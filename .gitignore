@@ -1,0 +1,28 @@
+# Dependencies
+/vendor/
+
+# Logs
+/logs/*.log
+/logs/*.txt
+
+# Configuration (if using environment-specific configs)
+.env
+config/database.local.php
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
+
+.github/
