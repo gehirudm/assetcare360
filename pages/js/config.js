@@ -48,18 +48,46 @@ const CONFIG = {
         'Gears'
     ],
     
-    // Vehicle Types
+    // Vehicle Types (must match database ENUM)
     VEHICLE_TYPES: [
-        'Asset Transportation',
-        'General Use'
+        'Truck',
+        'Van',
+        'Car',
+        'Bus',
+        'Bike',
+        'Three-Wheeler',
+        'Lorry',
+        'Tanker',
+        'Other'
     ],
     
-    // Fuel Types
+    // Fuel Types (must match database ENUM)
     FUEL_TYPES: [
         'Petrol',
         'Diesel',
         'Electric',
-        'Hybrid'
+        'Hybrid',
+        'LPG',
+        'CNG'
+    ],
+    
+    // Vehicle Components
+    VEHICLE_COMPONENTS: [
+        'Engine',
+        'Transmission',
+        'Braking System',
+        'Suspension System',
+        'Steering System',
+        'Cooling System',
+        'Exhaust System',
+        'Electrical System',
+        'Fuel System',
+        'Tires & Wheels',
+        'Battery',
+        'Alternator',
+        'Starter Motor',
+        'Air Conditioning',
+        'Lights & Signals'
     ],
     
     // Application Settings

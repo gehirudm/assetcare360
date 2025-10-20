@@ -26,7 +26,7 @@ class Machine extends BaseModel {
             'last_service_date' => 'DATE NULL',
             'next_service_date' => 'DATE NULL',
             'components' => 'TEXT NULL',
-            'status' => "ENUM('Active', 'Inactive', 'Under Maintenance', 'Decommissioned') DEFAULT 'Active'",
+            'status' => "ENUM('Active', 'Inactive', 'Under Maintenance', 'Decommissioned', 'For Auction') DEFAULT 'Active'",
             'notes' => 'TEXT NULL',
             'created_by' => 'INT NULL',
             'updated_by' => 'INT NULL',

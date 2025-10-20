@@ -1700,7 +1700,7 @@ components:
           in: query
           schema:
             type: string
-            enum: [Active, Inactive, Under Maintenance, Decommissioned]
+            enum: [Active, Inactive, Under Maintenance, Decommissioned, For Auction]
         - name: location
           in: query
           schema:
@@ -1874,7 +1874,7 @@ components:
           in: query
           schema:
             type: string
-            enum: [Active, Inactive, Under Maintenance, Decommissioned]
+            enum: [Active, Inactive, Under Maintenance, Decommissioned, For Auction]
         - name: vehicle_type
           in: query
           schema:
@@ -1977,10 +1977,11 @@ components:
           description: Vehicle deleted successfully
 
   /vehicles/{id}/mileage:
-    put:
+    patch:
       tags:
         - Vehicles
       summary: Update vehicle mileage
+      description: Updates the current mileage of a vehicle. New mileage must be greater than or equal to current mileage.
       security:
         - bearerAuth: []
         - cookieAuth: []
@@ -1999,11 +2000,32 @@ components:
               properties:
                 mileage:
                   type: integer
+                  description: New mileage in kilometers (must be >= current mileage)
+                  minimum: 0
               required:
                 - mileage
       responses:
         '200':
           description: Mileage updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Mileage updated successfully
+                  data:
+                    $ref: '#/components/schemas/Vehicle'
+        '400':
+          description: Bad request - New mileage is less than current mileage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /vehicles/due-service:
     get:
@@ -2053,7 +2075,7 @@ components:
             type: string
         status:
           type: string
-          enum: [Active, Inactive, Under Maintenance, Decommissioned]
+          enum: [Active, Inactive, Under Maintenance, Decommissioned, For Auction]
         notes:
           type: string
         created_by:
@@ -2103,7 +2125,7 @@ components:
             type: string
         status:
           type: string
-          enum: [Active, Inactive, Under Maintenance, Decommissioned]
+          enum: [Active, Inactive, Under Maintenance, Decommissioned, For Auction]
         notes:
           type: string
 
@@ -2159,7 +2181,12 @@ components:
           type: integer
         status:
           type: string
-          enum: [Active, Inactive, Under Maintenance, Decommissioned]
+          enum: [Active, Inactive, Under Maintenance, Decommissioned, For Auction]
+        components:
+          type: array
+          items:
+            type: string
+          description: List of vehicle components
         notes:
           type: string
         created_at:
@@ -2212,19 +2239,29 @@ components:
           enum: [Time-Based, Mileage-Based, Both]
         service_interval_days:
           type: integer
+          description: Required when service_interval_type is 'Time-Based' or 'Both'
         service_interval_km:
           type: integer
+          description: Required when service_interval_type is 'Mileage-Based' or 'Both'
         current_mileage:
           type: integer
           default: 0
+          minimum: 0
         last_service_date:
           type: string
           format: date
+          description: Must not be in the future
         last_service_mileage:
           type: integer
+          description: Must be less than or equal to current_mileage
         status:
           type: string
-          enum: [Active, Inactive, Under Maintenance, Decommissioned]
+          enum: [Active, Inactive, Under Maintenance, Decommissioned, For Auction]
+        components:
+          type: array
+          items:
+            type: string
+          description: List of vehicle components
         notes:
           type: string
 

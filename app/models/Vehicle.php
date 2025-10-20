@@ -34,7 +34,8 @@ class Vehicle extends BaseModel {
             'last_service_mileage' => 'INT NULL',
             'next_service_date' => 'DATE NULL',
             'next_service_mileage' => 'INT NULL',
-            'status' => "ENUM('Active', 'Inactive', 'Under Maintenance', 'Decommissioned') DEFAULT 'Active'",
+            'status' => "ENUM('Active', 'Inactive', 'Under Maintenance', 'Decommissioned', 'For Auction') DEFAULT 'Active'",
+            'components' => 'TEXT NULL COMMENT "JSON array of vehicle components"',
             'notes' => 'TEXT NULL',
             'created_by' => 'INT NULL',
             'updated_by' => 'INT NULL',
@@ -59,6 +60,11 @@ class Vehicle extends BaseModel {
      * Create vehicle
      */
     public function createVehicle($data) {
+        // Encode components if provided as array
+        if (isset($data['components']) && is_array($data['components'])) {
+            $data['components'] = json_encode($data['components']);
+        }
+        
         // Calculate next service date if applicable
         if (!empty($data['last_service_date']) && !empty($data['service_interval_days'])) {
             $lastService = new DateTime($data['last_service_date']);
@@ -78,6 +84,11 @@ class Vehicle extends BaseModel {
      * Update vehicle
      */
     public function updateVehicle($id, $data) {
+        // Encode components if provided as array
+        if (isset($data['components']) && is_array($data['components'])) {
+            $data['components'] = json_encode($data['components']);
+        }
+        
         $current = $this->findById($id);
         
         // Recalculate next service date if needed
@@ -157,7 +168,16 @@ class Vehicle extends BaseModel {
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll();
+        $vehicles = $stmt->fetchAll();
+        
+        // Decode components JSON
+        foreach ($vehicles as &$vehicle) {
+            if (isset($vehicle['components'])) {
+                $vehicle['components'] = json_decode($vehicle['components'], true) ?: [];
+            }
+        }
+        
+        return $vehicles;
     }
     
     /**
@@ -227,5 +247,18 @@ class Vehicle extends BaseModel {
      */
     public function findByChassisNumber($chassisNumber) {
         return $this->findOne(['chassis_number' => $chassisNumber]);
+    }
+    
+    /**
+     * Override findById to decode JSON components
+     */
+    public function findById($id) {
+        $vehicle = parent::findById($id);
+        
+        if ($vehicle && isset($vehicle['components'])) {
+            $vehicle['components'] = json_decode($vehicle['components'], true) ?: [];
+        }
+        
+        return $vehicle;
     }
 }

@@ -35,6 +35,23 @@ class VehicleService {
             throw new Exception("Service interval in kilometers is required for mileage-based service");
         }
         
+        // Validate last service mileage
+        if (!empty($data['last_service_mileage']) && !empty($data['current_mileage'])) {
+            if ($data['last_service_mileage'] > $data['current_mileage']) {
+                throw new Exception("Last service mileage cannot be greater than current mileage");
+            }
+        }
+        
+        // Validate last service date
+        if (!empty($data['last_service_date'])) {
+            $lastServiceDate = new DateTime($data['last_service_date']);
+            $currentDate = new DateTime();
+            
+            if ($lastServiceDate > $currentDate) {
+                throw new Exception("Last service date cannot be in the future");
+            }
+        }
+        
         // Check if chassis number already exists
         $existing = $this->vehicleModel->findByChassisNumber($data['chassis_number']);
         if ($existing) {
@@ -81,6 +98,24 @@ class VehicleService {
             $existing = $this->vehicleModel->findByNumberPlate($data['number_plate']);
             if ($existing) {
                 throw new Exception("Vehicle with number plate '{$data['number_plate']}' already exists");
+            }
+        }
+        
+        // Validate last service mileage
+        $currentMileage = isset($data['current_mileage']) ? $data['current_mileage'] : $vehicle['current_mileage'];
+        $lastServiceMileage = isset($data['last_service_mileage']) ? $data['last_service_mileage'] : $vehicle['last_service_mileage'];
+        
+        if ($lastServiceMileage !== null && $currentMileage !== null && $lastServiceMileage > $currentMileage) {
+            throw new Exception("Last service mileage cannot be greater than current mileage");
+        }
+        
+        // Validate last service date
+        if (isset($data['last_service_date']) && !empty($data['last_service_date'])) {
+            $lastServiceDate = new DateTime($data['last_service_date']);
+            $currentDate = new DateTime();
+            
+            if ($lastServiceDate > $currentDate) {
+                throw new Exception("Last service date cannot be in the future");
             }
         }
         

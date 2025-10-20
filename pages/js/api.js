@@ -87,6 +87,17 @@ const API = {
     },
     
     /**
+     * PATCH request
+     */
+    async patch(endpoint, data, options = {}) {
+        return this.request(endpoint, {
+            ...options,
+            method: 'PATCH',
+            body: JSON.stringify(data)
+        });
+    },
+    
+    /**
      * DELETE request
      */
     async delete(endpoint, options = {}) {

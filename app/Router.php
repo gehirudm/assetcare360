@@ -43,6 +43,13 @@ class Router {
     }
     
     /**
+     * Add PATCH route
+     */
+    public function patch($path, $controller, $action, $middlewares = []) {
+        $this->addRoute('PATCH', $path, $controller, $action, $middlewares);
+    }
+    
+    /**
      * Add DELETE route
      */
     public function delete($path, $controller, $action, $middlewares = []) {

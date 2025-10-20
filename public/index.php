@@ -22,7 +22,7 @@ if (CORS_ENABLED && !empty($origin)) {
 // Set headers
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: ' . $allowedOrigin);
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Access-Control-Allow-Credentials: true'); // Allow cookies to be sent
 header('Vary: Origin'); // Important for caching
@@ -106,7 +106,7 @@ $router->get('/vehicles', 'VehicleController', 'index');
 $router->post('/vehicles', 'VehicleController', 'store');
 $router->get('/vehicles/:id', 'VehicleController', 'show');
 $router->put('/vehicles/:id', 'VehicleController', 'update');
-$router->put('/vehicles/:id/mileage', 'VehicleController', 'updateMileage');
+$router->patch('/vehicles/:id/mileage', 'VehicleController', 'updateMileage');
 $router->delete('/vehicles/:id', 'VehicleController', 'delete');
 
 // Dispatch the request

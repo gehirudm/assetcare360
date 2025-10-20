@@ -60,8 +60,8 @@ class VehicleController {
                 Response::error('Invalid JSON data', 400);
             }
             
-            // Get user ID from JWT token (set by AuthMiddleware)
-            global $user;
+            // Get user ID from authenticated user
+            $user = RoleMiddleware::getCurrentUser();
             $userId = $user['id'] ?? null;
             
             $vehicle = $this->vehicleService->createVehicle($data, $userId);
@@ -76,8 +76,16 @@ class VehicleController {
      * GET /api/vehicles/:id
      * Get vehicle by ID
      */
-    public function show($id) {
+    public function show() {
         try {
+            // Get vehicle ID from URL parameter (set by router)
+            $id = $_GET['id'] ?? null;
+            
+            if (!$id) {
+                Response::error('Vehicle ID is required', 400);
+                return;
+            }
+            
             $vehicle = $this->vehicleService->getVehicleById($id);
             
             Response::success($vehicle);
@@ -90,16 +98,25 @@ class VehicleController {
      * PUT /api/vehicles/:id
      * Update vehicle
      */
-    public function update($id) {
+    public function update() {
         try {
+            // Get vehicle ID from URL parameter (set by router)
+            $id = $_GET['id'] ?? null;
+            
+            if (!$id) {
+                Response::error('Vehicle ID is required', 400);
+                return;
+            }
+            
             $data = json_decode(file_get_contents('php://input'), true);
             
             if (!$data) {
                 Response::error('Invalid JSON data', 400);
+                return;
             }
             
-            // Get user ID from JWT token
-            global $user;
+            // Get user ID from authenticated user
+            $user = RoleMiddleware::getCurrentUser();
             $userId = $user['id'] ?? null;
             
             $vehicle = $this->vehicleService->updateVehicle($id, $data, $userId);
@@ -114,8 +131,16 @@ class VehicleController {
      * DELETE /api/vehicles/:id
      * Delete vehicle
      */
-    public function delete($id) {
+    public function delete() {
         try {
+            // Get vehicle ID from URL parameter (set by router)
+            $id = $_GET['id'] ?? null;
+            
+            if (!$id) {
+                Response::error('Vehicle ID is required', 400);
+                return;
+            }
+            
             $this->vehicleService->deleteVehicle($id);
             
             Response::success(null, 'Vehicle deleted successfully');
@@ -128,12 +153,21 @@ class VehicleController {
      * PATCH /api/vehicles/:id/mileage
      * Update vehicle mileage
      */
-    public function updateMileage($id) {
+    public function updateMileage() {
         try {
+            // Get vehicle ID from URL parameter (set by router)
+            $id = $_GET['id'] ?? null;
+            
+            if (!$id) {
+                Response::error('Vehicle ID is required', 400);
+                return;
+            }
+            
             $data = json_decode(file_get_contents('php://input'), true);
             
             if (!$data || !isset($data['mileage'])) {
                 Response::error('Mileage is required', 400);
+                return;
             }
             
             $vehicle = $this->vehicleService->updateMileage($id, $data['mileage']);

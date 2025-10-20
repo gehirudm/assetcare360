@@ -57,8 +57,8 @@ class MachineController {
                 Response::error('Invalid JSON data', 400);
             }
             
-            // Get user ID from JWT token (set by AuthMiddleware)
-            global $user;
+            // Get user ID from authenticated user
+            $user = RoleMiddleware::getCurrentUser();
             $userId = $user['id'] ?? null;
             
             $machine = $this->machineService->createMachine($data, $userId);
@@ -73,8 +73,16 @@ class MachineController {
      * GET /api/machines/:id
      * Get machine by ID
      */
-    public function show($id) {
+    public function show() {
         try {
+            // Get machine ID from URL parameter (set by router)
+            $id = $_GET['id'] ?? null;
+            
+            if (!$id) {
+                Response::error('Machine ID is required', 400);
+                return;
+            }
+            
             $machine = $this->machineService->getMachineById($id);
             
             Response::success($machine);
@@ -87,16 +95,25 @@ class MachineController {
      * PUT /api/machines/:id
      * Update machine
      */
-    public function update($id) {
+    public function update() {
         try {
+            // Get machine ID from URL parameter (set by router)
+            $id = $_GET['id'] ?? null;
+            
+            if (!$id) {
+                Response::error('Machine ID is required', 400);
+                return;
+            }
+            
             $data = json_decode(file_get_contents('php://input'), true);
             
             if (!$data) {
                 Response::error('Invalid JSON data', 400);
+                return;
             }
             
-            // Get user ID from JWT token
-            global $user;
+            // Get user ID from authenticated user
+            $user = RoleMiddleware::getCurrentUser();
             $userId = $user['id'] ?? null;
             
             $machine = $this->machineService->updateMachine($id, $data, $userId);
@@ -111,8 +128,16 @@ class MachineController {
      * DELETE /api/machines/:id
      * Delete machine
      */
-    public function delete($id) {
+    public function delete() {
         try {
+            // Get machine ID from URL parameter (set by router)
+            $id = $_GET['id'] ?? null;
+            
+            if (!$id) {
+                Response::error('Machine ID is required', 400);
+                return;
+            }
+            
             $this->machineService->deleteMachine($id);
             
             Response::success(null, 'Machine deleted successfully');
