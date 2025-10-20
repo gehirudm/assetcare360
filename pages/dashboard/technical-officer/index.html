@@ -1,0 +1,2324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Officer Dashboard</title>
+    <style>
+        :root {
+            --royal-blue: hsla(219, 89%, 53%, 1);
+            --royal-blue-2: hsla(219, 75%, 50%, 1);
+            --tang-blue: hsla(219, 67%, 47%, 1);
+            --kelly-green: hsla(99, 60%, 43%, 1);
+            --stone-100: #f7f9fb;
+            --stone-200: #eef1f4;
+            --text-900: #111827;
+            --text-700: #374151;
+            --muted: #6b7280;
+            --danger: #d93025;
+            --warn: #f59e0b;
+            --ok: #10b981;
+            --card: #ffffff;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --ring: 0 0 0 3px rgba(59,130,246,.2);
+            --gradient-blue: linear-gradient(to right, var(--royal-blue), var(--tang-blue));
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body { height: 100%; }
+
+        body {
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial;
+            color: var(--text-900);
+            background: var(--stone-100);
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--gradient-blue);
+            color: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.5);
+            transform: translateY(-1px);
+        }
+
+        .main-wrapper {
+            display: flex;
+            flex: 1;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #4e73df, #2a59a0);
+            color: #fff;
+            padding: 20px 0;
+            overflow-y: auto;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #fff;
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+            padding-bottom: 15px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            color: rgba(255, 255, 255, 0.8);
+            border-radius: 5px;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-left-color: #4e73df;
+            color: #fff;
+            transform: translateX(5px);
+        }
+
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.15);
+            border-left-color: #4e73df;
+            font-weight: 600;
+        }
+
+        .nav-icon {
+            margin-right: 12px;
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .content-section {
+            display: none;
+            background: var(--card);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--stone-200);
+            padding-bottom: 15px;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            color: var(--tang-blue);
+            margin-bottom: 5px;
+        }
+
+        .page-subtitle {
+            color: var(--muted);
+            font-size: 1.1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--stone-200);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            font-weight: 600;
+            color: var(--tang-blue);
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-in-progress {
+            background: var(--warn);
+            color: #000;
+        }
+
+        .status-pending {
+            background: var(--muted);
+            color: #fff;
+        }
+
+        .status-complete {
+            background: var(--kelly-green);
+            color: #fff;
+        }
+
+        .status-approved {
+            background: var(--ok);
+            color: #fff;
+        }
+
+        .status-rejected {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .status-new {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+        .status-done {
+            background: var(--kelly-green);
+            color: #fff;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: var(--royal-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--tang-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--stone-200);
+            color: var(--text-700);
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--kelly-green);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .btn-warning {
+            background: var(--warn);
+            color: #000;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+            transform: translateY(-1px);
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+
+        .btn-mini {
+            padding: 6px 12px;
+            font-size: 11px;
+            margin: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            color: var(--text-700);
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--stone-200);
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            box-shadow: var(--ring);
+            border-color: var(--royal-blue);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-section {
+            border: 1px solid var(--stone-200);
+            border-radius: 10px;
+            padding: 16px;
+            margin: 16px 0;
+            background: #fafcff;
+        }
+
+        .form-section h5 {
+            margin: 0 0 12px 0;
+            color: var(--tang-blue);
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .ticket-item, .request-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .ticket-item:hover, .request-item:hover {
+            box-shadow: var(--shadow);
+            transform: translateY(-1px);
+        }
+
+        .ticket-details {
+            flex: 1;
+        }
+
+        .ticket-details strong {
+            color: var(--text-700);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .ticket-meta {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+
+        .ticket-issue {
+            color: var(--text-700);
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .ticket-actions {
+            text-align: right;
+            white-space: nowrap;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: flex-end;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid var(--stone-200);
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .filter-btn.active {
+            background: var(--royal-blue);
+            color: white;
+            border-color: var(--royal-blue);
+        }
+
+        .filter-btn:hover {
+            background: var(--stone-200);
+        }
+
+        .filter-btn.active:hover {
+            background: var(--tang-blue);
+            border-color: var(--tang-blue);
+        }
+
+        .notification-item {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .notification-item.success {
+            background: #d1f2eb;
+            border-color: #a3e9d1;
+        }
+
+        .notification-item.warning {
+            background: #fff3cd;
+            border-color: #ffeaa7;
+        }
+
+        .notification-item.info {
+            background: #cce7ff;
+            border-color: #7db3d8;
+        }
+
+        .notification-icon {
+            font-size: 1.2rem;
+            min-width: 24px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.35);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: var(--muted);
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: var(--royal-blue);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+        }
+
+        .close:hover {
+            background: var(--tang-blue);
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--kelly-green);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            display: none;
+            z-index: 1001;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .section-divider {
+            margin: 30px 0;
+            border-bottom: 2px solid var(--stone-200);
+            padding-bottom: 15px;
+        }
+
+        .divider-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--tang-blue);
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 10px 15px;
+            }
+            
+            .header-title {
+                font-size: 1.4rem;
+            }
+            
+            .user-info {
+                display: none;
+            }
+            
+            .sidebar {
+                width: 100%;
+                position: fixed;
+                top: 70px;
+                left: -100%;
+                height: calc(100vh - 70px);
+                z-index: 999;
+                transition: left 0.3s ease;
+            }
+            
+            .sidebar.open {
+                left: 0;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="header-title">Technical Officer Dashboard</h1>
+            <div class="header-user">
+                <div class="user-info">
+                    <div class="user-avatar">TO</div>
+                    <span>Tech Officer</span>
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    <span>🚪</span>
+                    Logout
+                </button>
+            </div>
+        </header>
+
+        <div class="main-wrapper">
+            <aside class="sidebar">
+                <h2>Technical Officer</h2>
+                <nav>
+                    <div class="nav-item active" data-section="dashboard">
+                        <span class="nav-icon">📊</span>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="nav-item" data-section="tickets">
+                        <span class="nav-icon">🎫</span>
+                        <span>Fault & Repair Tickets</span>
+                    </div>
+                    <div class="nav-item" data-section="spare-parts">
+                        <span class="nav-icon">🔧</span>
+                        <span>Spare Part Management</span>
+                    </div>
+                    <div class="nav-item" data-section="service-warranty">
+                        <span class="nav-icon">🛡️</span>
+                        <span>Service & Warranty</span>
+                    </div>
+                    <div class="nav-item" data-section="feedback">
+                        <span class="nav-icon">💬</span>
+                        <span>Asset Feedback</span>
+                    </div>
+                </nav>
+            </aside>
+
+            <main class="main-content">
+                <!-- Dashboard Section -->
+                <section class="content-section active" id="dashboard">
+                    <div class="page-header">
+                        <h1 class="page-title">Dashboard</h1>
+                        <p class="page-subtitle">Technical Officer Management Overview</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">🔔 Recent Notifications</div>
+                        <div class="notification-item success">
+                            <span class="notification-icon">✅</span>
+                            <div>
+                                <strong>Parts Request Approved:</strong> Brake pads for TKT-001 approved by Inventory Manager
+                            </div>
+                        </div>
+                        <div class="notification-item info">
+                            <span class="notification-icon">📋</span>
+                            <div>
+                                <strong>New Ticket Assigned:</strong> TKT-004 assigned by Supervisor - Engine overheating
+                            </div>
+                        </div>
+                        <div class="notification-item warning">
+                            <span class="notification-icon">⏰</span>
+                            <div>
+                                <strong>Work Update Required:</strong> 2 tickets need progress updates
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid">
+                        <div class="card">
+                            <div class="card-header">🎫 My Active Tickets</div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                                <div style="text-align: center; padding: 15px; background: #dbeafe; border-radius: 8px;">
+                                    <div style="font-size: 1.5rem; font-weight: bold; color: #3b82f6;" id="dashNewCount">2</div>
+                                    <div style="color: var(--muted);">New Tickets</div>
+                                </div>
+                                <div style="text-align: center; padding: 15px; background: #fff3e0; border-radius: 8px;">
+                                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--warn);" id="dashProgressCount">1</div>
+                                    <div style="color: var(--muted);">In Progress</div>
+                                </div>
+                                <div style="text-align: center; padding: 15px; background: #e8f5e8; border-radius: 8px;">
+                                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--ok);" id="dashCompleteCount">0</div>
+                                    <div style="color: var(--muted);">Completed Today</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">📦 Parts Request Status</div>
+                            <div class="request-item">
+                                <div class="ticket-details">
+                                    <strong>REQ-001</strong>
+                                    <div class="ticket-meta">To: Supervisor → Inventory Manager</div>
+                                    <div class="ticket-issue">Brake pads x4</div>
+                                </div>
+                                <div class="ticket-actions">
+                                    <span class="status-badge status-approved">Approved</span>
+                                </div>
+                            </div>
+                            <div class="request-item">
+                                <div class="ticket-details">
+                                    <strong>REQ-002</strong>
+                                    <div class="ticket-meta">To: Supervisor → Inventory Manager</div>
+                                    <div class="ticket-issue">Oil filters x2</div>
+                                </div>
+                                <div class="ticket-actions">
+                                    <span class="status-badge status-pending">Pending</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Fault & Repair Tickets -->
+                <section class="content-section" id="tickets">
+                    <div class="page-header">
+                        <h1 class="page-title">Fault & Repair Tickets</h1>
+                        <p class="page-subtitle">Manage tickets assigned by supervisors</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="openModal('createRepairTicketModal')">
+                            ➕ Create New Repair Ticket
+                        </button>
+                    </div>
+
+                    <!-- Tab Filters -->
+                    <div class="filter-controls" id="ticketFilterTabs">
+                        <button class="filter-btn active" onclick="filterTicketsByStatus('all')">All Tickets</button>
+                        <button class="filter-btn" onclick="filterTicketsByStatus('new')">To Be Processed</button>
+                        <button class="filter-btn" onclick="filterTicketsByStatus('in-progress')">In Progress</button>
+                        <button class="filter-btn" onclick="filterTicketsByStatus('completed')">Completed</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span>� Tickets</span>
+                            <span id="ticketCount" class="status-badge status-normal">5 tickets</span>
+                        </div>
+                        <div id="allTicketsList">
+                            <!-- New Tickets -->
+                            <div class="ticket-item" data-status="new">
+                                <div class="ticket-details">
+                                    <strong>TKT-002</strong>
+                                    <div class="ticket-meta">Equipment: Machine #205 | Reporter: Mike Operator</div>
+                                    <div class="ticket-issue">Hydraulic leak in main cylinder</div>
+                                    <div class="ticket-meta">Assigned by: Supervisor Mike | Priority: Medium | Date: Aug 30</div>
+                                </div>
+                                <div class="ticket-actions">
+                                    <span class="status-badge status-new">New</span>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-primary btn-mini" onclick="processTicket('TKT-002')">Process</button>
+                                        <button class="btn btn-warning btn-mini" onclick="requestPartsForTicket('TKT-002')">Request Parts</button>
+                                        <button class="btn btn-secondary btn-mini" onclick="viewTicketDetails('TKT-002')">View Details</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ticket-item" data-status="new">
+                                <div class="ticket-details">
+                                    <strong>TKT-003</strong>
+                                    <div class="ticket-meta">Equipment: Truck #089 | Reporter: Sarah Driver</div>
+                                    <div class="ticket-issue">Brake system malfunction</div>
+                                    <div class="ticket-meta">Assigned by: Supervisor Lisa | Priority: High | Date: Aug 30</div>
+                                </div>
+                                <div class="ticket-actions">
+                                    <span class="status-badge status-new">New</span>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-primary btn-mini" onclick="processTicket('TKT-003')">Process</button>
+                                        <button class="btn btn-warning btn-mini" onclick="requestPartsForTicket('TKT-003')">Request Parts</button>
+                                        <button class="btn btn-secondary btn-mini" onclick="viewTicketDetails('TKT-003')">View Details</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- In Progress Tickets -->
+                            <div class="ticket-item" data-status="in-progress">
+                                <div class="ticket-details">
+                                    <strong>TKT-001</strong>
+                                    <div class="ticket-meta">Equipment: Vehicle #101 | Reporter: John Driver</div>
+                                    <div class="ticket-issue">Engine overheating</div>
+                                    <div class="ticket-meta">Assigned by: Supervisor John | Priority: High | Started: Aug 28</div>
+                                    <div style="margin-top: 8px; padding: 8px; background: #f0f9ff; border-radius: 4px; font-size: 12px;">
+                                        <strong>Current Status:</strong> Installing new radiator - 60% complete
+                                    </div>
+                                </div>
+                                <div class="ticket-actions">
+                                    <span class="status-badge status-in-progress">In Progress</span>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-primary btn-mini" onclick="updateWorkProgress('TKT-001')">Update Work</button>
+                                        <button class="btn btn-warning btn-mini" onclick="requestPartsForTicket('TKT-001')">Request Parts</button>
+                                        <button class="btn btn-success btn-mini" onclick="markTicketDone('TKT-001')">Mark Done</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Completed Tickets -->
+                            <div class="ticket-item" data-status="completed">
+                                <div class="ticket-details">
+                                    <strong>TKT-004</strong>
+                                    <div class="ticket-meta">Equipment: Van #112 | Reporter: Malika Nishantha</div>
+                                    <div class="ticket-issue">Transmission fluid leak repaired</div>
+                                    <div class="ticket-meta">Assigned by: Supervisor John | Priority: Medium | Completed: Aug 29</div>
+                                    <div style="margin-top: 8px; padding: 8px; background: #f0fdf4; border-radius: 4px; font-size: 12px;">
+                                        <strong>Resolution:</strong> Replaced transmission seals and refilled fluid. Vehicle tested and operational.
+                                    </div>
+                                </div>
+                                <div class="ticket-actions">
+                                    <span class="status-badge status-complete">Completed</span>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-secondary btn-mini" onclick="viewTicketDetails('TKT-004')">View Details</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ticket-item" data-status="completed">
+                                <div class="ticket-details">
+                                    <strong>TKT-005</strong>
+                                    <div class="ticket-meta">Equipment: Machine #150 | Reporter: Gehiru Damindu</div>
+                                    <div class="ticket-issue">Gas cylinder valve replacement completed</div>
+                                    <div class="ticket-meta">Assigned by: Supervisor Mike | Priority: High | Completed: Aug 28</div>
+                                    <div style="margin-top: 8px; padding: 8px; background: #f0fdf4; border-radius: 4px; font-size: 12px;">
+                                        <strong>Resolution:</strong> Replaced faulty pressure valve and tested system. All safety checks passed.
+                                    </div>
+                                </div>
+                                <div class="ticket-actions">
+                                    <span class="status-badge status-complete">Completed</span>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-secondary btn-mini" onclick="viewTicketDetails('TKT-005')">View Details</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="noTicketsMessage" style="display: none; text-align: center; color: var(--muted); padding: 20px;">
+                            No tickets found for this filter
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Spare Part Management -->
+                <section class="content-section" id="spare-parts">
+                    <div class="page-header">
+                        <h1 class="page-title">Spare Part Management</h1>
+                        <p class="page-subtitle">Request and track spare parts</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="openModal('requestPartsModal')">
+                            Request New Parts
+                        </button>
+                    </div>
+
+                    <!-- Tab Filters -->
+                    <div class="filter-controls" id="partsFilterTabs">
+                        <button class="filter-btn active" onclick="filterPartsByStatus('all')">All Requests</button>
+                        <button class="filter-btn" onclick="filterPartsByStatus('approved')">Approved</button>
+                        <button class="filter-btn" onclick="filterPartsByStatus('pending')">Pending</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span>📋 My Parts Requests</span>
+                            <span id="partsCount" class="status-badge status-normal">2 requests</span>
+                        </div>
+                        <div id="allPartsRequests">
+                        
+                        <!-- Request 1 -->
+                        <div class="request-item" data-status="approved" style="display: block; padding: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <strong style="font-size: 1.1rem; color: var(--tang-blue);">REQ-001</strong>
+                                <span class="status-badge status-approved">Approved</span>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px;">
+                                <div>
+                                    <span style="color: var(--muted); font-size: 0.9rem;">Ticket ID</span>
+                                    <div style="font-weight: 500; margin-top: 3px;">TKT-001</div>
+                                </div>
+                                <div>
+                                    <span style="color: var(--muted); font-size: 0.9rem;">Equipment</span>
+                                    <div style="font-weight: 500; margin-top: 3px;">Vehicle #101</div>
+                                </div>
+                                <div>
+                                    <span style="color: var(--muted); font-size: 0.9rem;">Reporter</span>
+                                    <div style="font-weight: 500; margin-top: 3px;">Tech Officer</div>
+                                </div>
+                                <div>
+                                    <span style="color: var(--muted); font-size: 0.9rem;">Requested Date</span>
+                                    <div style="font-weight: 500; margin-top: 3px;">Aug 20, 2025</div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--stone-200);">
+                                <span style="color: var(--muted); font-size: 0.9rem;">Issue Description</span>
+                                <div style="margin-top: 8px; line-height: 1.6; color: var(--text-700);">
+                                    Required for brake system repair on Vehicle #101
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 15px;">
+                                <span style="color: var(--muted); font-size: 0.9rem; font-weight: 600;">🔧 Spare Parts Required</span>
+                                <div style="margin-top: 10px;">
+                                    <div style="background: #f8f9fa; border-radius: 8px; padding: 15px;">
+                                        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                                            <span style="color: var(--text-700); font-weight: 500;">Brake Pads - BP-001</span>
+                                            <span style="color: var(--text-900); font-weight: 600;">Qty: 4</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                                <button class="btn btn-secondary btn-small">Track Status</button>
+                                <button class="btn btn-primary btn-small" onclick="viewPartRequestDetails('REQ-001')">View Details</button>
+                            </div>
+                        </div>
+
+                        <!-- Request 2 -->
+                        <div class="request-item" data-status="pending" style="display: block; padding: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <strong style="font-size: 1.1rem; color: var(--tang-blue);">REQ-002</strong>
+                                <span class="status-badge status-pending">Pending</span>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px;">
+                                <div>
+                                    <span style="color: var(--muted); font-size: 0.9rem;">Ticket ID</span>
+                                    <div style="font-weight: 500; margin-top: 3px;">TKT-003</div>
+                                </div>
+                                <div>
+                                    <span style="color: var(--muted); font-size: 0.9rem;">Equipment</span>
+                                    <div style="font-weight: 500; margin-top: 3px;">Machine #205</div>
+                                </div>
+                                <div>
+                                    <span style="color: var(--muted); font-size: 0.9rem;">Reporter</span>
+                                    <div style="font-weight: 500; margin-top: 3px;">Tech Officer</div>
+                                </div>
+                                <div>
+                                    <span style="color: var(--muted); font-size: 0.9rem;">Requested Date</span>
+                                    <div style="font-weight: 500; margin-top: 3px;">Aug 22, 2025</div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--stone-200);">
+                                <span style="color: var(--muted); font-size: 0.9rem;">Issue Description</span>
+                                <div style="margin-top: 8px; line-height: 1.6; color: var(--text-700);">
+                                    Preventive maintenance for hydraulic system
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 15px;">
+                                <span style="color: var(--muted); font-size: 0.9rem; font-weight: 600;">🔧 Spare Parts Required</span>
+                                <div style="margin-top: 10px;">
+                                    <div style="background: #f8f9fa; border-radius: 8px; padding: 15px;">
+                                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--stone-200);">
+                                            <span style="color: var(--text-700); font-weight: 500;">Oil Filter - OF-205</span>
+                                            <span style="color: var(--text-900); font-weight: 600;">Qty: 2</span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                                            <span style="color: var(--text-700); font-weight: 500;">Hydraulic Pump - HYD-250</span>
+                                            <span style="color: var(--text-900); font-weight: 600;">Qty: 1</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                                <button class="btn btn-secondary btn-small">Track Status</button>
+                                <button class="btn btn-primary btn-small" onclick="viewPartRequestDetails('REQ-002')">View Details</button>
+                            </div>
+                        </div>
+                        </div>
+                        <div id="noPartsMessage" style="display: none; text-align: center; color: var(--muted); padding: 20px;">
+                            No parts requests found for this filter
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Service & Warranty -->
+                <section class="content-section" id="service-warranty">
+                    <div class="page-header">
+                        <h1 class="page-title">Service & Warranty Handling</h1>
+                        <p class="page-subtitle">Track service timelines and claim warranties</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="openModal('warrantyClaimModal')">
+                            Claim Warranty
+                        </button>
+                    </div>
+
+                    <!-- Tab Filters -->
+                    <div class="filter-controls" id="warrantyFilterTabs">
+                        <button class="filter-btn active" onclick="filterWarrantyByStatus('all')">All Claims</button>
+                        <button class="filter-btn" onclick="filterWarrantyByStatus('approved')">Approved</button>
+                        <button class="filter-btn" onclick="filterWarrantyByStatus('pending')">Pending</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span>🛡️ Warranty Claims</span>
+                            <span id="warrantyCount" class="status-badge status-normal">2 claims</span>
+                        </div>
+                        <div id="allWarrantyClaims">
+                        <div class="request-item" data-status="approved">
+                            <div class="ticket-details">
+                                <strong>WC-001</strong>
+                                <div class="ticket-meta">Part: Engine Block (ENG-500) | Equipment: Vehicle #101</div>
+                                <div class="ticket-issue">Warranty expires: Dec 15, 2025</div>
+                                <div class="ticket-meta">To: Inventory Manager</div>
+                            </div>
+                            <div class="ticket-actions">
+                                <span class="status-badge status-approved">Approved</span>
+                                <button class="btn btn-secondary btn-small">Track</button>
+                            </div>
+                        </div>
+                        <div class="request-item" data-status="pending">
+                            <div class="ticket-details">
+                                <strong>WC-002</strong>
+                                <div class="ticket-meta">Part: Hydraulic Pump (HYD-250) | Equipment: Machine #205</div>
+                                <div class="ticket-issue">Warranty expires: Sep 10, 2025</div>
+                                <div class="ticket-meta">To: Inventory Manager</div>
+                            </div>
+                            <div class="ticket-actions">
+                                <span class="status-badge status-pending">Pending</span>
+                                <button class="btn btn-secondary btn-small">Track</button>
+                            </div>
+                        </div>
+                        </div>
+                        <div id="noWarrantyMessage" style="display: none; text-align: center; color: var(--muted); padding: 20px;">
+                            No warranty claims found for this filter
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Asset Feedback -->
+                <section class="content-section" id="feedback">
+                    <div class="page-header">
+                        <h1 class="page-title">Asset Feedback</h1>
+                        <p class="page-subtitle">Submit feedback post-repair (shared with Supervisor & MM)</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="openModal('feedbackModal')">
+                            Submit Asset Feedback
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">📝 Recent Feedback Submissions</div>
+                        <div class="request-item">
+                            <div class="ticket-details">
+                                <strong>FB-001</strong>
+                                <div class="ticket-meta">Equipment: Vehicle #101 | Component: Engine System</div>
+                                <div class="ticket-issue">Post-repair assessment: Good performance, minor temperature variations</div>
+                                <div class="ticket-meta">Shared with: Supervisor & Maintenance Manager</div>
+                            </div>
+                            <div class="ticket-actions">
+                                <span class="status-badge status-complete">Submitted</span>
+                                <small style="color: var(--muted);">Aug 22</small>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Create Repair Ticket Modal -->
+    <div id="createRepairTicketModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('createRepairTicketModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Create New Repair Ticket</h2>
+            <form id="createRepairTicketForm">
+                <div class="form-section">
+                    <h5>🚗 Asset Information</h5>
+                    <div class="form-group">
+                        <label class="form-label">Asset Type *</label>
+                        <select class="form-input" id="assetType" required>
+                            <option value="">Select Asset Type</option>
+                            <option value="vehicle">Vehicle</option>
+                            <option value="machine">Machine</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Asset ID / Registration *</label>
+                        <input type="text" class="form-input" id="assetId" placeholder="e.g., LKA-1234 or Machine #205" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Asset Name</label>
+                        <input type="text" class="form-input" id="assetName" placeholder="e.g., Toyota Hilux, Excavator">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5>🔧 Fault Details</h5>
+                    <div class="form-group">
+                        <label class="form-label">Fault Category *</label>
+                        <select class="form-input" id="faultCategory" required>
+                            <option value="">Select Category</option>
+                            <option value="engine">Engine/Motor</option>
+                            <option value="transmission">Transmission</option>
+                            <option value="electrical">Electrical System</option>
+                            <option value="hydraulic">Hydraulic System</option>
+                            <option value="brake">Brake System</option>
+                            <option value="cooling">Cooling System</option>
+                            <option value="fuel">Fuel System</option>
+                            <option value="suspension">Suspension</option>
+                            <option value="body">Body/Structure</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fault Description *</label>
+                        <textarea class="form-textarea" id="faultDescription" placeholder="Describe the fault/issue in detail..." rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Reported By</label>
+                        <input type="text" class="form-input" id="reportedBy" placeholder="Driver/Operator name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Priority *</label>
+                        <select class="form-input" id="repairPriority" required>
+                            <option value="high">High - Urgent</option>
+                            <option value="medium" selected>Medium - Normal</option>
+                            <option value="low">Low - Non-urgent</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5>⚙️ Repair Management</h5>
+                    <div class="form-group">
+                        <label class="form-label">Repair Type *</label>
+                        <select class="form-input" id="repairType" required onchange="toggleOutsourcedFields()">
+                            <option value="">Select Repair Type</option>
+                            <option value="internal">Resolve by Me (Internal Repair)</option>
+                            <option value="outsourced">Outsource to External Service</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Internal Repair Fields -->
+                    <div id="internalRepairFields" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label">Estimated Completion Time</label>
+                            <input type="datetime-local" class="form-input" id="estimatedCompletion">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Required Parts (if known)</label>
+                            <textarea class="form-textarea" id="requiredParts" placeholder="List any parts that will be needed..." rows="3"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Outsourced Repair Fields -->
+                    <div id="outsourcedRepairFields" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label">Service Provider Name</label>
+                            <input type="text" class="form-input" id="serviceProvider" placeholder="Garage/Workshop name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Service Provider Contact</label>
+                            <input type="text" class="form-input" id="serviceContact" placeholder="Contact number">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Service Provider Address</label>
+                            <textarea class="form-textarea" id="serviceAddress" placeholder="Complete address..." rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Estimated Cost (LKR)</label>
+                            <input type="number" class="form-input" id="estimatedCost" placeholder="Estimated repair cost" step="100">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Additional Notes</label>
+                        <textarea class="form-textarea" id="additionalNotes" placeholder="Any additional information..." rows="3"></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Create Ticket & Send to Supervisor</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Process Ticket Modal -->
+    <div id="processTicketModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('processTicketModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Start Working on Ticket</h2>
+            <form id="processTicketForm">
+                <div class="form-section">
+                    <h5>🔧 Begin Work</h5>
+                    <div class="form-group">
+                        <label class="form-label">Ticket ID</label>
+                        <input type="text" class="form-input" id="processTicketId" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Initial Assessment</label>
+                        <textarea class="form-textarea" placeholder="Describe your initial assessment and planned approach..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Estimated Completion Time</label>
+                        <input type="datetime-local" class="form-input" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Start Work & Update Status</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Update Work Progress Modal -->
+    <div id="updateWorkModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('updateWorkModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Update Work Progress</h2>
+            <form id="updateWorkForm">
+                <div class="form-section">
+                    <h5>📋 Work Progress Update</h5>
+                    <div class="form-group">
+                        <label class="form-label">Ticket ID</label>
+                        <input type="text" class="form-input" id="updateTicketId" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Work Done Today</label>
+                        <textarea class="form-textarea" placeholder="Describe work completed in this session..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Parts Used (if any)</label>
+                        <textarea class="form-textarea" placeholder="List any parts used..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Time Spent (hours)</label>
+                        <input type="number" class="form-input" step="0.5" min="0" placeholder="Hours worked" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Current Status</label>
+                        <textarea class="form-textarea" placeholder="Current status and next steps..." required></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Update Progress & Notify Supervisor</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mark Done Modal -->
+    <div id="markDoneModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('markDoneModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Mark Ticket as Done</h2>
+            <form id="markDoneForm">
+                <div class="form-section">
+                    <h5>✅ Work Completion Summary</h5>
+                    <div class="form-group">
+                        <label class="form-label">Ticket ID</label>
+                        <input type="text" class="form-input" id="doneTicketId" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Work Summary</label>
+                        <textarea class="form-textarea" placeholder="Summarize all work completed..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">All Parts Used</label>
+                        <textarea class="form-textarea" placeholder="Complete list of parts used during repair..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Total Time Spent</label>
+                        <input type="number" class="form-input" step="0.5" min="0" placeholder="Total hours" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Final Status</label>
+                        <select class="form-select" required>
+                            <option value="">Select final status</option>
+                            <option value="fully-operational">Fully Operational</option>
+                            <option value="operational-monitor">Operational - Requires Monitoring</option>
+                            <option value="temporary-fix">Temporary Fix Applied</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Testing Results</label>
+                        <textarea class="form-textarea" placeholder="Describe testing performed and results..." required></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success">Mark Done & Send to Supervisor</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Request Parts Modal -->
+    <div id="requestPartsModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('requestPartsModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">📋 Request Spare Parts</h2>
+            <form id="requestPartsForm">
+                <div class="form-section">
+                    <h5>🎫 Ticket Information</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Ticket ID</label>
+                            <input type="text" class="form-input" placeholder="Enter ticket ID (if related)" id="relatedTicketId">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Equipment</label>
+                            <input type="text" class="form-input" placeholder="Enter equipment/machine ID" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Reporter</label>
+                            <input type="text" class="form-input" id="reporterName" value="Tech Officer" readonly style="background-color: #f0f0f0;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Priority</label>
+                            <select class="form-select" required>
+                                <option value="">Select Priority</option>
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5>📝 Issue Description</h5>
+                    <div class="form-group">
+                        <label class="form-label">Issue Description</label>
+                        <textarea class="form-textarea" placeholder="Describe the issue or reason for spare parts request" rows="4" required></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5>🔧 Spare Parts Required</h5>
+                    <div id="sparePartsContainer">
+                        <div class="spare-part-item" style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Part Name</label>
+                                    <select class="form-select" required>
+                                        <option value="">Select Part</option>
+                                        <option value="BP-001">Brake Pads - BP-001</option>
+                                        <option value="OF-205">Oil Filter - OF-205</option>
+                                        <option value="HYD-250">Hydraulic Pump - HYD-250</option>
+                                        <option value="ENG-301">Engine Oil - ENG-301</option>
+                                        <option value="TYR-150">Tyres - TYR-150</option>
+                                        <option value="BAT-200">Battery - BAT-200</option>
+                                        <option value="GAS-400">Gas Cylinder - GAS-400</option>
+                                        <option value="VAL-350">Pressure Valve - VAL-350</option>
+                                        <option value="FIL-180">Air Filter - FIL-180</option>
+                                        <option value="BEL-220">Belt - BEL-220</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Quantity</label>
+                                    <input type="number" class="form-input" min="1" placeholder="Qty" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="addPartField()" style="margin-top: 10px;">
+                        ➕ Add Another Part
+                    </button>
+                </div>
+
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary">Submit Request to Supervisor</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('requestPartsModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Request Parts for Ticket Modal -->
+    <!-- Warranty Claim Modal -->
+    <div id="warrantyClaimModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('warrantyClaimModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Claim Warranty</h2>
+            <form id="warrantyClaimForm">
+                <div class="form-section">
+                    <h5>🛡️ Warranty Information</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Part Number</label>
+                            <input type="text" class="form-input" placeholder="Enter part number" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Equipment ID</label>
+                            <input type="text" class="form-input" placeholder="Equipment identifier" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Purchase Date</label>
+                            <input type="date" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Warranty Period (months)</label>
+                            <input type="number" class="form-input" min="1" max="60" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Defect Description</label>
+                        <textarea class="form-textarea" placeholder="Describe the defect or failure..." required></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit Warranty Claim</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Asset Feedback Modal -->
+    <div id="feedbackModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('feedbackModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Submit Asset Feedback</h2>
+            <form id="assetFeedbackForm">
+                <div class="form-section">
+                    <h5>💬 Asset Performance Feedback</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Equipment ID</label>
+                            <input type="text" class="form-input" placeholder="Enter equipment identifier" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Component/System</label>
+                            <select class="form-select" required>
+                                <option value="">Select Component</option>
+                                <option value="engine">Engine System</option>
+                                <option value="transmission">Transmission</option>
+                                <option value="hydraulics">Hydraulic System</option>
+                                <option value="brakes">Brake System</option>
+                                <option value="electrical">Electrical System</option>
+                                <option value="cooling">Cooling System</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Feedback Type</label>
+                        <select class="form-select" required>
+                            <option value="">Select Type</option>
+                            <option value="post-repair">Post-Repair Assessment</option>
+                            <option value="preventive">Preventive Observation</option>
+                            <option value="performance">Performance Review</option>
+                            <option value="recommendation">Maintenance Recommendation</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Detailed Feedback</label>
+                        <textarea class="form-textarea" placeholder="Provide detailed feedback about asset performance..." required></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Submit Feedback</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Details Modal -->
+    <div id="viewDetailsModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('viewDetailsModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Ticket Details</h2>
+            <div id="ticketDetailsContent">
+                <!-- Details will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- View Part Request Details Modal -->
+    <div id="viewPartRequestModal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <button class="close" onclick="closeModal('viewPartRequestModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">📋 Spare Parts Request Details</h2>
+            <div id="partRequestDetailsContent">
+                <!-- Details will be populated by JavaScript -->
+            </div>
+            <div style="margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeModal('viewPartRequestModal')">Close</button>
+            </div>
+        </div>
+    </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        Action completed successfully!
+    </div>
+
+    <script>
+        // Store ticket data
+        let ticketData = {
+            'TKT-001': { 
+                status: 'in-progress', 
+                assignedBy: 'Supervisor John',
+                equipment: 'Vehicle #101',
+                reporter: 'John Driver',
+                issue: 'Engine overheating',
+                priority: 'High',
+                assignedDate: 'Aug 28',
+                workDone: 'Installing new radiator - 60% complete'
+            },
+            'TKT-002': { 
+                status: 'new', 
+                assignedBy: 'Supervisor Mike',
+                equipment: 'Machine #205',
+                reporter: 'Mike Operator',
+                issue: 'Hydraulic leak in main cylinder',
+                priority: 'Medium',
+                assignedDate: 'Aug 30'
+            },
+            'TKT-003': { 
+                status: 'new', 
+                assignedBy: 'Supervisor Lisa',
+                equipment: 'Truck #089',
+                reporter: 'Sarah Driver',
+                issue: 'Brake system malfunction',
+                priority: 'High',
+                assignedDate: 'Aug 30'
+            }
+        };
+
+        // Navigation functionality
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+                
+                this.classList.add('active');
+                
+                const sectionId = this.getAttribute('data-section');
+                document.getElementById(sectionId).classList.add('active');
+            });
+        });
+
+        // Modal functionality
+        function openModal(modalId, ticketId = '') {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('active');
+                
+                if (ticketId) {
+                    if (modalId === 'processTicketModal') {
+                        document.getElementById('processTicketId').value = ticketId;
+                    } else if (modalId === 'updateWorkModal') {
+                        document.getElementById('updateTicketId').value = ticketId;
+                    } else if (modalId === 'markDoneModal') {
+                        document.getElementById('doneTicketId').value = ticketId;
+                    } else if (modalId === 'viewDetailsModal') {
+                        showTicketDetails(ticketId);
+                    }
+                }
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+
+        // Add another spare part field dynamically
+        function addPartField() {
+            const container = document.getElementById('sparePartsContainer');
+            const newPartItem = document.createElement('div');
+            newPartItem.className = 'spare-part-item';
+            newPartItem.style.cssText = 'background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 10px; position: relative;';
+            newPartItem.innerHTML = `
+                <button type="button" onclick="this.parentElement.remove()" style="position: absolute; top: 10px; right: 10px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-size: 14px;">×</button>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Part Name</label>
+                        <select class="form-select" required>
+                            <option value="">Select Part</option>
+                            <option value="BP-001">Brake Pads - BP-001</option>
+                            <option value="OF-205">Oil Filter - OF-205</option>
+                            <option value="HYD-250">Hydraulic Pump - HYD-250</option>
+                            <option value="ENG-301">Engine Oil - ENG-301</option>
+                            <option value="TYR-150">Tyres - TYR-150</option>
+                            <option value="BAT-200">Battery - BAT-200</option>
+                            <option value="GAS-400">Gas Cylinder - GAS-400</option>
+                            <option value="VAL-350">Pressure Valve - VAL-350</option>
+                            <option value="FIL-180">Air Filter - FIL-180</option>
+                            <option value="BEL-220">Belt - BEL-220</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-input" min="1" placeholder="Qty" required>
+                    </div>
+                </div>
+            `;
+            container.appendChild(newPartItem);
+        }
+
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            
+            if (type === 'success') {
+                toast.style.background = 'var(--kelly-green)';
+            } else if (type === 'warning') {
+                toast.style.background = 'var(--warn)';
+                toast.style.color = '#000';
+            } else if (type === 'error') {
+                toast.style.background = 'var(--danger)';
+            }
+            
+            toast.style.display = 'block';
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+                toast.style.background = 'var(--kelly-green)';
+                toast.style.color = 'white';
+            }, 4000);
+        }
+
+        // Filter tickets by status
+        function filterTicketsByStatus(status) {
+            const tickets = document.querySelectorAll('#allTicketsList .ticket-item');
+            const noTicketsMessage = document.getElementById('noTicketsMessage');
+            const ticketCount = document.getElementById('ticketCount');
+            const filterButtons = document.querySelectorAll('#ticketFilterTabs .filter-btn');
+            let visibleCount = 0;
+
+            // Update active button styling
+            filterButtons.forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Filter tickets
+            tickets.forEach(ticket => {
+                const ticketStatus = ticket.getAttribute('data-status');
+                if (status === 'all' || ticketStatus === status) {
+                    ticket.style.display = '';
+                    visibleCount++;
+                } else {
+                    ticket.style.display = 'none';
+                }
+            });
+
+            // Show/hide no tickets message
+            if (visibleCount === 0) {
+                noTicketsMessage.style.display = 'block';
+            } else {
+                noTicketsMessage.style.display = 'none';
+            }
+
+            // Update ticket count
+            ticketCount.textContent = `${visibleCount} ticket${visibleCount !== 1 ? 's' : ''}`;
+        }
+
+        // Filter parts requests by status
+        function filterPartsByStatus(status) {
+            const requests = document.querySelectorAll('#allPartsRequests .request-item');
+            const noPartsMessage = document.getElementById('noPartsMessage');
+            const partsCount = document.getElementById('partsCount');
+            const filterButtons = document.querySelectorAll('#partsFilterTabs .filter-btn');
+            let visibleCount = 0;
+
+            // Update active button styling
+            filterButtons.forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Filter requests
+            requests.forEach(request => {
+                const requestStatus = request.getAttribute('data-status');
+                if (status === 'all' || requestStatus === status) {
+                    request.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    request.style.display = 'none';
+                }
+            });
+
+            // Show/hide no requests message
+            if (visibleCount === 0) {
+                noPartsMessage.style.display = 'block';
+            } else {
+                noPartsMessage.style.display = 'none';
+            }
+
+            // Update parts count
+            partsCount.textContent = `${visibleCount} request${visibleCount !== 1 ? 's' : ''}`;
+        }
+
+        // Toggle outsourced fields based on repair type selection
+        function toggleOutsourcedFields() {
+            const repairType = document.getElementById('repairType').value;
+            const internalFields = document.getElementById('internalRepairFields');
+            const outsourcedFields = document.getElementById('outsourcedRepairFields');
+            
+            if (repairType === 'internal') {
+                internalFields.style.display = 'block';
+                outsourcedFields.style.display = 'none';
+                // Remove required from outsourced fields
+                document.getElementById('serviceProvider').removeAttribute('required');
+            } else if (repairType === 'outsourced') {
+                internalFields.style.display = 'none';
+                outsourcedFields.style.display = 'block';
+                // Add required to service provider
+                document.getElementById('serviceProvider').setAttribute('required', 'required');
+            } else {
+                internalFields.style.display = 'none';
+                outsourcedFields.style.display = 'none';
+            }
+        }
+
+        // Create Repair Ticket Form Submission
+        document.getElementById('createRepairTicketForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const assetType = document.getElementById('assetType').value;
+            const assetId = document.getElementById('assetId').value;
+            const assetName = document.getElementById('assetName').value;
+            const faultCategory = document.getElementById('faultCategory').value;
+            const faultDescription = document.getElementById('faultDescription').value;
+            const reportedBy = document.getElementById('reportedBy').value;
+            const priority = document.getElementById('repairPriority').value;
+            const repairType = document.getElementById('repairType').value;
+            
+            // Generate new ticket ID
+            const ticketId = 'TKT-' + String(Math.floor(Math.random() * 900) + 100);
+            
+            // Create ticket object
+            const ticketData = {
+                ticketId: ticketId,
+                assetType: assetType,
+                assetId: assetId,
+                assetName: assetName,
+                faultCategory: faultCategory,
+                faultDescription: faultDescription,
+                reportedBy: reportedBy,
+                priority: priority,
+                repairType: repairType,
+                createdBy: 'Technical Officer',
+                status: 'pending-supervisor-approval',
+                createdDate: new Date().toISOString()
+            };
+            
+            // Add type-specific details
+            if (repairType === 'internal') {
+                ticketData.estimatedCompletion = document.getElementById('estimatedCompletion').value;
+                ticketData.requiredParts = document.getElementById('requiredParts').value;
+            } else if (repairType === 'outsourced') {
+                ticketData.serviceProvider = document.getElementById('serviceProvider').value;
+                ticketData.serviceContact = document.getElementById('serviceContact').value;
+                ticketData.serviceAddress = document.getElementById('serviceAddress').value;
+                ticketData.estimatedCost = document.getElementById('estimatedCost').value;
+            }
+            
+            ticketData.additionalNotes = document.getElementById('additionalNotes').value;
+            
+            // In a real application, this would send data to the server
+            console.log('New Repair Ticket Created:', ticketData);
+            
+            // Show success message
+            const repairTypeText = repairType === 'internal' ? 'Internal Repair (To be resolved by you)' : 'Outsourced Repair';
+            showToast(`✅ Repair Ticket ${ticketId} created successfully!\nType: ${repairTypeText}\nAsset: ${assetId}\nSent to supervisor for approval and management.`);
+            
+            // Close modal and reset form
+            closeModal('createRepairTicketModal');
+            this.reset();
+            document.getElementById('internalRepairFields').style.display = 'none';
+            document.getElementById('outsourcedRepairFields').style.display = 'none';
+            
+            // Optionally add the ticket to the list (for demonstration)
+            addTicketToList(ticketData);
+        });
+
+        // Add newly created ticket to the list
+        function addTicketToList(ticketData) {
+            const ticketsList = document.getElementById('allTicketsList');
+            const priorityClass = ticketData.priority === 'high' ? 'status-urgent' : 
+                                 ticketData.priority === 'medium' ? 'status-normal' : 'status-low';
+            
+            const repairTypeDisplay = ticketData.repairType === 'internal' ? 
+                '🔧 Internal Repair' : '🏪 Outsourced';
+            
+            const newTicketHTML = `
+                <div class="ticket-item" data-status="new" style="border-left: 4px solid #fbbf24;">
+                    <div class="ticket-details">
+                        <strong>${ticketData.ticketId}</strong>
+                        <div class="ticket-meta">Equipment: ${ticketData.assetId}${ticketData.assetName ? ' - ' + ticketData.assetName : ''} | Type: ${ticketData.assetType}</div>
+                        <div class="ticket-issue">${ticketData.faultDescription}</div>
+                        <div class="ticket-meta">Created by: You | Priority: ${ticketData.priority} | ${repairTypeDisplay}</div>
+                        <div style="margin-top: 8px; padding: 8px; background: #fef3c7; border-radius: 4px; font-size: 12px;">
+                            <strong>⏳ Status:</strong> Waiting for supervisor approval and assignment
+                        </div>
+                    </div>
+                    <div class="ticket-actions">
+                        <span class="status-badge ${priorityClass}">Pending Approval</span>
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary btn-mini" onclick="viewTicketDetails('${ticketData.ticketId}')">View Details</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add to the top of the list
+            ticketsList.insertAdjacentHTML('afterbegin', newTicketHTML);
+        }
+
+        // Ticket Management Functions
+        function processTicket(ticketId) {
+            openModal('processTicketModal', ticketId);
+        }
+
+        function updateWorkProgress(ticketId) {
+            openModal('updateWorkModal', ticketId);
+        }
+
+        function markTicketDone(ticketId) {
+            openModal('markDoneModal', ticketId);
+        }
+
+        function requestPartsForTicket(ticketId) {
+            // Open the main request parts modal and pre-fill ticket ID
+            const modal = document.getElementById('requestPartsModal');
+            const ticketIdField = document.getElementById('relatedTicketId');
+            
+            if (ticketIdField) {
+                ticketIdField.value = ticketId;
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function viewTicketDetails(ticketId) {
+            openModal('viewDetailsModal', ticketId);
+        }
+
+        // View Part Request Details
+        function viewPartRequestDetails(requestId) {
+            const modal = document.getElementById('viewPartRequestModal');
+            const content = document.getElementById('partRequestDetailsContent');
+            
+            // Sample data - in a real application, this would come from a database
+            const requestData = {
+                'REQ-001': {
+                    id: 'REQ-001',
+                    ticketId: 'TKT-001',
+                    equipment: 'Vehicle #101',
+                    reporter: 'Tech Officer',
+                    requestedDate: 'Aug 20, 2025',
+                    status: 'Approved',
+                    priority: 'High',
+                    issueDescription: 'Required for brake system repair on Vehicle #101',
+                    parts: [
+                        { name: 'Brake Pads - BP-001', quantity: 4 }
+                    ],
+                    approvedBy: 'Supervisor John',
+                    approvedDate: 'Aug 21, 2025',
+                    remarks: 'Approved for immediate dispatch'
+                },
+                'REQ-002': {
+                    id: 'REQ-002',
+                    ticketId: 'TKT-003',
+                    equipment: 'Machine #205',
+                    reporter: 'Tech Officer',
+                    requestedDate: 'Aug 22, 2025',
+                    status: 'Pending',
+                    priority: 'Medium',
+                    issueDescription: 'Preventive maintenance for hydraulic system',
+                    parts: [
+                        { name: 'Oil Filter - OF-205', quantity: 2 },
+                        { name: 'Hydraulic Pump - HYD-250', quantity: 1 }
+                    ],
+                    approvedBy: null,
+                    approvedDate: null,
+                    remarks: 'Awaiting supervisor approval'
+                }
+            };
+
+            const request = requestData[requestId];
+            
+            if (!request) {
+                content.innerHTML = '<p>Request not found.</p>';
+                modal.classList.add('active');
+                return;
+            }
+
+            // Build parts list HTML
+            let partsHTML = '';
+            request.parts.forEach((part, index) => {
+                const borderBottom = index < request.parts.length - 1 ? 'border-bottom: 1px solid var(--stone-200);' : '';
+                partsHTML += `
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; ${borderBottom}">
+                        <span style="color: var(--text-700); font-weight: 500;">${part.name}</span>
+                        <span style="color: var(--text-900); font-weight: 600;">Qty: ${part.quantity}</span>
+                    </div>
+                `;
+            });
+
+            const statusBadgeClass = request.status === 'Approved' ? 'status-approved' : 'status-pending';
+            const approvalSection = request.status === 'Approved' ? `
+                <div style="margin-top: 20px; padding: 15px; background: #f0fdf4; border-radius: 8px; border: 1px solid #86efac;">
+                    <strong style="color: var(--kelly-green);">✅ Approval Information</strong>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
+                        <div>
+                            <span style="color: var(--muted); font-size: 0.9rem;">Approved By</span>
+                            <div style="font-weight: 500; margin-top: 3px;">${request.approvedBy}</div>
+                        </div>
+                        <div>
+                            <span style="color: var(--muted); font-size: 0.9rem;">Approved Date</span>
+                            <div style="font-weight: 500; margin-top: 3px;">${request.approvedDate}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <span style="color: var(--muted); font-size: 0.9rem;">Remarks</span>
+                        <div style="margin-top: 3px; color: var(--text-700);">${request.remarks}</div>
+                    </div>
+                </div>
+            ` : `
+                <div style="margin-top: 20px; padding: 15px; background: #fef3c7; border-radius: 8px; border: 1px solid #fbbf24;">
+                    <strong style="color: var(--warn);">⏳ Pending Approval</strong>
+                    <div style="margin-top: 8px; color: var(--text-700);">
+                        ${request.remarks}
+                    </div>
+                </div>
+            `;
+
+            content.innerHTML = `
+                <div style="background: white;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid var(--stone-200);">
+                        <strong style="font-size: 1.2rem; color: var(--tang-blue);">${request.id}</strong>
+                        <span class="status-badge ${statusBadgeClass}">${request.status}</span>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <span style="color: var(--muted); font-size: 0.9rem;">Ticket ID</span>
+                            <div style="font-weight: 500; margin-top: 3px;">${request.ticketId}</div>
+                        </div>
+                        <div>
+                            <span style="color: var(--muted); font-size: 0.9rem;">Equipment</span>
+                            <div style="font-weight: 500; margin-top: 3px;">${request.equipment}</div>
+                        </div>
+                        <div>
+                            <span style="color: var(--muted); font-size: 0.9rem;">Reporter</span>
+                            <div style="font-weight: 500; margin-top: 3px;">${request.reporter}</div>
+                        </div>
+                        <div>
+                            <span style="color: var(--muted); font-size: 0.9rem;">Requested Date</span>
+                            <div style="font-weight: 500; margin-top: 3px;">${request.requestedDate}</div>
+                        </div>
+                        <div>
+                            <span style="color: var(--muted); font-size: 0.9rem;">Priority</span>
+                            <div style="font-weight: 500; margin-top: 3px;">${request.priority}</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--stone-200);">
+                        <span style="color: var(--muted); font-size: 0.9rem; font-weight: 600;">📝 Issue Description</span>
+                        <div style="margin-top: 8px; line-height: 1.6; color: var(--text-700);">
+                            ${request.issueDescription}
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <span style="color: var(--muted); font-size: 0.9rem; font-weight: 600;">🔧 Spare Parts Required</span>
+                        <div style="margin-top: 10px;">
+                            <div style="background: #f8f9fa; border-radius: 8px; padding: 15px;">
+                                ${partsHTML}
+                            </div>
+                        </div>
+                    </div>
+
+                    ${approvalSection}
+                </div>
+            `;
+            
+            modal.classList.add('active');
+        }
+
+        // Filter warranty claims by status
+        function filterWarrantyByStatus(status) {
+            const claims = document.querySelectorAll('#allWarrantyClaims .request-item');
+            const noWarrantyMessage = document.getElementById('noWarrantyMessage');
+            const warrantyCount = document.getElementById('warrantyCount');
+            const filterButtons = document.querySelectorAll('#warrantyFilterTabs .filter-btn');
+            let visibleCount = 0;
+
+            // Update active button styling
+            filterButtons.forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Filter warranty claims
+            claims.forEach(claim => {
+                const claimStatus = claim.getAttribute('data-status');
+                if (status === 'all' || claimStatus === status) {
+                    claim.style.display = '';
+                    visibleCount++;
+                } else {
+                    claim.style.display = 'none';
+                }
+            });
+
+            // Show/hide no claims message
+            if (visibleCount === 0) {
+                noWarrantyMessage.style.display = 'block';
+            } else {
+                noWarrantyMessage.style.display = 'none';
+            }
+
+            // Update warranty count
+            warrantyCount.textContent = `${visibleCount} claim${visibleCount !== 1 ? 's' : ''}`;
+        }
+
+        function showTicketDetails(ticketId) {
+            const ticket = ticketData[ticketId];
+            const detailsContent = document.getElementById('ticketDetailsContent');
+            
+            detailsContent.innerHTML = `
+                <div class="form-section">
+                    <h5>📋 Ticket Information</h5>
+                    <p><strong>Ticket ID:</strong> ${ticketId}</p>
+                    <p><strong>Equipment:</strong> ${ticket.equipment}</p>
+                    <p><strong>Reporter:</strong> ${ticket.reporter}</p>
+                    <p><strong>Issue:</strong> ${ticket.issue}</p>
+                    <p><strong>Priority:</strong> ${ticket.priority}</p>
+                    <p><strong>Assigned by:</strong> ${ticket.assignedBy}</p>
+                    <p><strong>Assigned Date:</strong> ${ticket.assignedDate}</p>
+                    <p><strong>Current Status:</strong> ${ticket.status.replace('-', ' ').toUpperCase()}</p>
+                    ${ticket.workDone ? `<p><strong>Work Progress:</strong> ${ticket.workDone}</p>` : ''}
+                </div>
+            `;
+        }
+
+        function moveTicketToInProgress(ticketId) {
+            const ticketElement = document.getElementById(`ticket-${ticketId}`);
+            if (ticketElement) {
+                // Update status badge
+                const statusBadge = ticketElement.querySelector('.status-badge');
+                statusBadge.className = 'status-badge status-in-progress';
+                statusBadge.textContent = 'In Progress';
+                
+                // Update buttons
+                const actionButtons = ticketElement.querySelector('.action-buttons');
+                actionButtons.innerHTML = `
+                    <button class="btn btn-primary btn-mini" onclick="updateWorkProgress('${ticketId}')">Update Work</button>
+                    <button class="btn btn-warning btn-mini" onclick="requestPartsForTicket('${ticketId}')">Request Parts</button>
+                    <button class="btn btn-success btn-mini" onclick="markTicketDone('${ticketId}')">Mark Done</button>
+                `;
+                
+                // Move from new to in-progress section
+                const inProgressList = document.getElementById('inProgressTicketsList');
+                const noProgressMsg = document.getElementById('noProgressTickets');
+                
+                if (noProgressMsg) {
+                    noProgressMsg.style.display = 'none';
+                }
+                
+                inProgressList.appendChild(ticketElement);
+                ticketElement.setAttribute('data-status', 'in-progress');
+                
+                // Update work done status
+                const ticketDetails = ticketElement.querySelector('.ticket-details');
+                const existingStatus = ticketDetails.querySelector('.work-status');
+                if (existingStatus) {
+                    existingStatus.remove();
+                }
+                
+                const statusDiv = document.createElement('div');
+                statusDiv.className = 'work-status';
+                statusDiv.style.cssText = 'margin-top: 8px; padding: 8px; background: #f0f9ff; border-radius: 4px; font-size: 12px;';
+                statusDiv.innerHTML = '<strong>Current Status:</strong> Work started - initial assessment complete';
+                ticketDetails.appendChild(statusDiv);
+            }
+        }
+
+        function moveTicketToCompleted(ticketId) {
+            const ticketElement = document.getElementById(`ticket-${ticketId}`);
+            if (ticketElement) {
+                // Update status badge
+                const statusBadge = ticketElement.querySelector('.status-badge');
+                statusBadge.className = 'status-badge status-done';
+                statusBadge.textContent = 'Done';
+                
+                // Remove action buttons
+                const actionButtons = ticketElement.querySelector('.action-buttons');
+                actionButtons.innerHTML = '<small style="color: var(--muted);">Sent to Supervisor</small>';
+                
+                // Move to completed section
+                const completedList = document.getElementById('completedTicketsList');
+                completedList.innerHTML = ''; // Clear "no tickets" message
+                completedList.appendChild(ticketElement);
+                ticketElement.setAttribute('data-status', 'done');
+                
+                // Update work status
+                const workStatus = ticketElement.querySelector('.work-status');
+                if (workStatus) {
+                    workStatus.innerHTML = '<strong>Status:</strong> Work completed - sent to supervisor for review';
+                    workStatus.style.background = '#e8f5e8';
+                }
+            }
+        }
+
+        function updateDashboardCounts() {
+            const newCount = document.querySelectorAll('[data-status="new"]').length;
+            const progressCount = document.querySelectorAll('[data-status="in-progress"]').length;
+            const doneCount = document.querySelectorAll('[data-status="done"]').length;
+            
+            document.getElementById('dashNewCount').textContent = newCount;
+            document.getElementById('dashProgressCount').textContent = progressCount;
+            document.getElementById('dashCompleteCount').textContent = doneCount;
+        }
+
+        // Form submissions
+        function initializeForms() {
+            // Process Ticket Form
+            document.getElementById('processTicketForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const ticketId = document.getElementById('processTicketId').value;
+                
+                ticketData[ticketId].status = 'in-progress';
+                moveTicketToInProgress(ticketId);
+                updateDashboardCounts();
+                
+                showToast(`Work started on ${ticketId}. Status changed to "In Progress". Supervisor ${ticketData[ticketId].assignedBy} has been notified.`);
+                closeModal('processTicketModal');
+                this.reset();
+            });
+
+            // Update Work Form
+            document.getElementById('updateWorkForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const ticketId = document.getElementById('updateTicketId').value;
+                const workDone = this.querySelector('textarea[placeholder*="Describe work completed"]').value;
+                
+                // Update the work status display
+                const ticketElement = document.getElementById(`ticket-${ticketId}`);
+                const workStatus = ticketElement.querySelector('.work-status');
+                if (workStatus) {
+                    workStatus.innerHTML = `<strong>Current Status:</strong> ${workDone}`;
+                }
+                
+                ticketData[ticketId].workDone = workDone;
+                
+                showToast(`Work progress updated for ${ticketId}. Supervisor ${ticketData[ticketId].assignedBy} has been notified.`);
+                closeModal('updateWorkModal');
+                this.reset();
+            });
+
+            // Mark Done Form
+            document.getElementById('markDoneForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const ticketId = document.getElementById('doneTicketId').value;
+                
+                ticketData[ticketId].status = 'done';
+                moveTicketToCompleted(ticketId);
+                updateDashboardCounts();
+                
+                showToast(`${ticketId} marked as DONE! Work summary sent to Supervisor ${ticketData[ticketId].assignedBy} for review.`);
+                closeModal('markDoneModal');
+                this.reset();
+            });
+
+            // Request Parts Form
+            document.getElementById('requestPartsForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                showToast('Parts request submitted to Supervisor for approval!');
+                closeModal('requestPartsModal');
+                this.reset();
+            });
+
+            // Warranty Claim Form
+            document.getElementById('warrantyClaimForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                showToast('Warranty claim submitted to Inventory Manager!');
+                closeModal('warrantyClaimModal');
+                this.reset();
+            });
+
+            // Asset Feedback Form
+            document.getElementById('assetFeedbackForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                showToast('Feedback submitted successfully! Shared with Supervisor & Maintenance Manager.');
+                closeModal('feedbackModal');
+                this.reset();
+            });
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                showToast('Logging out...');
+                setTimeout(() => {
+                    alert('You have been logged out successfully!');
+                }, 1000);
+            }
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                e.target.classList.remove('active');
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const activeModal = document.querySelector('.modal.active');
+                if (activeModal) {
+                    activeModal.classList.remove('active');
+                }
+            }
+        });
+
+        // Mobile sidebar toggle
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeForms();
+            updateDashboardCounts();
+            
+            // Set today's date as default for date inputs
+            const today = new Date().toISOString().split('T')[0];
+            const now = new Date();
+            const currentDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            
+            document.querySelectorAll('input[type="date"]').forEach(input => {
+                if (!input.value) {
+                    input.value = today;
+                }
+            });
+
+            document.querySelectorAll('input[type="datetime-local"]').forEach(input => {
+                if (!input.value) {
+                    input.value = currentDateTime;
+                }
+            });
+
+            // Add mobile menu button for responsive design
+            if (window.innerWidth <= 768) {
+                const menuBtn = document.createElement('button');
+                menuBtn.innerHTML = '☰';
+                menuBtn.className = 'menu-btn';
+                menuBtn.style.cssText = `
+                    position: fixed;
+                    top: 80px;
+                    left: 20px;
+                    z-index: 1000;
+                    background: var(--royal-blue);
+                    color: white;
+                    border: none;
+                    padding: 10px;
+                    border-radius: 5px;
+                    font-size: 18px;
+                    cursor: pointer;
+                    box-shadow: var(--shadow);
+                `;
+                menuBtn.onclick = toggleSidebar;
+                document.body.appendChild(menuBtn);
+            }
+        });
+    </script>
+</body>
+</html>

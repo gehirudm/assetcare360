@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auction Officer Dashboard</title>
+    <style>
+        :root {
+            --royal-blue: hsla(219, 89%, 53%, 1);
+            --royal-blue-2: hsla(219, 75%, 50%, 1);
+            --tang-blue: hsla(219, 67%, 47%, 1);
+            --kelly-green: hsla(99, 60%, 43%, 1);
+            --stone-100: #f7f9fb;
+            --stone-200: #eef1f4;
+            --text-900: #111827;
+            --text-700: #374151;
+            --muted: #6b7280;
+            --danger: #d93025;
+            --warn: #f59e0b;
+            --ok: #10b981;
+            --card: #ffffff;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --ring: 0 0 0 3px rgba(59,130,246,.2);
+            --gradient-blue: linear-gradient(to right, var(--royal-blue), var(--tang-blue));
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body { height: 100%; }
+
+        body {
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial;
+            color: var(--text-900);
+            background: var(--stone-100);
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--gradient-blue);
+            color: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.5);
+            transform: translateY(-1px);
+        }
+
+        .main-wrapper {
+            display: flex;
+            flex: 1;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #4e73df, #2a59a0);
+            color: #fff;
+            padding: 20px 0;
+            overflow-y: auto;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #fff;
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+            padding-bottom: 15px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-left-color: #4e73df;
+            color: #fff;
+            transform: translateX(5px);
+        }
+
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.15);
+            border-left-color: #4e73df;
+            font-weight: 600;
+        }
+
+        .nav-icon {
+            margin-right: 12px;
+            font-size: 1.3rem;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .content-section {
+            display: none;
+            background: var(--card);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--stone-200);
+            padding-bottom: 15px;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            color: var(--tang-blue);
+            margin-bottom: 5px;
+        }
+
+        .page-subtitle {
+            color: var(--muted);
+            font-size: 1.1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--stone-200);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            font-weight: 600;
+            color: var(--tang-blue);
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, var(--royal-blue), var(--tang-blue));
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .summary-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .summary-content {
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pending { background: var(--warn); color: #000; }
+        .status-approved { background: var(--ok); color: #fff; }
+        .status-active { background: var(--kelly-green); color: #fff; }
+        .status-rejected { background: var(--danger); color: #fff; }
+        .status-in-progress { background: var(--royal-blue-2); color: #fff; }
+        .status-complete { background: var(--kelly-green); color: #fff; }
+        .status-scheduled { background: var(--muted); color: #fff; }
+        .status-ended { background: var(--text-700); color: #fff; }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            text-align: center;
+            margin-right: 10px;
+            margin-bottom: 5px;
+        }
+
+        .btn-primary {
+            background: var(--royal-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--tang-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--stone-200);
+            color: var(--text-700);
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--kelly-green);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            color: var(--text-700);
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--stone-200);
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            box-shadow: var(--ring);
+            border-color: var(--royal-blue);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-section {
+            border: 1px solid var(--stone-200);
+            border-radius: 10px;
+            padding: 16px;
+            margin: 16px 0;
+            background: #fafcff;
+        }
+
+        .form-section h5 {
+            margin: 0 0 12px 0;
+            color: var(--tang-blue);
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .item-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .item-card:hover {
+            box-shadow: var(--shadow);
+            transform: translateY(-1px);
+        }
+
+        .item-details {
+            flex: 1;
+        }
+
+        .item-details strong {
+            color: var(--text-700);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .item-meta {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+
+        .item-description {
+            color: var(--text-700);
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .item-actions {
+            text-align: right;
+            white-space: nowrap;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: flex-end;
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid var(--stone-200);
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .filter-btn.active {
+            background: var(--royal-blue);
+            color: white;
+            border-color: var(--royal-blue);
+        }
+
+        .filter-btn:hover {
+            border-color: var(--royal-blue);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.35);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: var(--royal-blue);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+        }
+
+        .close:hover {
+            background: var(--tang-blue);
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--kelly-green);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            display: none;
+            z-index: 1001;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 10px 15px;
+            }
+            
+            .header-title {
+                font-size: 1.4rem;
+            }
+            
+            .user-info {
+                display: none;
+            }
+            
+            .sidebar {
+                width: 100%;
+                position: fixed;
+                top: 70px;
+                left: -100%;
+                height: calc(100vh - 70px);
+                z-index: 999;
+                transition: left 0.3s ease;
+            }
+            
+            .sidebar.open {
+                left: 0;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="header-title">Auction Officer Dashboard</h1>
+            <div class="header-user">
+                <div class="user-info">
+                    <div class="user-avatar">AO</div>
+                    <span>Emma Thompson</span>
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    <span>🚪</span> Logout
+                </button>
+            </div>
+        </header>
+
+        <div class="main-wrapper">
+            <aside class="sidebar">
+                <h2>Auction Officer</h2>
+                <nav>
+                    <div class="nav-item active" data-section="dashboard">
+                        <span class="nav-icon">📊</span>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="nav-item" data-section="active-auctions">
+                        <span class="nav-icon">🔨</span>
+                        <span>Active Auctions</span>
+                    </div>
+                    <div class="nav-item" data-section="assets">
+                        <span class="nav-icon">🚚</span>
+                        <span>Assets for Auction</span>
+                    </div>
+                    <div class="nav-item" data-section="bidders">
+                        <span class="nav-icon">👥</span>
+                        <span>Bidder Management</span>
+                    </div>
+                    <div class="nav-item" data-section="schedule">
+                        <span class="nav-icon">📅</span>
+                        <span>Auction Schedule</span>
+                    </div>
+                    <div class="nav-item" data-section="reports">
+                        <span class="nav-icon">📈</span>
+                        <span>Reports</span>
+                    </div>
+                </nav>
+            </aside>
+
+            <main class="main-content">
+                <!-- Dashboard Section -->
+                <section class="content-section active" id="dashboard">
+                    <div class="page-header">
+                        <h1 class="page-title">Dashboard</h1>
+                        <p class="page-subtitle">Auction Management Overview</p>
+                    </div>
+
+                    <div class="grid">
+                        <div class="summary-card">
+                            <div class="summary-title">Today's Activity</div>
+                            <div class="summary-content">
+                                • Active Auctions: 3<br>
+                                • Total Bids: 35<br>
+                                • Pending Bidders: 5<br>
+                                • Scheduled Auctions: 3
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-title">Auction Performance</div>
+                            <div class="summary-content">
+                                • Completed This Month: 12<br>
+                                • Success Rate: 92%<br>
+                                • Avg. Above Reserve: 15%<br>
+                                • Total Revenue: $285,000
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-title">Pending Actions</div>
+                            <div class="summary-content">
+                                • Bidder Approvals: 5<br>
+                                • Assets Ready: 8<br>
+                                • Ending Soon: 1<br>
+                                • To Be Published: 3
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span>⚡ Quick Actions</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn btn-primary" onclick="navigateTo('active-auctions')">🔨 Create Auction</button>
+                            <button class="btn btn-primary" onclick="navigateTo('bidders')">👥 Register Bidder</button>
+                            <button class="btn btn-primary" onclick="navigateTo('schedule')">📅 Schedule Auction</button>
+                            <button class="btn btn-success" onclick="navigateTo('reports')">📊 View Reports</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span>📈 Recent Activities</span>
+                        </div>
+                        <div class="item-card">
+                            <div class="item-details">
+                                <strong>Auction Created</strong>
+                                <div class="item-meta">AUC-2024-010 | 2 hours ago</div>
+                                <div class="item-description">Truck LKC-7890 (2017) - Reserve: $15,000</div>
+                            </div>
+                            <span class="status-badge status-complete">Created</span>
+                        </div>
+                        <div class="item-card">
+                            <div class="item-details">
+                                <strong>Bidder Approved</strong>
+                                <div class="item-meta">BID-051 - K-Tech Imports | 4 hours ago</div>
+                                <div class="item-description">Company verification completed</div>
+                            </div>
+                            <span class="status-badge status-approved">Approved</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Active Auctions Section -->
+                <section class="content-section" id="active-auctions">
+                    <div class="page-header">
+                        <h1 class="page-title">Active Auctions</h1>
+                        <p class="page-subtitle">Monitor ongoing auctions and bidding activity</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="openModal('createAuctionModal')">Create New Auction</button>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterAuctions('all')">All Auctions</button>
+                        <button class="filter-btn" onclick="filterAuctions('active')">Active</button>
+                        <button class="filter-btn" onclick="filterAuctions('ending-soon')">Ending Soon</button>
+                        <button class="filter-btn" onclick="filterAuctions('starting-soon')">Starting Soon</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span>🔨 Active Auctions</span>
+                            <span class="status-badge status-active">3 active</span>
+                        </div>
+                        <div id="auctionsContainer">
+                            <div class="item-card" data-status="ending-soon">
+                                <div class="item-details">
+                                    <strong>AUC-2024-001</strong>
+                                    <div class="item-meta">Truck LX-A-9876 (2019) | 12 Bidders</div>
+                                    <div class="item-description">Current: $18,500 | Reserve: $18,000 | Time: 2h 15m</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-in-progress">Ending Soon</span>
+                                    <button class="btn btn-secondary btn-small" onclick="viewAuctionDetails('AUC-2024-001')">👁️ View</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidders('AUC-2024-001')">👥 Bidders</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="active">
+                                <div class="item-details">
+                                    <strong>AUC-2024-002</strong>
+                                    <div class="item-meta">Event F1-005 (2018) | 8 Bidders</div>
+                                    <div class="item-description">Current: $9,200 | Reserve: $8,000 | Time: 1d 5h</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-active">Active</span>
+                                    <button class="btn btn-secondary btn-small" onclick="viewAuctionDetails('AUC-2024-002')">👁️ View</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidders('AUC-2024-002')">👥 Bidders</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="starting-soon">
+                                <div class="item-details">
+                                    <strong>AUC-2024-003</strong>
+                                    <div class="item-meta">V2L LX-B-486 (2020) | 15 Registered</div>
+                                    <div class="item-description">Reserve: $12,000 | Starts in: 5h</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-pending">Starting Soon</span>
+                                    <button class="btn btn-secondary btn-small" onclick="viewAuctionDetails('AUC-2024-003')">👁️ View</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidders('AUC-2024-003')">👥 Bidders</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Assets Section -->
+                <section class="content-section" id="assets">
+                    <div class="page-header">
+                        <h1 class="page-title">Assets for Auction</h1>
+                        <p class="page-subtitle">Manage vehicles and machinery marked for disposal</p>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterAssets('all')">All Assets</button>
+                        <button class="filter-btn" onclick="filterAssets('good')">Good Condition</button>
+                        <button class="filter-btn" onclick="filterAssets('fair')">Fair Condition</button>
+                        <button class="filter-btn" onclick="filterAssets('vehicles')">Vehicles</button>
+                        <button class="filter-btn" onclick="filterAssets('equipment')">Equipment</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span>🚚 Assets Ready for Auction</span>
+                            <span class="status-badge status-pending">8 available</span>
+                        </div>
+                        <div id="assetsContainer">
+                            <div class="item-card" data-status="fair" data-type="vehicles">
+                                <div class="item-details">
+                                    <strong>Truck LKC-7890</strong>
+                                    <div class="item-meta">2017 Mitsubishi Canter · 180,000 km</div>
+                                    <div class="item-description">High maintenance cost | Fair condition</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-pending">Fair</span>
+                                    <button class="btn btn-primary btn-small" onclick="viewAssetDetails('Truck LKC-7890')">👁️ View</button>
+                                    <button class="btn btn-success btn-small" onclick="scheduleAssetAuction('Truck LKC-7890')">📅 Schedule</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="good" data-type="equipment">
+                                <div class="item-details">
+                                    <strong>Excavator EX-003</strong>
+                                    <div class="item-meta">2016 Caterpillar 315D · 8,500 h</div>
+                                    <div class="item-description">Fleet downsizing | Good condition</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-approved">Good</span>
+                                    <button class="btn btn-primary btn-small" onclick="viewAssetDetails('Excavator EX-003')">👁️ View</button>
+                                    <button class="btn btn-success btn-small" onclick="scheduleAssetAuction('Excavator EX-003')">📅 Schedule</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="fair" data-type="equipment">
+                                <div class="item-details">
+                                    <strong>Generator GEN-002</strong>
+                                    <div class="item-meta">2015 Perkins 100kVA · 12,000 h</div>
+                                    <div class="item-description">Replacement purchased | Fair condition</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-pending">Fair</span>
+                                    <button class="btn btn-primary btn-small" onclick="viewAssetDetails('Generator GEN-002')">👁️ View</button>
+                                    <button class="btn btn-success btn-small" onclick="scheduleAssetAuction('Generator GEN-002')">📅 Schedule</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Bidders Section -->
+                <section class="content-section" id="bidders">
+                    <div class="page-header">
+                        <h1 class="page-title">Bidder Management</h1>
+                        <p class="page-subtitle">Register and manage auction participants</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="openModal('registerBidderModal')">Register New Bidder</button>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterBidders('all')">All Bidders</button>
+                        <button class="filter-btn" onclick="filterBidders('pending')">Pending</button>
+                        <button class="filter-btn" onclick="filterBidders('verified')">Verified</button>
+                        <button class="filter-btn" onclick="filterBidders('company')">Companies</button>
+                        <button class="filter-btn" onclick="filterBidders('individual')">Individuals</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span>👥 Registered Bidders</span>
+                            <span class="status-badge status-approved">47 total, 5 pending</span>
+                        </div>
+                        <div id="biddersContainer">
+                            <div class="item-card" data-status="pending" data-type="individual">
+                                <div class="item-details">
+                                    <strong>BID-045 - R. Fernando</strong>
+                                    <div class="item-meta">Individual | r.fernando@email.com</div>
+                                    <div class="item-description">Registered: Oct 18, 2025 | Documents submitted</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-pending">Pending</span>
+                                    <button class="btn btn-success btn-small" onclick="approveBidder('BID-045')">✓ Approve</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidderDetails('BID-045')">👁️ View</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="verified" data-type="company">
+                                <div class="item-details">
+                                    <strong>BID-014 - Next Motors (Pvt)</strong>
+                                    <div class="item-meta">Company | info@nextmotors.com</div>
+                                    <div class="item-description">Active bidder | 15 successful bids</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-approved">Verified</span>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidderDetails('BID-014')">👁️ View</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="verified" data-type="individual">
+                                <div class="item-details">
+                                    <strong>BID-032 - M. Jayasekara</strong>
+                                    <div class="item-meta">Individual | m.jayasekara@email.com</div>
+                                    <div class="item-description">Active bidder | 8 successful bids</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-approved">Verified</span>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidderDetails('BID-032')">👁️ View</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="pending" data-type="company">
+                                <div class="item-details">
+                                    <strong>BID-050 - K-Tech Imports</strong>
+                                    <div class="item-meta">Company | accounts@ktech.com</div>
+                                    <div class="item-description">Registered: Oct 17, 2025 | Documents under review</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-pending">Pending</span>
+                                    <button class="btn btn-success btn-small" onclick="approveBidder('BID-050')">✓ Approve</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidderDetails('BID-050')">👁️ View</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Schedule Section -->
+                <section class="content-section" id="schedule">
+                    <div class="page-header">
+                        <h1 class="page-title">Auction Schedule</h1>
+                        <p class="page-subtitle">Plan and manage auction timelines</p>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterSchedule('all')">All Scheduled</button>
+                        <button class="filter-btn" onclick="filterSchedule('scheduled')">Scheduled</button>
+                        <button class="filter-btn" onclick="filterSchedule('published')">Published</button>
+                        <button class="filter-btn" onclick="filterSchedule('this-week')">This Week</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span>📅 Upcoming Auctions</span>
+                            <span class="status-badge status-scheduled">3 scheduled</span>
+                        </div>
+                        <div id="scheduleContainer">
+                            <div class="item-card" data-status="scheduled" data-period="this-week">
+                                <div class="item-details">
+                                    <strong>AUC-2024-004 - Truck LKC-7890</strong>
+                                    <div class="item-meta">Publish: Sep 01 | Start: Sep 05, 10:00 | End: Sep 10, 15:00</div>
+                                    <div class="item-description">Reserve: $15,000 | 2017 Mitsubishi Canter</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-scheduled">Scheduled</span>
+                                    <button class="btn btn-secondary btn-small" onclick="editSchedule('AUC-2024-004')">✏️ Edit</button>
+                                    <button class="btn btn-success btn-small" onclick="publishAuction('AUC-2024-004')">📢 Publish</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="scheduled" data-period="this-week">
+                                <div class="item-details">
+                                    <strong>AUC-2024-005 - Excavator EX-003</strong>
+                                    <div class="item-meta">Publish: Sep 03 | Start: Sep 08, 09:00 | End: Sep 13, 12:00</div>
+                                    <div class="item-description">Reserve: $25,000 | 2016 Caterpillar 315D</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-scheduled">Scheduled</span>
+                                    <button class="btn btn-secondary btn-small" onclick="editSchedule('AUC-2024-005')">✏️ Edit</button>
+                                    <button class="btn btn-success btn-small" onclick="publishAuction('AUC-2024-005')">📢 Publish</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="scheduled" data-period="this-week">
+                                <div class="item-details">
+                                    <strong>AUC-2024-006 - Generator GEN-002</strong>
+                                    <div class="item-meta">Publish: Sep 05 | Start: Sep 10, 14:00 | End: Sep 15, 16:00</div>
+                                    <div class="item-description">Reserve: $8,000 | 2015 Perkins 100kVA</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-scheduled">Scheduled</span>
+                                    <button class="btn btn-secondary btn-small" onclick="editSchedule('AUC-2024-006')">✏️ Edit</button>
+                                    <button class="btn btn-success btn-small" onclick="publishAuction('AUC-2024-006')">📢 Publish</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Reports Section -->
+                <section class="content-section" id="reports">
+                    <div class="page-header">
+                        <h1 class="page-title">Auction Reports</h1>
+                        <p class="page-subtitle">Generate and analyze auction performance data</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">📈 Report Filters</div>
+                        <form id="reportFilters">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Date Range</label>
+                                    <select class="form-select">
+                                        <option>Today</option>
+                                        <option>This Week</option>
+                                        <option>This Month</option>
+                                        <option>Custom</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select">
+                                        <option>All</option>
+                                        <option>Active</option>
+                                        <option>Ended</option>
+                                        <option>Scheduled</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                                <button type="button" class="btn btn-success" onclick="exportToCSV()">Export CSV</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterReports('all')">All Reports</button>
+                        <button class="filter-btn" onclick="filterReports('active')">Active</button>
+                        <button class="filter-btn" onclick="filterReports('ended')">Ended</button>
+                        <button class="filter-btn" onclick="filterReports('scheduled')">Scheduled</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span>📊 Auction Report Results</span>
+                            <span class="status-badge status-approved">3 results</span>
+                        </div>
+                        <div id="reportsContainer">
+                            <div class="item-card" data-status="active">
+                                <div class="item-details">
+                                    <strong>AUC-2024-001 - Truck LX-A-9876 (2019)</strong>
+                                    <div class="item-meta">12 Bidders | Start: $18,000 | Current: $18,500</div>
+                                    <div class="item-description">Above Reserve: 2.8% | Ends in: 2h 15m</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-in-progress">Ending Soon</span>
+                                    <button class="btn btn-secondary btn-small" onclick="viewReportDetails('AUC-2024-001')">👁️ View</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="active">
+                                <div class="item-details">
+                                    <strong>AUC-2024-002 - Event F1-005 (2018)</strong>
+                                    <div class="item-meta">8 Bidders | Start: $8,000 | Current: $9,200</div>
+                                    <div class="item-description">Above Reserve: 15.0% | Ends in: 1d 5h</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-active">Active</span>
+                                    <button class="btn btn-secondary btn-small" onclick="viewReportDetails('AUC-2024-002')">👁️ View</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="scheduled">
+                                <div class="item-details">
+                                    <strong>AUC-2024-003 - V2L LX-B-486 (2020)</strong>
+                                    <div class="item-meta">15 Registered | Reserve: $12,000</div>
+                                    <div class="item-description">Starts in: 5h</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-pending">Starting Soon</span>
+                                    <button class="btn btn-secondary btn-small" onclick="viewReportDetails('AUC-2024-003')">👁️ View</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Create Auction Modal -->
+    <div id="createAuctionModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('createAuctionModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Create New Auction</h2>
+            <form id="createAuctionForm">
+                <div class="form-section">
+                    <h5>🆔 Basic Details</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Auction ID *</label>
+                            <input type="text" class="form-input" placeholder="AUC-2024-010" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Asset *</label>
+                            <input type="text" class="form-input" placeholder="Truck LKC-7890" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Reserve Price (USD) *</label>
+                            <input type="number" class="form-input" min="0" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Start Time *</label>
+                            <input type="datetime-local" class="form-input" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">End Time *</label>
+                            <input type="datetime-local" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Bid Increment (USD)</label>
+                            <input type="number" class="form-input" min="1" step="1" value="100">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h5>📝 Notes</h5>
+                    <textarea class="form-textarea" placeholder="Inspection notes, disclosures, etc."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Auction</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('createAuctionModal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Register Bidder Modal -->
+    <div id="registerBidderModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('registerBidderModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Register Bidder</h2>
+            <form id="registerBidderForm">
+                <div class="form-section">
+                    <h5>👤 Bidder Information</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Full Name *</label>
+                            <input type="text" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-input" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Phone *</label>
+                            <input type="tel" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Type *</label>
+                            <select class="form-select" required>
+                                <option value="">Select Type</option>
+                                <option>Individual</option>
+                                <option>Company</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Company</label>
+                            <input type="text" class="form-input" placeholder="If applicable">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Verification Status *</label>
+                            <select class="form-select" required>
+                                <option value="">Select Status</option>
+                                <option>Pending</option>
+                                <option>Verified</option>
+                                <option>Rejected</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Register Bidder</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('registerBidderModal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Schedule Auction Modal -->
+    <div id="scheduleAuctionModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('scheduleAuctionModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Schedule Auction</h2>
+            <form id="scheduleAuctionForm">
+                <div class="form-section">
+                    <h5>📅 Timing</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Auction ID *</label>
+                            <input type="text" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Publish On *</label>
+                            <input type="datetime-local" class="form-input" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Start Time *</label>
+                            <input type="datetime-local" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">End Time *</label>
+                            <input type="datetime-local" class="form-input" required>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Schedule</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('scheduleAuctionModal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // Navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById(this.getAttribute('data-section')).classList.add('active');
+            });
+        });
+
+        function navigateTo(sectionId) {
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+            document.querySelector(`[data-section="${sectionId}"]`).classList.add('active');
+            document.getElementById(sectionId).classList.add('active');
+        }
+
+        // Modal functions
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.background = type === 'error' ? '#d93025' : type === 'warning' ? '#f59e0b' : '#5caf53';
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 3000);
+        }
+
+        // Filter functions
+        function filterAuctions(status) {
+            filterItems('auctionsContainer', status, 'auctions');
+        }
+
+        function filterAssets(criteria) {
+            const cards = document.querySelectorAll('#assetsContainer .item-card');
+            let count = 0;
+            cards.forEach(card => {
+                const cardStatus = card.getAttribute('data-status');
+                const cardType = card.getAttribute('data-type');
+                let shouldShow = false;
+                
+                if (criteria === 'all') shouldShow = true;
+                else if (criteria === 'good' && cardStatus === 'good') shouldShow = true;
+                else if (criteria === 'fair' && cardStatus === 'fair') shouldShow = true;
+                else if (criteria === 'vehicles' && cardType === 'vehicles') shouldShow = true;
+                else if (criteria === 'equipment' && cardType === 'equipment') shouldShow = true;
+                
+                if (shouldShow) {
+                    card.style.display = 'flex';
+                    count++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            updateFilterButtons(event.target);
+            showToast(`Showing ${count} assets`);
+        }
+
+        function filterBidders(criteria) {
+            const cards = document.querySelectorAll('#biddersContainer .item-card');
+            let count = 0;
+            cards.forEach(card => {
+                const cardStatus = card.getAttribute('data-status');
+                const cardType = card.getAttribute('data-type');
+                let shouldShow = false;
+                
+                if (criteria === 'all') shouldShow = true;
+                else if (criteria === 'pending' && cardStatus === 'pending') shouldShow = true;
+                else if (criteria === 'verified' && cardStatus === 'verified') shouldShow = true;
+                else if (criteria === 'company' && cardType === 'company') shouldShow = true;
+                else if (criteria === 'individual' && cardType === 'individual') shouldShow = true;
+                
+                if (shouldShow) {
+                    card.style.display = 'flex';
+                    count++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            updateFilterButtons(event.target);
+            showToast(`Showing ${count} bidders`);
+        }
+
+        function filterSchedule(criteria) {
+            const cards = document.querySelectorAll('#scheduleContainer .item-card');
+            let count = 0;
+            cards.forEach(card => {
+                const cardStatus = card.getAttribute('data-status');
+                const cardPeriod = card.getAttribute('data-period');
+                let shouldShow = false;
+                
+                if (criteria === 'all') shouldShow = true;
+                else if (criteria === 'scheduled' && cardStatus === 'scheduled') shouldShow = true;
+                else if (criteria === 'published' && cardStatus === 'published') shouldShow = true;
+                else if (criteria === 'this-week' && cardPeriod === 'this-week') shouldShow = true;
+                
+                if (shouldShow) {
+                    card.style.display = 'flex';
+                    count++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            updateFilterButtons(event.target);
+            showToast(`Showing ${count} scheduled auctions`);
+        }
+
+        function filterReports(status) {
+            filterItems('reportsContainer', status, 'reports');
+        }
+
+        function filterItems(containerId, status, label) {
+            const cards = document.querySelectorAll(`#${containerId} .item-card`);
+            let count = 0;
+            cards.forEach(card => {
+                if (status === 'all' || card.getAttribute('data-status') === status) {
+                    card.style.display = 'flex';
+                    count++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            updateFilterButtons(event.target);
+            showToast(`Showing ${count} ${label}`);
+        }
+
+        function updateFilterButtons(activeBtn) {
+            activeBtn.parentElement.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            activeBtn.classList.add('active');
+        }
+
+        // View Details Functions
+        function viewAuctionDetails(id) {
+            const detailsModal = document.createElement('div');
+            detailsModal.className = 'modal active';
+            detailsModal.innerHTML = `
+                <div class="modal-content">
+                    <button class="close" onclick="this.closest('.modal').remove()">&times;</button>
+                    <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Auction Details - ${id}</h2>
+                    <div class="form-section">
+                        <h5>🔨 Auction Information</h5>
+                        <div><strong>Auction ID:</strong> ${id}</div>
+                        <div><strong>Asset:</strong> Truck LX-A-9876 (2019)</div>
+                        <div><strong>Status:</strong> <span class="status-badge status-in-progress">Active - Ending Soon</span></div>
+                        <div><strong>Created:</strong> Oct 15, 2025</div>
+                        <div><strong>Start Time:</strong> Oct 17, 2025 10:00 AM</div>
+                        <div><strong>End Time:</strong> Oct 19, 2025 04:30 PM</div>
+                        <div><strong>Time Remaining:</strong> 2 hours 15 minutes</div>
+                    </div>
+                    <div class="form-section">
+                        <h5>💰 Bidding Information</h5>
+                        <div><strong>Reserve Price:</strong> $18,000</div>
+                        <div><strong>Starting Bid:</strong> $18,000</div>
+                        <div><strong>Current Bid:</strong> $18,500</div>
+                        <div><strong>Above Reserve:</strong> 2.8%</div>
+                        <div><strong>Total Bidders:</strong> 12</div>
+                        <div><strong>Total Bids:</strong> 27</div>
+                        <div><strong>Bid Increment:</strong> $100</div>
+                    </div>
+                    <div class="form-section">
+                        <h5>🚚 Asset Details</h5>
+                        <div><strong>Make/Model:</strong> Truck LX-A-9876</div>
+                        <div><strong>Year:</strong> 2019</div>
+                        <div><strong>Mileage:</strong> 85,000 km</div>
+                        <div><strong>Condition:</strong> Good</div>
+                        <div><strong>Location:</strong> Main Depot - Colombo</div>
+                    </div>
+                    <div class="form-section">
+                        <h5>📊 Bidding Activity</h5>
+                        <div style="margin-bottom: 8px;">
+                            <strong>Recent Bids:</strong><br>
+                            $18,500 - BID-032 (M. Jayasekara) - 5 min ago<br>
+                            $18,400 - BID-014 (Next Motors) - 12 min ago<br>
+                            $18,300 - BID-032 (M. Jayasekara) - 25 min ago<br>
+                            $18,200 - BID-045 (R. Fernando) - 1 hour ago
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Close</button>
+                </div>
+            `;
+            document.body.appendChild(detailsModal);
+        }
+
+        function viewBidders(auctionId) {
+            const detailsModal = document.createElement('div');
+            detailsModal.className = 'modal active';
+            detailsModal.innerHTML = `
+                <div class="modal-content">
+                    <button class="close" onclick="this.closest('.modal').remove()">&times;</button>
+                    <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Bidders for ${auctionId}</h2>
+                    <div class="form-section">
+                        <h5>👥 Registered Bidders (12)</h5>
+                        <div style="margin-bottom: 8px;">
+                            <strong>Active Bidders:</strong><br><br>
+                            <strong>BID-032</strong> - M. Jayasekara | Individual<br>
+                            Last Bid: $18,500 (5 min ago) | Total Bids: 8<br><br>
+                            <strong>BID-014</strong> - Next Motors (Pvt) | Company<br>
+                            Last Bid: $18,400 (12 min ago) | Total B
