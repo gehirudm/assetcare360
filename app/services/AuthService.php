@@ -55,6 +55,9 @@ class AuthService {
         // Update last login
         $this->userModel->updateLastLogin($user['id']);
         
+        // Check if password change is required
+        $forcePasswordChange = (bool)($user['force_password_change'] ?? 0);
+        
         // Generate JWT token
         $tokenPayload = [
             'id' => $user['id'],
@@ -70,10 +73,11 @@ class AuthService {
         
         return [
             'success' => true,
-            'message' => 'Login successful',
+            'message' => $forcePasswordChange ? 'Login successful. You must change your password.' : 'Login successful',
             'data' => [
                 'token' => $token,
-                'user' => $user
+                'user' => $user,
+                'force_password_change' => $forcePasswordChange
             ]
         ];
     }
@@ -152,8 +156,21 @@ class AuthService {
             ];
         }
         
+        // Check if new password is same as current password
+        if ($this->userModel->verifyPassword($newPassword, $user['password'])) {
+            return [
+                'success' => false,
+                'message' => 'New password must be different from current password'
+            ];
+        }
+        
         // Update password
         $this->userModel->updatePassword($userId, $newPassword);
+        
+        // Clear force_password_change flag if it was set
+        if ($user['force_password_change']) {
+            $this->userModel->update($userId, ['force_password_change' => 0]);
+        }
         
         return [
             'success' => true,

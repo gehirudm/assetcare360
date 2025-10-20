@@ -63,17 +63,25 @@ class Router {
         
         // Find matching route
         foreach ($this->routes as $route) {
-            if ($route['method'] === $method && $this->matchPath($route['path'], $path)) {
-                // Execute middlewares
-                foreach ($route['middlewares'] as $middleware) {
-                    call_user_func($middleware);
+            if ($route['method'] === $method) {
+                $params = $this->matchPath($route['path'], $path);
+                if ($params !== false) {
+                    // Set URL parameters in $_GET
+                    foreach ($params as $key => $value) {
+                        $_GET[$key] = $value;
+                    }
+                    
+                    // Execute middlewares
+                    foreach ($route['middlewares'] as $middleware) {
+                        call_user_func($middleware);
+                    }
+                    
+                    // Execute controller action
+                    $controller = new $route['controller']();
+                    $action = $route['action'];
+                    $controller->$action();
+                    return;
                 }
-                
-                // Execute controller action
-                $controller = new $route['controller']();
-                $action = $route['action'];
-                $controller->$action();
-                return;
             }
         }
         
@@ -83,10 +91,25 @@ class Router {
     
     /**
      * Match path with route pattern
+     * Supports :param syntax for URL parameters
+     * Returns array of parameters if match, false otherwise
      */
     private function matchPath($routePath, $requestPath) {
-        // Simple exact match for now
-        // Can be extended to support parameters like /users/:id
-        return $routePath === $requestPath;
+        // Convert route path to regex pattern
+        $pattern = preg_replace('/\/:([^\/]+)/', '/(?P<$1>[^/]+)', $routePath);
+        $pattern = '#^' . $pattern . '$#';
+        
+        if (preg_match($pattern, $requestPath, $matches)) {
+            // Extract named parameters
+            $params = [];
+            foreach ($matches as $key => $value) {
+                if (is_string($key)) {
+                    $params[$key] = $value;
+                }
+            }
+            return $params;
+        }
+        
+        return false;
     }
 }

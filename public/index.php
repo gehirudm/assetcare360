@@ -36,6 +36,7 @@ require_once __DIR__ . '/../app/Router.php';
 
 // Load controllers
 require_once __DIR__ . '/../app/controllers/AuthController.php';
+require_once __DIR__ . '/../app/controllers/UserController.php';
 
 // Initialize request logger
 $requestLogger = new RequestLogger();
@@ -50,6 +51,17 @@ $router->post('/auth/logout', 'AuthController', 'logout');
 $router->get('/auth/me', 'AuthController', 'me');
 $router->post('/auth/change-password', 'AuthController', 'changePassword');
 $router->get('/auth/validate', 'AuthController', 'validateToken');
+
+// User management routes (Admin only)
+$router->get('/users/stats', 'UserController', 'stats');
+$router->get('/users', 'UserController', 'index');
+$router->post('/users', 'UserController', 'create');
+$router->get('/users/:id', 'UserController', 'show');
+$router->put('/users/:id', 'UserController', 'update');
+$router->delete('/users/:id', 'UserController', 'delete');
+$router->post('/users/:id/activate', 'UserController', 'activate');
+$router->post('/users/:id/deactivate', 'UserController', 'deactivate');
+$router->post('/users/:id/reset-password', 'UserController', 'resetPassword');
 
 // Dispatch the request
 try {

@@ -19,12 +19,17 @@ class User extends BaseModel {
             'password' => 'VARCHAR(255) NOT NULL',
             'full_name' => 'VARCHAR(255) NOT NULL',
             'role' => "ENUM('Admin', 'Inventory Manager', 'Machinary Operator', 'Driver', 'Supervisor') NOT NULL",
+            'department' => 'VARCHAR(100) NULL',
             'email' => 'VARCHAR(255) NULL',
             'phone' => 'VARCHAR(20) NULL',
             'is_active' => 'TINYINT(1) DEFAULT 1',
+            'force_password_change' => 'TINYINT(1) DEFAULT 0',
             'last_login' => 'TIMESTAMP NULL',
             'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
-            'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
+            'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+            'INDEX idx_role' => '(role)',
+            'INDEX idx_active' => '(is_active)',
+            'INDEX idx_department' => '(department)'
         ];
     }
     
@@ -121,6 +126,204 @@ class User extends BaseModel {
     public function employeeIdExists($employeeId, $excludeUserId = null) {
         $sql = "SELECT COUNT(*) as count FROM `{$this->table}` WHERE employee_id = ?";
         $params = [$employeeId];
+        
+        if ($excludeUserId) {
+            $sql .= " AND id != ?";
+            $params[] = $excludeUserId;
+        }
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $result = $stmt->fetch();
+        
+        return $result['count'] > 0;
+    }
+    
+    /**
+     * Get all users with optional filters
+     * @param array $filters - ['role' => 'Admin', 'is_active' => 1, 'department' => 'IT']
+     * @param string $search - Search term for full_name or employee_id
+     * @param string $orderBy - Order by clause (default: 'full_name ASC')
+     * @param int $limit - Limit number of results
+     * @param int $offset - Offset for pagination
+     */
+    public function getAllUsers($filters = [], $search = null, $orderBy = 'full_name ASC', $limit = null, $offset = 0) {
+        $sql = "SELECT * FROM `{$this->table}` WHERE 1=1";
+        $params = [];
+        
+        // Apply filters
+        if (!empty($filters['role'])) {
+            $sql .= " AND role = ?";
+            $params[] = $filters['role'];
+        }
+        
+        if (isset($filters['is_active'])) {
+            $sql .= " AND is_active = ?";
+            $params[] = $filters['is_active'];
+        }
+        
+        if (!empty($filters['department'])) {
+            $sql .= " AND department = ?";
+            $params[] = $filters['department'];
+        }
+        
+        // Apply search
+        if ($search) {
+            $sql .= " AND (full_name LIKE ? OR employee_id LIKE ? OR email LIKE ?)";
+            $searchTerm = "%{$search}%";
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+        
+        // Apply ordering
+        $sql .= " ORDER BY {$orderBy}";
+        
+        // Apply pagination
+        if ($limit) {
+            $sql .= " LIMIT ? OFFSET ?";
+            $params[] = $limit;
+            $params[] = $offset;
+        }
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $users = $stmt->fetchAll();
+        
+        // Remove passwords from results
+        return array_map(function($user) {
+            unset($user['password']);
+            return $user;
+        }, $users);
+    }
+    
+    /**
+     * Get total count of users with filters
+     */
+    public function getUserCount($filters = [], $search = null) {
+        $sql = "SELECT COUNT(*) as count FROM `{$this->table}` WHERE 1=1";
+        $params = [];
+        
+        // Apply filters
+        if (!empty($filters['role'])) {
+            $sql .= " AND role = ?";
+            $params[] = $filters['role'];
+        }
+        
+        if (isset($filters['is_active'])) {
+            $sql .= " AND is_active = ?";
+            $params[] = $filters['is_active'];
+        }
+        
+        if (!empty($filters['department'])) {
+            $sql .= " AND department = ?";
+            $params[] = $filters['department'];
+        }
+        
+        // Apply search
+        if ($search) {
+            $sql .= " AND (full_name LIKE ? OR employee_id LIKE ? OR email LIKE ?)";
+            $searchTerm = "%{$search}%";
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $result = $stmt->fetch();
+        
+        return (int) $result['count'];
+    }
+    
+    /**
+     * Update user (excluding password)
+     */
+    public function updateUser($userId, $data) {
+        // Remove password from data if present (use updatePassword for that)
+        if (isset($data['password'])) {
+            unset($data['password']);
+        }
+        
+        // If employee_id is being changed, check if it already exists
+        if (isset($data['employee_id'])) {
+            if ($this->employeeIdExists($data['employee_id'], $userId)) {
+                return false;
+            }
+        }
+        
+        return $this->update($userId, $data);
+    }
+    
+    /**
+     * Generate random password
+     */
+    public function generateRandomPassword($length = 12) {
+        $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+        $password = '';
+        $charLength = strlen($chars);
+        
+        for ($i = 0; $i < $length; $i++) {
+            $password .= $chars[random_int(0, $charLength - 1)];
+        }
+        
+        return $password;
+    }
+    
+    /**
+     * Get users by role
+     */
+    public function getUsersByRole($role) {
+        $users = $this->findAll(['role' => $role], 'full_name ASC');
+        return array_map(function($user) {
+            unset($user['password']);
+            return $user;
+        }, $users);
+    }
+    
+    /**
+     * Get user statistics
+     */
+    public function getUserStats() {
+        $sql = "SELECT 
+                    COUNT(*) as total_users,
+                    SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_users,
+                    SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as inactive_users,
+                    role,
+                    COUNT(*) as role_count
+                FROM `{$this->table}`
+                GROUP BY role";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $roleStats = $stmt->fetchAll();
+        
+        $sql = "SELECT 
+                    COUNT(*) as total_users,
+                    SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_users,
+                    SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as inactive_users
+                FROM `{$this->table}`";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $totalStats = $stmt->fetch();
+        
+        return [
+            'total' => $totalStats,
+            'by_role' => $roleStats
+        ];
+    }
+    
+    /**
+     * Check if email exists
+     */
+    public function emailExists($email, $excludeUserId = null) {
+        if (empty($email)) {
+            return false;
+        }
+        
+        $sql = "SELECT COUNT(*) as count FROM `{$this->table}` WHERE email = ?";
+        $params = [$email];
         
         if ($excludeUserId) {
             $sql .= " AND id != ?";

@@ -23,6 +23,7 @@ $testUsers = [
         'password' => 'password123',
         'full_name' => 'Admin User',
         'role' => 'Admin',
+        'department' => 'Administration',
         'email' => 'admin@assetcare360.com',
         'phone' => '+94771234567'
     ],
@@ -31,6 +32,7 @@ $testUsers = [
         'password' => 'password123',
         'full_name' => 'Inventory Manager One',
         'role' => 'Inventory Manager',
+        'department' => 'Inventory',
         'email' => 'inv.manager1@assetcare360.com',
         'phone' => '+94771234568'
     ],
@@ -39,6 +41,7 @@ $testUsers = [
         'password' => 'password123',
         'full_name' => 'Inventory Manager Two',
         'role' => 'Inventory Manager',
+        'department' => 'Inventory',
         'email' => 'inv.manager2@assetcare360.com',
         'phone' => '+94771234569'
     ],
@@ -47,6 +50,7 @@ $testUsers = [
         'password' => 'password123',
         'full_name' => 'Supervisor One',
         'role' => 'Supervisor',
+        'department' => 'Operations',
         'email' => 'supervisor1@assetcare360.com',
         'phone' => '+94771234570'
     ],
@@ -55,6 +59,7 @@ $testUsers = [
         'password' => 'password123',
         'full_name' => 'Supervisor Two',
         'role' => 'Supervisor',
+        'department' => 'Operations',
         'email' => 'supervisor2@assetcare360.com',
         'phone' => '+94771234571'
     ],
@@ -63,6 +68,7 @@ $testUsers = [
         'password' => 'password123',
         'full_name' => 'Driver One',
         'role' => 'Driver',
+        'department' => 'Logistics',
         'email' => 'driver1@assetcare360.com',
         'phone' => '+94771234572'
     ],
@@ -71,6 +77,7 @@ $testUsers = [
         'password' => 'password123',
         'full_name' => 'Driver Two',
         'role' => 'Driver',
+        'department' => 'Logistics',
         'email' => 'driver2@assetcare360.com',
         'phone' => '+94771234573'
     ],
@@ -79,6 +86,7 @@ $testUsers = [
         'password' => 'password123',
         'full_name' => 'Machinary Operator One',
         'role' => 'Machinary Operator',
+        'department' => 'Production',
         'email' => 'operator1@assetcare360.com',
         'phone' => '+94771234574'
     ],
@@ -87,6 +95,7 @@ $testUsers = [
         'password' => 'password123',
         'full_name' => 'Machinary Operator Two',
         'role' => 'Machinary Operator',
+        'department' => 'Production',
         'email' => 'operator2@assetcare360.com',
         'phone' => '+94771234575'
     ],
@@ -95,6 +104,7 @@ $testUsers = [
         'password' => 'password123',
         'full_name' => 'Machinary Operator Three',
         'role' => 'Machinary Operator',
+        'department' => 'Production',
         'email' => 'operator3@assetcare360.com',
         'phone' => '+94771234576'
     ]
