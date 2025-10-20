@@ -5,7 +5,8 @@ let currentUser = null;
 document.addEventListener('DOMContentLoaded', async function() {
     try {
         // Check authentication and authorization using DashboardInit
-        const user = await DashboardInit.init(['Machinery Operator', 'Machine Operator', 'Admin'], {
+        // Note: 'Machinary Operator' matches the database ENUM (contains typo)
+        const user = await DashboardInit.init(['Machinary Operator', 'Admin'], {
             updateUserDisplay: true,
             onSuccess: async (user) => {
                 // Store current user

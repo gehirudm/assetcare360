@@ -27,7 +27,7 @@ const CONFIG = {
             TECHNICAL_OFFICER: '/dashboard/technical-officer/index.html',
             SUPERVISOR: '/dashboard/supervisor.html',
             DRIVER: '/dashboard/driver.html',
-            MACHINARY_OPERATOR: '/dashboard/machop.html'
+            MACHINARY_OPERATOR: '/dashboard/machinery-operator/index.html'  // Matches DB typo: 'Machinary Operator'
         }
     },
     
