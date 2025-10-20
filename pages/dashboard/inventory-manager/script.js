@@ -59,7 +59,7 @@ async function initializeApp() {
         showLoading(false);
     } catch (error) {
         console.error('Failed to initialize app:', error);
-        Utils.toast('Failed to load application. Please refresh the page.', 'error');
+        Utils.showToast('Failed to load application. Please refresh the page.', 'error');
         showLoading(false);
     }
 }
@@ -165,7 +165,7 @@ async function loadSectionData(sectionId) {
         showLoading(false);
     } catch (error) {
         console.error(`Failed to load ${sectionId} data:`, error);
-        Utils.toast(`Failed to load ${sectionId} data`, 'error');
+        Utils.showToast(`Failed to load ${sectionId} data`, 'error');
         showLoading(false);
     }
 }
@@ -249,7 +249,7 @@ async function loadMachines() {
         displayMachines(machines);
     } catch (error) {
         console.error('Failed to load machines:', error);
-        Utils.toast('Failed to load machines', 'error');
+        Utils.showToast('Failed to load machines', 'error');
         machines = [];
         displayMachines([]);
     }
@@ -283,19 +283,35 @@ function displayMachines(machineList) {
                     Status: <span class="status-badge ${getStatusClass(machine.status)}">${machine.status}</span>
                     ${machine.next_service_date ? `| Next Service: ${Utils.formatDate(machine.next_service_date)}` : ''}
                 </div>
-                ${machine.components ? `<div class="item-meta"><i class="fas fa-list"></i> Components: ${JSON.parse(machine.components).join(', ')}</div>` : ''}
+                ${machine.components && Array.isArray(machine.components) ? `<div class="item-meta"><i class="fas fa-list"></i> Components: ${machine.components.join(', ')}</div>` : ''}
             </div>
             <div class="item-actions">
                 <div class="action-buttons">
                     <button class="btn btn-small btn-secondary" onclick="viewMachineDetails(${machine.id})">
-                        <i class="fas fa-eye"></i> View
+                        <i class="fas fa-eye"></i> VIEW
                     </button>
                     <button class="btn btn-small btn-primary" onclick="editMachine(${machine.id})">
-                        <i class="fas fa-edit"></i> Edit
+                        <i class="fas fa-edit"></i> EDIT
                     </button>
-                    <button class="btn btn-small btn-danger" onclick="deleteMachine(${machine.id})">
-                        <i class="fas fa-trash"></i> Delete
-                    </button>
+                    <div class="dropdown-container">
+                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'machine-${machine.id}')">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div class="dropdown-menu" id="dropdown-machine-${machine.id}">
+                            ${machine.status === 'For Auction' ? `
+                                <button class="dropdown-item" onclick="removeFromAuction(${machine.id}, 'machine')">
+                                    <i class="fas fa-undo"></i> Remove from Auction
+                                </button>
+                            ` : `
+                                <button class="dropdown-item" onclick="markForAuction(${machine.id}, 'machine')">
+                                    <i class="fas fa-gavel"></i> Mark for Auction
+                                </button>
+                            `}
+                            <button class="dropdown-item danger" onclick="confirmDelete(${machine.id}, 'machine', '${machine.machine_name}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -308,6 +324,7 @@ function getStatusClass(status) {
         case 'Under Maintenance': return 'status-low-stock';
         case 'Inactive': return 'status-out-of-stock';
         case 'Decommissioned': return 'status-rejected';
+        case 'For Auction': return 'status-auction';
         default: return 'status-normal';
     }
 }
@@ -340,7 +357,7 @@ function applyMachineFilters(searchValue = '') {
 }
 
 async function refreshMachines() {
-    Utils.toast('Refreshing machines...', 'info');
+    Utils.showToast('Refreshing machines...', 'info');
     await loadMachines();
 }
 
@@ -444,15 +461,20 @@ function createMachineModal(machine = null) {
                 </div>
 
                 <div class="form-section">
-                    <h5><i class="fas fa-list"></i> Components</h5>
-                    <div class="checkbox-group">
-                        ${CONFIG.MACHINE_COMPONENTS.map(component => `
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="comp_${component}" value="${component}"
-                                       ${machine?.components && JSON.parse(machine.components).includes(component) ? 'checked' : ''}>
-                                <label for="comp_${component}">${component}</label>
-                            </div>
-                        `).join('')}
+                    <h5><i class="fas fa-cogs"></i> Machine Components</h5>
+                    <div class="form-group">
+                        <label class="form-label">Select Components</label>
+                        <div class="components-grid">
+                            ${CONFIG.MACHINE_COMPONENTS.map((component, index) => {
+                                const isChecked = machine?.components?.includes(component) ? 'checked' : '';
+                                return `
+                                    <label class="component-checkbox">
+                                        <input type="checkbox" name="machineComponent" value="${component}" ${isChecked}>
+                                        <span>${component}</span>
+                                    </label>
+                                `;
+                            }).join('')}
+                        </div>
                     </div>
                 </div>
 
@@ -490,13 +512,22 @@ async function handleAddMachine(e) {
         const response = await API.post('/machines', formData);
         
         if (response.status === 'success') {
-            Utils.toast('Machine added successfully!', 'success');
+            Utils.showToast('Machine added successfully!', 'success');
             closeModal('addMachineModal');
             await loadMachines();
+        } else if (response.status === 'error') {
+            // Display error message from backend
+            Utils.showToast(response.message || 'Failed to add machine', 'error');
+            
+            // If there are validation errors, display them on the form
+            if (response.errors) {
+                const form = document.getElementById('addMachineForm');
+                Utils.showFormErrors(form, response.errors);
+            }
         }
     } catch (error) {
         console.error('Failed to add machine:', error);
-        Utils.toast(error.message || 'Failed to add machine', 'error');
+        Utils.showToast(error.message || 'Failed to add machine', 'error');
     }
 }
 
@@ -509,18 +540,27 @@ async function handleEditMachine(e) {
         const response = await API.put(`/machines/${machineId}`, formData);
         
         if (response.status === 'success') {
-            Utils.toast('Machine updated successfully!', 'success');
+            Utils.showToast('Machine updated successfully!', 'success');
             closeModal('editMachineModal');
             await loadMachines();
+        } else if (response.status === 'error') {
+            // Display error message from backend
+            Utils.showToast(response.message || 'Failed to update machine', 'error');
+            
+            // If there are validation errors, display them on the form
+            if (response.errors) {
+                const form = document.getElementById('editMachineForm');
+                Utils.showFormErrors(form, response.errors);
+            }
         }
     } catch (error) {
         console.error('Failed to update machine:', error);
-        Utils.toast(error.message || 'Failed to update machine', 'error');
+        Utils.showToast(error.message || 'Failed to update machine', 'error');
     }
 }
 
 function getMachineFormData() {
-    const selectedComponents = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+    const selectedComponents = Array.from(document.querySelectorAll('input[name="machineComponent"]:checked'))
         .map(cb => cb.value);
     
     return {
@@ -542,7 +582,7 @@ function getMachineFormData() {
 async function editMachine(id) {
     const machine = machines.find(m => m.id === id);
     if (!machine) {
-        Utils.toast('Machine not found', 'error');
+        Utils.showToast('Machine not found', 'error');
         return;
     }
     
@@ -554,7 +594,7 @@ async function editMachine(id) {
 async function deleteMachine(id) {
     const machine = machines.find(m => m.id === id);
     if (!machine) {
-        Utils.toast('Machine not found', 'error');
+        Utils.showToast('Machine not found', 'error');
         return;
     }
     
@@ -566,19 +606,19 @@ async function deleteMachine(id) {
         const response = await API.delete(`/machines/${id}`);
         
         if (response.status === 'success') {
-            Utils.toast('Machine deleted successfully!', 'success');
+            Utils.showToast('Machine deleted successfully!', 'success');
             await loadMachines();
         }
     } catch (error) {
         console.error('Failed to delete machine:', error);
-        Utils.toast(error.message || 'Failed to delete machine', 'error');
+        Utils.showToast(error.message || 'Failed to delete machine', 'error');
     }
 }
 
 function viewMachineDetails(id) {
     const machine = machines.find(m => m.id === id);
     if (!machine) {
-        Utils.toast('Machine not found', 'error');
+        Utils.showToast('Machine not found', 'error');
         return;
     }
     
@@ -603,10 +643,10 @@ function viewMachineDetails(id) {
             ${machine.warranty_expiry ? `<p><strong>Warranty Expiry:</strong> ${Utils.formatDate(machine.warranty_expiry)}</p>` : ''}
             ${machine.warranty_provider ? `<p><strong>Warranty Provider:</strong> ${machine.warranty_provider}</p>` : ''}
         </div>
-        ${machine.components ? `
+        ${machine.components && Array.isArray(machine.components) ? `
             <div class="form-section">
                 <h5><i class="fas fa-list"></i> Components</h5>
-                <p>${JSON.parse(machine.components).join(', ')}</p>
+                <p>${machine.components.join(', ')}</p>
             </div>
         ` : ''}
         ${machine.notes ? `
@@ -630,7 +670,7 @@ async function loadVehicles() {
         displayVehicles(vehicles);
     } catch (error) {
         console.error('Failed to load vehicles:', error);
-        Utils.toast('Failed to load vehicles', 'error');
+        Utils.showToast('Failed to load vehicles', 'error');
         vehicles = [];
         displayVehicles([]);
     }
@@ -674,17 +714,33 @@ function displayVehicles(vehicleList) {
             <div class="item-actions">
                 <div class="action-buttons">
                     <button class="btn btn-small btn-secondary" onclick="viewVehicleDetails(${vehicle.id})">
-                        <i class="fas fa-eye"></i> View
-                    </button>
-                    <button class="btn btn-small btn-warning" onclick="updateVehicleMileage(${vehicle.id})">
-                        <i class="fas fa-tachometer-alt"></i> Update Mileage
+                        <i class="fas fa-eye"></i> VIEW
                     </button>
                     <button class="btn btn-small btn-primary" onclick="editVehicle(${vehicle.id})">
-                        <i class="fas fa-edit"></i> Edit
+                        <i class="fas fa-edit"></i> EDIT
                     </button>
-                    <button class="btn btn-small btn-danger" onclick="deleteVehicle(${vehicle.id})">
-                        <i class="fas fa-trash"></i> Delete
-                    </button>
+                    <div class="dropdown-container">
+                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'vehicle-${vehicle.id}')">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div class="dropdown-menu" id="dropdown-vehicle-${vehicle.id}">
+                            <button class="dropdown-item" onclick="updateVehicleMileage(${vehicle.id}); closeAllDropdowns();">
+                                <i class="fas fa-tachometer-alt"></i> Update Mileage
+                            </button>
+                            ${vehicle.status === 'For Auction' ? `
+                                <button class="dropdown-item" onclick="removeFromAuction(${vehicle.id}, 'vehicle')">
+                                    <i class="fas fa-undo"></i> Remove from Auction
+                                </button>
+                            ` : `
+                                <button class="dropdown-item" onclick="markForAuction(${vehicle.id}, 'vehicle')">
+                                    <i class="fas fa-gavel"></i> Mark for Auction
+                                </button>
+                            `}
+                            <button class="dropdown-item danger" onclick="confirmDelete(${vehicle.id}, 'vehicle', '${vehicle.vehicle_name}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -720,7 +776,7 @@ function applyVehicleFilters(searchValue = '') {
 }
 
 async function refreshVehicles() {
-    Utils.toast('Refreshing vehicles...', 'info');
+    Utils.showToast('Refreshing vehicles...', 'info');
     await loadVehicles();
 }
 
@@ -883,6 +939,24 @@ function createVehicleModal(vehicle = null) {
                 </div>
 
                 <div class="form-section">
+                    <h5><i class="fas fa-cogs"></i> Vehicle Components</h5>
+                    <div class="form-group">
+                        <label class="form-label">Select Components</label>
+                        <div class="components-grid">
+                            ${CONFIG.VEHICLE_COMPONENTS.map((component, index) => {
+                                const isChecked = vehicle?.components?.includes(component) ? 'checked' : '';
+                                return `
+                                    <label class="component-checkbox">
+                                        <input type="checkbox" name="vehicleComponent" value="${component}" ${isChecked}>
+                                        <span>${component}</span>
+                                    </label>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
                     <div class="form-group">
                         <label class="form-label">Notes</label>
                         <textarea class="form-textarea" id="vehicleNotes" rows="3">${vehicle?.notes || ''}</textarea>
@@ -944,13 +1018,22 @@ async function handleAddVehicle(e) {
         const response = await API.post('/vehicles', formData);
         
         if (response.status === 'success') {
-            Utils.toast('Vehicle added successfully!', 'success');
+            Utils.showToast('Vehicle added successfully!', 'success');
             closeModal('addVehicleModal');
             await loadVehicles();
+        } else if (response.status === 'error') {
+            // Display error message from backend
+            Utils.showToast(response.message || 'Failed to add vehicle', 'error');
+            
+            // If there are validation errors, display them on the form
+            if (response.errors) {
+                const form = document.getElementById('addVehicleForm');
+                Utils.showFormErrors(form, response.errors);
+            }
         }
     } catch (error) {
         console.error('Failed to add vehicle:', error);
-        Utils.toast(error.message || 'Failed to add vehicle', 'error');
+        Utils.showToast(error.message || 'Failed to add vehicle', 'error');
     }
 }
 
@@ -963,13 +1046,22 @@ async function handleEditVehicle(e) {
         const response = await API.put(`/vehicles/${vehicleId}`, formData);
         
         if (response.status === 'success') {
-            Utils.toast('Vehicle updated successfully!', 'success');
+            Utils.showToast('Vehicle updated successfully!', 'success');
             closeModal('editVehicleModal');
             await loadVehicles();
+        } else if (response.status === 'error') {
+            // Display error message from backend
+            Utils.showToast(response.message || 'Failed to update vehicle', 'error');
+            
+            // If there are validation errors, display them on the form
+            if (response.errors) {
+                const form = document.getElementById('editVehicleForm');
+                Utils.showFormErrors(form, response.errors);
+            }
         }
     } catch (error) {
         console.error('Failed to update vehicle:', error);
-        Utils.toast(error.message || 'Failed to update vehicle', 'error');
+        Utils.showToast(error.message || 'Failed to update vehicle', 'error');
     }
 }
 
@@ -1005,13 +1097,20 @@ function getVehicleFormData() {
         formData.service_interval_km = parseInt(document.getElementById('vehicleServiceIntervalKm').value);
     }
     
+    // Get selected components
+    const selectedComponents = [];
+    document.querySelectorAll('input[name="vehicleComponent"]:checked').forEach(checkbox => {
+        selectedComponents.push(checkbox.value);
+    });
+    formData.components = selectedComponents;
+    
     return formData;
 }
 
 async function editVehicle(id) {
     const vehicle = vehicles.find(v => v.id === id);
     if (!vehicle) {
-        Utils.toast('Vehicle not found', 'error');
+        Utils.showToast('Vehicle not found', 'error');
         return;
     }
     
@@ -1023,7 +1122,7 @@ async function editVehicle(id) {
 async function deleteVehicle(id) {
     const vehicle = vehicles.find(v => v.id === id);
     if (!vehicle) {
-        Utils.toast('Vehicle not found', 'error');
+        Utils.showToast('Vehicle not found', 'error');
         return;
     }
     
@@ -1035,19 +1134,19 @@ async function deleteVehicle(id) {
         const response = await API.delete(`/vehicles/${id}`);
         
         if (response.status === 'success') {
-            Utils.toast('Vehicle deleted successfully!', 'success');
+            Utils.showToast('Vehicle deleted successfully!', 'success');
             await loadVehicles();
         }
     } catch (error) {
         console.error('Failed to delete vehicle:', error);
-        Utils.toast(error.message || 'Failed to delete vehicle', 'error');
+        Utils.showToast(error.message || 'Failed to delete vehicle', 'error');
     }
 }
 
 function viewVehicleDetails(id) {
     const vehicle = vehicles.find(v => v.id === id);
     if (!vehicle) {
-        Utils.toast('Vehicle not found', 'error');
+        Utils.showToast('Vehicle not found', 'error');
         return;
     }
     
@@ -1081,6 +1180,14 @@ function viewVehicleDetails(id) {
             ${vehicle.warranty_expiry ? `<p><strong>Warranty Expiry:</strong> ${Utils.formatDate(vehicle.warranty_expiry)}</p>` : ''}
             ${vehicle.warranty_provider ? `<p><strong>Warranty Provider:</strong> ${vehicle.warranty_provider}</p>` : ''}
         </div>
+        ${vehicle.components && vehicle.components.length > 0 ? `
+            <div class="form-section">
+                <h5><i class="fas fa-cogs"></i> Components</h5>
+                <div class="components-list">
+                    ${vehicle.components.map(comp => `<span class="component-badge">${comp}</span>`).join('')}
+                </div>
+            </div>
+        ` : ''}
         ${vehicle.notes ? `
             <div class="form-section">
                 <h5><i class="fas fa-sticky-note"></i> Notes</h5>
@@ -1096,34 +1203,76 @@ function viewVehicleDetails(id) {
 function updateVehicleMileage(id) {
     const vehicle = vehicles.find(v => v.id === id);
     if (!vehicle) {
-        Utils.toast('Vehicle not found', 'error');
+        Utils.showToast('Vehicle not found', 'error');
         return;
     }
     
-    const newMileage = prompt(`Update mileage for ${vehicle.vehicle_name} (${vehicle.number_plate})\nCurrent mileage: ${vehicle.current_mileage} km\n\nEnter new mileage:`, vehicle.current_mileage);
-    
-    if (newMileage === null || newMileage === '') return;
-    
-    const mileage = parseInt(newMileage);
-    if (isNaN(mileage) || mileage < vehicle.current_mileage) {
-        Utils.toast('Invalid mileage. New mileage must be greater than current mileage.', 'error');
-        return;
-    }
-    
-    updateMileageAPI(id, mileage);
+    const modal = createMileageUpdateModal(vehicle);
+    document.body.appendChild(modal);
+    modal.classList.add('active');
 }
 
-async function updateMileageAPI(id, mileage) {
+function createMileageUpdateModal(vehicle) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'updateMileageModal';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4><i class="fas fa-tachometer-alt"></i> Update Vehicle Mileage</h4>
+                <button class="btn-close" onclick="closeModal('updateMileageModal')">&times;</button>
+            </div>
+            <form id="updateMileageForm" onsubmit="handleMileageUpdate(event, ${vehicle.id})">
+                <div class="form-section">
+                    <div class="vehicle-info-card">
+                        <h5><i class="fas fa-car"></i> ${vehicle.vehicle_name}</h5>
+                        <p><strong>Number Plate:</strong> ${vehicle.number_plate}</p>
+                        <p><strong>Current Mileage:</strong> <span class="highlight">${vehicle.current_mileage} km</span></p>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <div class="form-group">
+                        <label class="form-label">New Mileage (km) *</label>
+                        <input type="number" 
+                               class="form-input" 
+                               id="newMileage" 
+                               min="${vehicle.current_mileage}" 
+                               value="${vehicle.current_mileage}" 
+                               required>
+                        <small class="form-help">Mileage must be greater than or equal to current mileage (${vehicle.current_mileage} km)</small>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Update Mileage
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('updateMileageModal')">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </form>
+        </div>
+    `;
+    
+    return modal;
+}
+
+async function handleMileageUpdate(e, vehicleId) {
+    e.preventDefault();
+    
     try {
-        const response = await API.put(`/vehicles/${id}/mileage`, { mileage });
+        const mileage = parseInt(document.getElementById('newMileage').value);
+        const response = await API.patch(`/vehicles/${vehicleId}/mileage`, { mileage });
         
         if (response.status === 'success') {
-            Utils.toast('Mileage updated successfully!', 'success');
+            Utils.showToast('Mileage updated successfully!', 'success');
+            closeModal('updateMileageModal');
             await loadVehicles();
         }
     } catch (error) {
         console.error('Failed to update mileage:', error);
-        Utils.toast(error.message || 'Failed to update mileage', 'error');
+        Utils.showToast(error.message || 'Failed to update mileage', 'error');
     }
 }
 
@@ -1184,43 +1333,197 @@ function closeModal(modalId) {
 }
 
 function logout() {
-    if (confirm('Are you sure you want to logout?')) {
-        Auth.logout();
+    createConfirmationDialog(
+        'Confirm Logout',
+        'Are you sure you want to logout? Any unsaved changes will be lost.',
+        () => {
+            Auth.logout();
+        },
+        'warning'
+    );
+}
+
+// ==================== DROPDOWN MENU FUNCTIONS ====================
+
+function toggleDropdown(event, dropdownId) {
+    event.stopPropagation();
+    
+    // Close all other dropdowns first
+    closeAllDropdowns();
+    
+    // Toggle the clicked dropdown
+    const dropdown = document.getElementById(`dropdown-${dropdownId}`);
+    if (dropdown) {
+        dropdown.classList.toggle('active');
+    }
+}
+
+function closeAllDropdowns() {
+    document.querySelectorAll('.dropdown-menu').forEach(dropdown => {
+        dropdown.classList.remove('active');
+    });
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', (event) => {
+    if (!event.target.closest('.dropdown-container')) {
+        closeAllDropdowns();
+    }
+});
+
+// ==================== CONFIRMATION DIALOG FUNCTIONS ====================
+
+function createConfirmationDialog(title, message, onConfirm, type = 'danger') {
+    const modal = document.createElement('div');
+    modal.className = 'modal confirmation-modal';
+    modal.id = 'confirmationModal';
+    
+    modal.innerHTML = `
+        <div class="modal-content confirmation-content">
+            <div class="confirmation-header ${type}">
+                <i class="fas fa-${type === 'danger' ? 'exclamation-triangle' : 'question-circle'}"></i>
+                <h4>${title}</h4>
+            </div>
+            <div class="confirmation-body">
+                <p>${message}</p>
+            </div>
+            <div class="confirmation-actions">
+                <button class="btn btn-secondary" onclick="closeConfirmation()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="btn btn-${type}" onclick="confirmAction()">
+                    <i class="fas fa-check"></i> Confirm
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Store the confirmation action
+    window.pendingConfirmAction = onConfirm;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('active'), 10);
+}
+
+function closeConfirmation() {
+    const modal = document.getElementById('confirmationModal');
+    if (modal) {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    }
+    window.pendingConfirmAction = null;
+}
+
+async function confirmAction() {
+    if (window.pendingConfirmAction) {
+        await window.pendingConfirmAction();
+        closeConfirmation();
+    }
+}
+
+// ==================== DELETE CONFIRMATION ====================
+
+function confirmDelete(id, type, name) {
+    closeAllDropdowns();
+    createConfirmationDialog(
+        'Confirm Deletion',
+        `Are you sure you want to delete <strong>${name}</strong>?<br><br>This action cannot be undone.`,
+        async () => {
+            if (type === 'machine') {
+                await deleteMachine(id);
+            } else if (type === 'vehicle') {
+                await deleteVehicle(id);
+            }
+        },
+        'danger'
+    );
+}
+
+// ==================== AUCTION FUNCTIONS ====================
+
+function markForAuction(id, type) {
+    closeAllDropdowns();
+    const itemName = type === 'machine' 
+        ? machines.find(m => m.id === id)?.machine_name 
+        : vehicles.find(v => v.id === id)?.vehicle_name;
+    
+    createConfirmationDialog(
+        'Mark for Auction',
+        `Are you sure you want to mark <strong>${itemName}</strong> for auction?<br><br>This will change the status to "For Auction".`,
+        async () => {
+            await updateItemStatus(id, type, 'For Auction');
+        },
+        'warning'
+    );
+}
+
+async function removeFromAuction(id, type) {
+    closeAllDropdowns();
+    const itemName = type === 'machine' 
+        ? machines.find(m => m.id === id)?.machine_name 
+        : vehicles.find(v => v.id === id)?.vehicle_name;
+    
+    createConfirmationDialog(
+        'Remove from Auction',
+        `Do you want to remove <strong>${itemName}</strong> from auction?<br><br>The status will be changed to "Active".`,
+        async () => {
+            await updateItemStatus(id, type, 'Active');
+        },
+        'primary'
+    );
+}
+
+async function updateItemStatus(id, type, status) {
+    try {
+        const endpoint = type === 'machine' ? `/machines/${id}` : `/vehicles/${id}`;
+        const response = await API.put(endpoint, { status });
+        
+        if (response.status === 'success') {
+            Utils.showToast(`Status updated to "${status}" successfully!`, 'success');
+            if (type === 'machine') {
+                await loadMachines();
+            } else {
+                await loadVehicles();
+            }
+        }
+    } catch (error) {
+        console.error('Failed to update status:', error);
+        Utils.showToast(error.message || 'Failed to update status', 'error');
     }
 }
 
 // ==================== PLACEHOLDER FUNCTIONS ====================
 
 function openAddPartModal() {
-    Utils.toast('Spare parts management coming soon!', 'info');
+    Utils.showToast('Spare parts management coming soon!', 'info');
 }
 
 function bulkImportParts() {
-    Utils.toast('Bulk import feature coming soon!', 'info');
+    Utils.showToast('Bulk import feature coming soon!', 'info');
 }
 
 function exportCatalog() {
-    Utils.toast('Export feature coming soon!', 'info');
+    Utils.showToast('Export feature coming soon!', 'info');
 }
 
 function filterCatalogByStock(status) {
-    Utils.toast('Catalog filtering coming soon!', 'info');
+    Utils.showToast('Catalog filtering coming soon!', 'info');
 }
 
 function approveAllOrders() {
-    Utils.toast('Order management coming soon!', 'info');
+    Utils.showToast('Order management coming soon!', 'info');
 }
 
 function viewAllApprovedOrders() {
-    Utils.toast('Order management coming soon!', 'info');
+    Utils.showToast('Order management coming soon!', 'info');
 }
 
 function addMachineUsage() {
-    Utils.toast('Usage tracking coming soon!', 'info');
+    Utils.showToast('Usage tracking coming soon!', 'info');
 }
 
 function configureAlerts() {
-    Utils.toast('Alert configuration coming soon!', 'info');
+    Utils.showToast('Alert configuration coming soon!', 'info');
 }
 
 // Close modal when clicking outside or pressing Escape

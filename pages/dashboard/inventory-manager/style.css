@@ -452,11 +452,14 @@ body {
     margin-bottom: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
+    position: relative;
+    z-index: 1;
 }
 
 .inventory-item:hover {
     box-shadow: var(--shadow);
     transform: translateY(-1px);
+    z-index: 10;
 }
 
 .item-details {
@@ -837,4 +840,320 @@ body {
     .checkbox-group {
         grid-template-columns: 1fr;
     }
+}
+/* Components Grid Styling */
+.components-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.component-checkbox {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid var(--stone-200);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.component-checkbox:hover {
+    border-color: var(--royal-blue);
+    background: #f0f7ff;
+}
+
+.component-checkbox input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+.component-checkbox input[type="checkbox"]:checked + span {
+    color: var(--royal-blue);
+    font-weight: 500;
+}
+
+/* Component Badge Styling (for details view) */
+.components-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.component-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    background: var(--stone-200);
+    color: var(--text-700);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.component-badge:before {
+    content: '✓';
+    margin-right: 6px;
+    color: var(--kelly-green);
+    font-weight: bold;
+}
+
+/* Vehicle Info Card (for mileage update modal) */
+.vehicle-info-card {
+    background: var(--stone-100);
+    border-left: 4px solid var(--royal-blue);
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+
+.vehicle-info-card h5 {
+    color: var(--royal-blue);
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+}
+
+.vehicle-info-card p {
+    margin: 8px 0;
+    color: var(--text-700);
+}
+
+.vehicle-info-card .highlight {
+    color: var(--royal-blue);
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+/* Form Help Text */
+.form-help {
+    display: block;
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-style: italic;
+}
+
+/* Modal Header and Close Button */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--stone-200);
+}
+
+.modal-header h4 {
+    margin: 0;
+    color: var(--text-900);
+    font-size: 1.5rem;
+}
+
+.btn-close {
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #fff;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: var(--royal-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    transition: all 0.2s ease;
+    line-height: 1;
+    padding: 0;
+}
+
+.btn-close:hover {
+    background: var(--tang-blue);
+    transform: rotate(90deg);
+}
+
+.btn-close:active {
+    transform: rotate(90deg) scale(0.95);
+}
+
+/* Dropdown Menu Styles */
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-trigger {
+    padding: 8px 12px;
+    min-width: auto;
+}
+
+.dropdown-menu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 5px;
+    background: white;
+    border: 1px solid var(--stone-200);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 200px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+}
+
+.dropdown-menu.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    z-index: 1001;
+}
+
+.dropdown-item {
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-700);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:first-child {
+    border-radius: 8px 8px 0 0;
+}
+
+.dropdown-item:last-child {
+    border-radius: 0 0 8px 8px;
+}
+
+.dropdown-item:hover {
+    background: var(--stone-100);
+    color: var(--royal-blue);
+}
+
+.dropdown-item.danger {
+    color: var(--danger);
+}
+
+.dropdown-item.danger:hover {
+    background: #fee;
+    color: var(--danger);
+}
+
+.dropdown-item i {
+    width: 16px;
+    text-align: center;
+}
+
+/* Confirmation Dialog Styles */
+.confirmation-modal .modal-content {
+    max-width: 450px;
+    padding: 0;
+    overflow: hidden;
+}
+
+.confirmation-header {
+    padding: 25px;
+    background: var(--stone-100);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-bottom: 2px solid var(--stone-200);
+}
+
+.confirmation-header.danger {
+    background: #fee;
+    border-bottom-color: var(--danger);
+}
+
+.confirmation-header.warning {
+    background: #fff7ed;
+    border-bottom-color: var(--warn);
+}
+
+.confirmation-header.primary {
+    background: #f0f7ff;
+    border-bottom-color: var(--royal-blue);
+}
+
+.confirmation-header i {
+    font-size: 2rem;
+}
+
+.confirmation-header.danger i {
+    color: var(--danger);
+}
+
+.confirmation-header.warning i {
+    color: var(--warn);
+}
+
+.confirmation-header.primary i {
+    color: var(--royal-blue);
+}
+
+.confirmation-header h4 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--text-900);
+}
+
+.confirmation-body {
+    padding: 25px;
+}
+
+.confirmation-body p {
+    margin: 0;
+    line-height: 1.6;
+    color: var(--text-700);
+}
+
+.confirmation-actions {
+    padding: 20px 25px;
+    background: var(--stone-100);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid var(--stone-200);
+}
+
+.confirmation-actions .btn {
+    min-width: 100px;
+}
+
+/* Status Badge for Auction */
+.status-auction {
+    background: #fff7ed;
+    color: var(--warn);
+    border: 1px solid var(--warn);
+}
+
+/* Adjust action buttons to be more compact */
+.item-actions .action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-small {
+    font-size: 0.75rem;
+    padding: 8px 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
 }

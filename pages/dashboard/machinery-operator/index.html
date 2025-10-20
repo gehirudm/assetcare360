@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Machinery Operator Dashboard - AssetCare360</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="header-title">
+                <i class="fas fa-cogs"></i> Machinery Operator Dashboard
+            </h1>
+            <div class="header-user">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span id="userName">Machine Operator</span>
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="main-wrapper">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <h2>Operator Portal</h2>
+                <nav>
+                    <div class="nav-item active" data-section="dashboard">
+                        <span class="nav-icon"><i class="fas fa-chart-line"></i></span>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="nav-item" data-section="fault-reporting">
+                        <span class="nav-icon"><i class="fas fa-exclamation-triangle"></i></span>
+                        <span>Fault Reporting</span>
+                    </div>
+                    <div class="nav-item" data-section="condition-updates">
+                        <span class="nav-icon"><i class="fas fa-clipboard-check"></i></span>
+                        <span>Condition Updates</span>
+                    </div>
+                    <div class="nav-item" data-section="ticket-tracking">
+                        <span class="nav-icon"><i class="fas fa-ticket-alt"></i></span>
+                        <span>Ticket Tracking</span>
+                    </div>
+                    <div class="nav-item" data-section="notifications">
+                        <span class="nav-icon"><i class="fas fa-bell"></i></span>
+                        <span>Notifications</span>
+                    </div>
+                </nav>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Dashboard Section -->
+                <section class="content-section active" id="dashboard">
+                    <div class="page-header">
+                        <h1 class="page-title">Dashboard</h1>
+                        <p class="page-subtitle">Machinery Operations Overview</p>
+                    </div>
+
+                    <div class="grid">
+                        <div class="summary-card">
+                            <div class="summary-title"><i class="fas fa-tasks"></i> Today's Activity</div>
+                            <div class="summary-content">
+                                <i class="fas fa-cog"></i> Assigned Machines: <strong>3</strong><br>
+                                <i class="fas fa-play-circle"></i> Active Operations: <strong>2</strong><br>
+                                <i class="fas fa-file-alt"></i> Reports Submitted: <strong>1</strong><br>
+                                <i class="fas fa-clock"></i> Pending Approvals: <strong>2</strong>
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-title"><i class="fas fa-info-circle"></i> Machine Status</div>
+                            <div class="summary-content">
+                                <i class="fas fa-check-circle"></i> Operational: <strong>2</strong><br>
+                                <i class="fas fa-wrench"></i> Under Maintenance: <strong>1</strong><br>
+                                <i class="fas fa-calendar-alt"></i> Service Due: <strong>1</strong><br>
+                                <i class="fas fa-hourglass-half"></i> Total Hours Today: <strong>16.5h</strong>
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-title"><i class="fas fa-list-ul"></i> Pending Actions</div>
+                            <div class="summary-content">
+                                <i class="fas fa-ticket-alt"></i> Open Tickets: <strong>1</strong><br>
+                                <i class="fas fa-clipboard-list"></i> Condition Updates: <strong>1</strong><br>
+                                <i class="fas fa-bell"></i> Service Reminders: <strong>1</strong><br>
+                                <i class="fas fa-envelope"></i> Notifications: <strong>3</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-bolt"></i> Quick Actions</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn btn-primary" onclick="navigateTo('fault-reporting')">
+                                <i class="fas fa-exclamation-triangle"></i> Report Fault
+                            </button>
+                            <button class="btn btn-primary" onclick="navigateTo('condition-updates')">
+                                <i class="fas fa-clipboard-check"></i> Update Condition
+                            </button>
+                            <button class="btn btn-primary" onclick="navigateTo('ticket-tracking')">
+                                <i class="fas fa-ticket-alt"></i> Track Tickets
+                            </button>
+                            <button class="btn btn-secondary" onclick="navigateTo('notifications')">
+                                <i class="fas fa-bell"></i> View Notifications
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-cogs"></i> Assigned Machines</span>
+                        </div>
+                        <div id="assignedMachines">
+                            <!-- Machines will be loaded here -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Fault Reporting Section -->
+                <section class="content-section" id="fault-reporting">
+                    <div class="page-header">
+                        <h1 class="page-title">Fault Reporting</h1>
+                        <p class="page-subtitle">Submit machine fault tickets with details and photos</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="openModal('reportFaultModal')">
+                            <i class="fas fa-plus"></i> Report New Fault
+                        </button>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterFaults('all')">All Reports</button>
+                        <button class="filter-btn" onclick="filterFaults('pending')">Pending</button>
+                        <button class="filter-btn" onclick="filterFaults('approved')">Approved</button>
+                        <button class="filter-btn" onclick="filterFaults('in-progress')">In Progress</button>
+                        <button class="filter-btn" onclick="filterFaults('resolved')">Resolved</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-clipboard-list"></i> My Fault Reports</span>
+                            <span class="status-badge status-in-progress">1 pending, 1 in progress</span>
+                        </div>
+                        <div id="faultsContainer">
+                            <!-- Faults will be loaded here -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Condition Updates Section -->
+                <section class="content-section" id="condition-updates">
+                    <div class="page-header">
+                        <h1 class="page-title">Condition Updates</h1>
+                        <p class="page-subtitle">Enter usage hours and observed conditions</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="openModal('conditionUpdateModal')">
+                            <i class="fas fa-plus"></i> Submit Condition Update
+                        </button>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterUpdates('all')">All Updates</button>
+                        <button class="filter-btn" onclick="filterUpdates('pending')">Pending</button>
+                        <button class="filter-btn" onclick="filterUpdates('approved')">Reviewed</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-edit"></i> Recent Condition Updates</span>
+                            <span class="status-badge status-pending">1 pending review</span>
+                        </div>
+                        <div id="updatesContainer">
+                            <!-- Updates will be loaded here -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Ticket Tracking Section -->
+                <section class="content-section" id="ticket-tracking">
+                    <div class="page-header">
+                        <h1 class="page-title">Ticket Tracking</h1>
+                        <p class="page-subtitle">Track the lifecycle of your submitted tickets</p>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterTickets('all')">All Tickets</button>
+                        <button class="filter-btn" onclick="filterTickets('pending')">Pending</button>
+                        <button class="filter-btn" onclick="filterTickets('in-progress')">In Progress</button>
+                        <button class="filter-btn" onclick="filterTickets('resolved')">Resolved</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-ticket-alt"></i> Active Tickets</span>
+                            <span class="status-badge status-in-progress">1 pending, 1 active</span>
+                        </div>
+                        <div id="ticketsContainer">
+                            <!-- Tickets will be loaded here -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Notifications Section -->
+                <section class="content-section" id="notifications">
+                    <div class="page-header">
+                        <h1 class="page-title">Notifications</h1>
+                        <p class="page-subtitle">Supervisor approvals and repair updates</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-bell"></i> Recent Notifications</div>
+                        <div id="notificationsContainer">
+                            <!-- Notifications will be loaded here -->
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Report Fault Modal -->
+    <div id="reportFaultModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> Report Machine Fault</h2>
+                <button class="btn-close" onclick="closeModal('reportFaultModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="reportFaultForm">
+                <div class="form-section">
+                    <h5><i class="fas fa-tools"></i> Fault Information</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Machine</label>
+                            <select class="form-select" id="faultMachine" required>
+                                <option value="">Select Machine</option>
+                                <option value="EXC-045">Excavator #045</option>
+                                <option value="TRK-203">Truck #203</option>
+                                <option value="LOD-128">Loader #128</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fault Category</label>
+                            <select class="form-select" id="faultCategory" required>
+                                <option value="">Select Category</option>
+                                <option value="Engine System">Engine System</option>
+                                <option value="Hydraulic System">Hydraulic System</option>
+                                <option value="Electrical System">Electrical System</option>
+                                <option value="Brake System">Brake System</option>
+                                <option value="Transmission">Transmission</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fault Description</label>
+                        <textarea class="form-textarea" id="faultDescription" required placeholder="Describe the fault in detail..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Priority Level</label>
+                        <select class="form-select" id="faultPriority" required>
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Current Location</label>
+                            <input type="text" class="form-input" id="faultLocation" required placeholder="e.g., Site A - Zone 3">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Current Hours</label>
+                            <input type="number" class="form-input" id="faultHours" required placeholder="e.g., 1847">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h5><i class="fas fa-camera"></i> Photo Documentation</h5>
+                    <div class="photo-upload" onclick="document.getElementById('faultPhotos').click()">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--royal-blue);"></i>
+                        <p>Click to upload photos</p>
+                        <input type="file" id="faultPhotos" accept="image/*" multiple style="display: none;">
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Submit Fault Report
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('reportFaultModal')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Condition Update Modal -->
+    <div id="conditionUpdateModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-clipboard-check"></i> Machine Condition Update</h2>
+                <button class="btn-close" onclick="closeModal('conditionUpdateModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="conditionUpdateForm">
+                <div class="form-section">
+                    <h5><i class="fas fa-cogs"></i> Machine Information</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Machine</label>
+                            <select class="form-select" id="updateMachine" required>
+                                <option value="">Select Machine</option>
+                                <option value="EXC-045">Excavator #045</option>
+                                <option value="TRK-203">Truck #203</option>
+                                <option value="LOD-128">Loader #128</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Current Hours</label>
+                            <input type="number" class="form-input" id="updateHours" required placeholder="e.g., 1847">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Overall Condition</label>
+                        <select class="form-select" id="updateCondition" required>
+                            <option value="">Select Condition</option>
+                            <option value="Excellent">Excellent</option>
+                            <option value="Good">Good</option>
+                            <option value="Fair">Fair</option>
+                            <option value="Poor">Poor</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-clipboard-list"></i> System Status</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Engine Performance</label>
+                            <select class="form-select" id="updateEngine" required>
+                                <option value="Normal operation">Normal operation</option>
+                                <option value="Minor issues observed">Minor issues observed</option>
+                                <option value="Significant issues">Significant issues</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Hydraulic System</label>
+                            <select class="form-select" id="updateHydraulic" required>
+                                <option value="Normal operation">Normal operation</option>
+                                <option value="Minor issues observed">Minor issues observed</option>
+                                <option value="Significant issues">Significant issues</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Detailed Observations</label>
+                        <textarea class="form-textarea" id="updateObservations" required placeholder="Describe any unusual sounds, vibrations, or performance issues..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Maintenance Recommendations</label>
+                        <textarea class="form-textarea" id="updateRecommendations" placeholder="Suggest any maintenance actions needed..."></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check"></i> Submit Update
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('conditionUpdateModal')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Scripts -->
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/config.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/dashboard-init.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
