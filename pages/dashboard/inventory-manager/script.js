@@ -2,30 +2,28 @@
 
 document.addEventListener('DOMContentLoaded', async function() {
     try {
-        // Check authentication first
-        const user = await Auth.checkAuth();
-        
-        if (!user) {
-            // Not authenticated, redirect to login
-            window.location.href = '/auth/login.html';
-            return;
-        }
-        
-        // Check if user has Inventory Manager role
-        if (user.role !== 'Inventory Manager' && user.role !== 'Admin') {
-            Utils.showToast('Access denied. Insufficient privileges.', 'error');
-            setTimeout(() => {
-                // Redirect to their appropriate dashboard
-                Auth.redirectToDashboard(user);
-            }, 2000);
-            return;
-        }
-        
-        // Store current user
-        currentUser = user;
-        
-        // Initialize the application
-        await initializeApp();
+        // Check authentication and authorization using DashboardInit
+        const user = await DashboardInit.init(['Inventory Manager', 'Admin'], {
+            updateUserDisplay: true,
+            onSuccess: async (user) => {
+                // Store current user
+                currentUser = user;
+                
+                // Update specific user info elements for this dashboard
+                const userNameElement = document.getElementById('userName');
+                const userRoleElement = document.getElementById('userRole');
+                
+                if (userNameElement) {
+                    userNameElement.textContent = user.full_name || 'Inventory Manager';
+                }
+                if (userRoleElement) {
+                    userRoleElement.textContent = user.role || 'Inventory Manager';
+                }
+                
+                // Initialize the application
+                await initializeApp();
+            }
+        });
     } catch (error) {
         console.error('Authentication error:', error);
         window.location.href = '/auth/login.html';

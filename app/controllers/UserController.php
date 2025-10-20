@@ -60,8 +60,7 @@ class UserController {
     public function show() {
         RoleMiddleware::requireRole('Admin');
         
-        // Get user ID from URL (you'll need to implement URL parameter extraction)
-        // For now, we'll get it from query parameter
+        // Get user ID from URL parameter (set by router)
         $userId = $_GET['id'] ?? null;
         
         if (!$userId) {

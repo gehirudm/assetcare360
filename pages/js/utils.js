@@ -150,5 +150,64 @@ const Utils = {
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    },
+
+    /**
+     * Clear all validation errors in a form
+     */
+    clearFormErrors(formElement) {
+        // Remove all existing error messages
+        const errorElements = formElement.querySelectorAll('.field-error');
+        errorElements.forEach(el => el.remove());
+        
+        // Remove error styling from inputs
+        const inputs = formElement.querySelectorAll('.form-input.error, .form-select.error');
+        inputs.forEach(input => input.classList.remove('error'));
+    },
+
+    /**
+     * Show validation errors in a form
+     * @param {HTMLFormElement} formElement - The form element
+     * @param {Object} errors - Object with field names as keys and error messages as values
+     */
+    showFormErrors(formElement, errors) {
+        // Clear existing errors first
+        this.clearFormErrors(formElement);
+        
+        // Show new errors
+        Object.keys(errors).forEach(fieldName => {
+            const errorMessage = errors[fieldName];
+            
+            // Map backend field names to form field names if needed
+            const fieldMap = {
+                'phone': 'phone_number' // Backend uses 'phone', form uses 'phone_number'
+            };
+            const formFieldName = fieldMap[fieldName] || fieldName;
+            
+            // Find the input field
+            const input = formElement.querySelector(`[name="${formFieldName}"]`);
+            
+            if (input) {
+                // Add error class to input
+                input.classList.add('error');
+                
+                // Create and insert error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'field-error';
+                errorDiv.textContent = errorMessage;
+                errorDiv.style.color = '#d93025';
+                errorDiv.style.fontSize = '12px';
+                errorDiv.style.marginTop = '4px';
+                
+                // Insert after the input's parent (form-group)
+                const formGroup = input.closest('.form-group');
+                
+                if (formGroup) {
+                    formGroup.appendChild(errorDiv);
+                } else {
+                    input.parentNode.insertBefore(errorDiv, input.nextSibling);
+                }
+            }
+        });
     }
 };

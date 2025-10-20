@@ -42,8 +42,12 @@ const API = {
                 throw new Error(data.message || 'Unauthorized');
             }
             
+            // For validation errors (422) or other errors, return the data object
+            // which includes status, message, and errors fields
             if (!response.ok) {
-                throw new Error(data.message || 'Request failed');
+                // Return the error response data instead of throwing
+                // This allows us to access validation errors
+                return data;
             }
             
             return data;

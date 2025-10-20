@@ -511,6 +511,110 @@ GET /api/logs/stats?period=today
 GET /api/logs/export?period=week&category=Authentication
 ```
 
+## User Management (Admin Only)
+
+The system includes comprehensive user management functionality accessible through the System Administration dashboard.
+
+### Features
+
+#### Create User
+- Generate unique employee IDs
+- Assign roles: Admin, Inventory Manager, Machinery Operator, Driver, Supervisor
+- Set department and contact information
+- Auto-generate temporary passwords
+- Force password change on first login
+- Send welcome emails with credentials
+
+#### Update User
+- Modify user information (name, email, phone, role, department)
+- Employee ID cannot be changed after creation
+- All changes are tracked in system logs
+
+#### Suspend/Activate User
+- **Suspend**: Deactivates user account (sets `is_active = 0`)
+- **Activate**: Reactivates suspended account (sets `is_active = 1`)
+- Suspended users cannot login (checked during authentication)
+- Status shown with visual badges (Active/Inactive)
+
+#### Reset Password
+- Generate new temporary password
+- Automatically sets `force_password_change = 1`
+- User must change password on next login
+- Password displayed to admin for secure sharing
+
+#### Delete User
+- **Note**: Delete performs soft delete (deactivates account)
+- User data is retained for audit purposes
+- Cannot be undone (deactivated permanently)
+
+### API Endpoints
+
+```bash
+# List all users with filtering
+GET /api/users?role=Admin&status=active&search=john&page=1&limit=20
+
+# Get specific user
+GET /api/users/{id}
+
+# Create new user
+POST /api/users
+{
+  "employee_id": "EMP-020",
+  "full_name": "John Doe",
+  "email": "john@company.com",
+  "phone": "+94771234567",
+  "role": "Inventory Manager",
+  "department": "Warehouse",
+  "force_password_change": 1,
+  "send_welcome_email": false
+}
+
+# Update user
+PUT /api/users/{id}
+{
+  "full_name": "John Smith",
+  "email": "john.smith@company.com",
+  "role": "Supervisor"
+}
+
+# Suspend user
+POST /api/users/{id}/deactivate
+
+# Activate user
+POST /api/users/{id}/activate
+
+# Reset password
+POST /api/users/{id}/reset-password
+
+# Delete user (soft delete)
+DELETE /api/users/{id}
+
+# Get user statistics
+GET /api/users/stats
+```
+
+### Authentication with Account Status
+
+When a user attempts to login, the system checks:
+1. Valid credentials (employee ID + password)
+2. **Account status** (`is_active` must be `1`)
+3. Password change requirement (`force_password_change` flag)
+
+Suspended users receive: `"Your account has been deactivated. Please contact administrator."`
+
+### User Statistics
+
+The dashboard displays:
+- Total users
+- Active users count
+- Inactive users count
+- Users by role breakdown
+- Recent user activity
+
+### Access Control
+
+All user management endpoints require **Admin role**. Enforced by `RoleMiddleware::requireRole('Admin')`.
+
 ## Development Tips
 
 1. **Adding new routes**: Edit `public/index.php` and add routes using the router
