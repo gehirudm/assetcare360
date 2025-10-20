@@ -4,11 +4,19 @@ A PHP-based backend for an inventory management system with role-based access co
 
 ## Features
 
-✅ **Auto Table Creation** - Database tables are automatically created from PHP model definitions  
-✅ **Role-Based Access Control** - Easy-to-configure user roles with API restrictions  
-✅ **Automatic Request Logging** - All API requests are logged with user information  
-✅ **JWT Authentication** - Secure token-based authentication  
-✅ **Clean Architecture** - Models for database operations, Services for business logic, Controllers for endpoints  
+- ✅ JWT-based authentication with HTTP-only cookies
+- ✅ Role-based access control (RBAC) with 5 user roles
+- ✅ Automatic API request logging with categorization
+- ✅ Advanced log viewing and analytics (Admin only)
+- ✅ Endpoint registry for action mapping
+- ✅ Cookie-based session management
+- ✅ User management with CRUD operations
+- ✅ Password management with force change flag
+- ✅ User filtering and search capabilities
+- ✅ Database auto-table creation from models
+- ✅ Secure password hashing
+- ✅ CORS support
+- ✅ CSV export functionality for logs  
 
 ## Project Structure
 
@@ -44,11 +52,20 @@ assetcare-backend-new/
 ## User Roles
 
 The system supports the following roles (in order of hierarchy):
-1. **Admin** - Full system access
+1. **Admin** - Full system access including user management and system logs
 2. **Inventory Manager** - Manage inventory operations
 3. **Supervisor** - Supervise operations
 4. **Driver** - Driver-specific access
-5. **Machinary Operator** - Equipment operation access
+5. **Machinary Operator** - Equipment-specific access
+
+## Documentation
+
+- **[API Quick Reference](docs/API_REFERENCE.md)** - Quick overview of all endpoints
+- **[System Logging Guide](docs/LOGGING.md)** - Complete logging system documentation
+- **[Testing Guide](docs/TESTING_LOGS.md)** - How to test the logging features
+- **[Architecture Overview](docs/ARCHITECTURE_LOGS.md)** - System architecture diagrams
+- **[Change Log](docs/CHANGELOG_LOGS.md)** - Recent changes and implementation details
+- **[OpenAPI Specification](testing/openapi.yaml)** - Full API specification
 
 ## Setup Instructions
 
@@ -264,17 +281,70 @@ RoleMiddleware::requireRole(['Admin', 'Inventory Manager']); // Multiple roles
 RoleMiddleware::requireMinRole('Supervisor'); // Supervisor and above
 ```
 
-## Request Logging
+## System Logging & Analytics
+
+### Automatic Request Logging
 
 All API requests are automatically logged to the `api_request_logs` table with:
 - User ID and Employee ID
 - HTTP Method and Endpoint
+- Action and Category (from endpoint registry)
 - Request Body (with sensitive data redacted)
 - Response Code
 - IP Address and User Agent
 - Timestamp
 
 No code changes needed - it's automatic!
+
+### Endpoint Registry
+
+The system maintains a registry of all endpoints mapping them to:
+- **Action**: Human-readable description (e.g., "Create User", "User Login")
+- **Category**: Logical grouping (e.g., "Authentication", "User Management", "Inventory Management")
+- **Description**: Detailed explanation of what the endpoint does
+
+This allows logs to be intelligently categorized and searched.
+
+### Log Viewing Features (Admin Only)
+
+Admins can view and analyze system logs with powerful filtering:
+
+**Filter Options:**
+- **By Category**: Authentication, User Management, System Administration, etc.
+- **By Time Period**: Today, Past Week, Past Month, Past Year, All Time
+- **By Keyword**: Search across actions, endpoints, employee IDs, user names
+- **By User**: View all activities of a specific user
+- **By Response Code**: Filter by HTTP status codes (200, 401, 404, etc.)
+- **By Method**: Filter by HTTP method (GET, POST, PUT, DELETE)
+
+**Analytics Features:**
+- **Statistics**: Total requests, requests by category, method, response code
+- **Top Users**: Most active users by request count
+- **Top Actions**: Most frequently performed actions
+- **Error Rate**: Percentage of failed requests
+- **Activity Timeline**: Hourly breakdown of system activity
+- **User Activity Summary**: Per-user statistics and activity breakdown
+
+**Export:**
+- Download logs as CSV for external analysis (max 1000 records per export)
+
+**Example Queries:**
+```bash
+# Get all user management logs from the past week
+GET /api/logs?category=User%20Management&period=week
+
+# Search for "admin" activities
+GET /api/logs?keyword=admin
+
+# Get user activity for user ID 5
+GET /api/logs/user/5?period=month
+
+# Get statistics for today
+GET /api/logs/stats?period=today
+
+# Export logs as CSV
+GET /api/logs/export?period=week&category=Authentication
+```
 
 ## Development Tips
 

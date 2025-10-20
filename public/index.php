@@ -37,6 +37,7 @@ require_once __DIR__ . '/../app/Router.php';
 // Load controllers
 require_once __DIR__ . '/../app/controllers/AuthController.php';
 require_once __DIR__ . '/../app/controllers/UserController.php';
+require_once __DIR__ . '/../app/controllers/LogController.php';
 
 // Initialize request logger
 $requestLogger = new RequestLogger();
@@ -62,6 +63,16 @@ $router->delete('/users/:id', 'UserController', 'delete');
 $router->post('/users/:id/activate', 'UserController', 'activate');
 $router->post('/users/:id/deactivate', 'UserController', 'deactivate');
 $router->post('/users/:id/reset-password', 'UserController', 'resetPassword');
+
+// System logs routes (Admin only)
+$router->get('/logs/stats', 'LogController', 'stats');
+$router->get('/logs/categories', 'LogController', 'categories');
+$router->get('/logs/registry', 'LogController', 'registry');
+$router->get('/logs/timeline', 'LogController', 'timeline');
+$router->get('/logs/export', 'LogController', 'export');
+$router->get('/logs/user/:id/summary', 'LogController', 'getUserActivitySummary');
+$router->get('/logs/user/:id', 'LogController', 'getUserLogs');
+$router->get('/logs', 'LogController', 'index');
 
 // Dispatch the request
 try {
