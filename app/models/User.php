@@ -26,10 +26,18 @@ class User extends BaseModel {
             'force_password_change' => 'TINYINT(1) DEFAULT 0',
             'last_login' => 'TIMESTAMP NULL',
             'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
-            'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
-            'INDEX idx_role' => '(role)',
-            'INDEX idx_active' => '(is_active)',
-            'INDEX idx_department' => '(department)'
+            'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
+        ];
+    }
+    
+    /**
+     * Get additional indexes for the table
+     */
+    protected function getIndexes() {
+        return [
+            'idx_role' => 'role',
+            'idx_active' => 'is_active',
+            'idx_department' => 'department'
         ];
     }
     

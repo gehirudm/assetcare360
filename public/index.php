@@ -5,6 +5,9 @@
  * All API requests are routed through this file
  */
 
+// Load configuration first
+require_once __DIR__ . '/../config/config.php';
+
 // Set headers
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: ' . (CORS_ENABLED ? CORS_ORIGIN : '*'));
@@ -18,8 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// Load configuration
-require_once __DIR__ . '/../config/config.php';
+// Load database
 require_once __DIR__ . '/../config/Database.php';
 
 // Load helpers

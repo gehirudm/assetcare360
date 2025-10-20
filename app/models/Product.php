@@ -32,10 +32,18 @@ class Product extends BaseModel {
             'created_by' => 'INT NULL',
             'updated_by' => 'INT NULL',
             'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
-            'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
-            'INDEX idx_sku' => '(sku)',
-            'INDEX idx_category' => '(category)',
-            'INDEX idx_active' => '(is_active)'
+            'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
+        ];
+    }
+    
+    /**
+     * Get additional indexes for the table
+     */
+    protected function getIndexes() {
+        return [
+            'idx_category' => 'category',
+            'idx_active' => 'is_active',
+            'idx_reorder' => 'quantity, reorder_level'
         ];
     }
     

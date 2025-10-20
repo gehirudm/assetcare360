@@ -72,16 +72,14 @@ The system supports the following roles (in order of hierarchy):
 ### Prerequisites
 - PHP 7.4 or higher
 - MySQL 5.7 or higher
-- Apache with mod_rewrite enabled
+- Apache with mod_rewrite enabled (for production)
+- PDO MySQL extension
 
-### Installation
+### Quick Setup (Automated)
 
-1. **Clone or navigate to the project directory**
-   ```bash
-   cd /Users/gehirudm/Programming/AssetCare360/assetcare-backend-new
-   ```
+The easiest way to set up the project is using the automated setup script:
 
-2. **Configure database connection**
+1. **Configure database credentials**
    
    Edit `config/config.php` and update the database credentials:
    ```php
@@ -91,21 +89,54 @@ The system supports the following roles (in order of hierarchy):
    define('DB_PASS', '');
    ```
 
-3. **Create the database**
+2. **Run the setup script**
+   ```bash
+   php setup.php
+   ```
+   
+   The script will:
+   - ✅ Check PHP version and required extensions
+   - ✅ Create the database automatically
+   - ✅ Create the logs directory
+   - ✅ Initialize all database tables
+   - ✅ Seed test users
+   - ✅ Test the database connection
+
+3. **Start the development server**
+   ```bash
+   cd public
+   php -S localhost:8000
+   ```
+
+4. **Access the API**
+   
+   Open your browser or API client to: `http://localhost:8000/api`
+
+### Manual Setup (Alternative)
+
+If you prefer to set up manually:
+
+1. **Create the database**
    ```sql
    CREATE DATABASE assetcare360;
    ```
 
-4. **Seed the database with test users**
+2. **Seed the database with test users**
    ```bash
    php scripts/seed.php
    ```
 
-5. **Configure your web server**
+3. **Create logs directory**
+   ```bash
+   mkdir -p logs
+   chmod 755 logs
+   ```
+
+4. **Configure your web server**
    
    Point your document root to the `public` folder or ensure `.htaccess` is working.
 
-6. **Start your server**
+5. **Start your server**
    
    For local development with PHP built-in server:
    ```bash

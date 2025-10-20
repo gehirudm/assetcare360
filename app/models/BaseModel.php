@@ -27,6 +27,19 @@ abstract class BaseModel {
     abstract protected function getSchema();
     
     /**
+     * Define additional indexes (optional)
+     * Override in child classes if needed
+     * Example format:
+     * [
+     *     'idx_name' => 'column_name',
+     *     'idx_multi' => 'column1, column2'
+     * ]
+     */
+    protected function getIndexes() {
+        return [];
+    }
+    
+    /**
      * Automatically create table if it doesn't exist
      */
     protected function createTableIfNotExists() {
@@ -45,8 +58,31 @@ abstract class BaseModel {
         
         try {
             $this->db->exec($sql);
+            
+            // Create indexes if defined
+            $this->createIndexes();
         } catch (PDOException $e) {
             die("Error creating table {$this->table}: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Create additional indexes
+     */
+    protected function createIndexes() {
+        $indexes = $this->getIndexes();
+        if (empty($indexes)) {
+            return;
+        }
+        
+        foreach ($indexes as $indexName => $columns) {
+            $sql = "CREATE INDEX IF NOT EXISTS `{$indexName}` ON `{$this->table}` ($columns)";
+            try {
+                $this->db->exec($sql);
+            } catch (PDOException $e) {
+                // Index might already exist or error in definition, log but don't fail
+                error_log("Error creating index {$indexName} on {$this->table}: " . $e->getMessage());
+            }
         }
     }
     
