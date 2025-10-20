@@ -40,9 +40,15 @@ define('LOG_DIR', __DIR__ . '/../logs');
 
 /**
  * CORS Configuration
+ * When using credentials (cookies), you must specify the exact origin, not '*'
  */
 define('CORS_ENABLED', true);
-define('CORS_ORIGIN', '*');
+define('CORS_ALLOWED_ORIGINS', [
+    'http://localhost:3000',
+    'http://localhost:8080',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:8080'
+]);
 
 /**
  * Error Reporting

@@ -1,0 +1,11 @@
+{
+    "gmail": {
+        "name": "gmail",
+        "host": "smtp.gmail.com",
+        "port": "587",
+        "email": "mail.assetcare360@gmail.com",
+        "username": "mail.assetcare360@gmail.com",
+        "password": "nkas ihjh olho foim",
+        "mechanism": "PLAIN"
+    }
+}

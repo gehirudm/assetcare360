@@ -48,10 +48,16 @@ class AuthController {
     /**
      * Get current user
      * GET /api/auth/me
+     * Returns user info if authenticated, or null if not (doesn't throw 401)
      */
     public function me() {
-        $user = RoleMiddleware::authenticate();
-        Response::success($user);
+        $user = RoleMiddleware::getCurrentUser();
+        
+        if ($user) {
+            Response::success($user, 'User authenticated');
+        } else {
+            Response::success(null, 'No user authenticated');
+        }
     }
     
     /**
@@ -128,6 +134,60 @@ class AuthController {
             Response::success($result['data'], 'Token is valid');
         } else {
             Response::unauthorized($result['message']);
+        }
+    }
+    
+    /**
+     * Forgot password
+     * POST /api/auth/forgot-password
+     */
+    public function forgotPassword() {
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$input) {
+            Response::error('Invalid JSON data', 400);
+        }
+        
+        $employeeId = $input['employee_id'] ?? null;
+        $email = $input['email'] ?? null;
+        
+        if (!$employeeId || !$email) {
+            Response::error('Employee ID and email are required', 400);
+        }
+        
+        $result = $this->authService->forgotPassword($employeeId, $email);
+        
+        if ($result['success']) {
+            Response::success($result, $result['message']);
+        } else {
+            Response::error($result['message'], 400);
+        }
+    }
+    
+    /**
+     * Reset password
+     * POST /api/auth/reset-password
+     */
+    public function resetPassword() {
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$input) {
+            Response::error('Invalid JSON data', 400);
+        }
+        
+        $token = $input['token'] ?? null;
+        $newPassword = $input['new_password'] ?? null;
+        
+        if (!$token || !$newPassword) {
+            Response::error('Token and new password are required', 400);
+        }
+        
+        $result = $this->authService->resetPassword($token, $newPassword);
+        
+        if ($result['success']) {
+            Response::success(null, $result['message']);
+        } else {
+            Response::error($result['message'], 400);
         }
     }
 }

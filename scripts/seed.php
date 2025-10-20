@@ -28,6 +28,15 @@ $testUsers = [
         'phone' => '+94771234567'
     ],
     [
+        'employee_id' => 'LITRO-MAINTMGR-001',
+        'password' => 'password123',
+        'full_name' => 'Maintenance Manager One',
+        'role' => 'Maintenance Manager',
+        'department' => 'Maintenance',
+        'email' => 'maint.manager@assetcare360.com',
+        'phone' => '+94771234577'
+    ],
+    [
         'employee_id' => 'LITRO-INVMGR-001',
         'password' => 'password123',
         'full_name' => 'Inventory Manager One',
@@ -44,6 +53,15 @@ $testUsers = [
         'department' => 'Inventory',
         'email' => 'inv.manager2@assetcare360.com',
         'phone' => '+94771234569'
+    ],
+    [
+        'employee_id' => 'LITRO-TECHOFFICER-001',
+        'password' => 'password123',
+        'full_name' => 'Technical Officer One',
+        'role' => 'Technical Officer',
+        'department' => 'Technical',
+        'email' => 'tech.officer@assetcare360.com',
+        'phone' => '+94771234578'
     ],
     [
         'employee_id' => 'LITRO-SUPERVISOR-001',
@@ -145,9 +163,12 @@ echo "────────────────────────�
 echo "Employee ID: LITRO-ADMIN-001\n";
 echo "Password: password123\n";
 echo "Role: Admin\n";
-echo "\nEmployee ID: LITRO-SUPERVISOR-001\n";
+echo "\nEmployee ID: LITRO-MAINTMGR-001\n";
 echo "Password: password123\n";
-echo "Role: Supervisor\n";
+echo "Role: Maintenance Manager\n";
+echo "\nEmployee ID: LITRO-TECHOFFICER-001\n";
+echo "Password: password123\n";
+echo "Role: Technical Officer\n";
 echo "─────────────────────────────────────────\n\n";
 
 echo "All users use the password: password123\n\n";

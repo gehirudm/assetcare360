@@ -18,12 +18,14 @@ class User extends BaseModel {
             'employee_id' => 'VARCHAR(100) UNIQUE NOT NULL',
             'password' => 'VARCHAR(255) NOT NULL',
             'full_name' => 'VARCHAR(255) NOT NULL',
-            'role' => "ENUM('Admin', 'Inventory Manager', 'Machinary Operator', 'Driver', 'Supervisor') NOT NULL",
+            'role' => "ENUM('Admin', 'Maintenance Manager', 'Inventory Manager', 'Technical Officer', 'Supervisor', 'Machinary Operator', 'Driver') NOT NULL",
             'department' => 'VARCHAR(100) NULL',
             'email' => 'VARCHAR(255) NULL',
             'phone' => 'VARCHAR(20) NULL',
             'is_active' => 'TINYINT(1) DEFAULT 1',
             'force_password_change' => 'TINYINT(1) DEFAULT 0',
+            'password_reset_token' => 'VARCHAR(255) NULL',
+            'password_reset_expires' => 'TIMESTAMP NULL',
             'last_login' => 'TIMESTAMP NULL',
             'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
             'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
@@ -343,5 +345,45 @@ class User extends BaseModel {
         $result = $stmt->fetch();
         
         return $result['count'] > 0;
+    }
+    
+    /**
+     * Store password reset token
+     */
+    public function storePasswordResetToken($userId, $token, $expiresAt) {
+        $sql = "UPDATE `{$this->table}` 
+                SET password_reset_token = ?, 
+                    password_reset_expires = ? 
+                WHERE id = ?";
+        
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([$token, $expiresAt, $userId]);
+    }
+    
+    /**
+     * Find user by password reset token
+     */
+    public function findByPasswordResetToken($token) {
+        $sql = "SELECT * FROM `{$this->table}` 
+                WHERE password_reset_token = ? 
+                AND password_reset_expires > NOW() 
+                AND is_active = 1";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$token]);
+        return $stmt->fetch();
+    }
+    
+    /**
+     * Clear password reset token
+     */
+    public function clearPasswordResetToken($userId) {
+        $sql = "UPDATE `{$this->table}` 
+                SET password_reset_token = NULL, 
+                    password_reset_expires = NULL 
+                WHERE id = ?";
+        
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([$userId]);
     }
 }

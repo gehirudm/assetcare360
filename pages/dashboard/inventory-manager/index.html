@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Manager Dashboard - AssetCare360</title>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="./style.css">
+    
+    <!-- Universal Config and Helper Scripts -->
+    <script src="../../js/config.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/utils.js"></script>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="header-title">Inventory Manager Dashboard</h1>
+            <div class="header-user">
+                <div class="user-info" id="userInfo">
+                    <div class="user-avatar" id="userAvatar">IM</div>
+                    <div>
+                        <div id="userName">Inventory Manager</div>
+                        <div style="font-size: 0.8rem; opacity: 0.8;" id="userRole">Loading...</div>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="main-wrapper">
+            <aside class="sidebar">
+                <h2><i class="fas fa-boxes"></i> Inventory Manager</h2>
+                <nav>
+                    <div class="nav-item active" data-section="dashboard">
+                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="nav-item" data-section="machines">
+                        <i class="nav-icon fas fa-cogs"></i>
+                        <span>Manage Machines</span>
+                    </div>
+                    <div class="nav-item" data-section="vehicles">
+                        <i class="nav-icon fas fa-truck"></i>
+                        <span>Manage Vehicles</span>
+                    </div>
+                    <div class="nav-item" data-section="catalog">
+                        <i class="nav-icon fas fa-list-alt"></i>
+                        <span>Spare Parts Catalog</span>
+                    </div>
+                    <div class="nav-item" data-section="orders-approvals">
+                        <i class="nav-icon fas fa-clipboard-check"></i>
+                        <span>Orders & Approvals</span>
+                    </div>
+                    <div class="nav-item" data-section="usage-tracking">
+                        <i class="nav-icon fas fa-chart-line"></i>
+                        <span>Usage Tracking</span>
+                    </div>
+                    <div class="nav-item" data-section="notifications">
+                        <i class="nav-icon fas fa-bell"></i>
+                        <span>Notifications</span>
+                    </div>
+                </nav>
+            </aside>
+
+            <main class="main-content">
+                <!-- Dashboard Section -->
+                <section class="content-section active" id="dashboard">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-tachometer-alt"></i> Dashboard Overview</h2>
+                        <p class="page-subtitle">Quick overview of inventory status and recent activities</p>
+                    </div>
+
+                    <div class="grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalMachines">-</div>
+                            <div class="stat-label"><i class="fas fa-cogs"></i> Total Machines</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalVehicles">-</div>
+                            <div class="stat-label"><i class="fas fa-truck"></i> Total Vehicles</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="machinesDueService">-</div>
+                            <div class="stat-label"><i class="fas fa-wrench"></i> Machines Due Service</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="vehiclesDueService">-</div>
+                            <div class="stat-label"><i class="fas fa-oil-can"></i> Vehicles Due Service</div>
+                        </div>
+                    </div>
+
+                    <div class="grid">
+                        <div class="summary-card">
+                            <div class="summary-title"><i class="fas fa-exclamation-triangle"></i> Urgent Attention Required</div>
+                            <div class="summary-content" id="urgentItems">
+                                Loading urgent items...
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-title"><i class="fas fa-clock"></i> Recent Activity</div>
+                            <div class="summary-content" id="recentActivity">
+                                Loading recent activities...
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Machines Section -->
+                <section class="content-section" id="machines">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-cogs"></i> Machine Management</h2>
+                        <p class="page-subtitle">Manage industrial machines and equipment</p>
+                    </div>
+
+                    <div class="search-bar">
+                        <input type="text" id="machineSearch" class="search-input" placeholder="Search machines...">
+                        <button class="btn btn-primary" onclick="openAddMachineModal()">
+                            <i class="fas fa-plus"></i> Add New Machine
+                        </button>
+                        <button class="btn btn-secondary" onclick="refreshMachines()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+
+                    <div class="filter-controls" id="machineFilters">
+                        <button class="filter-btn active" onclick="filterMachines('all')">All</button>
+                        <button class="filter-btn" onclick="filterMachines('Active')">Active</button>
+                        <button class="filter-btn" onclick="filterMachines('Under Maintenance')">Under Maintenance</button>
+                        <button class="filter-btn" onclick="filterMachines('Inactive')">Inactive</button>
+                    </div>
+
+                    <div id="machinesList">
+                        <!-- Machines will be loaded here -->
+                    </div>
+                </section>
+
+                <!-- Vehicles Section -->
+                <section class="content-section" id="vehicles">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-truck"></i> Vehicle Management</h2>
+                        <p class="page-subtitle">Manage company vehicles and fleet</p>
+                    </div>
+
+                    <div class="search-bar">
+                        <input type="text" id="vehicleSearch" class="search-input" placeholder="Search vehicles...">
+                        <button class="btn btn-primary" onclick="openAddVehicleModal()">
+                            <i class="fas fa-plus"></i> Add New Vehicle
+                        </button>
+                        <button class="btn btn-secondary" onclick="refreshVehicles()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+
+                    <div class="filter-controls" id="vehicleFilters">
+                        <button class="filter-btn active" onclick="filterVehicles('all')">All</button>
+                        <button class="filter-btn" onclick="filterVehicles('Active')">Active</button>
+                        <button class="filter-btn" onclick="filterVehicles('Under Maintenance')">Under Maintenance</button>
+                        <button class="filter-btn" onclick="filterVehicles('Inactive')">Inactive</button>
+                    </div>
+
+                    <div id="vehiclesList">
+                        <!-- Vehicles will be loaded here -->
+                    </div>
+                </section>
+
+                <!-- Spare Parts Catalog -->
+                <section class="content-section" id="catalog">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-list-alt"></i> Spare Parts Catalog</h2>
+                        <p class="page-subtitle">Browse and manage spare parts inventory</p>
+                    </div>
+                    
+                    <div class="search-bar">
+                        <input type="text" id="catalogSearch" class="search-input" placeholder="Search spare parts...">
+                        <button class="btn btn-primary" onclick="openAddPartModal()">
+                            <i class="fas fa-plus"></i> Add New Part
+                        </button>
+                        <button class="btn btn-secondary" onclick="bulkImportParts()">
+                            <i class="fas fa-upload"></i> Bulk Import
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportCatalog()">
+                            <i class="fas fa-download"></i> Export Catalog
+                        </button>
+                    </div>
+                    
+                    <div class="filter-controls">
+                        <div id="stockFilterTabs">
+                            <button class="filter-btn active" onclick="filterCatalogByStock('all')">All Stock</button>
+                            <button class="filter-btn" onclick="filterCatalogByStock('in-stock')">In Stock</button>
+                            <button class="filter-btn" onclick="filterCatalogByStock('low-stock')">Low Stock</button>
+                            <button class="filter-btn" onclick="filterCatalogByStock('out-of-stock')">Out of Stock</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-boxes"></i> Spare Parts (<span id="catalogCount">0 items</span>)</span>
+                        </div>
+                        <div id="catalogItems">
+                            <!-- Catalog items will be populated here -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Orders & Approvals -->
+                <section class="content-section" id="orders-approvals">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-clipboard-check"></i> Orders & Approvals</h2>
+                        <p class="page-subtitle">Manage inventory orders and approval workflow</p>
+                    </div>
+
+                    <div class="grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <span><i class="fas fa-clock"></i> Pending Orders (<span id="pendingCount">0</span>)</span>
+                                <button class="btn btn-small btn-success" onclick="approveAllOrders()">
+                                    <i class="fas fa-check-double"></i> Approve All
+                                </button>
+                            </div>
+                            <div id="pendingOrdersList">
+                                <!-- Pending orders will be loaded here -->
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <span><i class="fas fa-check-circle"></i> Approved Orders</span>
+                                <button class="btn btn-small btn-secondary" onclick="viewAllApprovedOrders()">
+                                    <i class="fas fa-eye"></i> View All
+                                </button>
+                            </div>
+                            <div id="approvedOrdersList">
+                                <!-- Approved orders will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Usage Tracking -->
+                <section class="content-section" id="usage-tracking">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-chart-line"></i> Usage Tracking</h2>
+                        <p class="page-subtitle">Monitor equipment usage and maintenance schedules</p>
+                    </div>
+
+                    <div class="search-bar">
+                        <input type="text" class="search-input" placeholder="Search equipment usage...">
+                        <button class="btn btn-primary" onclick="addMachineUsage()">
+                            <i class="fas fa-plus"></i> Add Usage Record
+                        </button>
+                        <button class="btn btn-secondary" onclick="openModal('reportModal')">
+                            <i class="fas fa-chart-bar"></i> Generate Report
+                        </button>
+                    </div>
+
+                    <div id="usageTrackingList">
+                        <!-- Usage tracking items will be loaded here -->
+                    </div>
+                </section>
+
+                <!-- Notifications -->
+                <section class="content-section" id="notifications">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-bell"></i> Notifications</h2>
+                        <p class="page-subtitle">System alerts and important updates</p>
+                    </div>
+
+                    <div class="search-bar">
+                        <button class="btn btn-secondary" onclick="configureAlerts()">
+                            <i class="fas fa-cog"></i> Configure Alerts
+                        </button>
+                    </div>
+
+                    <div id="notificationsList">
+                        <!-- Notifications will be loaded here -->
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals will be included here -->
+    <div id="modalsContainer">
+        <!-- Modals will be loaded by JavaScript -->
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        Action completed successfully!
+    </div>
+
+    <!-- Load JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>

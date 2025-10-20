@@ -53,10 +53,12 @@ assetcare-backend-new/
 
 The system supports the following roles (in order of hierarchy):
 1. **Admin** - Full system access including user management and system logs
-2. **Inventory Manager** - Manage inventory operations
-3. **Supervisor** - Supervise operations
-4. **Driver** - Driver-specific access
-5. **Machinary Operator** - Equipment-specific access
+2. **Maintenance Manager** - Manage maintenance operations and schedules
+3. **Inventory Manager** - Manage inventory operations
+4. **Technical Officer** - Technical support and equipment management
+5. **Supervisor** - Supervise operations
+6. **Driver** - Driver-specific access
+7. **Machinary Operator** - Equipment-specific access
 
 ## Documentation
 
@@ -144,6 +146,86 @@ If you prefer to set up manually:
    php -S localhost:8000
    ```
 
+## Email Testing with MailHog (macOS)
+
+MailHog is a local SMTP server that captures emails for testing without actually sending them. This is perfect for development and testing the password reset functionality.
+
+### Installation
+
+1. **Install MailHog using Homebrew**
+   ```bash
+   brew install mailhog
+   ```
+
+2. **Start MailHog service**
+   ```bash
+   brew services start mailhog
+   ```
+
+3. **Install mhsendmail (mail sender binary)**
+   ```bash
+   go install github.com/mailhog/mhsendmail@latest
+   ```
+
+4. **Configure PHP to use MailHog**
+   
+   Find your `php.ini` file location:
+   ```bash
+   php --ini
+   ```
+   
+   Edit the `php.ini` file and set the `sendmail_path`:
+   ```ini
+   sendmail_path = "~/go/bin/mhsendmail"
+   ```
+   
+   **Note:** Replace `~` with your actual home directory path if needed (e.g., `/Users/yourusername/go/bin/mhsendmail`)
+
+5. **Restart PHP** (if using PHP-FPM or Apache, restart the service)
+
+### Usage
+
+Once configured, you can use PHP's built-in `mail()` function normally:
+
+```php
+mail($to, $subject, $message, $headers);
+```
+
+All emails will be captured by MailHog and can be viewed in the web interface at:
+
+**http://localhost:8025/**
+
+### Testing the Setup
+
+Run the included test script to verify email configuration:
+
+```bash
+php test_mail.php
+```
+
+If successful, you should see "Mail sent successfully!" and the email will appear in MailHog's web interface at http://localhost:8025/
+
+### Features
+
+- 📧 View all captured emails in a web interface
+- 🔍 Search and filter emails
+- 📱 Responsive design for mobile viewing
+- 🗑️ Delete emails individually or clear all
+- 🔗 View email headers and raw source
+- 📎 Download attachments (if any)
+
+### Stopping MailHog
+
+To stop the MailHog service:
+```bash
+brew services stop mailhog
+```
+
+To restart:
+```bash
+brew services restart mailhog
+```
+
 ## API Endpoints
 
 ### Authentication
@@ -209,12 +291,64 @@ Content-Type: application/json
 }
 ```
 
+**Note:** If a user has `force_password_change` flag set, they will be automatically redirected to the password change page upon login and cannot access the dashboard until they change their password.
+
+#### Forgot Password
+```http
+POST /api/auth/forgot-password
+Content-Type: application/json
+
+{
+  "employee_id": "LITRO-ADMIN-001",
+  "email": "admin@assetcare360.com"
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "If your account exists, you will receive a password reset email shortly.",
+  "debug_token": "abc123...",
+  "debug_link": "http://localhost:3000/auth/reset-password.html?token=abc123..."
+}
+```
+
+**Note:** In development mode, the response includes `debug_token` and `debug_link` for testing. These should be removed in production. The password reset email is sent to the user's registered email address with a link that expires in 1 hour.
+
+#### Reset Password
+```http
+POST /api/auth/reset-password
+Content-Type: application/json
+
+{
+  "token": "abc123...",
+  "new_password": "newpassword456"
+}
+```
+
+**Note:** The token is obtained from the password reset email link. It must be used within 1 hour of generation.
+
 #### Validate Token
 ```http
 GET /api/auth/validate
 ```
 
 **Authentication:** Cookie-based (automatic) or Authorization header
+
+## Password Reset Flow
+
+1. **User requests password reset**: User enters their Employee ID and email on the forgot password page
+2. **Email sent**: System sends password reset email with a unique token (valid for 1 hour)
+3. **User clicks link**: Email contains link to `http://localhost:3000/auth/reset-password.html?token={token}`
+4. **Set new password**: User enters new password on reset page
+5. **Password updated**: System validates token, updates password, and redirects to login page
+
+**Force Password Change:**
+- When an admin creates a new user or resets a user's password, the `force_password_change` flag is set
+- User can log in with temporary password but is immediately redirected to change password page
+- User cannot access any dashboard or functionality until password is changed
+- After successful password change, the flag is cleared and user is redirected to their dashboard
 
 ## Authentication Methods
 

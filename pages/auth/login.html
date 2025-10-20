@@ -5,7 +5,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AssetCare360 - Login</title>
+    
+    <!-- Config and Helper Scripts -->
+    <script src="../js/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/utils.js"></script>
+    
     <style>
+        :root {
+            --primary: #4a90e2;
+            --primary-hover: #3a7bc8;
+            --kelly-green: #10b981;
+            --royal-blue: #1e40af;
+            --royal-blue-2: #1e3a8a;
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -13,8 +28,8 @@
         }
 
         body {
-            font-family: "Work Sans", sans-serif;
-            background: linear-gradient(135deg, var(--royal-blue-2) 0%, var(--royal-blue-2) 100%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -210,6 +225,30 @@
             animation: spin 1s linear infinite;
         }
 
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            display: none;
+        }
+
+        .alert.error {
+            background-color: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+
+        .alert.success {
+            background-color: #efe;
+            color: #3c3;
+            border: 1px solid #cfc;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
         @keyframes spin {
             0% {
                 transform: rotate(0deg);
@@ -264,23 +303,20 @@
             Access your role-based dashboard.
         </div>
 
-        <form id="loginForm" class="login-form" action="/auth" method="POST">
+        <!-- Alert Message -->
+        <div id="alertMessage" class="alert"></div>
+
+        <form id="loginForm" class="login-form">
             <div class="form-group">
                 <label for="employeeId">Employee ID</label>
-                <input type="text" id="employeeId" name="employeeId" placeholder="Enter your employee ID" required>
+                <input type="text" id="employeeId" name="employeeId" placeholder="Enter your employee ID" required autocomplete="username">
                 <div class="error-message">Please enter a valid employee ID</div>
-            </div>
-
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" placeholder="yourname@company.com" required>
-                <div class="error-message">Please enter a valid email address</div>
             </div>
 
             <div class="form-group">
                 <label for="password">Password</label>
                 <div class="password-field">
-                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
                     <button type="button" class="password-toggle" onclick="togglePassword()">
                         <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
                             <path
@@ -291,7 +327,7 @@
                 <div class="error-message">Please enter your password</div>
             </div>
             <div class="forgot-password-link">
-                <a href="/login/forgot-password">Forgot password?</a>
+                <a href="../auth/forgot-password.html">Forgot password?</a>
             </div>
 
             <button type="submit" class="login-btn">
@@ -310,12 +346,36 @@
             const form = document.getElementById('loginForm');
             const inputs = form.querySelectorAll('input');
             const loginBtn = form.querySelector('.login-btn');
+            const alertMessage = document.getElementById('alertMessage');
+
+            // Check if already logged in
+            checkExistingSession();
 
             // Real-time validation
             inputs.forEach(input => {
                 input.addEventListener('blur', validateField);
                 input.addEventListener('input', clearError);
             });
+
+            async function checkExistingSession() {
+                const user = await Auth.checkAuth();
+                if (user) {
+                    // User is already logged in, redirect to their dashboard
+                    Auth.redirectToDashboard(user);
+                }
+                // If user is null, they're not logged in - stay on login page (expected behavior)
+            }
+
+            function showAlert(message, type) {
+                alertMessage.textContent = message;
+                alertMessage.className = `alert ${type} show`;
+                
+                if (type === 'success') {
+                    setTimeout(() => {
+                        alertMessage.classList.remove('show');
+                    }, 3000);
+                }
+            }
 
             function validateField(e) {
                 const field = e.target;
@@ -328,12 +388,12 @@
                     return false;
                 }
 
-                if (field.type === 'email' && !isValidEmail(field.value)) {
+                if (field.name === 'employeeId' && field.value.trim().length < 3) {
                     formGroup.classList.add('error');
                     return false;
                 }
 
-                if (field.name === 'employeeId' && field.value.trim().length < 3) {
+                if (field.name === 'password' && field.value.length < 6) {
                     formGroup.classList.add('error');
                     return false;
                 }
@@ -345,15 +405,12 @@
             function clearError(e) {
                 const formGroup = e.target.closest('.form-group');
                 formGroup.classList.remove('error');
-            }
-
-            function isValidEmail(email) {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                return emailRegex.test(email);
+                alertMessage.classList.remove('show');
             }
 
             // Form submission with loading state
-            form.addEventListener('submit', function (e) {
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
 
                 let isValid = true;
                 inputs.forEach(input => {
@@ -362,8 +419,50 @@
                     }
                 });
 
-                if (isValid) {
-                    loginBtn.classList.add('loading');
+                if (!isValid) {
+                    showAlert('Please fill in all required fields correctly', 'error');
+                    return;
+                }
+
+                const employeeId = document.getElementById('employeeId').value.trim();
+                const password = document.getElementById('password').value;
+
+                // Show loading state
+                loginBtn.classList.add('loading');
+                loginBtn.disabled = true;
+
+                try {
+                    const result = await Auth.login(employeeId, password);
+                    
+                    console.log('Login result:', result);
+
+                    if (result.success) {
+                        // Check if password change is required
+                        if (result.forcePasswordChange) {
+                            showAlert('Password change required. Redirecting...', 'success');
+                            // Redirect to change password page after short delay
+                            setTimeout(() => {
+                                window.location.href = './change-password.html';
+                            }, 1000);
+                            return;
+                        }
+                        
+                        showAlert(result.message || 'Login successful! Redirecting...', 'success');
+                        
+                        console.log('Login successful, redirecting user:', result.user);
+                        
+                        // Redirect to dashboard
+                        Auth.redirectToDashboard(result.user);
+                    } else {
+                        showAlert(result.message || 'Login failed. Please try again.', 'error');
+                        loginBtn.classList.remove('loading');
+                        loginBtn.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    showAlert('An error occurred. Please try again.', 'error');
+                    loginBtn.classList.remove('loading');
+                    loginBtn.disabled = false;
                 }
             });
 
@@ -405,36 +504,6 @@
                     </svg>
                 `;
             }
-        }
-
-        // Login handler function
-        function handleLogin(event) {
-            const formData = new FormData(event.target);
-            const loginData = {
-                employeeId: formData.get('employeeId'),
-                email: formData.get('email'),
-                password: formData.get('password')
-            };
-
-            // Here you would typically make an API call to your authentication endpoint
-            console.log('Login attempted with:', loginData);
-
-            // Simulate API response
-            setTimeout(() => {
-                const loginBtn = document.querySelector('.login-btn');
-                loginBtn.classList.remove('loading');
-
-                // On successful login, redirect to dashboard
-                // window.location.href = '/dashboard';
-
-                // For demo purposes, show success message
-                alert('Login successful! Redirecting to dashboard...');
-            }, 2000);
-        }
-
-        // Handle forgot password
-        function handleForgotPassword() {
-            window.location.href = '/login/forgot-password';
         }
     </script>
 </body>

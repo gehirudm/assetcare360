@@ -1,0 +1,100 @@
+/**
+ * API Helper Functions for AssetCare360
+ * Handles all HTTP requests to the backend API
+ */
+
+const API = {
+    /**
+     * Make an authenticated API request
+     */
+    async request(endpoint, options = {}) {
+        const url = `${CONFIG.API_BASE_URL}${endpoint}`;
+        
+        // Get token from localStorage (fallback for header auth)
+        const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+        
+        // Set default headers
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+        
+        // Add authorization header if token exists
+        if (token && !options.skipAuth) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers,
+                credentials: 'include' // Include cookies
+            });
+            
+            const data = await response.json();
+            
+            // Handle 401 Unauthorized (except for /auth/me which returns success: false)
+            if (response.status === 401) {
+                // Only redirect if we're not already on the login page and not checking auth status
+                if (!options.skipAuthRedirect && !window.location.pathname.includes('login') && !endpoint.includes('/auth/me')) {
+                    this.handleUnauthorized();
+                }
+                throw new Error(data.message || 'Unauthorized');
+            }
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Request failed');
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
+        }
+    },
+    
+    /**
+     * GET request
+     */
+    async get(endpoint, options = {}) {
+        return this.request(endpoint, { ...options, method: 'GET' });
+    },
+    
+    /**
+     * POST request
+     */
+    async post(endpoint, data, options = {}) {
+        return this.request(endpoint, {
+            ...options,
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+    },
+    
+    /**
+     * PUT request
+     */
+    async put(endpoint, data, options = {}) {
+        return this.request(endpoint, {
+            ...options,
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    },
+    
+    /**
+     * DELETE request
+     */
+    async delete(endpoint, options = {}) {
+        return this.request(endpoint, { ...options, method: 'DELETE' });
+    },
+    
+    /**
+     * Handle unauthorized access
+     */
+    handleUnauthorized() {
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+        localStorage.removeItem(CONFIG.STORAGE_KEYS.USER_DATA);
+        window.location.href = CONFIG.ROUTES.LOGIN;
+    }
+};

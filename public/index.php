@@ -8,12 +8,24 @@
 // Load configuration first
 require_once __DIR__ . '/../config/config.php';
 
+// Handle CORS
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$allowedOrigin = '*';
+
+if (CORS_ENABLED && !empty($origin)) {
+    // Check if the origin is in the allowed list
+    if (in_array($origin, CORS_ALLOWED_ORIGINS)) {
+        $allowedOrigin = $origin;
+    }
+}
+
 // Set headers
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: ' . (CORS_ENABLED ? CORS_ORIGIN : '*'));
+header('Access-Control-Allow-Origin: ' . $allowedOrigin);
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Access-Control-Allow-Credentials: true'); // Allow cookies to be sent
+header('Vary: Origin'); // Important for caching
 
 // Handle preflight requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -40,6 +52,8 @@ require_once __DIR__ . '/../app/Router.php';
 require_once __DIR__ . '/../app/controllers/AuthController.php';
 require_once __DIR__ . '/../app/controllers/UserController.php';
 require_once __DIR__ . '/../app/controllers/LogController.php';
+require_once __DIR__ . '/../app/controllers/MachineController.php';
+require_once __DIR__ . '/../app/controllers/VehicleController.php';
 
 // Initialize request logger
 $requestLogger = new RequestLogger();
@@ -54,6 +68,8 @@ $router->post('/auth/logout', 'AuthController', 'logout');
 $router->get('/auth/me', 'AuthController', 'me');
 $router->post('/auth/change-password', 'AuthController', 'changePassword');
 $router->get('/auth/validate', 'AuthController', 'validateToken');
+$router->post('/auth/forgot-password', 'AuthController', 'forgotPassword');
+$router->post('/auth/reset-password', 'AuthController', 'resetPassword');
 
 // User management routes (Admin only)
 $router->get('/users/stats', 'UserController', 'stats');
@@ -75,6 +91,23 @@ $router->get('/logs/export', 'LogController', 'export');
 $router->get('/logs/user/:id/summary', 'LogController', 'getUserActivitySummary');
 $router->get('/logs/user/:id', 'LogController', 'getUserLogs');
 $router->get('/logs', 'LogController', 'index');
+
+// Machine management routes (Inventory Manager and above)
+$router->get('/machines/due-service', 'MachineController', 'dueForService');
+$router->get('/machines', 'MachineController', 'index');
+$router->post('/machines', 'MachineController', 'store');
+$router->get('/machines/:id', 'MachineController', 'show');
+$router->put('/machines/:id', 'MachineController', 'update');
+$router->delete('/machines/:id', 'MachineController', 'delete');
+
+// Vehicle management routes (Inventory Manager and above)
+$router->get('/vehicles/due-service', 'VehicleController', 'dueForService');
+$router->get('/vehicles', 'VehicleController', 'index');
+$router->post('/vehicles', 'VehicleController', 'store');
+$router->get('/vehicles/:id', 'VehicleController', 'show');
+$router->put('/vehicles/:id', 'VehicleController', 'update');
+$router->put('/vehicles/:id/mileage', 'VehicleController', 'updateMileage');
+$router->delete('/vehicles/:id', 'VehicleController', 'delete');
 
 // Dispatch the request
 try {

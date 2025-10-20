@@ -4,6 +4,13 @@ info:
   description: |
     Backend API for AssetCare360 Inventory Management System.
     
+    ## Response Format
+    All API responses follow a standardized format:
+    - **Success responses**: `{status: "success", message: "...", data: {...}}`
+    - **Error responses**: `{status: "error", message: "...", errors: [...]}`
+    
+    The `status` field is always either `"success"` or `"error"`.
+    
     ## Authentication
     This API uses JWT (JSON Web Tokens) for authentication. Tokens can be provided in two ways:
     1. **HTTP-only Cookie** (Recommended): Set automatically by the `/auth/login` endpoint
@@ -12,7 +19,9 @@ info:
     ## Authorization
     Access to endpoints is restricted based on user roles:
     - **Admin**: Full system access including user management
+    - **Maintenance Manager**: Manage maintenance operations and schedules
     - **Inventory Manager**: Inventory operations
+    - **Technical Officer**: Technical support and equipment management
     - **Supervisor**: Supervisory access
     - **Driver**: Driver-specific operations
     - **Machinary Operator**: Equipment operations
@@ -84,9 +93,11 @@ paths:
               schema:
                 type: object
                 properties:
-                  success:
-                    type: boolean
-                    example: true
+                  status:
+                    type: string
+                    enum: [success, error]
+                    example: success
+                    description: Response status indicator
                   message:
                     type: string
                     example: "Login successful"
@@ -113,22 +124,47 @@ paths:
       tags:
         - Authentication
       summary: Get current user
-      description: Retrieve information about the currently authenticated user
+      description: |
+        Get information about the currently authenticated user.
+        Returns null in data field if no user is authenticated (does not return 401).
+        This endpoint can be called without authentication.
+      security: []
       responses:
         '200':
-          description: Current user information
+          description: Success (returns user if authenticated, null if not)
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  success:
-                    type: boolean
-                    example: true
+                  status:
+                    type: string
+                    enum: [success, error]
+                    example: success
+                  message:
+                    type: string
+                    example: "User authenticated"
                   data:
-                    $ref: '#/components/schemas/User'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                    oneOf:
+                      - $ref: '#/components/schemas/User'
+                      - type: "null"
+              examples:
+                authenticated:
+                  summary: User is authenticated
+                  value:
+                    status: success
+                    message: "User authenticated"
+                    data:
+                      id: 1
+                      employee_id: "LITRO-ADMIN-001"
+                      full_name: "Admin User"
+                      role: "Admin"
+                notAuthenticated:
+                  summary: User is not authenticated
+                  value:
+                    status: success
+                    message: "No user authenticated"
+                    data: null
 
   /auth/logout:
     post:
@@ -229,6 +265,110 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /auth/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: Request password reset
+      description: Request a password reset link to be sent to the user's email address
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - employee_id
+                - email
+              properties:
+                employee_id:
+                  type: string
+                  example: "LITRO-ADMIN-001"
+                  description: User's employee ID
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+                  description: User's registered email address
+      responses:
+        '200':
+          description: Password reset request processed (always returns success for security)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "If your account exists, you will receive a password reset email shortly."
+                  debug_token:
+                    type: string
+                    description: "Reset token (only in development mode)"
+                  debug_link:
+                    type: string
+                    description: "Reset link (only in development mode)"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/reset-password:
+    post:
+      tags:
+        - Authentication
+      summary: Reset password with token
+      description: Reset user password using the token received via email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - new_password
+              properties:
+                token:
+                  type: string
+                  example: "a1b2c3d4e5f6..."
+                  description: Reset token from email link
+                new_password:
+                  type: string
+                  format: password
+                  example: "newpassword123"
+                  description: New password (minimum 6 characters)
+                  minLength: 6
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Password reset successfully. You can now log in with your new password."
+        '400':
+          description: Invalid token or password requirements not met
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Invalid or expired reset token"
+
   # ==================== USER MANAGEMENT ====================
   /users:
     get:
@@ -244,7 +384,7 @@ paths:
           description: Filter by user role
           schema:
             type: string
-            enum: [Admin, Inventory Manager, Supervisor, Driver, Machinary Operator]
+            enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator]
         - name: status
           in: query
           description: Filter by active status
@@ -332,7 +472,7 @@ paths:
                   minLength: 2
                 role:
                   type: string
-                  enum: [Admin, Inventory Manager, Supervisor, Driver, Machinary Operator]
+                  enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator]
                   example: "Inventory Manager"
                 department:
                   type: string
@@ -441,7 +581,7 @@ paths:
                   minLength: 2
                 role:
                   type: string
-                  enum: [Admin, Inventory Manager, Supervisor, Driver, Machinary Operator]
+                  enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator]
                 department:
                   type: string
                   example: "Operations"
@@ -1258,7 +1398,7 @@ components:
           example: "Admin User"
         role:
           type: string
-          enum: [Admin, Inventory Manager, Supervisor, Driver, Machinary Operator]
+          enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator]
           example: "Admin"
         department:
           type: string
@@ -1419,9 +1559,11 @@ components:
     Error:
       type: object
       properties:
-        success:
-          type: boolean
-          example: false
+        status:
+          type: string
+          enum: [error]
+          example: error
+          description: Response status indicator (always 'error' for error responses)
         message:
           type: string
           example: "Error message"
@@ -1439,7 +1581,7 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
           example:
-            success: false
+            status: error
             message: "Invalid input data"
             errors: ["Full name is required", "Invalid email format"]
 
@@ -1450,7 +1592,7 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
           example:
-            success: false
+            status: error
             message: "Authentication required"
 
     Forbidden:
@@ -1460,7 +1602,7 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
           example:
-            success: false
+            status: error
             message: "Access denied. Admin role required."
 
     NotFound:
@@ -1470,7 +1612,7 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
           example:
-            success: false
+            status: error
             message: "User not found"
 
   examples:
@@ -1481,7 +1623,7 @@ components:
 
     LoginResponse:
       value:
-        success: true
+        status: success
         message: "Login successful"
         data:
           token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -1512,7 +1654,7 @@ components:
 
     CreateUserResponse:
       value:
-        success: true
+        status: success
         message: "User created successfully"
         data:
           user:
@@ -1528,3 +1670,572 @@ components:
             created_at: "2025-10-20T14:30:00Z"
             updated_at: "2025-10-20T14:30:00Z"
           generated_password: "aB3$xY9z"
+
+  # ==================== MACHINES ====================
+  /machines:
+    get:
+      tags:
+        - Machines
+      summary: Get all machines
+      description: Retrieve a paginated list of machines with optional filtering and search
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [Active, Inactive, Under Maintenance, Decommissioned]
+        - name: location
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully retrieved machines
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      machines:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Machine'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+    post:
+      tags:
+        - Machines
+      summary: Create a new machine
+      description: Add a new machine to the inventory
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MachineInput'
+      responses:
+        '201':
+          description: Machine created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: '#/components/schemas/Machine'
+
+  /machines/{id}:
+    get:
+      tags:
+        - Machines
+      summary: Get machine by ID
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully retrieved machine
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Machine'
+    put:
+      tags:
+        - Machines
+      summary: Update machine
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MachineInput'
+      responses:
+        '200':
+          description: Machine updated successfully
+    delete:
+      tags:
+        - Machines
+      summary: Delete machine
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Machine deleted successfully
+
+  /machines/due-service:
+    get:
+      tags:
+        - Machines
+      summary: Get machines due for service
+      description: Retrieve machines that need servicing within 7 days
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Successfully retrieved machines due for service
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      machines:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Machine'
+
+  # ==================== VEHICLES ====================
+  /vehicles:
+    get:
+      tags:
+        - Vehicles
+      summary: Get all vehicles
+      description: Retrieve a paginated list of vehicles with optional filtering and search
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [Active, Inactive, Under Maintenance, Decommissioned]
+        - name: vehicle_type
+          in: query
+          schema:
+            type: string
+        - name: fuel_type
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully retrieved vehicles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      vehicles:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Vehicle'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+    post:
+      tags:
+        - Vehicles
+      summary: Create a new vehicle
+      description: Add a new vehicle to the inventory
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleInput'
+      responses:
+        '201':
+          description: Vehicle created successfully
+
+  /vehicles/{id}:
+    get:
+      tags:
+        - Vehicles
+      summary: Get vehicle by ID
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully retrieved vehicle
+    put:
+      tags:
+        - Vehicles
+      summary: Update vehicle
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleInput'
+      responses:
+        '200':
+          description: Vehicle updated successfully
+    delete:
+      tags:
+        - Vehicles
+      summary: Delete vehicle
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Vehicle deleted successfully
+
+  /vehicles/{id}/mileage:
+    put:
+      tags:
+        - Vehicles
+      summary: Update vehicle mileage
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mileage:
+                  type: integer
+              required:
+                - mileage
+      responses:
+        '200':
+          description: Mileage updated successfully
+
+  /vehicles/due-service:
+    get:
+      tags:
+        - Vehicles
+      summary: Get vehicles due for service
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Successfully retrieved vehicles due for service
+
+components:
+  schemas:
+    Machine:
+      type: object
+      properties:
+        id:
+          type: integer
+        model_number:
+          type: string
+        machine_name:
+          type: string
+        location:
+          type: string
+        warranty_expiry:
+          type: string
+          format: date
+        warranty_provider:
+          type: string
+        supplier_name:
+          type: string
+        supplier_contact:
+          type: string
+        service_interval_days:
+          type: integer
+        last_service_date:
+          type: string
+          format: date
+        next_service_date:
+          type: string
+          format: date
+        components:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [Active, Inactive, Under Maintenance, Decommissioned]
+        notes:
+          type: string
+        created_by:
+          type: integer
+        updated_by:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    MachineInput:
+      type: object
+      required:
+        - model_number
+        - machine_name
+        - location
+        - supplier_name
+        - service_interval_days
+      properties:
+        model_number:
+          type: string
+        machine_name:
+          type: string
+        location:
+          type: string
+        warranty_expiry:
+          type: string
+          format: date
+        warranty_provider:
+          type: string
+        supplier_name:
+          type: string
+        supplier_contact:
+          type: string
+        service_interval_days:
+          type: integer
+          default: 90
+        last_service_date:
+          type: string
+          format: date
+        components:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [Active, Inactive, Under Maintenance, Decommissioned]
+        notes:
+          type: string
+
+    Vehicle:
+      type: object
+      properties:
+        id:
+          type: integer
+        vehicle_name:
+          type: string
+        model_number:
+          type: string
+        chassis_number:
+          type: string
+        number_plate:
+          type: string
+        vehicle_type:
+          type: string
+          enum: [Truck, Van, Car, Bus, Bike, Three-Wheeler, Lorry, Tanker, Other]
+        fuel_type:
+          type: string
+          enum: [Petrol, Diesel, Electric, Hybrid, LPG, CNG]
+        fuel_efficiency:
+          type: number
+          format: float
+        warranty_expiry:
+          type: string
+          format: date
+        warranty_provider:
+          type: string
+        supplier_name:
+          type: string
+        supplier_contact:
+          type: string
+        service_interval_type:
+          type: string
+          enum: [Time-Based, Mileage-Based, Both]
+        service_interval_days:
+          type: integer
+        service_interval_km:
+          type: integer
+        current_mileage:
+          type: integer
+        last_service_date:
+          type: string
+          format: date
+        last_service_mileage:
+          type: integer
+        next_service_date:
+          type: string
+          format: date
+        next_service_mileage:
+          type: integer
+        status:
+          type: string
+          enum: [Active, Inactive, Under Maintenance, Decommissioned]
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    VehicleInput:
+      type: object
+      required:
+        - vehicle_name
+        - model_number
+        - chassis_number
+        - number_plate
+        - vehicle_type
+        - fuel_type
+        - supplier_name
+        - service_interval_type
+      properties:
+        vehicle_name:
+          type: string
+        model_number:
+          type: string
+        chassis_number:
+          type: string
+        number_plate:
+          type: string
+        vehicle_type:
+          type: string
+          enum: [Truck, Van, Car, Bus, Bike, Three-Wheeler, Lorry, Tanker, Other]
+        fuel_type:
+          type: string
+          enum: [Petrol, Diesel, Electric, Hybrid, LPG, CNG]
+        fuel_efficiency:
+          type: number
+          format: float
+        warranty_expiry:
+          type: string
+          format: date
+        warranty_provider:
+          type: string
+        supplier_name:
+          type: string
+        supplier_contact:
+          type: string
+        service_interval_type:
+          type: string
+          enum: [Time-Based, Mileage-Based, Both]
+        service_interval_days:
+          type: integer
+        service_interval_km:
+          type: integer
+        current_mileage:
+          type: integer
+          default: 0
+        last_service_date:
+          type: string
+          format: date
+        last_service_mileage:
+          type: integer
+        status:
+          type: string
+          enum: [Active, Inactive, Under Maintenance, Decommissioned]
+        notes:
+          type: string
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
