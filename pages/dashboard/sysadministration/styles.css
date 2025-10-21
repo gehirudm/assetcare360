@@ -293,6 +293,11 @@ body {
     white-space: nowrap;
 }
 
+.status-normal {
+    background: var(--royal-blue);
+    color: #fff;
+}
+
 .status-active {
     background: var(--kelly-green);
     color: #fff;
@@ -431,6 +436,8 @@ body {
     padding: 8px 16px;
     font-size: 12px;
     margin-right: 5px;
+    display: inline-block;
+    white-space: nowrap;
 }
 
 /* Forms */
@@ -534,6 +541,14 @@ body {
     padding: 15px;
     text-align: left;
     border-bottom: 1px solid var(--stone-200);
+}
+
+.table td {
+    white-space: nowrap;
+}
+
+.table td:last-child {
+    white-space: nowrap;
 }
 
 .table th {
@@ -640,12 +655,12 @@ body {
     height: 100%;
     background: rgba(0, 0, 0, 0.35);
     z-index: 1000;
-    align-items: center;
-    justify-content: center;
 }
 
 .modal.active {
     display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .modal-content {
@@ -658,6 +673,7 @@ body {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     overflow-y: auto;
     position: relative;
+    margin: auto;
 }
 
 .close {
@@ -698,6 +714,37 @@ body {
 @keyframes slideIn {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
+}
+
+/* ==================== FILTER CONTROLS ==================== */
+.filter-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    border: 2px solid var(--stone-200);
+    background: white;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-700);
+}
+
+.filter-btn:hover {
+    border-color: var(--royal-blue);
+    color: var(--royal-blue);
+}
+
+.filter-btn.active {
+    background: var(--royal-blue);
+    color: white;
+    border-color: var(--royal-blue);
 }
 
 /* Search and Filter */

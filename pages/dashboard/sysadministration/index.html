@@ -259,23 +259,25 @@
                         <button class="btn btn-primary" onclick="openModal('createUserModal')">
                             ➕ Create New User
                         </button>
-                        <button class="btn btn-secondary" id="exportUsersBtn">
-                            📥 Export Users
-                        </button>
+                    </div>
+
+                    <!-- Tab Filters -->
+                    <div class="filter-controls" id="userFilterTabs">
+                        <button class="filter-btn active" onclick="filterUsersByRole('all')">All Users</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Admin')">Admin</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Maintenance Manager')">Maintenance Manager</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Inventory Manager')">Inventory Manager</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Technical Officer')">Technical Officer</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Supervisor')">Supervisor</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Machinary Operator')">Machinary Operator</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Driver')">Driver</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Auction Officer')">Auction Officer</button>
                     </div>
 
                     <!-- Search and Filter -->
                     <div class="search-bar">
-                        <input type="text" class="search-input" placeholder="Search by name, email, or role..." id="userSearch">
-                        <select class="filter-select" id="roleFilter">
-                            <option value="">All Roles</option>
-                            <option value="Admin">Admin</option>
-                            <option value="Supervisor">Supervisor</option>
-                            <option value="Inventory Manager">Inventory Manager</option>
-                            <option value="Machinary Operator">Machinary Operator</option>
-                            <option value="Driver">Driver</option>
-                        </select>
-                        <select class="filter-select" id="statusFilter">
+                        <input type="text" class="search-input" placeholder="Search by name, email, or employee ID..." id="userSearch" onkeyup="searchUsers()">
+                        <select class="filter-select" id="statusFilter" onchange="applyAllFilters()">
                             <option value="">All Status</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -284,9 +286,15 @@
 
                     <!-- User List - will be populated by script.js -->
                     <div class="card">
-                        <div class="card-header">👥 User Accounts</div>
+                        <div class="card-header">
+                            <span>👥 User Accounts</span>
+                            <span id="userCount" class="status-badge status-normal">0 users</span>
+                        </div>
                         <div id="userList">
                             <p style="text-align: center; padding: 20px; color: var(--muted);">Loading users...</p>
+                        </div>
+                        <div id="noUsersMessage" style="display: none; text-align: center; color: var(--muted); padding: 20px;">
+                            No users found for this filter
                         </div>
                     </div>
                 </section>
@@ -773,18 +781,20 @@
                         </button>
                     </div>
 
+                    <!-- Tab Filters -->
+                    <div class="filter-controls" id="logFilterTabs">
+                        <button class="filter-btn active" onclick="filterLogsByType('all')">All Logs</button>
+                        <button class="filter-btn" onclick="filterLogsByType('login')">Login Events</button>
+                        <button class="filter-btn" onclick="filterLogsByType('config')">Configuration Changes</button>
+                        <button class="filter-btn" onclick="filterLogsByType('user')">User Management</button>
+                        <button class="filter-btn" onclick="filterLogsByType('permission')">Permission Changes</button>
+                        <button class="filter-btn" onclick="filterLogsByType('error')">Errors</button>
+                    </div>
+
                     <!-- Log Filters -->
                     <div class="search-bar">
-                        <input type="text" class="search-input" placeholder="Search logs by user, action, or module..." id="logSearch">
-                        <select class="filter-select" id="logTypeFilter">
-                            <option value="">All Types</option>
-                            <option value="login">Login Events</option>
-                            <option value="config">Configuration Changes</option>
-                            <option value="user">User Management</option>
-                            <option value="permission">Permission Changes</option>
-                            <option value="error">Errors</option>
-                        </select>
-                        <select class="filter-select" id="logDateFilter">
+                        <input type="text" class="search-input" placeholder="Search logs by user, action, or module..." id="logSearch" onkeyup="searchLogs()">
+                        <select class="filter-select" id="logDateFilter" onchange="applyLogFilters()">
                             <option value="today">Today</option>
                             <option value="week">Last 7 Days</option>
                             <option value="month">Last 30 Days</option>
@@ -794,9 +804,13 @@
 
                     <!-- System Logs Display -->
                     <div class="card">
-                        <div class="card-header">📋 System Event Logs</div>
+                        <div class="card-header">
+                            <span>📋 System Event Logs</span>
+                            <span id="logCount" class="status-badge status-normal">0 logs</span>
+                        </div>
                         
-                        <div class="log-entry">
+                        <div id="logsList">
+                        <div class="log-entry" data-type="login" data-module="Authentication">
                             <div class="log-timestamp">Oct 18, 2025 - 11:45 AM</div>
                             <div><strong>Event:</strong> User Login</div>
                             <div><strong>User:</strong> john.smith@company.com (EMP-001)</div>
@@ -804,7 +818,7 @@
                             <div><strong>Module:</strong> Authentication</div>
                         </div>
 
-                        <div class="log-entry">
+                        <div class="log-entry" data-type="permission" data-module="User Management">
                             <div class="log-timestamp">Oct 18, 2025 - 11:30 AM</div>
                             <div><strong>Event:</strong> Permission Updated</div>
                             <div><strong>User:</strong> System Admin (SA-001)</div>
@@ -812,7 +826,7 @@
                             <div><strong>Module:</strong> User Management</div>
                         </div>
 
-                        <div class="log-entry error">
+                        <div class="log-entry error" data-type="error" data-module="Authentication">
                             <div class="log-timestamp">Oct 18, 2025 - 10:15 AM</div>
                             <div><strong>Event:</strong> Failed Login Attempt</div>
                             <div><strong>User:</strong> robert.williams@company.com (EMP-004)</div>
@@ -820,7 +834,7 @@
                             <div><strong>Module:</strong> Authentication</div>
                         </div>
 
-                        <div class="log-entry">
+                        <div class="log-entry" data-type="config" data-module="System Configuration">
                             <div class="log-timestamp">Oct 18, 2025 - 9:20 AM</div>
                             <div><strong>Event:</strong> Configuration Change</div>
                             <div><strong>User:</strong> System Admin (SA-001)</div>
@@ -828,7 +842,7 @@
                             <div><strong>Module:</strong> System Configuration</div>
                         </div>
 
-                        <div class="log-entry">
+                        <div class="log-entry" data-type="user" data-module="User Management">
                             <div class="log-timestamp">Oct 18, 2025 - 8:45 AM</div>
                             <div><strong>Event:</strong> User Account Created</div>
                             <div><strong>User:</strong> System Admin (SA-001)</div>
@@ -836,7 +850,7 @@
                             <div><strong>Module:</strong> User Management</div>
                         </div>
 
-                        <div class="log-entry warning">
+                        <div class="log-entry warning" data-type="error" data-module="System">
                             <div class="log-timestamp">Oct 18, 2025 - 7:30 AM</div>
                             <div><strong>Event:</strong> System Backup</div>
                             <div><strong>User:</strong> Automated System</div>
@@ -859,6 +873,10 @@
                             <div><strong>Details:</strong> Password reset performed for user EMP-008</div>
                             <div><strong>Module:</strong> User Management</div>
                         </div>
+                        </div>
+                        <div id="noLogsMessage" style="display: none; text-align: center; color: var(--muted); padding: 20px;">
+                            No logs found for this filter
+                        </div>
                     </div>
                 </section>
 
@@ -869,9 +887,23 @@
                         <p class="page-subtitle">Monitor real-time user activity and generate reports</p>
                     </div>
 
+                    <!-- Tab Filters -->
+                    <div class="filter-controls" id="activityFilterTabs">
+                        <button class="filter-btn active" onclick="filterActiveUsersByRole('all')">All Users</button>
+                        <button class="filter-btn" onclick="filterActiveUsersByRole('Admin')">Admin</button>
+                        <button class="filter-btn" onclick="filterActiveUsersByRole('Supervisor')">Supervisor</button>
+                        <button class="filter-btn" onclick="filterActiveUsersByRole('Inventory Manager')">Inventory Manager</button>
+                        <button class="filter-btn" onclick="filterActiveUsersByRole('Technical Officer')">Technical Officer</button>
+                        <button class="filter-btn" onclick="filterActiveUsersByRole('Driver')">Driver</button>
+                        <button class="filter-btn" onclick="filterActiveUsersByRole('Machinary Operator')">Machinary Operator</button>
+                    </div>
+
                     <!-- Currently Logged In Users -->
                     <div class="card">
-                        <div class="card-header">🟢 Currently Active Users</div>
+                        <div class="card-header">
+                            <span>🟢 Currently Active Users</span>
+                            <span id="activeUserCount" class="status-badge status-normal">0 active</span>
+                        </div>
                         <table class="table">
                             <thead>
                                 <tr>
@@ -883,8 +915,8 @@
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
+                            <tbody id="activeUsersList">
+                                <tr data-role="Supervisor">
                                     <td>John Smith (EMP-001)</td>
                                     <td><span class="status-badge status-supervisor">Supervisor</span></td>
                                     <td>Today 9:30 AM (2h 15m)</td>
@@ -895,7 +927,7 @@
                                         <button class="btn btn-danger btn-small" onclick="forceLogout('EMP-001')">Force Logout</button>
                                     </td>
                                 </tr>
-                                <tr>
+                                <tr data-role="Inventory Manager">
                                     <td>Sarah Johnson (EMP-002)</td>
                                     <td><span class="status-badge status-manager">Inventory Manager</span></td>
                                     <td>Today 8:15 AM (3h 30m)</td>
@@ -906,7 +938,7 @@
                                         <button class="btn btn-danger btn-small" onclick="forceLogout('EMP-002')">Force Logout</button>
                                     </td>
                                 </tr>
-                                <tr>
+                                <tr data-role="Driver">
                                     <td>David Martinez (EMP-007)</td>
                                     <td><span class="status-badge status-driver">Driver</span></td>
                                     <td>Today 10:00 AM (1h 45m)</td>
@@ -1074,10 +1106,13 @@
                         <select class="form-select" name="role" required>
                             <option value="">Select Role</option>
                             <option value="Admin">Admin</option>
-                            <option value="Supervisor">Supervisor</option>
+                            <option value="Maintenance Manager">Maintenance Manager</option>
                             <option value="Inventory Manager">Inventory Manager</option>
+                            <option value="Technical Officer">Technical Officer</option>
+                            <option value="Supervisor">Supervisor</option>
                             <option value="Machinary Operator">Machinary Operator</option>
                             <option value="Driver">Driver</option>
+                            <option value="Auction Officer">Auction Officer</option>
                         </select>
                     </div>
                 </div>

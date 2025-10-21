@@ -264,7 +264,16 @@ class UserService {
         if (empty($data['role'])) {
             $errors['role'] = 'Role is required';
         } else {
-            $validRoles = ['Admin', 'Inventory Manager', 'Machinary Operator', 'Driver', 'Supervisor'];
+            $validRoles = [
+                'Admin',
+                'Maintenance Manager',
+                'Inventory Manager',
+                'Technical Officer',
+                'Supervisor',
+                'Machinary Operator',
+                'Driver',
+                'Auction Officer'
+            ];
             if (!in_array($data['role'], $validRoles)) {
                 $errors['role'] = 'Invalid role';
             }

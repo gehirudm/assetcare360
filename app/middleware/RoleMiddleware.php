@@ -8,11 +8,12 @@ class RoleMiddleware {
     
     // Define role hierarchy (higher number = more permissions)
     const ROLE_HIERARCHY = [
-        'Admin' => 7,
-        'Maintenance Manager' => 6,
-        'Inventory Manager' => 5,
-        'Technical Officer' => 4,
-        'Supervisor' => 3,
+        'Admin' => 8,
+        'Maintenance Manager' => 7,
+        'Inventory Manager' => 6,
+        'Technical Officer' => 5,
+        'Supervisor' => 4,
+        'Auction Officer' => 3,
         'Driver' => 2,
         'Machinary Operator' => 1
     ];
