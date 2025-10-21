@@ -5,7 +5,7 @@ A PHP-based backend for an inventory management system with role-based access co
 ## Features
 
 - ✅ JWT-based authentication with HTTP-only cookies
-- ✅ Role-based access control (RBAC) with 5 user roles
+- ✅ Role-based access control (RBAC) with 7 user roles
 - ✅ Automatic API request logging with categorization
 - ✅ Advanced log viewing and analytics (Admin only)
 - ✅ Endpoint registry for action mapping
@@ -16,7 +16,10 @@ A PHP-based backend for an inventory management system with role-based access co
 - ✅ Database auto-table creation from models
 - ✅ Secure password hashing
 - ✅ CORS support
-- ✅ CSV export functionality for logs  
+- ✅ CSV export functionality for logs
+- ✅ Machine and vehicle inventory management
+- ✅ Fault ticket system with image uploads (max 5 images per report)
+- ✅ UUID-based image storage for fault reports  
 
 ## Project Structure
 

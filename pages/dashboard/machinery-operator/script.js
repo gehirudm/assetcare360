@@ -2,6 +2,48 @@
 
 let currentUser = null;
 
+// ==================== HELPER FUNCTIONS ====================
+
+/**
+ * Map status to display values
+ */
+function getStatusInfo(status) {
+    const statusMap = {
+        'Open': { label: 'Pending', class: 'status-pending', text: 'Pending' },
+        'In Progress': { label: 'In Progress', class: 'status-in-progress', text: 'In Progress' },
+        'Resolved': { label: 'Resolved', class: 'status-resolved', text: 'Resolved' },
+        'Closed': { label: 'Closed', class: 'status-resolved', text: 'Resolved' }
+    };
+    return statusMap[status] || { label: status, class: 'status-pending', text: status };
+}
+
+/**
+ * Format date to readable string
+ */
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+}
+
+/**
+ * Get update text based on status
+ */
+function getUpdateText(status) {
+    const updateMap = {
+        'Open': 'Awaiting supervisor review',
+        'In Progress': 'Being investigated',
+        'Resolved': 'Completed and resolved',
+        'Closed': 'Ticket closed'
+    };
+    return updateMap[status] || 'No updates';
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
     try {
         // Check authentication and authorization using DashboardInit
@@ -125,60 +167,79 @@ function loadAssignedMachines() {
     `).join('');
 }
 
-function loadFaultReports() {
-    const faults = [
-        {
-            id: 'TKT-003',
-            machine: 'Truck #203',
-            submitted: 'Aug 22, 10:30 AM',
-            description: 'Engine making unusual noise, loss of power',
-            priority: 'High',
-            photos: 2,
-            status: 'pending',
-            statusLabel: 'Pending',
-            statusClass: 'status-pending'
-        },
-        {
-            id: 'TKT-001',
-            machine: 'Excavator #045',
-            submitted: 'Aug 20, 02:15 PM',
-            description: 'Hydraulic fluid leak from main cylinder',
-            priority: 'Medium',
-            photos: 3,
-            status: 'in-progress',
-            statusLabel: 'In Progress',
-            statusClass: 'status-in-progress'
-        },
-        {
-            id: 'TKT-002',
-            machine: 'Loader #128',
-            submitted: 'Aug 18, 11:00 AM',
-            description: 'Brake pedal feels soft, reduced stopping power',
-            priority: 'High',
-            photos: 1,
-            status: 'resolved',
-            statusLabel: 'Resolved',
-            statusClass: 'status-resolved'
-        }
-    ];
-
+async function loadFaultReports() {
     const container = document.getElementById('faultsContainer');
-    container.innerHTML = faults.map(fault => `
-        <div class="item-card" data-status="${fault.status}">
-            <div class="item-details">
-                <strong>${fault.id}</strong>
-                <div class="item-meta">Machine: ${fault.machine} | Submitted: ${fault.submitted}</div>
-                <div class="item-description">${fault.description}</div>
-                <div class="item-meta">Priority: ${fault.priority} | Photos: ${fault.photos} attached</div>
-            </div>
-            <div class="item-actions">
-                <span class="status-badge ${fault.statusClass}">${fault.statusLabel}</span>
-                <button class="btn btn-secondary btn-small" onclick="viewFaultDetails('${fault.id}')">
-                    <i class="fas fa-eye"></i> View
-                </button>
-            </div>
-        </div>
-    `).join('');
+    
+    try {
+        // Show loading state
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--stone-400);">Loading fault reports...</div>';
+        
+        // Fetch fault tickets from API
+        const response = await API.get('/fault-tickets');
+        
+        if (response.status === 'success' && response.data && response.data.tickets) {
+            const faults = response.data.tickets;
+            
+            if (faults.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--stone-400);">No fault reports found</div>';
+                return;
+            }
+            
+            container.innerHTML = faults.map(fault => {
+                const statusInfo = getStatusInfo(fault.status);
+                const imageCount = fault.images ? fault.images.length : 0;
+                const isPending = fault.status === 'Open';
+                
+                // Build action buttons based on status
+                let actionButtons = `
+                    <button class="btn btn-secondary btn-small" onclick="viewFaultDetails(${fault.id})">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                `;
+                
+                // Add edit/delete dropdown for pending tickets
+                if (isPending) {
+                    actionButtons += `
+                        <div style="position: relative; display: inline-block;">
+                            <button class="btn btn-secondary btn-small" onclick="toggleTicketMenu(${fault.id}, event)" id="ticket-menu-btn-${fault.id}">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div class="dropdown-menu" id="ticket-menu-${fault.id}" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: white; border: 1px solid var(--stone-200); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 150px; z-index: 1000;">
+                                <button onclick="editFaultTicket(${fault.id}); closeTicketMenu(${fault.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text-700);" onmouseover="this.style.background='var(--stone-50)'" onmouseout="this.style.background='none'">
+                                    <i class="fas fa-edit" style="width: 16px;"></i> Edit
+                                </button>
+                                <button onclick="deleteFaultTicket(${fault.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--red-600);" onmouseover="this.style.background='var(--red-50)'" onmouseout="this.style.background='none'">
+                                    <i class="fas fa-trash" style="width: 16px;"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                return `
+                    <div class="item-card" data-status="${fault.status.toLowerCase().replace(' ', '-')}">
+                        <div class="item-details">
+                            <strong>TKT-${String(fault.id).padStart(3, '0')}</strong>
+                            <div class="item-meta">Machine: ${fault.machine_name || 'Unknown'} | Submitted: ${formatDate(fault.created_at)}</div>
+                            <div class="item-description">${fault.description}</div>
+                            <div class="item-meta">Priority: ${fault.priority} | Photos: ${imageCount} attached | Location: ${fault.location}</div>
+                        </div>
+                        <div class="item-actions">
+                            <span class="status-badge ${statusInfo.class}">${statusInfo.label}</span>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                ${actionButtons}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--stone-400);">Failed to load fault reports</div>';
+        }
+    } catch (error) {
+        console.error('Error loading fault reports:', error);
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--red-500);">Error loading fault reports. Please try again.</div>';
+    }
 }
 
 function loadConditionUpdates() {
@@ -223,57 +284,77 @@ function loadConditionUpdates() {
     `).join('');
 }
 
-function loadTickets() {
-    const tickets = [
-        {
-            id: 'TKT-003',
-            machine: 'Truck #203',
-            submitted: 'Aug 22, 10:30 AM',
-            description: 'Engine making unusual noise, loss of power',
-            update: 'Awaiting supervisor review',
-            status: 'pending',
-            statusLabel: 'Pending',
-            statusClass: 'status-pending'
-        },
-        {
-            id: 'TKT-001',
-            machine: 'Excavator #045',
-            submitted: 'Aug 20, 02:15 PM',
-            description: 'Hydraulic fluid leak from main cylinder',
-            update: 'Parts ordered, repair in progress',
-            status: 'in-progress',
-            statusLabel: 'In Progress',
-            statusClass: 'status-in-progress'
-        },
-        {
-            id: 'TKT-002',
-            machine: 'Loader #128',
-            submitted: 'Aug 18, 11:00 AM',
-            description: 'Brake pedal feels soft',
-            update: 'Completed Aug 21, 3:30 PM',
-            status: 'resolved',
-            statusLabel: 'Resolved',
-            statusClass: 'status-resolved'
-        }
-    ];
-
+async function loadTickets() {
     const container = document.getElementById('ticketsContainer');
-    container.innerHTML = tickets.map(ticket => `
-        <div class="item-card" data-status="${ticket.status}">
-            <div class="item-details">
-                <strong>${ticket.id}</strong>
-                <div class="item-meta">Machine: ${ticket.machine} | Submitted: ${ticket.submitted}</div>
-                <div class="item-description">${ticket.description}</div>
-                <div class="item-meta">Last Update: ${ticket.update}</div>
-            </div>
-            <div class="item-actions">
-                <span class="status-badge ${ticket.statusClass}">${ticket.statusLabel}</span>
-                <button class="btn btn-secondary btn-small" onclick="viewTicketTimeline('${ticket.id}')">
-                    <i class="fas fa-history"></i> Timeline
-                </button>
-            </div>
-        </div>
-    `).join('');
+    
+    try {
+        // Show loading state
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--stone-400);">Loading tickets...</div>';
+        
+        // Fetch fault tickets from API
+        const response = await API.get('/fault-tickets');
+        
+        if (response.status === 'success' && response.data && response.data.tickets) {
+            const tickets = response.data.tickets;
+            
+            if (tickets.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--stone-400);">No tickets found</div>';
+                return;
+            }
+            
+            container.innerHTML = tickets.map(ticket => {
+                const statusInfo = getStatusInfo(ticket.status);
+                const updateText = getUpdateText(ticket.status);
+                const isPending = ticket.status === 'Open';
+                
+                // Build action buttons based on status
+                let actionButtons = `
+                    <button class="btn btn-secondary btn-small" onclick="viewFaultDetails(${ticket.id})">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                `;
+                
+                // Add edit/delete dropdown for pending tickets
+                if (isPending) {
+                    actionButtons += `
+                        <div style="position: relative; display: inline-block;">
+                            <button class="btn btn-secondary btn-small" onclick="toggleTicketMenu(${ticket.id}, event)" id="ticket-menu-btn-${ticket.id}">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div class="dropdown-menu" id="ticket-menu-${ticket.id}" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: white; border: 1px solid var(--stone-200); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 150px; z-index: 1000;">
+                                <button onclick="editFaultTicket(${ticket.id}); closeTicketMenu(${ticket.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text-700);" onmouseover="this.style.background='var(--stone-50)'" onmouseout="this.style.background='none'">
+                                    <i class="fas fa-edit" style="width: 16px;"></i> Edit
+                                </button>
+                                <button onclick="deleteFaultTicket(${ticket.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--red-600);" onmouseover="this.style.background='var(--red-50)'" onmouseout="this.style.background='none'">
+                                    <i class="fas fa-trash" style="width: 16px;"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                return `
+                    <div class="item-card" data-status="${ticket.status.toLowerCase().replace(' ', '-')}">
+                        <div class="item-details">
+                            <strong>TKT-${String(ticket.id).padStart(3, '0')}</strong>
+                            <div class="item-meta">Machine: ${ticket.machine_name || 'Unknown'} | Submitted: ${formatDate(ticket.created_at)}</div>
+                            <div class="item-description">${ticket.description}</div>
+                            <div class="item-meta">Last Update: ${updateText}</div>
+                        </div>
+                        <div class="item-actions" style="display: flex; gap: 8px; align-items: center;">
+                            <span class="status-badge ${statusInfo.class}">${statusInfo.label}</span>
+                            ${actionButtons}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--stone-400);">Failed to load tickets</div>';
+        }
+    } catch (error) {
+        console.error('Error loading tickets:', error);
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--red-500);">Error loading tickets. Please try again.</div>';
+    }
 }
 
 function loadNotifications() {
@@ -332,10 +413,63 @@ function loadNotifications() {
 
 // ==================== MODAL FUNCTIONS ====================
 
-function openModal(modalId) {
+async function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.add('active');
+        
+        // Load machines when opening report fault modal
+        if (modalId === 'reportFaultModal') {
+            await loadMachinesForFaultReport();
+        }
+    }
+}
+
+async function loadMachinesForFaultReport() {
+    try {
+        const machineSelect = document.getElementById('faultMachine');
+        if (!machineSelect) return;
+        
+        // Show loading state
+        machineSelect.innerHTML = '<option value="">Loading machines...</option>';
+        machineSelect.disabled = true;
+        
+        // Fetch machines from API
+        const response = await API.get('/machines');
+        
+        if (response.status === 'success' && response.data) {
+            const machines = response.data.machines || [];
+            
+            // Populate dropdown
+            machineSelect.innerHTML = '<option value="">Select Machine</option>';
+            
+            // Filter only active machines
+            const activeMachines = machines.filter(m => m.status === 'Active');
+            
+            if (activeMachines.length === 0) {
+                machineSelect.innerHTML = '<option value="">No active machines available</option>';
+            } else {
+                activeMachines.forEach(machine => {
+                    const option = document.createElement('option');
+                    option.value = machine.id;
+                    option.textContent = `${machine.machine_name} - ${machine.model_number} (${machine.location})`;
+                    machineSelect.appendChild(option);
+                });
+            }
+        } else {
+            machineSelect.innerHTML = '<option value="">Error loading machines</option>';
+            console.error('Failed to load machines:', response.message);
+        }
+        
+        machineSelect.disabled = false;
+    } catch (error) {
+        console.error('Error loading machines:', error);
+        const machineSelect = document.getElementById('faultMachine');
+        if (machineSelect) {
+            machineSelect.innerHTML = '<option value="">Error loading machines</option>';
+            machineSelect.disabled = false;
+        }
+        showToast('Failed to load machines. Please try again.', 'error');
     }
 }
 
@@ -375,6 +509,12 @@ function setupFormHandlers() {
         });
     }
 
+    // Photo upload handler
+    const photoInput = document.getElementById('faultPhotos');
+    if (photoInput) {
+        photoInput.addEventListener('change', handlePhotoSelection);
+    }
+
     // Condition Update Form
     const updateForm = document.getElementById('conditionUpdateForm');
     if (updateForm) {
@@ -383,29 +523,153 @@ function setupFormHandlers() {
             handleConditionUpdateSubmission();
         });
     }
+
+    // Edit Fault Form
+    const editFaultForm = document.getElementById('editFaultForm');
+    if (editFaultForm) {
+        editFaultForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleEditFaultSubmission();
+        });
+    }
+
+    // Edit photo upload handler
+    const editPhotoInput = document.getElementById('editPhotos');
+    if (editPhotoInput) {
+        editPhotoInput.addEventListener('change', handleEditPhotoSelection);
+    }
 }
 
-function handleFaultSubmission() {
-    const formData = {
-        machine: document.getElementById('faultMachine').value,
-        category: document.getElementById('faultCategory').value,
-        description: document.getElementById('faultDescription').value,
-        priority: document.getElementById('faultPriority').value,
-        location: document.getElementById('faultLocation').value,
-        hours: document.getElementById('faultHours').value
-    };
+// ==================== PHOTO HANDLING ====================
 
-    // Here you would typically send to API
-    console.log('Fault report submitted:', formData);
+let selectedPhotos = [];
+
+function handlePhotoSelection(event) {
+    const files = Array.from(event.target.files);
     
-    showToast('Fault report submitted successfully! Supervisor will review shortly.', 'success');
-    closeModal('reportFaultModal');
-    document.getElementById('reportFaultForm').reset();
+    // Validate file count
+    if (selectedPhotos.length + files.length > 5) {
+        showToast('Maximum 5 photos allowed', 'error');
+        event.target.value = '';
+        return;
+    }
     
-    // Reload fault reports
-    setTimeout(() => {
-        loadFaultReports();
-    }, 500);
+    // Validate file types and sizes
+    const validFiles = [];
+    for (const file of files) {
+        // Check file type
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+            showToast(`Invalid file type: ${file.name}. Only JPEG, PNG, and WebP are allowed.`, 'error');
+            continue;
+        }
+        
+        // Check file size (5MB limit)
+        if (file.size > 5 * 1024 * 1024) {
+            showToast(`File too large: ${file.name}. Maximum size is 5MB.`, 'error');
+            continue;
+        }
+        
+        validFiles.push(file);
+    }
+    
+    // Add valid files to selected photos
+    selectedPhotos.push(...validFiles);
+    
+    // Update preview
+    updatePhotoPreview();
+    
+    // Clear input
+    event.target.value = '';
+}
+
+function updatePhotoPreview() {
+    const container = document.getElementById('photoPreviewContainer');
+    container.innerHTML = '';
+    
+    selectedPhotos.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const previewItem = document.createElement('div');
+            previewItem.className = 'photo-preview-item';
+            previewItem.innerHTML = `
+                <img src="${e.target.result}" alt="${file.name}">
+                <button type="button" class="remove-photo" onclick="removePhoto(${index})">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="photo-name" title="${file.name}">${file.name}</div>
+            `;
+            container.appendChild(previewItem);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function removePhoto(index) {
+    selectedPhotos.splice(index, 1);
+    updatePhotoPreview();
+    showToast('Photo removed', 'success');
+}
+
+async function handleFaultSubmission() {
+    try {
+        // Hide previous errors
+        const errorDiv = document.getElementById('faultFormErrors');
+        errorDiv.style.display = 'none';
+        errorDiv.innerHTML = '';
+        
+        // Create FormData for multipart/form-data
+        const formData = new FormData();
+        formData.append('machine_id', document.getElementById('faultMachine').value);
+        formData.append('description', document.getElementById('faultDescription').value);
+        formData.append('priority', document.getElementById('faultPriority').value);
+        
+        // Append photos
+        selectedPhotos.forEach((photo, index) => {
+            formData.append('photos[]', photo);
+        });
+        
+        // Show loading state
+        const submitBtn = document.querySelector('#reportFaultForm button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+        
+        // Submit to API
+        const response = await API.postFormData('/fault-tickets', formData);
+        
+        if (response.status === 'success') {
+            showToast('Fault report submitted successfully! Supervisor will review shortly.', 'success');
+            closeModal('reportFaultModal');
+            document.getElementById('reportFaultForm').reset();
+            selectedPhotos = [];
+            updatePhotoPreview();
+            
+            // Reload fault reports
+            setTimeout(() => {
+                loadFaultReports();
+            }, 500);
+        } else {
+            // Handle validation errors
+            if (response.errors) {
+                Utils.showFormErrors('faultFormErrors', response.errors);
+            } else {
+                showToast(response.message || 'Failed to submit fault report', 'error');
+            }
+        }
+        
+        // Restore button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+        
+    } catch (error) {
+        console.error('Error submitting fault report:', error);
+        showToast(error.message || 'Failed to submit fault report', 'error');
+        
+        // Restore button
+        const submitBtn = document.querySelector('#reportFaultForm button[type="submit"]');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Fault Report';
+    }
 }
 
 function handleConditionUpdateSubmission() {
@@ -432,26 +696,167 @@ function handleConditionUpdateSubmission() {
     }, 500);
 }
 
+// ==================== EDIT FAULT TICKET FUNCTIONS ====================
+
+let editSelectedPhotos = [];
+let imagesToDelete = [];
+
+function handleEditPhotoSelection(event) {
+    const files = Array.from(event.target.files);
+    const existingImageCount = document.querySelectorAll('#existingImages .image-preview').length;
+    
+    // Validate total file count (existing + new)
+    if (existingImageCount + editSelectedPhotos.length + files.length > 5) {
+        showToast('Maximum 5 photos allowed in total', 'error');
+        event.target.value = '';
+        return;
+    }
+    
+    // Validate file types and sizes
+    const validFiles = [];
+    for (const file of files) {
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+            showToast(`Invalid file type: ${file.name}. Only JPEG, PNG, and WebP are allowed.`, 'error');
+            continue;
+        }
+        
+        if (file.size > 5 * 1024 * 1024) {
+            showToast(`File too large: ${file.name}. Maximum size is 5MB.`, 'error');
+            continue;
+        }
+        
+        validFiles.push(file);
+    }
+    
+    editSelectedPhotos.push(...validFiles);
+    updateEditPhotoPreview();
+    event.target.value = '';
+}
+
+function updateEditPhotoPreview() {
+    const container = document.getElementById('editPhotoPreviews');
+    container.innerHTML = '';
+    
+    editSelectedPhotos.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const previewItem = document.createElement('div');
+            previewItem.className = 'photo-preview-item';
+            previewItem.innerHTML = `
+                <img src="${e.target.result}" alt="${file.name}">
+                <button type="button" class="remove-photo" onclick="removeEditPhoto(${index})">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="photo-name">${file.name}</div>
+            `;
+            container.appendChild(previewItem);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function removeEditPhoto(index) {
+    editSelectedPhotos.splice(index, 1);
+    updateEditPhotoPreview();
+    showToast('Photo removed', 'success');
+}
+
+function removeExistingImage(imageId, buttonElement) {
+    createConfirmationDialog(
+        'Remove Image',
+        'Remove this image? It will be deleted when you save the fault ticket.',
+        () => {
+            imagesToDelete.push(imageId);
+            buttonElement.closest('.photo-preview-item').remove();
+            showToast('Image will be removed when you save', 'info');
+        },
+        'warning'
+    );
+}
+
+async function handleEditFaultSubmission() {
+    try {
+        const ticketId = document.getElementById('editTicketId').value;
+        
+        // Create FormData for multipart/form-data
+        const formData = new FormData();
+        formData.append('description', document.getElementById('editDescription').value);
+        formData.append('priority', document.getElementById('editPrioritySelect').value);
+        
+        // Append new photos
+        editSelectedPhotos.forEach((photo) => {
+            formData.append('photos[]', photo);
+        });
+        
+        // Append images to delete
+        imagesToDelete.forEach((imageId) => {
+            formData.append('delete_images[]', imageId);
+        });
+        
+        // Show loading state
+        const submitBtn = document.querySelector('#editFaultForm button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+        
+        // Submit to API
+        const response = await API.putFormData(`/fault-tickets/${ticketId}`, formData);
+        
+        if (response.status === 'success') {
+            showToast('Fault ticket updated successfully!', 'success');
+            closeModal('editFaultModal');
+            
+            // Reset edit form state
+            editSelectedPhotos = [];
+            imagesToDelete = [];
+            
+            // Reload fault reports and tickets
+            setTimeout(() => {
+                loadFaultReports();
+                loadTickets();
+            }, 500);
+        } else {
+            showToast(response.message || 'Failed to update fault ticket', 'error');
+        }
+        
+        // Restore button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+        
+    } catch (error) {
+        console.error('Error updating fault ticket:', error);
+        showToast('Failed to update fault ticket. Please try again.', 'error');
+        
+        // Restore button
+        const submitBtn = document.querySelector('#editFaultForm button[type="submit"]');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Update Fault Report';
+    }
+}
+
 // ==================== FILTER FUNCTIONS ====================
 
-function filterFaults(status) {
-    filterItems('faultsContainer', status, 'fault reports');
+function filterFaults(status, buttonElement) {
+    filterItems('faultsContainer', status, 'fault reports', buttonElement || event?.target);
 }
 
-function filterUpdates(status) {
-    filterItems('updatesContainer', status, 'condition updates');
+function filterUpdates(status, buttonElement) {
+    filterItems('updatesContainer', status, 'condition updates', buttonElement || event?.target);
 }
 
-function filterTickets(status) {
-    filterItems('ticketsContainer', status, 'tickets');
+function filterTickets(status, buttonElement) {
+    filterItems('ticketsContainer', status, 'tickets', buttonElement || event?.target);
 }
 
-function filterItems(containerId, status, label) {
+function filterItems(containerId, status, label, buttonElement) {
     const cards = document.querySelectorAll(`#${containerId} .item-card`);
     let count = 0;
     
     cards.forEach(card => {
-        if (status === 'all' || card.getAttribute('data-status') === status) {
+        const cardStatus = card.getAttribute('data-status');
+        
+        // Show all if 'all' is selected, otherwise match status
+        if (status === 'all' || cardStatus === status) {
             card.style.display = 'flex';
             count++;
         } else {
@@ -460,11 +865,133 @@ function filterItems(containerId, status, label) {
     });
     
     // Update active button
-    const filterButtons = event.target.parentElement.querySelectorAll('.filter-btn');
-    filterButtons.forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+    if (buttonElement) {
+        const filterButtons = buttonElement.parentElement.querySelectorAll('.filter-btn');
+        filterButtons.forEach(btn => btn.classList.remove('active'));
+        buttonElement.classList.add('active');
+    }
     
     showToast(`Showing ${count} ${label}`, 'success');
+}
+
+// ==================== DROPDOWN MENU FUNCTIONS ====================
+
+function toggleTicketMenu(ticketId, event) {
+    event.stopPropagation();
+    const menu = document.getElementById(`ticket-menu-${ticketId}`);
+    
+    // Close all other menus
+    document.querySelectorAll('.dropdown-menu').forEach(m => {
+        if (m.id !== `ticket-menu-${ticketId}`) {
+            m.style.display = 'none';
+        }
+    });
+    
+    // Toggle current menu
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+function closeTicketMenu(ticketId) {
+    const menu = document.getElementById(`ticket-menu-${ticketId}`);
+    if (menu) menu.style.display = 'none';
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function() {
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.style.display = 'none';
+    });
+});
+
+// ==================== EDIT/DELETE TICKET FUNCTIONS ====================
+
+async function editFaultTicket(ticketId) {
+    try {
+        // Fetch ticket details
+        const response = await API.get(`/fault-tickets/${ticketId}`);
+        
+        if (response.status !== 'success') {
+            showToast('Failed to load ticket details', 'error');
+            return;
+        }
+        
+        const ticket = response.data;
+        
+        // Check if ticket is still pending
+        if (ticket.status !== 'Open') {
+            showToast('Only pending tickets can be edited', 'error');
+            return;
+        }
+        
+        // Populate edit form
+        document.getElementById('editTicketId').value = ticket.id;
+        
+        // Display machine name (can't be changed)
+        const editMachineSelect = document.getElementById('editMachineSelect');
+        editMachineSelect.innerHTML = `<option value="${ticket.machine_id}" selected>${ticket.machine_name || 'Unknown Machine'}</option>`;
+        editMachineSelect.disabled = true;
+        
+        document.getElementById('editPrioritySelect').value = ticket.priority;
+        document.getElementById('editDescription').value = ticket.description;
+        
+        // Display existing images
+        const existingImagesContainer = document.getElementById('existingImages');
+        existingImagesContainer.innerHTML = '';
+        
+        if (ticket.images && ticket.images.length > 0) {
+            ticket.images.forEach(img => {
+                const imgDiv = document.createElement('div');
+                imgDiv.className = 'photo-preview-item';
+                imgDiv.innerHTML = `
+                    <img src="http://localhost:8000/api/uploads/fault-tickets/${img.image_url}" alt="${img.original_filename}">
+                    <button type="button" class="remove-photo" onclick="removeExistingImage(${img.id}, this)" data-image-id="${img.id}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <div class="photo-name">${img.original_filename}</div>
+                `;
+                existingImagesContainer.appendChild(imgDiv);
+            });
+        }
+        
+        // Clear new photos
+        document.getElementById('editPhotos').value = '';
+        document.getElementById('editPhotoPreviews').innerHTML = '';
+        
+        // Open modal
+        openModal('editFaultModal');
+        
+    } catch (error) {
+        console.error('Error loading ticket for edit:', error);
+        showToast('Failed to load ticket details', 'error');
+    }
+}
+
+async function deleteFaultTicket(ticketId) {
+    // Close the dropdown menu first
+    closeTicketMenu(ticketId);
+    
+    createConfirmationDialog(
+        'Delete Fault Ticket',
+        'Are you sure you want to delete this fault ticket? This action cannot be undone and all associated images will be permanently removed.',
+        async () => {
+            try {
+                const response = await API.delete(`/fault-tickets/${ticketId}`);
+                
+                if (response.status === 'success') {
+                    showToast('Fault ticket deleted successfully', 'success');
+                    // Reload tickets
+                    loadTickets();
+                    loadFaultReports();
+                } else {
+                    showToast(response.message || 'Failed to delete ticket', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting ticket:', error);
+                showToast('Failed to delete ticket. Please try again.', 'error');
+            }
+        },
+        'danger'
+    );
 }
 
 // ==================== VIEW DETAIL FUNCTIONS ====================
@@ -549,80 +1076,107 @@ function viewMachine(id) {
     document.body.appendChild(detailsModal);
 }
 
-function viewFaultDetails(id) {
-    const faultData = {
-        'TKT-003': {
-            machine: 'Truck #203',
-            submitted: 'Aug 22, 10:30 AM',
-            priority: 'High',
-            category: 'Engine System',
-            description: 'Engine making unusual noise, loss of power during operation',
-            status: 'Pending',
-            statusClass: 'status-pending',
-            lastUpdate: 'Awaiting supervisor review'
-        },
-        'TKT-001': {
-            machine: 'Excavator #045',
-            submitted: 'Aug 20, 02:15 PM',
-            priority: 'Medium',
-            category: 'Hydraulic System',
-            description: 'Hydraulic fluid leak from main cylinder',
-            status: 'In Progress',
-            statusClass: 'status-in-progress',
-            lastUpdate: 'Parts ordered, repair in progress'
-        },
-        'TKT-002': {
-            machine: 'Loader #128',
-            submitted: 'Aug 18, 11:00 AM',
-            priority: 'High',
-            category: 'Brake System',
-            description: 'Brake pedal feels soft, reduced stopping power',
-            status: 'Resolved',
-            statusClass: 'status-resolved',
-            lastUpdate: 'Completed Aug 21, 3:30 PM'
-        }
-    };
-
-    const fault = faultData[id];
-    if (!fault) return;
-
-    const detailsModal = document.createElement('div');
-    detailsModal.className = 'modal active';
-    detailsModal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-exclamation-triangle"></i> Fault Report - ${id}</h2>
-                <button class="btn-close" onclick="this.closest('.modal').remove()">
-                    <i class="fas fa-times"></i>
-                </button>
+async function viewFaultDetails(id) {
+    try {
+        // Show loading indicator
+        const loadingModal = document.createElement('div');
+        loadingModal.className = 'modal active';
+        loadingModal.id = 'loadingModal';
+        loadingModal.innerHTML = `
+            <div class="modal-content" style="text-align: center; padding: 40px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: var(--stone-600);"></i>
+                <p style="margin-top: 16px;">Loading fault details...</p>
             </div>
-            <div style="padding: 30px;">
+        `;
+        document.body.appendChild(loadingModal);
+        
+        // Fetch fault ticket details
+        const response = await API.get(`/fault-tickets/${id}`);
+        
+        // Remove loading modal
+        const loading = document.getElementById('loadingModal');
+        if (loading) loading.remove();
+
+        if (response.status !== 'success') {
+            showToast(response.message || 'Failed to load fault details', 'error');
+            return;
+        }
+
+        const fault = response.data;
+        const statusInfo = getStatusInfo(fault.status);
+        const updateText = getUpdateText(fault.status);
+
+        // Build images section
+        let imagesHtml = '';
+        if (fault.images && fault.images.length > 0) {
+            imagesHtml = `
                 <div class="form-section">
-                    <h5><i class="fas fa-info-circle"></i> Fault Information</h5>
-                    <div style="margin-bottom: 8px;"><strong>Ticket ID:</strong> ${id}</div>
-                    <div style="margin-bottom: 8px;"><strong>Machine:</strong> ${fault.machine}</div>
-                    <div style="margin-bottom: 8px;"><strong>Submitted:</strong> ${fault.submitted}</div>
-                    <div style="margin-bottom: 8px;"><strong>Priority:</strong> ${fault.priority}</div>
-                    <div style="margin-bottom: 8px;"><strong>Category:</strong> ${fault.category}</div>
+                    <h5><i class="fas fa-images"></i> Attached Images (${fault.images.length})</h5>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 12px;">
+                        ${fault.images.map(img => `
+                            <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 1px solid var(--stone-200);">
+                                <img src="http://localhost:8000/api/uploads/fault-tickets/${img.image_url}" 
+                                     alt="${img.original_filename}"
+                                     style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;"
+                                     onclick="window.open('http://localhost:8000/api/uploads/fault-tickets/${img.image_url}', '_blank')"
+                                     onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;background:var(--stone-100);color:var(--stone-500);\\'>Image not available</div>'">
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
-                <div class="form-section">
-                    <h5><i class="fas fa-file-alt"></i> Description</h5>
-                    <div>${fault.description}</div>
-                </div>
-                <div class="form-section">
-                    <h5><i class="fas fa-tasks"></i> Status</h5>
-                    <div style="margin-bottom: 8px;"><strong>Current Status:</strong> <span class="status-badge ${fault.statusClass}">${fault.status}</span></div>
-                    <div style="margin-bottom: 8px;"><strong>Last Update:</strong> ${fault.lastUpdate}</div>
-                </div>
-                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--stone-200); display: flex; gap: 10px; justify-content: flex-end;">
-                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">
-                        <i class="fas fa-times"></i> Close
+            `;
+        }
+        
+        const detailsModal = document.createElement('div');
+        detailsModal.className = 'modal active';
+        detailsModal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2><i class="fas fa-exclamation-triangle"></i> Fault Report #${fault.id}</h2>
+                    <button class="btn-close" onclick="this.closest('.modal').remove()">
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
+                <div style="padding: 30px;">
+                    <div class="form-section">
+                        <h5><i class="fas fa-info-circle"></i> Fault Information</h5>
+                        <div style="margin-bottom: 8px;"><strong>Ticket ID:</strong> #${fault.id}</div>
+                        <div style="margin-bottom: 8px;"><strong>Machine:</strong> ${fault.machine_name || 'Unknown'}</div>
+                        <div style="margin-bottom: 8px;"><strong>Location:</strong> ${fault.location || 'Not specified'}</div>
+                        <div style="margin-bottom: 8px;"><strong>Submitted:</strong> ${formatDate(fault.created_at)}</div>
+                        <div style="margin-bottom: 8px;"><strong>Priority:</strong> <span class="priority-badge priority-${fault.priority?.toLowerCase()}">${fault.priority || 'Medium'}</span></div>
+                        <div style="margin-bottom: 8px;"><strong>Reported By:</strong> ${fault.reported_by_name || 'N/A'}</div>
+                    </div>
+                    <div class="form-section">
+                        <h5><i class="fas fa-file-alt"></i> Description</h5>
+                        <div style="padding: 12px; background: var(--stone-50); border-radius: 8px; border: 1px solid var(--stone-200);">
+                            ${fault.description || 'No description provided'}
+                        </div>
+                    </div>
+                    ${imagesHtml}
+                    <div class="form-section">
+                        <h5><i class="fas fa-tasks"></i> Status</h5>
+                        <div style="margin-bottom: 8px;"><strong>Current Status:</strong> <span class="status-badge ${statusInfo.class}">${statusInfo.text}</span></div>
+                        <div style="margin-bottom: 8px;"><strong>Last Update:</strong> ${updateText}</div>
+                        ${fault.updated_at !== fault.created_at ? `<div style="margin-bottom: 8px;"><strong>Updated On:</strong> ${formatDate(fault.updated_at)}</div>` : ''}
+                    </div>
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--stone-200); display: flex; gap: 10px; justify-content: flex-end;">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </div>
+                </div>
             </div>
-        </div>
-    `;
-    document.body.appendChild(detailsModal);
+        `;
+        document.body.appendChild(detailsModal);
+    } catch (error) {
+        // Remove loading modal if exists
+        const loading = document.getElementById('loadingModal');
+        if (loading) loading.remove();
+        
+        console.error('Error loading fault details:', error);
+        showToast('Failed to load fault details. Please try again.', 'error');
+    }
 }
 
 function viewUpdateDetails(id) {
@@ -825,6 +1379,13 @@ function createConfirmationDialog(title, message, onConfirm, type = 'danger') {
             </div>
         </div>
     `;
+    
+    // Close on outside click
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            closeConfirmation();
+        }
+    };
     
     // Store the confirmation action
     window.pendingConfirmAction = onConfirm;

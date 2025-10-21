@@ -2039,6 +2039,379 @@ components:
         '200':
           description: Successfully retrieved vehicles due for service
 
+  # ==================== FAULT TICKETS ====================
+  /fault-tickets:
+    get:
+      tags:
+        - Fault Tickets
+      summary: Get all fault tickets
+      description: Retrieve all fault tickets with optional filtering
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: machine_id
+          in: query
+          description: Filter by machine ID
+          schema:
+            type: integer
+        - name: reported_by
+          in: query
+          description: Filter by reporter user ID
+          schema:
+            type: integer
+        - name: status
+          in: query
+          description: Filter by ticket status
+          schema:
+            type: string
+            enum: [Open, In Progress, Resolved, Closed]
+        - name: priority
+          in: query
+          description: Filter by priority level
+          schema:
+            type: string
+            enum: [Low, Medium, High, Critical]
+      responses:
+        '200':
+          description: Successfully retrieved fault tickets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      tickets:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/FaultTicket'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    post:
+      tags:
+        - Fault Tickets
+      summary: Create new fault ticket
+      description: Report a new fault with optional image attachments (max 5 images, 5MB each)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - machine_id
+                - description
+                - priority
+              properties:
+                machine_id:
+                  type: integer
+                  description: ID of the machine with the fault (location is automatically fetched from machine record)
+                description:
+                  type: string
+                  minLength: 10
+                  description: Detailed fault description (minimum 10 characters)
+                priority:
+                  type: string
+                  enum: [Low, Medium, High, Critical]
+                  description: Fault priority level
+                photos:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  maxItems: 5
+                  description: Fault images (JPEG, PNG, WebP only, max 5MB each)
+      responses:
+        '201':
+          description: Fault ticket created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Fault ticket created successfully
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: ID of the created fault ticket
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Validation failed
+                  errors:
+                    type: object
+                    properties:
+                      machine_id:
+                        type: string
+                        example: Machine is required
+                      description:
+                        type: string
+                        example: Description must be at least 10 characters
+                      priority:
+                        type: string
+                        example: Invalid priority level
+                      images:
+                        type: array
+                        items:
+                          type: string
+                        example: [Maximum 5 images allowed, file.jpg exceeds 5MB size limit]
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /fault-tickets/{id}:
+    get:
+      tags:
+        - Fault Tickets
+      summary: Get fault ticket by ID
+      description: Retrieve a single fault ticket with its images
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Fault ticket ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully retrieved fault ticket
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      ticket:
+                        $ref: '#/components/schemas/FaultTicketWithImages'
+        '404':
+          description: Fault ticket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    put:
+      tags:
+        - Fault Tickets
+      summary: Update fault ticket
+      description: Update fault ticket description, priority, and images (add/remove). Only pending tickets can be edited.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Fault ticket ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                  minLength: 10
+                  description: Updated fault description
+                priority:
+                  type: string
+                  enum: [Low, Medium, High, Critical]
+                  description: Updated priority level
+                photos:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  maxItems: 5
+                  description: New images to add (max 5 total images per ticket)
+                delete_images:
+                  type: array
+                  items:
+                    type: integer
+                  description: Array of image IDs to delete
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                  minLength: 10
+                priority:
+                  type: string
+                  enum: [Low, Medium, High, Critical]
+                location:
+                  type: string
+                status:
+                  type: string
+                  enum: [Open, In Progress, Resolved, Closed]
+      responses:
+        '200':
+          description: Fault ticket updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Fault ticket updated successfully
+        '400':
+          description: Bad request (e.g., ticket not pending)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Only pending tickets can be edited
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Validation failed
+                  errors:
+                    type: object
+                    properties:
+                      priority:
+                        type: string
+                        example: Invalid priority level
+                      photos:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Image 1: File too large", "Image 2: Invalid type"]
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    delete:
+      tags:
+        - Fault Tickets
+      summary: Delete fault ticket
+      description: Delete a fault ticket and all associated images. Only pending tickets can be deleted.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Fault ticket ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Fault ticket deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Fault ticket deleted successfully
+        '400':
+          description: Bad request (e.g., ticket not pending)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: Only pending tickets can be deleted
+        '404':
+          description: Fault ticket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     Machine:
@@ -2265,6 +2638,76 @@ components:
         notes:
           type: string
 
+    FaultTicket:
+      type: object
+      properties:
+        id:
+          type: integer
+        machine_id:
+          type: integer
+        machine_asset_tag:
+          type: string
+        machine_name:
+          type: string
+        reported_by:
+          type: integer
+        reporter_name:
+          type: string
+        reporter_first_name:
+          type: string
+        reporter_last_name:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+          enum: [Low, Medium, High, Critical]
+        location:
+          type: string
+        status:
+          type: string
+          enum: [Open, In Progress, Resolved, Closed]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    
+    FaultTicketWithImages:
+      allOf:
+        - $ref: '#/components/schemas/FaultTicket'
+        - type: object
+          properties:
+            images:
+              type: array
+              items:
+                $ref: '#/components/schemas/FaultTicketImage'
+    
+    FaultTicketImage:
+      type: object
+      properties:
+        id:
+          type: integer
+        fault_ticket_id:
+          type: integer
+        image_uuid:
+          type: string
+          format: uuid
+        original_filename:
+          type: string
+        file_path:
+          type: string
+        file_size:
+          type: integer
+          description: File size in bytes
+        mime_type:
+          type: string
+          enum: [image/jpeg, image/png, image/webp]
+        created_at:
+          type: string
+          format: date-time
+    
     Pagination:
       type: object
       properties:

@@ -54,6 +54,8 @@ require_once __DIR__ . '/../app/controllers/UserController.php';
 require_once __DIR__ . '/../app/controllers/LogController.php';
 require_once __DIR__ . '/../app/controllers/MachineController.php';
 require_once __DIR__ . '/../app/controllers/VehicleController.php';
+require_once __DIR__ . '/../app/controllers/FaultTicketController.php';
+require_once __DIR__ . '/../app/controllers/FileController.php';
 
 // Initialize request logger
 $requestLogger = new RequestLogger();
@@ -108,6 +110,16 @@ $router->get('/vehicles/:id', 'VehicleController', 'show');
 $router->put('/vehicles/:id', 'VehicleController', 'update');
 $router->patch('/vehicles/:id/mileage', 'VehicleController', 'updateMileage');
 $router->delete('/vehicles/:id', 'VehicleController', 'delete');
+
+// Fault ticket routes (Machinery Operator and above)
+$router->get('/fault-tickets', 'FaultTicketController', 'index');
+$router->get('/fault-tickets/:id', 'FaultTicketController', 'show');
+$router->post('/fault-tickets', 'FaultTicketController', 'create');
+$router->put('/fault-tickets/:id', 'FaultTicketController', 'update');
+$router->delete('/fault-tickets/:id', 'FaultTicketController', 'delete');
+
+// File serving routes (for uploaded files)
+$router->get('/uploads/fault-tickets/:filename', 'FileController', 'serveFaultTicketImage');
 
 // Dispatch the request
 try {

@@ -140,10 +140,10 @@
 
                     <div class="filter-controls">
                         <button class="filter-btn active" onclick="filterFaults('all')">All Reports</button>
-                        <button class="filter-btn" onclick="filterFaults('pending')">Pending</button>
-                        <button class="filter-btn" onclick="filterFaults('approved')">Approved</button>
+                        <button class="filter-btn" onclick="filterFaults('open')">Pending</button>
                         <button class="filter-btn" onclick="filterFaults('in-progress')">In Progress</button>
                         <button class="filter-btn" onclick="filterFaults('resolved')">Resolved</button>
+                        <button class="filter-btn" onclick="filterFaults('closed')">Closed</button>
                     </div>
 
                     <div class="card">
@@ -196,9 +196,10 @@
 
                     <div class="filter-controls">
                         <button class="filter-btn active" onclick="filterTickets('all')">All Tickets</button>
-                        <button class="filter-btn" onclick="filterTickets('pending')">Pending</button>
+                        <button class="filter-btn" onclick="filterTickets('open')">Pending</button>
                         <button class="filter-btn" onclick="filterTickets('in-progress')">In Progress</button>
                         <button class="filter-btn" onclick="filterTickets('resolved')">Resolved</button>
+                        <button class="filter-btn" onclick="filterTickets('closed')">Closed</button>
                     </div>
 
                     <div class="card">
@@ -240,11 +241,14 @@
                 </button>
             </div>
             <form id="reportFaultForm">
+                <!-- Error display -->
+                <div id="faultFormErrors" class="form-errors" style="display: none;"></div>
+                
                 <div class="form-section">
                     <h5><i class="fas fa-tools"></i> Fault Information</h5>
-                    <div class="form-grid">
+                    <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Machine</label>
+                            <label class="form-label">Machine *</label>
                             <select class="form-select" id="faultMachine" required>
                                 <option value="">Select Machine</option>
                                 <option value="EXC-045">Excavator #045</option>
@@ -253,49 +257,32 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Fault Category</label>
-                            <select class="form-select" id="faultCategory" required>
-                                <option value="">Select Category</option>
-                                <option value="Engine System">Engine System</option>
-                                <option value="Hydraulic System">Hydraulic System</option>
-                                <option value="Electrical System">Electrical System</option>
-                                <option value="Brake System">Brake System</option>
-                                <option value="Transmission">Transmission</option>
-                                <option value="Other">Other</option>
+                            <label class="form-label">Priority Level *</label>
+                            <select class="form-select" id="faultPriority" required>
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
                             </select>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Fault Description</label>
-                        <textarea class="form-textarea" id="faultDescription" required placeholder="Describe the fault in detail..."></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Priority Level</label>
-                        <select class="form-select" id="faultPriority" required>
-                            <option value="Low">Low</option>
-                            <option value="Medium" selected>Medium</option>
-                            <option value="High">High</option>
-                            <option value="Critical">Critical</option>
-                        </select>
-                    </div>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label">Current Location</label>
-                            <input type="text" class="form-input" id="faultLocation" required placeholder="e.g., Site A - Zone 3">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Current Hours</label>
-                            <input type="number" class="form-input" id="faultHours" required placeholder="e.g., 1847">
-                        </div>
+                        <label class="form-label">Fault Description *</label>
+                        <textarea class="form-textarea" id="faultDescription" required 
+                                  placeholder="Describe the fault in detail including any unusual sounds, behaviors, or observations..."></textarea>
                     </div>
                 </div>
                 
                 <div class="form-section">
                     <h5><i class="fas fa-camera"></i> Photo Documentation</h5>
-                    <div class="photo-upload" onclick="document.getElementById('faultPhotos').click()">
-                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--royal-blue);"></i>
-                        <p>Click to upload photos</p>
-                        <input type="file" id="faultPhotos" accept="image/*" multiple style="display: none;">
+                    <div class="photo-upload-area">
+                        <div class="photo-upload" onclick="document.getElementById('faultPhotos').click()">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--royal-blue);"></i>
+                            <p><strong>Click to upload photos</strong></p>
+                            <p style="font-size: 0.85rem; color: var(--muted);">Maximum 5 images (JPEG, PNG, WebP)</p>
+                            <input type="file" id="faultPhotos" accept="image/jpeg,image/png,image/webp" multiple style="display: none;">
+                        </div>
+                        <div id="photoPreviewContainer" class="photo-preview-container"></div>
                     </div>
                 </div>
 
@@ -304,6 +291,74 @@
                         <i class="fas fa-paper-plane"></i> Submit Fault Report
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="closeModal('reportFaultModal')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Fault Ticket Modal -->
+    <div id="editFaultModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> Edit Fault Report</h2>
+                <button class="btn-close" onclick="closeModal('editFaultModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="editFaultForm">
+                <input type="hidden" id="editTicketId">
+                
+                <div class="form-section">
+                    <h5><i class="fas fa-tools"></i> Fault Information</h5>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Machine *</label>
+                            <select class="form-select" id="editMachineSelect" required disabled>
+                                <option value="">Select Machine</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Priority Level *</label>
+                            <select class="form-select" id="editPrioritySelect" required>
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fault Description *</label>
+                        <textarea class="form-textarea" id="editDescription" rows="5" 
+                                  placeholder="Describe the issue in detail..." required></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-camera"></i> Existing Images</h5>
+                    <div id="existingImages" class="photo-preview-container" style="margin-bottom: 20px;"></div>
+                </div>
+                
+                <div class="form-section">
+                    <h5><i class="fas fa-camera"></i> Add New Images</h5>
+                    <div class="photo-upload-area">
+                        <div class="photo-upload" onclick="document.getElementById('editPhotos').click()">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--royal-blue);"></i>
+                            <p><strong>Click to upload new photos</strong></p>
+                            <p style="font-size: 0.85rem; color: var(--muted);">Maximum 5 images total (JPEG, PNG, WebP)</p>
+                            <input type="file" id="editPhotos" accept="image/jpeg,image/png,image/webp" multiple style="display: none;">
+                        </div>
+                        <div id="editPhotoPreviews" class="photo-preview-container"></div>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update Fault Report
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editFaultModal')">
                         <i class="fas fa-times"></i> Cancel
                     </button>
                 </div>

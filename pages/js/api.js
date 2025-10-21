@@ -105,6 +105,100 @@ const API = {
     },
     
     /**
+     * POST request with FormData (for file uploads)
+     */
+    async postFormData(endpoint, formData, options = {}) {
+        const url = `${CONFIG.API_BASE_URL}${endpoint}`;
+        
+        // Get token from localStorage
+        const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+        
+        // Set headers (don't set Content-Type, let browser set it with boundary for multipart/form-data)
+        const headers = {};
+        
+        // Add authorization header if token exists
+        if (token && !options.skipAuth) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers,
+                body: formData,
+                credentials: 'include'
+            });
+            
+            const data = await response.json();
+            
+            // Handle 401 Unauthorized
+            if (response.status === 401) {
+                if (!options.skipAuthRedirect && !window.location.pathname.includes('login')) {
+                    this.handleUnauthorized();
+                }
+                throw new Error(data.message || 'Unauthorized');
+            }
+            
+            // Return the data object (includes status, message, errors)
+            if (!response.ok) {
+                return data;
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
+        }
+    },
+    
+    /**
+     * PUT request with FormData (multipart)
+     */
+    async putFormData(endpoint, formData, options = {}) {
+        const url = `${CONFIG.API_BASE_URL}${endpoint}`;
+        const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+        
+        // Set headers (don't set Content-Type for FormData)
+        const headers = {
+            ...options.headers
+        };
+        
+        // Add authorization header if token exists
+        if (token && !options.skipAuth) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        try {
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers,
+                body: formData,
+                credentials: 'include'
+            });
+            
+            const data = await response.json();
+            
+            // Handle 401 Unauthorized
+            if (response.status === 401) {
+                if (!options.skipAuthRedirect && !window.location.pathname.includes('login')) {
+                    this.handleUnauthorized();
+                }
+                throw new Error(data.message || 'Unauthorized');
+            }
+            
+            // Return the data object (includes status, message, errors)
+            if (!response.ok) {
+                return data;
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
+        }
+    },
+    
+    /**
      * Handle unauthorized access
      */
     handleUnauthorized() {
