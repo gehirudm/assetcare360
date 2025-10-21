@@ -53,20 +53,43 @@ const DashboardInit = {
 
     /**
      * Update user information in the dashboard header
-     * Expects elements with classes: .user-info span, .user-avatar
+     * Supports both old and new header structures
      */
     updateUserInfo(user) {
-        // Update user name
-        const userInfoElement = document.querySelector('.user-info span');
-        if (userInfoElement) {
-            userInfoElement.textContent = user.full_name || user.role || 'User';
+        // New header structure (Supervisor/Admin style)
+        const userNameElement = document.getElementById('userName');
+        const userEmployeeIdElement = document.getElementById('userEmployeeId');
+        const userRoleElement = document.getElementById('userRole');
+        const userAvatarElement = document.getElementById('userAvatar');
+        
+        if (userNameElement) {
+            userNameElement.textContent = user.full_name || user.role || 'User';
         }
         
-        // Update user avatar with initials
-        const userAvatarElement = document.querySelector('.user-avatar');
+        if (userEmployeeIdElement) {
+            userEmployeeIdElement.textContent = user.employee_id || '';
+        }
+        
+        if (userRoleElement) {
+            userRoleElement.textContent = user.role || '';
+        }
+        
         if (userAvatarElement) {
             const initials = this.getInitials(user.full_name || user.role);
             userAvatarElement.textContent = initials;
+        }
+        
+        // Fallback: Old header structure (legacy dashboards)
+        const legacyUserInfoElement = document.querySelector('.user-info span:not(.separator)');
+        if (legacyUserInfoElement && !userNameElement) {
+            legacyUserInfoElement.textContent = user.full_name || user.role || 'User';
+        }
+        
+        // Update legacy user avatar if new one doesn't exist
+        const legacyUserAvatarElement = document.querySelector('.user-avatar:not([id])');
+        if (legacyUserAvatarElement && !userAvatarElement) {
+            const initials = this.getInitials(user.full_name || user.role);
+            legacyUserAvatarElement.textContent = initials;
         }
 
         // Update role display if exists

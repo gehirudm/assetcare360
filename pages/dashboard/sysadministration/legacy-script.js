@@ -466,6 +466,83 @@ function generateTempPassword() {
     return password;
 }
 
+// ==================== CONFIRMATION DIALOG ====================
+
+function createConfirmationDialog(title, message, onConfirm, type = 'danger') {
+    const modal = document.createElement('div');
+    modal.className = 'modal confirmation-modal';
+    modal.id = 'confirmationModal';
+    
+    const iconMap = {
+        'danger': 'exclamation-triangle',
+        'warning': 'exclamation-circle',
+        'primary': 'question-circle',
+        'info': 'info-circle'
+    };
+    
+    modal.innerHTML = `
+        <div class="modal-content confirmation-content">
+            <div class="confirmation-header ${type}">
+                <i class="fas fa-${iconMap[type] || 'question-circle'}"></i>
+                <h4>${title}</h4>
+            </div>
+            <div class="confirmation-body">
+                <p>${message}</p>
+            </div>
+            <div class="confirmation-actions">
+                <button class="btn btn-secondary" onclick="closeConfirmation()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="btn btn-${type}" onclick="confirmAction()">
+                    <i class="fas fa-check"></i> Confirm
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Close on outside click
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            closeConfirmation();
+        }
+    };
+    
+    // Store the confirmation action
+    window.pendingConfirmAction = onConfirm;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('active'), 10);
+}
+
+function closeConfirmation() {
+    const modal = document.getElementById('confirmationModal');
+    if (modal) {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    }
+    window.pendingConfirmAction = null;
+}
+
+async function confirmAction() {
+    if (window.pendingConfirmAction) {
+        await window.pendingConfirmAction();
+        closeConfirmation();
+    }
+}
+
+// ==================== LOGOUT ====================
+
+function logout() {
+    createConfirmationDialog(
+        'Confirm Logout',
+        'Are you sure you want to logout? Any unsaved changes will be lost.',
+        () => {
+            Auth.logout();
+        },
+        'warning'
+    );
+}
+
 // Auto-refresh active users every 30 seconds (in real implementation)
 setInterval(function() {
     // In real implementation, would fetch updated user activity
