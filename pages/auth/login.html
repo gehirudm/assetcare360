@@ -35,12 +35,12 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            overflow: hidden;
+            padding: 2rem 0;
         }
 
         body::before {
             content: '';
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             right: 0;
@@ -52,7 +52,7 @@
 
         body::after {
             content: '';
-            position: absolute;
+            position: fixed;
             width: 600px;
             height: 600px;
             background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
