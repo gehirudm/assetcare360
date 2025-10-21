@@ -875,3 +875,913 @@ function clearOldLogs() {
     }
     */
 }
+
+// ==================== MODAL MANAGEMENT ====================
+
+function openModal(modalId) {
+    console.log(`Opening modal: ${modalId}`);
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+        // Add animation
+        setTimeout(() => {
+            modal.style.opacity = '1';
+        }, 10);
+    }
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.opacity = '0';
+        setTimeout(() => {
+            modal.style.display = 'none';
+            modal.classList.remove('active');
+        }, 300);
+    }
+}
+
+// Close modal when clicking outside of it
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.opacity = '0';
+        setTimeout(() => {
+            event.target.style.display = 'none';
+            event.target.classList.remove('active');
+        }, 300);
+    }
+}
+
+// ==================== PERMISSIONS & ROLES ====================
+
+function editPermission(module) {
+    console.log(`Editing permission for module: ${module}`);
+    
+    // Open details modal with permission editing form
+    const modal = document.getElementById('detailsModal');
+    const title = document.getElementById('detailsTitle');
+    const content = document.getElementById('detailsContent');
+    
+    title.textContent = `Edit Permissions: ${module.replace(/-/g, ' ').toUpperCase()}`;
+    
+    content.innerHTML = `
+        <form id="editPermissionForm">
+            <div class="form-section">
+                <h5>🔐 Select Roles with Access</h5>
+                ${['Admin', 'Maintenance Manager', 'Inventory Manager', 'Technical Officer', 'Supervisor', 'Machinary Operator', 'Driver', 'Auction Officer'].map(role => `
+                    <div class="form-check">
+                        <input type="checkbox" id="perm-${role.toLowerCase().replace(/\s+/g, '-')}" ${['Admin', 'Supervisor'].includes(role) ? 'checked' : ''}>
+                        <label for="perm-${role.toLowerCase().replace(/\s+/g, '-')}">${role}</label>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="form-section">
+                <h5>📝 Access Level</h5>
+                <div class="form-group">
+                    <label class="form-label">Permission Type</label>
+                    <select class="form-select" required>
+                        <option value="full">Full Access (View, Create, Edit, Delete)</option>
+                        <option value="edit">View & Edit Only</option>
+                        <option value="view">View Only</option>
+                        <option value="none">No Access</option>
+                    </select>
+                </div>
+            </div>
+            <div style="text-align: right; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    `;
+    
+    modal.classList.add('active'); modal.style.display = 'flex';
+    setTimeout(() => { modal.style.opacity = '1'; }, 10);
+    
+    // Handle form submission
+    document.getElementById('editPermissionForm').onsubmit = function(e) {
+        e.preventDefault();
+        if (typeof Utils !== 'undefined' && Utils.showToast) {
+            Utils.showToast(`Permissions updated for ${module}!`, 'success');
+        } else {
+            alert(`Permissions updated for ${module}!`);
+        }
+        closeModal('detailsModal');
+    };
+}
+
+// ==================== SERVICE INTERVAL CONFIGURATION ====================
+
+function editServiceInterval(intervalId) {
+    console.log(`Editing service interval: ${intervalId}`);
+    
+    // Sample data (would come from API in real implementation)
+    const intervalData = {
+        'SI-001': { type: 'light-vehicle', service: 'Oil Change', km: 5000, months: 6 },
+        'SI-002': { type: 'heavy-vehicle', service: 'Major Service', km: 10000, months: 12 },
+        'SI-003': { type: 'excavator', service: 'Hydraulic System Check', km: 500, months: 3 },
+        'SI-004': { type: 'loader', service: 'Engine Service', km: 1000, months: 4 }
+    };
+    
+    const data = intervalData[intervalId] || { type: '', service: '', km: '', months: '' };
+    
+    const modal = document.getElementById('detailsModal');
+    const title = document.getElementById('detailsTitle');
+    const content = document.getElementById('detailsContent');
+    
+    title.textContent = `Edit Service Interval: ${intervalId}`;
+    
+    content.innerHTML = `
+        <form id="editServiceIntervalForm">
+            <div class="form-section">
+                <h5>⚙️ Service Configuration</h5>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Vehicle/Machine Type</label>
+                        <select class="form-select" required>
+                            <option value="">Select Type</option>
+                            <option value="light-vehicle" ${data.type === 'light-vehicle' ? 'selected' : ''}>Light Vehicle</option>
+                            <option value="heavy-vehicle" ${data.type === 'heavy-vehicle' ? 'selected' : ''}>Heavy Vehicle</option>
+                            <option value="excavator" ${data.type === 'excavator' ? 'selected' : ''}>Excavator</option>
+                            <option value="loader" ${data.type === 'loader' ? 'selected' : ''}>Loader</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Service Type</label>
+                        <input type="text" class="form-input" value="${data.service}" required>
+                    </div>
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Distance Interval (km/hours)</label>
+                        <input type="number" class="form-input" value="${data.km}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Time Interval (months)</label>
+                        <input type="number" class="form-input" value="${data.months}" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" required>
+                        <option value="active" selected>Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+            </div>
+            <div style="text-align: right; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    `;
+    
+    modal.classList.add('active'); modal.style.display = 'flex';
+    setTimeout(() => { modal.style.opacity = '1'; }, 10);
+    
+    document.getElementById('editServiceIntervalForm').onsubmit = function(e) {
+        e.preventDefault();
+        if (typeof Utils !== 'undefined' && Utils.showToast) {
+            Utils.showToast(`Service Interval ${intervalId} updated successfully!`, 'success');
+        } else {
+            alert(`Service Interval ${intervalId} updated successfully!`);
+        }
+        closeModal('detailsModal');
+    };
+}
+
+function deleteServiceInterval(intervalId) {
+    if (confirm(`⚠️ Delete Service Interval\n\nAre you sure you want to delete service interval ${intervalId}?\n\nThis action cannot be undone.`)) {
+        console.log(`Deleting service interval: ${intervalId}`);
+        
+        // Here you would make an API call to delete the interval
+        // Example: await API.delete(`/service-intervals/${intervalId}`)
+        
+        // Find and remove the row from the table
+        const rows = document.querySelectorAll('.table tbody tr');
+        rows.forEach(row => {
+            const deleteButton = row.querySelector(`button[onclick*="deleteServiceInterval('${intervalId}')"]`);
+            if (deleteButton) {
+                // Fade out animation
+                row.style.transition = 'opacity 0.3s';
+                row.style.opacity = '0';
+                setTimeout(() => {
+                    row.remove();
+                }, 300);
+            }
+        });
+        
+        // Show success message
+        if (typeof Utils !== 'undefined' && Utils.showToast) {
+            Utils.showToast(`Service Interval ${intervalId} deleted successfully!`, 'success');
+        } else {
+            alert(`Service Interval ${intervalId} deleted successfully!`);
+        }
+    }
+}
+
+function scheduleService(assetId) {
+    console.log(`Scheduling service for: ${assetId}`);
+    if (typeof Utils !== 'undefined' && Utils.showToast) {
+        Utils.showToast(`Schedule Service for ${assetId} - Feature coming soon!`, 'info');
+    } else {
+        alert(`Schedule Service for ${assetId} - Feature coming soon!`);
+    }
+}
+
+function viewVehicleDetails(vehicleId) {
+    console.log(`Viewing vehicle details: ${vehicleId}`);
+    if (typeof Utils !== 'undefined' && Utils.showToast) {
+        Utils.showToast(`View Vehicle Details ${vehicleId} - Feature coming soon!`, 'info');
+    } else {
+        alert(`View Vehicle Details ${vehicleId} - Feature coming soon!`);
+    }
+}
+
+function viewMachineDetails(machineId) {
+    console.log(`Viewing machine details: ${machineId}`);
+    if (typeof Utils !== 'undefined' && Utils.showToast) {
+        Utils.showToast(`View Machine Details ${machineId} - Feature coming soon!`, 'info');
+    } else {
+        alert(`View Machine Details ${machineId} - Feature coming soon!`);
+    }
+}
+
+// ==================== PETTY CASH CONFIGURATION ====================
+
+function editPettyCashLimit(role) {
+    console.log(`Editing petty cash limit for role: ${role}`);
+    
+    // Sample data
+    const limitsData = {
+        'supervisor': { daily: 500, monthly: 5000, approval: 200 },
+        'technical-officer': { daily: 200, monthly: 2000, approval: 100 },
+        'maintenance-manager': { daily: 1000, monthly: 10000, approval: 500 }
+    };
+    
+    const data = limitsData[role] || { daily: 0, monthly: 0, approval: 0 };
+    
+    const modal = document.getElementById('detailsModal');
+    const title = document.getElementById('detailsTitle');
+    const content = document.getElementById('detailsContent');
+    
+    title.textContent = `Edit Petty Cash Limit: ${role.replace(/-/g, ' ').toUpperCase()}`;
+    
+    content.innerHTML = `
+        <form id="editPettyCashForm">
+            <div class="form-section">
+                <h5>💰 Allowance Configuration</h5>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Daily Limit ($)</label>
+                        <input type="number" class="form-input" value="${data.daily}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Monthly Limit ($)</label>
+                        <input type="number" class="form-input" value="${data.monthly}" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Approval Required Above ($)</label>
+                    <input type="number" class="form-input" value="${data.approval}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea class="form-textarea" placeholder="Any special conditions or notes"></textarea>
+                </div>
+            </div>
+            <div style="text-align: right; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    `;
+    
+    modal.classList.add('active'); modal.style.display = 'flex';
+    setTimeout(() => { modal.style.opacity = '1'; }, 10);
+    
+    document.getElementById('editPettyCashForm').onsubmit = function(e) {
+        e.preventDefault();
+        if (typeof Utils !== 'undefined' && Utils.showToast) {
+            Utils.showToast(`Petty cash limits updated for ${role}!`, 'success');
+        } else {
+            alert(`Petty cash limits updated for ${role}!`);
+        }
+        closeModal('detailsModal');
+    };
+}
+
+function viewPettyCashHistory(employeeId) {
+    console.log(`Viewing petty cash history for: ${employeeId}`);
+    
+    const modal = document.getElementById('detailsModal');
+    const title = document.getElementById('detailsTitle');
+    const content = document.getElementById('detailsContent');
+    
+    title.textContent = `Petty Cash History: ${employeeId}`;
+    
+    content.innerHTML = `
+        <div class="form-section">
+            <h5>📊 Transaction History</h5>
+            <table class="table" style="margin-top: 15px;">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Purpose</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Oct 18, 2025</td>
+                        <td>$150</td>
+                        <td>Vehicle parts procurement</td>
+                        <td><span class="status-badge status-completed">Approved</span></td>
+                    </tr>
+                    <tr>
+                        <td>Oct 15, 2025</td>
+                        <td>$85</td>
+                        <td>Tool maintenance</td>
+                        <td><span class="status-badge status-completed">Approved</span></td>
+                    </tr>
+                    <tr>
+                        <td>Oct 12, 2025</td>
+                        <td>$220</td>
+                        <td>Emergency repairs</td>
+                        <td><span class="status-badge status-pending">Pending</span></td>
+                    </tr>
+                    <tr>
+                        <td>Oct 10, 2025</td>
+                        <td>$95</td>
+                        <td>Fuel expenses</td>
+                        <td><span class="status-badge status-completed">Approved</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="margin-top: 20px; padding: 15px; background: var(--light-bg); border-radius: 8px;">
+                <strong>Summary:</strong><br>
+                Total Spent This Month: $550<br>
+                Remaining Limit: $1,450<br>
+                Pending Approvals: $220
+            </div>
+        </div>
+        <div style="text-align: right; margin-top: 20px;">
+            <button type="button" class="btn btn-primary" onclick="closeModal('detailsModal')">Close</button>
+        </div>
+    `;
+    
+    modal.classList.add('active'); modal.style.display = 'flex';
+    setTimeout(() => { modal.style.opacity = '1'; }, 10);
+}
+
+function adjustLimit(employeeId) {
+    console.log(`Adjusting limit for: ${employeeId}`);
+    
+    const modal = document.getElementById('detailsModal');
+    const title = document.getElementById('detailsTitle');
+    const content = document.getElementById('detailsContent');
+    
+    title.textContent = `Adjust Petty Cash Limit: ${employeeId}`;
+    
+    content.innerHTML = `
+        <form id="adjustLimitForm">
+            <div class="form-section">
+                <h5>💰 Individual Limit Adjustment</h5>
+                <div class="form-group">
+                    <label class="form-label">Current Monthly Limit</label>
+                    <input type="text" class="form-input" value="$2,000" readonly disabled>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">New Monthly Limit ($)</label>
+                    <input type="number" class="form-input" placeholder="e.g., 3000" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Adjustment Reason</label>
+                    <select class="form-select" required>
+                        <option value="">Select Reason</option>
+                        <option value="project">Special Project</option>
+                        <option value="promotion">Role Change/Promotion</option>
+                        <option value="temporary">Temporary Increase</option>
+                        <option value="permanent">Permanent Adjustment</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Valid Until (for temporary adjustments)</label>
+                    <input type="date" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Justification Notes</label>
+                    <textarea class="form-textarea" placeholder="Provide detailed justification for this adjustment" required></textarea>
+                </div>
+            </div>
+            <div style="text-align: right; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Adjust Limit</button>
+            </div>
+        </form>
+    `;
+    
+    modal.classList.add('active'); modal.style.display = 'flex';
+    setTimeout(() => { modal.style.opacity = '1'; }, 10);
+    
+    document.getElementById('adjustLimitForm').onsubmit = function(e) {
+        e.preventDefault();
+        if (typeof Utils !== 'undefined' && Utils.showToast) {
+            Utils.showToast(`Limit adjusted successfully for ${employeeId}!`, 'success');
+        } else {
+            alert(`Limit adjusted successfully for ${employeeId}!`);
+        }
+        closeModal('detailsModal');
+    };
+}
+
+// ==================== NOTIFICATION TEMPLATES ====================
+
+function previewTemplate(templateId) {
+    console.log(`Previewing template: ${templateId}`);
+    
+    // Sample template data
+    const templates = {
+        'TPL-001': {
+            name: 'Breakdown Alert Notification',
+            type: 'Email',
+            subject: 'Urgent: Breakdown Reported - {vehicle_id}',
+            body: 'Dear {recipient_name},\n\nA breakdown has been reported for vehicle {vehicle_id}.\n\nLocation: {location}\nPriority: {priority}\nReported Time: {timestamp}\n\nPlease take immediate action.\n\nTicket ID: {ticket_id}\n\nBest regards,\nAssetCare360 System'
+        },
+        'TPL-002': {
+            name: 'Service Reminder Notification',
+            type: 'Email',
+            subject: 'Service Due: {vehicle_id} - {service_type}',
+            body: 'Dear {recipient_name},\n\nThis is a reminder that vehicle {vehicle_id} is due for {service_type}.\n\nLast Service Date: {last_service_date}\nOdometer Reading: {current_odometer} km\n\nPlease schedule the service at your earliest convenience.\n\nBest regards,\nAssetCare360 System'
+        },
+        'TPL-003': {
+            name: 'Parts Approval Request',
+            type: 'Email',
+            subject: 'Parts Request Pending Approval - {request_id}',
+            body: 'Dear {recipient_name},\n\nA parts request requires your approval.\n\nRequest ID: {request_id}\nRequested By: {requester_name}\nParts List:\n{parts_list}\n\nTotal Cost: ${total_cost}\n\nPlease review and approve/reject this request.\n\nBest regards,\nAssetCare360 System'
+        },
+        'TPL-004': {
+            name: 'Auction Notice',
+            type: 'Email',
+            subject: 'New Auction Listing - {item_description}',
+            body: 'Dear {recipient_name},\n\nA new item has been listed for auction.\n\nItem: {item_description}\nAuction Date: {auction_date}\nStarting Bid: ${starting_bid}\n\nPlease visit the auction portal to place your bid.\n\nBest regards,\nAssetCare360 System'
+        },
+        'TPL-SMS-001': {
+            name: 'Breakdown Alert SMS',
+            type: 'SMS',
+            body: 'ALERT: Breakdown reported for {vehicle_id} at {location}. Priority: {priority}. Ticket: {ticket_id}'
+        },
+        'TPL-SMS-002': {
+            name: 'Service Reminder SMS',
+            type: 'SMS',
+            body: 'Reminder: {vehicle_id} service due. Last service: {last_service_date}. Schedule now.'
+        }
+    };
+    
+    const template = templates[templateId] || { name: 'Unknown Template', type: 'Email', subject: '', body: '' };
+    
+    const modal = document.getElementById('detailsModal');
+    const title = document.getElementById('detailsTitle');
+    const content = document.getElementById('detailsContent');
+    
+    title.textContent = `Preview Template: ${template.name}`;
+    
+    content.innerHTML = `
+        <div class="form-section">
+            <h5>📧 Template Preview</h5>
+            <div style="background: var(--light-bg); padding: 20px; border-radius: 8px; margin-top: 15px;">
+                <div style="margin-bottom: 15px;">
+                    <strong>Template ID:</strong> ${templateId}<br>
+                    <strong>Type:</strong> <span class="status-badge status-normal">${template.type}</span>
+                </div>
+                ${template.type === 'Email' ? `
+                    <div style="margin-bottom: 15px; padding: 10px; background: white; border-left: 4px solid var(--tang-blue);">
+                        <strong>Subject:</strong><br>
+                        <span style="font-size: 16px;">${template.subject}</span>
+                    </div>
+                ` : ''}
+                <div style="padding: 15px; background: white; border-radius: 5px; white-space: pre-wrap; font-family: monospace; font-size: 13px;">
+${template.body}
+                </div>
+                <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 5px; font-size: 12px;">
+                    <strong>📝 Variables:</strong> {vehicle_id}, {location}, {priority}, {ticket_id}, {recipient_name}, {timestamp}, etc.
+                </div>
+            </div>
+        </div>
+        <div style="text-align: right; margin-top: 20px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')">Close</button>
+            <button type="button" class="btn btn-primary" onclick="editTemplate('${templateId}'); closeModal('detailsModal');">Edit Template</button>
+        </div>
+    `;
+    
+    modal.classList.add('active'); modal.style.display = 'flex';
+    setTimeout(() => { modal.style.opacity = '1'; }, 10);
+}
+
+function editTemplate(templateId) {
+    console.log(`Editing template: ${templateId}`);
+    
+    // Sample template data
+    const templates = {
+        'TPL-001': {
+            name: 'Breakdown Alert Notification',
+            type: 'email',
+            category: 'breakdown',
+            subject: 'Urgent: Breakdown Reported - {vehicle_id}',
+            body: 'Dear {recipient_name},\n\nA breakdown has been reported for vehicle {vehicle_id}.\n\nLocation: {location}\nPriority: {priority}\nReported Time: {timestamp}\n\nPlease take immediate action.\n\nTicket ID: {ticket_id}\n\nBest regards,\nAssetCare360 System'
+        },
+        'TPL-002': {
+            name: 'Service Reminder Notification',
+            type: 'email',
+            category: 'maintenance',
+            subject: 'Service Due: {vehicle_id} - {service_type}',
+            body: 'Dear {recipient_name},\n\nThis is a reminder that vehicle {vehicle_id} is due for {service_type}.\n\nLast Service Date: {last_service_date}\nOdometer Reading: {current_odometer} km\n\nPlease schedule the service at your earliest convenience.\n\nBest regards,\nAssetCare360 System'
+        },
+        'TPL-SMS-001': {
+            name: 'Breakdown Alert SMS',
+            type: 'sms',
+            category: 'breakdown',
+            body: 'ALERT: Breakdown reported for {vehicle_id} at {location}. Priority: {priority}. Ticket: {ticket_id}'
+        }
+    };
+    
+    const template = templates[templateId] || { name: '', type: 'email', category: '', subject: '', body: '' };
+    
+    const modal = document.getElementById('detailsModal');
+    const title = document.getElementById('detailsTitle');
+    const content = document.getElementById('detailsContent');
+    
+    title.textContent = `Edit Template: ${templateId}`;
+    
+    content.innerHTML = `
+        <form id="editTemplateForm">
+            <div class="form-section">
+                <h5>📧 Template Information</h5>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Template Name</label>
+                        <input type="text" class="form-input" value="${template.name}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Template Type</label>
+                        <select class="form-select" required>
+                            <option value="email" ${template.type === 'email' ? 'selected' : ''}>Email</option>
+                            <option value="sms" ${template.type === 'sms' ? 'selected' : ''}>SMS</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" required>
+                        <option value="breakdown" ${template.category === 'breakdown' ? 'selected' : ''}>Breakdown Management</option>
+                        <option value="maintenance" ${template.category === 'maintenance' ? 'selected' : ''}>Maintenance</option>
+                        <option value="inventory" ${template.category === 'inventory' ? 'selected' : ''}>Inventory</option>
+                        <option value="auction" ${template.category === 'auction' ? 'selected' : ''}>Auction Management</option>
+                        <option value="general" ${template.category === 'general' ? 'selected' : ''}>General</option>
+                    </select>
+                </div>
+            </div>
+
+            ${template.type === 'email' ? `
+            <div class="form-section">
+                <h5>✉️ Email Content</h5>
+                <div class="form-group">
+                    <label class="form-label">Subject Line</label>
+                    <input type="text" class="form-input" value="${template.subject || ''}" placeholder="Use variables like {vehicle_id}, {ticket_id}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Message Body</label>
+                    <textarea class="form-textarea" rows="8" placeholder="Enter message template">${template.body}</textarea>
+                </div>
+            </div>
+            ` : `
+            <div class="form-section">
+                <h5>📱 SMS Content</h5>
+                <div class="form-group">
+                    <label class="form-label">Message (160 characters max)</label>
+                    <textarea class="form-textarea" rows="3" maxlength="160">${template.body}</textarea>
+                    <small style="color: var(--muted);">Character count: ${template.body.length}/160</small>
+                </div>
+            </div>
+            `}
+
+            <div class="form-group">
+                <label class="form-label">Status</label>
+                <select class="form-select" required>
+                    <option value="active" selected>Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+
+            <div style="text-align: right; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    `;
+    
+    modal.classList.add('active'); modal.style.display = 'flex';
+    setTimeout(() => { modal.style.opacity = '1'; }, 10);
+    
+    document.getElementById('editTemplateForm').onsubmit = function(e) {
+        e.preventDefault();
+        if (typeof Utils !== 'undefined' && Utils.showToast) {
+            Utils.showToast(`Template ${templateId} updated successfully!`, 'success');
+        } else {
+            alert(`Template ${templateId} updated successfully!`);
+        }
+        closeModal('detailsModal');
+    };
+}
+
+function testTemplate(templateId) {
+    console.log(`Testing template: ${templateId}`);
+    
+    const modal = document.getElementById('detailsModal');
+    const title = document.getElementById('detailsTitle');
+    const content = document.getElementById('detailsContent');
+    
+    title.textContent = `Test Template: ${templateId}`;
+    
+    content.innerHTML = `
+        <form id="testTemplateForm">
+            <div class="form-section">
+                <h5>📧 Send Test Notification</h5>
+                <p style="color: var(--muted); margin-bottom: 15px;">
+                    Send a test notification using this template to verify it's working correctly.
+                </p>
+                <div class="form-group">
+                    <label class="form-label">Recipient Email/Phone</label>
+                    <input type="text" class="form-input" placeholder="Enter test recipient" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Test Data (JSON format)</label>
+                    <textarea class="form-textarea" rows="6" placeholder='{\n  "vehicle_id": "VEH-001",\n  "location": "Main Depot",\n  "priority": "High",\n  "ticket_id": "TKT-123"\n}'>{
+  "vehicle_id": "VEH-001",
+  "location": "Main Depot",
+  "priority": "High",
+  "ticket_id": "TKT-123",
+  "recipient_name": "Test User"
+}</textarea>
+                    <small style="color: var(--muted);">Variables will be replaced with these values</small>
+                </div>
+            </div>
+            <div style="text-align: right; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')">Cancel</button>
+                <button type="submit" class="btn btn-warning">Send Test</button>
+            </div>
+        </form>
+    `;
+    
+    modal.classList.add('active'); modal.style.display = 'flex';
+    setTimeout(() => { modal.style.opacity = '1'; }, 10);
+    
+    document.getElementById('testTemplateForm').onsubmit = function(e) {
+        e.preventDefault();
+        if (typeof Utils !== 'undefined' && Utils.showToast) {
+            Utils.showToast(`Test notification sent successfully using template ${templateId}!`, 'success');
+        } else {
+            alert(`Test notification sent successfully using template ${templateId}!`);
+        }
+        closeModal('detailsModal');
+    };
+}
+
+// ==================== USER ACTIVITY TRACKING ====================
+
+function viewUserSession(employeeId) {
+    console.log(`Viewing user session for: ${employeeId}`);
+    
+    const modal = document.getElementById('detailsModal');
+    const title = document.getElementById('detailsTitle');
+    const content = document.getElementById('detailsContent');
+    
+    title.textContent = `Active Session Details: ${employeeId}`;
+    
+    content.innerHTML = `
+        <div class="form-section">
+            <h5>👤 User Information</h5>
+            <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-top: 10px;">
+                <strong>Employee ID:</strong> ${employeeId}<br>
+                <strong>Name:</strong> John Smith<br>
+                <strong>Role:</strong> <span class="status-badge status-supervisor">Supervisor</span><br>
+                <strong>Email:</strong> john.smith@company.com
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h5>🔐 Session Details</h5>
+            <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-top: 10px;">
+                <strong>Login Time:</strong> Today 9:30 AM<br>
+                <strong>Session Duration:</strong> 2h 15m<br>
+                <strong>IP Address:</strong> 192.168.1.45<br>
+                <strong>Device:</strong> Windows 10, Chrome 118<br>
+                <strong>Current Page:</strong> Breakdown Tickets Dashboard<br>
+                <strong>Last Activity:</strong> 2 minutes ago
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h5>📊 Session Activity</h5>
+            <table class="table" style="margin-top: 10px;">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Action</th>
+                        <th>Module</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>11:43 AM</td>
+                        <td>Viewed ticket details</td>
+                        <td>Breakdown Management</td>
+                    </tr>
+                    <tr>
+                        <td>11:35 AM</td>
+                        <td>Approved parts request</td>
+                        <td>Inventory</td>
+                    </tr>
+                    <tr>
+                        <td>11:20 AM</td>
+                        <td>Updated petty cash request</td>
+                        <td>Finance</td>
+                    </tr>
+                    <tr>
+                        <td>10:15 AM</td>
+                        <td>Viewed maintenance reports</td>
+                        <td>Reports</td>
+                    </tr>
+                    <tr>
+                        <td>9:45 AM</td>
+                        <td>Approved breakdown ticket</td>
+                        <td>Breakdown Management</td>
+                    </tr>
+                    <tr>
+                        <td>9:30 AM</td>
+                        <td>Logged in</td>
+                        <td>Authentication</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="text-align: right; margin-top: 20px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')">Close</button>
+            <button type="button" class="btn btn-danger" onclick="forceLogout('${employeeId}'); closeModal('detailsModal');">Force Logout</button>
+        </div>
+    `;
+    
+    modal.classList.add('active'); modal.style.display = 'flex';
+    setTimeout(() => { modal.style.opacity = '1'; }, 10);
+}
+
+function forceLogout(employeeId) {
+    if (confirm(`⚠️ Force Logout\n\nAre you sure you want to force logout ${employeeId}?\n\nThis will immediately terminate their active session and they will need to log in again.\n\nThis action should only be used in emergencies or security concerns.`)) {
+        console.log(`Forcing logout for: ${employeeId}`);
+        
+        // Here you would make an API call to terminate the session
+        if (typeof Utils !== 'undefined' && Utils.showToast) {
+            Utils.showToast(`${employeeId} has been logged out successfully!`, 'success');
+        } else {
+            alert(`${employeeId} has been logged out successfully!`);
+        }
+        
+        // Optionally refresh the active users table
+        // location.reload(); // or update the table dynamically
+    }
+}
+
+function viewFullActivityLog(employeeId) {
+    console.log(`Viewing full activity log for: ${employeeId}`);
+    
+    const modal = document.getElementById('detailsModal');
+    const title = document.getElementById('detailsTitle');
+    const content = document.getElementById('detailsContent');
+    
+    title.textContent = `Complete Activity Log: ${employeeId}`;
+    
+    content.innerHTML = `
+        <div class="form-section">
+            <h5>📈 User Activity History</h5>
+            <div style="margin-bottom: 15px;">
+                <strong>Employee:</strong> John Smith (${employeeId})<br>
+                <strong>Role:</strong> Supervisor<br>
+                <strong>Period:</strong> Last 7 Days
+            </div>
+
+            <div class="search-bar" style="margin-bottom: 15px;">
+                <input type="text" class="search-input" placeholder="Search activities...">
+                <select class="filter-select">
+                    <option value="all">All Actions</option>
+                    <option value="login">Login Events</option>
+                    <option value="approval">Approvals</option>
+                    <option value="create">Create Actions</option>
+                    <option value="update">Update Actions</option>
+                    <option value="delete">Delete Actions</option>
+                </select>
+            </div>
+
+            <div style="max-height: 400px; overflow-y: auto;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Action</th>
+                            <th>Module</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Oct 18, 11:43 AM</td>
+                            <td>Viewed Details</td>
+                            <td>Breakdown Management</td>
+                            <td>Ticket TKT-156</td>
+                        </tr>
+                        <tr>
+                            <td>Oct 18, 11:35 AM</td>
+                            <td>Approved Request</td>
+                            <td>Inventory</td>
+                            <td>Parts request PR-089</td>
+                        </tr>
+                        <tr>
+                            <td>Oct 18, 11:20 AM</td>
+                            <td>Updated Record</td>
+                            <td>Finance</td>
+                            <td>Petty cash PC-045</td>
+                        </tr>
+                        <tr>
+                            <td>Oct 18, 10:15 AM</td>
+                            <td>Generated Report</td>
+                            <td>Reports</td>
+                            <td>Maintenance summary</td>
+                        </tr>
+                        <tr>
+                            <td>Oct 18, 9:45 AM</td>
+                            <td>Approved Ticket</td>
+                            <td>Breakdown Management</td>
+                            <td>Ticket TKT-155</td>
+                        </tr>
+                        <tr>
+                            <td>Oct 18, 9:30 AM</td>
+                            <td>Login</td>
+                            <td>Authentication</td>
+                            <td>IP: 192.168.1.45</td>
+                        </tr>
+                        <tr>
+                            <td>Oct 17, 5:45 PM</td>
+                            <td>Logout</td>
+                            <td>Authentication</td>
+                            <td>Session ended</td>
+                        </tr>
+                        <tr>
+                            <td>Oct 17, 3:20 PM</td>
+                            <td>Created User</td>
+                            <td>User Management</td>
+                            <td>New user EMP-015</td>
+                        </tr>
+                        <tr>
+                            <td>Oct 17, 2:15 PM</td>
+                            <td>Updated Settings</td>
+                            <td>System Config</td>
+                            <td>Service interval SI-003</td>
+                        </tr>
+                        <tr>
+                            <td>Oct 17, 1:30 PM</td>
+                            <td>Approved Request</td>
+                            <td>Finance</td>
+                            <td>Petty cash PC-044</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: 15px; padding: 15px; background: var(--light-bg); border-radius: 8px;">
+                <strong>Activity Summary (Last 7 Days):</strong><br>
+                Total Sessions: 12<br>
+                Total Actions: 156<br>
+                Average Session Duration: 3h 45m<br>
+                Most Active Module: Breakdown Management (45 actions)
+            </div>
+        </div>
+
+        <div style="text-align: right; margin-top: 20px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')">Close</button>
+            <button type="button" class="btn btn-primary" onclick="exportUserActivity('${employeeId}')">Export to CSV</button>
+        </div>
+    `;
+    
+    modal.classList.add('active'); modal.style.display = 'flex';
+    setTimeout(() => { modal.style.opacity = '1'; }, 10);
+}
+
+function exportUserActivity(employeeId) {
+    console.log(`Exporting activity for: ${employeeId}`);
+    if (typeof Utils !== 'undefined' && Utils.showToast) {
+        Utils.showToast(`Activity log exported for ${employeeId}!`, 'success');
+    } else {
+        alert(`Activity log exported for ${employeeId}!`);
+    }
+}
