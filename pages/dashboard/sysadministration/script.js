@@ -629,3 +629,174 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 1000);
 });
+
+// ==================== SYSTEM LOGS FILTERING ====================
+
+let currentLogTypeFilter = 'all';
+
+function filterLogsByType(type) {
+    const logs = document.querySelectorAll('#logsList .log-entry');
+    const noLogsMessage = document.getElementById('noLogsMessage');
+    const logCount = document.getElementById('logCount');
+    const logsListDiv = document.getElementById('logsList');
+    const filterButtons = document.querySelectorAll('#logFilterTabs .filter-btn');
+    let visibleCount = 0;
+
+    // Update current filter
+    currentLogTypeFilter = type;
+
+    // Update active button styling
+    filterButtons.forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+
+    // Filter logs
+    logs.forEach(log => {
+        const logType = log.getAttribute('data-type');
+        const searchValue = document.getElementById('logSearch')?.value.toLowerCase() || '';
+
+        // Check type filter
+        let typeMatch = (type === 'all' || logType === type);
+
+        // Check search filter
+        let searchMatch = true;
+        if (searchValue) {
+            const logText = log.textContent.toLowerCase();
+            searchMatch = logText.includes(searchValue);
+        }
+
+        // Show/hide based on filters
+        if (typeMatch && searchMatch) {
+            log.style.display = '';
+            visibleCount++;
+        } else {
+            log.style.display = 'none';
+        }
+    });
+
+    // Show/hide no logs message
+    if (visibleCount === 0) {
+        logsListDiv.style.display = 'none';
+        noLogsMessage.style.display = 'block';
+    } else {
+        logsListDiv.style.display = 'block';
+        noLogsMessage.style.display = 'none';
+    }
+
+    // Update log count
+    if (logCount) {
+        logCount.textContent = `${visibleCount} log${visibleCount !== 1 ? 's' : ''}`;
+    }
+}
+
+// Search logs (works with current tab filter)
+function searchLogs() {
+    applyLogFilters();
+}
+
+// Apply all log filters together
+function applyLogFilters() {
+    const logs = document.querySelectorAll('#logsList .log-entry');
+    const noLogsMessage = document.getElementById('noLogsMessage');
+    const logCount = document.getElementById('logCount');
+    const logsListDiv = document.getElementById('logsList');
+    let visibleCount = 0;
+
+    const searchValue = document.getElementById('logSearch')?.value.toLowerCase() || '';
+
+    logs.forEach(log => {
+        const logType = log.getAttribute('data-type');
+
+        // Check type filter (use current tab)
+        let typeMatch = (currentLogTypeFilter === 'all' || logType === currentLogTypeFilter);
+
+        // Check search filter
+        let searchMatch = true;
+        if (searchValue) {
+            const logText = log.textContent.toLowerCase();
+            searchMatch = logText.includes(searchValue);
+        }
+
+        // Show/hide based on filters
+        if (typeMatch && searchMatch) {
+            log.style.display = '';
+            visibleCount++;
+        } else {
+            log.style.display = 'none';
+        }
+    });
+
+    // Show/hide no logs message
+    if (visibleCount === 0) {
+        logsListDiv.style.display = 'none';
+        noLogsMessage.style.display = 'block';
+    } else {
+        logsListDiv.style.display = 'block';
+        noLogsMessage.style.display = 'none';
+    }
+
+    // Update log count
+    if (logCount) {
+        logCount.textContent = `${visibleCount} log${visibleCount !== 1 ? 's' : ''}`;
+    }
+}
+
+// Update log count after initial load
+setTimeout(() => {
+    const logs = document.querySelectorAll('#logsList .log-entry');
+    const logCount = document.getElementById('logCount');
+    if (logCount && logs.length > 0) {
+        logCount.textContent = `${logs.length} log${logs.length !== 1 ? 's' : ''}`;
+    }
+}, 1000);
+
+// ==================== ACTIVITY TRACKING FILTERING ====================
+
+let currentActivityRoleFilter = 'all';
+
+function filterActiveUsersByRole(role) {
+    const users = document.querySelectorAll('#activeUsersList tr');
+    const activeUserCount = document.getElementById('activeUserCount');
+    const filterButtons = document.querySelectorAll('#activityFilterTabs .filter-btn');
+    let visibleCount = 0;
+
+    // Update current filter
+    currentActivityRoleFilter = role;
+
+    // Update active button styling
+    filterButtons.forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+
+    // Filter active users
+    users.forEach(user => {
+        const userRole = user.getAttribute('data-role');
+
+        // Check role filter
+        let roleMatch = (role === 'all' || userRole === role);
+
+        // Show/hide based on filter
+        if (roleMatch) {
+            user.style.display = '';
+            visibleCount++;
+        } else {
+            user.style.display = 'none';
+        }
+    });
+
+    // Update active user count
+    if (activeUserCount) {
+        activeUserCount.textContent = `${visibleCount} active`;
+    }
+}
+
+// Update active user count after initial load
+setTimeout(() => {
+    const users = document.querySelectorAll('#activeUsersList tr');
+    const activeUserCount = document.getElementById('activeUserCount');
+    if (activeUserCount && users.length > 0) {
+        activeUserCount.textContent = `${users.length} active`;
+    }
+}, 1000);
