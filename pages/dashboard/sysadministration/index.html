@@ -85,98 +85,164 @@
                 <!-- Dashboard Section -->
                 <section class="content-section active" id="dashboard">
                     <div class="page-header">
-                        <h1 class="page-title">System Overview</h1>
-                        <p class="page-subtitle">System health, user activity, and alerts</p>
+                        <h2 class="page-title"><i class="fas fa-chart-line"></i> Dashboard Overview</h2>
+                        <p class="page-subtitle">System health, user activity, and quick actions</p>
                     </div>
 
-                    <!-- Summary Cards -->
                     <div class="grid">
-                        <div class="summary-card">
-                            <div class="summary-title">User Statistics</div>
-                            <div class="summary-content">
-                                • Total Users: 45<br>
-                                • Active Users: 38<br>
-                                • Inactive Users: 5<br>
-                                • Suspended: 2
+                        <div class="summary-card clickable" onclick="navigateToSection('user-accounts')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">User Accounts</div>
+                                    <div class="summary-number">45</div>
+                                    <div class="summary-description">total users in the system</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
                             </div>
                         </div>
-                        <div class="summary-card">
-                            <div class="summary-title">Asset Overview</div>
-                            <div class="summary-content">
-                                • Total Vehicles: 78<br>
-                                • Total Machines: 34<br>
-                                • Active Assets: 98<br>
-                                • Under Maintenance: 14
-                            </div>
-                        </div>
-                        <div class="summary-card">
-                            <div class="summary-title">System Health</div>
-                            <div class="summary-content">
-                                • Pending Alerts: 7<br>
-                                • Failed Logins: 3 (24h)<br>
-                                • Last Backup: 2 hours ago<br>
-                                • System Uptime: 99.8%
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Quick Actions -->
-                    <div class="card">
-                        <div class="card-header">⚡ Quick Actions</div>
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button class="btn btn-primary" onclick="openModal('createUserModal')">➕ Create User</button>
-                            <button class="btn btn-primary" onclick="navigateToSection('service-config')">⚙️ Configure System</button>
-                            <button class="btn btn-warning" onclick="openModal('resetPasswordModal')">🔐 Reset Password</button>
-                            <button class="btn btn-secondary" onclick="navigateToSection('system-logs')">🧾 View Logs</button>
+                        <div class="summary-card clickable" onclick="navigateToSection('permissions')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-lock"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Permissions</div>
+                                    <div class="summary-number">8</div>
+                                    <div class="summary-description">active roles configured</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="summary-card clickable" onclick="navigateToSection('system-logs')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-clipboard-list"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">System Events</div>
+                                    <div class="summary-number">256</div>
+                                    <div class="summary-description">logged events (24 hours)</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="summary-card clickable" onclick="navigateToSection('service-config')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-cogs"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Service Config</div>
+                                    <div class="summary-number">12</div>
+                                    <div class="summary-description">service intervals configured</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Recent Activity Feed -->
-                    <div class="card">
-                        <div class="card-header">📈 Recent Activity</div>
-                        <div class="notification-item info">
-                            <span class="notification-icon">🔵</span>
-                            <div>
-                                <strong>User Login:</strong> Supervisor John logged in from 192.168.1.45
-                                <div style="font-size: 12px; color: var(--muted);">2 minutes ago</div>
-                            </div>
+                    <div class="recent-activities">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-chart-line"></i> Recent Activities
+                            </h3>
                         </div>
-                        <div class="notification-item success">
-                            <span class="notification-icon">✅</span>
-                            <div>
-                                <strong>Account Created:</strong> New Technical Officer account created by Admin
-                                <div style="font-size: 12px; color: var(--muted);">15 minutes ago</div>
+
+                        <div class="activities-list">
+                            <!-- Activity Item 1 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">User Login</div>
+                                    <div class="activity-meta">Supervisor John | IP: 192.168.1.45 | 2 minutes ago</div>
+                                    <div class="activity-description">Successful login from authorized location</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-approved">SUCCESS</span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="notification-item warning">
-                            <span class="notification-icon">⚠️</span>
-                            <div>
-                                <strong>Permission Changed:</strong> Inventory Manager role updated with new access rights
-                                <div style="font-size: 12px; color: var(--muted);">1 hour ago</div>
+
+                            <!-- Activity Item 2 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Account Created</div>
+                                    <div class="activity-meta">Admin | New Technical Officer | 15 minutes ago</div>
+                                    <div class="activity-description">New user account created successfully</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-completed">CREATED</span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="notification-item danger">
-                            <span class="notification-icon">❌</span>
-                            <div>
-                                <strong>Failed Login:</strong> 3 failed login attempts for user 'driver_05'
-                                <div style="font-size: 12px; color: var(--muted);">2 hours ago</div>
+
+                            <!-- Activity Item 3 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Permission Changed</div>
+                                    <div class="activity-meta">Admin | Inventory Manager Role | 1 hour ago</div>
+                                    <div class="activity-description">Updated role with new access rights</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-pending">UPDATED</span>
+                                </div>
+                            </div>
+
+                            <!-- Activity Item 4 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Failed Login</div>
+                                    <div class="activity-meta">User: driver_05 | 3 attempts | 2 hours ago</div>
+                                    <div class="activity-description">Multiple failed login attempts detected</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-rejected">FAILED</span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- System Alerts -->
-                    <div class="card">
-                        <div class="card-header">🚨 System Alerts</div>
-                        <div class="notification-item danger">
-                            <span class="notification-icon">⏰</span>
-                            <div>
-                                <strong>Service Interval Alert:</strong> Vehicle #045 overdue for service by 15 days
-                            </div>
+                    <div class="recent-activities">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-exclamation-triangle"></i> System Alerts
+                            </h3>
                         </div>
-                        <div class="notification-item warning">
-                            <span class="notification-icon">💾</span>
-                            <div>
-                                <strong>Backup Reminder:</strong> Manual backup recommended for critical data
+
+                        <div class="activities-list">
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Service Interval Alert</div>
+                                    <div class="activity-meta">Vehicle #045 | Overdue by 15 days</div>
+                                    <div class="activity-description">Oil change overdue, immediate action required</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-critical">CRITICAL</span>
+                                </div>
+                            </div>
+
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Backup Reminder</div>
+                                    <div class="activity-meta">System Maintenance | Scheduled</div>
+                                    <div class="activity-description">Manual backup recommended for critical data</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-pending">PENDING</span>
+                                </div>
                             </div>
                         </div>
                     </div>
