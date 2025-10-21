@@ -252,30 +252,53 @@ async function loadFaultTickets() {
                     const reporterName = ticket.reported_by_name || ticket.reporter_full_name || 'Unknown';
                     const createdDate = new Date(ticket.created_at);
                     const formattedDate = createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    const formattedTime = createdDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
                     
                     // Get first line of description for title
                     const descriptionLines = description.split('\n').filter(line => line.trim());
                     const title = descriptionLines[0] || description;
                     const details = descriptionLines.slice(1).join(' ') || '';
                     
+                    // Determine urgency level for styling
+                    const priority = (ticket.priority || 'Medium').toLowerCase();
+                    const urgencyClass = `urgency-${priority}`;
+                    
                     return `
-                        <div class="fault-ticket-card">
+                        <div class="fault-ticket-card ${urgencyClass}">
                             <div class="ticket-card-header">
-                                <h3 class="ticket-card-title">TKT-${String(ticket.id).padStart(3, '0')} - ${title}</h3>
-                                <span class="status-badge status-${ticket.priority ? ticket.priority.toLowerCase() : 'medium'}">${(ticket.priority || 'MEDIUM').toUpperCase()}</span>
+                                <div class="ticket-header-left">
+                                    <span class="ticket-id">TKT-${String(ticket.id).padStart(3, '0')}</span>
+                                    <h3 class="ticket-card-title">${title}</h3>
+                                </div>
+                                <div class="ticket-header-right">
+                                    <span class="priority-badge priority-${priority}">
+                                        <i class="fas fa-exclamation-circle"></i> ${priority.toUpperCase()}
+                                    </span>
+                                    <div class="ticket-actions-inline">
+                                        <button class="btn-compact btn-view" onclick="viewTicketDetails(${ticket.id})" title="View Details">
+                                            <i class="fas fa-eye"></i> <span>View</span>
+                                        </button>
+                                        <button class="btn-compact btn-assign" onclick="assignTicket(${ticket.id})" title="Assign Ticket">
+                                            <i class="fas fa-user-plus"></i> <span>Assign</span>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                             <div class="ticket-card-meta">
-                                Vehicle: ${assetName} | Reported by: ${reporterName} | ${formattedDate}
+                                <span class="meta-item">
+                                    <i class="fas fa-wrench"></i> <strong>Machine:</strong> ${assetName}
+                                </span>
+                                <span class="meta-item">
+                                    <i class="fas fa-user"></i> <strong>Reported By:</strong> ${reporterName}
+                                </span>
+                                <span class="meta-item">
+                                    <i class="fas fa-calendar"></i> <strong>Date:</strong> ${formattedDate}
+                                </span>
+                                <span class="meta-item">
+                                    <i class="fas fa-clock"></i> <strong>Time:</strong> ${formattedTime}
+                                </span>
                             </div>
                             ${details ? `<div class="ticket-card-description">${details}</div>` : ''}
-                            <div class="ticket-card-actions">
-                                <button class="btn btn-secondary btn-small" onclick="viewTicketDetails(${ticket.id})">
-                                    <i class="fas fa-eye"></i> VIEW
-                                </button>
-                                <button class="btn btn-primary btn-small" onclick="assignTicket(${ticket.id})">
-                                    <i class="fas fa-user-plus"></i> ASSIGN
-                                </button>
-                            </div>
                         </div>
                     `;
                 }).join('');
