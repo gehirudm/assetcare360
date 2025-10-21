@@ -511,9 +511,11 @@ body {
     text-align: right;
     white-space: nowrap;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 6px;
-    align-items: flex-end;
+    align-items: center;
+    justify-content: flex-end;
 }
 
 /* Notifications */
@@ -596,9 +598,6 @@ body {
     border-radius: 50%;
     background: var(--royal-blue);
     color: #fff;
-    display: flex;
-    align-items: center;
-    justify-center: center;
     border: none;
 }
 

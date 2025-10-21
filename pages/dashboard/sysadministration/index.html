@@ -206,9 +206,745 @@
                     </div>
                 </section>
 
-                <!-- Other sections remain the same (permissions, service-config, petty-cash, notifications, logs, activity) -->
-                <!-- I'm keeping the HTML file smaller by removing other sections that aren't being modified -->
-                <!-- They can be added back from the original file if needed -->
+                <!-- Permissions & Roles Section -->
+                <section class="content-section" id="permissions">
+                    <div class="page-header">
+                        <h1 class="page-title">Permissions & Roles</h1>
+                        <p class="page-subtitle">Manage role-based access control</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="openModal('createRoleModal')">
+                            ➕ Create New Role
+                        </button>
+                    </div>
+
+                    <!-- Permission Matrix -->
+                    <div class="card">
+                        <div class="card-header">🔐 Permission Matrix</div>
+                        <div class="permission-matrix">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Module / Feature</th>
+                                        <th>System Admin</th>
+                                        <th>Supervisor</th>
+                                        <th>Inventory Manager</th>
+                                        <th>Technical Officer</th>
+                                        <th>Driver</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>User Management</strong></td>
+                                        <td>✅ Full Access</td>
+                                        <td>❌ No Access</td>
+                                        <td>❌ No Access</td>
+                                        <td>❌ No Access</td>
+                                        <td>❌ No Access</td>
+                                        <td><button class="btn btn-secondary btn-small" onclick="editPermission('user-management')">Edit</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Breakdown Tickets</strong></td>
+                                        <td>✅ View All</td>
+                                        <td>✅ Create/Approve</td>
+                                        <td>👁️ View Only</td>
+                                        <td>✅ Create/Update</td>
+                                        <td>✅ Create Only</td>
+                                        <td><button class="btn btn-secondary btn-small" onclick="editPermission('breakdown-tickets')">Edit</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Inventory Management</strong></td>
+                                        <td>✅ View All</td>
+                                        <td>👁️ View Only</td>
+                                        <td>✅ Full Access</td>
+                                        <td>✅ Request Parts</td>
+                                        <td>❌ No Access</td>
+                                        <td><button class="btn btn-secondary btn-small" onclick="editPermission('inventory')">Edit</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Service Intervals</strong></td>
+                                        <td>✅ Configure</td>
+                                        <td>👁️ View Only</td>
+                                        <td>❌ No Access</td>
+                                        <td>👁️ View Only</td>
+                                        <td>👁️ View Only</td>
+                                        <td><button class="btn btn-secondary btn-small" onclick="editPermission('service-intervals')">Edit</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Petty Cash Management</strong></td>
+                                        <td>✅ Configure</td>
+                                        <td>✅ Approve/View</td>
+                                        <td>❌ No Access</td>
+                                        <td>✅ Request</td>
+                                        <td>❌ No Access</td>
+                                        <td><button class="btn btn-secondary btn-small" onclick="editPermission('petty-cash')">Edit</button></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Reports & Analytics</strong></td>
+                                        <td>✅ All Reports</td>
+                                        <td>✅ Department Reports</td>
+                                        <td>✅ Inventory Reports</td>
+                                        <td>👁️ Basic Reports</td>
+                                        <td>👁️ Own Reports</td>
+                                        <td><button class="btn btn-secondary btn-small" onclick="editPermission('reports')">Edit</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Audit Trail -->
+                    <div class="card">
+                        <div class="card-header">📋 Permission Change Audit Trail</div>
+                        <div class="log-entry">
+                            <div class="log-timestamp">Oct 18, 2025 - 10:30 AM</div>
+                            <div><strong>Action:</strong> Permission Updated - Inventory Management</div>
+                            <div><strong>Changed By:</strong> System Admin (SA-001)</div>
+                            <div><strong>Details:</strong> Technical Officer role granted "Request Parts" access</div>
+                        </div>
+                        <div class="log-entry">
+                            <div class="log-timestamp">Oct 17, 2025 - 3:15 PM</div>
+                            <div><strong>Action:</strong> New Role Created - Maintenance Manager</div>
+                            <div><strong>Changed By:</strong> System Admin (SA-001)</div>
+                            <div><strong>Details:</strong> Full maintenance module access granted</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Service Configuration Section -->
+                <section class="content-section" id="service-config">
+                    <div class="page-header">
+                        <h1 class="page-title">Service Interval Configuration</h1>
+                        <p class="page-subtitle">Manage vehicle and machine service schedules</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="openModal('addServiceIntervalModal')">
+                            ➕ Add Service Interval
+                        </button>
+                    </div>
+
+                    <!-- Service Intervals Table -->
+                    <div class="card">
+                        <div class="card-header">⚙️ Service Interval Settings</div>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Vehicle/Machine Type</th>
+                                    <th>Service Type</th>
+                                    <th>Interval (km/hours)</th>
+                                    <th>Time-based (months)</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Light Vehicle</td>
+                                    <td>Oil Change</td>
+                                    <td>5,000 km</td>
+                                    <td>6 months</td>
+                                    <td><span class="status-badge status-active">Active</span></td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="editServiceInterval('SI-001')">Edit</button>
+                                        <button class="btn btn-danger btn-small" onclick="deleteServiceInterval('SI-001')">Delete</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Heavy Vehicle</td>
+                                    <td>Major Service</td>
+                                    <td>10,000 km</td>
+                                    <td>12 months</td>
+                                    <td><span class="status-badge status-active">Active</span></td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="editServiceInterval('SI-002')">Edit</button>
+                                        <button class="btn btn-danger btn-small" onclick="deleteServiceInterval('SI-002')">Delete</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Excavator</td>
+                                    <td>Hydraulic System Check</td>
+                                    <td>500 hours</td>
+                                    <td>3 months</td>
+                                    <td><span class="status-badge status-active">Active</span></td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="editServiceInterval('SI-003')">Edit</button>
+                                        <button class="btn btn-danger btn-small" onclick="deleteServiceInterval('SI-003')">Delete</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>All Vehicles</td>
+                                    <td>Brake Inspection</td>
+                                    <td>15,000 km</td>
+                                    <td>12 months</td>
+                                    <td><span class="status-badge status-active">Active</span></td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="editServiceInterval('SI-004')">Edit</button>
+                                        <button class="btn btn-danger btn-small" onclick="deleteServiceInterval('SI-004')">Delete</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Overdue Services Alert -->
+                    <div class="card">
+                        <div class="card-header">🚨 Overdue Service Alerts</div>
+                        <div class="notification-item danger">
+                            <span class="notification-icon">⚠️</span>
+                            <div>
+                                <strong>Vehicle #045:</strong> Oil change overdue by 15 days (Last service: Sep 20, 2025)
+                                <div style="margin-top: 5px;">
+                                    <button class="btn btn-primary btn-small" onclick="scheduleService('VEH-045')">Schedule Service</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewVehicleDetails('VEH-045')">View Details</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="notification-item warning">
+                            <span class="notification-icon">⏰</span>
+                            <div>
+                                <strong>Machine #078:</strong> Hydraulic check due in 3 days (Last service: Jul 18, 2025)
+                                <div style="margin-top: 5px;">
+                                    <button class="btn btn-primary btn-small" onclick="scheduleService('MAC-078')">Schedule Service</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewMachineDetails('MAC-078')">View Details</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Petty Cash Configuration Section -->
+                <section class="content-section" id="petty-cash-config">
+                    <div class="page-header">
+                        <h1 class="page-title">Petty Cash Configuration</h1>
+                        <p class="page-subtitle">Manage petty cash allowances and limits</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="openModal('setPettyCashLimitModal')">
+                            💰 Set New Limit
+                        </button>
+                    </div>
+
+                    <!-- Global Settings -->
+                    <div class="card">
+                        <div class="card-header">⚙️ Global Petty Cash Settings</div>
+                        <div class="form-section">
+                            <h5>💵 Default Allowances</h5>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Role</th>
+                                        <th>Daily Limit</th>
+                                        <th>Monthly Limit</th>
+                                        <th>Requires Approval</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="status-badge status-supervisor">Supervisor</span></td>
+                                        <td>$500</td>
+                                        <td>$5,000</td>
+                                        <td>Above $200</td>
+                                        <td>
+                                            <button class="btn btn-secondary btn-small" onclick="editPettyCashLimit('supervisor')">Edit</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="status-badge status-officer">Technical Officer</span></td>
+                                        <td>$200</td>
+                                        <td>$2,000</td>
+                                        <td>Above $100</td>
+                                        <td>
+                                            <button class="btn btn-secondary btn-small" onclick="editPettyCashLimit('technical-officer')">Edit</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="status-badge status-manager">Maintenance Manager</span></td>
+                                        <td>$1,000</td>
+                                        <td>$10,000</td>
+                                        <td>Above $500</td>
+                                        <td>
+                                            <button class="btn btn-secondary btn-small" onclick="editPettyCashLimit('maintenance-manager')">Edit</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Current Usage -->
+                    <div class="card">
+                        <div class="card-header">📊 Current Month Usage Overview</div>
+                        <div class="grid">
+                            <div class="stat-card">
+                                <div class="stat-number" style="color: var(--royal-blue);">$12,450</div>
+                                <div class="stat-label">Total Disbursed</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" style="color: var(--kelly-green);">$8,200</div>
+                                <div class="stat-label">Approved Requests</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" style="color: var(--warn);">$1,500</div>
+                                <div class="stat-label">Pending Approval</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Individual Allowances -->
+                    <div class="card">
+                        <div class="card-header">👤 Individual User Allowances</div>
+                        <div class="search-bar">
+                            <input type="text" class="search-input" placeholder="Search by employee name or ID..." id="pettyCashUserSearch">
+                        </div>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Role</th>
+                                    <th>Current Month Usage</th>
+                                    <th>Remaining Limit</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>John Smith (EMP-001)</td>
+                                    <td><span class="status-badge status-supervisor">Supervisor</span></td>
+                                    <td>$3,200 / $5,000</td>
+                                    <td>$1,800</td>
+                                    <td><span class="status-badge status-active">Normal</span></td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="viewPettyCashHistory('EMP-001')">View History</button>
+                                        <button class="btn btn-primary btn-small" onclick="adjustLimit('EMP-001')">Adjust Limit</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Michael Chen (EMP-003)</td>
+                                    <td><span class="status-badge status-officer">Technical Officer</span></td>
+                                    <td>$1,850 / $2,000</td>
+                                    <td>$150</td>
+                                    <td><span class="status-badge status-pending">Near Limit</span></td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="viewPettyCashHistory('EMP-003')">View History</button>
+                                        <button class="btn btn-primary btn-small" onclick="adjustLimit('EMP-003')">Adjust Limit</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Notification Templates Section -->
+                <section class="content-section" id="notifications-config">
+                    <div class="page-header">
+                        <h1 class="page-title">Notification Templates</h1>
+                        <p class="page-subtitle">Manage email and SMS notification templates</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="openModal('createTemplateModal')">
+                            ➕ Create New Template
+                        </button>
+                    </div>
+
+                    <!-- Template List -->
+                    <div class="card">
+                        <div class="card-header">📧 Email Templates</div>
+                        <div class="user-item">
+                            <div class="user-details">
+                                <strong>Breakdown Alert Notification</strong>
+                                <div class="user-meta">Type: Email | Category: Breakdown Management</div>
+                                <div class="user-meta" style="margin-top: 5px;">
+                                    <strong>Subject:</strong> Urgent: Breakdown Reported - {vehicle_id}<br>
+                                    <strong>Preview:</strong> A breakdown has been reported for {vehicle_id}. Location: {location}. Priority: {priority}...
+                                </div>
+                            </div>
+                            <div class="user-actions">
+                                <span class="status-badge status-active">Active</span>
+                                <div style="margin-top: 5px;">
+                                    <button class="btn btn-secondary btn-small" onclick="previewTemplate('TPL-001')">Preview</button>
+                                    <button class="btn btn-secondary btn-small" onclick="editTemplate('TPL-001')">Edit</button>
+                                    <button class="btn btn-warning btn-small" onclick="testTemplate('TPL-001')">Test Send</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="user-item">
+                            <div class="user-details">
+                                <strong>Service Reminder Notification</strong>
+                                <div class="user-meta">Type: Email | Category: Maintenance</div>
+                                <div class="user-meta" style="margin-top: 5px;">
+                                    <strong>Subject:</strong> Service Due: {vehicle_id} - {service_type}<br>
+                                    <strong>Preview:</strong> Your vehicle {vehicle_id} is due for {service_type}. Last service: {last_service_date}...
+                                </div>
+                            </div>
+                            <div class="user-actions">
+                                <span class="status-badge status-active">Active</span>
+                                <div style="margin-top: 5px;">
+                                    <button class="btn btn-secondary btn-small" onclick="previewTemplate('TPL-002')">Preview</button>
+                                    <button class="btn btn-secondary btn-small" onclick="editTemplate('TPL-002')">Edit</button>
+                                    <button class="btn btn-warning btn-small" onclick="testTemplate('TPL-002')">Test Send</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="user-item">
+                            <div class="user-details">
+                                <strong>Parts Approval Request</strong>
+                                <div class="user-meta">Type: Email | Category: Inventory</div>
+                                <div class="user-meta" style="margin-top: 5px;">
+                                    <strong>Subject:</strong> Parts Request Pending Approval - {request_id}<br>
+                                    <strong>Preview:</strong> A parts request requires your approval. Request ID: {request_id}. Parts: {parts_list}...
+                                </div>
+                            </div>
+                            <div class="user-actions">
+                                <span class="status-badge status-active">Active</span>
+                                <div style="margin-top: 5px;">
+                                    <button class="btn btn-secondary btn-small" onclick="previewTemplate('TPL-003')">Preview</button>
+                                    <button class="btn btn-secondary btn-small" onclick="editTemplate('TPL-003')">Edit</button>
+                                    <button class="btn btn-warning btn-small" onclick="testTemplate('TPL-003')">Test Send</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="user-item">
+                            <div class="user-details">
+                                <strong>Auction Notice</strong>
+                                <div class="user-meta">Type: Email | Category: Auction Management</div>
+                                <div class="user-meta" style="margin-top: 5px;">
+                                    <strong>Subject:</strong> New Auction Listing - {item_description}<br>
+                                    <strong>Preview:</strong> A new item has been listed for auction. Item: {item_description}. Auction Date: {auction_date}...
+                                </div>
+                            </div>
+                            <div class="user-actions">
+                                <span class="status-badge status-active">Active</span>
+                                <div style="margin-top: 5px;">
+                                    <button class="btn btn-secondary btn-small" onclick="previewTemplate('TPL-004')">Preview</button>
+                                    <button class="btn btn-secondary btn-small" onclick="editTemplate('TPL-004')">Edit</button>
+                                    <button class="btn btn-warning btn-small" onclick="testTemplate('TPL-004')">Test Send</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SMS Templates -->
+                    <div class="card">
+                        <div class="card-header">📱 SMS Templates</div>
+                        <div class="user-item">
+                            <div class="user-details">
+                                <strong>Breakdown Alert SMS</strong>
+                                <div class="user-meta">Type: SMS | Category: Breakdown Management</div>
+                                <div class="user-meta" style="margin-top: 5px;">
+                                    <strong>Message:</strong> ALERT: Breakdown reported for {vehicle_id} at {location}. Priority: {priority}. Ticket: {ticket_id}
+                                </div>
+                            </div>
+                            <div class="user-actions">
+                                <span class="status-badge status-active">Active</span>
+                                <div style="margin-top: 5px;">
+                                    <button class="btn btn-secondary btn-small" onclick="editTemplate('TPL-SMS-001')">Edit</button>
+                                    <button class="btn btn-warning btn-small" onclick="testTemplate('TPL-SMS-001')">Test Send</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="user-item">
+                            <div class="user-details">
+                                <strong>Service Reminder SMS</strong>
+                                <div class="user-meta">Type: SMS | Category: Maintenance</div>
+                                <div class="user-meta" style="margin-top: 5px;">
+                                    <strong>Message:</strong> Reminder: {vehicle_id} service due on {due_date}. Service type: {service_type}. Contact maintenance dept.
+                                </div>
+                            </div>
+                            <div class="user-actions">
+                                <span class="status-badge status-active">Active</span>
+                                <div style="margin-top: 5px;">
+                                    <button class="btn btn-secondary btn-small" onclick="editTemplate('TPL-SMS-002')">Edit</button>
+                                    <button class="btn btn-warning btn-small" onclick="testTemplate('TPL-SMS-002')">Test Send</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- System Logs Section -->
+                <section class="content-section" id="system-logs">
+                    <div class="page-header">
+                        <h1 class="page-title">System Logs</h1>
+                        <p class="page-subtitle">View system events and activities</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-secondary" onclick="exportLogs()">
+                            📥 Export Logs
+                        </button>
+                        <button class="btn btn-danger" onclick="confirmClearLogs()">
+                            🗑️ Clear Old Logs
+                        </button>
+                    </div>
+
+                    <!-- Log Filters -->
+                    <div class="search-bar">
+                        <input type="text" class="search-input" placeholder="Search logs by user, action, or module..." id="logSearch">
+                        <select class="filter-select" id="logTypeFilter">
+                            <option value="">All Types</option>
+                            <option value="login">Login Events</option>
+                            <option value="config">Configuration Changes</option>
+                            <option value="user">User Management</option>
+                            <option value="permission">Permission Changes</option>
+                            <option value="error">Errors</option>
+                        </select>
+                        <select class="filter-select" id="logDateFilter">
+                            <option value="today">Today</option>
+                            <option value="week">Last 7 Days</option>
+                            <option value="month">Last 30 Days</option>
+                            <option value="all">All Time</option>
+                        </select>
+                    </div>
+
+                    <!-- System Logs Display -->
+                    <div class="card">
+                        <div class="card-header">📋 System Event Logs</div>
+                        
+                        <div class="log-entry">
+                            <div class="log-timestamp">Oct 18, 2025 - 11:45 AM</div>
+                            <div><strong>Event:</strong> User Login</div>
+                            <div><strong>User:</strong> john.smith@company.com (EMP-001)</div>
+                            <div><strong>Details:</strong> Successful login from IP 192.168.1.45</div>
+                            <div><strong>Module:</strong> Authentication</div>
+                        </div>
+
+                        <div class="log-entry">
+                            <div class="log-timestamp">Oct 18, 2025 - 11:30 AM</div>
+                            <div><strong>Event:</strong> Permission Updated</div>
+                            <div><strong>User:</strong> System Admin (SA-001)</div>
+                            <div><strong>Details:</strong> Modified access rights for Technical Officer role</div>
+                            <div><strong>Module:</strong> User Management</div>
+                        </div>
+
+                        <div class="log-entry error">
+                            <div class="log-timestamp">Oct 18, 2025 - 10:15 AM</div>
+                            <div><strong>Event:</strong> Failed Login Attempt</div>
+                            <div><strong>User:</strong> robert.williams@company.com (EMP-004)</div>
+                            <div><strong>Details:</strong> Account suspended - login denied from IP 192.168.1.78</div>
+                            <div><strong>Module:</strong> Authentication</div>
+                        </div>
+
+                        <div class="log-entry">
+                            <div class="log-timestamp">Oct 18, 2025 - 9:20 AM</div>
+                            <div><strong>Event:</strong> Configuration Change</div>
+                            <div><strong>User:</strong> System Admin (SA-001)</div>
+                            <div><strong>Details:</strong> Updated petty cash limit for Supervisor role from $400 to $500</div>
+                            <div><strong>Module:</strong> System Configuration</div>
+                        </div>
+
+                        <div class="log-entry">
+                            <div class="log-timestamp">Oct 18, 2025 - 8:45 AM</div>
+                            <div><strong>Event:</strong> User Account Created</div>
+                            <div><strong>User:</strong> System Admin (SA-001)</div>
+                            <div><strong>Details:</strong> New Technical Officer account created (EMP-015)</div>
+                            <div><strong>Module:</strong> User Management</div>
+                        </div>
+
+                        <div class="log-entry warning">
+                            <div class="log-timestamp">Oct 18, 2025 - 7:30 AM</div>
+                            <div><strong>Event:</strong> System Backup</div>
+                            <div><strong>User:</strong> Automated System</div>
+                            <div><strong>Details:</strong> Daily backup completed - 2.3 GB backed up successfully</div>
+                            <div><strong>Module:</strong> System Maintenance</div>
+                        </div>
+
+                        <div class="log-entry error">
+                            <div class="log-timestamp">Oct 17, 2025 - 11:50 PM</div>
+                            <div><strong>Event:</strong> Database Connection Error</div>
+                            <div><strong>User:</strong> System</div>
+                            <div><strong>Details:</strong> Temporary connection timeout - Auto-recovered after 15 seconds</div>
+                            <div><strong>Module:</strong> Database</div>
+                        </div>
+
+                        <div class="log-entry">
+                            <div class="log-timestamp">Oct 17, 2025 - 6:30 PM</div>
+                            <div><strong>Event:</strong> Password Reset</div>
+                            <div><strong>User:</strong> System Admin (SA-001)</div>
+                            <div><strong>Details:</strong> Password reset performed for user EMP-008</div>
+                            <div><strong>Module:</strong> User Management</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- User Activity Tracking Section -->
+                <section class="content-section" id="activity-tracking">
+                    <div class="page-header">
+                        <h1 class="page-title">User Activity Tracking</h1>
+                        <p class="page-subtitle">Monitor real-time user activity and generate reports</p>
+                    </div>
+
+                    <!-- Currently Logged In Users -->
+                    <div class="card">
+                        <div class="card-header">🟢 Currently Active Users</div>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Role</th>
+                                    <th>Login Time</th>
+                                    <th>IP Address</th>
+                                    <th>Current Activity</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>John Smith (EMP-001)</td>
+                                    <td><span class="status-badge status-supervisor">Supervisor</span></td>
+                                    <td>Today 9:30 AM (2h 15m)</td>
+                                    <td>192.168.1.45</td>
+                                    <td>Viewing Breakdown Tickets</td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="viewUserSession('EMP-001')">View Session</button>
+                                        <button class="btn btn-danger btn-small" onclick="forceLogout('EMP-001')">Force Logout</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Sarah Johnson (EMP-002)</td>
+                                    <td><span class="status-badge status-manager">Inventory Manager</span></td>
+                                    <td>Today 8:15 AM (3h 30m)</td>
+                                    <td>192.168.1.52</td>
+                                    <td>Managing Inventory</td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="viewUserSession('EMP-002')">View Session</button>
+                                        <button class="btn btn-danger btn-small" onclick="forceLogout('EMP-002')">Force Logout</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>David Martinez (EMP-007)</td>
+                                    <td><span class="status-badge status-driver">Driver</span></td>
+                                    <td>Today 10:00 AM (1h 45m)</td>
+                                    <td>192.168.1.89</td>
+                                    <td>Viewing Dashboard</td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="viewUserSession('EMP-007')">View Session</button>
+                                        <button class="btn btn-danger btn-small" onclick="forceLogout('EMP-007')">Force Logout</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Activity Timeline -->
+                    <div class="card">
+                        <div class="card-header">📊 Activity Summary (Last 24 Hours)</div>
+                        <div class="grid">
+                            <div class="stat-card">
+                                <div class="stat-number" style="color: var(--kelly-green);">38</div>
+                                <div class="stat-label">Unique Logins</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" style="color: var(--royal-blue);">256</div>
+                                <div class="stat-label">Total Actions</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" style="color: var(--danger);">3</div>
+                                <div class="stat-label">Failed Login Attempts</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Activity Details -->
+                    <div class="card">
+                        <div class="card-header">📈 Detailed User Activity</div>
+                        <div class="search-bar">
+                            <input type="text" class="search-input" placeholder="Search by user name or employee ID..." id="activityUserSearch">
+                            <select class="filter-select" id="activityDateFilter">
+                                <option value="today">Today</option>
+                                <option value="week">Last 7 Days</option>
+                                <option value="month">Last 30 Days</option>
+                            </select>
+                        </div>
+
+                        <div class="user-item">
+                            <div class="user-details">
+                                <strong>John Smith (EMP-001)</strong>
+                                <div class="user-meta">Role: Supervisor | Total Sessions Today: 1</div>
+                                <div class="user-meta" style="margin-top: 5px;">
+                                    <strong>Activity Timeline:</strong><br>
+                                    • 9:30 AM - Logged in from 192.168.1.45<br>
+                                    • 9:45 AM - Approved breakdown ticket TKT-156<br>
+                                    • 10:15 AM - Viewed maintenance reports<br>
+                                    • 11:20 AM - Updated petty cash request
+                                </div>
+                            </div>
+                            <div class="user-actions">
+                                <button class="btn btn-secondary btn-small" onclick="viewFullActivityLog('EMP-001')">Full Log</button>
+                                <button class="btn btn-primary btn-small" onclick="generateActivityReport('EMP-001')">Generate Report</button>
+                            </div>
+                        </div>
+
+                        <div class="user-item">
+                            <div class="user-details">
+                                <strong>Sarah Johnson (EMP-002)</strong>
+                                <div class="user-meta">Role: Inventory Manager | Total Sessions Today: 1</div>
+                                <div class="user-meta" style="margin-top: 5px;">
+                                    <strong>Activity Timeline:</strong><br>
+                                    • 8:15 AM - Logged in from 192.168.1.52<br>
+                                    • 8:30 AM - Approved parts order REQ-089<br>
+                                    • 9:00 AM - Added new spare part to catalog<br>
+                                    • 10:45 AM - Generated inventory usage report
+                                </div>
+                            </div>
+                            <div class="user-actions">
+                                <button class="btn btn-secondary btn-small" onclick="viewFullActivityLog('EMP-002')">Full Log</button>
+                                <button class="btn btn-primary btn-small" onclick="generateActivityReport('EMP-002')">Generate Report</button>
+                            </div>
+                        </div>
+
+                        <div class="user-item">
+                            <div class="user-details">
+                                <strong>Michael Chen (EMP-003)</strong>
+                                <div class="user-meta">Role: Technical Officer | Total Sessions Today: 0</div>
+                                <div class="user-meta" style="margin-top: 5px;">
+                                    <strong>Last Activity:</strong><br>
+                                    • Yesterday 5:45 PM - Logged out<br>
+                                    • Yesterday 5:30 PM - Submitted breakdown ticket TKT-178<br>
+                                    • Yesterday 3:15 PM - Requested parts for repair
+                                </div>
+                            </div>
+                            <div class="user-actions">
+                                <button class="btn btn-secondary btn-small" onclick="viewFullActivityLog('EMP-003')">Full Log</button>
+                                <button class="btn btn-primary btn-small" onclick="generateActivityReport('EMP-003')">Generate Report</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inactivity Report -->
+                    <div class="card">
+                        <div class="card-header">⚠️ User Inactivity Report</div>
+                        <div class="notification-item warning">
+                            <span class="notification-icon">⏰</span>
+                            <div>
+                                <strong>No Recent Activity:</strong> Robert Williams (EMP-004) - Last login: 8 days ago
+                                <div style="margin-top: 5px;">
+                                    <button class="btn btn-secondary btn-small" onclick="viewUserDetails('EMP-004')">View User</button>
+                                    <button class="btn btn-warning btn-small" onclick="sendInactivityReminder('EMP-004')">Send Reminder</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="notification-item info">
+                            <span class="notification-icon">ℹ️</span>
+                            <div>
+                                <strong>Minimal Activity:</strong> Lisa Anderson (EMP-009) - Only 2 logins in last 14 days
+                                <div style="margin-top: 5px;">
+                                    <button class="btn btn-secondary btn-small" onclick="viewUserDetails('EMP-009')">View User</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
             </main>
         </div>
@@ -274,6 +1010,239 @@
                     <button type="button" class="btn btn-secondary" onclick="closeModal('createUserModal')">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create User Account</button>
                 </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reset Password Modal -->
+    <div id="resetPasswordModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('resetPasswordModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Reset User Password</h2>
+            <form id="resetPasswordForm">
+                <div class="form-section">
+                    <h5>🔑 Password Reset</h5>
+                    <div class="form-group">
+                        <label class="form-label">User to Reset</label>
+                        <select class="form-select" required>
+                            <option value="">Select User</option>
+                            <option value="EMP-001">John Smith (EMP-001)</option>
+                            <option value="EMP-002">Sarah Johnson (EMP-002)</option>
+                            <option value="EMP-003">Michael Chen (EMP-003)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">New Temporary Password</label>
+                        <input type="text" class="form-input" placeholder="Auto-generated" readonly>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="sendEmailNotif" checked>
+                        <label for="sendEmailNotif">Send email notification to user</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="forcePasswordChange" checked>
+                        <label for="forcePasswordChange">Force password change on next login</label>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-warning">Reset Password</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Service Interval Modal -->
+    <div id="addServiceIntervalModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('addServiceIntervalModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Add Service Interval</h2>
+            <form id="addServiceIntervalForm">
+                <div class="form-section">
+                    <h5>⚙️ Service Configuration</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Vehicle/Machine Type</label>
+                            <select class="form-select" required>
+                                <option value="">Select Type</option>
+                                <option value="light-vehicle">Light Vehicle</option>
+                                <option value="heavy-vehicle">Heavy Vehicle</option>
+                                <option value="excavator">Excavator</option>
+                                <option value="loader">Loader</option>
+                                <option value="all">All Vehicles/Machines</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Service Type</label>
+                            <input type="text" class="form-input" placeholder="e.g., Oil Change" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Distance Interval (km/hours)</label>
+                            <input type="number" class="form-input" placeholder="e.g., 5000" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Time Interval (months)</label>
+                            <input type="number" class="form-input" placeholder="e.g., 6" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-textarea" placeholder="Additional details about this service interval"></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Service Interval</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Set Petty Cash Limit Modal -->
+    <div id="setPettyCashLimitModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('setPettyCashLimitModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Set Petty Cash Limit</h2>
+            <form id="setPettyCashLimitForm">
+                <div class="form-section">
+                    <h5>💰 Allowance Configuration</h5>
+                    <div class="form-group">
+                        <label class="form-label">Role</label>
+                        <select class="form-select" required>
+                            <option value="">Select Role</option>
+                            <option value="supervisor">Supervisor</option>
+                            <option value="technical-officer">Technical Officer</option>
+                            <option value="maintenance-manager">Maintenance Manager</option>
+                        </select>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Daily Limit ($)</label>
+                            <input type="number" class="form-input" placeholder="e.g., 500" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Monthly Limit ($)</label>
+                            <input type="number" class="form-input" placeholder="e.g., 5000" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Approval Required Above ($)</label>
+                        <input type="number" class="form-input" placeholder="e.g., 200" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-textarea" placeholder="Any special conditions or notes"></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Set Limit</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Template Modal -->
+    <div id="createTemplateModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('createTemplateModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Create Notification Template</h2>
+            <form id="createTemplateForm">
+                <div class="form-section">
+                    <h5>📧 Template Information</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Template Name</label>
+                            <input type="text" class="form-input" placeholder="e.g., Parts Rejection Notice" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Template Type</label>
+                            <select class="form-select" required>
+                                <option value="">Select Type</option>
+                                <option value="email">Email</option>
+                                <option value="sms">SMS</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" required>
+                            <option value="">Select Category</option>
+                            <option value="breakdown">Breakdown Management</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="inventory">Inventory</option>
+                            <option value="auction">Auction Management</option>
+                            <option value="general">General</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5>✉️ Email Content (if Email type)</h5>
+                    <div class="form-group">
+                        <label class="form-label">Subject Line</label>
+                        <input type="text" class="form-input" placeholder="Use variables like {vehicle_id}, {ticket_id}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Message Body</label>
+                        <textarea class="form-textarea" rows="6" placeholder="Enter message template. Use variables like {name}, {vehicle_id}, {date}, etc."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5>📱 SMS Content (if SMS type)</h5>
+                    <div class="form-group">
+                        <label class="form-label">Message (160 characters max)</label>
+                        <textarea class="form-textarea" rows="3" placeholder="Enter SMS template" maxlength="160"></textarea>
+                        <small style="color: var(--muted);">Character count: 0/160</small>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Create Template</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Role Modal -->
+    <div id="createRoleModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('createRoleModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Create New Role</h2>
+            <form id="createRoleForm">
+                <div class="form-section">
+                    <h5>🔐 Role Information</h5>
+                    <div class="form-group">
+                        <label class="form-label">Role Name</label>
+                        <input type="text" class="form-input" placeholder="e.g., Fleet Manager" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Role Description</label>
+                        <textarea class="form-textarea" placeholder="Describe the responsibilities and scope of this role"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5>✅ Permissions</h5>
+                    <div class="form-check">
+                        <input type="checkbox" id="perm-user-management">
+                        <label for="perm-user-management">User Management</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="perm-breakdown-tickets">
+                        <label for="perm-breakdown-tickets">Breakdown Ticket Management</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="perm-inventory">
+                        <label for="perm-inventory">Inventory Management</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="perm-service">
+                        <label for="perm-service">Service Configuration</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="perm-petty-cash">
+                        <label for="perm-petty-cash">Petty Cash Management</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="perm-reports">
+                        <label for="perm-reports">Reports & Analytics</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Create Role</button>
             </form>
         </div>
     </div>
