@@ -88,6 +88,100 @@ function editPermission(module) {
     showToast(`Opening permission editor for ${module}`);
 }
 
+// User Management Functions
+function viewUserDetails(empId) {
+    const title = document.getElementById('detailsTitle');
+    const content = document.getElementById('detailsContent');
+    
+    const userDetails = {
+        'EMP-001': {
+            name: 'John Smith',
+            empId: 'EMP-001',
+            email: 'john.smith@company.com',
+            phone: '+94 77 123 4567',
+            role: 'Supervisor',
+            department: 'Maintenance',
+            status: 'Active',
+            lastLogin: 'Today at 9:30 AM',
+            created: 'Jan 15, 2025',
+            loginCount: 245,
+            permissions: ['Create Tickets', 'Approve Tickets', 'View Reports', 'Manage Team']
+        }
+    };
+    
+    const user = userDetails[empId] || userDetails['EMP-001'];
+    
+    title.textContent = `User Details - ${user.name}`;
+    content.innerHTML = `
+        <div class="form-section">
+            <h5>👤 Personal Information</h5>
+            <div class="form-grid">
+                <div><strong>Full Name:</strong> ${user.name}</div>
+                <div><strong>Employee ID:</strong> ${user.empId}</div>
+                <div><strong>Email:</strong> ${user.email}</div>
+                <div><strong>Phone:</strong> ${user.phone}</div>
+            </div>
+        </div>
+        <div class="form-section">
+            <h5>🏢 Work Information</h5>
+            <div class="form-grid">
+                <div><strong>Role:</strong> ${user.role}</div>
+                <div><strong>Department:</strong> ${user.department}</div>
+                <div><strong>Status:</strong> <span class="status-badge status-active">${user.status}</span></div>
+                <div><strong>Account Created:</strong> ${user.created}</div>
+            </div>
+        </div>
+        <div class="form-section">
+            <h5>📊 Activity Statistics</h5>
+            <div class="form-grid">
+                <div><strong>Last Login:</strong> ${user.lastLogin}</div>
+                <div><strong>Total Logins:</strong> ${user.loginCount}</div>
+            </div>
+        </div>
+        <div class="form-section">
+            <h5>🔐 Permissions</h5>
+            <div>${user.permissions.map(p => `• ${p}`).join('<br>')}</div>
+        </div>
+    `;
+    
+    openModal('detailsModal');
+}
+
+function editUser(empId) {
+    showToast(`Opening edit form for user ${empId}`);
+    // In real implementation, would populate and open edit modal
+}
+
+function resetPassword(empId) {
+    if (confirm(`Reset password for user ${empId}?`)) {
+        showToast(`Password reset email sent to user ${empId}`);
+    }
+}
+
+function suspendUser(empId) {
+    if (confirm(`Are you sure you want to suspend user ${empId}?`)) {
+        showToast(`User ${empId} has been suspended`, 'warning');
+        // Update UI to reflect suspension
+    }
+}
+
+function activateUser(empId) {
+    if (confirm(`Activate user ${empId}?`)) {
+        showToast(`User ${empId} has been activated`);
+    }
+}
+
+function deleteUser(empId) {
+    if (confirm(`WARNING: Permanently delete user ${empId}? This action cannot be undone!`)) {
+        showToast(`User ${empId} has been deleted`, 'error');
+    }
+}
+
+function exportUsers() {
+    showToast('Exporting user list to CSV...');
+    // In real implementation, would trigger CSV download
+}
+
 // Service Configuration Functions
 function editServiceInterval(intervalId) {
     showToast(`Opening edit form for service interval ${intervalId}`);
@@ -370,6 +464,83 @@ function generateTempPassword() {
         password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return password;
+}
+
+// ==================== CONFIRMATION DIALOG ====================
+
+function createConfirmationDialog(title, message, onConfirm, type = 'danger') {
+    const modal = document.createElement('div');
+    modal.className = 'modal confirmation-modal';
+    modal.id = 'confirmationModal';
+    
+    const iconMap = {
+        'danger': 'exclamation-triangle',
+        'warning': 'exclamation-circle',
+        'primary': 'question-circle',
+        'info': 'info-circle'
+    };
+    
+    modal.innerHTML = `
+        <div class="modal-content confirmation-content">
+            <div class="confirmation-header ${type}">
+                <i class="fas fa-${iconMap[type] || 'question-circle'}"></i>
+                <h4>${title}</h4>
+            </div>
+            <div class="confirmation-body">
+                <p>${message}</p>
+            </div>
+            <div class="confirmation-actions">
+                <button class="btn btn-secondary" onclick="closeConfirmation()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button class="btn btn-${type}" onclick="confirmAction()">
+                    <i class="fas fa-check"></i> Confirm
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Close on outside click
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            closeConfirmation();
+        }
+    };
+    
+    // Store the confirmation action
+    window.pendingConfirmAction = onConfirm;
+    
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('active'), 10);
+}
+
+function closeConfirmation() {
+    const modal = document.getElementById('confirmationModal');
+    if (modal) {
+        modal.classList.remove('active');
+        setTimeout(() => modal.remove(), 300);
+    }
+    window.pendingConfirmAction = null;
+}
+
+async function confirmAction() {
+    if (window.pendingConfirmAction) {
+        await window.pendingConfirmAction();
+        closeConfirmation();
+    }
+}
+
+// ==================== LOGOUT ====================
+
+function logout() {
+    createConfirmationDialog(
+        'Confirm Logout',
+        'Are you sure you want to logout? Any unsaved changes will be lost.',
+        () => {
+            Auth.logout();
+        },
+        'warning'
+    );
 }
 
 // Auto-refresh active users every 30 seconds (in real implementation)

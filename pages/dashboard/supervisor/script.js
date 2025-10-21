@@ -921,6 +921,244 @@ if (window.innerWidth <= 768) {
     document.body.appendChild(menuBtn);
 }
 
+// ==================== REPAIR MANAGEMENT FUNCTIONS ====================
+
+function viewRepairDetails(repairId) {
+    showToast(`Viewing repair ${repairId} details`, 'info');
+    // TODO: Implement detailed repair view modal
+}
+
+function greenLightRepair(repairId) {
+    createConfirmationDialog(
+        'Approve Repair',
+        `Are you sure you want to approve repair ${repairId}? The technician can proceed with the work.`,
+        async () => {
+            const itemCard = document.querySelector(`[data-id="${repairId}"]`);
+            if (itemCard) {
+                itemCard.remove();
+            }
+            showToast(`✅ Repair ${repairId} approved! Technician can proceed.`, 'success');
+        },
+        'success'
+    );
+}
+
+function rejectRepair(repairId) {
+    createConfirmationDialog(
+        'Reject Repair',
+        `Reject repair ${repairId}? Please provide reason to technician.`,
+        async () => {
+            const itemCard = document.querySelector(`[data-id="${repairId}"]`);
+            if (itemCard) {
+                itemCard.remove();
+            }
+            showToast(`❌ Repair ${repairId} rejected.`, 'warning');
+        },
+        'danger'
+    );
+}
+
+function markAsOutsourced(repairId) {
+    showToast(`Marking repair ${repairId} as outsourced`, 'info');
+    // TODO: Implement outsource modal
+}
+
+function viewRepairProgress(repairId) {
+    showToast(`Viewing progress for repair ${repairId}`, 'info');
+    // TODO: Implement progress view modal
+}
+
+function updateRepairTimeline(repairId) {
+    showToast(`Updating timeline for repair ${repairId}`, 'info');
+    // TODO: Implement timeline update functionality
+}
+
+function viewAllOutsourced() {
+    showToast('Loading all outsourced repairs...', 'info');
+    // TODO: Implement outsourced repairs view
+}
+
+function updateComponentInfo() {
+    showToast('Opening component information update form', 'info');
+    // TODO: Implement component info modal
+}
+
+// ==================== BUDGET APPROVAL FUNCTIONS ====================
+
+function filterBudgetsByStatus(status) {
+    const btn = event.target;
+    document.querySelectorAll('#budget-approval .filter-controls .filter-btn').forEach(b => {
+        b.classList.remove('active');
+    });
+    btn.classList.add('active');
+    
+    const rows = document.querySelectorAll('#pendingBudgetsTable tr');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const rowStatus = row.getAttribute('data-status');
+        if (!rowStatus) return;
+        
+        if (status === 'all') {
+            row.style.display = '';
+            visibleCount++;
+        } else if (rowStatus === status) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Update badge count
+    const badge = document.getElementById('budgetCountBadge');
+    if (badge) {
+        badge.textContent = `${visibleCount} budget${visibleCount !== 1 ? 's' : ''}`;
+    }
+    
+    showToast(`Showing ${visibleCount} budget${visibleCount !== 1 ? 's' : ''}`, 'info');
+}
+
+function viewBudgetDetails(budgetId) {
+    showToast(`Viewing budget ${budgetId} details`, 'info');
+    // TODO: Implement detailed budget view modal with breakdown and garage details
+}
+
+function approveBudget(budgetId) {
+    createConfirmationDialog(
+        'Approve Budget',
+        `Approve budget ${budgetId}?`,
+        async () => {
+            const row = document.querySelector(`tr[data-id="${budgetId}"]`);
+            if (row) {
+                // Update status
+                row.setAttribute('data-status', 'approved');
+                
+                // Update the actions column to show approved status
+                const actionsCell = row.querySelector('.budget-actions');
+                if (actionsCell) {
+                    actionsCell.innerHTML = `
+                        <span class="status-badge status-completed">✅ Approved</span>
+                        <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('${budgetId}')"><i class="fas fa-eye"></i> View</button>
+                    `;
+                }
+                
+                // Hide the row if viewing only pending
+                const activeBtn = document.querySelector('#budget-approval .filter-controls .filter-btn.active');
+                if (activeBtn && activeBtn.textContent.toLowerCase().includes('pending')) {
+                    row.style.display = 'none';
+                }
+            }
+            showToast(`✅ Budget ${budgetId} approved!`, 'success');
+            updateBudgetCount();
+        },
+        'success'
+    );
+}
+
+function rejectBudget(budgetId) {
+    createConfirmationDialog(
+        'Reject Budget',
+        `Reject budget ${budgetId}? Technician will need to revise.`,
+        async () => {
+            const row = document.querySelector(`tr[data-id="${budgetId}"]`);
+            if (row) {
+                // Update status
+                row.setAttribute('data-status', 'rejected');
+                
+                // Update the actions column to show rejected status
+                const actionsCell = row.querySelector('.budget-actions');
+                if (actionsCell) {
+                    actionsCell.innerHTML = `
+                        <span class="status-badge status-rejected">❌ Rejected</span>
+                        <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('${budgetId}')"><i class="fas fa-eye"></i> View</button>
+                    `;
+                }
+                
+                // Hide the row if viewing only pending
+                const activeBtn = document.querySelector('#budget-approval .filter-controls .filter-btn.active');
+                if (activeBtn && activeBtn.textContent.toLowerCase().includes('pending')) {
+                    row.style.display = 'none';
+                }
+            }
+            showToast(`❌ Budget ${budgetId} rejected.`, 'warning');
+            updateBudgetCount();
+        },
+        'danger'
+    );
+}
+
+function updateBudgetCount() {
+    const activeBtn = document.querySelector('#budget-approval .filter-controls .filter-btn.active');
+    if (activeBtn) {
+        const rows = document.querySelectorAll('#pendingBudgetsTable tr');
+        let visibleCount = 0;
+        
+        rows.forEach(row => {
+            if (row.style.display !== 'none') {
+                visibleCount++;
+            }
+        });
+        
+        const badge = document.getElementById('budgetCountBadge');
+        if (badge) {
+            badge.textContent = `${visibleCount} budget${visibleCount !== 1 ? 's' : ''}`;
+        }
+    }
+}
+
+// ==================== ASSET STATUS FUNCTIONS ====================
+
+function filterAssets(status) {
+    const btn = event.target;
+    document.querySelectorAll('#asset-status .filter-controls .filter-btn').forEach(b => {
+        b.classList.remove('active');
+    });
+    btn.classList.add('active');
+    
+    const rows = document.querySelectorAll('#assetStatusTable tr');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const rowStatus = row.getAttribute('data-status');
+        if (!rowStatus) return;
+        
+        if (status === 'all') {
+            row.style.display = '';
+            visibleCount++;
+        } else if (rowStatus === status) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    showToast(`Showing ${visibleCount} asset${visibleCount !== 1 ? 's' : ''}`, 'info');
+}
+
+function viewAssetDetails(assetId) {
+    showToast(`Viewing details for asset ${assetId}`, 'info');
+    // TODO: Implement detailed asset view modal
+}
+
+function updateAssetStatus(assetId) {
+    showToast(`Updating status for asset ${assetId}`, 'info');
+    // TODO: Implement status update modal
+}
+
+// ==================== TECHNICIAN ASSIGNMENTS FUNCTIONS ====================
+
+function viewTechnicianDetails(techId) {
+    showToast(`Viewing details for technician ${techId}`, 'info');
+    // TODO: Implement detailed technician view modal
+}
+
+function assignNewTicket(techId) {
+    showToast(`Assigning new ticket to technician ${techId}`, 'info');
+    // TODO: Implement ticket assignment modal
+}
+
 // ==================== MODAL BACKDROP HANDLERS ====================
 
 // Close modals on backdrop click

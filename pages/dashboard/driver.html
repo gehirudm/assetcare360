@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Driver Dashboard</title>
+    <title>Driver Dashboard - AssetCare360</title>
+    
+    <!-- FontAwesome -->
+    <script src="https://kit.fontawesome.com/a422e631ad.js" crossorigin="anonymous"></script>
+    
     <style>
         :root {
             --royal-blue: hsla(219, 89%, 53%, 1);
@@ -55,9 +59,37 @@
             align-items: center;
         }
 
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .brand-name {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.025em;
+        }
+
+        .brand-highlight {
+            color: var(--kelly-green);
+        }
+
+        .header-divider {
+            width: 2px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
         .header-title {
-            font-size: 1.8rem;
-            font-weight: 700;
+            font-size: 1.4rem;
+            font-weight: 600;
             margin: 0;
         }
 
@@ -72,6 +104,31 @@
             align-items: center;
             gap: 10px;
             font-weight: 500;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+        }
+
+        .user-meta {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .user-meta .separator {
+            color: rgba(255, 255, 255, 0.5);
         }
 
         .user-avatar {
@@ -141,20 +198,20 @@
             transition: all 0.3s ease;
             border-left: 4px solid transparent;
             color: rgba(255, 255, 255, 0.8);
-            border-radius: 5px;
         }
 
         .nav-item:hover {
             background: rgba(255, 255, 255, 0.1);
-            border-left-color: #4e73df;
+            border-left-color: #fff;
             color: #fff;
             transform: translateX(5px);
         }
 
         .nav-item.active {
             background: rgba(255, 255, 255, 0.15);
-            border-left-color: #4e73df;
+            border-left-color: #fff;
             font-weight: 600;
+            color: #fff;
         }
 
         .nav-icon {
@@ -208,8 +265,8 @@
         /* Grid and Cards */
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
             margin-bottom: 30px;
         }
 
@@ -725,6 +782,259 @@
             color: #991b1b;
         }
 
+        /* ==================== SUMMARY CARDS ==================== */
+        .summary-card {
+            background: linear-gradient(135deg, var(--royal-blue), var(--tang-blue));
+            color: white;
+            padding: 35px 30px;
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            min-height: 180px;
+        }
+
+        .summary-card.clickable {
+            cursor: pointer;
+        }
+
+        .summary-card.clickable::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .summary-card.clickable:hover::before {
+            opacity: 1;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.25);
+        }
+
+        .summary-card-content {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            flex: 1;
+        }
+
+        .summary-icon {
+            width: 75px;
+            height: 75px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-details {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .summary-title {
+            font-size: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            opacity: 0.9;
+        }
+
+        .summary-number {
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-description {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            line-height: 1.5;
+            max-width: 280px;
+        }
+
+        .summary-arrow {
+            font-size: 1.8rem;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+            margin-left: 20px;
+        }
+
+        .summary-card.clickable:hover .summary-arrow {
+            opacity: 1;
+            transform: translateX(5px);
+        }
+
+        /* ==================== RECENT ACTIVITIES ==================== */
+        .recent-activities {
+            background: var(--card);
+            border-radius: 18px;
+            padding: 0;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-top: 30px;
+        }
+
+        .section-header {
+            background: linear-gradient(135deg, #f7f9fb 0%, #eef1f4 100%);
+            padding: 20px 30px;
+            border-bottom: 2px solid var(--stone-200);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: var(--royal-blue);
+            margin: 0;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title i {
+            font-size: 1.3rem;
+        }
+
+        .activities-list {
+            padding: 0;
+        }
+
+        .activity-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 25px 30px;
+            border-bottom: 1px solid var(--stone-200);
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-item:hover {
+            background: #fafcff;
+            transform: translateX(5px);
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-900);
+            margin-bottom: 8px;
+        }
+
+        .activity-meta {
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .activity-description {
+            font-size: 0.95rem;
+            color: var(--text-700);
+            line-height: 1.5;
+        }
+
+        .activity-status {
+            margin-left: 20px;
+            flex-shrink: 0;
+        }
+
+        /* ==================== CONFIRMATION MODAL ==================== */
+        .confirmation-modal {
+            z-index: 2000 !important;
+        }
+
+        .confirmation-modal .modal-content {
+            max-width: 500px;
+        }
+
+        .confirmation-content {
+            padding: 0 !important;
+        }
+
+        .confirmation-header {
+            padding: 25px 30px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.3rem;
+        }
+
+        .confirmation-header.danger {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: white;
+        }
+
+        .confirmation-header.warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .confirmation-header.primary {
+            background: var(--gradient-blue);
+            color: white;
+        }
+
+        .confirmation-header.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+
+        .confirmation-header h4 {
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .confirmation-header i {
+            font-size: 1.5rem;
+        }
+
+        .confirmation-body {
+            padding: 30px;
+            color: var(--text-700);
+            line-height: 1.6;
+        }
+
+        .confirmation-body p {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .confirmation-actions {
+            padding: 20px 30px;
+            border-top: 1px solid var(--stone-200);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .header {
@@ -776,49 +1086,64 @@
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <h1 class="header-title">Driver Dashboard</h1>
+            <div class="header-left">
+                <div class="brand-logo">
+                    <span class="brand-name">AssetCare<span class="brand-highlight">360</span></span>
+                </div>
+                <div class="header-divider"></div>
+                <h1 class="header-title">
+                    <i class="fas fa-steering-wheel"></i> Driver Dashboard
+                </h1>
+            </div>
             <div class="header-user">
                 <div class="user-info">
-                    <div class="user-avatar">DR</div>
-                    <span>John Driver</span>
+                    <div class="user-avatar" id="userAvatar">D</div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">Loading...</div>
+                        <div class="user-meta">
+                            <span id="userEmployeeId"></span>
+                            <span class="separator">•</span>
+                            <span id="userRole"></span>
+                        </div>
+                    </div>
                 </div>
                 <button class="logout-btn" onclick="logout()">
-                    <span>🚪</span>
-                    Logout
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
                 </button>
             </div>
         </header>
 
         <div class="main-wrapper">
             <aside class="sidebar">
-                <h2>Driver</h2>
+                <!-- <h2>Driver</h2> -->
                 <nav>
                     <div class="nav-item active" data-section="dashboard">
-                        <span class="nav-icon">📊</span>
+                        <i class="nav-icon fas fa-tachometer-alt"></i>
                         <span>Dashboard</span>
                     </div>
                     <div class="nav-item" data-section="trip-log">
-                        <span class="nav-icon">🚚</span>
+                        <i class="nav-icon fas fa-route"></i>
                         <span>Trip Log</span>
                     </div>
                     <div class="nav-item" data-section="vehicle-check">
-                        <span class="nav-icon">✅</span>
+                        <i class="nav-icon fas fa-clipboard-check"></i>
                         <span>Vehicle Check</span>
                     </div>
                     <div class="nav-item" data-section="breakdown">
-                        <span class="nav-icon">⚠️</span>
+                        <i class="nav-icon fas fa-exclamation-triangle"></i>
                         <span>Breakdown Report</span>
                     </div>
                     <div class="nav-item" data-section="fuel-mileage">
-                        <span class="nav-icon">⛽</span>
+                        <i class="nav-icon fas fa-gas-pump"></i>
                         <span>Fuel & Mileage</span>
                     </div>
                     <div class="nav-item" data-section="transport-ticket">
-                        <span class="nav-icon">🎫</span>
+                        <i class="nav-icon fas fa-ticket-alt"></i>
                         <span>Transport Ticket</span>
                     </div>
                     <div class="nav-item" data-section="garages">
-                        <span class="nav-icon">🏪</span>
+                        <i class="nav-icon fas fa-warehouse"></i>
                         <span>Nearby Garages</span>
                     </div>
                 </nav>
@@ -828,65 +1153,119 @@
                 <!-- Dashboard Section -->
                 <section class="content-section active" id="dashboard">
                     <div class="page-header">
-                        <h1 class="page-title">Dashboard</h1>
-                        <p class="page-subtitle">Your assigned vehicle and quick actions</p>
+                        <h2 class="page-title"><i class="fas fa-tachometer-alt"></i> Dashboard Overview</h2>
+                        <p class="page-subtitle">Welcome! Here's your daily summary</p>
                     </div>
 
-                    <!-- Quick Stats -->
-                    <div class="card">
-                        <div class="card-header">📊 Quick Statistics</div>
-                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
-                            <div style="text-align: center; padding: 15px; background: #e8f5e8; border-radius: 8px;">
-                                <div style="font-size: 1.5rem; font-weight: bold; color: var(--ok);">220</div>
-                                <div style="color: var(--muted);">KM Today</div>
+                    <div class="grid">
+                        <div class="summary-card clickable" onclick="navigateTo('trip-log')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-route"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Today's Trips</div>
+                                    <div class="summary-number">3</div>
+                                    <div class="summary-description">trips scheduled today</div>
+                                </div>
                             </div>
-                            <div style="text-align: center; padding: 15px; background: #e3f2fd; border-radius: 8px;">
-                                <div style="font-size: 1.5rem; font-weight: bold; color: var(--royal-blue);">2</div>
-                                <div style="color: var(--muted);">Trips Completed</div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
                             </div>
-                            <div style="text-align: center; padding: 15px; background: #fff3e0; border-radius: 8px;">
-                                <div style="font-size: 1.5rem; font-weight: bold; color: var(--warn);">1</div>
-                                <div style="color: var(--muted);">Pending Trips</div>
+                        </div>
+
+                        <div class="summary-card clickable" onclick="navigateTo('vehicle-check')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-clipboard-check"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Vehicle Checks</div>
+                                    <div class="summary-number">3</div>
+                                    <div class="summary-description">daily checks submitted</div>
+                                </div>
                             </div>
-                            <div style="text-align: center; padding: 15px; background: #fee; border-radius: 8px;">
-                                <div style="font-size: 1.5rem; font-weight: bold; color: var(--danger);">1</div>
-                                <div style="color: var(--muted);">Open Reports</div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="summary-card clickable" onclick="navigateTo('fuel-mileage')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-gas-pump"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Distance Today</div>
+                                    <div class="summary-number">220 KM</div>
+                                    <div class="summary-description">total distance covered</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="summary-card clickable" onclick="navigateTo('breakdown')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Breakdown Reports</div>
+                                    <div class="summary-number">1</div>
+                                    <div class="summary-description">active breakdown report</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Quick Actions -->
-                    <div class="card">
-                        <div class="card-header">
-                            <span>⚡ Quick Actions</span>
+                    <!-- Recent Activities Section -->
+                    <div class="recent-activities">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-chart-line"></i> Recent Activities
+                            </h3>
                         </div>
-                        <div style="display: flex; gap: 10px; flex-wrap: nowrap;">
-                            <button class="btn btn-primary btn-small" onclick="openModal('dailyCheckModal')">📋 Submit Daily Check</button>
-                            <button class="btn btn-success btn-small" onclick="openModal('startTripModal')">🚗 Start New Trip</button>
-                            <button class="btn btn-warning btn-small" onclick="openModal('fuelMileageModal')">⛽ Log Fuel & Mileage</button>
-                            <button class="btn btn-danger btn-small" onclick="openModal('transportTicketModal')">🎫 Create Transport Ticket</button>
-                        </div>
-                    </div>
 
-                    <!-- Quick Notifications -->
-                    <div class="card">
-                        <div class="card-header">🔔 Important Notifications</div>
-                        <div class="notification-item warning">
-                            <span class="notification-icon">⏰</span>
-                            <div>
-                                <strong>Service Due:</strong> Vehicle LKA-1234 service due in 250 km
+                        <div class="activities-list" id="activitiesList">
+                            <!-- Activity Item 1 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Daily Check Approved</div>
+                                    <div class="activity-meta">Vehicle: LKA-1234 | Check ID: VC-001 | 2 hours ago</div>
+                                    <div class="activity-description">All safety checks passed successfully</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-approved">APPROVED</span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="notification-item info">
-                            <span class="notification-icon">🎫</span>
-                            <div>
-                                <strong>New Trip Assigned:</strong> TRP-003 - Galle to Colombo scheduled for today
+
+                            <!-- Activity Item 2 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Trip Completed</div>
+                                    <div class="activity-meta">Trip: TRP-001 | Galle → Colombo | 3 hours ago</div>
+                                    <div class="activity-description">Successfully completed 85km trip with cargo delivery</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-completed">COMPLETED</span>
+                                </div>
                             </div>
-                        </div>
-                        <div class="notification-item success">
-                            <span class="notification-icon">✅</span>
-                            <div>
-                                <strong>Check Approved:</strong> Daily inspection approved by supervisor
+
+                            <!-- Activity Item 3 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Service Due Alert</div>
+                                    <div class="activity-meta">Vehicle: LKA-1234 | Due in: 250 KM | 5 hours ago</div>
+                                    <div class="activity-description">Regular maintenance service required soon</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-pending">PENDING</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -895,7 +1274,7 @@
                 <!-- Trip Log Section -->
                 <section class="content-section" id="trip-log">
                     <div class="page-header">
-                        <h1 class="page-title">Trip Log</h1>
+                        <h2 class="page-title"><i class="fas fa-route"></i> Trip Log</h2>
                         <p class="page-subtitle">Record and track your trips with details</p>
                     </div>
 
@@ -957,7 +1336,7 @@
                 <!-- Vehicle Check Section -->
                 <section class="content-section" id="vehicle-check">
                     <div class="page-header">
-                        <h1 class="page-title">Vehicle Check</h1>
+                        <h2 class="page-title"><i class="fas fa-clipboard-check"></i> Vehicle Check</h2>
                         <p class="page-subtitle">Submit daily pre-trip inspection reports</p>
                     </div>
 
@@ -1042,7 +1421,7 @@
                 <!-- Breakdown Report Section -->
                 <section class="content-section" id="breakdown">
                     <div class="page-header">
-                        <h1 class="page-title">Breakdown Report</h1>
+                        <h2 class="page-title"><i class="fas fa-exclamation-triangle"></i> Breakdown Report</h2>
                         <p class="page-subtitle">Report vehicle issues and track repair status</p>
                     </div>
 
@@ -1116,7 +1495,7 @@
                 <!-- Fuel & Mileage Section -->
                 <section class="content-section" id="fuel-mileage">
                     <div class="page-header">
-                        <h1 class="page-title">Fuel & Mileage</h1>
+                        <h2 class="page-title"><i class="fas fa-gas-pump"></i> Fuel & Mileage</h2>
                         <p class="page-subtitle">Track fuel consumption and vehicle efficiency</p>
                     </div>
 
@@ -1200,7 +1579,7 @@
                 <!-- Transport Ticket Section -->
                 <section class="content-section" id="transport-ticket">
                     <div class="page-header">
-                        <h1 class="page-title">Transport Ticket</h1>
+                        <h2 class="page-title"><i class="fas fa-ticket-alt"></i> Transport Ticket</h2>
                         <p class="page-subtitle">Create and manage cargo transport documentation</p>
                     </div>
 
@@ -1240,7 +1619,7 @@
                 <!-- Nearby Garages Section -->
                 <section class="content-section" id="garages">
                     <div class="page-header">
-                        <h1 class="page-title">Nearby Company Garages</h1>
+                        <h2 class="page-title"><i class="fas fa-warehouse"></i> Nearby Company Garages</h2>
                         <p class="page-subtitle">Find registered service centers for emergency support</p>
                     </div>
 
@@ -2301,6 +2680,23 @@
 
     <script>
         // Navigation functionality
+        function navigateTo(sectionId) {
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+            
+            // Find and activate the corresponding nav item
+            const navItem = document.querySelector(`[data-section="${sectionId}"]`);
+            if (navItem) {
+                navItem.classList.add('active');
+            }
+            
+            // Show the corresponding section
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.classList.add('active');
+            }
+        }
+
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', function() {
                 document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
@@ -3045,13 +3441,79 @@
             });
         }
 
-        function logout() {
-            if (confirm('Are you sure you want to logout?')) {
-                showToast('Logging out...');
-                setTimeout(() => {
-                    alert('You have been logged out successfully!');
-                }, 1000);
+        // ==================== CONFIRMATION DIALOG ====================
+        function createConfirmationDialog(title, message, onConfirm, type = 'danger') {
+            const modal = document.createElement('div');
+            modal.className = 'modal confirmation-modal';
+            modal.id = 'confirmationModal';
+            
+            const iconMap = {
+                'danger': 'exclamation-triangle',
+                'warning': 'exclamation-circle',
+                'primary': 'question-circle',
+                'info': 'info-circle'
+            };
+            
+            modal.innerHTML = `
+                <div class="modal-content confirmation-content">
+                    <div class="confirmation-header ${type}">
+                        <i class="fas fa-${iconMap[type] || 'question-circle'}"></i>
+                        <h4>${title}</h4>
+                    </div>
+                    <div class="confirmation-body">
+                        <p>${message}</p>
+                    </div>
+                    <div class="confirmation-actions">
+                        <button class="btn btn-secondary" onclick="closeConfirmation()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button class="btn btn-${type}" onclick="confirmAction()">
+                            <i class="fas fa-check"></i> Confirm
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Close on outside click
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    closeConfirmation();
+                }
+            };
+            
+            // Store the confirmation action
+            window.pendingConfirmAction = onConfirm;
+            
+            document.body.appendChild(modal);
+            setTimeout(() => modal.classList.add('active'), 10);
+        }
+
+        function closeConfirmation() {
+            const modal = document.getElementById('confirmationModal');
+            if (modal) {
+                modal.classList.remove('active');
+                setTimeout(() => modal.remove(), 300);
             }
+            window.pendingConfirmAction = null;
+        }
+
+        async function confirmAction() {
+            if (window.pendingConfirmAction) {
+                await window.pendingConfirmAction();
+                closeConfirmation();
+            }
+        }
+
+        function logout() {
+            createConfirmationDialog(
+                'Confirm Logout',
+                'Are you sure you want to logout? Any unsaved changes will be lost.',
+                () => {
+                    // Call Auth.logout() which will clear tokens and redirect
+                    Auth.logout();
+                },
+                'warning'
+            );
         }
 
         // Close modal when clicking outside
@@ -3111,6 +3573,35 @@
             initializeForms();
             setupDragAndDrop();
             
+            // Initialize user display
+            const userName = "John Driver"; // This would come from session/auth
+            const userRole = "Driver";
+            const employeeId = "DRV-12345"; // This would come from session/auth
+            
+            // Update user name
+            const userNameElement = document.getElementById('userName');
+            if (userNameElement) {
+                userNameElement.textContent = userName;
+            }
+            
+            // Update user role
+            const userRoleElement = document.getElementById('userRole');
+            if (userRoleElement) {
+                userRoleElement.textContent = userRole;
+            }
+            
+            // Update employee ID
+            const userEmployeeIdElement = document.getElementById('userEmployeeId');
+            if (userEmployeeIdElement) {
+                userEmployeeIdElement.textContent = `ID: ${employeeId}`;
+            }
+            
+            // Update avatar with first letter
+            const userAvatarElement = document.getElementById('userAvatar');
+            if (userAvatarElement && userName) {
+                userAvatarElement.textContent = userName.charAt(0).toUpperCase();
+            }
+            
             // Set today's date as default for date inputs
             const today = new Date().toISOString().split('T')[0];
             document.querySelectorAll('input[type="date"]').forEach(input => {
@@ -3153,5 +3644,11 @@
             }
         });
     </script>
+
+    <!-- External Scripts -->
+    <script src="../js/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/utils.js"></script>
 </body>
 </html>

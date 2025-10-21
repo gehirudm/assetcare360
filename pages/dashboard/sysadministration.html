@@ -1797,22 +1797,22 @@
                     <h5>👤 Personal Information</h5>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label class="form-label">Full Name *</label>
-                            <input type="text" class="form-input" name="full_name" placeholder="Enter full name" required>
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-input" placeholder="Enter full name" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Employee ID *</label>
-                            <input type="text" class="form-input" name="employee_id" placeholder="e.g., EMP-020" required>
+                            <label class="form-label">Employee ID</label>
+                            <input type="text" class="form-input" placeholder="e.g., EMP-020" required>
                         </div>
                     </div>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Email Address</label>
-                            <input type="email" class="form-input" name="email" placeholder="user@company.com">
+                            <input type="email" class="form-input" placeholder="user@company.com" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Phone Number</label>
-                            <input type="tel" class="form-input" name="phone" placeholder="+94 XX XXX XXXX">
+                            <input type="tel" class="form-input" placeholder="+94 XX XXX XXXX">
                         </div>
                     </div>
                 </div>
@@ -1821,31 +1821,53 @@
                     <h5>🏢 Work Information</h5>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label class="form-label">Role *</label>
-                            <select class="form-select" name="role" required>
+                            <label class="form-label">Role</label>
+                            <select class="form-select" required>
                                 <option value="">Select Role</option>
-                                <option value="Admin">Admin</option>
-                                <option value="Inventory Manager">Inventory Manager</option>
-                                <option value="Machinary Operator">Machinery Operator</option>
-                                <option value="Driver">Driver</option>
-                                <option value="Supervisor">Supervisor</option>
+                                <option value="admin">System Admin</option>
+                                <option value="supervisor">Supervisor</option>
+                                <option value="inventory-manager">Inventory Manager</option>
+                                <option value="maintenance-manager">Maintenance Manager</option>
+                                <option value="technical-officer">Technical Officer</option>
+                                <option value="driver">Driver</option>
+                                <option value="auction-officer">Auction Officer</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Department</label>
-                            <input type="text" class="form-input" name="department" placeholder="e.g., Maintenance">
+                            <select class="form-select" required>
+                                <option value="">Select Department</option>
+                                <option value="administration">Administration</option>
+                                <option value="maintenance">Maintenance</option>
+                                <option value="inventory">Inventory</option>
+                                <option value="technical">Technical</option>
+                                <option value="operations">Operations</option>
+                            </select>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-section">
                     <h5>🔐 Account Settings</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Temporary Password</label>
+                            <input type="password" class="form-input" placeholder="Auto-generated" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Account Status</label>
+                            <select class="form-select" required>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="form-check">
-                        <input type="checkbox" id="forcePasswordChange" name="force_password_change" checked>
+                        <input type="checkbox" id="forcePasswordChange">
                         <label for="forcePasswordChange">Force password change on first login</label>
                     </div>
                     <div class="form-check">
-                        <input type="checkbox" id="sendWelcomeEmail" name="send_welcome_email">
+                        <input type="checkbox" id="sendWelcomeEmail" checked>
                         <label for="sendWelcomeEmail">Send welcome email with login credentials</label>
                     </div>
                 </div>
@@ -2505,10 +2527,8 @@
             sidebar.classList.toggle('open');
         }
 
-        // This script is now in external file script.js
         // Initialize everything when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
-            // Legacy initialization for non-user sections
             initializeForms();
             initializeSearchAndFilter();
             
@@ -2585,6 +2605,5 @@
             console.log('Refreshing active user data...');
         }, 30000);
     </script>
-    <script type="module" src="./sysadministration/script.js"></script>
 </body>
 </html>

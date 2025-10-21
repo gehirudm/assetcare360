@@ -5,7 +5,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AssetCare360 - Vehicle & Machine Management Solution</title>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
     <style>
+        :root {
+            --royal-blue: hsla(219, 89%, 53%, 1);
+            --royal-blue-2: hsla(219, 75%, 50%, 1);
+            --tang-blue: hsla(219, 67%, 47%, 1);
+            --kelly-green: hsla(99, 60%, 43%, 1);
+            --stone-100: #f7f9fb;
+            --stone-200: #eef1f4;
+            --text-900: #111827;
+            --text-700: #374151;
+            --muted: #6b7280;
+            --card: #ffffff;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --gradient-blue: linear-gradient(135deg, var(--royal-blue), var(--tang-blue));
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,7 +37,7 @@
         }
 
         body {
-            font-family: "Work Sans", sans-serif;
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             line-height: 1.6;
             color: var(--text-900);
             overflow-x: hidden;
@@ -22,14 +46,21 @@
 
         /* Header */
         .header {
-            background: rgba(30, 60, 114, 0.95);
+            background: var(--gradient-blue);
             color: #fff;
             padding: 1rem 0;
             position: fixed;
             width: 100%;
             top: 0;
             z-index: 1000;
-            box-shadow: var(--shadow);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .header.scrolled {
+            padding: 0.75rem 0;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.15);
         }
 
         .nav-container {
@@ -46,44 +77,52 @@
             align-items: center;
             gap: 0.75rem;
             font-size: 1.5rem;
-            font-weight: 700;
+            font-weight: 800;
             color: #fff;
             text-decoration: none;
         }
 
-        .logo-icon {
-            width: 45px;
-            height: 45px;
-            background: #fff;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.4rem;
-            color: var(--royal-blue);
-            box-shadow: var(--shadow);
+        .logo-text {
+            font-weight: 800;
+            letter-spacing: -0.5px;
         }
 
-        .logo-text {
-            font-weight: 700;
-            letter-spacing: -0.5px;
+        .logo-highlight {
+            color: var(--kelly-green);
         }
 
         .nav-links {
             display: flex;
-            gap: 2rem;
+            gap: 2.5rem;
             align-items: center;
         }
 
         .nav-links a {
-            color: #fff;
+            color: rgba(255, 255, 255, 0.9);
             text-decoration: none;
-            transition: color 0.3s;
+            transition: all 0.3s;
             font-weight: 500;
+            font-size: 1rem;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #fff;
+            transition: width 0.3s ease;
         }
 
         .nav-links a:hover {
-            color: rgba(255, 255, 255, 0.8);
+            color: #fff;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
         }
 
         .login-buttons {
@@ -92,44 +131,49 @@
         }
 
         .btn {
-            padding: 0.75rem 1.5rem;
+            padding: 0.85rem 1.75rem;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             text-decoration: none;
             font-weight: 600;
-            transition: all 0.3s;
-            display: inline-block;
-            font-family: "Work Sans", sans-serif;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: "Inter", sans-serif;
+            font-size: 1rem;
         }
 
         .btn-primary {
             background: #fff;
             color: var(--royal-blue);
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
         }
 
         .btn-primary:hover {
-            background: rgba(255, 255, 255, 0.9);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow);
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
         }
 
         .btn-secondary {
             background: transparent;
             color: #fff;
-            border: 2px solid #fff;
+            border: 2px solid rgba(255, 255, 255, 0.3);
         }
 
         .btn-secondary:hover {
-            background: #fff;
-            color: var(--royal-blue);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #fff;
+            transform: translateY(-2px);
         }
 
         /* Hero Section */
         .hero {
             background: var(--gradient-blue);
             color: #fff;
-            padding: 120px 0 80px;
+            padding: 140px 0 100px;
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -142,8 +186,25 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-            opacity: 0.3;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.5;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            top: -300px;
+            right: -300px;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
         }
 
         .hero-content {
@@ -155,49 +216,134 @@
         }
 
         .hero h1 {
-            font-size: 3.5rem;
-            margin-bottom: 1rem;
-            font-weight: 700;
-            line-height: 1.2;
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            font-weight: 900;
+            line-height: 1.1;
+            animation: fadeInUp 0.8s ease-out;
+            letter-spacing: -2px;
         }
 
         .hero .subtitle {
-            font-size: 1.3rem;
-            margin-bottom: 2rem;
-            opacity: 0.9;
-            max-width: 600px;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.95;
+            max-width: 700px;
             margin-left: auto;
             margin-right: auto;
+            font-weight: 500;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .hero .description {
+            font-size: 1.1rem;
+            margin-bottom: 2.5rem;
+            opacity: 0.85;
+            max-width: 650px;
+            margin-left: auto;
+            margin-right: auto;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-cta {
+            animation: fadeInUp 0.8s ease-out 0.6s both;
         }
 
         .hero-stats {
-            display: flex;
-            justify-content: center;
-            gap: 3rem;
-            margin: 3rem 0;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin: 4rem auto 0;
+            max-width: 1000px;
+            animation: fadeInUp 0.8s ease-out 0.8s both;
         }
 
         .stat {
             text-align: center;
+            padding: 2rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .stat:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
 
         .stat-number {
-            font-size: 2.5rem;
-            font-weight: bold;
+            font-size: 3rem;
+            font-weight: 900;
             color: #fff;
             display: block;
+            line-height: 1;
+            margin-bottom: 0.5rem;
         }
 
         .stat-label {
-            font-size: 0.9rem;
-            opacity: 0.8;
+            font-size: 1rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        /* Animated Background Elements */
+        .floating-icon {
+            position: absolute;
+            font-size: 3rem;
+            opacity: 0.1;
+            animation: floatRandom 15s ease-in-out infinite;
+        }
+
+        .floating-icon:nth-child(1) {
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .floating-icon:nth-child(2) {
+            top: 60%;
+            left: 85%;
+            animation-delay: 2s;
+        }
+
+        .floating-icon:nth-child(3) {
+            top: 40%;
+            left: 5%;
+            animation-delay: 4s;
+        }
+
+        .floating-icon:nth-child(4) {
+            top: 70%;
+            left: 90%;
+            animation-delay: 6s;
+        }
+
+        @keyframes floatRandom {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(20px, -20px) rotate(90deg); }
+            50% { transform: translate(-15px, 15px) rotate(180deg); }
+            75% { transform: translate(15px, -10px) rotate(270deg); }
         }
 
         /* Features Section */
         .features {
-            padding: 80px 0;
+            padding: 100px 0;
             background: var(--stone-100);
+            position: relative;
         }
 
         .container {
@@ -208,154 +354,346 @@
 
         .section-title {
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 4rem;
+            animation: fadeInUp 0.8s ease-out;
         }
 
-        .section-title h2 {
-            font-size: 2.5rem;
+        .section-title h2,
+        .section-title {
+            font-size: 3rem;
             margin-bottom: 1rem;
             color: var(--tang-blue);
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            color: var(--muted);
+            max-width: 700px;
+            margin: 1rem auto 0;
+            line-height: 1.8;
+            font-weight: 400;
         }
 
         .section-title p {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             color: var(--muted);
-            max-width: 600px;
+            max-width: 650px;
             margin: 0 auto;
+            line-height: 1.8;
         }
 
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 2rem;
             margin-top: 3rem;
         }
 
         .feature-card {
             background: var(--card);
-            padding: 2rem;
-            border-radius: 12px;
+            padding: 2.5rem;
+            border-radius: 20px;
             box-shadow: var(--shadow);
-            transition: transform 0.3s, box-shadow 0.3s;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             text-align: center;
+            border: 1px solid var(--stone-200);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-blue);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
         }
 
         .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            border-color: var(--royal-blue);
         }
 
         .feature-icon {
-            width: 60px;
-            height: 60px;
+            width: 80px;
+            height: 80px;
             background: var(--gradient-blue);
-            border-radius: 12px;
+            border-radius: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 1rem;
-            font-size: 1.5rem;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
             color: #fff;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(66, 99, 235, 0.3);
+        }
+
+        .feature-card:hover .feature-icon {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 12px 30px rgba(66, 99, 235, 0.4);
         }
 
         .feature-card h3 {
-            font-size: 1.3rem;
+            font-size: 1.4rem;
             margin-bottom: 1rem;
             color: var(--tang-blue);
+            font-weight: 700;
         }
 
         .feature-card p {
             color: var(--muted);
-            line-height: 1.6;
+            line-height: 1.7;
+            font-size: 1rem;
         }
 
         /* How It Works Section */
         .how-it-works {
-            padding: 80px 0;
+            padding: 100px 0;
             background: var(--card);
+            position: relative;
+        }
+
+        .steps-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 3rem;
+            margin-top: 4rem;
+            position: relative;
+        }
+
+        .steps-container::before {
+            content: '';
+            position: absolute;
+            top: 35px;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: linear-gradient(to right, var(--royal-blue), var(--tang-blue), var(--kelly-green));
+            z-index: 0;
         }
 
         .steps {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            margin-top: 3rem;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 3rem;
+            margin-top: 4rem;
+            position: relative;
+        }
+
+        .steps::before {
+            content: '';
+            position: absolute;
+            top: 35px;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: linear-gradient(to right, var(--royal-blue), var(--tang-blue), var(--kelly-green));
+            z-index: 0;
         }
 
         .step {
             text-align: center;
             position: relative;
+            z-index: 1;
+            animation: fadeInUp 0.6s ease-out both;
         }
 
+        .step:nth-child(1) { animation-delay: 0.1s; }
+        .step:nth-child(2) { animation-delay: 0.2s; }
+        .step:nth-child(3) { animation-delay: 0.3s; }
+        .step:nth-child(4) { animation-delay: 0.4s; }
+        .step:nth-child(5) { animation-delay: 0.5s; }
+
         .step-number {
-            width: 50px;
-            height: 50px;
-            background: var(--royal-blue);
+            width: 70px;
+            height: 70px;
+            background: var(--gradient-blue);
             color: #fff;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            font-size: 1.2rem;
-            margin: 0 auto 1rem;
+            font-weight: 800;
+            font-size: 1.8rem;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 8px 20px rgba(66, 99, 235, 0.3);
+            border: 4px solid #fff;
+            transition: all 0.4s ease;
+        }
+
+        .step-number i {
+            font-size: 1.8rem;
+        }
+
+        .step:hover .step-number {
+            transform: scale(1.15) rotate(10deg);
+            box-shadow: 0 12px 30px rgba(66, 99, 235, 0.5);
+        }
+
+        .step-content h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.75rem;
+            color: var(--tang-blue);
+            font-weight: 700;
         }
 
         .step h3 {
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
+            font-size: 1.3rem;
+            margin-bottom: 0.75rem;
             color: var(--tang-blue);
+            font-weight: 700;
+        }
+
+        .step-content p {
+            color: var(--muted);
+            line-height: 1.7;
+            font-size: 0.95rem;
         }
 
         .step p {
             color: var(--muted);
-            font-size: 0.95rem;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        /* Benefits Section */
+        .benefits {
+            padding: 100px 0;
+            background: #fff;
+        }
+
+        /* User Roles Section */
+        .user-roles {
+            padding: 100px 0;
+            background: var(--stone-100);
+        }
+
+        .roles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2.5rem;
+            margin-top: 4rem;
+        }
+
+        .role-card {
+            text-align: center;
+            padding: 2.5rem;
+            background: var(--card);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .role-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+            border-color: var(--royal-blue);
+        }
+
+        .role-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient-blue);
+            color: #fff;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 8px 20px rgba(66, 99, 235, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .role-card:hover .role-icon {
+            transform: scale(1.1);
+            box-shadow: 0 12px 30px rgba(66, 99, 235, 0.4);
+        }
+
+        .role-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: var(--tang-blue);
+            font-weight: 700;
+        }
+
+        .role-card p {
+            color: var(--muted);
+            line-height: 1.6;
         }
 
         /* CTA Section */
         .cta {
             background: var(--gradient-blue);
             color: #fff;
-            padding: 80px 0;
+            padding: 100px 0;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.5;
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 2;
         }
 
         .cta h2 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
         }
 
         .cta p {
-            font-size: 1.1rem;
-            margin-bottom: 2rem;
-            opacity: 0.9;
+            font-size: 1.3rem;
+            margin-bottom: 2.5rem;
+            opacity: 0.95;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .cta-buttons {
             display: flex;
-            gap: 1rem;
+            gap: 1.5rem;
             justify-content: center;
             flex-wrap: wrap;
         }
 
-        .cta .btn-primary {
-            background: #fff;
-            color: var(--royal-blue);
+        .cta .btn {
             font-size: 1.1rem;
-            padding: 1rem 2rem;
-        }
-
-        .cta .btn-secondary {
-            font-size: 1.1rem;
-            padding: 1rem 2rem;
+            padding: 1.1rem 2.5rem;
         }
 
         /* Footer */
         .footer {
             background: linear-gradient(135deg, rgb(30, 60, 114) 0%, rgb(42, 82, 152) 100%);
             color: #fff;
-            padding: 40px 0 20px;
-            text-align: center;
+            padding: 60px 0 30px;
         }
 
         .footer-content {
@@ -364,39 +702,207 @@
             padding: 0 2rem;
         }
 
-        .footer p {
-            opacity: 0.8;
+        .footer-logo {
+            margin-bottom: 2rem;
+        }
+
+        .logo-static {
             margin-bottom: 1rem;
+        }
+
+        .logo-static .logo-text {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .logo-static .logo-highlight {
+            color: var(--kelly-green);
+        }
+
+        .footer-description {
+            margin-top: 1rem;
+            max-width: 400px;
+            line-height: 1.8;
+            font-size: 1rem;
+            opacity: 0.9;
+            color: rgba(255, 255, 255, 0.95);
         }
 
         .footer-links {
             display: flex;
-            justify-content: center;
             gap: 2rem;
-            margin-bottom: 2rem;
+            justify-content: center;
+            margin: 2rem 0;
             flex-wrap: wrap;
         }
 
         .footer-links a {
-            color: var(--blue);
+            color: rgba(255, 255, 255, 0.85);
             text-decoration: none;
-            opacity: 0.8;
-            transition: opacity 0.3s;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
         }
 
         .footer-links a:hover {
-            opacity: 1;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
         }
 
-        .success-indicator {
-            background: var(--kelly-green);
-            color: #fff;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
+        .footer-links a i {
             font-size: 0.9rem;
-            font-weight: 600;
-            display: inline-block;
-            margin: 0.5rem;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            padding-top: 2rem;
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .footer-bottom p {
+            margin: 0.5rem 0;
+        }
+
+        .footer-tagline {
+            opacity: 0.8;
+            font-size: 0.95rem;
+        }
+
+        .footer-stats-text {
+            margin-top: 1rem !important;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+
+        .footer-stats-text i {
+            margin: 0 0.3rem;
+        }
+
+        .footer-main {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-brand h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            font-weight: 800;
+        }
+
+        .footer-brand p {
+            opacity: 0.8;
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-stats {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .footer-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0.9;
+        }
+
+        /* Scroll to Top Button */
+        .scroll-to-top,
+        .scroll-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 55px;
+            height: 55px;
+            background: var(--gradient-blue);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 20px rgba(66, 99, 235, 0.4);
+            transition: all 0.3s ease;
+            z-index: 999;
+            transform: translateY(100px);
+        }
+
+        .scroll-to-top:hover,
+        .scroll-top:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(66, 99, 235, 0.6);
+            background: linear-gradient(135deg, var(--tang-blue), var(--royal-blue));
+        }
+
+        .scroll-to-top.show,
+        .scroll-top.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .scroll-to-top i {
+            font-size: 1.3rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 968px) {
+            .hero h1 {
+                font-size: 3rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .section-title h2 {
+                font-size: 2.5rem;
+            }
+
+            .footer-main {
+                grid-template-columns: 1fr;
+            }
+
+            .steps::before {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero .subtitle {
+                font-size: 1.2rem;
+            }
+
+            .hero-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .section-title h2 {
+                font-size: 2rem;
+            }
+
+            .cta h2 {
+                font-size: 2rem;
+            }
         }
     </style>
 </head>
@@ -406,164 +912,192 @@
     <header class="header">
         <div class="nav-container">
             <div class="logo">
-                <div class="logo-icon">🚛</div>
-                <span>AssetCare360</span>
+                <span class="logo-text">AssetCare<span class="logo-highlight">360</span></span>
             </div>
             <nav class="nav-links">
-                <a href="#features">Features</a>
-                <a href="#how-it-works">How It Works</a>
-                <a href="#contact">Contact</a>
+                <a href="#features"><i class="fas fa-star"></i> Features</a>
+                <a href="#how-it-works"><i class="fas fa-clipboard-list"></i> How It Works</a>
+                <a href="#contact"><i class="fas fa-envelope"></i> Contact</a>
             </nav>
             <div class="login-buttons">
-                <a href="/auth" class="btn btn-secondary">Employee Login</a>
-                <a href="/auth/admin" class="btn btn-secondary">Admin Login</a>
+                <a href="auth/login.html" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
             </div>
         </div>
     </header>
 
     <!-- Hero Section -->
     <section class="hero">
+        <!-- Floating Icons -->
+        <i class="fas fa-truck floating-icon"></i>
+        <i class="fas fa-cogs floating-icon"></i>
+        <i class="fas fa-wrench floating-icon"></i>
+        <i class="fas fa-chart-line floating-icon"></i>
+        
         <div class="hero-content">
             <h1>AssetCare360</h1>
-            <p class="subtitle">Complete Vehicle & Machine Management Solution for Litro Gas Company</p>
-            <p>Streamline fault reporting, maintenance scheduling, and asset tracking with our comprehensive management
-                platform.</p>
+            <p class="subtitle">Complete Vehicle & Machine Management Solution</p>
+            <p class="description">Streamline fault reporting, maintenance scheduling, and asset tracking with our comprehensive management platform designed for modern fleet operations.</p>
+
+            <div class="hero-cta">
+                <a href="auth/login.html" class="btn btn-primary" style="font-size: 1.2rem; padding: 1.2rem 2.5rem;">
+                    <i class="fas fa-rocket"></i> Get Started
+                </a>
+            </div>
 
             <div class="hero-stats">
                 <div class="stat">
                     <span class="stat-number">500+</span>
-                    <span class="stat-label">Vehicles Managed</span>
+                    <span class="stat-label"><i class="fas fa-truck"></i> Vehicles Managed</span>
                 </div>
                 <div class="stat">
                     <span class="stat-number">99.9%</span>
-                    <span class="stat-label">Uptime</span>
+                    <span class="stat-label"><i class="fas fa-check-circle"></i> System Uptime</span>
                 </div>
                 <div class="stat">
                     <span class="stat-number">24/7</span>
-                    <span class="stat-label">Support</span>
+                    <span class="stat-label"><i class="fas fa-headset"></i> Support Available</span>
                 </div>
                 <div class="stat">
                     <span class="stat-number">50+</span>
-                    <span class="stat-label">Locations</span>
+                    <span class="stat-label"><i class="fas fa-map-marker-alt"></i> Service Locations</span>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Features Section -->
-    <section class="features" id="features">
+        <!-- Features Section -->
+    <section id="features" class="features">
         <div class="container">
-            <div class="section-title">
-                <h2>Powerful Features for Asset Management</h2>
-                <p>Everything you need to manage your fleet efficiently and keep operations running smoothly</p>
-            </div>
+            <h2 class="section-title">Powerful Features for Complete Asset Management</h2>
+            <p class="section-subtitle">Everything you need to manage your fleet efficiently and effectively</p>
 
             <div class="features-grid">
                 <div class="feature-card">
-                    <div class="feature-icon">🔧</div>
-                    <h3>Fault Reporting System</h3>
-                    <p>Quick and easy fault reporting with real-time notifications. Track issues from detection to
-                        resolution with complete audit trails.</p>
+                    <div class="feature-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3>Quick Fault Reporting</h3>
+                    <p>Report vehicle or machine faults instantly with photo attachments and detailed descriptions. Get immediate notifications to relevant personnel.</p>
                 </div>
 
                 <div class="feature-card">
-                    <div class="feature-icon">📊</div>
-                    <h3>Real-time Dashboard</h3>
-                    <p>Comprehensive dashboards for different roles - supervisors, technicians, drivers, and
-                        administrators with role-based access control.</p>
+                    <div class="feature-icon">
+                        <i class="fas fa-wrench"></i>
+                    </div>
+                    <h3>Maintenance Tracking</h3>
+                    <p>Schedule and track all maintenance activities. Monitor service history, set reminders, and ensure optimal asset performance.</p>
                 </div>
 
                 <div class="feature-card">
-                    <div class="feature-icon">🚛</div>
-                    <h3>Vehicle Tracking</h3>
-                    <p>Monitor vehicle status, maintenance schedules, and performance metrics. Keep track of your entire
-                        fleet from a single interface.</p>
+                    <div class="feature-icon">
+                        <i class="fas fa-route"></i>
+                    </div>
+                    <h3>Real-time Monitoring</h3>
+                    <p>Track vehicle locations, monitor status, and view comprehensive analytics in real-time. Make data-driven decisions instantly.</p>
                 </div>
 
                 <div class="feature-card">
-                    <div class="feature-icon">⚙️</div>
-                    <h3>Maintenance Management</h3>
-                    <p>Automated maintenance scheduling, spare parts management, and repair workflow optimization to
-                        minimize downtime.</p>
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Advanced Analytics</h3>
+                    <p>Comprehensive dashboards with insights on maintenance costs, fault trends, and asset utilization. Export detailed reports.</p>
                 </div>
 
                 <div class="feature-card">
-                    <div class="feature-icon">👥</div>
-                    <h3>Team Coordination</h3>
-                    <p>Seamless communication between drivers, technicians, supervisors, and management with task
-                        assignment and progress tracking.</p>
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Role-based Access</h3>
+                    <p>Secure multi-level access control. Different views and permissions for supervisors, operators, technical staff, and administrators.</p>
                 </div>
 
                 <div class="feature-card">
-                    <div class="feature-icon">📱</div>
+                    <div class="feature-icon">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
                     <h3>Mobile Responsive</h3>
-                    <p>Access the system from any device - desktop, tablet, or mobile. Perfect for field operations and
-                        on-the-go management.</p>
+                    <p>Access the platform from any device. Full functionality on desktop, tablet, and mobile for on-the-go management.</p>
                 </div>
 
                 <div class="feature-card">
-                    <div class="feature-icon">📈</div>
-                    <h3>Analytics & Reports</h3>
-                    <p>Detailed analytics on asset performance, maintenance costs, downtime analysis, and operational
-                        efficiency metrics.</p>
+                    <div class="feature-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h3>Smart Notifications</h3>
+                    <p>Automated alerts for maintenance schedules, fault reports, and critical events. Never miss an important update.</p>
                 </div>
 
                 <div class="feature-card">
-                    <div class="feature-icon">🔒</div>
-                    <h3>Secure & Reliable</h3>
-                    <p>Enterprise-grade security with role-based access, data encryption, and regular backups to keep
-                        your information safe.</p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">💰</div>
-                    <h3>Cost Management</h3>
-                    <p>Track repair costs, spare parts inventory, and budget approvals. Optimize spending with detailed
-                        financial insights.</p>
+                    <div class="feature-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <h3>Complete History</h3>
+                    <p>Detailed audit trails and historical records of all activities. Track changes, view timelines, and maintain compliance.</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- How It Works Section -->
-    <section class="how-it-works" id="how-it-works">
+        <!-- How It Works Section -->
+    <section id="how-it-works" class="how-it-works">
         <div class="container">
-            <div class="section-title">
-                <h2>How AssetCare360 Works</h2>
-                <p>Simple, efficient workflow designed for Litro Gas operations</p>
-            </div>
+            <h2 class="section-title">How It Works</h2>
+            <p class="section-subtitle">Streamlined workflow for complete asset management</p>
 
-            <div class="steps">
+            <div class="steps-container">
                 <div class="step">
-                    <div class="step-number">1</div>
-                    <h3>Report Issues</h3>
-                    <p>Drivers and operators quickly report faults or maintenance needs through the intuitive interface
-                    </p>
+                    <div class="step-number">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="step-content">
+                        <h3>Report Issue</h3>
+                        <p>Operators quickly report faults with photos and descriptions through an intuitive interface</p>
+                    </div>
                 </div>
 
                 <div class="step">
-                    <div class="step-number">2</div>
-                    <h3>Automatic Assignment</h3>
-                    <p>System automatically assigns tickets to appropriate technicians based on expertise and
-                        availability</p>
+                    <div class="step-number">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="step-content">
+                        <h3>Automatic Assignment</h3>
+                        <p>System automatically assigns tickets to appropriate technicians based on expertise and availability</p>
+                    </div>
                 </div>
 
                 <div class="step">
-                    <div class="step-number">3</div>
-                    <h3>Track Progress</h3>
-                    <p>Real-time tracking of repair progress with updates, photos, and estimated completion times</p>
+                    <div class="step-number">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <div class="step-content">
+                        <h3>Track Progress</h3>
+                        <p>Real-time tracking of repair progress with updates, photos, and estimated completion times</p>
+                    </div>
                 </div>
 
                 <div class="step">
-                    <div class="step-number">4</div>
-                    <h3>Quality Assurance</h3>
-                    <p>Supervisors review and approve completed work, ensuring quality standards are met</p>
+                    <div class="step-number">
+                        <i class="fas fa-check-double"></i>
+                    </div>
+                    <div class="step-content">
+                        <h3>Quality Assurance</h3>
+                        <p>Supervisors review and approve completed work, ensuring quality standards are met</p>
+                    </div>
                 </div>
 
                 <div class="step">
-                    <div class="step-number">5</div>
-                    <h3>Analytics & Insights</h3>
-                    <p>Generate reports and insights to optimize operations and prevent future issues</p>
+                    <div class="step-number">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="step-content">
+                        <h3>Analytics & Insights</h3>
+                        <p>Generate reports and insights to optimize operations and prevent future issues</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -574,46 +1108,58 @@
         <div class="container">
             <div class="section-title">
                 <h2>Why Choose AssetCare360?</h2>
-                <p>Designed specifically for Litro Gas Company's operational needs</p>
+                <p class="section-subtitle">Built for operational excellence and efficiency</p>
             </div>
 
             <div class="features-grid">
                 <div class="feature-card">
-                    <div class="feature-icon">⏱️</div>
+                    <div class="feature-icon">
+                        <i class="fas fa-stopwatch"></i>
+                    </div>
                     <h3>Reduce Downtime</h3>
                     <p>Minimize vehicle and equipment downtime with proactive maintenance scheduling and rapid fault
                         resolution.</p>
                 </div>
 
                 <div class="feature-card">
-                    <div class="feature-icon">💡</div>
+                    <div class="feature-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
                     <h3>Improve Efficiency</h3>
                     <p>Streamline operations with automated workflows, reducing manual paperwork and administrative
                         overhead.</p>
                 </div>
 
                 <div class="feature-card">
-                    <div class="feature-icon">🎯</div>
+                    <div class="feature-icon">
+                        <i class="fas fa-bullseye"></i>
+                    </div>
                     <h3>Better Decision Making</h3>
                     <p>Make informed decisions with comprehensive data analytics and real-time operational insights.</p>
                 </div>
 
                 <div class="feature-card">
-                    <div class="feature-icon">🛡️</div>
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
                     <h3>Enhanced Safety</h3>
                     <p>Ensure vehicle safety with regular maintenance tracking and immediate fault reporting
                         capabilities.</p>
                 </div>
 
                 <div class="feature-card">
-                    <div class="feature-icon">📋</div>
+                    <div class="feature-icon">
+                        <i class="fas fa-file-contract"></i>
+                    </div>
                     <h3>Compliance Ready</h3>
                     <p>Meet regulatory requirements with detailed maintenance records and audit trails for all
                         activities.</p>
                 </div>
 
                 <div class="feature-card">
-                    <div class="feature-icon">🔄</div>
+                    <div class="feature-icon">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
                     <h3>Scalable Solution</h3>
                     <p>Grows with your business needs, supporting additional vehicles, locations, and operational
                         requirements.</p>
@@ -625,40 +1171,58 @@
     <!-- User Roles Section -->
     <section class="how-it-works" style="background: #f8f9fa;">
         <div class="container">
-            <div class="section-title">
-                <h2>Role-Based Access Control</h2>
-                <p>Tailored interfaces for every team member</p>
-            </div>
+            <h2 class="section-title">Role-Based Access Control</h2>
+            <p class="section-subtitle">Tailored interfaces designed for every team member's specific needs</p>
 
             <div class="steps">
                 <div class="step">
-                    <div class="step-number">👷</div>
-                    <h3>Supervisors</h3>
-                    <p>Approve budgets, assign tickets, monitor progress, and oversee team coordination</p>
+                    <div class="step-number">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="step-content">
+                        <h3>Supervisors</h3>
+                        <p>Approve budgets, assign tickets, monitor progress, and oversee team coordination</p>
+                    </div>
                 </div>
 
                 <div class="step">
-                    <div class="step-number">🔧</div>
-                    <h3>Technicians</h3>
-                    <p>Receive assignments, update progress, order parts, and complete repair documentation</p>
+                    <div class="step-number">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="step-content">
+                        <h3>Technicians</h3>
+                        <p>Receive assignments, update progress, order parts, and complete repair documentation</p>
+                    </div>
                 </div>
 
                 <div class="step">
-                    <div class="step-number">🚛</div>
-                    <h3>Drivers</h3>
-                    <p>Report faults, submit daily checks, and track vehicle maintenance status</p>
+                    <div class="step-number">
+                        <i class="fas fa-truck-moving"></i>
+                    </div>
+                    <div class="step-content">
+                        <h3>Operators</h3>
+                        <p>Report faults, submit daily checks, and track vehicle maintenance status</p>
+                    </div>
                 </div>
 
                 <div class="step">
-                    <div class="step-number">👨‍💼</div>
-                    <h3>Administrators</h3>
-                    <p>Manage users, configure system settings, and access comprehensive analytics</p>
+                    <div class="step-number">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div class="step-content">
+                        <h3>Administrators</h3>
+                        <p>Manage users, configure system settings, and access comprehensive analytics</p>
+                    </div>
                 </div>
 
                 <div class="step">
-                    <div class="step-number">📊</div>
-                    <h3>Managers</h3>
-                    <p>View operational dashboards, approve major expenditures, and strategic planning</p>
+                    <div class="step-number">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="step-content">
+                        <h3>Managers</h3>
+                        <p>View operational dashboards, approve major expenditures, and strategic planning</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -668,11 +1232,14 @@
     <section class="cta">
         <div class="container">
             <h2>Ready to Transform Your Asset Management?</h2>
-            <p>Join Litro Gas Company in revolutionizing vehicle and machine management with AssetCare360</p>
+            <p>Experience the power of streamlined operations and real-time insights with AssetCare360</p>
             <div class="cta-buttons">
-                <a href="/auth" class="btn btn-primary">Employee Access</a>
-                <a href="/auth/admin" class="btn btn-secondary" style="font-size: 1.1rem; padding: 1rem 2rem;">Admin
-                    Portal</a>
+                <a href="auth/login.html" class="btn btn-primary" style="font-size: 1.2rem; padding: 1.2rem 2.5rem;">
+                    <i class="fas fa-sign-in-alt"></i> Access Dashboard
+                </a>
+                <a href="#features" class="btn btn-secondary" style="font-size: 1.1rem; padding: 1rem 2rem;">
+                    <i class="fas fa-info-circle"></i> Learn More
+                </a>
             </div>
         </div>
     </section>
@@ -680,20 +1247,35 @@
     <!-- Footer -->
     <footer class="footer" id="contact">
         <div class="footer-content">
-            <div class="footer-links">
-                <a href="#features">Features</a>
-                <a href="#how-it-works">How It Works</a>
-                <a href="/support">Support</a>
-                <a href="/privacy">Privacy Policy</a>
-                <a href="/terms">Terms of Service</a>
+            <div class="footer-logo">
+                <div class="logo-static">
+                    <span class="logo-text">AssetCare<span class="logo-highlight">360</span></span>
+                </div>
+                <p class="footer-description">Complete Vehicle & Machine Management Solution for modern fleet operations.</p>
             </div>
-            <p>&copy; 2025 AssetCare360. All rights reserved.</p>
-            <p>Designed for Litro Gas Company - Vehicle & Machine Management Solution</p>
-            <p style="margin-top: 1rem; opacity: 0.6; font-size: 0.9rem;">
-                🚛 Managing 500+ Vehicles | ⚙️ 24/7 Operations | 🔧 Real-time Fault Reporting
-            </p>
+            
+            <div class="footer-links">
+                <a href="#features"><i class="fas fa-star"></i> Features</a>
+                <a href="#how-it-works"><i class="fas fa-clipboard-list"></i> How It Works</a>
+                <a href="#contact"><i class="fas fa-envelope"></i> Contact</a>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 AssetCare360. All rights reserved.</p>
+                <p class="footer-tagline">Professional Asset Management Solution</p>
+                <p class="footer-stats-text">
+                    <i class="fas fa-truck"></i> Managing 500+ Vehicles | 
+                    <i class="fas fa-cogs"></i> 24/7 Operations | 
+                    <i class="fas fa-exclamation-circle"></i> Real-time Fault Reporting
+                </p>
+            </div>
         </div>
     </footer>
+
+    <!-- Scroll to Top Button -->
+    <button id="scrollToTop" class="scroll-to-top">
+        <i class="fas fa-arrow-up"></i>
+    </button>
 
     <script>
         // Smooth scrolling for navigation links
@@ -711,15 +1293,31 @@
         });
 
         // Add scroll effect to header
+        const header = document.querySelector('.header');
         window.addEventListener('scroll', function () {
-            const header = document.querySelector('.header');
             if (window.scrollY > 100) {
-                header.style.background = 'rgba(30, 60, 114, 0.95)';
-                header.style.backdropFilter = 'blur(10px)';
+                header.classList.add('scrolled');
             } else {
-                header.style.background = 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)';
-                header.style.backdropFilter = 'none';
+                header.classList.remove('scrolled');
             }
+        });
+
+        // Scroll to top button functionality
+        const scrollToTopBtn = document.getElementById('scrollToTop');
+        
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 300) {
+                scrollToTopBtn.classList.add('show');
+            } else {
+                scrollToTopBtn.classList.remove('show');
+            }
+        });
+
+        scrollToTopBtn.addEventListener('click', function() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
         });
 
         // Animate stats on scroll
@@ -761,13 +1359,21 @@
             observer.observe(heroStats);
         }
 
-        // Add loading animation
-        window.addEventListener('load', function () {
-            document.body.style.opacity = '0';
-            document.body.style.transition = 'opacity 0.5s ease-in-out';
-            setTimeout(() => {
-                document.body.style.opacity = '1';
-            }, 100);
+        // Add entrance animations on scroll for feature cards
+        const featureObserver = new IntersectionObserver(function(entries) {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.feature-card, .step').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            featureObserver.observe(card);
         });
     </script>
 </body>

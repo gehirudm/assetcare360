@@ -28,6 +28,7 @@ const CONFIG = {
             SUPERVISOR: '/dashboard/supervisor/index.html',
             DRIVER: '/dashboard/driver.html',
             MACHINARY_OPERATOR: '/dashboard/machinery-operator/index.html'  // Matches DB typo: 'Machinary Operator'
+            // MACHINARY_OPERATOR: '/dashboard/machop.html'  // Matches DB typo: 'Machinary Operator'
         }
     },
     

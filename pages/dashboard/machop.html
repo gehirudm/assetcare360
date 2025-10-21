@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Machinery Operator Dashboard</title>
+    <title>Machinery Operator Dashboard - AssetCare360</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --royal-blue: hsla(219, 89%, 53%, 1);
@@ -535,6 +536,226 @@
             background: #fafcff;
         }
 
+        /* New styles for improved modals and photo functionality */
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            border-bottom: 2px solid var(--stone-200);
+            margin: -30px -30px 20px -30px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: var(--tang-blue);
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-close {
+            background: var(--danger);
+            color: white;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-close:hover {
+            background: #b02a1f;
+            transform: scale(1.1);
+        }
+
+        .modal-actions {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--stone-200);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .form-errors {
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            color: #991b1b;
+        }
+
+        .form-errors ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .photo-upload-area {
+            margin-top: 12px;
+        }
+
+        .photo-preview-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .photo-preview-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid var(--stone-200);
+            background: var(--stone-50);
+        }
+
+        .photo-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-preview-item .remove-photo {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            opacity: 0.9;
+            transition: all 0.3s ease;
+        }
+
+        .photo-preview-item .remove-photo:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .photo-preview-item .photo-name {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 8px;
+            font-size: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .confirmation-modal .modal-content {
+            max-width: 450px;
+        }
+
+        .confirmation-header {
+            padding: 20px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: -30px -30px 20px -30px;
+        }
+
+        .confirmation-header.danger {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: white;
+        }
+
+        .confirmation-header.warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .confirmation-header i {
+            font-size: 24px;
+        }
+
+        .confirmation-header h4 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+
+        .confirmation-body {
+            padding: 20px 0;
+            color: var(--text-700);
+            line-height: 1.6;
+        }
+
+        .confirmation-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--stone-200);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+            transform: translateY(-2px);
+        }
+
+        .btn-warning {
+            background: var(--warn);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+        }
+
+        .dropdown-menu {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .toast.success {
+            background: var(--kelly-green);
+        }
+
+        .toast.error {
+            background: var(--danger);
+        }
+
+        .toast.warning {
+            background: var(--warn);
+            color: #000;
+        }
+
+        .toast.info {
+            background: var(--royal-blue);
+        }
+
         @media (max-width: 768px) {
             .sidebar {
                 width: 100%;
@@ -554,12 +775,16 @@
                 padding: 20px;
             }
 
-            .form-grid {
+            .form-grid, .form-row {
                 grid-template-columns: 1fr;
             }
 
             .grid {
                 grid-template-columns: 1fr;
+            }
+
+            .photo-preview-container {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
             }
         }
     </style>
@@ -567,14 +792,19 @@
 <body>
     <div class="container">
         <header class="header">
-            <h1 class="header-title">Machinery Operator Dashboard</h1>
+            <h1 class="header-title">
+                <i class="fas fa-cogs"></i> Machinery Operator Dashboard
+            </h1>
             <div class="header-user">
                 <div class="user-info">
-                    <div class="user-avatar">MO</div>
-                    <span>Machine Operator</span>
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span id="userName">Machine Operator</span>
                 </div>
                 <button class="logout-btn" onclick="logout()">
-                    <span>🚪</span> Logout
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
                 </button>
             </div>
         </header>
@@ -584,23 +814,23 @@
                 <h2>Operator Portal</h2>
                 <nav>
                     <div class="nav-item active" data-section="dashboard">
-                        <span class="nav-icon">📊</span>
+                        <span class="nav-icon"><i class="fas fa-chart-line"></i></span>
                         <span>Dashboard</span>
                     </div>
                     <div class="nav-item" data-section="fault-reporting">
-                        <span class="nav-icon">⚠️</span>
+                        <span class="nav-icon"><i class="fas fa-exclamation-triangle"></i></span>
                         <span>Fault Reporting</span>
                     </div>
                     <div class="nav-item" data-section="condition-updates">
-                        <span class="nav-icon">📝</span>
+                        <span class="nav-icon"><i class="fas fa-clipboard-check"></i></span>
                         <span>Condition Updates</span>
                     </div>
                     <div class="nav-item" data-section="ticket-tracking">
-                        <span class="nav-icon">🎫</span>
+                        <span class="nav-icon"><i class="fas fa-ticket-alt"></i></span>
                         <span>Ticket Tracking</span>
                     </div>
                     <div class="nav-item" data-section="notifications">
-                        <span class="nav-icon">🔔</span>
+                        <span class="nav-icon"><i class="fas fa-bell"></i></span>
                         <span>Notifications</span>
                     </div>
                 </nav>
@@ -616,82 +846,60 @@
 
                     <div class="grid">
                         <div class="summary-card">
-                            <div class="summary-title">Today's Activity</div>
+                            <div class="summary-title"><i class="fas fa-tasks"></i> Today's Activity</div>
                             <div class="summary-content">
-                                • Assigned Machines: 3<br>
-                                • Active Operations: 2<br>
-                                • Reports Submitted: 1<br>
-                                • Pending Approvals: 2
+                                <i class="fas fa-cog"></i> Assigned Machines: <strong>3</strong><br>
+                                <i class="fas fa-play-circle"></i> Active Operations: <strong>2</strong><br>
+                                <i class="fas fa-file-alt"></i> Reports Submitted: <strong>1</strong><br>
+                                <i class="fas fa-clock"></i> Pending Approvals: <strong>2</strong>
                             </div>
                         </div>
                         <div class="summary-card">
-                            <div class="summary-title">Machine Status</div>
+                            <div class="summary-title"><i class="fas fa-info-circle"></i> Machine Status</div>
                             <div class="summary-content">
-                                • Operational: 2<br>
-                                • Under Maintenance: 1<br>
-                                • Service Due: 1<br>
-                                • Total Hours Today: 16.5h
+                                <i class="fas fa-check-circle"></i> Operational: <strong>2</strong><br>
+                                <i class="fas fa-wrench"></i> Under Maintenance: <strong>1</strong><br>
+                                <i class="fas fa-calendar-alt"></i> Service Due: <strong>1</strong><br>
+                                <i class="fas fa-hourglass-half"></i> Total Hours Today: <strong>16.5h</strong>
                             </div>
                         </div>
                         <div class="summary-card">
-                            <div class="summary-title">Pending Actions</div>
+                            <div class="summary-title"><i class="fas fa-list-ul"></i> Pending Actions</div>
                             <div class="summary-content">
-                                • Open Tickets: 1<br>
-                                • Condition Updates: 1<br>
-                                • Service Reminders: 1<br>
-                                • Notifications: 3
+                                <i class="fas fa-ticket-alt"></i> Open Tickets: <strong>1</strong><br>
+                                <i class="fas fa-clipboard-list"></i> Condition Updates: <strong>1</strong><br>
+                                <i class="fas fa-bell"></i> Service Reminders: <strong>1</strong><br>
+                                <i class="fas fa-envelope"></i> Notifications: <strong>3</strong>
                             </div>
                         </div>
                     </div>
 
                     <div class="card">
                         <div class="card-header">
-                            <span>⚡ Quick Actions</span>
+                            <span><i class="fas fa-bolt"></i> Quick Actions</span>
                         </div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button class="btn btn-primary" onclick="navigateTo('fault-reporting')">⚠️ Report Fault</button>
-                            <button class="btn btn-primary" onclick="navigateTo('condition-updates')">📝 Update Condition</button>
-                            <button class="btn btn-primary" onclick="navigateTo('ticket-tracking')">🎫 Track Tickets</button>
-                            <button class="btn btn-secondary" onclick="navigateTo('notifications')">🔔 View Notifications</button>
+                            <button class="btn btn-primary" onclick="navigateTo('fault-reporting')">
+                                <i class="fas fa-exclamation-triangle"></i> Report Fault
+                            </button>
+                            <button class="btn btn-primary" onclick="navigateTo('condition-updates')">
+                                <i class="fas fa-clipboard-check"></i> Update Condition
+                            </button>
+                            <button class="btn btn-primary" onclick="navigateTo('ticket-tracking')">
+                                <i class="fas fa-ticket-alt"></i> Track Tickets
+                            </button>
+                            <button class="btn btn-secondary" onclick="navigateTo('notifications')">
+                                <i class="fas fa-bell"></i> View Notifications
+                            </button>
                         </div>
                     </div>
 
                     <div class="card">
                         <div class="card-header">
-                            <span>🔧 Assigned Machines</span>
+                            <span><i class="fas fa-cogs"></i> Assigned Machines</span>
                         </div>
-                        <div class="item-card">
-                            <div class="item-details">
-                                <strong>Excavator #045</strong>
-                                <div class="item-meta">Type: Hydraulic Excavator | Location: Site A - Zone 3</div>
-                                <div class="item-description">Hours: 1,847 / 2,000 | Service due in 153 hours</div>
-                            </div>
-                            <div class="item-actions">
-                                <span class="status-badge status-approved">Operational</span>
-                                <button class="btn btn-secondary btn-small" onclick="viewMachine('EXC-045')">👁️ View</button>
-                            </div>
-                        </div>
-                        <div class="item-card">
-                            <div class="item-details">
-                                <strong>Truck #203</strong>
-                                <div class="item-meta">Type: Heavy Duty Truck | Location: Maintenance Bay 2</div>
-                                <div class="item-description">Hours: 2,340 / 2,500 | Under repair - TKT-003</div>
-                            </div>
-                            <div class="item-actions">
-                                <span class="status-badge status-pending">Maintenance</span>
-                                <button class="btn btn-secondary btn-small" onclick="viewMachine('TRK-203')">👁️ View</button>
-                            </div>
-                        </div>
-                        <div class="item-card">
-                            <div class="item-details">
-                                <strong>Loader #128</strong>
-                                <div class="item-meta">Type: Front End Loader | Location: Site B - Zone 1</div>
-                                <div class="item-description">Hours: 890 / 2,000 | All systems operational</div>
-                            </div>
-                            <div class="item-actions">
-                                <span class="status-badge status-approved">Operational</span>
-                                <button class="btn btn-secondary btn-small" onclick="viewMachine('LOD-128')">👁️ View</button>
-                            </div>
+                        <div id="assignedMachines">
+                            <!-- Machines will be loaded here by script.js -->
                         </div>
                     </div>
                 </section>
@@ -704,132 +912,26 @@
                     </div>
 
                     <div style="margin-bottom: 20px;">
-                        <button class="btn btn-primary" onclick="openModal('reportFaultModal')">Report New Fault</button>
-                    </div>
-
-                    <div id="reportFaultModal" class="modal">
-                        <div class="modal-content">
-                            <button class="close" onclick="closeModal('reportFaultModal')">&times;</button>
-                            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Report Machine Fault</h2>
-                            <form id="reportFaultForm">
-                                <div class="form-section">
-                                    <h5>🚨 Fault Information</h5>
-                                    <div class="form-grid">
-                                        <div class="form-group">
-                                            <label class="form-label">Machine ID *</label>
-                                            <select class="form-select" required>
-                                                <option value="">Select Machine</option>
-                                                <option value="EXC-045">Excavator #045</option>
-                                                <option value="TRK-203">Truck #203</option>
-                                                <option value="LOD-128">Loader #128</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Priority Level *</label>
-                                            <select class="form-select" required>
-                                                <option value="">Select Priority</option>
-                                                <option value="low">Low - Minor issue</option>
-                                                <option value="medium">Medium - Affects operation</option>
-                                                <option value="high">High - Safety concern</option>
-                                                <option value="critical">Critical - Immediate stop</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Fault Category *</label>
-                                        <select class="form-select" required>
-                                            <option value="">Select Category</option>
-                                            <option value="engine">Engine System</option>
-                                            <option value="hydraulics">Hydraulic System</option>
-                                            <option value="transmission">Transmission</option>
-                                            <option value="brakes">Brake System</option>
-                                            <option value="electrical">Electrical System</option>
-                                            <option value="cooling">Cooling System</option>
-                                            <option value="other">Other</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Fault Description *</label>
-                                        <textarea class="form-textarea" placeholder="Describe the fault in detail..." required></textarea>
-                                    </div>
-                                    <div class="form-grid">
-                                        <div class="form-group">
-                                            <label class="form-label">Current Hours *</label>
-                                            <input type="number" class="form-input" min="0" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Location *</label>
-                                            <input type="text" class="form-input" placeholder="Current location" required>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-section">
-                                    <h5>📷 Photo Documentation</h5>
-                                    <div class="photo-upload" onclick="document.getElementById('faultPhotos').click()">
-                                        <div style="font-size: 2rem; margin-bottom: 10px;">📷</div>
-                                        <div style="font-weight: 600; margin-bottom: 5px;">Click to upload photos</div>
-                                        <div style="color: var(--muted); font-size: 14px;">Upload photos of the fault (max 5 files)</div>
-                                        <input type="file" id="faultPhotos" multiple accept="image/*" style="display: none;">
-                                    </div>
-                                </div>
-
-                                <button type="submit" class="btn btn-primary">Submit Fault Report</button>
-                                <button type="button" class="btn btn-secondary" onclick="closeModal('reportFaultModal')">Cancel</button>
-                            </form>
-                        </div>
+                        <button class="btn btn-primary" onclick="openModal('reportFaultModal')">
+                            <i class="fas fa-plus"></i> Report New Fault
+                        </button>
                     </div>
 
                     <div class="filter-controls">
                         <button class="filter-btn active" onclick="filterFaults('all')">All Reports</button>
-                        <button class="filter-btn" onclick="filterFaults('pending')">Pending</button>
-                        <button class="filter-btn" onclick="filterFaults('approved')">Approved</button>
+                        <button class="filter-btn" onclick="filterFaults('open')">Pending</button>
                         <button class="filter-btn" onclick="filterFaults('in-progress')">In Progress</button>
                         <button class="filter-btn" onclick="filterFaults('resolved')">Resolved</button>
+                        <button class="filter-btn" onclick="filterFaults('closed')">Closed</button>
                     </div>
 
                     <div class="card">
                         <div class="card-header">
-                            <span>📋 My Fault Reports</span>
+                            <span><i class="fas fa-clipboard-list"></i> My Fault Reports</span>
                             <span class="status-badge status-in-progress">1 pending, 1 in progress</span>
                         </div>
                         <div id="faultsContainer">
-                            <div class="item-card" data-status="pending">
-                                <div class="item-details">
-                                    <strong>TKT-003</strong>
-                                    <div class="item-meta">Machine: Truck #203 | Submitted: Aug 22, 10:30 AM</div>
-                                    <div class="item-description">Engine making unusual noise, loss of power</div>
-                                    <div class="item-meta">Priority: High | Photos: 2 attached</div>
-                                </div>
-                                <div class="item-actions">
-                                    <span class="status-badge status-pending">Pending</span>
-                                    <button class="btn btn-secondary btn-small" onclick="viewFaultDetails('TKT-003')">👁️ View</button>
-                                </div>
-                            </div>
-                            <div class="item-card" data-status="in-progress">
-                                <div class="item-details">
-                                    <strong>TKT-001</strong>
-                                    <div class="item-meta">Machine: Excavator #045 | Submitted: Aug 20, 02:15 PM</div>
-                                    <div class="item-description">Hydraulic fluid leak from main cylinder</div>
-                                    <div class="item-meta">Priority: Medium | Photos: 3 attached</div>
-                                </div>
-                                <div class="item-actions">
-                                    <span class="status-badge status-in-progress">In Progress</span>
-                                    <button class="btn btn-secondary btn-small" onclick="viewFaultDetails('TKT-001')">👁️ View</button>
-                                </div>
-                            </div>
-                            <div class="item-card" data-status="resolved">
-                                <div class="item-details">
-                                    <strong>TKT-002</strong>
-                                    <div class="item-meta">Machine: Loader #128 | Submitted: Aug 18, 11:00 AM</div>
-                                    <div class="item-description">Brake pedal feels soft, reduced stopping power</div>
-                                    <div class="item-meta">Priority: High | Resolved: Aug 21, 3:30 PM</div>
-                                </div>
-                                <div class="item-actions">
-                                    <span class="status-badge status-resolved">Resolved</span>
-                                    <button class="btn btn-secondary btn-small" onclick="viewFaultDetails('TKT-002')">👁️ View</button>
-                                </div>
-                            </div>
+                            <!-- Faults will be loaded here -->
                         </div>
                     </div>
                 </section>
@@ -925,34 +1027,11 @@
 
                     <div class="card">
                         <div class="card-header">
-                            <span>📝 Recent Condition Updates</span>
-                            <span class="status-badge status-pending">1 pending review</span>
+                            <i class="fas fa-clipboard-check"></i>
+                            <span>Recent Condition Updates</span>
                         </div>
                         <div id="updatesContainer">
-                            <div class="item-card" data-status="approved">
-                                <div class="item-details">
-                                    <strong>UPD-005</strong>
-                                    <div class="item-meta">Machine: Excavator #045 | Submitted: Aug 22, 05:00 PM</div>
-                                    <div class="item-description">Hours: 1,847 | Condition: Good - Minor hydraulic noise</div>
-                                    <div class="item-meta">Reviewed by: Supervisor John</div>
-                                </div>
-                                <div class="item-actions">
-                                    <span class="status-badge status-approved">Reviewed</span>
-                                    <button class="btn btn-secondary btn-small" onclick="viewUpdateDetails('UPD-005')">👁️ View</button>
-                                </div>
-                            </div>
-                            <div class="item-card" data-status="pending">
-                                <div class="item-details">
-                                    <strong>UPD-004</strong>
-                                    <div class="item-meta">Machine: Loader #128 | Submitted: Aug 22, 12:30 PM</div>
-                                    <div class="item-description">Hours: 890 | Condition: Excellent - No issues observed</div>
-                                    <div class="item-meta">Pending review by: Supervisor Mike</div>
-                                </div>
-                                <div class="item-actions">
-                                    <span class="status-badge status-pending">Pending</span>
-                                    <button class="btn btn-secondary btn-small" onclick="viewUpdateDetails('UPD-004')">👁️ View</button>
-                                </div>
-                            </div>
+                            <!-- Updates loaded dynamically via JavaScript -->
                         </div>
                     </div>
                 </section>
@@ -973,46 +1052,11 @@
 
                     <div class="card">
                         <div class="card-header">
-                            <span>🎫 Active Tickets</span>
-                            <span class="status-badge status-in-progress">1 pending, 1 active</span>
+                            <i class="fas fa-ticket-alt"></i>
+                            <span>Active Tickets</span>
                         </div>
                         <div id="ticketsContainer">
-                            <div class="item-card" data-status="pending">
-                                <div class="item-details">
-                                    <strong>TKT-003</strong>
-                                    <div class="item-meta">Machine: Truck #203 | Submitted: Aug 22, 10:30 AM</div>
-                                    <div class="item-description">Engine making unusual noise, loss of power</div>
-                                    <div class="item-meta"><strong>Status:</strong> Pending supervisor review</div>
-                                </div>
-                                <div class="item-actions">
-                                    <span class="status-badge status-pending">Pending</span>
-                                    <button class="btn btn-secondary btn-small" onclick="viewTicketTimeline('TKT-003')">📊 Timeline</button>
-                                </div>
-                            </div>
-                            <div class="item-card" data-status="in-progress">
-                                <div class="item-details">
-                                    <strong>TKT-001</strong>
-                                    <div class="item-meta">Machine: Excavator #045 | Submitted: Aug 20, 02:15 PM</div>
-                                    <div class="item-description">Hydraulic fluid leak from main cylinder</div>
-                                    <div class="item-meta"><strong>Status:</strong> Technical Officer working on repair</div>
-                                </div>
-                                <div class="item-actions">
-                                    <span class="status-badge status-in-progress">In Progress</span>
-                                    <button class="btn btn-secondary btn-small" onclick="viewTicketTimeline('TKT-001')">📊 Timeline</button>
-                                </div>
-                            </div>
-                            <div class="item-card" data-status="resolved">
-                                <div class="item-details">
-                                    <strong>TKT-002</strong>
-                                    <div class="item-meta">Machine: Loader #128 | Submitted: Aug 18, 11:00 AM</div>
-                                    <div class="item-description">Brake pedal feels soft, reduced stopping power</div>
-                                    <div class="item-meta"><strong>Completed:</strong> Aug 21, 3:30 PM (Duration: 3 days, 4.5 hours)</div>
-                                </div>
-                                <div class="item-actions">
-                                    <span class="status-badge status-resolved">Resolved</span>
-                                    <button class="btn btn-secondary btn-small" onclick="viewTicketTimeline('TKT-002')">📊 Timeline</button>
-                                </div>
-                            </div>
+                            <!-- Tickets loaded dynamically via JavaScript -->
                         </div>
                     </div>
                 </section>
@@ -1025,41 +1069,9 @@
                     </div>
 
                     <div class="card">
-                        <div class="card-header">🔔 Recent Notifications</div>
-                        <div class="item-card">
-                            <div class="item-details">
-                                <strong>✅ Ticket Approved</strong>
-                                <div class="item-description">TKT-001 approved by Supervisor John - Technical Officer Mike assigned</div>
-                                <div class="item-meta">Aug 22, 8:45 AM</div>
-                            </div>
-                        </div>
-                        <div class="item-card">
-                            <div class="item-details">
-                                <strong>🔧 Repair Update</strong>
-                                <div class="item-description">TKT-001 - Parts ordered, repair scheduled for tomorrow</div>
-                                <div class="item-meta">Aug 22, 9:00 AM</div>
-                            </div>
-                        </div>
-                        <div class="item-card">
-                            <div class="item-details">
-                                <strong>✅ Condition Update Approved</strong>
-                                <div class="item-description">UPD-005 for Excavator #045 reviewed and approved by Supervisor John</div>
-                                <div class="item-meta">Aug 22, 5:15 PM</div>
-                            </div>
-                        </div>
-                        <div class="item-card">
-                            <div class="item-details">
-                                <strong>⏰ Service Reminder</strong>
-                                <div class="item-description">Excavator #045 service due in 2 days (153 hours remaining)</div>
-                                <div class="item-meta">Aug 22, 6:00 AM</div>
-                            </div>
-                        </div>
-                        <div class="item-card">
-                            <div class="item-details">
-                                <strong>🎉 Ticket Resolved</strong>
-                                <div class="item-description">TKT-002 completed successfully - Loader #128 back in service</div>
-                                <div class="item-meta">Aug 21, 3:30 PM</div>
-                            </div>
+                        <div class="card-header"><i class="fas fa-bell"></i> Recent Notifications</div>
+                        <div id="notificationsContainer">
+                            <!-- Notifications will be loaded here -->
                         </div>
                     </div>
                 </section>
@@ -1069,346 +1081,225 @@
 
     <div id="toast" class="toast"></div>
 
-    <script>
-        // Navigation
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', function() {
-                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-                document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-                this.classList.add('active');
-                document.getElementById(this.getAttribute('data-section')).classList.add('active');
-            });
-        });
-
-        function navigateTo(sectionId) {
-            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-            document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-            document.querySelector(`[data-section="${sectionId}"]`).classList.add('active');
-            document.getElementById(sectionId).classList.add('active');
-        }
-
-        // Modal functions
-        function openModal(modalId) {
-            document.getElementById(modalId).classList.add('active');
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
-
-        // Toast notification
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.style.background = type === 'error' ? '#d93025' : type === 'warning' ? '#f59e0b' : '#5caf53';
-            toast.style.display = 'block';
-            setTimeout(() => toast.style.display = 'none', 3000);
-        }
-
-        // Filter functions
-        function filterFaults(status) {
-            filterItems('faultsContainer', status, 'fault reports');
-        }
-
-        function filterUpdates(status) {
-            filterItems('updatesContainer', status, 'condition updates');
-        }
-
-        function filterTickets(status) {
-            filterItems('ticketsContainer', status, 'tickets');
-        }
-
-        function filterItems(containerId, status, label) {
-            const cards = document.querySelectorAll(`#${containerId} .item-card`);
-            let count = 0;
-            cards.forEach(card => {
-                if (status === 'all' || card.getAttribute('data-status') === status) {
-                    card.style.display = 'flex';
-                    count++;
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-            updateFilterButtons(event.target);
-            showToast(`Showing ${count} ${label}`);
-        }
-
-        function updateFilterButtons(activeBtn) {
-            activeBtn.parentElement.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-            activeBtn.classList.add('active');
-        }
-
-        // View functions
-        function viewMachine(id) {
-            const machines = {
-                'EXC-045': {
-                    name: 'Excavator #045',
-                    type: 'Hydraulic Excavator',
-                    hours: '1,847 / 2,000',
-                    lastService: 'July 15, 2024',
-                    location: 'Site A - Zone 3',
-                    status: 'Operational',
-                    fuelLevel: '75%',
-                    condition: 'Good - Minor hydraulic noise'
-                },
-                'TRK-203': {
-                    name: 'Truck #203',
-                    type: 'Heavy Duty Truck',
-                    hours: '2,340 / 2,500',
-                    lastService: 'August 10, 2024',
-                    location: 'Maintenance Bay 2',
-                    status: 'Under Repair',
-                    fuelLevel: '45%',
-                    condition: 'Under maintenance - TKT-003'
-                },
-                'LOD-128': {
-                    name: 'Loader #128',
-                    type: 'Front End Loader',
-                    hours: '890 / 2,000',
-                    lastService: 'June 20, 2024',
-                    location: 'Site B - Zone 1',
-                    status: 'Operational',
-                    fuelLevel: '90%',
-                    condition: 'Excellent - No issues'
-                }
-            };
-
-            const machine = machines[id];
-            const detailsModal = document.createElement('div');
-            detailsModal.className = 'modal active';
-            detailsModal.innerHTML = `
-                <div class="modal-content">
-                    <button class="close" onclick="this.closest('.modal').remove()">&times;</button>
-                    <h2 style="margin-bottom: 20px; color: var(--tang-blue);">${machine.name} Details</h2>
-                    <div class="form-section">
-                        <h5>🔧 Machine Information</h5>
-                        <div style="margin-bottom: 8px;"><strong>Machine ID:</strong> ${id}</div>
-                        <div style="margin-bottom: 8px;"><strong>Type:</strong> ${machine.type}</div>
-                        <div style="margin-bottom: 8px;"><strong>Status:</strong> <span class="status-badge ${machine.status === 'Operational' ? 'status-approved' : 'status-pending'}">${machine.status}</span></div>
-                        <div style="margin-bottom: 8px;"><strong>Location:</strong> ${machine.location}</div>
-                    </div>
-                    <div class="form-section">
-                        <h5>📊 Operating Hours</h5>
-                        <div style="margin-bottom: 8px;"><strong>Current Hours:</strong> ${machine.hours}</div>
-                        <div style="margin-bottom: 8px;"><strong>Last Service:</strong> ${machine.lastService}</div>
-                        <div style="margin-bottom: 8px;"><strong>Service Status:</strong> ${id === 'EXC-045' ? 'Due in 153 hours' : 'Up to date'}</div>
-                    </div>
-                    <div class="form-section">
-                        <h5>⚙️ Current Condition</h5>
-                        <div style="margin-bottom: 8px;"><strong>Overall Condition:</strong> ${machine.condition}</div>
-                        <div style="margin-bottom: 8px;"><strong>Fuel Level:</strong> ${machine.fuelLevel}</div>
-                    </div>
-                    <button class="btn btn-primary" onclick="this.closest('.modal').remove(); openModal('reportFaultModal');">Report Fault</button>
-                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Close</button>
-                </div>
-            `;
-            document.body.appendChild(detailsModal);
-        }
-
-        function viewFaultDetails(id) {
-            const detailsModal = document.createElement('div');
-            detailsModal.className = 'modal active';
-            detailsModal.innerHTML = `
-                <div class="modal-content">
-                    <button class="close" onclick="this.closest('.modal').remove()">&times;</button>
-                    <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Fault Report - ${id}</h2>
-                    <div class="form-section">
-                        <h5>🚨 Fault Information</h5>
-                        <div><strong>Ticket ID:</strong> ${id}</div>
-                        <div><strong>Machine:</strong> ${id === 'TKT-003' ? 'Truck #203' : id === 'TKT-001' ? 'Excavator #045' : 'Loader #128'}</div>
-                        <div><strong>Submitted:</strong> ${id === 'TKT-003' ? 'Aug 22, 10:30 AM' : id === 'TKT-001' ? 'Aug 20, 02:15 PM' : 'Aug 18, 11:00 AM'}</div>
-                        <div><strong>Priority:</strong> High</div>
-                        <div><strong>Category:</strong> ${id === 'TKT-003' ? 'Engine System' : id === 'TKT-001' ? 'Hydraulic System' : 'Brake System'}</div>
-                    </div>
-                    <div class="form-section">
-                        <h5>📝 Description</h5>
-                        <div>${id === 'TKT-003' ? 'Engine making unusual noise, loss of power during operation' : id === 'TKT-001' ? 'Hydraulic fluid leak from main cylinder' : 'Brake pedal feels soft, reduced stopping power'}</div>
-                    </div>
-                    <div class="form-section">
-                        <h5>📊 Status</h5>
-                        <div><strong>Current Status:</strong> <span class="status-badge ${id === 'TKT-003' ? 'status-pending' : id === 'TKT-001' ? 'status-in-progress' : 'status-resolved'}">${id === 'TKT-003' ? 'Pending' : id === 'TKT-001' ? 'In Progress' : 'Resolved'}</span></div>
-                        <div><strong>Last Update:</strong> ${id === 'TKT-003' ? 'Awaiting supervisor review' : id === 'TKT-001' ? 'Parts ordered, repair in progress' : 'Completed Aug 21, 3:30 PM'}</div>
-                    </div>
-                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Close</button>
-                </div>
-            `;
-            document.body.appendChild(detailsModal);
-        }
-
-        function viewUpdateDetails(id) {
-            const updates = {
-                'UPD-005': {
-                    machine: 'Excavator #045',
-                    submitted: 'Aug 22, 05:00 PM',
-                    hours: '1,847',
-                    condition: 'Good',
-                    enginePerf: 'Normal operation',
-                    hydraulicSys: 'Minor issues observed',
-                    observations: 'Slight hydraulic noise when extending boom. Fluid levels normal. Performance not significantly affected.',
-                    recommendations: 'Monitor hydraulic system. Consider inspection during next scheduled maintenance.',
-                    reviewedBy: 'Supervisor John',
-                    status: 'Reviewed',
-                    reviewNotes: 'Observations noted. Will schedule detailed hydraulic inspection.'
-                },
-                'UPD-004': {
-                    machine: 'Loader #128',
-                    submitted: 'Aug 22, 12:30 PM',
-                    hours: '890',
-                    condition: 'Excellent',
-                    enginePerf: 'Normal operation',
-                    hydraulicSys: 'Normal operation',
-                    observations: 'All systems functioning properly. No unusual sounds or vibrations. Smooth operation throughout the shift.',
-                    recommendations: 'Continue regular maintenance schedule. No immediate concerns.',
-                    reviewedBy: 'Supervisor Mike',
-                    status: 'Pending Review',
-                    reviewNotes: ''
-                }
-            };
-
-            const update = updates[id];
-            const detailsModal = document.createElement('div');
-            detailsModal.className = 'modal active';
-            detailsModal.innerHTML = `
-                <div class="modal-content">
-                    <button class="close" onclick="this.closest('.modal').remove()">&times;</button>
-                    <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Condition Update - ${id}</h2>
-                    <div class="form-section">
-                        <h5>🔧 Machine Information</h5>
-                        <div style="margin-bottom: 8px;"><strong>Update ID:</strong> ${id}</div>
-                        <div style="margin-bottom: 8px;"><strong>Machine:</strong> ${update.machine}</div>
-                        <div style="margin-bottom: 8px;"><strong>Submitted:</strong> ${update.submitted}</div>
-                        <div style="margin-bottom: 8px;"><strong>Current Hours:</strong> ${update.hours}</div>
-                    </div>
-                    <div class="form-section">
-                        <h5>📊 Condition Assessment</h5>
-                        <div style="margin-bottom: 8px;"><strong>Overall Condition:</strong> ${update.condition}</div>
-                        <div style="margin-bottom: 8px;"><strong>Engine Performance:</strong> ${update.enginePerf}</div>
-                        <div style="margin-bottom: 8px;"><strong>Hydraulic System:</strong> ${update.hydraulicSys}</div>
-                    </div>
-                    <div class="form-section">
-                        <h5>📝 Detailed Observations</h5>
-                        <div style="margin-bottom: 8px;">${update.observations}</div>
-                    </div>
-                    <div class="form-section">
-                        <h5>🔧 Maintenance Recommendations</h5>
-                        <div style="margin-bottom: 8px;">${update.recommendations}</div>
-                    </div>
-                    <div class="form-section">
-                        <h5>✅ Review Status</h5>
-                        <div style="margin-bottom: 8px;"><strong>Status:</strong> <span class="status-badge ${update.status === 'Reviewed' ? 'status-approved' : 'status-pending'}">${update.status}</span></div>
-                        <div style="margin-bottom: 8px;"><strong>Reviewed By:</strong> ${update.reviewedBy}</div>
-                        ${update.reviewNotes ? `<div style="margin-bottom: 8px;"><strong>Review Notes:</strong> ${update.reviewNotes}</div>` : ''}
-                    </div>
-                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Close</button>
-                </div>
-            `;
-            document.body.appendChild(detailsModal);
-        }
-
-        function viewTicketTimeline(id) {
-            const timelines = {
-                'TKT-001': [
-                    { step: 1, title: 'Fault Reported', actor: 'Machine Operator', date: 'Aug 20, 2:15 PM', desc: 'Hydraulic fluid leak from main cylinder' },
-                    { step: 2, title: 'Supervisor Approved', actor: 'Supervisor John', date: 'Aug 20, 3:30 PM', desc: 'Approved for technical officer assignment' },
-                    { step: 3, title: 'TO Assigned', actor: 'Supervisor John', date: 'Aug 20, 4:00 PM', desc: 'Assigned to Technical Officer Mike' },
-                    { step: 4, title: 'Investigation Started', actor: 'Technical Officer Mike', date: 'Aug 21, 9:00 AM', desc: 'Initial assessment completed' },
-                    { step: 5, title: 'Parts Ordered', actor: 'Technical Officer Mike', date: 'Aug 22, 9:00 AM', desc: 'Hydraulic seals ordered, repair in progress' }
-                ],
-                'TKT-002': [
-                    { step: 1, title: 'Fault Reported', actor: 'Machine Operator', date: 'Aug 18, 11:00 AM', desc: 'Brake pedal feels soft' },
-                    { step: 2, title: 'Supervisor Approved', actor: 'Supervisor Mike', date: 'Aug 18, 2:00 PM', desc: 'High priority - safety concern' },
-                    { step: 3, title: 'TO Assigned', actor: 'Supervisor Mike', date: 'Aug 18, 2:30 PM', desc: 'Assigned to Technical Officer Sarah' },
-                    { step: 4, title: 'Repair Started', actor: 'Technical Officer Sarah', date: 'Aug 19, 8:00 AM', desc: 'Brake system inspection begun' },
-                    { step: 5, title: 'Repair Completed', actor: 'Technical Officer Sarah', date: 'Aug 21, 2:00 PM', desc: 'Brake fluid replaced, system bled' },
-                    { step: 6, title: 'Validation Completed', actor: 'Supervisor Mike', date: 'Aug 21, 3:30 PM', desc: 'Repair validated, machine returned to service' }
-                ],
-                'TKT-003': [
-                    { step: 1, title: 'Fault Reported', actor: 'Machine Operator', date: 'Aug 22, 10:30 AM', desc: 'Engine making unusual noise, loss of power' }
-                ]
-            };
-
-            const timeline = timelines[id] || [];
-            let timelineHtml = '';
-            
-            timeline.forEach((entry, index) => {
-                const isLast = index === timeline.length - 1;
-                timelineHtml += `
-                    <div style="display: flex; margin-bottom: 20px;">
-                        <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--royal-blue); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; flex-shrink: 0;">
-                            ${entry.step}
+    <!-- Report Fault Modal -->
+    <div id="reportFaultModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> Report Machine Fault</h2>
+                <button class="btn-close" onclick="closeModal('reportFaultModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="reportFaultForm">
+                <!-- Error display -->
+                <div id="faultFormErrors" class="form-errors" style="display: none;"></div>
+                
+                <div class="form-section">
+                    <h5><i class="fas fa-tools"></i> Fault Information</h5>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Machine *</label>
+                            <select class="form-select" id="faultMachine" required>
+                                <option value="">Select Machine</option>
+                            </select>
                         </div>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600; color: var(--text-700);">${entry.title}</div>
-                            <div style="color: var(--muted); font-size: 13px; margin-bottom: 5px;">${entry.date} - ${entry.actor}</div>
-                            <div style="color: var(--text-700); font-size: 14px;">${entry.desc}</div>
-                            ${!isLast ? '<div style="width: 2px; height: 20px; background: #e5e7eb; margin-left: 19px; margin-top: 10px;"></div>' : ''}
+                        <div class="form-group">
+                            <label class="form-label">Priority Level *</label>
+                            <select class="form-select" id="faultPriority" required>
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
+                            </select>
                         </div>
                     </div>
-                `;
-            });
-
-            const detailsModal = document.createElement('div');
-            detailsModal.className = 'modal active';
-            detailsModal.innerHTML = `
-                <div class="modal-content">
-                    <button class="close" onclick="this.closest('.modal').remove()">&times;</button>
-                    <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Ticket Timeline - ${id}</h2>
-                    ${timelineHtml}
-                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Close</button>
+                    <div class="form-group">
+                        <label class="form-label">Fault Description *</label>
+                        <textarea class="form-textarea" id="faultDescription" required 
+                                  placeholder="Describe the fault in detail including any unusual sounds, behaviors, or observations..."></textarea>
+                    </div>
                 </div>
-            `;
-            document.body.appendChild(detailsModal);
-        }
+                
+                <div class="form-section">
+                    <h5><i class="fas fa-camera"></i> Photo Documentation</h5>
+                    <div class="photo-upload-area">
+                        <div class="photo-upload" onclick="document.getElementById('faultPhotos').click()">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--royal-blue);"></i>
+                            <p><strong>Click to upload photos</strong></p>
+                            <p style="font-size: 0.85rem; color: var(--muted);">Maximum 5 images (JPEG, PNG, WebP)</p>
+                            <input type="file" id="faultPhotos" accept="image/jpeg,image/png,image/webp" multiple style="display: none;">
+                        </div>
+                        <div id="photoPreviewContainer" class="photo-preview-container"></div>
+                    </div>
+                </div>
 
-        function logout() {
-            if (confirm('Are you sure you want to logout?')) {
-                showToast('Logging out...');
-                setTimeout(() => alert('Logged out successfully!'), 1000);
-            }
-        }
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Submit Fault Report
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('reportFaultModal')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        // Form submissions
-        document.getElementById('reportFaultForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            showToast('✅ Fault report submitted! Supervisor will review shortly.');
-            closeModal('reportFaultModal');
-            this.reset();
-        });
+    <!-- Edit Fault Ticket Modal -->
+    <div id="editFaultModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> Edit Fault Report</h2>
+                <button class="btn-close" onclick="closeModal('editFaultModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="editFaultForm">
+                <input type="hidden" id="editTicketId">
+                
+                <div class="form-section">
+                    <h5><i class="fas fa-tools"></i> Fault Information</h5>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Machine *</label>
+                            <select class="form-select" id="editMachineSelect" required disabled>
+                                <option value="">Select Machine</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Priority Level *</label>
+                            <select class="form-select" id="editPrioritySelect" required>
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                                <option value="Critical">Critical</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fault Description *</label>
+                        <textarea class="form-textarea" id="editDescription" rows="5" 
+                                  placeholder="Describe the issue in detail..." required></textarea>
+                    </div>
+                </div>
 
-        document.getElementById('conditionUpdateForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            showToast('✅ Condition update submitted! Supervisor will review.');
-            closeModal('conditionUpdateModal');
-            this.reset();
-        });
+                <div class="form-section">
+                    <h5><i class="fas fa-camera"></i> Existing Images</h5>
+                    <div id="existingImages" class="photo-preview-container" style="margin-bottom: 20px;"></div>
+                </div>
+                
+                <div class="form-section">
+                    <h5><i class="fas fa-camera"></i> Add New Images</h5>
+                    <div class="photo-upload-area">
+                        <div class="photo-upload" onclick="document.getElementById('editPhotos').click()">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--royal-blue);"></i>
+                            <p><strong>Click to upload new photos</strong></p>
+                            <p style="font-size: 0.85rem; color: var(--muted);">Maximum 5 images total (JPEG, PNG, WebP)</p>
+                            <input type="file" id="editPhotos" accept="image/jpeg,image/png,image/webp" multiple style="display: none;">
+                        </div>
+                        <div id="editPhotoPreviews" class="photo-preview-container"></div>
+                    </div>
+                </div>
 
-        // Close modal on outside click
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('modal')) {
-                e.target.classList.remove('active');
-            }
-        });
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update Fault Report
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editFaultModal')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        // Close modal with Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                const activeModal = document.querySelector('.modal.active');
-                if (activeModal) activeModal.classList.remove('active');
-            }
-        });
+    <!-- Condition Update Modal -->
+    <div id="conditionUpdateModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-clipboard-check"></i> Machine Condition Update</h2>
+                <button class="btn-close" onclick="closeModal('conditionUpdateModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="conditionUpdateForm">
+                <div class="form-section">
+                    <h5><i class="fas fa-cogs"></i> Machine Information</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Machine</label>
+                            <select class="form-select" id="updateMachine" required>
+                                <option value="">Select Machine</option>
+                                <option value="EXC-045">Excavator #045</option>
+                                <option value="TRK-203">Truck #203</option>
+                                <option value="LOD-128">Loader #128</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Current Hours</label>
+                            <input type="number" class="form-input" id="updateHours" required placeholder="e.g., 1847">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Overall Condition</label>
+                        <select class="form-select" id="updateCondition" required>
+                            <option value="">Select Condition</option>
+                            <option value="Excellent">Excellent</option>
+                            <option value="Good">Good</option>
+                            <option value="Fair">Fair</option>
+                            <option value="Poor">Poor</option>
+                        </select>
+                    </div>
+                </div>
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            if (window.innerWidth <= 768) {
-                const menuBtn = document.createElement('button');
-                menuBtn.innerHTML = '☰';
-                menuBtn.style.cssText = `position: fixed; top: 80px; left: 20px; z-index: 1000; 
-                    background: var(--royal-blue); color: white; border: none; padding: 10px 15px; 
-                    border-radius: 5px; font-size: 20px; cursor: pointer; box-shadow: var(--shadow);`;
-                menuBtn.onclick = () => document.querySelector('.sidebar').classList.toggle('open');
-                document.body.prepend(menuBtn);
-            }
-        });
-    </script>
+                <div class="form-section">
+                    <h5><i class="fas fa-clipboard-list"></i> System Status</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Engine Performance</label>
+                            <select class="form-select" id="updateEngine" required>
+                                <option value="Normal operation">Normal operation</option>
+                                <option value="Minor issues observed">Minor issues observed</option>
+                                <option value="Significant issues">Significant issues</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Hydraulic System</label>
+                            <select class="form-select" id="updateHydraulic" required>
+                                <option value="Normal operation">Normal operation</option>
+                                <option value="Minor issues observed">Minor issues observed</option>
+                                <option value="Significant issues">Significant issues</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Detailed Observations</label>
+                        <textarea class="form-textarea" id="updateObservations" required placeholder="Describe any unusual sounds, vibrations, or performance issues..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Maintenance Recommendations</label>
+                        <textarea class="form-textarea" id="updateRecommendations" placeholder="Suggest any maintenance actions needed..."></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check"></i> Submit Update
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('conditionUpdateModal')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/auth.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/dashboard-init.js"></script>
+    <script src="machinery-operator/script.js"></script>
 </body>
 </html>

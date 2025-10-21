@@ -840,30 +840,30 @@
                     <!-- Summary Details -->
                     <div class="grid">
                         <div class="summary-card">
-                            <div class="summary-title">Total Inventory Items</div>
+                            <div class="summary-title">Total Vehicles</div>
                             <div class="summary-content">
-                                • Total Parts: 187 items<br>
-                                • Active Items: 156 items<br>
-                                • Inactive/Obsolete: 31 items<br>
-                                • Total Value: $456,789
+                                • Active Vehicles: 45 units<br>
+                                • Under Maintenance: 8 units<br>
+                                • Out of Service: 3 units<br>
+                                • Total Fleet: 56 vehicles
                             </div>
                         </div>
                         <div class="summary-card">
-                            <div class="summary-title">Stock Status Summary</div>
+                            <div class="summary-title">Total Machineries</div>
                             <div class="summary-content">
-                                • In Stock: 156 items (83.4%)<br>
-                                • Low Stock: 23 items (12.3%)<br>
-                                • Out of Stock: 8 items (4.3%)<br>
-                                • Last Updated: Today 2:30 PM
+                                • Operational Machines: 32 units<br>
+                                • Under Repair: 5 units<br>
+                                • Idle/Standby: 7 units<br>
+                                • Total Machines: 44 units
                             </div>
                         </div>
                         <div class="summary-card">
-                            <div class="summary-title">Recent Activity Summary</div>
+                            <div class="summary-title">Total Spare Parts</div>
                             <div class="summary-content">
-                                • Orders Approved: 12 this week<br>
-                                • Orders Rejected: 3 this week<br>
-                                • New Items Added: 5 this month<br>
-                                • Parts Dispatched: 87 this month
+                                • In Stock: 156 items<br>
+                                • Low Stock: 23 items<br>
+                                • Out of Stock: 8 items<br>
+                                • Total Parts: 187 items
                             </div>
                         </div>
                     </div>
@@ -907,12 +907,6 @@
                         <button class="btn btn-primary" onclick="openAddPartModal()">
                             ➕ Add New Spare Part
                         </button>
-                        <button class="btn btn-success" onclick="bulkImportParts()">
-                            📥 Bulk Import
-                        </button>
-                        <button class="btn btn-warning" onclick="exportCatalog()">
-                            📤 Export Catalog
-                        </button>
                     </div>
 
                     <!-- Search Bar -->
@@ -931,10 +925,8 @@
                     <!-- Tab Filters for Category -->
                     <div class="filter-controls" id="categoryFilterTabs" style="margin-top:10px;">
                         <button class="filter-btn active" onclick="filterCatalogByCategory('all')">All Categories</button>
-                        <button class="filter-btn" onclick="filterCatalogByCategory('engine')">Engine Parts</button>
-                        <button class="filter-btn" onclick="filterCatalogByCategory('hydraulic')">Hydraulic Parts</button>
-                        <button class="filter-btn" onclick="filterCatalogByCategory('brake')">Brake System</button>
-                        <button class="filter-btn" onclick="filterCatalogByCategory('electrical')">Electrical</button>
+                        <button class="filter-btn" onclick="filterCatalogByCategory('vehicles')">Vehicles</button>
+                        <button class="filter-btn" onclick="filterCatalogByCategory('machines')">Machines</button>
                     </div>
 
                     <!-- Catalog Items -->
@@ -944,12 +936,14 @@
                             <span id="catalogCount" class="status-badge status-normal">3 items</span>
                         </div>
                         <div id="catalogItems">
-                            <div class="inventory-item" data-status="in-stock" data-category="brake" data-id="BP-001">
+                            <div class="inventory-item" data-status="in-stock" data-category="vehicles" data
+                            
+                            -id="BP-001">
                                 <div class="item-details">
                                     <strong>Brake Pads - BP-001</strong>
-                                    <div class="item-meta">Category: Brake System | Quantity: 45 units</div>
-                                    <div class="item-description">Location: Warehouse A-15 | Supplier: Brake Solutions Inc.</div>
-                                    <div class="item-meta">Linked Machines: Vehicle #101, #089, #112</div>
+                                    <div class="item-meta">Category: Vehicles | Quantity: 45 units</div>
+                                    <div class="item-description">Location: Warehouse A-15 | Supplier: Ravindu Lakshan</div>
+                                    <div class="item-meta">Compatible Vehicles: Vehicle #101, #089, #112</div>
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-in-stock">In Stock</span>
@@ -960,12 +954,12 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="inventory-item" data-status="low-stock" data-category="engine" data-id="OF-205">
+                            <div class="inventory-item" data-status="low-stock" data-category="machines" data-id="OF-205">
                                 <div class="item-details">
                                     <strong>Oil Filter - OF-205</strong>
-                                    <div class="item-meta">Category: Engine Parts | Quantity: 8 units</div>
+                                    <div class="item-meta">Category: Machines | Quantity: 8 units</div>
                                     <div class="item-description">Location: Warehouse B-03 | Supplier: FilterMax Ltd.</div>
-                                    <div class="item-meta">Linked Machines: Machine #205, #210, #215</div>
+                                    <div class="item-meta">Compatible Machines: Excavator #205, Loader #210, Crane #215</div>
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-low-stock">Low Stock</span>
@@ -977,12 +971,12 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="inventory-item" data-status="out-of-stock" data-category="hydraulic" data-id="HYD-250">
+                            <div class="inventory-item" data-status="out-of-stock" data-category="machines" data-id="HYD-250">
                                 <div class="item-details">
                                     <strong>Hydraulic Pump - HYD-250</strong>
-                                    <div class="item-meta">Category: Hydraulic Parts | Quantity: 0 units</div>
+                                    <div class="item-meta">Category: Machines | Quantity: 0 units</div>
                                     <div class="item-description">Location: Warehouse C-08 | Supplier: Hydraulic Systems Pro</div>
-                                    <div class="item-meta">Linked Machines: Excavator #045, #067</div>
+                                    <div class="item-meta">Compatible Machines: Excavator #045, Bulldozer #067</div>
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-out-of-stock">Out of Stock</span>
@@ -1006,52 +1000,86 @@
                     </div>
 
                     <div style="margin-bottom: 20px;">
-                        <button class="btn btn-primary" onclick="openAddInventoryModal()">
-                            ➕ Add New Inventory Item
+                        <button class="btn btn-primary" onclick="openAddInventoryModal('machinery')">
+                            ➕ Add New Machinery
                         </button>
-                        <button class="btn btn-success" onclick="bulkUpdateInventory()">
-                            🔄 Bulk Update
+                        <button class="btn btn-success" onclick="openAddInventoryModal('vehicle')">
+                            ➕ Add New Vehicle
                         </button>
-                        <button class="btn btn-warning" onclick="exportInventory()">
-                            📤 Export Data
-                        </button>
+                    </div>
+
+                    <!-- Filter Tabs -->
+                    <div style="margin-bottom: 20px;">
+                        <div class="filter-row">
+                            <button class="filter-btn active" onclick="filterInventoryByType('all')">All Items</button>
+                            <button class="filter-btn" onclick="filterInventoryByType('vehicles')">Vehicles</button>
+                            <button class="filter-btn" onclick="filterInventoryByType('machines')">Machines</button>
+                        </div>
                     </div>
 
                     <div class="card">
                         <div class="card-header">
                             <span>📦 Current Inventory Management</span>
-                            <span id="inventoryCount" class="status-badge status-normal">2 items</span>
+                            <span id="inventoryCount" class="status-badge status-normal">4 items</span>
                         </div>
                         <div id="inventoryItems">
-                            <div class="inventory-item" data-id="ENG-500">
+                            <div class="inventory-item" data-id="VEH-001" data-type="vehicles">
                                 <div class="item-details">
-                                    <strong>Engine Block - ENG-500</strong>
-                                    <div class="item-meta">Category: Engine Parts | Added: Aug 15, 2025</div>
-                                    <div class="item-description">Supplier: ABC Motors | Item ID: ENG-500-2025</div>
-                                    <div class="item-meta">Linked Machines: Vehicle #101, #145, #167</div>
+                                    <strong>Gas Truck - VEH-001</strong>
+                                    <div class="item-meta">Type: Gas Truck | Added: Aug 15, 2025</div>
+                                    <div class="item-description">Supplier: Ransika Dinura | Vehicle No: GT-2025-001</div>
+                                    <div class="item-meta">Components: Engine, Transmission, Brake System, Fuel System</div>
                                 </div>
                                 <div class="item-actions">
                                     <div class="action-buttons">
-                                        <button class="btn btn-secondary btn-small" onclick="viewInventoryDetails('ENG-500')">👁️ View</button>
-                                        <button class="btn btn-primary btn-small" onclick="editInventoryItem('ENG-500')">✏️ Edit</button>
-                                        <button class="btn btn-warning btn-small" onclick="duplicateInventoryItem('ENG-500')">📋 Duplicate</button>
-                                        <button class="btn btn-danger btn-small" onclick="deleteInventoryItem('ENG-500')">🗑️ Delete</button>
+                                        <button class="btn btn-secondary btn-small" onclick="viewInventoryDetails('VEH-001')">👁️ View</button>
+                                        <button class="btn btn-primary btn-small" onclick="editInventoryItem('VEH-001')">✏️ Edit</button>
+                                        <button class="btn btn-danger btn-small" onclick="deleteInventoryItem('VEH-001')">🗑️ Delete</button>
                                     </div>
                                 </div>
                             </div>
-                            <div class="inventory-item" data-id="HYD-SEAL-100">
+                            <div class="inventory-item" data-id="VEH-002" data-type="vehicles">
                                 <div class="item-details">
-                                    <strong>Hydraulic Seals - HYD-SEAL-100</strong>
-                                    <div class="item-meta">Category: Hydraulic Parts | Added: Aug 20, 2025</div>
-                                    <div class="item-description">Supplier: Hydraulic Solutions Ltd | Item ID: HYD-SEAL-100-2025</div>
-                                    <div class="item-meta">Components: Primary Seal, Secondary Seal, O-rings</div>
+                                    <strong>Van - VEH-002</strong>
+                                    <div class="item-meta">Type: Van | Added: Aug 18, 2025</div>
+                                    <div class="item-description">Supplier: Winuka Gamage | Vehicle No: VN-2025-002</div>
+                                    <div class="item-meta">Components: Engine, Suspension, Tires, Lighting System</div>
                                 </div>
                                 <div class="item-actions">
                                     <div class="action-buttons">
-                                        <button class="btn btn-secondary btn-small" onclick="viewInventoryDetails('HYD-SEAL-100')">👁️ View</button>
-                                        <button class="btn btn-primary btn-small" onclick="editInventoryItem('HYD-SEAL-100')">✏️ Edit</button>
-                                        <button class="btn btn-warning btn-small" onclick="duplicateInventoryItem('HYD-SEAL-100')">📋 Duplicate</button>
-                                        <button class="btn btn-danger btn-small" onclick="deleteInventoryItem('HYD-SEAL-100')">🗑️ Delete</button>
+                                        <button class="btn btn-secondary btn-small" onclick="viewInventoryDetails('VEH-002')">👁️ View</button>
+                                        <button class="btn btn-primary btn-small" onclick="editInventoryItem('VEH-002')">✏️ Edit</button>
+                                        <button class="btn btn-danger btn-small" onclick="deleteInventoryItem('VEH-002')">🗑️ Delete</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="inventory-item" data-id="MACH-001" data-type="machines">
+                                <div class="item-details">
+                                    <strong>Gas Filling Machine - MACH-001</strong>
+                                    <div class="item-meta">Type: Gas Filling Station | Added: Aug 20, 2025</div>
+                                    <div class="item-description">Supplier: Senash Adeesha | Machine ID: GFS-2025-001</div>
+                                    <div class="item-meta">Components: Gas Cylinder, Pressure Valve, Filling Nozzle, Safety Valve</div>
+                                </div>
+                                <div class="item-actions">
+                                    <div class="action-buttons">
+                                        <button class="btn btn-secondary btn-small" onclick="viewInventoryDetails('MACH-001')">👁️ View</button>
+                                        <button class="btn btn-primary btn-small" onclick="editInventoryItem('MACH-001')">✏️ Edit</button>
+                                        <button class="btn btn-danger btn-small" onclick="deleteInventoryItem('MACH-001')">🗑️ Delete</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="inventory-item" data-id="MACH-002" data-type="machines">
+                                <div class="item-details">
+                                    <strong>Gas Compressor Unit - MACH-002</strong>
+                                    <div class="item-meta">Type: Compressor | Added: Aug 22, 2025</div>
+                                    <div class="item-description">Supplier: Gehiru Damindu | Machine ID: GC-2025-002</div>
+                                    <div class="item-meta">Components: Compressor Unit, Pressure Gauge, Flow Meter, Storage Tank</div>
+                                </div>
+                                <div class="item-actions">
+                                    <div class="action-buttons">
+                                        <button class="btn btn-secondary btn-small" onclick="viewInventoryDetails('MACH-002')">👁️ View</button>
+                                        <button class="btn btn-primary btn-small" onclick="editInventoryItem('MACH-002')">✏️ Edit</button>
+                                        <button class="btn btn-danger btn-small" onclick="deleteInventoryItem('MACH-002')">🗑️ Delete</button>
                                     </div>
                                 </div>
                             </div>
@@ -1092,8 +1120,18 @@
                         <p class="page-subtitle">Manage order approvals and rejections</p>
                     </div>
 
+                    <!-- Filter Tabs -->
+                    <div style="margin-bottom: 20px;">
+                        <div class="filter-row">
+                            <button class="filter-btn active" onclick="filterOrdersByStatus('all')">All Orders</button>
+                            <button class="filter-btn" onclick="filterOrdersByStatus('pending')">Pending</button>
+                            <button class="filter-btn" onclick="filterOrdersByStatus('approved')">Approved</button>
+                            <button class="filter-btn" onclick="filterOrdersByStatus('rejected')">Rejected</button>
+                        </div>
+                    </div>
+
                     <!-- Pending Orders Table -->
-                    <div class="card">
+                    <div class="card order-section" data-status="pending">
                         <div class="card-header">
                             <span>📋 Pending Orders</span>
                             <span id="pendingCount" class="status-badge status-warning">3 pending</span>
@@ -1105,6 +1143,7 @@
                                         <th>Request ID</th>
                                         <th>Part Details</th>
                                         <th>Requestor</th>
+                                        <th>Supervisor</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -1117,6 +1156,7 @@
                                             <small>Qty: 4 | For: TKT-001</small>
                                         </td>
                                         <td>Technical Officer</td>
+                                        <td>Senash Adeesha</td>
                                         <td><span class="status-badge status-pending">Pending</span></td>
                                         <td>
                                             <button class="btn btn-success btn-small" onclick="approveOrder('REQ-001')">✅ Approve</button>
@@ -1131,6 +1171,7 @@
                                             <small>Qty: 2 | For: TKT-002</small>
                                         </td>
                                         <td>Technical Officer</td>
+                                        <td>Gehiru Damindu</td>
                                         <td><span class="status-badge status-pending">Pending</span></td>
                                         <td>
                                             <button class="btn btn-success btn-small" onclick="approveOrder('REQ-002')">✅ Approve</button>
@@ -1145,6 +1186,7 @@
                                             <small>Qty: 1 | For: TKT-003</small>
                                         </td>
                                         <td>Technical Officer</td>
+                                        <td>Sahan Sandepa</td>
                                         <td><span class="status-badge status-critical">Critical</span></td>
                                         <td>
                                             <button class="btn btn-success btn-small" onclick="approveOrder('REQ-003')">✅ Approve</button>
@@ -1158,7 +1200,7 @@
                     </div>
 
                     <!-- Approved Orders -->
-                    <div class="card">
+                    <div class="card order-section" data-status="approved">
                         <div class="card-header">
                             <span>✅ Approved Orders</span>
                             <button class="btn btn-secondary btn-small" onclick="viewAllApprovedOrders()">View All</button>
@@ -1168,8 +1210,8 @@
                                 <div class="item-details">
                                     <strong>REQ-004</strong>
                                     <div class="item-meta">Brake discs (BD-150) - Qty: 2 | Aug 20, 2025</div>
-                                    <div class="item-description">From: Technical Officer</div>
-                                    <div class="item-meta">Approved by: Inventory Manager | Dispatched: Aug 21, 2025</div>
+                                    <div class="item-description">From: Technical Officer via Senash Adeesha</div>
+                                    <div class="item-meta">Approved by: Malika Nishantha | Dispatched: Aug 21, 2025</div>
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-approved">Approved</span>
@@ -1183,7 +1225,7 @@
                     </div>
 
                     <!-- Rejected Orders -->
-                    <div class="card">
+                    <div class="card order-section" data-status="rejected">
                         <div class="card-header">
                             <span>❌ Rejected Orders</span>
                             <button class="btn btn-secondary btn-small" onclick="viewAllRejectedOrders()">View All</button>
@@ -1193,8 +1235,8 @@
                                 <div class="item-details">
                                     <strong>REQ-005</strong>
                                     <div class="item-meta">Engine coolant (EC-75) - Qty: 10L | Aug 18, 2025</div>
-                                    <div class="item-description">From: Technical Officer</div>
-                                    <div class="item-meta">Rejected by: Inventory Manager | Reason: Stock unavailable</div>
+                                    <div class="item-description">From: Technical Officer via Gehiru Damindu</div>
+                                    <div class="item-meta">Rejected by: Seniru Seneweera | Reason: Stock unavailable</div>
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-rejected">Rejected</span>
@@ -1226,7 +1268,7 @@
                             <div class="stat-label">Parts Consumed This Month</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-number" style="color: var(--warn);">$45,200</div>
+                            <div class="stat-number" style="color: var(--warn);">Rs. 45,200</div>
                             <div class="stat-label">Monthly Consumption Value</div>
                         </div>
                     </div>
@@ -1253,7 +1295,7 @@
                                     <td>Vehicle #101</td>
                                     <td>Aug 19, 2025</td>
                                     <td>Brake pads, Brake discs, Brake fluid</td>
-                                    <td>$850</td>
+                                    <td>Rs. 850</td>
                                     <td><span class="status-badge status-low-stock">High</span></td>
                                     <td>
                                         <button class="btn btn-secondary btn-small" onclick="viewUsageDetails('Vehicle-101')">👁️ View</button>
@@ -1266,7 +1308,7 @@
                                     <td>Machine #205</td>
                                     <td>Aug 15, 2025</td>
                                     <td>Hydraulic seals, Hydraulic fluid</td>
-                                    <td>$1,200</td>
+                                    <td>Rs. 1,200</td>
                                     <td><span class="status-badge status-pending">Medium</span></td>
                                     <td>
                                         <button class="btn btn-secondary btn-small" onclick="viewUsageDetails('Machine-205')">👁️ View</button>
@@ -1279,7 +1321,7 @@
                                     <td>Excavator #045</td>
                                     <td>Aug 10, 2025</td>
                                     <td>Engine filters, Engine oil</td>
-                                    <td>$650</td>
+                                    <td>Rs. 650</td>
                                     <td><span class="status-badge status-in-stock">Low</span></td>
                                     <td>
                                         <button class="btn btn-secondary btn-small" onclick="viewUsageDetails('Excavator-045')">👁️ View</button>
@@ -1384,32 +1426,24 @@
                             <input type="text" class="form-input" id="partName" placeholder="Enter part name" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Part Number</label>
-                            <input type="text" class="form-input" id="partNumber" placeholder="Enter part number" required>
+                            <label class="form-label">Category</label>
+                            <select class="form-select" id="partCategory" required onchange="updateCompatibilityOptions()">
+                                <option value="">Select Category</option>
+                                <option value="vehicles">Vehicles</option>
+                                <option value="machines">Machines</option>
+                            </select>
                         </div>
                     </div>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label class="form-label">Category</label>
-                            <select class="form-select" id="partCategory" required>
-                                <option value="">Select Category</option>
-                                <option value="engine">Engine Parts</option>
-                                <option value="hydraulic">Hydraulic Parts</option>
-                                <option value="brake">Brake System</option>
-                                <option value="electrical">Electrical</option>
-                                <option value="transmission">Transmission</option>
-                                <option value="cooling">Cooling System</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
                             <label class="form-label">Quantity</label>
                             <input type="number" class="form-input" id="partQuantity" min="0" required>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Storage Location</label>
-                        <input type="text" class="form-input" id="partLocation" placeholder="e.g., Warehouse A-15" required>
+                        <div class="form-group">
+                            <label class="form-label">Storage Location</label>
+                            <input type="text" class="form-input" id="partLocation" placeholder="e.g., Warehouse A-15" required>
                         </div>
+                    </div>
                 </div>
 
                 <div class="form-section">
@@ -1451,8 +1485,10 @@
                 <div class="form-section">
                     <h5>🔗 Machine Compatibility</h5>
                     <div class="form-group">
-                        <label class="form-label">Compatible Machines/Vehicles</label>
-                        <textarea class="form-textarea" id="partMachines" placeholder="List machine/vehicle IDs where this part can be used"></textarea>
+                        <label class="form-label" id="compatibilityLabel">Compatible Machines/Vehicles</label>
+                        <div id="compatibilityCheckboxes" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
+                            <p style="color: #999; grid-column: 1 / -1;">Please select a category first</p>
+                        </div>
                     </div>
                 </div>
 
@@ -1486,12 +1522,8 @@
                             <label class="form-label">Category</label>
                             <select class="form-select" id="editPartCategory" required>
                                 <option value="">Select Category</option>
-                                <option value="engine">Engine Parts</option>
-                                <option value="hydraulic">Hydraulic Parts</option>
-                                <option value="brake">Brake System</option>
-                                <option value="electrical">Electrical</option>
-                                <option value="transmission">Transmission</option>
-                                <option value="cooling">Cooling System</option>
+                                <option value="vehicles">Vehicles</option>
+                                <option value="machines">Machines</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1535,47 +1567,160 @@
                     <h5>📦 Basic Information</h5>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label class="form-label">Item Name</label>
+                            <label class="form-label" id="invItemNameLabel">Item Name</label>
+                            <!-- Input field for machinery -->
                             <input type="text" class="form-input" id="invItemName" placeholder="Enter item name" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Item ID</label>
-                            <input type="text" class="form-input" id="invItemId" placeholder="Auto-generated" readonly>
-                        </div>
-                    </div>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label">Category</label>
-                            <select class="form-select" id="invCategory" required>
-                                <option value="">Select Category</option>
-                                <option value="engine">Engine Parts</option>
-                                <option value="hydraulic">Hydraulic Parts</option>
-                                <option value="brake">Brake System</option>
-                                <option value="electrical">Electrical</option>
-                                <option value="transmission">Transmission</option>
-                                <option value="cooling">Cooling System</option>
+                            <!-- Dropdown for vehicles -->
+                            <select class="form-select" id="invVehicleName" style="display:none;">
+                                <option value="">Select Vehicle Type</option>
+                                <option value="Car">Car</option>
+                                <option value="Van">Van</option>
+                                <option value="Gas-Truck">Gas Truck</option>
+                                <option value="Plant-Vehicle">Plant Vehicle</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Supplier</label>
-                            <input type="text" class="form-input" id="invSupplier" placeholder="Enter supplier name" required>
+                            <label class="form-label" id="invItemIdLabel">Item ID</label>
+                            <input type="text" class="form-input" id="invItemId" placeholder="Auto-generated" readonly>
                         </div>
                     </div>
+                    
                     <div class="form-group">
                         <label class="form-label">Description</label>
                         <textarea class="form-textarea" id="invDescription" placeholder="Detailed description of the item"></textarea>
                     </div>
                 </div>
 
-                <div class="form-section">
-                    <h5>🔗 Machine Mapping</h5>
-                    <div class="form-group">
-                        <label class="form-label">Linked Machines/Vehicles</label>
-                        <textarea class="form-textarea" id="invMachines" placeholder="List machine/vehicle IDs where this item is used"></textarea>
+                <!-- Supplier Details - shown only for machinery -->
+                <div class="form-section" id="invSupplierSection" style="display:none;">
+                    <h5>🏭 Supplier Details</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Supplier Name</label>
+                            <input type="text" class="form-input" id="invSupplierName" placeholder="Enter supplier name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Contact Number</label>
+                            <input type="text" class="form-input" id="invSupplierContact" placeholder="Enter contact number">
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Components</label>
-                        <textarea class="form-textarea" id="invComponents" placeholder="List any sub-components or related parts"></textarea>
+                        <label class="form-label">Supplier Address</label>
+                        <textarea class="form-textarea" id="invSupplierAddress" placeholder="Enter supplier address"></textarea>
+                    </div>
+                </div>
+
+                <!-- Machine Components - shown only for machinery -->
+                <div class="form-section" id="invMachineComponentsSection" style="display:none;">
+                    <h5>� Machine Components</h5>
+                    <div class="form-group">
+                        <label class="form-label">Select Components</label>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="components" value="Gas-Cylinder"> Gas Cylinder
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="components" value="Pressure-Valve"> Pressure Valve
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="components" value="Filling-Nozzle"> Filling Nozzle
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="components" value="Regulator"> Regulator
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="components" value="Hose-Assembly"> Hose Assembly
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="components" value="Safety-Valve"> Safety Valve
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="components" value="Pressure-Gauge"> Pressure Gauge
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="components" value="Flow-Meter"> Flow Meter
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="components" value="Compressor-Unit"> Compressor Unit
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="components" value="Storage-Tank"> Storage Tank
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vehicle Components - shown only for vehicles -->
+                <div class="form-section" id="invVehicleComponentsSection" style="display:none;">
+                    <h5>� Vehicle Components</h5>
+                    <div class="form-group">
+                        <label class="form-label">Select Components</label>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="vehicleComponents" value="Engine"> Engine
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="vehicleComponents" value="Transmission"> Transmission
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="vehicleComponents" value="Brake-System"> Brake System
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="vehicleComponents" value="Suspension"> Suspension
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="vehicleComponents" value="Tires"> Tires
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="vehicleComponents" value="Battery"> Battery
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="vehicleComponents" value="Fuel-System"> Fuel System
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="vehicleComponents" value="Cooling-System"> Cooling System
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="vehicleComponents" value="Exhaust-System"> Exhaust System
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" name="vehicleComponents" value="Lighting-System"> Lighting System
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Purchase Details -->
+                <div class="form-section" id="invPurchaseSection" style="display:none;">
+                    <h5>💰 Purchase Details</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Purchase Date</label>
+                            <input type="date" class="form-input" id="invPurchaseDate">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Purchase Amount</label>
+                            <input type="number" class="form-input" id="invPurchaseAmount" placeholder="Enter amount" min="0" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warranty Details -->
+                <div class="form-section" id="invWarrantySection" style="display:none;">
+                    <h5>🛡️ Warranty Details</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Warranty Period (months)</label>
+                            <input type="number" class="form-input" id="invWarrantyPeriod" placeholder="Enter period in months" min="0" max="120">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Warranty Start Date</label>
+                            <input type="date" class="form-input" id="invWarrantyStart">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Warranty Terms</label>
+                        <textarea class="form-textarea" id="invWarrantyTerms" placeholder="Enter warranty terms and conditions (optional)"></textarea>
                     </div>
                 </div>
 
@@ -1633,6 +1778,35 @@
         </div>
     </div>
 
+    <!-- Flag Obsolete Item Modal -->
+    <div id="flagObsoleteModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('flagObsoleteModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">🚨 Flag Item as Obsolete</h2>
+            <form id="flagObsoleteForm">
+                <div class="form-section">
+                    <h5>📦 Select Item</h5>
+                    <div class="form-group">
+                        <label class="form-label">Select Inventory Item</label>
+                        <select class="form-select" id="obsoleteItemSelect" required>
+                            <option value="">-- Select an item to flag --</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Reason for Obsolescence</label>
+                        <textarea class="form-input" id="obsoleteReason" rows="3" placeholder="Enter reason why this item is obsolete" required></textarea>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('flagObsoleteModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Flag as Obsolete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Delete Confirmation Modal -->
     <div id="deleteModal" class="modal">
         <div class="modal-content">
@@ -1656,6 +1830,59 @@
             <div id="orderActionContent">
                 <!-- Content will be populated dynamically -->
             </div>
+        </div>
+    </div>
+
+    <!-- Add Usage Entry Modal -->
+    <div id="addUsageModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('addUsageModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">📈 Add Usage Entry</h2>
+            <form id="addUsageForm">
+                <div class="form-section">
+                    <h5>🔧 Select Machine/Vehicle</h5>
+                    <div class="form-group">
+                        <label class="form-label">Select Item</label>
+                        <select class="form-select" id="usageItemSelect" required>
+                            <option value="">-- Select a machine or vehicle --</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h5>📋 Usage Details</h5>
+                    <div class="form-group">
+                        <label class="form-label">Last Repair Date</label>
+                        <input type="date" class="form-input" id="usageRepairDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Parts Used</label>
+                        <textarea class="form-input" id="usagePartsUsed" rows="3" placeholder="e.g., Brake pads, Brake discs, Brake fluid" required></textarea>
+                    </div>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Total Cost (Rs.)</label>
+                            <input type="number" class="form-input" id="usageCost" placeholder="Enter cost" min="0" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Usage Frequency</label>
+                            <select class="form-select" id="usageFrequency" required>
+                                <option value="">-- Select frequency --</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addUsageModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Entry</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -1850,6 +2077,35 @@
             }
         }
 
+        // Filter Inventory by Type (Vehicles/Machines)
+        function filterInventoryByType(type) {
+            // Update active button
+            const filterButtons = document.querySelectorAll('#manage-inventory .filter-btn');
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Filter items
+            const items = document.querySelectorAll('#inventoryItems .inventory-item');
+            let visibleCount = 0;
+            
+            items.forEach(item => {
+                const itemType = item.getAttribute('data-type');
+                
+                if (type === 'all' || itemType === type) {
+                    item.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            // Update count
+            const countBadge = document.getElementById('inventoryCount');
+            if (countBadge) {
+                countBadge.textContent = `${visibleCount} item${visibleCount !== 1 ? 's' : ''}`;
+            }
+        }
+
         function initializeSearchAndFilter() {
             const searchInput = document.getElementById('catalogSearch');
             if (searchInput) {
@@ -1862,6 +2118,68 @@
         }
 
         // ==================== SPARE PARTS CRUD ====================
+        
+        // Update compatibility checkboxes based on selected category
+        function updateCompatibilityOptions() {
+            const category = document.getElementById('partCategory').value;
+            const container = document.getElementById('compatibilityCheckboxes');
+            const label = document.getElementById('compatibilityLabel');
+            
+            if (category === 'vehicles') {
+                label.textContent = 'Compatible Vehicles';
+                container.innerHTML = `
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="compatibility" value="Transport-Vehicle"> Transport Vehicle
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="compatibility" value="Gas-Distribution-Vehicle"> Gas Distribution Vehicle
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="compatibility" value="Service-Truck"> Service Truck
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="compatibility" value="Delivery-Van"> Delivery Van
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="compatibility" value="Utility-Vehicle"> Utility Vehicle
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="compatibility" value="Maintenance-Vehicle"> Maintenance Vehicle
+                    </label>
+                `;
+            } else if (category === 'machines') {
+                label.textContent = 'Compatible Machines';
+                container.innerHTML = `
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="compatibility" value="Gas-Filling-Machine"> Gas Filling Machine
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="compatibility" value="Gas-Compressor"> Gas Compressor
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="compatibility" value="Cylinder-Testing-Machine"> Cylinder Testing Machine
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="compatibility" value="Gas-Transfer-Pump"> Gas Transfer Pump
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="compatibility" value="Storage-Tank-System"> Storage Tank System
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="compatibility" value="Pressure-Regulator"> Pressure Regulator
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="compatibility" value="Loading-Unloading-System"> Loading/Unloading System
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" name="compatibility" value="Gas-Leak-Detector"> Gas Leak Detector
+                    </label>
+                `;
+            } else {
+                label.textContent = 'Compatible Machines/Vehicles';
+                container.innerHTML = '<p style="color: #999; grid-column: 1 / -1;">Please select a category first</p>';
+            }
+        }
         
         // CREATE - Add Part
         function openAddPartModal() {
@@ -1931,15 +2249,15 @@
                     category: 'Brake System',
                     quantity: 45,
                     location: 'Warehouse A-15',
-                    supplier: 'Brake Solutions Inc.',
-                    supplierContact: '+1-555-0123',
-                    supplierAddress: '123 Brake Street, Auto City, AC 12345',
+                    supplier: 'Seniru Seneweera',
+                    supplierContact: '+94-77-123-4567',
+                    supplierAddress: '123 Brake Street, Colombo, Sri Lanka',
                     warranty: 'Active until Dec 2025',
                     warrantyTerms: 'Full replacement warranty for manufacturing defects',
                     lastService: 'Aug 15, 2025',
                     linkedMachines: ['Vehicle #101', 'Vehicle #089', 'Vehicle #112'],
-                    unitCost: '$45.50',
-                    totalValue: '$2,047.50'
+                    unitCost: 'Rs. 45.50',
+                    totalValue: 'Rs. 2,047.50'
                 }
             };
 
@@ -1955,8 +2273,8 @@
                 warrantyTerms: 'N/A',
                 lastService: 'N/A',
                 linkedMachines: ['N/A'],
-                unitCost: '$0.00',
-                totalValue: '$0.00'
+                unitCost: 'Rs. 0.00',
+                totalValue: 'Rs. 0.00'
             };
             
             title.textContent = part.name + ' Details';
@@ -2056,9 +2374,91 @@
         // ==================== INVENTORY CRUD ====================
         
         // CREATE - Add Inventory
-        function openAddInventoryModal() {
+        function openAddInventoryModal(type) {
             const timestamp = Date.now().toString().slice(-6);
-            document.getElementById('invItemId').value = `INV-${timestamp}`;
+            const modalTitle = document.querySelector('#addInventoryModal h2');
+            
+            // Get form sections and labels
+            const itemNameLabel = document.getElementById('invItemNameLabel');
+            const itemIdLabel = document.getElementById('invItemIdLabel');
+            const itemNameInput = document.getElementById('invItemName');
+            const vehicleNameDropdown = document.getElementById('invVehicleName');
+            const itemIdInput = document.getElementById('invItemId');
+            const supplierSection = document.getElementById('invSupplierSection');
+            const machineComponentsSection = document.getElementById('invMachineComponentsSection');
+            const vehicleComponentsSection = document.getElementById('invVehicleComponentsSection');
+            const purchaseSection = document.getElementById('invPurchaseSection');
+            const warrantySection = document.getElementById('invWarrantySection');
+            
+            if (type === 'machinery') {
+                document.getElementById('invItemId').value = `MACH-${timestamp}`;
+                modalTitle.textContent = 'Add New Machinery';
+                
+                // Set labels for machinery
+                itemNameLabel.textContent = 'Machinery Name';
+                itemIdLabel.textContent = 'Machinery ID';
+                
+                // Show input field, hide dropdown
+                itemNameInput.style.display = 'block';
+                vehicleNameDropdown.style.display = 'none';
+                itemNameInput.required = true;
+                vehicleNameDropdown.required = false;
+                
+                // Show machinery sections
+                supplierSection.style.display = 'block';
+                machineComponentsSection.style.display = 'block';
+                vehicleComponentsSection.style.display = 'none';
+                purchaseSection.style.display = 'block';
+                warrantySection.style.display = 'block';
+                
+            } else if (type === 'vehicle') {
+                document.getElementById('invItemId').value = `VEH-${timestamp}`;
+                modalTitle.textContent = 'Add New Vehicle';
+                
+                // Set labels for vehicle
+                itemNameLabel.textContent = 'Vehicle Name';
+                itemIdLabel.textContent = 'Vehicle No';
+                
+                // Show dropdown, hide input field
+                itemNameInput.style.display = 'none';
+                vehicleNameDropdown.style.display = 'block';
+                itemNameInput.required = false;
+                vehicleNameDropdown.required = true;
+                
+                // Make Vehicle No editable
+                itemIdInput.readOnly = false;
+                itemIdInput.placeholder = 'Enter vehicle number';
+                
+                // Show vehicle sections
+                supplierSection.style.display = 'block';
+                vehicleComponentsSection.style.display = 'block';
+                machineComponentsSection.style.display = 'none';
+                purchaseSection.style.display = 'block';
+                warrantySection.style.display = 'block';
+                
+            } else {
+                document.getElementById('invItemId').value = `INV-${timestamp}`;
+                modalTitle.textContent = 'Add New Inventory Item';
+                
+                // Default labels
+                itemNameLabel.textContent = 'Item Name';
+                itemIdLabel.textContent = 'Item ID';
+                
+                // Show input field
+                itemNameInput.style.display = 'block';
+                vehicleNameDropdown.style.display = 'none';
+                itemNameInput.required = true;
+                vehicleNameDropdown.required = false;
+                itemIdInput.readOnly = true;
+                
+                // Hide all optional sections
+                supplierSection.style.display = 'none';
+                machineComponentsSection.style.display = 'none';
+                vehicleComponentsSection.style.display = 'none';
+                purchaseSection.style.display = 'none';
+                warrantySection.style.display = 'none';
+            }
+            
             openModal('addInventoryModal');
         }
 
@@ -2117,19 +2517,80 @@
             const title = document.getElementById('detailsTitle');
             const content = document.getElementById('detailsContent');
             
-            title.textContent = `Inventory Item ${itemId} Details`;
+            // Find the item element
+            const itemElement = document.querySelector(`#inventoryItems [data-id="${itemId}"]`);
+            if (!itemElement) return;
+            
+            const itemType = itemElement.getAttribute('data-type');
+            const itemDetails = itemElement.querySelector('.item-details');
+            const itemName = itemDetails.querySelector('strong').textContent;
+            const metaLines = itemDetails.querySelectorAll('.item-meta');
+            const description = itemDetails.querySelector('.item-description').textContent;
+            
+            // Parse the details
+            const nameParts = itemName.split(' - ');
+            const name = nameParts[0];
+            const id = nameParts[1];
+            
+            // Extract type, date, supplier, and components
+            let typeInfo = '', dateAdded = '', supplier = '', supplierInfo = '', components = '';
+            
+            metaLines.forEach(meta => {
+                const text = meta.textContent;
+                if (text.includes('Type:')) {
+                    typeInfo = text.split('Type:')[1].split('|')[0].trim();
+                    if (text.includes('Added:')) {
+                        dateAdded = text.split('Added:')[1].trim();
+                    }
+                } else if (text.includes('Components:')) {
+                    components = text.split('Components:')[1].trim();
+                }
+            });
+            
+            if (description.includes('Supplier:')) {
+                const supplierParts = description.split('|');
+                supplier = supplierParts[0].split('Supplier:')[1].trim();
+                if (itemType === 'vehicles') {
+                    supplierInfo = supplierParts[1].split('Vehicle No:')[1].trim();
+                } else {
+                    supplierInfo = supplierParts[1].split('Machine ID:')[1].trim();
+                }
+            }
+            
+            title.textContent = `${name} - Details`;
+            
+            let itemTypeLabel = itemType === 'vehicles' ? '🚗 Vehicle' : '⚙️ Machinery';
+            let idLabel = itemType === 'vehicles' ? 'Vehicle No' : 'Machine ID';
+            
             content.innerHTML = `
                 <div class="form-section">
-                    <h5>📦 Item Information</h5>
-                    <div><strong>Item ID:</strong> ${itemId}</div>
-                    <div><strong>Category:</strong> Engine Parts</div>
-                    <div><strong>Supplier:</strong> ABC Motors</div>
-                    <div><strong>Added Date:</strong> ${new Date().toLocaleDateString()}</div>
+                    <h5>${itemTypeLabel} Information</h5>
+                    <div style="margin-bottom: 10px;"><strong>Item ID:</strong> ${id}</div>
+                    <div style="margin-bottom: 10px;"><strong>Name:</strong> ${name}</div>
+                    <div style="margin-bottom: 10px;"><strong>Type:</strong> ${typeInfo}</div>
+                    <div style="margin-bottom: 10px;"><strong>${idLabel}:</strong> ${supplierInfo}</div>
+                    <div style="margin-bottom: 10px;"><strong>Date Added:</strong> ${dateAdded}</div>
                 </div>
                 <div class="form-section">
-                    <h5>🔗 Machine Mapping</h5>
-                    <div><strong>Linked Machines:</strong> Various</div>
-                    <div><strong>Components:</strong> Multiple components</div>
+                    <h5>🏢 Supplier Details</h5>
+                    <div style="margin-bottom: 10px;"><strong>Supplier Name:</strong> ${supplier}</div>
+                    <div style="margin-bottom: 10px;"><strong>Contact:</strong> N/A</div>
+                    <div style="margin-bottom: 10px;"><strong>Address:</strong> N/A</div>
+                </div>
+                <div class="form-section">
+                    <h5>🔧 Components</h5>
+                    <div style="margin-bottom: 10px;">${components}</div>
+                </div>
+                <div class="form-section">
+                    <h5>� Purchase Details</h5>
+                    <div style="margin-bottom: 10px;"><strong>Purchase Date:</strong> ${dateAdded}</div>
+                    <div style="margin-bottom: 10px;"><strong>Purchase Amount:</strong> N/A</div>
+                </div>
+                <div class="form-section">
+                    <h5>🛡️ Warranty Details</h5>
+                    <div style="margin-bottom: 10px;"><strong>Warranty Period:</strong> N/A</div>
+                    <div style="margin-bottom: 10px;"><strong>Warranty Start Date:</strong> N/A</div>
+                    <div style="margin-bottom: 10px;"><strong>Warranty Terms:</strong> N/A</div>
                 </div>
             `;
             
@@ -2138,16 +2599,38 @@
 
         // UPDATE - Edit Inventory Item
         function editInventoryItem(itemId) {
-            document.getElementById('editInvId').value = itemId;
-            
+            // Find the item element to get its type
             const itemElement = document.querySelector(`#inventoryItems [data-id="${itemId}"]`);
             if (itemElement) {
+                const itemType = itemElement.getAttribute('data-type');
                 const itemText = itemElement.querySelector('strong').textContent;
                 const parts = itemText.split(' - ');
-                document.getElementById('editInvItemName').value = parts[0];
+                const itemName = parts[0];
+                
+                // Determine if it's machinery or vehicle
+                let type = 'machinery';
+                if (itemType === 'vehicles') {
+                    type = 'vehicle';
+                }
+                
+                // Open the add inventory modal with the determined type
+                openAddInventoryModal(type);
+                
+                // Pre-fill the form with existing data
+                if (type === 'machinery') {
+                    document.getElementById('invItemId').value = itemId;
+                    document.getElementById('invItemName').value = itemName;
+                } else {
+                    document.getElementById('invItemId').value = itemId;
+                    document.getElementById('invItemName').value = itemName;
+                }
+                
+                // Change modal title to indicate editing
+                const modalTitle = document.querySelector('#addInventoryModal h2');
+                if (modalTitle) {
+                    modalTitle.textContent = type === 'machinery' ? '✏️ Edit Machinery' : '✏️ Edit Vehicle';
+                }
             }
-            
-            openModal('editInventoryModal');
         }
 
         document.getElementById('editInventoryForm').addEventListener('submit', function(e) {
@@ -2228,15 +2711,210 @@
         // ==================== OBSOLETE ITEMS ====================
         
         function addObsoleteItem() {
-            showToast('Opening form to flag obsolete item...');
+            // Reset modal to add mode
+            const modalTitle = document.querySelector('#flagObsoleteModal h2');
+            if (modalTitle) {
+                modalTitle.textContent = '🚨 Flag Item as Obsolete';
+            }
+            
+            // Enable and populate dropdown with current inventory items
+            const select = document.getElementById('obsoleteItemSelect');
+            select.disabled = false;
+            select.innerHTML = '<option value="">-- Select an item to flag --</option>';
+            
+            const inventoryItems = document.querySelectorAll('#inventoryItems .inventory-item');
+            inventoryItems.forEach(item => {
+                const itemId = item.getAttribute('data-id');
+                const itemName = item.querySelector('strong').textContent;
+                const option = document.createElement('option');
+                option.value = itemId;
+                option.textContent = itemName;
+                select.appendChild(option);
+            });
+            
+            // Clear the reason field and remove edit mode
+            document.getElementById('obsoleteReason').value = '';
+            document.getElementById('flagObsoleteForm').removeAttribute('data-edit-id');
+            
+            openModal('flagObsoleteModal');
         }
+        
+        // Handle flag obsolete form submission
+        document.getElementById('flagObsoleteForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const selectedItemId = document.getElementById('obsoleteItemSelect').value;
+            const reason = document.getElementById('obsoleteReason').value;
+            const editId = this.getAttribute('data-edit-id');
+            
+            if (!selectedItemId) {
+                showToast('⚠️ Please select an item to flag', 'error');
+                return;
+            }
+            
+            // Check if we're in edit mode
+            if (editId) {
+                // Edit mode - update existing obsolete item
+                const obsoleteItem = document.querySelector(`#obsoleteItems [data-id="${editId}"]`);
+                if (obsoleteItem) {
+                    const descriptionElement = obsoleteItem.querySelector('.item-description');
+                    if (descriptionElement) {
+                        descriptionElement.textContent = `Reason: ${reason}`;
+                    }
+                    
+                    // Reset modal state
+                    document.getElementById('obsoleteItemSelect').disabled = false;
+                    this.removeAttribute('data-edit-id');
+                    
+                    // Reset modal title
+                    const modalTitle = document.querySelector('#flagObsoleteModal h2');
+                    if (modalTitle) {
+                        modalTitle.textContent = '🚨 Flag Item as Obsolete';
+                    }
+                    
+                    closeModal('flagObsoleteModal');
+                    showToast('✅ Obsolete item reason updated successfully!');
+                }
+                return;
+            }
+            
+            // Add mode - create new obsolete item
+            // Find the selected item in inventory
+            const inventoryItem = document.querySelector(`#inventoryItems [data-id="${selectedItemId}"]`);
+            if (!inventoryItem) {
+                showToast('⚠️ Item not found', 'error');
+                return;
+            }
+            
+            // Get item details
+            const itemType = inventoryItem.getAttribute('data-type');
+            const itemName = inventoryItem.querySelector('strong').textContent;
+            const itemMeta = inventoryItem.querySelector('.item-meta').textContent;
+            
+            // Create obsolete item
+            const obsoleteItem = document.createElement('div');
+            obsoleteItem.className = 'inventory-item';
+            obsoleteItem.setAttribute('data-id', selectedItemId);
+            obsoleteItem.innerHTML = `
+                <div class="item-details">
+                    <strong>${itemName}</strong>
+                    <div class="item-meta">${itemMeta}</div>
+                    <div class="item-description">Reason: ${reason}</div>
+                    <div class="item-meta">Flagged to: Auction Officer | Status: Pending Disposal</div>
+                </div>
+                <div class="item-actions">
+                    <span class="status-badge status-rejected">Obsolete</span>
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary btn-small" onclick="viewObsoleteDetails('${selectedItemId}')">👁️ View</button>
+                        <button class="btn btn-primary btn-small" onclick="editObsoleteItem('${selectedItemId}')">✏️ Edit</button>
+                        <button class="btn btn-success btn-small" onclick="restoreItem('${selectedItemId}')">♻️ Restore</button>
+                        <button class="btn btn-danger btn-small" onclick="permanentlyDeleteItem('${selectedItemId}')">🗑️ Remove</button>
+                    </div>
+                </div>
+            `;
+            
+            // Add to obsolete items section
+            document.getElementById('obsoleteItems').appendChild(obsoleteItem);
+            
+            // Remove from active inventory
+            inventoryItem.remove();
+            
+            // Update inventory count
+            const inventoryCount = document.querySelectorAll('#inventoryItems .inventory-item').length;
+            document.getElementById('inventoryCount').textContent = `${inventoryCount} item${inventoryCount !== 1 ? 's' : ''}`;
+            
+            closeModal('flagObsoleteModal');
+            showToast('✅ Item flagged as obsolete successfully!');
+        });
+
 
         function viewObsoleteDetails(itemId) {
-            showToast(`Viewing details for obsolete item ${itemId}`);
+            const title = document.getElementById('detailsTitle');
+            const content = document.getElementById('detailsContent');
+            
+            // Find the obsolete item element
+            const itemElement = document.querySelector(`#obsoleteItems [data-id="${itemId}"]`);
+            if (!itemElement) return;
+            
+            const itemDetails = itemElement.querySelector('.item-details');
+            const itemName = itemDetails.querySelector('strong').textContent;
+            const metaLines = itemDetails.querySelectorAll('.item-meta');
+            const description = itemDetails.querySelector('.item-description').textContent;
+            
+            // Parse the details
+            const nameParts = itemName.split(' - ');
+            const name = nameParts[0];
+            const id = nameParts[1];
+            
+            // Extract information
+            let typeInfo = '', dateInfo = '', reason = '', status = '';
+            
+            metaLines.forEach(meta => {
+                const text = meta.textContent;
+                if (text.includes('Type:') || text.includes('Category:')) {
+                    const parts = text.split('|');
+                    typeInfo = parts[0].trim();
+                    if (parts[1]) {
+                        dateInfo = parts[1].trim();
+                    }
+                } else if (text.includes('Flagged to:')) {
+                    status = text;
+                }
+            });
+            
+            if (description.includes('Reason:')) {
+                reason = description.split('Reason:')[1].trim();
+            }
+            
+            title.textContent = `${name} - Obsolete Item Details`;
+            
+            content.innerHTML = `
+                <div class="form-section">
+                    <h5>📦 Item Information</h5>
+                    <div style="margin-bottom: 10px;"><strong>Item ID:</strong> ${id}</div>
+                    <div style="margin-bottom: 10px;"><strong>Name:</strong> ${name}</div>
+                    <div style="margin-bottom: 10px;"><strong>${typeInfo}</strong></div>
+                    <div style="margin-bottom: 10px;"><strong>${dateInfo}</strong></div>
+                </div>
+                <div class="form-section">
+                    <h5>🚨 Obsolescence Details</h5>
+                    <div style="margin-bottom: 10px;"><strong>Reason:</strong> ${reason}</div>
+                    <div style="margin-bottom: 10px;"><strong>Status:</strong> ${status}</div>
+                </div>
+            `;
+            
+            openModal('detailsModal');
         }
 
         function editObsoleteItem(itemId) {
-            showToast(`Editing obsolete item ${itemId}`);
+            // Find the obsolete item element
+            const itemElement = document.querySelector(`#obsoleteItems [data-id="${itemId}"]`);
+            if (!itemElement) return;
+            
+            const itemDetails = itemElement.querySelector('.item-details');
+            const description = itemDetails.querySelector('.item-description').textContent;
+            
+            // Extract current reason
+            let currentReason = '';
+            if (description.includes('Reason:')) {
+                currentReason = description.split('Reason:')[1].trim();
+            }
+            
+            // Open the flag obsolete modal with edit mode
+            document.getElementById('obsoleteItemSelect').value = itemId;
+            document.getElementById('obsoleteItemSelect').disabled = true; // Disable changing item
+            document.getElementById('obsoleteReason').value = currentReason;
+            
+            // Change modal title
+            const modalTitle = document.querySelector('#flagObsoleteModal h2');
+            if (modalTitle) {
+                modalTitle.textContent = '✏️ Edit Obsolete Item Reason';
+            }
+            
+            // Store original item ID for update
+            document.getElementById('flagObsoleteForm').setAttribute('data-edit-id', itemId);
+            
+            openModal('flagObsoleteModal');
         }
 
         function restoreItem(itemId) {
@@ -2264,6 +2942,28 @@
             };
             
             openModal('deleteModal');
+        }
+
+        // ==================== ORDER FILTERING ====================
+        
+        function filterOrdersByStatus(status) {
+            // Update active button
+            const filterButtons = document.querySelectorAll('#orders-approvals .filter-btn');
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Filter order sections
+            const orderSections = document.querySelectorAll('.order-section');
+            
+            orderSections.forEach(section => {
+                const sectionStatus = section.getAttribute('data-status');
+                
+                if (status === 'all' || sectionStatus === status) {
+                    section.style.display = 'block';
+                } else {
+                    section.style.display = 'none';
+                }
+            });
         }
 
         // ==================== ORDER MANAGEMENT ====================
@@ -2335,13 +3035,13 @@
 
         function confirmApproval(orderId) {
             moveOrderToApproved(orderId);
-            showToast(`✅ Order ${orderId} approved successfully! Technical Officer notified.`);
+            showToast(`✅ Order ${orderId} approved successfully! Technical Officer and Supervisor notified.`);
             closeModal('orderActionModal');
         }
 
         function confirmRejection(orderId) {
             moveOrderToRejected(orderId);
-            showToast(`❌ Order ${orderId} rejected. Technical Officer notified with reason.`);
+            showToast(`❌ Order ${orderId} rejected. Technical Officer and Supervisor notified with reason.`);
             closeModal('orderActionModal');
         }
 
@@ -2353,7 +3053,8 @@
                 const orderData = {
                     id: row.cells[0].textContent,
                     part: row.cells[1].innerHTML,
-                    requestor: row.cells[2].textContent
+                    requestor: row.cells[2].textContent,
+                    supervisor: row.cells[3].textContent
                 };
                 row.remove();
                 
@@ -2365,7 +3066,7 @@
                     <div class="item-details">
                         <strong>${orderData.id}</strong>
                         <div class="item-meta">${orderData.part.replace(/<[^>]*>/g, '').replace('Qty:', '| Qty:')} | ${new Date().toLocaleDateString()}</div>
-                        <div class="item-description">From: ${orderData.requestor}</div>
+                        <div class="item-description">From: ${orderData.requestor} via ${orderData.supervisor}</div>
                         <div class="item-meta">Approved by: Inventory Manager | Dispatched: ${new Date().toLocaleDateString()}</div>
                     </div>
                     <div class="item-actions">
@@ -2390,7 +3091,8 @@
                 const orderData = {
                     id: row.cells[0].textContent,
                     part: row.cells[1].innerHTML,
-                    requestor: row.cells[2].textContent
+                    requestor: row.cells[2].textContent,
+                    supervisor: row.cells[3].textContent
                 };
                 row.remove();
                 
@@ -2402,7 +3104,7 @@
                     <div class="item-details">
                         <strong>${orderData.id}</strong>
                         <div class="item-meta">${orderData.part.replace(/<[^>]*>/g, '').replace('Qty:', '| Qty:')} | ${new Date().toLocaleDateString()}</div>
-                        <div class="item-description">From: ${orderData.requestor}</div>
+                        <div class="item-description">From: ${orderData.requestor} via ${orderData.supervisor}</div>
                         <div class="item-meta">Rejected by: Inventory Manager | Reason: As per review</div>
                     </div>
                     <div class="item-actions">
@@ -2450,21 +3152,8 @@
         }
 
         function viewTicketDetails(ticketId) {
-            const title = document.getElementById('detailsTitle');
-            const content = document.getElementById('detailsContent');
-            
-            title.textContent = `Ticket ${ticketId} Details`;
-            content.innerHTML = `
-                <div class="form-section">
-                    <h5>🎫 Ticket Information</h5>
-                    <div><strong>Ticket ID:</strong> ${ticketId}</div>
-                    <div><strong>Priority:</strong> Normal</div>
-                    <div><strong>Status:</strong> Parts Requested</div>
-                    <div><strong>Created:</strong> ${new Date().toLocaleDateString()}</div>
-                </div>
-            `;
-            
-            openModal('detailsModal');
+            // Redirect to technical officer ticket page
+            window.location.href = 'technicalofficer ticket .html';
         }
 
         function printOrderDetails(orderId) {
@@ -2535,8 +3224,86 @@
         // ==================== USAGE TRACKING ====================
         
         function addMachineUsage() {
-            showToast('Opening form to add machine usage entry...');
+            // Populate dropdown with inventory items (machines and vehicles)
+            const select = document.getElementById('usageItemSelect');
+            select.innerHTML = '<option value="">-- Select a machine or vehicle --</option>';
+            
+            const inventoryItems = document.querySelectorAll('#inventoryItems .inventory-item');
+            inventoryItems.forEach(item => {
+                const itemId = item.getAttribute('data-id');
+                const itemType = item.getAttribute('data-type');
+                const itemName = item.querySelector('strong').textContent;
+                const option = document.createElement('option');
+                option.value = itemId;
+                option.textContent = itemName;
+                option.setAttribute('data-type', itemType);
+                select.appendChild(option);
+            });
+            
+            // Clear form fields
+            document.getElementById('usageRepairDate').value = '';
+            document.getElementById('usagePartsUsed').value = '';
+            document.getElementById('usageCost').value = '';
+            document.getElementById('usageFrequency').value = '';
+            
+            openModal('addUsageModal');
         }
+        
+        // Handle add usage form submission
+        document.getElementById('addUsageForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const selectedItemId = document.getElementById('usageItemSelect').value;
+            const selectedOption = document.getElementById('usageItemSelect').selectedOptions[0];
+            const repairDate = document.getElementById('usageRepairDate').value;
+            const partsUsed = document.getElementById('usagePartsUsed').value;
+            const cost = document.getElementById('usageCost').value;
+            const frequency = document.getElementById('usageFrequency').value;
+            
+            if (!selectedItemId) {
+                showToast('⚠️ Please select a machine or vehicle', 'error');
+                return;
+            }
+            
+            // Get item name from dropdown
+            const itemName = selectedOption.textContent;
+            
+            // Format the date
+            const dateObj = new Date(repairDate);
+            const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            
+            // Determine status badge color based on frequency
+            let statusClass = 'status-pending';
+            if (frequency === 'High') {
+                statusClass = 'status-low-stock';
+            } else if (frequency === 'Low') {
+                statusClass = 'status-normal';
+            }
+            
+            // Create new usage row
+            const newRow = document.createElement('tr');
+            newRow.setAttribute('data-id', selectedItemId);
+            newRow.innerHTML = `
+                <td>${itemName.split(' - ')[0]}</td>
+                <td>${formattedDate}</td>
+                <td>${partsUsed}</td>
+                <td>Rs. ${parseFloat(cost).toFixed(2)}</td>
+                <td><span class="status-badge ${statusClass}">${frequency}</span></td>
+                <td>
+                    <button class="btn btn-secondary btn-small" onclick="viewUsageDetails('${selectedItemId}')">👁️ View</button>
+                    <button class="btn btn-primary btn-small" onclick="editUsageRecord('${selectedItemId}')">✏️ Edit</button>
+                    <button class="btn btn-success btn-small" onclick="generateMachineReport('${selectedItemId}')">📊 Report</button>
+                    <button class="btn btn-danger btn-small" onclick="deleteUsageRecord('${selectedItemId}')">🗑️ Delete</button>
+                </td>
+            `;
+            
+            // Add to usage table
+            document.getElementById('usageTableBody').appendChild(newRow);
+            
+            closeModal('addUsageModal');
+            showToast('✅ Usage entry added successfully!');
+        });
+
 
         function viewUsageDetails(machineId) {
             const title = document.getElementById('detailsTitle');
@@ -2549,7 +3316,7 @@
                     <div><strong>Machine ID:</strong> ${machineId}</div>
                     <div><strong>Last Repair:</strong> ${new Date().toLocaleDateString()}</div>
                     <div><strong>Total Repairs:</strong> 12</div>
-                    <div><strong>Total Cost:</strong> $8,500</div>
+                    <div><strong>Total Cost:</strong> Rs. 8,500</div>
                 </div>
             `;
             

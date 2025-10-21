@@ -11,15 +11,26 @@
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <h1 class="header-title">
-                <i class="fas fa-cogs"></i> Machinery Operator Dashboard
-            </h1>
+            <div class="header-left">
+                <div class="brand-logo">
+                    <span class="brand-name">AssetCare<span class="brand-highlight">360</span></span>
+                </div>
+                <div class="header-divider"></div>
+                <h1 class="header-title">
+                    <i class="fas fa-cogs"></i> Machinery Operator Dashboard
+                </h1>
+            </div>
             <div class="header-user">
                 <div class="user-info">
-                    <div class="user-avatar">
-                        <i class="fas fa-user"></i>
+                    <div class="user-avatar" id="userAvatar">MO</div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">Loading...</div>
+                        <div class="header-user-meta">
+                            <span id="userEmployeeId"></span>
+                            <span class="separator">•</span>
+                            <span id="userRole"></span>
+                        </div>
                     </div>
-                    <span id="userName">Machine Operator</span>
                 </div>
                 <button class="logout-btn" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i>
@@ -31,26 +42,25 @@
         <div class="main-wrapper">
             <!-- Sidebar -->
             <aside class="sidebar">
-                <h2>Operator Portal</h2>
                 <nav>
                     <div class="nav-item active" data-section="dashboard">
-                        <span class="nav-icon"><i class="fas fa-chart-line"></i></span>
+                        <i class="nav-icon fas fa-chart-line"></i>
                         <span>Dashboard</span>
                     </div>
                     <div class="nav-item" data-section="fault-reporting">
-                        <span class="nav-icon"><i class="fas fa-exclamation-triangle"></i></span>
+                        <i class="nav-icon fas fa-exclamation-triangle"></i>
                         <span>Fault Reporting</span>
                     </div>
                     <div class="nav-item" data-section="condition-updates">
-                        <span class="nav-icon"><i class="fas fa-clipboard-check"></i></span>
+                        <i class="nav-icon fas fa-clipboard-check"></i>
                         <span>Condition Updates</span>
                     </div>
                     <div class="nav-item" data-section="ticket-tracking">
-                        <span class="nav-icon"><i class="fas fa-ticket-alt"></i></span>
+                        <i class="nav-icon fas fa-ticket-alt"></i>
                         <span>Ticket Tracking</span>
                     </div>
                     <div class="nav-item" data-section="notifications">
-                        <span class="nav-icon"><i class="fas fa-bell"></i></span>
+                        <i class="nav-icon fas fa-bell"></i>
                         <span>Notifications</span>
                     </div>
                 </nav>
@@ -61,66 +71,177 @@
                 <!-- Dashboard Section -->
                 <section class="content-section active" id="dashboard">
                     <div class="page-header">
-                        <h1 class="page-title">Dashboard</h1>
-                        <p class="page-subtitle">Machinery Operations Overview</p>
+                        <h2 class="page-title"><i class="fas fa-chart-line"></i> Dashboard Overview</h2>
+                        <p class="page-subtitle">Welcome! Here's your machinery operations summary</p>
                     </div>
 
                     <div class="grid">
-                        <div class="summary-card">
-                            <div class="summary-title"><i class="fas fa-tasks"></i> Today's Activity</div>
-                            <div class="summary-content">
-                                <i class="fas fa-cog"></i> Assigned Machines: <strong>3</strong><br>
-                                <i class="fas fa-play-circle"></i> Active Operations: <strong>2</strong><br>
-                                <i class="fas fa-file-alt"></i> Reports Submitted: <strong>1</strong><br>
-                                <i class="fas fa-clock"></i> Pending Approvals: <strong>2</strong>
+                        <div class="summary-card clickable" onclick="navigateTo('fault-reporting')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Fault Reports</div>
+                                    <div class="summary-number">2</div>
+                                    <div class="summary-description">active fault tickets</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
                             </div>
                         </div>
-                        <div class="summary-card">
-                            <div class="summary-title"><i class="fas fa-info-circle"></i> Machine Status</div>
-                            <div class="summary-content">
-                                <i class="fas fa-check-circle"></i> Operational: <strong>2</strong><br>
-                                <i class="fas fa-wrench"></i> Under Maintenance: <strong>1</strong><br>
-                                <i class="fas fa-calendar-alt"></i> Service Due: <strong>1</strong><br>
-                                <i class="fas fa-hourglass-half"></i> Total Hours Today: <strong>16.5h</strong>
+
+                        <div class="summary-card clickable" onclick="navigateTo('condition-updates')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-clipboard-check"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Condition Updates</div>
+                                    <div class="summary-number">1</div>
+                                    <div class="summary-description">pending supervisor review</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
                             </div>
                         </div>
-                        <div class="summary-card">
-                            <div class="summary-title"><i class="fas fa-list-ul"></i> Pending Actions</div>
-                            <div class="summary-content">
-                                <i class="fas fa-ticket-alt"></i> Open Tickets: <strong>1</strong><br>
-                                <i class="fas fa-clipboard-list"></i> Condition Updates: <strong>1</strong><br>
-                                <i class="fas fa-bell"></i> Service Reminders: <strong>1</strong><br>
-                                <i class="fas fa-envelope"></i> Notifications: <strong>3</strong>
+
+                        <div class="summary-card clickable" onclick="navigateTo('ticket-tracking')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-ticket-alt"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Ticket Tracking</div>
+                                    <div class="summary-number">1</div>
+                                    <div class="summary-description">tickets in progress</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="summary-card clickable" onclick="navigateTo('notifications')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-bell"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Notifications</div>
+                                    <div class="summary-number">3</div>
+                                    <div class="summary-description">new notifications</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
                             </div>
                         </div>
                     </div>
 
-                    <div class="card">
-                        <div class="card-header">
-                            <span><i class="fas fa-bolt"></i> Quick Actions</span>
+                    <!-- Recent Activities Section -->
+                    <div class="recent-activities">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-chart-line"></i> Recent Activities
+                            </h3>
                         </div>
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button class="btn btn-primary" onclick="navigateTo('fault-reporting')">
-                                <i class="fas fa-exclamation-triangle"></i> Report Fault
-                            </button>
-                            <button class="btn btn-primary" onclick="navigateTo('condition-updates')">
-                                <i class="fas fa-clipboard-check"></i> Update Condition
-                            </button>
-                            <button class="btn btn-primary" onclick="navigateTo('ticket-tracking')">
-                                <i class="fas fa-ticket-alt"></i> Track Tickets
-                            </button>
-                            <button class="btn btn-secondary" onclick="navigateTo('notifications')">
-                                <i class="fas fa-bell"></i> View Notifications
-                            </button>
+
+                        <div class="activities-list">
+                            <!-- Activity Item 1 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Fault Report Submitted</div>
+                                    <div class="activity-meta">Excavator #045 | Hydraulic Issue | 1 hour ago</div>
+                                    <div class="activity-description">Reported hydraulic pressure drop during operation</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-pending">PENDING</span>
+                                </div>
+                            </div>
+
+                            <!-- Activity Item 2 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Condition Update Reviewed</div>
+                                    <div class="activity-meta">Loader #128 | Supervisor Approved | 3 hours ago</div>
+                                    <div class="activity-description">Daily condition update approved by supervisor</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-approved">APPROVED</span>
+                                </div>
+                            </div>
+
+                            <!-- Activity Item 3 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Repair Completed</div>
+                                    <div class="activity-meta">Truck #203 | Engine Maintenance | 1 day ago</div>
+                                    <div class="activity-description">Engine oil change completed, machine ready for operation</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-completed">COMPLETED</span>
+                                </div>
+                            </div>
+
+                            <!-- Activity Item 4 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Service Reminder</div>
+                                    <div class="activity-meta">Excavator #045 | 100 Hour Service Due | 2 days ago</div>
+                                    <div class="activity-description">Scheduled maintenance approaching in 15 operating hours</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-pending">REMINDER</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="card">
-                        <div class="card-header">
-                            <span><i class="fas fa-cogs"></i> Assigned Machines</span>
+                    <!-- Assigned Machines -->
+                    <div class="recent-activities">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-cogs"></i> Assigned Machines
+                            </h3>
                         </div>
-                        <div id="assignedMachines">
-                            <!-- Machines will be loaded here -->
+
+                        <div class="activities-list" id="assignedMachines">
+                            <!-- Activity Item -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Excavator #045</div>
+                                    <div class="activity-meta">Current Hours: 1,847 | Next Service: 1,900 hours</div>
+                                    <div class="activity-description">Status: Operational | Last update: 2 hours ago</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-operational">OPERATIONAL</span>
+                                </div>
+                            </div>
+
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Loader #128</div>
+                                    <div class="activity-meta">Current Hours: 2,341 | Next Service: 2,500 hours</div>
+                                    <div class="activity-description">Status: Operational | Last update: 5 hours ago</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-operational">OPERATIONAL</span>
+                                </div>
+                            </div>
+
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Truck #203</div>
+                                    <div class="activity-meta">Current Hours: 3,012 | Next Service: 3,100 hours</div>
+                                    <div class="activity-description">Status: Under Maintenance | Hydraulic repair in progress</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-under-repair">MAINTENANCE</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
