@@ -58,13 +58,38 @@ body {
     align-items: center;
 }
 
-.header-title {
-    font-size: 1.8rem;
-    font-weight: 700;
-    margin: 0;
+.header-left {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 20px;
+}
+
+.brand-logo {
+    display: flex;
+    align-items: center;
+}
+
+.brand-name {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -0.025em;
+}
+
+.brand-highlight {
+    color: var(--kelly-green);
+}
+
+.header-divider {
+    width: 2px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.header-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 0;
 }
 
 .header-user {
@@ -78,6 +103,31 @@ body {
     align-items: center;
     gap: 10px;
     font-weight: 500;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.user-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: white;
+}
+
+.header-user-meta {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.header-user-meta .separator {
+    color: rgba(255, 255, 255, 0.5);
 }
 
 .user-avatar {
@@ -101,9 +151,10 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     font-weight: 600;
+    text-decoration: none;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .logout-btn:hover {
@@ -124,16 +175,6 @@ body {
     border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.sidebar h2 {
-    text-align: center;
-    margin-bottom: 30px;
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #fff;
-    border-bottom: 2px solid rgba(255,255,255,0.2);
-    padding-bottom: 15px;
-}
-
 .nav-item {
     display: flex;
     align-items: center;
@@ -146,14 +187,14 @@ body {
 
 .nav-item:hover {
     background: rgba(255, 255, 255, 0.1);
-    border-left-color: #4e73df;
+    border-left-color: #fff;
     color: #fff;
     transform: translateX(5px);
 }
 
 .nav-item.active {
     background: rgba(255, 255, 255, 0.15);
-    border-left-color: #4e73df;
+    border-left-color: #fff;
     font-weight: 600;
     color: #fff;
 }
@@ -161,10 +202,7 @@ body {
 .nav-icon {
     margin-right: 12px;
     font-size: 1.3rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
+    color: rgba(255, 255, 255, 0.9);
 }
 
 /* ==================== MAIN CONTENT ==================== */
