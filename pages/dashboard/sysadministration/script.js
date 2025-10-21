@@ -494,3 +494,138 @@ class UserManagement {
 
 // Initialize UserManagement when script loads
 const userManagement = new UserManagement();
+
+// ==================== TAB-BASED FILTERING ====================
+
+// Global variable to track current role filter
+let currentRoleFilter = 'all';
+
+function filterUsersByRole(role) {
+    const users = document.querySelectorAll('#userList .user-item');
+    const noUsersMessage = document.getElementById('noUsersMessage');
+    const userCount = document.getElementById('userCount');
+    const userListDiv = document.getElementById('userList');
+    const filterButtons = document.querySelectorAll('#userFilterTabs .filter-btn');
+    let visibleCount = 0;
+
+    // Update current role filter
+    currentRoleFilter = role;
+
+    // Update active button styling
+    filterButtons.forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+
+    // Filter users
+    users.forEach(user => {
+        const userRole = user.getAttribute('data-role');
+        const userStatus = user.getAttribute('data-status');
+        const statusFilter = document.getElementById('statusFilter')?.value || '';
+        const searchValue = document.getElementById('userSearch')?.value.toLowerCase() || '';
+
+        // Check role filter
+        let roleMatch = (role === 'all' || userRole === role);
+
+        // Check status filter
+        let statusMatch = (!statusFilter || userStatus === statusFilter);
+
+        // Check search filter
+        let searchMatch = true;
+        if (searchValue) {
+            const userText = user.textContent.toLowerCase();
+            searchMatch = userText.includes(searchValue);
+        }
+
+        // Show/hide based on all filters
+        if (roleMatch && statusMatch && searchMatch) {
+            user.style.display = '';
+            visibleCount++;
+        } else {
+            user.style.display = 'none';
+        }
+    });
+
+    // Show/hide no users message
+    if (visibleCount === 0) {
+        userListDiv.style.display = 'none';
+        noUsersMessage.style.display = 'block';
+    } else {
+        userListDiv.style.display = 'block';
+        noUsersMessage.style.display = 'none';
+    }
+
+    // Update user count
+    if (userCount) {
+        userCount.textContent = `${visibleCount} user${visibleCount !== 1 ? 's' : ''}`;
+    }
+}
+
+// Search users (works with current tab filter)
+function searchUsers() {
+    applyAllFilters();
+}
+
+// Apply all filters together
+function applyAllFilters() {
+    const users = document.querySelectorAll('#userList .user-item');
+    const noUsersMessage = document.getElementById('noUsersMessage');
+    const userCount = document.getElementById('userCount');
+    const userListDiv = document.getElementById('userList');
+    let visibleCount = 0;
+
+    const searchValue = document.getElementById('userSearch')?.value.toLowerCase() || '';
+    const statusFilter = document.getElementById('statusFilter')?.value || '';
+
+    users.forEach(user => {
+        const userRole = user.getAttribute('data-role');
+        const userStatus = user.getAttribute('data-status');
+
+        // Check role filter (use current tab)
+        let roleMatch = (currentRoleFilter === 'all' || userRole === currentRoleFilter);
+
+        // Check status filter
+        let statusMatch = (!statusFilter || userStatus === statusFilter);
+
+        // Check search filter
+        let searchMatch = true;
+        if (searchValue) {
+            const userText = user.textContent.toLowerCase();
+            searchMatch = userText.includes(searchValue);
+        }
+
+        // Show/hide based on all filters
+        if (roleMatch && statusMatch && searchMatch) {
+            user.style.display = '';
+            visibleCount++;
+        } else {
+            user.style.display = 'none';
+        }
+    });
+
+    // Show/hide no users message
+    if (visibleCount === 0) {
+        userListDiv.style.display = 'none';
+        noUsersMessage.style.display = 'block';
+    } else {
+        userListDiv.style.display = 'block';
+        noUsersMessage.style.display = 'none';
+    }
+
+    // Update user count
+    if (userCount) {
+        userCount.textContent = `${visibleCount} user${visibleCount !== 1 ? 's' : ''}`;
+    }
+}
+
+// Update user count after initial load
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for users to load, then update count
+    setTimeout(() => {
+        const users = document.querySelectorAll('#userList .user-item');
+        const userCount = document.getElementById('userCount');
+        if (userCount && users.length > 0) {
+            userCount.textContent = `${users.length} user${users.length !== 1 ? 's' : ''}`;
+        }
+    }, 1000);
+});

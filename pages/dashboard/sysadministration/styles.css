@@ -293,6 +293,11 @@ body {
     white-space: nowrap;
 }
 
+.status-normal {
+    background: var(--royal-blue);
+    color: #fff;
+}
+
 .status-active {
     background: var(--kelly-green);
     color: #fff;
@@ -698,6 +703,37 @@ body {
 @keyframes slideIn {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
+}
+
+/* ==================== FILTER CONTROLS ==================== */
+.filter-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    border: 2px solid var(--stone-200);
+    background: white;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-700);
+}
+
+.filter-btn:hover {
+    border-color: var(--royal-blue);
+    color: var(--royal-blue);
+}
+
+.filter-btn.active {
+    background: var(--royal-blue);
+    color: white;
+    border-color: var(--royal-blue);
 }
 
 /* Search and Filter */

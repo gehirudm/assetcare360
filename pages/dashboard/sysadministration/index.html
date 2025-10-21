@@ -264,21 +264,23 @@
                         </button>
                     </div>
 
+                    <!-- Tab Filters -->
+                    <div class="filter-controls" id="userFilterTabs">
+                        <button class="filter-btn active" onclick="filterUsersByRole('all')">All Users</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Admin')">Admin</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Maintenance Manager')">Maintenance Manager</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Inventory Manager')">Inventory Manager</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Technical Officer')">Technical Officer</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Supervisor')">Supervisor</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Machinary Operator')">Machinary Operator</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Driver')">Driver</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Auction Officer')">Auction Officer</button>
+                    </div>
+
                     <!-- Search and Filter -->
                     <div class="search-bar">
-                        <input type="text" class="search-input" placeholder="Search by name, email, or role..." id="userSearch">
-                        <select class="filter-select" id="roleFilter">
-                            <option value="">All Roles</option>
-                            <option value="Admin">Admin</option>
-                            <option value="Maintenance Manager">Maintenance Manager</option>
-                            <option value="Inventory Manager">Inventory Manager</option>
-                            <option value="Technical Officer">Technical Officer</option>
-                            <option value="Supervisor">Supervisor</option>
-                            <option value="Machinary Operator">Machinary Operator</option>
-                            <option value="Driver">Driver</option>
-                            <option value="Auction Officer">Auction Officer</option>
-                        </select>
-                        <select class="filter-select" id="statusFilter">
+                        <input type="text" class="search-input" placeholder="Search by name, email, or employee ID..." id="userSearch" onkeyup="searchUsers()">
+                        <select class="filter-select" id="statusFilter" onchange="applyAllFilters()">
                             <option value="">All Status</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -287,9 +289,15 @@
 
                     <!-- User List - will be populated by script.js -->
                     <div class="card">
-                        <div class="card-header">👥 User Accounts</div>
+                        <div class="card-header">
+                            <span>👥 User Accounts</span>
+                            <span id="userCount" class="status-badge status-normal">0 users</span>
+                        </div>
                         <div id="userList">
                             <p style="text-align: center; padding: 20px; color: var(--muted);">Loading users...</p>
+                        </div>
+                        <div id="noUsersMessage" style="display: none; text-align: center; color: var(--muted); padding: 20px;">
+                            No users found for this filter
                         </div>
                     </div>
                 </section>
