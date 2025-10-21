@@ -2,10 +2,12 @@
 
 require_once __DIR__ . '/../models/FaultTicket.php';
 require_once __DIR__ . '/../models/FaultTicketImage.php';
+require_once __DIR__ . '/../models/FaultTicketAssignment.php';
 
 class FaultTicketService {
     private $faultTicketModel;
     private $imageModel;
+    private $assignmentModel;
     
     // Constants for validation
     const MAX_IMAGES = 5;
@@ -17,6 +19,7 @@ class FaultTicketService {
     public function __construct() {
         $this->faultTicketModel = new FaultTicket();
         $this->imageModel = new FaultTicketImage();
+        $this->assignmentModel = new FaultTicketAssignment();
     }
     
     /**
@@ -303,6 +306,11 @@ class FaultTicketService {
         
         $ticket['reported_by_name'] = $reporterName;
         
+        // Get assignments for this ticket
+        if (isset($ticket['id'])) {
+            $ticket['assignments'] = $this->assignmentModel->getTicketAssignments($ticket['id']);
+        }
+        
         // Format image URLs for frontend
         if (isset($ticket['images']) && is_array($ticket['images'])) {
             foreach ($ticket['images'] as &$image) {
@@ -319,7 +327,7 @@ class FaultTicketService {
     /**
      * Update fault ticket
      */
-    public function update($id, $data, $files = [], $userId = null) {
+    public function update($id, $data, $files = [], $user = null) {
         // Validate update data
         $errors = [];
         
@@ -357,12 +365,21 @@ class FaultTicketService {
                 ];
             }
             
-            // If userId provided, verify ownership
-            if ($userId && $ticket['reported_by'] != $userId) {
-                return [
-                    'success' => false,
-                    'message' => 'You can only edit your own tickets'
-                ];
+            // Check ownership - allow Supervisor and Admin to update any ticket
+            if ($user) {
+                $userId = $user['id'];
+                $userRole = $user['role'] ?? null;
+                
+                // Supervisors and Admins can update any ticket
+                $canUpdateAnyTicket = in_array($userRole, ['Supervisor', 'Admin']);
+                
+                // Regular users can only edit their own tickets
+                if (!$canUpdateAnyTicket && $ticket['reported_by'] != $userId) {
+                    return [
+                        'success' => false,
+                        'message' => 'You can only edit your own tickets'
+                    ];
+                }
             }
             
             // Handle image deletions
@@ -445,6 +462,73 @@ class FaultTicketService {
             return [
                 'success' => false,
                 'message' => 'Error updating fault ticket: ' . $e->getMessage()
+            ];
+        }
+    }
+    
+    /**
+     * Assign technicians to a fault ticket
+     */
+    public function assignTechnicians($ticketId, $data, $user) {
+        try {
+            // Validate ticket exists
+            $ticket = $this->faultTicketModel->getTicketById($ticketId);
+            
+            if (!$ticket) {
+                return [
+                    'success' => false,
+                    'message' => 'Fault ticket not found'
+                ];
+            }
+            
+            // Check if user can assign tickets
+            $userRole = $user['role'] ?? null;
+            if (!in_array($userRole, ['Supervisor', 'Admin'])) {
+                return [
+                    'success' => false,
+                    'message' => 'You do not have permission to assign tickets'
+                ];
+            }
+            
+            // Validate required fields
+            if (empty($data['technician_ids']) || !is_array($data['technician_ids'])) {
+                return [
+                    'success' => false,
+                    'message' => 'At least one technician must be selected'
+                ];
+            }
+            
+            // Update ticket priority if provided
+            if (isset($data['priority'])) {
+                if (!in_array($data['priority'], FaultTicket::getValidPriorities())) {
+                    return [
+                        'success' => false,
+                        'message' => 'Invalid priority level'
+                    ];
+                }
+                
+                $this->faultTicketModel->updateTicket($ticketId, ['priority' => $data['priority']]);
+            }
+            
+            // Assign technicians
+            $assignedCount = $this->assignmentModel->assignTechnicians(
+                $ticketId,
+                $data['technician_ids'],
+                $user['id'],
+                $data['expected_completion_date'] ?? null,
+                $data['notes'] ?? null
+            );
+            
+            return [
+                'success' => true,
+                'message' => $assignedCount . ' technician(s) assigned successfully'
+            ];
+            
+        } catch (\Exception $e) {
+            error_log("FaultTicketService assignTechnicians error: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Error assigning technicians: ' . $e->getMessage()
             ];
         }
     }

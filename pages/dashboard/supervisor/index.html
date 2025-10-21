@@ -868,13 +868,11 @@
                             <label for="priority">Priority</label>
                             <select id="priority" name="priority" required>
                                 <option value="low">Low</option>
-                                <option value="normal" selected>Normal</option>
+                                <option value="medium" selected>Medium</option>
                                 <option value="high">High</option>
                                 <option value="critical">Critical</option>
                             </select>
                         </div>
-                        
-                        <div class="form-group">
                         
                         <div class="form-group">
                             <label for="assignTo">Assign To (Optional)</label>
@@ -883,6 +881,21 @@
                                 <!-- Technicians will be loaded dynamically -->
                             </select>
                         </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h3 class="form-section-title">
+                        <i class="fas fa-camera"></i> Photo Documentation (Optional)
+                    </h3>
+                    <div class="photo-upload-area">
+                        <div class="photo-upload" onclick="document.getElementById('ticketPhotos').click()">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--royal-blue);"></i>
+                            <p><strong>Click to upload photos</strong></p>
+                            <p style="font-size: 0.85rem; color: var(--muted);">Maximum 5 images (JPEG, PNG, WebP)</p>
+                            <input type="file" id="ticketPhotos" name="photos[]" accept="image/jpeg,image/png,image/webp" multiple style="display: none;">
+                        </div>
+                        <div id="createTicketPhotoPreview" class="photo-preview-container"></div>
                     </div>
                 </div>
                 
@@ -931,7 +944,7 @@
                         <label for="assignPriority">Priority Level</label>
                         <select id="assignPriority" name="priority">
                             <option value="low">Low</option>
-                            <option value="normal" selected>Normal</option>
+                            <option value="medium" selected>Medium</option>
                             <option value="high">High</option>
                             <option value="critical">Critical</option>
                         </select>
@@ -962,7 +975,7 @@
 
     <!-- View Ticket Modal -->
     <div id="viewTicketModal" class="modal">
-        <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-content" style="max-width: 800px; max-height: 90vh; display: flex; flex-direction: column;">
             <div class="modal-header">
                 <h2 class="modal-title">
                     <i class="fas fa-ticket-alt"></i> Ticket Details
@@ -971,7 +984,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div id="viewTicketContent" style="padding: 30px;">
+            <div id="viewTicketContent" style="padding: 30px; overflow-y: auto; flex: 1;">
                 <!-- Ticket details will be loaded dynamically -->
             </div>
         </div>

@@ -73,6 +73,9 @@ $router->get('/auth/validate', 'AuthController', 'validateToken');
 $router->post('/auth/forgot-password', 'AuthController', 'forgotPassword');
 $router->post('/auth/reset-password', 'AuthController', 'resetPassword');
 
+// Technicians routes (Supervisor and Admin)
+$router->get('/technicians', 'UserController', 'getTechnicians');
+
 // User management routes (Admin only)
 $router->get('/users/stats', 'UserController', 'stats');
 $router->get('/users', 'UserController', 'index');
@@ -115,7 +118,9 @@ $router->delete('/vehicles/:id', 'VehicleController', 'delete');
 $router->get('/fault-tickets', 'FaultTicketController', 'index');
 $router->get('/fault-tickets/:id', 'FaultTicketController', 'show');
 $router->post('/fault-tickets', 'FaultTicketController', 'create');
+$router->post('/fault-tickets/:id/assign', 'FaultTicketController', 'assign');
 $router->put('/fault-tickets/:id', 'FaultTicketController', 'update');
+$router->patch('/fault-tickets/:id', 'FaultTicketController', 'update');
 $router->delete('/fault-tickets/:id', 'FaultTicketController', 'delete');
 
 // File serving routes (for uploaded files)

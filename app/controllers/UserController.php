@@ -256,4 +256,25 @@ class UserController {
             Response::serverError('Failed to reset password');
         }
     }
+    
+    /**
+     * Get technicians (for supervisors to assign tickets)
+     * GET /api/technicians
+     * Accessible by Supervisor and Admin
+     */
+    public function getTechnicians() {
+        // Allow supervisors and admins to view technicians
+        RoleMiddleware::requireRole(['Supervisor', 'Admin']);
+        
+        // Get only Technical Officers
+        $filters = ['role' => 'Technical Officer'];
+        
+        $result = $this->userService->getAllUsers($filters, null, 1, 100);
+        
+        if ($result['success']) {
+            Response::success(['users' => $result['data']['users']]);
+        } else {
+            Response::error($result['message'], 400);
+        }
+    }
 }

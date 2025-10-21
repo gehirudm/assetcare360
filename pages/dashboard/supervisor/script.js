@@ -35,6 +35,12 @@
     
     // Load initial data
     loadDashboardData();
+    
+    // Set up photo upload handler
+    const photoInput = document.getElementById('ticketPhotos');
+    if (photoInput) {
+        photoInput.addEventListener('change', handleCreateTicketPhotoUpload);
+    }
 })();
 
 // ==================== NAVIGATION ====================
@@ -234,9 +240,9 @@ async function loadFaultTickets() {
             // Handle nested data structure: {data: {tickets: []}}
             const tickets = response.data.tickets || response.data || [];
             
-            // Separate unassigned and assigned tickets
-            const unassignedTickets = tickets.filter(t => !t.assigned_to);
-            const assignedTickets = tickets.filter(t => t.assigned_to && t.status !== 'completed');
+            // Separate unassigned and assigned tickets based on assignments array
+            const unassignedTickets = tickets.filter(t => !t.assignments || t.assignments.length === 0);
+            const assignedTickets = tickets.filter(t => t.assignments && t.assignments.length > 0 && t.status !== 'Resolved' && t.status !== 'Closed');
             
             // Display unassigned tickets
             if (unassignedTickets.length > 0) {
@@ -256,7 +262,7 @@ async function loadFaultTickets() {
                         <div class="fault-ticket-card">
                             <div class="ticket-card-header">
                                 <h3 class="ticket-card-title">TKT-${String(ticket.id).padStart(3, '0')} - ${title}</h3>
-                                <span class="status-badge status-${ticket.priority ? ticket.priority.toLowerCase() : 'normal'}">${(ticket.priority || 'NORMAL').toUpperCase()}</span>
+                                <span class="status-badge status-${ticket.priority ? ticket.priority.toLowerCase() : 'medium'}">${(ticket.priority || 'MEDIUM').toUpperCase()}</span>
                             </div>
                             <div class="ticket-card-meta">
                                 Vehicle: ${assetName} | Reported by: ${reporterName} | ${formattedDate}
@@ -284,17 +290,25 @@ async function loadFaultTickets() {
                     const description = ticket.description || 'No description';
                     const shortDesc = description.split('\n')[0]; // Get first line
                     
+                    // Get assigned technicians names
+                    const assignedTo = ticket.assignments && ticket.assignments.length > 0
+                        ? ticket.assignments.map(a => a.technician_name).join(', ')
+                        : 'Unassigned';
+                    
                     return `
                         <tr>
                             <td>TKT-${String(ticket.id).padStart(3, '0')}</td>
                             <td>${assetName}</td>
                             <td>${shortDesc}</td>
-                            <td><span class="status-badge status-${ticket.priority ? ticket.priority.toLowerCase() : 'normal'}">${(ticket.priority || 'NORMAL').toUpperCase()}</span></td>
-                            <td>${ticket.assigned_to_name || 'Unassigned'}</td>
-                            <td><span class="status-badge status-${(ticket.status || 'open').toLowerCase().replace('_', '-')}">${(ticket.status || 'OPEN').toUpperCase().replace('_', ' ')}</span></td>
+                            <td><span class="status-badge status-${ticket.priority ? ticket.priority.toLowerCase() : 'medium'}">${(ticket.priority || 'MEDIUM').toUpperCase()}</span></td>
+                            <td>${assignedTo}</td>
+                            <td><span class="status-badge status-${(ticket.status || 'open').toLowerCase().replace(' ', '-')}">${(ticket.status || 'OPEN').toUpperCase()}</span></td>
                             <td>
                                 <button class="btn btn-small btn-secondary" onclick="viewTicketDetails(${ticket.id})">
                                     <i class="fas fa-eye"></i> View
+                                </button>
+                                <button class="btn btn-small btn-primary" onclick="editTicketAssignment(${ticket.id})" style="margin-left: 5px;">
+                                    <i class="fas fa-edit"></i> Edit
                                 </button>
                             </td>
                         </tr>
@@ -341,7 +355,63 @@ async function createNewTicket() {
     modal.classList.add('active');
     
     // Reset form
-    document.getElementById('createTicketForm').reset();
+    const form = document.getElementById('createTicketForm');
+    form.reset();
+    
+    // Clear photos
+    createTicketPhotos = [];
+    updateCreateTicketPhotoPreview();
+}
+
+// Photo handling for create ticket modal
+function handleCreateTicketPhotoUpload(event) {
+    const files = Array.from(event.target.files);
+    const maxFiles = 5;
+    
+    // Check if adding these files would exceed the limit
+    if (createTicketPhotos.length + files.length > maxFiles) {
+        showToast(`Maximum ${maxFiles} photos allowed`, 'error');
+        return;
+    }
+    
+    // Add files to the array
+    createTicketPhotos.push(...files);
+    updateCreateTicketPhotoPreview();
+    
+    // Reset the file input so the same file can be selected again if needed
+    event.target.value = '';
+}
+
+function updateCreateTicketPhotoPreview() {
+    const container = document.getElementById('createTicketPhotoPreview');
+    container.innerHTML = '';
+    
+    if (createTicketPhotos.length === 0) {
+        return;
+    }
+    
+    createTicketPhotos.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const previewItem = document.createElement('div');
+            previewItem.className = 'photo-preview-item';
+            previewItem.innerHTML = `
+                <img src="${e.target.result}" alt="${file.name}">
+                <button type="button" class="remove-photo" onclick="removeCreateTicketPhoto(${index})">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="photo-name">${file.name}</div>
+            `;
+            container.appendChild(previewItem);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function removeCreateTicketPhoto(index) {
+    createTicketPhotos.splice(index, 1);
+    updateCreateTicketPhotoPreview();
+    showToast('Photo removed', 'success');
 }
 
 async function loadMachinesForTicket() {
@@ -370,13 +440,13 @@ function closeCreateTicketModal() {
 
 async function loadTechniciansForAssignment() {
     try {
-        const response = await API.get('/users?role=Technical Officer');
+        const response = await API.get('/technicians');
         const select = document.getElementById('assignTo');
         
         if (response.status === 'success' && response.data) {
-            const technicians = response.data;
+            const technicians = response.data.users || response.data;
             const options = technicians.map(tech => 
-                `<option value="${tech.id}">${tech.name || tech.employee_id}</option>`
+                `<option value="${tech.id}">${tech.full_name || tech.name || tech.employee_id}</option>`
             ).join('');
             
             select.innerHTML = '<option value="">Leave Unassigned</option>' + options;
@@ -386,32 +456,41 @@ async function loadTechniciansForAssignment() {
     }
 }
 
+// Store selected photos for create ticket
+let createTicketPhotos = [];
+
 async function handleCreateTicket(event) {
     event.preventDefault();
     
     const form = event.target;
-    const formData = new FormData(form);
     
-    // Combine issue_title and issue_description into description for backend
-    const issueTitle = formData.get('issue_title');
-    const issueDescription = formData.get('issue_description');
+    // Create FormData for multipart/form-data submission
+    const formData = new FormData();
+    
+    // Get form values
+    const machineId = document.getElementById('assetId').value;
+    const issueTitle = document.getElementById('issueTitle').value;
+    const issueDescription = document.getElementById('issueDescription').value;
+    const priority = document.getElementById('priority').value;
+    
+    // Combine title and description
     const description = `${issueTitle}\n\n${issueDescription}`;
     
-    const ticketData = {
-        machine_id: formData.get('asset_id'), // Backend expects machine_id
-        description: description, // Backend expects single description field
-        priority: formData.get('priority'),
-        // reported_by will be set by backend from authenticated user
-    };
+    // Capitalize first letter of priority to match backend format
+    const capitalizedPriority = priority.charAt(0).toUpperCase() + priority.slice(1);
     
-    // If assign_to is provided, add it
-    const assignTo = formData.get('assign_to');
-    if (assignTo) {
-        ticketData.assigned_to = assignTo;
-    }
+    // Append data to FormData
+    formData.append('machine_id', machineId);
+    formData.append('description', description);
+    formData.append('priority', capitalizedPriority);
+    
+    // Append photos if any
+    createTicketPhotos.forEach((photo) => {
+        formData.append('photos[]', photo);
+    });
     
     try {
-        const response = await API.post('/fault-tickets', ticketData);
+        const response = await API.postFormData('/fault-tickets', formData);
         
         if (response.status === 'success') {
             showToast('Fault ticket created successfully', 'success');
@@ -422,7 +501,7 @@ async function handleCreateTicket(event) {
         }
     } catch (error) {
         console.error('Error creating ticket:', error);
-        showToast('Failed to create ticket', 'error');
+        showToast(error.message || 'Failed to create ticket', 'error');
     }
 }
 
@@ -430,29 +509,79 @@ function assignTicket(ticketId) {
     loadTicketForAssignment(ticketId);
 }
 
-async function loadTicketForAssignment(ticketId) {
+function editTicketAssignment(ticketId) {
+    loadTicketForAssignment(ticketId, true);
+}
+
+async function loadTicketForAssignment(ticketId, isEdit = false) {
     try {
         // Load ticket details
         const ticketResponse = await API.get(`/fault-tickets/${ticketId}`);
         const ticket = ticketResponse.data;
         
+        // Update modal title based on mode
+        const modalTitle = document.querySelector('#assignTicketModal .modal-title');
+        if (modalTitle) {
+            modalTitle.innerHTML = isEdit 
+                ? '<i class="fas fa-edit"></i> Edit Ticket Assignment'
+                : '<i class="fas fa-user-plus"></i> Assign Ticket to Technician(s)';
+        }
+        
         // Set ticket ID in modal (it's a div, not an input)
-        document.getElementById('assignTicketId').textContent = `TKT-${String(ticketId).padStart(3, '0')}`;
+        const ticketIdElement = document.getElementById('assignTicketId');
+        if (ticketIdElement) {
+            ticketIdElement.textContent = `TKT-${String(ticketId).padStart(3, '0')}`;
+        }
         
         // Set current priority if exists
         const prioritySelect = document.getElementById('assignPriority');
-        if (ticket.priority) {
+        if (ticket.priority && prioritySelect) {
             prioritySelect.value = ticket.priority.toLowerCase();
         }
         
         // Load technicians with workload
         await loadTechniciansWithWorkload();
         
+        // If editing, pre-select currently assigned technicians
+        if (isEdit && ticket.assignments && ticket.assignments.length > 0) {
+            const assignedTechnicianIds = ticket.assignments.map(a => a.assigned_to);
+            assignedTechnicianIds.forEach(techId => {
+                const checkbox = document.querySelector(`input[name="technicians"][value="${techId}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+            
+            // Pre-fill expected completion date and notes if available
+            if (ticket.assignments[0].expected_completion_date) {
+                const dateInput = document.getElementById('expectedCompletion');
+                if (dateInput) {
+                    dateInput.value = ticket.assignments[0].expected_completion_date;
+                }
+            }
+            
+            if (ticket.assignments[0].notes) {
+                const notesInput = document.getElementById('assignmentNotes');
+                if (notesInput) {
+                    notesInput.value = ticket.assignments[0].notes;
+                }
+            }
+        }
+        
         // Store ticket ID for submission
-        document.getElementById('assignTicketForm').dataset.ticketId = ticketId;
+        const assignForm = document.getElementById('assignTicketForm');
+        if (assignForm) {
+            assignForm.dataset.ticketId = ticketId;
+        }
         
         // Show modal
-        document.getElementById('assignTicketModal').style.display = 'block';
+        const assignModal = document.getElementById('assignTicketModal');
+        if (assignModal) {
+            assignModal.style.display = 'flex';
+            setTimeout(() => {
+                assignModal.style.opacity = '1';
+            }, 10);
+        }
     } catch (error) {
         console.error('Error loading ticket for assignment:', error);
         showToast('Failed to load ticket details', 'error');
@@ -461,8 +590,8 @@ async function loadTicketForAssignment(ticketId) {
 
 async function loadTechniciansWithWorkload() {
     try {
-        // Get all technicians
-        const techResponse = await API.get('/users?role=Technical Officer');
+        // Get all technicians using the new endpoint
+        const techResponse = await API.get('/technicians');
         const technicians = techResponse.data?.users || techResponse.data || [];
         
         // Get all tickets to count workload
@@ -479,6 +608,12 @@ async function loadTechniciansWithWorkload() {
         
         // Populate checkbox list
         const checkboxList = document.getElementById('techniciansList');
+        
+        if (!checkboxList) {
+            console.error('techniciansList element not found!');
+            return;
+        }
+        
         checkboxList.innerHTML = technicians.map(tech => {
             const activeTickets = workloadMap[tech.id] || 0;
             const workloadText = activeTickets > 0 
@@ -516,15 +651,21 @@ async function handleAssignTicket(event) {
     }
     
     const formData = new FormData(form);
+    
+    // Capitalize first letter of priority to match backend format
+    const priority = formData.get('priority');
+    const capitalizedPriority = priority.charAt(0).toUpperCase() + priority.slice(1);
+    
     const assignmentData = {
-        assigned_to: selectedTechnicians[0], // Use first selected technician
-        priority: formData.get('priority'),
+        technician_ids: selectedTechnicians, // Now supports multiple technicians
+        priority: capitalizedPriority,
         expected_completion_date: formData.get('expected_completion'),
         notes: formData.get('notes')
     };
     
     try {
-        await API.patch(`/fault-tickets/${ticketId}`, assignmentData);
+        // Use the new assignment endpoint
+        await API.post(`/fault-tickets/${ticketId}/assign`, assignmentData);
         
         // Close modal and show success
         closeAssignTicketModal();
@@ -539,8 +680,19 @@ async function handleAssignTicket(event) {
 }
 
 function closeAssignTicketModal() {
-    document.getElementById('assignTicketModal').style.display = 'none';
-    document.getElementById('assignTicketForm').reset();
+    const modal = document.getElementById('assignTicketModal');
+    modal.style.opacity = '0';
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 300); // Wait for opacity transition
+    
+    // Reset form
+    const form = document.getElementById('assignTicketForm');
+    form.reset();
+    
+    // Uncheck all technician checkboxes
+    const checkboxes = form.querySelectorAll('input[name="technicians"]');
+    checkboxes.forEach(cb => cb.checked = false);
 }
 
 async function viewTicketDetails(ticketId) {
@@ -556,16 +708,17 @@ async function viewTicketDetails(ticketId) {
         // Build images section if images exist
         let imagesHTML = '';
         if (ticket.images && ticket.images.length > 0) {
+            const baseURL = CONFIG.API_BASE_URL.replace('/api', ''); // Remove /api from the URL
             imagesHTML = `
                 <div class="ticket-detail-section">
                     <h3>Attached Images</h3>
                     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
                         ${ticket.images.map(img => `
                             <div style="border: 1px solid var(--stone-200); border-radius: 8px; overflow: hidden;">
-                                <img src="${API_BASE_URL}/uploads/fault-tickets/${img.image_url}" 
+                                <img src="${baseURL}/uploads/fault-tickets/${img.image_url}" 
                                      alt="${img.original_filename}" 
                                      style="width: 100%; height: 200px; object-fit: cover; cursor: pointer;"
-                                     onclick="window.open('${API_BASE_URL}/uploads/fault-tickets/${img.image_url}', '_blank')">
+                                     onclick="window.open('${baseURL}/uploads/fault-tickets/${img.image_url}', '_blank')">
                                 <div style="padding: 8px; font-size: 0.75rem; color: var(--muted);">
                                     ${img.original_filename}
                                 </div>
@@ -621,7 +774,9 @@ async function viewTicketDetails(ticketId) {
                     </div>
                     <div class="detail-item">
                         <label>Assigned To:</label>
-                        <span>${ticket.assigned_to_name || 'Unassigned'}</span>
+                        <span>${ticket.assignments && ticket.assignments.length > 0 
+                            ? ticket.assignments.map(a => a.technician_name).join(', ') 
+                            : 'Unassigned'}</span>
                     </div>
                     <div class="detail-item">
                         <label>Created:</label>
@@ -631,6 +786,18 @@ async function viewTicketDetails(ticketId) {
                         <label>Last Updated:</label>
                         <span>${updatedDate}</span>
                     </div>
+                    ${ticket.assignments && ticket.assignments.length > 0 && ticket.assignments[0].expected_completion_date ? `
+                    <div class="detail-item">
+                        <label>Expected Completion:</label>
+                        <span>${new Date(ticket.assignments[0].expected_completion_date).toLocaleDateString()}</span>
+                    </div>
+                    ` : ''}
+                    ${ticket.assignments && ticket.assignments.length > 0 && ticket.assignments[0].notes ? `
+                    <div class="detail-item" style="grid-column: 1 / -1;">
+                        <label>Assignment Notes:</label>
+                        <p style="white-space: pre-wrap; margin: 5px 0 0 0;">${ticket.assignments[0].notes}</p>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
             
@@ -646,7 +813,11 @@ async function viewTicketDetails(ticketId) {
         document.getElementById('viewTicketContent').innerHTML = detailsHTML;
         
         // Show modal
-        document.getElementById('viewTicketModal').style.display = 'block';
+        const viewModal = document.getElementById('viewTicketModal');
+        viewModal.style.display = 'flex';
+        setTimeout(() => {
+            viewModal.style.opacity = '1';
+        }, 10);
     } catch (error) {
         console.error('Error loading ticket details:', error);
         showToast('Failed to load ticket details', 'error');
@@ -654,8 +825,12 @@ async function viewTicketDetails(ticketId) {
 }
 
 function closeViewTicketModal() {
-    document.getElementById('viewTicketModal').style.display = 'none';
-    document.getElementById('viewTicketContent').innerHTML = '';
+    const modal = document.getElementById('viewTicketModal');
+    modal.style.opacity = '0';
+    setTimeout(() => {
+        modal.style.display = 'none';
+        document.getElementById('viewTicketContent').innerHTML = '';
+    }, 300);
 }
 
 // ==================== REPAIR MANAGEMENT ====================

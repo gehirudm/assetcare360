@@ -156,14 +156,14 @@ class FaultTicketController {
                 // Parse multipart form data for PUT request
                 $this->parseMultipartFormData($_PUT, $_FILES_PUT);
                 
-                // Update fault ticket with files
-                $result = $this->faultTicketService->update($id, $_PUT, $_FILES_PUT, $user['id']);
+                // Update fault ticket with files - pass full user object
+                $result = $this->faultTicketService->update($id, $_PUT, $_FILES_PUT, $user);
             } else {
                 // Handle JSON update
                 $data = json_decode(file_get_contents('php://input'), true);
                 
-                // Update fault ticket
-                $result = $this->faultTicketService->update($id, $data, [], $user['id']);
+                // Update fault ticket - pass full user object
+                $result = $this->faultTicketService->update($id, $data, [], $user);
             }
             
             if (!$result['success']) {
@@ -179,6 +179,45 @@ class FaultTicketController {
             
         } catch (\Exception $e) {
             Response::error('Error updating fault ticket: ' . $e->getMessage(), 500);
+        }
+    }
+    
+    /**
+     * Assign technicians to a fault ticket
+     * POST /fault-tickets/:id/assign
+     */
+    public function assign() {
+        try {
+            // Get ID from route parameter
+            $id = $_GET['id'] ?? null;
+            
+            if (!$id) {
+                Response::error('Fault ticket ID is required', 400);
+                return;
+            }
+            
+            // Get authenticated user
+            $user = $this->getAuthenticatedUser();
+            if (!$user) {
+                Response::error('Unauthorized', 401);
+                return;
+            }
+            
+            // Get assignment data from request body
+            $data = json_decode(file_get_contents('php://input'), true);
+            
+            // Assign technicians
+            $result = $this->faultTicketService->assignTechnicians($id, $data, $user);
+            
+            if (!$result['success']) {
+                Response::error($result['message'] ?? 'Failed to assign technicians', 400);
+                return;
+            }
+            
+            Response::success(null, $result['message']);
+            
+        } catch (\Exception $e) {
+            Response::error('Error assigning technicians: ' . $e->getMessage(), 500);
         }
     }
     
