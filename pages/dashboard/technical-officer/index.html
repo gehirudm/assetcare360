@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Technical Officer Dashboard</title>
+    <title>Technical Officer Dashboard - AssetCare360</title>
+    
+    <!-- FontAwesome -->
+    <script src="https://kit.fontawesome.com/a422e631ad.js" crossorigin="anonymous"></script>
+    
     <style>
         :root {
             --royal-blue: hsla(219, 89%, 53%, 1);
@@ -44,6 +48,7 @@
             min-height: 100vh;
         }
 
+        /* ==================== HEADER ==================== */
         .header {
             background: var(--gradient-blue);
             color: white;
@@ -54,9 +59,37 @@
             align-items: center;
         }
 
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .brand-name {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.025em;
+        }
+
+        .brand-highlight {
+            color: var(--kelly-green);
+        }
+
+        .header-divider {
+            width: 2px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
         .header-title {
-            font-size: 1.8rem;
-            font-weight: 700;
+            font-size: 1.4rem;
+            font-weight: 600;
             margin: 0;
         }
 
@@ -71,6 +104,31 @@
             align-items: center;
             gap: 10px;
             font-weight: 500;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+        }
+
+        .user-meta {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .user-meta .separator {
+            color: rgba(255, 255, 255, 0.5);
         }
 
         .user-avatar {
@@ -111,6 +169,7 @@
             flex: 1;
         }
 
+        /* ==================== SIDEBAR ==================== */
         .sidebar {
             width: 280px;
             background: linear-gradient(135deg, #4e73df, #2a59a0);
@@ -121,16 +180,6 @@
             border-right: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .sidebar h2 {
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #fff;
-            border-bottom: 2px solid rgba(255,255,255,0.2);
-            padding-bottom: 15px;
-        }
-
         .nav-item {
             display: flex;
             align-items: center;
@@ -139,20 +188,20 @@
             transition: all 0.3s ease;
             border-left: 4px solid transparent;
             color: rgba(255, 255, 255, 0.8);
-            border-radius: 5px;
         }
 
         .nav-item:hover {
             background: rgba(255, 255, 255, 0.1);
-            border-left-color: #4e73df;
+            border-left-color: #fff;
             color: #fff;
             transform: translateX(5px);
         }
 
         .nav-item.active {
             background: rgba(255, 255, 255, 0.15);
-            border-left-color: #4e73df;
+            border-left-color: #fff;
             font-weight: 600;
+            color: #fff;
         }
 
         .nav-icon {
@@ -202,10 +251,11 @@
             font-size: 1.1rem;
         }
 
+        /* ==================== GRID & CARDS ==================== */
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
             margin-bottom: 30px;
         }
 
@@ -229,6 +279,190 @@
             color: var(--tang-blue);
             margin-bottom: 15px;
             font-size: 1.1rem;
+            display: flex;
+            justify-content: flex-start;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* ==================== SUMMARY CARDS ==================== */
+        .summary-card {
+            background: linear-gradient(135deg, var(--royal-blue), var(--tang-blue));
+            color: white;
+            padding: 35px 30px;
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            min-height: 180px;
+        }
+
+        .summary-card.clickable {
+            cursor: pointer;
+        }
+
+        .summary-card.clickable::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .summary-card.clickable:hover::before {
+            opacity: 1;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.25);
+        }
+
+        .summary-card-content {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            flex: 1;
+        }
+
+        .summary-icon {
+            width: 75px;
+            height: 75px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-details {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .summary-title {
+            font-size: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            opacity: 0.9;
+        }
+
+        .summary-number {
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-description {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            line-height: 1.5;
+            max-width: 280px;
+        }
+
+        .summary-arrow {
+            font-size: 1.8rem;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+            margin-left: 20px;
+        }
+
+        .summary-card.clickable:hover .summary-arrow {
+            opacity: 1;
+            transform: translateX(5px);
+        }
+
+        /* ==================== RECENT ACTIVITIES ==================== */
+        .recent-activities {
+            background: var(--card);
+            border-radius: 18px;
+            padding: 0;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-top: 30px;
+        }
+
+        .section-header {
+            background: linear-gradient(135deg, #f7f9fb 0%, #eef1f4 100%);
+            padding: 20px 30px;
+            border-bottom: 2px solid var(--stone-200);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: var(--royal-blue);
+            margin: 0;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title i {
+            font-size: 1.3rem;
+        }
+
+        .activities-list {
+            padding: 0;
+        }
+
+        .activity-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--stone-200);
+            transition: background 0.2s ease;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-item:hover {
+            background: #f9fafb;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-title {
+            font-weight: 600;
+            color: var(--text-900);
+            margin-bottom: 6px;
+            font-size: 1rem;
+        }
+
+        .activity-meta {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .activity-description {
+            font-size: 0.9rem;
+            color: var(--text-700);
+            line-height: 1.5;
+        }
+
+        .activity-status {
+            margin-left: 20px;
+            flex-shrink: 0;
         }
 
         .status-badge {
@@ -599,16 +833,103 @@
             margin-bottom: 5px;
         }
 
+        /* ==================== CONFIRMATION MODAL ==================== */
+        .confirmation-modal {
+            z-index: 2000 !important;
+        }
+
+        .confirmation-modal .modal-content {
+            max-width: 500px;
+        }
+
+        .confirmation-content {
+            padding: 0 !important;
+        }
+
+        .confirmation-header {
+            padding: 25px 30px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.3rem;
+        }
+
+        .confirmation-header.danger {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: white;
+        }
+
+        .confirmation-header.warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .confirmation-header.primary {
+            background: var(--gradient-blue);
+            color: white;
+        }
+
+        .confirmation-header.info {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+
+        .confirmation-header h4 {
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .confirmation-header i {
+            font-size: 1.5rem;
+        }
+
+        .confirmation-body {
+            padding: 30px;
+            color: var(--text-700);
+            line-height: 1.6;
+        }
+
+        .confirmation-body p {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .confirmation-actions {
+            padding: 20px 30px;
+            border-top: 1px solid var(--stone-200);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* ==================== RESPONSIVE ==================== */
         @media (max-width: 768px) {
             .header {
                 padding: 10px 15px;
             }
-            
-            .header-title {
-                font-size: 1.4rem;
+
+            .header-left {
+                gap: 10px;
+            }
+
+            .brand-name {
+                font-size: 1.2rem;
+            }
+
+            .header-divider {
+                display: none;
             }
             
-            .user-info {
+            .header-title {
+                font-size: 1rem;
+            }
+
+            .header-title i {
+                display: none;
+            }
+            
+            .user-details {
                 display: none;
             }
             
@@ -639,6 +960,38 @@
                 grid-template-columns: 1fr;
             }
 
+            .summary-card {
+                padding: 25px 20px;
+                min-height: 150px;
+            }
+
+            .summary-card-content {
+                gap: 15px;
+            }
+
+            .summary-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 1.8rem;
+            }
+
+            .summary-number {
+                font-size: 2.5rem;
+            }
+
+            .summary-description {
+                font-size: 0.85rem;
+            }
+
+            .activity-item {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .activity-status {
+                margin-left: 0;
+            }
+
             .action-buttons {
                 flex-direction: column;
             }
@@ -647,42 +1000,58 @@
 </head>
 <body>
     <div class="container">
+        <!-- Header -->
         <header class="header">
-            <h1 class="header-title">Technical Officer Dashboard</h1>
+            <div class="header-left">
+                <div class="brand-logo">
+                    <span class="brand-name">AssetCare<span class="brand-highlight">360</span></span>
+                </div>
+                <div class="header-divider"></div>
+                <h1 class="header-title">
+                    <i class="fas fa-user-cog"></i> Technical Officer Dashboard
+                </h1>
+            </div>
             <div class="header-user">
                 <div class="user-info">
-                    <div class="user-avatar">TO</div>
-                    <span>Tech Officer</span>
+                    <div class="user-avatar" id="userAvatar">T</div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">Loading...</div>
+                        <div class="user-meta">
+                            <span id="userEmployeeId"></span>
+                            <span class="separator">•</span>
+                            <span id="userRole"></span>
+                        </div>
+                    </div>
                 </div>
                 <button class="logout-btn" onclick="logout()">
-                    <span>🚪</span>
-                    Logout
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
                 </button>
             </div>
         </header>
 
         <div class="main-wrapper">
+            <!-- Sidebar -->
             <aside class="sidebar">
-                <h2>Technical Officer</h2>
                 <nav>
                     <div class="nav-item active" data-section="dashboard">
-                        <span class="nav-icon">📊</span>
+                        <i class="nav-icon fas fa-chart-line"></i>
                         <span>Dashboard</span>
                     </div>
                     <div class="nav-item" data-section="tickets">
-                        <span class="nav-icon">🎫</span>
+                        <i class="nav-icon fas fa-ticket-alt"></i>
                         <span>Fault & Repair Tickets</span>
                     </div>
                     <div class="nav-item" data-section="spare-parts">
-                        <span class="nav-icon">🔧</span>
+                        <i class="nav-icon fas fa-tools"></i>
                         <span>Spare Part Management</span>
                     </div>
                     <div class="nav-item" data-section="service-warranty">
-                        <span class="nav-icon">🛡️</span>
+                        <i class="nav-icon fas fa-shield-alt"></i>
                         <span>Service & Warranty</span>
                     </div>
                     <div class="nav-item" data-section="feedback">
-                        <span class="nav-icon">💬</span>
+                        <i class="nav-icon fas fa-comments"></i>
                         <span>Asset Feedback</span>
                     </div>
                 </nav>
@@ -692,71 +1061,142 @@
                 <!-- Dashboard Section -->
                 <section class="content-section active" id="dashboard">
                     <div class="page-header">
-                        <h1 class="page-title">Dashboard</h1>
-                        <p class="page-subtitle">Technical Officer Management Overview</p>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">🔔 Recent Notifications</div>
-                        <div class="notification-item success">
-                            <span class="notification-icon">✅</span>
-                            <div>
-                                <strong>Parts Request Approved:</strong> Brake pads for TKT-001 approved by Inventory Manager
-                            </div>
-                        </div>
-                        <div class="notification-item info">
-                            <span class="notification-icon">📋</span>
-                            <div>
-                                <strong>New Ticket Assigned:</strong> TKT-004 assigned by Supervisor - Engine overheating
-                            </div>
-                        </div>
-                        <div class="notification-item warning">
-                            <span class="notification-icon">⏰</span>
-                            <div>
-                                <strong>Work Update Required:</strong> 2 tickets need progress updates
-                            </div>
-                        </div>
+                        <h2 class="page-title"><i class="fas fa-chart-line"></i> Dashboard Overview</h2>
+                        <p class="page-subtitle">Welcome! Here's your technical operations summary</p>
                     </div>
 
                     <div class="grid">
-                        <div class="card">
-                            <div class="card-header">🎫 My Active Tickets</div>
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
-                                <div style="text-align: center; padding: 15px; background: #dbeafe; border-radius: 8px;">
-                                    <div style="font-size: 1.5rem; font-weight: bold; color: #3b82f6;" id="dashNewCount">2</div>
-                                    <div style="color: var(--muted);">New Tickets</div>
+                        <div class="summary-card clickable" onclick="navigateTo('tickets')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-ticket-alt"></i>
                                 </div>
-                                <div style="text-align: center; padding: 15px; background: #fff3e0; border-radius: 8px;">
-                                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--warn);" id="dashProgressCount">1</div>
-                                    <div style="color: var(--muted);">In Progress</div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Active Tickets</div>
+                                    <div class="summary-number" id="dashNewCount">3</div>
+                                    <div class="summary-description">fault and repair tickets assigned to you</div>
                                 </div>
-                                <div style="text-align: center; padding: 15px; background: #e8f5e8; border-radius: 8px;">
-                                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--ok);" id="dashCompleteCount">0</div>
-                                    <div style="color: var(--muted);">Completed Today</div>
-                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
                             </div>
                         </div>
 
-                        <div class="card">
-                            <div class="card-header">📦 Parts Request Status</div>
-                            <div class="request-item">
-                                <div class="ticket-details">
-                                    <strong>REQ-001</strong>
-                                    <div class="ticket-meta">To: Supervisor → Inventory Manager</div>
-                                    <div class="ticket-issue">Brake pads x4</div>
+                        <div class="summary-card clickable" onclick="navigateTo('tickets')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-wrench"></i>
                                 </div>
-                                <div class="ticket-actions">
-                                    <span class="status-badge status-approved">Approved</span>
+                                <div class="summary-details">
+                                    <div class="summary-title">In Progress</div>
+                                    <div class="summary-number" id="dashProgressCount">1</div>
+                                    <div class="summary-description">repairs currently being worked on</div>
                                 </div>
                             </div>
-                            <div class="request-item">
-                                <div class="ticket-details">
-                                    <strong>REQ-002</strong>
-                                    <div class="ticket-meta">To: Supervisor → Inventory Manager</div>
-                                    <div class="ticket-issue">Oil filters x2</div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="summary-card clickable" onclick="navigateTo('spare-parts')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-boxes"></i>
                                 </div>
-                                <div class="ticket-actions">
-                                    <span class="status-badge status-pending">Pending</span>
+                                <div class="summary-details">
+                                    <div class="summary-title">Parts Requests</div>
+                                    <div class="summary-number">2</div>
+                                    <div class="summary-description">pending spare parts requests</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="summary-card clickable" onclick="navigateTo('tickets')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Completed Today</div>
+                                    <div class="summary-number" id="dashCompleteCount">0</div>
+                                    <div class="summary-description">tickets completed today</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activities Section -->
+                    <div class="recent-activities">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-history"></i> Recent Activities
+                            </h3>
+                        </div>
+
+                        <div class="activities-list" id="activitiesList">
+                            <!-- Activity Item 1 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Parts Request Approved</div>
+                                    <div class="activity-meta">Request: REQ-001 | Brake pads x4 | 2 hours ago</div>
+                                    <div class="activity-description">Parts approved by Inventory Manager - Ready for pickup</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-approved">APPROVED</span>
+                                </div>
+                            </div>
+
+                            <!-- Activity Item 2 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">New Ticket Assigned</div>
+                                    <div class="activity-meta">Ticket: TKT-004 | Assigned by: Supervisor Mike | 3 hours ago</div>
+                                    <div class="activity-description">Engine overheating - High priority repair</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-assigned">ASSIGNED</span>
+                                </div>
+                            </div>
+
+                            <!-- Activity Item 3 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Repair Completed</div>
+                                    <div class="activity-meta">Ticket: TKT-005 | Machine #150 | 5 hours ago</div>
+                                    <div class="activity-description">Gas cylinder valve replacement completed successfully</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-completed">COMPLETED</span>
+                                </div>
+                            </div>
+
+                            <!-- Activity Item 4 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Work Progress Updated</div>
+                                    <div class="activity-meta">Ticket: TKT-001 | Vehicle #101 | 7 hours ago</div>
+                                    <div class="activity-description">Installing new radiator - 60% complete</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-in-progress">IN PROGRESS</span>
+                                </div>
+                            </div>
+
+                            <!-- Activity Item 5 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Parts Request Submitted</div>
+                                    <div class="activity-meta">Request: REQ-002 | Oil filters x2 | Yesterday</div>
+                                    <div class="activity-description">Awaiting approval from Supervisor</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-pending">PENDING</span>
                                 </div>
                             </div>
                         </div>
@@ -1575,15 +2015,25 @@
         };
 
         // Navigation functionality
+        function navigateTo(sectionId) {
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+            
+            const targetNav = document.querySelector(`.nav-item[data-section="${sectionId}"]`);
+            if (targetNav) {
+                targetNav.classList.add('active');
+            }
+            
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+        }
+
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', function() {
-                document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-                document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-                
-                this.classList.add('active');
-                
                 const sectionId = this.getAttribute('data-section');
-                document.getElementById(sectionId).classList.add('active');
+                navigateTo(sectionId);
             });
         });
 
@@ -2242,13 +2692,81 @@
             });
         }
 
-        function logout() {
-            if (confirm('Are you sure you want to logout?')) {
-                showToast('Logging out...');
-                setTimeout(() => {
-                    alert('You have been logged out successfully!');
-                }, 1000);
+        // ==================== CONFIRMATION DIALOG ====================
+
+        function createConfirmationDialog(title, message, onConfirm, type = 'danger') {
+            const modal = document.createElement('div');
+            modal.className = 'modal confirmation-modal';
+            modal.id = 'confirmationModal';
+            
+            const iconMap = {
+                'danger': 'exclamation-triangle',
+                'warning': 'exclamation-circle',
+                'primary': 'question-circle',
+                'info': 'info-circle'
+            };
+            
+            modal.innerHTML = `
+                <div class="modal-content confirmation-content">
+                    <div class="confirmation-header ${type}">
+                        <i class="fas fa-${iconMap[type] || 'question-circle'}"></i>
+                        <h4>${title}</h4>
+                    </div>
+                    <div class="confirmation-body">
+                        <p>${message}</p>
+                    </div>
+                    <div class="confirmation-actions">
+                        <button class="btn btn-secondary" onclick="closeConfirmation()">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button class="btn btn-${type}" onclick="confirmAction()">
+                            <i class="fas fa-check"></i> Confirm
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Close on outside click
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    closeConfirmation();
+                }
+            };
+            
+            // Store the confirmation action
+            window.pendingConfirmAction = onConfirm;
+            
+            document.body.appendChild(modal);
+            setTimeout(() => modal.classList.add('active'), 10);
+        }
+
+        function closeConfirmation() {
+            const modal = document.getElementById('confirmationModal');
+            if (modal) {
+                modal.classList.remove('active');
+                setTimeout(() => modal.remove(), 300);
             }
+            window.pendingConfirmAction = null;
+        }
+
+        async function confirmAction() {
+            if (window.pendingConfirmAction) {
+                await window.pendingConfirmAction();
+                closeConfirmation();
+            }
+        }
+
+        // ==================== LOGOUT ====================
+
+        function logout() {
+            createConfirmationDialog(
+                'Confirm Logout',
+                'Are you sure you want to logout? Any unsaved changes will be lost.',
+                () => {
+                    Auth.logout();
+                },
+                'warning'
+            );
         }
 
         // Close modal when clicking outside
@@ -2273,6 +2791,47 @@
             const sidebar = document.querySelector('.sidebar');
             sidebar.classList.toggle('open');
         }
+
+        // ==================== INITIALIZATION & AUTH ====================
+
+        // Check authorization on page load
+        (async function initializeDashboard() {
+            // Require Technical Officer role
+            const authorized = await Auth.requireRole('Technical Officer');
+            
+            if (!authorized) {
+                return; // Auth.requireRole will handle redirection
+            }
+            
+            // Load user data
+            const user = await Auth.checkAuth();
+            if (user) {
+                // Update user name
+                const fullName = user.full_name || user.name || 'Technical Officer';
+                const userNameElement = document.getElementById('userName');
+                if (userNameElement) {
+                    userNameElement.textContent = fullName;
+                }
+                
+                // Update user avatar with first letter of name
+                const avatar = document.getElementById('userAvatar');
+                if (avatar) {
+                    avatar.textContent = fullName.charAt(0).toUpperCase();
+                }
+                
+                // Update employee ID
+                const employeeIdElement = document.getElementById('userEmployeeId');
+                if (employeeIdElement && user.employee_id) {
+                    employeeIdElement.textContent = `ID: ${user.employee_id}`;
+                }
+                
+                // Update role
+                const roleElement = document.getElementById('userRole');
+                if (roleElement && user.role) {
+                    roleElement.textContent = user.role;
+                }
+            }
+        })();
 
         // Initialize everything when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
@@ -2320,5 +2879,10 @@
             }
         });
     </script>
+
+    <!-- External Scripts -->
+    <script src="../../js/config.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
 </body>
 </html>
