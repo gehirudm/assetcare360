@@ -307,111 +307,389 @@
                 <section class="content-section" id="repair-management">
                     <div class="page-header">
                         <h2 class="page-title"><i class="fas fa-tools"></i> Repair Management</h2>
-                        <p class="page-subtitle">Approve repairs and manage outsourcing</p>
+                        <p class="page-subtitle">Green-light repairs, monitor timelines and update component info</p>
                     </div>
 
+                    <!-- Repairs Awaiting Approval -->
                     <div class="card">
                         <div class="card-header">
-                            <i class="fas fa-clipboard-list"></i> Repairs Awaiting Approval
+                            <span><i class="fas fa-wrench"></i> Repairs Awaiting Green-Light</span>
+                            <span class="status-badge status-pending">6 pending</span>
                         </div>
-                        <div id="repairsAwaitingApproval">
-                            <!-- Repairs will be loaded dynamically -->
+                        <div id="pendingRepairsList">
+                            <div class="item-card" data-id="REP-001">
+                                <div class="item-details">
+                                    <strong>REP-001 - Engine Overhaul</strong>
+                                    <div class="item-meta">Asset: Vehicle V-105 | Ticket: TKT-050 | Tech: Mike</div>
+                                    <div class="item-description">Complete engine overhaul required, estimated 2 days</div>
+                                    <div class="item-meta">Estimated Cost: $2,500 | Parts: Engine gaskets, filters, oil</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-urgent">Urgent</span>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-secondary btn-small" onclick="viewRepairDetails('REP-001')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-success btn-small" onclick="greenLightRepair('REP-001')"><i class="fas fa-check"></i> Approve</button>
+                                        <button class="btn btn-danger btn-small" onclick="rejectRepair('REP-001')"><i class="fas fa-times"></i> Reject</button>
+                                        <button class="btn btn-warning btn-small" onclick="markAsOutsourced('REP-001')"><i class="fas fa-building"></i> Outsource</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="item-card" data-id="REP-002">
+                                <div class="item-details">
+                                    <strong>REP-002 - Transmission Repair</strong>
+                                    <div class="item-meta">Asset: Vehicle V-108 | Ticket: TKT-051 | Tech: Sarah</div>
+                                    <div class="item-description">Transmission fluid leak and gear issues</div>
+                                    <div class="item-meta">Estimated Cost: $1,800 | Parts: Transmission seals, fluid</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-normal">Normal</span>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-secondary btn-small" onclick="viewRepairDetails('REP-002')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-success btn-small" onclick="greenLightRepair('REP-002')"><i class="fas fa-check"></i> Approve</button>
+                                        <button class="btn btn-danger btn-small" onclick="rejectRepair('REP-002')"><i class="fas fa-times"></i> Reject</button>
+                                        <button class="btn btn-warning btn-small" onclick="markAsOutsourced('REP-002')"><i class="fas fa-building"></i> Outsource</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
+                    <!-- Ongoing Repairs -->
                     <div class="card">
                         <div class="card-header">
-                            <i class="fas fa-cogs"></i> Ongoing Repairs
-                            <button class="btn btn-secondary btn-small" onclick="updateComponentInfo()">
-                                <i class="fas fa-plus"></i> Update Component Info
-                            </button>
+                            <span><i class="fas fa-clock"></i> Ongoing Repairs - Timeline Monitoring</span>
                         </div>
-                        <div id="ongoingRepairsList">
-                            <!-- Ongoing repairs will be loaded dynamically -->
-                        </div>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Repair ID</th>
+                                    <th>Asset</th>
+                                    <th>Issue</th>
+                                    <th>Technician</th>
+                                    <th>Start Date</th>
+                                    <th>Expected Completion</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr data-id="REP-010">
+                                    <td>REP-010</td>
+                                    <td>Machine M-205</td>
+                                    <td>Hydraulic System</td>
+                                    <td>Tech Mike</td>
+                                    <td>Oct 18, 2025</td>
+                                    <td>Oct 20, 2025</td>
+                                    <td><span class="status-badge status-in-progress">On Track</span></td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="viewRepairProgress('REP-010')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-primary btn-small" onclick="updateRepairTimeline('REP-010')"><i class="fas fa-calendar"></i> Update</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
 
+                    <!-- Outsourced Repairs -->
                     <div class="card">
                         <div class="card-header">
-                            <i class="fas fa-building"></i> Outsourced Repairs
-                            <button class="btn btn-secondary btn-small" onclick="viewAllOutsourced()">
-                                <i class="fas fa-eye"></i> View All
-                            </button>
+                            <span><i class="fas fa-building"></i> Outsourced Repairs</span>
+                            <button class="btn btn-secondary btn-small" onclick="viewAllOutsourced()"><i class="fas fa-eye"></i> View All</button>
                         </div>
                         <div id="outsourcedRepairsList">
-                            <!-- Outsourced repairs will be loaded dynamically -->
+                            <div class="item-card">
+                                <div class="item-details">
+                                    <strong>REP-008 - Electrical System Overhaul</strong>
+                                    <div class="item-meta">Asset: Vehicle V-115 | Service Center: AutoTech Solutions</div>
+                                    <div class="item-description">Sent: Oct 15, 2025 | Expected Return: Oct 25, 2025</div>
+                                </div>
+                                <span class="status-badge status-outsourced">Outsourced</span>
+                            </div>
                         </div>
+                    </div>
+
+                    <!-- Component Updates -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-sync-alt"></i> Component Information Updates</span>
+                        </div>
+                        <p style="color: var(--muted); margin-bottom: 15px;">Update vehicle/machine component information based on technician or service center recommendations</p>
+                        <button class="btn btn-primary" onclick="updateComponentInfo()"><i class="fas fa-edit"></i> Update Component Info</button>
                     </div>
                 </section>
 
                 <!-- Budget Approval Section -->
+                                <!-- Budget Approval Section -->
                 <section class="content-section" id="budget-approval">
                     <div class="page-header">
                         <h2 class="page-title"><i class="fas fa-dollar-sign"></i> Budget Approval</h2>
                         <p class="page-subtitle">Review and approve repair budgets</p>
                     </div>
 
+                    <!-- Filter Controls -->
                     <div class="filter-controls">
-                        <button class="filter-btn active" onclick="filterBudgetsByStatus('all')">All</button>
+                        <button class="filter-btn active" onclick="filterBudgetsByStatus('all')">All Budgets</button>
                         <button class="filter-btn" onclick="filterBudgetsByStatus('pending')">Pending</button>
                         <button class="filter-btn" onclick="filterBudgetsByStatus('approved')">Approved</button>
                         <button class="filter-btn" onclick="filterBudgetsByStatus('rejected')">Rejected</button>
                     </div>
 
+                    <!-- Budget Approvals -->
                     <div class="card">
                         <div class="card-header">
-                            <i class="fas fa-file-invoice-dollar"></i> Pending Budget Requests
-                            <span class="status-badge status-pending" id="budgetCountBadge">3</span>
+                            <span><i class="fas fa-file-invoice-dollar"></i> Budget Approvals</span>
+                            <span class="status-badge status-pending" id="budgetCountBadge">5 budgets</span>
                         </div>
-                        <table class="table" id="pendingBudgetsTable">
+                        <table class="table">
                             <thead>
                                 <tr>
                                     <th>Budget ID</th>
-                                    <th>Repair</th>
-                                    <th>Technician</th>
-                                    <th>Amount</th>
-                                    <th>Status</th>
+                                    <th>Ticket/Repair</th>
+                                    <th>Asset</th>
+                                    <th>Requested Amount</th>
+                                    <th>Breakdown</th>
+                                    <th>Priority</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="budgetsTableBody">
-                                <!-- Budgets will be loaded dynamically -->
+                            <tbody id="pendingBudgetsTable">
+                                <tr data-id="BUD-001" data-breakdown-id="BR-003" data-type="in-route" data-status="pending">
+                                    <td>BUD-001</td>
+                                    <td>BR-003</td>
+                                    <td>Vehicle LKA-1234</td>
+                                    <td>LKR 12,500</td>
+                                    <td>
+                                        <small>Tire replacement<br>Submitted by: Driver Kamal</small>
+                                    </td>
+                                    <td><span class="status-badge status-urgent">Urgent</span></td>
+                                    <td class="budget-actions">
+                                        <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('BUD-001')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-success btn-small" onclick="approveBudget('BUD-001')"><i class="fas fa-check"></i> Approve</button>
+                                        <button class="btn btn-danger btn-small" onclick="rejectBudget('BUD-001')"><i class="fas fa-times"></i> Reject</button>
+                                    </td>
+                                </tr>
+                                <tr data-id="BUD-002" data-breakdown-id="BR-005" data-type="in-route" data-status="pending">
+                                    <td>BUD-002</td>
+                                    <td>BR-005</td>
+                                    <td>Vehicle LKA-5678</td>
+                                    <td>LKR 8,750</td>
+                                    <td>
+                                        <small>Battery replacement<br>Submitted by: Driver Saman</small>
+                                    </td>
+                                    <td><span class="status-badge status-normal">Normal</span></td>
+                                    <td class="budget-actions">
+                                        <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('BUD-002')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-success btn-small" onclick="approveBudget('BUD-002')"><i class="fas fa-check"></i> Approve</button>
+                                        <button class="btn btn-danger btn-small" onclick="rejectBudget('BUD-002')"><i class="fas fa-times"></i> Reject</button>
+                                    </td>
+                                </tr>
+                                <tr data-id="BUD-003" data-breakdown-id="BR-007" data-type="in-route" data-status="pending">
+                                    <td>BUD-003</td>
+                                    <td>BR-007</td>
+                                    <td>Vehicle LKA-9012</td>
+                                    <td>LKR 15,200</td>
+                                    <td>
+                                        <small>Brake system repair<br>Submitted by: Driver Nimal</small>
+                                    </td>
+                                    <td><span class="status-badge status-urgent">Urgent</span></td>
+                                    <td class="budget-actions">
+                                        <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('BUD-003')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-success btn-small" onclick="approveBudget('BUD-003')"><i class="fas fa-check"></i> Approve</button>
+                                        <button class="btn btn-danger btn-small" onclick="rejectBudget('BUD-003')"><i class="fas fa-times"></i> Reject</button>
+                                    </td>
+                                </tr>
+                                <tr data-id="BUD-004" data-breakdown-id="BR-009" data-type="in-route" data-status="pending">
+                                    <td>BUD-004</td>
+                                    <td>BR-009</td>
+                                    <td>Vehicle LKA-3456</td>
+                                    <td>LKR 6,500</td>
+                                    <td>
+                                        <small>Coolant system leak<br>Submitted by: Driver Anil</small>
+                                    </td>
+                                    <td><span class="status-badge status-normal">Normal</span></td>
+                                    <td class="budget-actions">
+                                        <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('BUD-004')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-success btn-small" onclick="approveBudget('BUD-004')"><i class="fas fa-check"></i> Approve</button>
+                                        <button class="btn btn-danger btn-small" onclick="rejectBudget('BUD-004')"><i class="fas fa-times"></i> Reject</button>
+                                    </td>
+                                </tr>
+                                <tr data-id="BUD-005" data-breakdown-id="BR-011" data-type="in-route" data-status="pending">
+                                    <td>BUD-005</td>
+                                    <td>BR-011</td>
+                                    <td>Vehicle LKA-7890</td>
+                                    <td>LKR 22,800</td>
+                                    <td>
+                                        <small>Transmission issue<br>Submitted by: Driver Sunil</small>
+                                    </td>
+                                    <td><span class="status-badge status-urgent">Urgent</span></td>
+                                    <td class="budget-actions">
+                                        <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('BUD-005')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-success btn-small" onclick="approveBudget('BUD-005')"><i class="fas fa-check"></i> Approve</button>
+                                        <button class="btn btn-danger btn-small" onclick="rejectBudget('BUD-005')"><i class="fas fa-times"></i> Reject</button>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Budget Summary -->
+                    <div class="grid">
+                        <div class="card">
+                            <div class="card-header"><i class="fas fa-chart-pie"></i> Monthly Budget Summary</div>
+                            <div style="padding: 15px 0;">
+                                <div style="margin-bottom: 10px;"><strong>Total Allocated:</strong> $50,000</div>
+                                <div style="margin-bottom: 10px;"><strong>Total Spent:</strong> $38,450</div>
+                                <div style="margin-bottom: 10px;"><strong>Pending Approvals:</strong> $8,300</div>
+                                <div><strong>Remaining:</strong> $3,250</div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
                 <!-- Asset Status Section -->
+                                <!-- Asset Status Section -->
                 <section class="content-section" id="asset-status">
                     <div class="page-header">
-                        <h2 class="page-title"><i class="fas fa-truck"></i> Asset Status Overview</h2>
-                        <p class="page-subtitle">Monitor all asset conditions</p>
+                        <h2 class="page-title"><i class="fas fa-clipboard-check"></i> Asset Status Overview</h2>
+                        <p class="page-subtitle">Monitor all assets under your supervision</p>
                     </div>
 
+                    <!-- Asset Summary Cards -->
+                    <div class="grid">
+                        <div class="card">
+                            <div class="card-header"><i class="fas fa-truck"></i> Vehicles</div>
+                            <div style="padding: 15px 0;">
+                                <div style="font-size: 2em; font-weight: bold; color: var(--royal-blue);">12</div>
+                                <div style="margin-top: 10px;">
+                                    <span style="color: var(--ok);">9 Operational</span> • 
+                                    <span style="color: var(--warn);">2 Maintenance</span> • 
+                                    <span style="color: var(--danger);">1 Repair</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><i class="fas fa-cogs"></i> Machines</div>
+                            <div style="padding: 15px 0;">
+                                <div style="font-size: 2em; font-weight: bold; color: var(--tang-blue);">8</div>
+                                <div style="margin-top: 10px;">
+                                    <span style="color: var(--ok);">6 Operational</span> • 
+                                    <span style="color: var(--warn);">1 Maintenance</span> • 
+                                    <span style="color: var(--danger);">1 Repair</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><i class="fas fa-wrench"></i> In Maintenance</div>
+                            <div style="padding: 15px 0;">
+                                <div style="font-size: 2em; font-weight: bold; color: var(--warn);">3</div>
+                                <div style="margin-top: 10px;">
+                                    <span>Regular servicing</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><i class="fas fa-tools"></i> Under Repair</div>
+                            <div style="padding: 15px 0;">
+                                <div style="font-size: 2em; font-weight: bold; color: var(--danger);">2</div>
+                                <div style="margin-top: 10px;">
+                                    <span>Critical issues</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter Controls -->
                     <div class="filter-controls">
-                        <button class="filter-btn active" onclick="filterAssets('all')">All</button>
+                        <button class="filter-btn active" onclick="filterAssets('all')">All Assets</button>
                         <button class="filter-btn" onclick="filterAssets('operational')">Operational</button>
-                        <button class="filter-btn" onclick="filterAssets('under-repair')">Under Repair</button>
-                        <button class="filter-btn" onclick="filterAssets('critical')">Critical</button>
+                        <button class="filter-btn" onclick="filterAssets('maintenance')">In Maintenance</button>
+                        <button class="filter-btn" onclick="filterAssets('repair')">Under Repair</button>
                     </div>
 
+                    <!-- Asset Details Table -->
                     <div class="card">
                         <div class="card-header">
-                            <i class="fas fa-list-alt"></i> Fleet Status
+                            <span><i class="fas fa-list"></i> Asset Details</span>
                         </div>
-                        <table class="table" id="assetStatusTable">
+                        <table class="table">
                             <thead>
                                 <tr>
                                     <th>Asset ID</th>
                                     <th>Type</th>
-                                    <th>Condition</th>
+                                    <th>Model</th>
+                                    <th>Location</th>
                                     <th>Status</th>
-                                    <th>Last Check</th>
+                                    <th>Last Service</th>
+                                    <th>Next Service</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="assetStatusBody">
-                                <!-- Assets will be loaded dynamically -->
+                            <tbody id="assetStatusTable">
+                                <tr data-status="operational">
+                                    <td>VEH-001</td>
+                                    <td>Vehicle</td>
+                                    <td>Toyota Hiace LKA-1234</td>
+                                    <td>Depot A</td>
+                                    <td><span class="status-badge status-operational">Operational</span></td>
+                                    <td>2024-01-15</td>
+                                    <td>2024-04-15</td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="viewAssetDetails('VEH-001')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-primary btn-small" onclick="updateAssetStatus('VEH-001')"><i class="fas fa-edit"></i> Update</button>
+                                    </td>
+                                </tr>
+                                <tr data-status="maintenance">
+                                    <td>VEH-002</td>
+                                    <td>Vehicle</td>
+                                    <td>Isuzu NPR LKA-5678</td>
+                                    <td>Workshop</td>
+                                    <td><span class="status-badge status-maintenance">In Maintenance</span></td>
+                                    <td>2024-01-20</td>
+                                    <td>2024-02-05</td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="viewAssetDetails('VEH-002')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-primary btn-small" onclick="updateAssetStatus('VEH-002')"><i class="fas fa-edit"></i> Update</button>
+                                    </td>
+                                </tr>
+                                <tr data-status="repair">
+                                    <td>VEH-003</td>
+                                    <td>Vehicle</td>
+                                    <td>Mitsubishi Canter LKA-9012</td>
+                                    <td>Workshop</td>
+                                    <td><span class="status-badge status-repair">Under Repair</span></td>
+                                    <td>2024-01-10</td>
+                                    <td>TBD</td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="viewAssetDetails('VEH-003')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-primary btn-small" onclick="updateAssetStatus('VEH-003')"><i class="fas fa-edit"></i> Update</button>
+                                    </td>
+                                </tr>
+                                <tr data-status="operational">
+                                    <td>MAC-001</td>
+                                    <td>Machine</td>
+                                    <td>CAT Excavator 320D</td>
+                                    <td>Site B</td>
+                                    <td><span class="status-badge status-operational">Operational</span></td>
+                                    <td>2024-01-18</td>
+                                    <td>2024-04-18</td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="viewAssetDetails('MAC-001')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-primary btn-small" onclick="updateAssetStatus('MAC-001')"><i class="fas fa-edit"></i> Update</button>
+                                    </td>
+                                </tr>
+                                <tr data-status="operational">
+                                    <td>MAC-002</td>
+                                    <td>Machine</td>
+                                    <td>JCB Backhoe 3CX</td>
+                                    <td>Site C</td>
+                                    <td><span class="status-badge status-operational">Operational</span></td>
+                                    <td>2024-01-12</td>
+                                    <td>2024-04-12</td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="viewAssetDetails('MAC-002')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-primary btn-small" onclick="updateAssetStatus('MAC-002')"><i class="fas fa-edit"></i> Update</button>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -421,16 +699,126 @@
                 <section class="content-section" id="technician-assignments">
                     <div class="page-header">
                         <h2 class="page-title"><i class="fas fa-user-cog"></i> Technician Assignments</h2>
-                        <p class="page-subtitle">View and manage technician workload</p>
+                        <p class="page-subtitle">Manage technician workload and assignments</p>
                     </div>
 
+                    <!-- Technician Overview Cards -->
+                    <div class="grid">
+                        <div class="card">
+                            <div class="card-header"><i class="fas fa-users"></i> Total Technicians</div>
+                            <div style="padding: 15px 0;">
+                                <div style="font-size: 2em; font-weight: bold; color: var(--royal-blue);">6</div>
+                                <div style="margin-top: 10px;">
+                                    <span style="color: var(--ok);">5 Available</span> • 
+                                    <span style="color: var(--warn);">1 Busy</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><i class="fas fa-tasks"></i> Active Assignments</div>
+                            <div style="padding: 15px 0;">
+                                <div style="font-size: 2em; font-weight: bold; color: var(--tang-blue);">8</div>
+                                <div style="margin-top: 10px;">
+                                    <span>Ongoing repairs</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><i class="fas fa-clock"></i> Avg. Completion Time</div>
+                            <div style="padding: 15px 0;">
+                                <div style="font-size: 2em; font-weight: bold; color: var(--kelly-green);">2.5</div>
+                                <div style="margin-top: 10px;">
+                                    <span>Days per repair</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Technician Workload -->
                     <div class="card">
                         <div class="card-header">
-                            <i class="fas fa-users"></i> Active Technicians
+                            <span><i class="fas fa-clipboard-list"></i> Technician Workload</span>
                         </div>
-                        <div id="techniciansList">
-                            <!-- Technicians will be loaded dynamically -->
-                        </div>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Technician</th>
+                                    <th>Specialization</th>
+                                    <th>Current Assignments</th>
+                                    <th>Status</th>
+                                    <th>Completed This Week</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="technicianAssignmentsTable">
+                                <tr>
+                                    <td>Ranjith Silva</td>
+                                    <td>Engine Specialist</td>
+                                    <td>2</td>
+                                    <td><span class="status-badge status-normal">Available</span></td>
+                                    <td>3</td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="viewTechnicianDetails('TECH-001')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-primary btn-small" onclick="assignNewTicket('TECH-001')"><i class="fas fa-plus"></i> Assign</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Pradeep Fernando</td>
+                                    <td>Transmission Expert</td>
+                                    <td>3</td>
+                                    <td><span class="status-badge status-warn">Busy</span></td>
+                                    <td>2</td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="viewTechnicianDetails('TECH-002')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-primary btn-small" onclick="assignNewTicket('TECH-002')"><i class="fas fa-plus"></i> Assign</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Mahesh Perera</td>
+                                    <td>Electrical Systems</td>
+                                    <td>1</td>
+                                    <td><span class="status-badge status-normal">Available</span></td>
+                                    <td>4</td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="viewTechnicianDetails('TECH-003')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-primary btn-small" onclick="assignNewTicket('TECH-003')"><i class="fas fa-plus"></i> Assign</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Chaminda Rathnayake</td>
+                                    <td>Brake Systems</td>
+                                    <td>1</td>
+                                    <td><span class="status-badge status-normal">Available</span></td>
+                                    <td>5</td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="viewTechnicianDetails('TECH-004')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-primary btn-small" onclick="assignNewTicket('TECH-004')"><i class="fas fa-plus"></i> Assign</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Kasun Dissanayake</td>
+                                    <td>Heavy Machinery</td>
+                                    <td>1</td>
+                                    <td><span class="status-badge status-normal">Available</span></td>
+                                    <td>2</td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="viewTechnicianDetails('TECH-005')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-primary btn-small" onclick="assignNewTicket('TECH-005')"><i class="fas fa-plus"></i> Assign</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Tharindu Jayasinghe</td>
+                                    <td>General Maintenance</td>
+                                    <td>0</td>
+                                    <td><span class="status-badge status-normal">Available</span></td>
+                                    <td>3</td>
+                                    <td>
+                                        <button class="btn btn-secondary btn-small" onclick="viewTechnicianDetails('TECH-006')"><i class="fas fa-eye"></i> View</button>
+                                        <button class="btn btn-primary btn-small" onclick="assignNewTicket('TECH-006')"><i class="fas fa-plus"></i> Assign</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </section>
             </main>
