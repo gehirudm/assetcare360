@@ -38,12 +38,6 @@ class UserManagement {
         if (statusFilter) {
             statusFilter.addEventListener('change', () => this.filterUsers());
         }
-
-        // Export button
-        const exportBtn = document.getElementById('exportUsersBtn');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => this.exportUsers());
-        }
     }
 
     async loadUsers(filters = {}) {
@@ -463,33 +457,6 @@ class UserManagement {
 
         this.loadUsers(filters);
     }
-
-    async exportUsers() {
-        try {
-            const response = await API.get('/users?format=csv');
-            
-            // Backend returns: { status: 'success', data: 'csv_content' }
-            if (response.status === 'success' && response.data) {
-                // Create download link
-                const blob = new Blob([response.data], { type: 'text/csv' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-                
-                Utils.showToast('User list exported successfully!', 'success');
-            } else {
-                Utils.showToast(response.message || 'Failed to export users', 'error');
-            }
-        } catch (error) {
-            console.error('Error exporting users:', error);
-            Utils.showToast('Error exporting users. Please try again.', 'error');
-        }
-    }
 }
 
 // Initialize UserManagement when script loads
@@ -800,3 +767,111 @@ setTimeout(() => {
         activeUserCount.textContent = `${users.length} active`;
     }
 }, 1000);
+
+// ==================== EXPORT LOGS FUNCTIONALITY ====================
+
+function exportLogs() {
+    try {
+        // Get all visible log entries
+        const logs = document.querySelectorAll('#logsList .log-entry');
+        const visibleLogs = Array.from(logs).filter(log => log.style.display !== 'none');
+
+        if (visibleLogs.length === 0) {
+            alert('No logs to export. Please adjust your filters.');
+            return;
+        }
+
+        // Create CSV header
+        let csvContent = 'Timestamp,Event,User,Details,Module\n';
+
+        // Extract data from each log entry
+        visibleLogs.forEach(log => {
+            const timestamp = log.querySelector('.log-timestamp')?.textContent.trim() || '';
+            const logText = log.textContent;
+            
+            // Extract event, user, details, and module using regex
+            const eventMatch = logText.match(/Event:\s*([^\n]+)/);
+            const userMatch = logText.match(/User:\s*([^\n]+)/);
+            const detailsMatch = logText.match(/Details:\s*([^\n]+)/);
+            const moduleMatch = logText.match(/Module:\s*([^\n]+)/);
+
+            const event = eventMatch ? eventMatch[1].trim() : '';
+            const user = userMatch ? userMatch[1].trim() : '';
+            const details = detailsMatch ? detailsMatch[1].trim() : '';
+            const module = moduleMatch ? moduleMatch[1].trim() : '';
+
+            // Escape commas and quotes in CSV
+            const escapeCSV = (str) => {
+                if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                    return `"${str.replace(/"/g, '""')}"`;
+                }
+                return str;
+            };
+
+            csvContent += `${escapeCSV(timestamp)},${escapeCSV(event)},${escapeCSV(user)},${escapeCSV(details)},${escapeCSV(module)}\n`;
+        });
+
+        // Create blob and download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        
+        // Generate filename with current date
+        const dateStr = new Date().toISOString().split('T')[0];
+        const filterType = currentLogTypeFilter === 'all' ? 'all' : currentLogTypeFilter;
+        link.download = `system_logs_${filterType}_${dateStr}.csv`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        // Show success message (if Utils is available)
+        if (typeof Utils !== 'undefined' && Utils.showToast) {
+            Utils.showToast(`${visibleLogs.length} log entries exported successfully!`, 'success');
+        } else {
+            alert(`${visibleLogs.length} log entries exported successfully!`);
+        }
+    } catch (error) {
+        console.error('Error exporting logs:', error);
+        if (typeof Utils !== 'undefined' && Utils.showToast) {
+            Utils.showToast('Error exporting logs. Please try again.', 'error');
+        } else {
+            alert('Error exporting logs. Please try again.');
+        }
+    }
+}
+
+// ==================== CLEAR LOGS FUNCTIONALITY ====================
+
+function confirmClearLogs() {
+    if (confirm('Are you sure you want to clear old logs? This action cannot be undone.')) {
+        clearOldLogs();
+    }
+}
+
+function clearOldLogs() {
+    // This would typically make an API call to clear logs from the database
+    // For now, we'll show a placeholder message
+    if (typeof Utils !== 'undefined' && Utils.showToast) {
+        Utils.showToast('Clear logs functionality will be implemented with backend integration.', 'info');
+    } else {
+        alert('Clear logs functionality will be implemented with backend integration.');
+    }
+    
+    // Example of what the API call might look like:
+    /*
+    try {
+        const response = await API.delete('/logs/old');
+        if (response.status === 'success') {
+            Utils.showToast('Old logs cleared successfully!', 'success');
+            // Reload logs
+            location.reload();
+        }
+    } catch (error) {
+        console.error('Error clearing logs:', error);
+        Utils.showToast('Error clearing logs. Please try again.', 'error');
+    }
+    */
+}
