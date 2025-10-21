@@ -156,9 +156,6 @@ class FaultTicketController {
                 // Parse multipart form data for PUT request
                 $this->parseMultipartFormData($_PUT, $_FILES_PUT);
                 
-                error_log("Parsed PUT data: " . print_r($_PUT, true));
-                error_log("Parsed FILES data: " . print_r($_FILES_PUT, true));
-                
                 // Update fault ticket with files
                 $result = $this->faultTicketService->update($id, $_PUT, $_FILES_PUT, $user['id']);
             } else {

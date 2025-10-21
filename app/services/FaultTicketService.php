@@ -200,13 +200,9 @@ class FaultTicketService {
      * Save uploaded images
      */
     private function saveImages($ticketId, $photos) {
-        error_log("saveImages called with ticketId: $ticketId");
-        error_log("Photos data: " . print_r($photos, true));
-        
         // Create upload directory if it doesn't exist
         if (!file_exists(self::UPLOAD_DIR)) {
             mkdir(self::UPLOAD_DIR, 0755, true);
-            error_log("Created upload directory: " . self::UPLOAD_DIR);
         }
         
         // Convert to array format if single file
@@ -222,16 +218,12 @@ class FaultTicketService {
         
         // Save each image
         for ($i = 0; $i < count($photos['name']); $i++) {
-            error_log("Processing image $i: " . $photos['name'][$i] . ", error: " . $photos['error'][$i]);
-            
             if ($photos['error'][$i] === UPLOAD_ERR_OK) {
                 // Generate UUID for filename
                 $uuid = FaultTicketImage::generateUuid();
                 $extension = strtolower(pathinfo($photos['name'][$i], PATHINFO_EXTENSION));
                 $filename = $uuid . '.' . $extension;
                 $filePath = self::UPLOAD_DIR . $filename;
-                
-                error_log("Attempting to move file from " . $photos['tmp_name'][$i] . " to " . $filePath);
                 
                 // Check if this is a regular uploaded file or a manually created temp file
                 // move_uploaded_file() only works for files uploaded via POST
@@ -256,10 +248,8 @@ class FaultTicketService {
                 }
                 
                 if ($moveSuccess) {
-                    error_log("File moved successfully, saving to database");
-                    
                     // Save to database
-                    $imageId = $this->imageModel->createImage([
+                    $this->imageModel->createImage([
                         'fault_ticket_id' => $ticketId,
                         'image_uuid' => $uuid,
                         'original_filename' => $photos['name'][$i],
@@ -267,13 +257,7 @@ class FaultTicketService {
                         'file_size' => $photos['size'][$i],
                         'mime_type' => $photos['type'][$i]
                     ]);
-                    
-                    error_log("Image saved to database with ID: " . $imageId);
-                } else {
-                    error_log("Failed to move uploaded file");
                 }
-            } else {
-                error_log("Upload error for image $i: " . $photos['error'][$i]);
             }
         }
     }
@@ -359,7 +343,6 @@ class FaultTicketService {
             $ticket = $this->faultTicketModel->getTicketById($id);
             
             if (!$ticket) {
-                error_log("FaultTicketService update: Ticket not found with ID: " . $id);
                 return [
                     'success' => false,
                     'message' => 'Fault ticket not found'
@@ -368,7 +351,6 @@ class FaultTicketService {
             
             // Only allow editing if status is Open (Pending)
             if ($ticket['status'] !== 'Open') {
-                error_log("FaultTicketService update: Ticket status is not Open: " . $ticket['status']);
                 return [
                     'success' => false,
                     'message' => 'Only pending tickets can be edited'
@@ -377,20 +359,14 @@ class FaultTicketService {
             
             // If userId provided, verify ownership
             if ($userId && $ticket['reported_by'] != $userId) {
-                error_log("FaultTicketService update: User $userId doesn't own ticket reported by " . $ticket['reported_by']);
                 return [
                     'success' => false,
                     'message' => 'You can only edit your own tickets'
                 ];
             }
             
-            error_log("FaultTicketService update: Processing ticket ID $id");
-            error_log("Data: " . print_r($data, true));
-            error_log("Files: " . print_r($files, true));
-            
             // Handle image deletions
             if (isset($data['delete_images']) && is_array($data['delete_images'])) {
-                error_log("Deleting images: " . print_r($data['delete_images'], true));
                 foreach ($data['delete_images'] as $imageId) {
                     if (!empty($imageId)) {
                         $this->deleteImage($imageId);
@@ -400,8 +376,6 @@ class FaultTicketService {
             
             // Handle new image uploads
             if (!empty($files) && isset($files['photos']) && !empty($files['photos']['name'])) {
-                error_log("Files photos detected: " . print_r($files['photos'], true));
-                
                 // Convert single file to array format if needed
                 if (!is_array($files['photos']['name'])) {
                     $files['photos'] = [
@@ -415,7 +389,6 @@ class FaultTicketService {
                 
                 // Check if there are actual files (not empty strings)
                 $actualFiles = array_filter($files['photos']['name']);
-                error_log("Actual files after filtering: " . print_r($actualFiles, true));
                 
                 if (!empty($actualFiles)) {
                     // Get current image count
@@ -424,11 +397,8 @@ class FaultTicketService {
                     $deleteCount = isset($data['delete_images']) ? count($data['delete_images']) : 0;
                     $newCount = count($actualFiles);
                     
-                    error_log("Image count check - Current: $currentCount, Deleted: $deleteCount, New: $newCount, Total will be: " . ($currentCount - $deleteCount + $newCount));
-                    
                     // Check if total will exceed limit
                     if (($currentCount - $deleteCount + $newCount) > self::MAX_IMAGES) {
-                        error_log("Image count exceeds limit!");
                         return [
                             'success' => false,
                             'message' => 'Maximum ' . self::MAX_IMAGES . ' images allowed per ticket'
@@ -436,42 +406,28 @@ class FaultTicketService {
                     }
                     
                     // Validate and save new images
-                    error_log("Validating images...");
                     $validation = $this->validateImages($files['photos']);
-                    error_log("Validation result: " . print_r($validation, true));
                     
                     if (!$validation['valid']) {
-                        error_log("Validation failed!");
                         return [
                             'success' => false,
                             'errors' => ['photos' => $validation['errors']]
                         ];
                     }
                     
-                    error_log("Saving new images for ticket ID: $id");
                     $this->saveImages($id, $files['photos']);
-                    error_log("Images saved successfully");
-                } else {
-                    error_log("No actual files to upload after filtering");
                 }
-            } else {
-                error_log("No files detected - empty: " . (empty($files) ? 'yes' : 'no') . 
-                         ", isset photos: " . (isset($files['photos']) ? 'yes' : 'no') . 
-                         ", name empty: " . (empty($files['photos']['name'] ?? null) ? 'yes' : 'no'));
             }
             
             // Update ticket data (remove delete_images from update data)
             $updateData = $data;
             unset($updateData['delete_images']);
             
-            error_log("Update data after cleanup: " . print_r($updateData, true));
-            
             // Only call updateTicket if there's actual data to update
             if (!empty($updateData)) {
                 $result = $this->faultTicketModel->updateTicket($id, $updateData);
                 
                 if (!$result) {
-                    error_log("FaultTicketService update: updateTicket returned false");
                     return [
                         'success' => false,
                         'message' => 'Failed to update fault ticket'
@@ -486,7 +442,6 @@ class FaultTicketService {
             
         } catch (\Exception $e) {
             error_log("FaultTicketService update error: " . $e->getMessage());
-            error_log("Stack trace: " . $e->getTraceAsString());
             return [
                 'success' => false,
                 'message' => 'Error updating fault ticket: ' . $e->getMessage()
@@ -551,27 +506,17 @@ class FaultTicketService {
      * Delete an image
      */
     private function deleteImage($imageId) {
-        error_log("Attempting to delete image ID: $imageId");
-        
         // Get image details
         $image = $this->imageModel->getImageById($imageId);
         
         if ($image) {
-            error_log("Image found: " . print_r($image, true));
-            
             // Delete file from filesystem
             if (file_exists($image['file_path'])) {
-                $unlinkResult = unlink($image['file_path']);
-                error_log("File deletion result: " . ($unlinkResult ? 'success' : 'failed') . " for " . $image['file_path']);
-            } else {
-                error_log("File does not exist: " . $image['file_path']);
+                unlink($image['file_path']);
             }
             
             // Delete from database
-            $dbResult = $this->imageModel->deleteImage($imageId);
-            error_log("Database deletion result: " . ($dbResult ? 'success' : 'failed'));
-        } else {
-            error_log("Image not found in database with ID: $imageId");
+            $this->imageModel->deleteImage($imageId);
         }
     }
 }
