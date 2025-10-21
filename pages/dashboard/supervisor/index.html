@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supervisor Dashboard - AssetCare360</title>
+    
+    <!-- FontAwesome -->
+    <script src="https://kit.fontawesome.com/a422e631ad.js" crossorigin="anonymous"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="brand-logo">
+                    <span class="brand-name">AssetCare<span class="brand-highlight">360</span></span>
+                </div>
+                <div class="header-divider"></div>
+                <h1 class="header-title">
+                    <i class="fas fa-user-tie"></i> Supervisor Dashboard
+                </h1>
+            </div>
+            <div class="header-user">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">S</div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">Loading...</div>
+                        <div class="user-meta">
+                            <span id="userEmployeeId"></span>
+                            <span class="separator">•</span>
+                            <span id="userRole"></span>
+                        </div>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="main-wrapper">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <!-- <h2><i class="fas fa-user-tie"></i> Supervisor Portal</h2> -->
+                <nav>
+                    <div class="nav-item active" data-section="dashboard">
+                        <i class="nav-icon fas fa-chart-line"></i>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="nav-item" data-section="daily-check-reports">
+                        <i class="nav-icon fas fa-clipboard-check"></i>
+                        <span>Daily Check Reports</span>
+                    </div>
+                    <div class="nav-item" data-section="fault-tickets">
+                        <i class="nav-icon fas fa-exclamation-triangle"></i>
+                        <span>Fault Tickets</span>
+                    </div>
+                    <div class="nav-item" data-section="repair-management">
+                        <i class="nav-icon fas fa-tools"></i>
+                        <span>Repair Management</span>
+                    </div>
+                    <div class="nav-item" data-section="budget-approval">
+                        <i class="nav-icon fas fa-dollar-sign"></i>
+                        <span>Budget Approval</span>
+                    </div>
+                    <div class="nav-item" data-section="asset-status">
+                        <i class="nav-icon fas fa-truck"></i>
+                        <span>Asset Status</span>
+                    </div>
+                    <div class="nav-item" data-section="technician-assignments">
+                        <i class="nav-icon fas fa-user-cog"></i>
+                        <span>Technician Assignments</span>
+                    </div>
+                </nav>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Dashboard Section -->
+                <section class="content-section active" id="dashboard">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-chart-line"></i> Dashboard Overview</h2>
+                        <p class="page-subtitle">Welcome! Here's your operational summary</p>
+                    </div>
+
+                    <div class="grid">
+                        <div class="summary-card clickable" onclick="navigateTo('daily-check-reports')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-clipboard-check"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Pending Reports</div>
+                                    <div class="summary-number">8</div>
+                                    <div class="summary-description">daily check reports awaiting review</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="summary-card clickable" onclick="navigateTo('fault-tickets')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Active Tickets</div>
+                                    <div class="summary-number">13</div>
+                                    <div class="summary-description">fault tickets in progress</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="summary-card clickable" onclick="navigateTo('repair-management')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-tools"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Repairs Pending</div>
+                                    <div class="summary-number">5</div>
+                                    <div class="summary-description">repairs awaiting approval</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="summary-card clickable" onclick="navigateTo('budget-approval')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Budget Requests</div>
+                                    <div class="summary-number">3</div>
+                                    <div class="summary-description">budget approvals needed</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activities Section -->
+                    <div class="recent-activities">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-chart-line"></i> Recent Activities
+                            </h3>
+                        </div>
+
+                        <div class="activities-list" id="activitiesList">
+                            <!-- Activity Item 1 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Daily Check Approved</div>
+                                    <div class="activity-meta">Driver: John Doe | Vehicle: V-101 | 2 hours ago</div>
+                                    <div class="activity-description">All checks passed, vehicle cleared for operation</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-approved">APPROVED</span>
+                                </div>
+                            </div>
+
+                            <!-- Activity Item 2 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Ticket Assigned</div>
+                                    <div class="activity-meta">Ticket: TKT-045 | Assigned to: Tech Mike | 3 hours ago</div>
+                                    <div class="activity-description">Hydraulic system leak - High priority</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-assigned">ASSIGNED</span>
+                                </div>
+                            </div>
+
+                            <!-- Activity Item 3 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Repair Completed</div>
+                                    <div class="activity-meta">Ticket: TKT-038 | Technician: Tech Sarah | 5 hours ago</div>
+                                    <div class="activity-description">Brake system repair completed and verified</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-completed">COMPLETED</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Daily Check Reports Section -->
+                <section class="content-section" id="daily-check-reports">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-clipboard-check"></i> Daily Check Reports</h2>
+                        <p class="page-subtitle">Review and approve daily inspection reports</p>
+                    </div>
+
+                    <div class="filter-controls" id="reportStatusFilters">
+                        <button class="filter-btn active" onclick="filterReportsByStatus('all')">All</button>
+                        <button class="filter-btn" onclick="filterReportsByStatus('pending')">Pending</button>
+                        <button class="filter-btn" onclick="filterReportsByStatus('approved')">Approved</button>
+                        <button class="filter-btn" onclick="filterReportsByStatus('rejected')">Rejected</button>
+                    </div>
+
+                    <div class="filter-controls" id="reportSourceFilters">
+                        <button class="filter-btn active" onclick="filterReportsBySource('all')">All Sources</button>
+                        <button class="filter-btn" onclick="filterReportsBySource('driver')">Driver Reports</button>
+                        <button class="filter-btn" onclick="filterReportsBySource('operator')">Operator Reports</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-list"></i> Reports for Review
+                        </div>
+                        <table class="table" id="pendingReportsTable">
+                            <thead>
+                                <tr>
+                                    <th>Report ID</th>
+                                    <th>Asset</th>
+                                    <th>Submitted By</th>
+                                    <th>Type</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportsTableBody">
+                                <!-- Reports will be loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Fault Tickets Section -->
+                <section class="content-section" id="fault-tickets">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-exclamation-triangle"></i> Fault Ticket Management</h2>
+                        <p class="page-subtitle">Assign and track fault tickets</p>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterTicketsByStatus('all')">All</button>
+                        <button class="filter-btn" onclick="filterTicketsByStatus('unassigned')">Unassigned</button>
+                        <button class="filter-btn" onclick="filterTicketsByStatus('assigned')">Assigned</button>
+                        <button class="filter-btn" onclick="filterTicketsByStatus('in-progress')">In Progress</button>
+                        <button class="filter-btn" onclick="filterTicketsByStatus('completed')">Completed</button>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterTicketsBySource('all')">All Sources</button>
+                        <button class="filter-btn" onclick="filterTicketsBySource('driver')">Driver</button>
+                        <button class="filter-btn" onclick="filterTicketsBySource('operator')">Operator</button>
+                        <button class="filter-btn" onclick="filterTicketsBySource('system')">System</button>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="createNewTicket()" style="margin-bottom: 20px;">
+                        <i class="fas fa-plus"></i> Create New Ticket
+                    </button>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-ticket-alt"></i> Unassigned Tickets
+                        </div>
+                        <div id="unassignedTicketsList">
+                            <!-- Unassigned tickets will be loaded dynamically -->
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-tasks"></i> Active Tickets
+                        </div>
+                        <table class="table" id="activeTicketsTable">
+                            <thead>
+                                <tr>
+                                    <th>Ticket ID</th>
+                                    <th>Asset</th>
+                                    <th>Issue</th>
+                                    <th>Priority</th>
+                                    <th>Assigned To</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activeTicketsBody">
+                                <!-- Active tickets will be loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Repair Management Section -->
+                <section class="content-section" id="repair-management">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-tools"></i> Repair Management</h2>
+                        <p class="page-subtitle">Approve repairs and manage outsourcing</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-clipboard-list"></i> Repairs Awaiting Approval
+                        </div>
+                        <div id="repairsAwaitingApproval">
+                            <!-- Repairs will be loaded dynamically -->
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-cogs"></i> Ongoing Repairs
+                            <button class="btn btn-secondary btn-small" onclick="updateComponentInfo()">
+                                <i class="fas fa-plus"></i> Update Component Info
+                            </button>
+                        </div>
+                        <div id="ongoingRepairsList">
+                            <!-- Ongoing repairs will be loaded dynamically -->
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-building"></i> Outsourced Repairs
+                            <button class="btn btn-secondary btn-small" onclick="viewAllOutsourced()">
+                                <i class="fas fa-eye"></i> View All
+                            </button>
+                        </div>
+                        <div id="outsourcedRepairsList">
+                            <!-- Outsourced repairs will be loaded dynamically -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Budget Approval Section -->
+                <section class="content-section" id="budget-approval">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-dollar-sign"></i> Budget Approval</h2>
+                        <p class="page-subtitle">Review and approve repair budgets</p>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterBudgetsByStatus('all')">All</button>
+                        <button class="filter-btn" onclick="filterBudgetsByStatus('pending')">Pending</button>
+                        <button class="filter-btn" onclick="filterBudgetsByStatus('approved')">Approved</button>
+                        <button class="filter-btn" onclick="filterBudgetsByStatus('rejected')">Rejected</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-file-invoice-dollar"></i> Pending Budget Requests
+                            <span class="status-badge status-pending" id="budgetCountBadge">3</span>
+                        </div>
+                        <table class="table" id="pendingBudgetsTable">
+                            <thead>
+                                <tr>
+                                    <th>Budget ID</th>
+                                    <th>Repair</th>
+                                    <th>Technician</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="budgetsTableBody">
+                                <!-- Budgets will be loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Asset Status Section -->
+                <section class="content-section" id="asset-status">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-truck"></i> Asset Status Overview</h2>
+                        <p class="page-subtitle">Monitor all asset conditions</p>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterAssets('all')">All</button>
+                        <button class="filter-btn" onclick="filterAssets('operational')">Operational</button>
+                        <button class="filter-btn" onclick="filterAssets('under-repair')">Under Repair</button>
+                        <button class="filter-btn" onclick="filterAssets('critical')">Critical</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-list-alt"></i> Fleet Status
+                        </div>
+                        <table class="table" id="assetStatusTable">
+                            <thead>
+                                <tr>
+                                    <th>Asset ID</th>
+                                    <th>Type</th>
+                                    <th>Condition</th>
+                                    <th>Status</th>
+                                    <th>Last Check</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="assetStatusBody">
+                                <!-- Assets will be loaded dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Technician Assignments Section -->
+                <section class="content-section" id="technician-assignments">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-user-cog"></i> Technician Assignments</h2>
+                        <p class="page-subtitle">View and manage technician workload</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-users"></i> Active Technicians
+                        </div>
+                        <div id="techniciansList">
+                            <!-- Technicians will be loaded dynamically -->
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Create New Ticket Modal -->
+    <div id="createTicketModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-ticket-alt"></i> Create New Fault Ticket
+                </h2>
+                <button class="modal-close" onclick="closeCreateTicketModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="createTicketForm" onsubmit="handleCreateTicket(event)">
+                <div class="form-section">
+                    <h3 class="form-section-title">
+                        <i class="fas fa-info-circle"></i> Ticket Information
+                    </h3>
+                    
+                    <div class="form-group">
+                        <label for="assetId">Machine / Asset</label>
+                        <select id="assetId" name="asset_id" required>
+                            <option value="">Select Machine/Asset</option>
+                            <!-- Machines will be loaded dynamically -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="issueTitle">Issue Title</label>
+                        <input type="text" id="issueTitle" name="issue_title" placeholder="Brief description of issue" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="issueDescription">Issue Description</label>
+                        <textarea id="issueDescription" name="issue_description" rows="4" placeholder="Detailed description of the fault..." required></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="priority">Priority</label>
+                            <select id="priority" name="priority" required>
+                                <option value="low">Low</option>
+                                <option value="normal" selected>Normal</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                        
+                        <div class="form-group">
+                            <label for="assignTo">Assign To (Optional)</label>
+                            <select id="assignTo" name="assign_to">
+                                <option value="">Leave Unassigned</option>
+                                <!-- Technicians will be loaded dynamically -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-ticket-alt"></i> CREATE TICKET
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateTicketModal()">
+                        CANCEL
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assign Ticket Modal -->
+    <div id="assignTicketModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-user-plus"></i> Assign Ticket to Technician(s)
+                </h2>
+                <button class="modal-close" onclick="closeAssignTicketModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="assignTicketForm" onsubmit="handleAssignTicket(event)">
+                <div class="form-section">
+                    <h3 class="form-section-title">
+                        <i class="fas fa-info-circle"></i> Ticket Information
+                    </h3>
+                    
+                    <div class="form-group">
+                        <label>Ticket ID</label>
+                        <div id="assignTicketId" class="readonly-field">TKT-050</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Select Technician(s) <span style="color: var(--muted); font-weight: 400;">(Select one or more)</span></label>
+                        <div id="techniciansList" class="checkbox-list">
+                            <!-- Technicians will be loaded dynamically -->
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="assignPriority">Priority Level</label>
+                        <select id="assignPriority" name="priority">
+                            <option value="low">Low</option>
+                            <option value="normal" selected>Normal</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="expectedCompletion">Expected Completion Date</label>
+                        <input type="date" id="expectedCompletion" name="expected_completion" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="assignmentNotes">Assignment Notes</label>
+                        <textarea id="assignmentNotes" name="notes" rows="4" placeholder="Add any special instructions..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-check"></i> ASSIGN TICKET
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAssignTicketModal()">
+                        CANCEL
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Ticket Modal -->
+    <div id="viewTicketModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-ticket-alt"></i> Ticket Details
+                </h2>
+                <button class="modal-close" onclick="closeViewTicketModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="viewTicketContent" style="padding: 30px;">
+                <!-- Ticket details will be loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../../js/config.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

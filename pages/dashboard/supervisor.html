@@ -1359,11 +1359,19 @@
                         <p class="page-subtitle">Review and approve repair budgets</p>
                     </div>
 
-                    <!-- Pending Budget Approvals -->
+                    <!-- Filter Controls -->
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterBudgetsByStatus('all')">All Budgets</button>
+                        <button class="filter-btn" onclick="filterBudgetsByStatus('pending')">Pending</button>
+                        <button class="filter-btn" onclick="filterBudgetsByStatus('approved')">Approved</button>
+                        <button class="filter-btn" onclick="filterBudgetsByStatus('rejected')">Rejected</button>
+                    </div>
+
+                    <!-- Budget Approvals -->
                     <div class="card">
                         <div class="card-header">
-                            <span>💰 Pending Budget Approvals</span>
-                            <span class="status-badge status-pending">5 pending</span>
+                            <span>💰 Budget Approvals</span>
+                            <span class="status-badge status-pending" id="budgetCountBadge">5 budgets</span>
                         </div>
                         <table class="table">
                             <thead>
@@ -1378,7 +1386,7 @@
                                 </tr>
                             </thead>
                             <tbody id="pendingBudgetsTable">
-                                <tr data-id="BUD-001" data-breakdown-id="BR-003" data-type="in-route">
+                                <tr data-id="BUD-001" data-breakdown-id="BR-003" data-type="in-route" data-status="pending">
                                     <td>BUD-001</td>
                                     <td>BR-003</td>
                                     <td>Vehicle LKA-1234</td>
@@ -1387,13 +1395,13 @@
                                         <small>Tire replacement<br>Submitted by: Driver Kamal</small>
                                     </td>
                                     <td><span class="status-badge status-urgent">Urgent</span></td>
-                                    <td>
+                                    <td class="budget-actions">
                                         <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('BUD-001')">👁️ View</button>
                                         <button class="btn btn-success btn-small" onclick="approveBudget('BUD-001')">✅ Approve</button>
                                         <button class="btn btn-danger btn-small" onclick="rejectBudget('BUD-001')">❌ Reject</button>
                                     </td>
                                 </tr>
-                                <tr data-id="BUD-002" data-breakdown-id="BR-005" data-type="in-route">
+                                <tr data-id="BUD-002" data-breakdown-id="BR-005" data-type="in-route" data-status="pending">
                                     <td>BUD-002</td>
                                     <td>BR-005</td>
                                     <td>Vehicle LKA-5678</td>
@@ -1402,13 +1410,13 @@
                                         <small>Battery replacement<br>Submitted by: Driver Saman</small>
                                     </td>
                                     <td><span class="status-badge status-normal">Normal</span></td>
-                                    <td>
+                                    <td class="budget-actions">
                                         <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('BUD-002')">👁️ View</button>
                                         <button class="btn btn-success btn-small" onclick="approveBudget('BUD-002')">✅ Approve</button>
                                         <button class="btn btn-danger btn-small" onclick="rejectBudget('BUD-002')">❌ Reject</button>
                                     </td>
                                 </tr>
-                                <tr data-id="BUD-003" data-breakdown-id="BR-007" data-type="in-route">
+                                <tr data-id="BUD-003" data-breakdown-id="BR-007" data-type="in-route" data-status="pending">
                                     <td>BUD-003</td>
                                     <td>BR-007</td>
                                     <td>Vehicle LKA-9012</td>
@@ -1417,13 +1425,13 @@
                                         <small>Brake system repair<br>Submitted by: Driver Nimal</small>
                                     </td>
                                     <td><span class="status-badge status-urgent">Urgent</span></td>
-                                    <td>
+                                    <td class="budget-actions">
                                         <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('BUD-003')">👁️ View</button>
                                         <button class="btn btn-success btn-small" onclick="approveBudget('BUD-003')">✅ Approve</button>
                                         <button class="btn btn-danger btn-small" onclick="rejectBudget('BUD-003')">❌ Reject</button>
                                     </td>
                                 </tr>
-                                <tr data-id="BUD-004" data-breakdown-id="BR-009" data-type="in-route">
+                                <tr data-id="BUD-004" data-breakdown-id="BR-009" data-type="in-route" data-status="pending">
                                     <td>BUD-004</td>
                                     <td>BR-009</td>
                                     <td>Vehicle LKA-3456</td>
@@ -1432,13 +1440,13 @@
                                         <small>Coolant system leak<br>Submitted by: Driver Anil</small>
                                     </td>
                                     <td><span class="status-badge status-normal">Normal</span></td>
-                                    <td>
+                                    <td class="budget-actions">
                                         <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('BUD-004')">👁️ View</button>
                                         <button class="btn btn-success btn-small" onclick="approveBudget('BUD-004')">✅ Approve</button>
                                         <button class="btn btn-danger btn-small" onclick="rejectBudget('BUD-004')">❌ Reject</button>
                                     </td>
                                 </tr>
-                                <tr data-id="BUD-005" data-breakdown-id="BR-011" data-type="in-route">
+                                <tr data-id="BUD-005" data-breakdown-id="BR-011" data-type="in-route" data-status="pending">
                                     <td>BUD-005</td>
                                     <td>BR-011</td>
                                     <td>Vehicle LKA-7890</td>
@@ -1447,7 +1455,7 @@
                                         <small>Transmission issue<br>Submitted by: Driver Sunil</small>
                                     </td>
                                     <td><span class="status-badge status-urgent">Urgent</span></td>
-                                    <td>
+                                    <td class="budget-actions">
                                         <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('BUD-005')">👁️ View</button>
                                         <button class="btn btn-success btn-small" onclick="approveBudget('BUD-005')">✅ Approve</button>
                                         <button class="btn btn-danger btn-small" onclick="rejectBudget('BUD-005')">❌ Reject</button>
@@ -3031,6 +3039,40 @@
 
         // ==================== BUDGET APPROVAL ====================
         
+        function filterBudgetsByStatus(status) {
+            const btn = event.target;
+            document.querySelectorAll('#budget-approval .filter-controls .filter-btn').forEach(b => {
+                b.classList.remove('active');
+            });
+            btn.classList.add('active');
+            
+            const rows = document.querySelectorAll('#pendingBudgetsTable tr');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                const rowStatus = row.getAttribute('data-status');
+                if (!rowStatus) return;
+                
+                if (status === 'all') {
+                    row.style.display = '';
+                    visibleCount++;
+                } else if (rowStatus === status) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Update badge count
+            const badge = document.getElementById('budgetCountBadge');
+            if (badge) {
+                badge.textContent = `${visibleCount} budget${visibleCount !== 1 ? 's' : ''}`;
+            }
+            
+            showToast(`Showing ${visibleCount} budget${visibleCount !== 1 ? 's' : ''}`);
+        }
+        
         function viewBudgetDetails(budgetId) {
             const title = document.getElementById('detailsTitle');
             const content = document.getElementById('detailsContent');
@@ -3177,9 +3219,26 @@
             if (confirm(`Approve budget ${budgetId}?`)) {
                 const row = document.querySelector(`tr[data-id="${budgetId}"]`);
                 if (row) {
-                    row.remove();
+                    // Update status
+                    row.setAttribute('data-status', 'approved');
+                    
+                    // Update the actions column to show approved status
+                    const actionsCell = row.querySelector('.budget-actions');
+                    if (actionsCell) {
+                        actionsCell.innerHTML = `
+                            <span class="status-badge status-completed">✅ Approved</span>
+                            <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('${budgetId}')">👁️ View</button>
+                        `;
+                    }
+                    
+                    // Hide the row if not viewing "all" or "approved"
+                    const activeBtn = document.querySelector('#budget-approval .filter-controls .filter-btn.active');
+                    if (activeBtn && activeBtn.textContent.toLowerCase().includes('pending')) {
+                        row.style.display = 'none';
+                    }
                 }
                 showToast(`✅ Budget ${budgetId} approved!`);
+                updateBudgetCount();
             }
         }
 
@@ -3187,9 +3246,45 @@
             if (confirm(`Reject budget ${budgetId}? Technician will need to revise.`)) {
                 const row = document.querySelector(`tr[data-id="${budgetId}"]`);
                 if (row) {
-                    row.remove();
+                    // Update status
+                    row.setAttribute('data-status', 'rejected');
+                    
+                    // Update the actions column to show rejected status
+                    const actionsCell = row.querySelector('.budget-actions');
+                    if (actionsCell) {
+                        actionsCell.innerHTML = `
+                            <span class="status-badge status-rejected">❌ Rejected</span>
+                            <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('${budgetId}')">👁️ View</button>
+                        `;
+                    }
+                    
+                    // Hide the row if not viewing "all" or "rejected"
+                    const activeBtn = document.querySelector('#budget-approval .filter-controls .filter-btn.active');
+                    if (activeBtn && activeBtn.textContent.toLowerCase().includes('pending')) {
+                        row.style.display = 'none';
+                    }
                 }
                 showToast(`❌ Budget ${budgetId} rejected.`);
+                updateBudgetCount();
+            }
+        }
+        
+        function updateBudgetCount() {
+            const activeBtn = document.querySelector('#budget-approval .filter-controls .filter-btn.active');
+            if (activeBtn) {
+                const rows = document.querySelectorAll('#pendingBudgetsTable tr');
+                let visibleCount = 0;
+                
+                rows.forEach(row => {
+                    if (row.style.display !== 'none') {
+                        visibleCount++;
+                    }
+                });
+                
+                const badge = document.getElementById('budgetCountBadge');
+                if (badge) {
+                    badge.textContent = `${visibleCount} budget${visibleCount !== 1 ? 's' : ''}`;
+                }
             }
         }
 

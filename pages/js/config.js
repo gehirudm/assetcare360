@@ -21,11 +21,11 @@ const CONFIG = {
         LOGIN: '/auth/login.html',
         FORGOT_PASSWORD: '/auth/forgot-password.html',
         DASHBOARD: {
-            ADMIN: '/dashboard/sysadministration.html',
+            ADMIN: '/dashboard/sysadministration/index.html',
             MAINTENANCE_MANAGER: '/dashboard/maintenance.html',
             INVENTORY_MANAGER: '/dashboard/inventory-manager/index.html',
             TECHNICAL_OFFICER: '/dashboard/technical-officer/index.html',
-            SUPERVISOR: '/dashboard/supervisor.html',
+            SUPERVISOR: '/dashboard/supervisor/index.html',
             DRIVER: '/dashboard/driver.html',
             MACHINARY_OPERATOR: '/dashboard/machinery-operator/index.html'  // Matches DB typo: 'Machinary Operator'
         }
