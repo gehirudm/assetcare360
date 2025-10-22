@@ -519,6 +519,9 @@ class FaultTicketService {
                 $data['notes'] ?? null
             );
             
+            // Update ticket status to "Assigned"
+            $this->faultTicketModel->updateTicket($ticketId, ['status' => 'Assigned']);
+            
             return [
                 'success' => true,
                 'message' => $assignedCount . ' technician(s) assigned successfully'

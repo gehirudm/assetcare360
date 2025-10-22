@@ -40,6 +40,18 @@ abstract class BaseModel {
     }
     
     /**
+     * Define foreign keys (optional)
+     * Override in child classes if needed
+     * Example format:
+     * [
+     *     'fk_name' => 'FOREIGN KEY (column) REFERENCES table(id) ON DELETE CASCADE'
+     * ]
+     */
+    protected function getForeignKeys() {
+        return [];
+    }
+    
+    /**
      * Automatically create table if it doesn't exist
      */
     protected function createTableIfNotExists() {
@@ -51,6 +63,12 @@ abstract class BaseModel {
         $columns = [];
         foreach ($schema as $column => $definition) {
             $columns[] = "`$column` $definition";
+        }
+        
+        // Add foreign keys to the schema
+        $foreignKeys = $this->getForeignKeys();
+        foreach ($foreignKeys as $fkName => $fkDefinition) {
+            $columns[] = $fkDefinition;
         }
         
         $columnsStr = implode(', ', $columns);

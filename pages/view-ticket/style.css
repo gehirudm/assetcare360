@@ -297,9 +297,24 @@ body {
     letter-spacing: 0.5px;
 }
 
-.status-new, .status-pending {
+.status-new, .status-pending, .status-open {
     background: #dbeafe;
     color: #1e40af;
+}
+
+.status-assigned {
+    background: #e0e7ff;
+    color: #4338ca;
+}
+
+.status-waiting-for-budget-approval {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-waiting-for-spare-parts {
+    background: #fce7f3;
+    color: #9f1239;
 }
 
 .status-in-progress {
@@ -310,6 +325,11 @@ body {
 .status-completed, .status-resolved {
     background: #d1fae5;
     color: #065f46;
+}
+
+.status-closed {
+    background: #e5e7eb;
+    color: #374151;
 }
 
 .priority-low {

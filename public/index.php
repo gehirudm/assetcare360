@@ -55,6 +55,7 @@ require_once __DIR__ . '/../app/controllers/LogController.php';
 require_once __DIR__ . '/../app/controllers/MachineController.php';
 require_once __DIR__ . '/../app/controllers/VehicleController.php';
 require_once __DIR__ . '/../app/controllers/FaultTicketController.php';
+require_once __DIR__ . '/../app/controllers/BudgetReportController.php';
 require_once __DIR__ . '/../app/controllers/FileController.php';
 
 // Initialize request logger
@@ -122,6 +123,15 @@ $router->post('/fault-tickets/:id/assign', 'FaultTicketController', 'assign');
 $router->put('/fault-tickets/:id', 'FaultTicketController', 'update');
 $router->patch('/fault-tickets/:id', 'FaultTicketController', 'update');
 $router->delete('/fault-tickets/:id', 'FaultTicketController', 'delete');
+
+// Budget report routes (Technical Officer and above)
+$router->get('/budget-reports/pending', 'BudgetReportController', 'getPending');
+$router->get('/budget-reports/ticket/:id', 'BudgetReportController', 'getByTicket');
+$router->get('/budget-reports/ticket/:id/latest', 'BudgetReportController', 'getLatestByTicket');
+$router->post('/budget-reports', 'BudgetReportController', 'create');
+$router->put('/budget-reports/:id', 'BudgetReportController', 'update');
+$router->post('/budget-reports/:id/review', 'BudgetReportController', 'review');
+$router->delete('/budget-reports/:id', 'BudgetReportController', 'delete');
 
 // File serving routes (for uploaded files)
 $router->get('/uploads/fault-tickets/:filename', 'FileController', 'serveFaultTicketImage');

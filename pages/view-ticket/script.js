@@ -467,9 +467,231 @@ function assignTechnicians() {
     // Implement assignment logic
 }
 
+// ==================== BUDGET REPORT FUNCTIONS ====================
+
+// Load budget report for the ticket
+async function loadBudgetReport() {
+    if (!currentUser || !ticketData) return;
+
+    // Only show budget report section for Technical Officers
+    if (currentUser.role !== 'Technical Officer') {
+        return;
+    }
+
+    const budgetReportCard = document.getElementById('budgetReportCard');
+    budgetReportCard.style.display = 'block';
+
+    try {
+        const response = await API.get(`/budget-reports/ticket/${ticketData.id}/latest`);
+        
+        if (response.status === 'success' && response.data.report) {
+            displayExistingBudgetReport(response.data.report);
+        } else {
+            displayNewBudgetReportForm();
+        }
+    } catch (error) {
+        console.error('Error loading budget report:', error);
+        displayNewBudgetReportForm();
+    }
+}
+
+// Display existing budget report
+function displayExistingBudgetReport(report) {
+    const content = document.getElementById('budgetReportContent');
+    const statusClass = report.status === 'approved' ? 'status-completed' : 
+                        report.status === 'rejected' ? 'status-urgent' : 
+                        report.status === 'revised' ? 'status-normal' : 'status-pending';
+    
+    const statusText = report.status.charAt(0).toUpperCase() + report.status.slice(1);
+    
+    // Check if budget can be edited (ticket status must be before "In Progress")
+    const allowedEditStatuses = ['Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts'];
+    const canEdit = allowedEditStatuses.includes(ticketData.status);
+    
+    content.innerHTML = `
+        <div class="budget-report-view">
+            <div class="budget-status-badge ${statusClass}">
+                <i class="fas ${report.status === 'approved' ? 'fa-check-circle' : 
+                                 report.status === 'rejected' ? 'fa-times-circle' : 
+                                 report.status === 'revised' ? 'fa-edit' : 'fa-clock'}"></i>
+                ${statusText}
+            </div>
+            
+            <div class="budget-section">
+                <h4><i class="fas fa-file-alt"></i> Quotation</h4>
+                <div class="budget-quotation">${report.quotation.replace(/\n/g, '<br>')}</div>
+            </div>
+            
+            <div class="budget-section">
+                <h4><i class="fas fa-rupee-sign"></i> Total Amount</h4>
+                <div class="budget-amount">LKR ${parseFloat(report.total_amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+            </div>
+            
+            <div class="budget-section">
+                <h4><i class="fas fa-comment-dots"></i> Justification</h4>
+                <div class="budget-justification">${report.justification.replace(/\n/g, '<br>')}</div>
+            </div>
+            
+            <div class="budget-meta">
+                <small><i class="fas fa-user"></i> Submitted by: ${report.submitted_by_name || 'Unknown'}</small>
+                <small><i class="fas fa-calendar"></i> ${formatDate(report.created_at)}</small>
+            </div>
+            
+            ${report.status !== 'pending' && report.reviewed_by_name ? `
+                <div class="budget-review">
+                    <h4><i class="fas fa-clipboard-check"></i> Review</h4>
+                    <p><strong>Reviewed by:</strong> ${report.reviewed_by_name}</p>
+                    <p><strong>Date:</strong> ${formatDate(report.reviewed_at)}</p>
+                    ${report.review_notes ? `<p><strong>Notes:</strong> ${report.review_notes}</p>` : ''}
+                </div>
+            ` : ''}
+            
+            ${canEdit && (report.status === 'pending' || report.status === 'revised') ? `
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button class="btn btn-primary" onclick="openBudgetReportModal(${JSON.stringify(report).replace(/"/g, '&quot;')})">
+                        <i class="fas fa-edit"></i> Edit Budget Report
+                    </button>
+                    ${report.status === 'pending' ? `
+                        <button class="btn btn-danger" onclick="deleteBudgetReport(${report.id})">
+                            <i class="fas fa-trash"></i> Delete Report
+                        </button>
+                    ` : ''}
+                </div>
+            ` : !canEdit ? `
+                <div style="margin-top: 15px; padding: 10px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 6px;">
+                    <small style="color: #92400e;">
+                        <i class="fas fa-info-circle"></i> 
+                        Budget report cannot be modified after work has started (status: ${ticketData.status})
+                    </small>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+// Display new budget report form
+function displayNewBudgetReportForm() {
+    const content = document.getElementById('budgetReportContent');
+    
+    // Check if ticket is in Open or Assigned status (before In Progress)
+    const allowedStatuses = ['Open', 'Assigned'];
+    const canSubmitBudget = allowedStatuses.includes(ticketData.status);
+    
+    if (!canSubmitBudget) {
+        content.innerHTML = `
+            <div class="budget-report-empty">
+                <i class="fas fa-info-circle" style="font-size: 3rem; color: var(--muted); margin-bottom: 15px;"></i>
+                <p style="color: var(--muted); margin-bottom: 10px;"><strong>Budget reports can only be submitted before work begins</strong></p>
+                <p style="color: var(--muted); font-size: 0.9rem;">Allowed statuses: Open, Assigned<br>Current status: <strong>${ticketData.status}</strong></p>
+            </div>
+        `;
+        return;
+    }
+    
+    content.innerHTML = `
+        <div class="budget-report-empty">
+            <i class="fas fa-file-invoice-dollar" style="font-size: 3rem; color: var(--muted); margin-bottom: 15px;"></i>
+            <p style="color: var(--muted); margin-bottom: 20px;">No budget report submitted yet</p>
+            <button class="btn btn-primary" onclick="openBudgetReportModal()">
+                <i class="fas fa-plus"></i> Submit Budget Report
+            </button>
+        </div>
+    `;
+}
+
+// Open budget report modal
+function openBudgetReportModal(existingReport = null) {
+    const modal = document.getElementById('budgetReportModal');
+    const form = document.getElementById('budgetReportForm');
+    const title = document.getElementById('budgetModalTitle');
+    
+    if (existingReport) {
+        title.textContent = 'Edit Budget Report';
+        document.getElementById('quotationInput').value = existingReport.quotation;
+        document.getElementById('totalAmountInput').value = parseFloat(existingReport.total_amount).toFixed(2);
+        document.getElementById('justificationInput').value = existingReport.justification;
+        form.dataset.reportId = existingReport.id;
+    } else {
+        title.textContent = 'Submit Budget Report';
+        form.reset();
+        delete form.dataset.reportId;
+    }
+    
+    modal.classList.add('active');
+}
+
+// Close budget report modal
+function closeBudgetReportModal() {
+    const modal = document.getElementById('budgetReportModal');
+    const form = document.getElementById('budgetReportForm');
+    modal.classList.remove('active');
+    form.reset();
+    delete form.dataset.reportId;
+}
+
+// Submit budget report
+async function submitBudgetReport(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const reportId = form.dataset.reportId;
+    
+    const budgetData = {
+        fault_ticket_id: ticketData.id,
+        quotation: document.getElementById('quotationInput').value.trim(),
+        total_amount: parseFloat(document.getElementById('totalAmountInput').value),
+        justification: document.getElementById('justificationInput').value.trim()
+    };
+    
+    try {
+        let response;
+        if (reportId) {
+            // Update existing report
+            response = await API.put(`/budget-reports/${reportId}`, budgetData);
+        } else {
+            // Create new report
+            response = await API.post('/budget-reports', budgetData);
+        }
+        
+        if (response.status === 'success') {
+            showToast(reportId ? 'Budget report updated successfully!' : 'Budget report submitted successfully!');
+            closeBudgetReportModal();
+            await loadBudgetReport(); // Reload the budget report section
+        } else {
+            throw new Error(response.message || 'Failed to submit budget report');
+        }
+    } catch (error) {
+        console.error('Error submitting budget report:', error);
+        showToast(error.message || 'Failed to submit budget report. Please try again.', true);
+    }
+}
+
+// Delete budget report
+async function deleteBudgetReport(reportId) {
+    if (!confirm('Are you sure you want to delete this budget report? This action cannot be undone and the ticket status will revert to "Open".')) {
+        return;
+    }
+    
+    try {
+        const response = await API.delete(`/budget-reports/${reportId}`);
+        
+        if (response.status === 'success') {
+            showToast('Budget report deleted successfully!');
+            // Reload the page to reflect status change
+            location.reload();
+        } else {
+            throw new Error(response.message || 'Failed to delete budget report');
+        }
+    } catch (error) {
+        console.error('Error deleting budget report:', error);
+        showToast(error.message || 'Failed to delete budget report. Please try again.', true);
+    }
+}
+
 // Initialize on page load
 (async function initialize() {
     await loadUserData();
     setupBackButton();
     await loadTicketDetails();
+    await loadBudgetReport(); // Load budget report if applicable
 })();

@@ -46,6 +46,8 @@ tags:
     description: System log viewing and analytics (Admin only)
   - name: Products
     description: Product/Inventory operations
+  - name: Budget Reports
+    description: Budget report submission and management for fault tickets
 
 security:
   - bearerAuth: []
@@ -2412,6 +2414,323 @@ components:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  # ==================== BUDGET REPORTS ====================
+  /budget-reports:
+    post:
+      tags:
+        - Budget Reports
+      summary: Create budget report
+      description: |
+        Submit a new budget report for a fault ticket (Technical Officer only).
+        
+        **Requirements:**
+        - Ticket must be in "Open" or "Assigned" status (before work begins)
+        - After submission, ticket status automatically changes to "Waiting for Budget Approval"
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fault_ticket_id
+                - quotation
+                - justification
+                - total_amount
+              properties:
+                fault_ticket_id:
+                  type: integer
+                  example: 1
+                quotation:
+                  type: string
+                  example: "- Spare Part A: LKR 40,000.00\n- Labor (5 hours @ LKR 2,500/hr): LKR 12,500.00\n- Transportation: LKR 5,000.00\n- Miscellaneous: LKR 2,500.00"
+                justification:
+                  type: string
+                  example: "The machine requires immediate repair to prevent further damage and maintain operational efficiency..."
+                total_amount:
+                  type: number
+                  format: decimal
+                  example: 60000.00
+      responses:
+        '201':
+          description: Budget report created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Budget report created successfully
+                  data:
+                    type: object
+                    properties:
+                      report:
+                        $ref: '#/components/schemas/BudgetReport'
+        '400':
+          description: Bad request (missing fields or invalid data)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Fault ticket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /budget-reports/pending:
+    get:
+      tags:
+        - Budget Reports
+      summary: Get all pending budget reports
+      description: Retrieve all pending budget reports (Supervisor/Admin only)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: List of pending budget reports
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      reports:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/BudgetReport'
+
+  /budget-reports/ticket/{id}:
+    get:
+      tags:
+        - Budget Reports
+      summary: Get budget reports for a ticket
+      description: Retrieve all budget reports submitted for a specific fault ticket
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Fault ticket ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of budget reports for the ticket
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      reports:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/BudgetReport'
+
+  /budget-reports/ticket/{id}/latest:
+    get:
+      tags:
+        - Budget Reports
+      summary: Get latest budget report for a ticket
+      description: Retrieve the most recent budget report for a specific fault ticket
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Fault ticket ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Latest budget report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      report:
+                        $ref: '#/components/schemas/BudgetReport'
+
+  /budget-reports/{id}:
+    put:
+      tags:
+        - Budget Reports
+      summary: Update budget report
+      description: |
+        Update an existing budget report (submitter only, only pending/revised reports).
+        
+        **Requirements:**
+        - Ticket must be before "In Progress" status (Open, Assigned, Waiting for Budget Approval, Waiting for Spare Parts)
+        - Only pending or revised reports can be edited
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Budget report ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quotation:
+                  type: string
+                justification:
+                  type: string
+                total_amount:
+                  type: number
+                  format: decimal
+      responses:
+        '200':
+          description: Budget report updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Budget report updated successfully
+                  data:
+                    type: object
+                    properties:
+                      report:
+                        $ref: '#/components/schemas/BudgetReport'
+    
+    delete:
+      tags:
+        - Budget Reports
+      summary: Delete budget report
+      description: |
+        Delete a budget report (submitter/admin only, only pending reports).
+        
+        **Requirements:**
+        - Only reports with status "pending" can be deleted
+        - Ticket must be before "In Progress" status
+        - After deletion, ticket status reverts to "Assigned" (if technicians assigned) or "Open"
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Budget report ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Budget report deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Budget report deleted successfully
+
+  /budget-reports/{id}/review:
+    post:
+      tags:
+        - Budget Reports
+      summary: Review budget report
+      description: Approve or reject a budget report (Supervisor/Admin only)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Budget report ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [approved, rejected, revised]
+                  example: approved
+                review_notes:
+                  type: string
+                  example: "Budget approved. Please proceed with repairs."
+      responses:
+        '200':
+          description: Budget report reviewed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Budget report reviewed successfully
+                  data:
+                    type: object
+                    properties:
+                      report:
+                        $ref: '#/components/schemas/BudgetReport'
+
 components:
   schemas:
     Machine:
@@ -2707,6 +3026,81 @@ components:
         created_at:
           type: string
           format: date-time
+    
+    BudgetReport:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        fault_ticket_id:
+          type: integer
+          example: 1
+        submitted_by:
+          type: integer
+          example: 5
+        submitted_by_name:
+          type: string
+          example: "John Technician"
+        submitted_by_employee_id:
+          type: string
+          example: "EMP-123"
+        quotation:
+          type: string
+          example: "- Spare Part A: LKR 40,000.00\n- Labor (5 hours @ LKR 2,500/hr): LKR 12,500.00\n- Transportation: LKR 5,000.00"
+        justification:
+          type: string
+          example: "The machine requires immediate repair to prevent further damage..."
+        total_amount:
+          type: string
+          example: "60000.00"
+        status:
+          type: string
+          enum: [pending, approved, rejected, revised]
+          example: pending
+        reviewed_by:
+          type: integer
+          nullable: true
+          example: 3
+        reviewed_by_name:
+          type: string
+          nullable: true
+          example: "Jane Supervisor"
+        reviewed_by_employee_id:
+          type: string
+          nullable: true
+          example: "EMP-456"
+        review_notes:
+          type: string
+          nullable: true
+          example: "Budget approved. Please proceed with repairs."
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-10-22T14:30:00Z"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-22T10:15:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-10-22T14:30:00Z"
+    
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: An error occurred
+        errors:
+          type: array
+          items:
+            type: string
     
     Pagination:
       type: object

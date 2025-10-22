@@ -42,21 +42,9 @@ class FaultTicketAssignment extends BaseModel {
      */
     protected function getForeignKeys() {
         return [
-            'fk_assignment_ticket' => [
-                'column' => 'fault_ticket_id',
-                'references' => 'fault_tickets(id)',
-                'on_delete' => 'CASCADE'
-            ],
-            'fk_assignment_technician' => [
-                'column' => 'assigned_to',
-                'references' => 'users(id)',
-                'on_delete' => 'CASCADE'
-            ],
-            'fk_assignment_supervisor' => [
-                'column' => 'assigned_by',
-                'references' => 'users(id)',
-                'on_delete' => 'CASCADE'
-            ]
+            'fk_assignment_ticket' => 'FOREIGN KEY (fault_ticket_id) REFERENCES fault_tickets(id) ON DELETE CASCADE',
+            'fk_assignment_technician' => 'FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE CASCADE',
+            'fk_assignment_supervisor' => 'FOREIGN KEY (assigned_by) REFERENCES users(id) ON DELETE CASCADE'
         ];
     }
     

@@ -180,3 +180,184 @@
     justify-content: center;
     gap: 5px;
 }
+
+/* Budget Report Styles */
+.budget-report-view {
+    padding: 5px 0;
+}
+
+.budget-report-empty {
+    text-align: center;
+    padding: 30px 20px;
+}
+
+.budget-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+}
+
+.budget-status-badge.status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.budget-status-badge.status-completed {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.budget-status-badge.status-urgent {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.budget-status-badge.status-normal {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.budget-section {
+    margin-bottom: 15px;
+}
+
+.budget-section h4 {
+    color: var(--tang-blue);
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+}
+
+.budget-quotation {
+    background: var(--stone-100);
+    border-left: 3px solid var(--royal-blue);
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--text-700);
+    white-space: pre-wrap;
+}
+
+.budget-amount {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--kelly-green);
+}
+
+.budget-justification {
+    background: var(--stone-100);
+    border-left: 3px solid var(--kelly-green);
+    padding: 12px;
+    border-radius: 6px;
+    line-height: 1.6;
+    color: var(--text-700);
+    font-size: 0.9rem;
+}
+
+.budget-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    padding-top: 12px;
+    border-top: 1px solid var(--stone-200);
+    margin-top: 15px;
+}
+
+.budget-meta small {
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.85rem;
+}
+
+.budget-review {
+    background: var(--stone-100);
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 15px;
+    border: 1px solid var(--stone-200);
+}
+
+.budget-review h4 {
+    color: var(--tang-blue);
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+}
+
+.budget-review p {
+    margin: 6px 0;
+    color: var(--text-700);
+    line-height: 1.5;
+    font-size: 0.9rem;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-900);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--stone-200);
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.3s ease;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="number"]:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--royal-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Responsive Budget Report */
+@media (max-width: 768px) {
+    .budget-amount {
+        font-size: 1.25rem;
+    }
+    
+    .budget-meta {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .budget-section {
+        margin-bottom: 12px;
+    }
+}

@@ -17,6 +17,9 @@ class FaultTicket extends BaseModel {
     
     // Valid statuses
     const STATUS_OPEN = 'Open';
+    const STATUS_ASSIGNED = 'Assigned';
+    const STATUS_WAITING_BUDGET = 'Waiting for Budget Approval';
+    const STATUS_WAITING_PARTS = 'Waiting for Spare Parts';
     const STATUS_IN_PROGRESS = 'In Progress';
     const STATUS_RESOLVED = 'Resolved';
     const STATUS_CLOSED = 'Closed';
@@ -32,7 +35,7 @@ class FaultTicket extends BaseModel {
             'description' => 'TEXT NOT NULL',
             'priority' => "ENUM('Low', 'Medium', 'High', 'Critical') NOT NULL DEFAULT 'Medium'",
             'location' => 'VARCHAR(255) NOT NULL',
-            'status' => "ENUM('Open', 'In Progress', 'Resolved', 'Closed') NOT NULL DEFAULT 'Open'",
+            'status' => "ENUM('Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts', 'In Progress', 'Resolved', 'Closed') NOT NULL DEFAULT 'Open'",
             'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
             'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
         ];
