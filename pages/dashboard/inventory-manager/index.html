@@ -693,8 +693,12 @@
     <!-- Add Part Modal -->
     <div id="addPartModal" class="modal">
         <div class="modal-content">
-            <button class="close" onclick="closeModal('addPartModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-plus-circle"></i> Add New Spare Part</h2>
+            <div class="modal-header">
+                <h2><i class="fas fa-plus-circle"></i> Add New Spare Part</h2>
+                <button class="btn-close" onclick="closeModal('addPartModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
             <form id="addPartForm">
                 <div class="form-section">
                     <h5><i class="fas fa-box"></i> Basic Information</h5>
@@ -783,8 +787,12 @@
     <!-- Edit Part Modal -->
     <div id="editPartModal" class="modal">
         <div class="modal-content">
-            <button class="close" onclick="closeModal('editPartModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-edit"></i> Edit Spare Part</h2>
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> Edit Spare Part</h2>
+                <button class="btn-close" onclick="closeModal('editPartModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
             <form id="editPartForm">
                 <input type="hidden" id="editPartId">
                 <div class="form-section">
@@ -850,8 +858,12 @@
         <!-- Reorder Form Modal -->
     <div id="reorderModal" class="modal">
         <div class="modal-content">
-            <button class="close" onclick="closeModal('reorderModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-sync"></i> Reorder Part</h2>
+            <div class="modal-header">
+                <h2><i class="fas fa-sync"></i> Reorder Part</h2>
+                <button class="btn-close" onclick="closeModal('reorderModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
             <form id="reorderForm">
                 <div class="form-section">
                     <h5><i class="fas fa-clipboard-list"></i> Reorder Information</h5>
@@ -902,8 +914,12 @@
     <!-- Add Usage Entry Modal -->
     <div id="addUsageModal" class="modal">
         <div class="modal-content">
-            <button class="close" onclick="closeModal('addUsageModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-plus-circle"></i> Add Usage Entry</h2>
+            <div class="modal-header">
+                <h2><i class="fas fa-plus-circle"></i> Add Usage Entry</h2>
+                <button class="btn-close" onclick="closeModal('addUsageModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
             <form id="addUsageForm">
                 <div class="form-section">
                     <h5><i class="fas fa-cog"></i> Machine/Vehicle Information</h5>
@@ -951,8 +967,12 @@
     <!-- Generate Report Modal -->
     <div id="reportModal" class="modal">
         <div class="modal-content">
-            <button class="close" onclick="closeModal('reportModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-chart-bar"></i> Generate Usage Report</h2>
+            <div class="modal-header">
+                <h2><i class="fas fa-chart-bar"></i> Generate Usage Report</h2>
+                <button class="btn-close" onclick="closeModal('reportModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
             <form id="reportForm">
                 <div class="form-section">
                     <h5><i class="fas fa-file-alt"></i> Report Configuration</h5>

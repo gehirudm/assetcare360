@@ -405,10 +405,12 @@ function createMachineModal(machine = null) {
     
     modal.innerHTML = `
         <div class="modal-content">
-            <button class="close" onclick="closeModal('${modal.id}')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">
-                <i class="fas fa-cog"></i> ${isEdit ? 'Edit' : 'Add New'} Machine
-            </h2>
+            <div class="modal-header">
+                <h2><i class="fas fa-cog"></i> ${isEdit ? 'Edit' : 'Add New'} Machine</h2>
+                <button class="btn-close" onclick="closeModal('${modal.id}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
             <form id="${isEdit ? 'editMachineForm' : 'addMachineForm'}">
                 ${isEdit ? `<input type="hidden" id="machineId" value="${machine.id}">` : ''}
                 
@@ -865,10 +867,12 @@ function createVehicleModal(vehicle = null) {
     
     modal.innerHTML = `
         <div class="modal-content">
-            <button class="close" onclick="closeModal('${modal.id}')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">
-                <i class="fas fa-truck"></i> ${isEdit ? 'Edit' : 'Add New'} Vehicle
-            </h2>
+            <div class="modal-header">
+                <h2><i class="fas fa-truck"></i> ${isEdit ? 'Edit' : 'Add New'} Vehicle</h2>
+                <button class="btn-close" onclick="closeModal('${modal.id}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
             <form id="${isEdit ? 'editVehicleForm' : 'addVehicleForm'}">
                 ${isEdit ? `<input type="hidden" id="vehicleId" value="${vehicle.id}">` : ''}
                 
