@@ -1,35 +1,7 @@
 
 // Store ticket data
-let ticketData = {
-    'TKT-001': {
-        status: 'in-progress',
-        assignedBy: 'Supervisor John',
-        equipment: 'Vehicle #101',
-        reporter: 'John Driver',
-        issue: 'Engine overheating',
-        priority: 'High',
-        assignedDate: 'Aug 28',
-        workDone: 'Installing new radiator - 60% complete'
-    },
-    'TKT-002': {
-        status: 'new',
-        assignedBy: 'Supervisor Mike',
-        equipment: 'Machine #205',
-        reporter: 'Mike Operator',
-        issue: 'Hydraulic leak in main cylinder',
-        priority: 'Medium',
-        assignedDate: 'Aug 30'
-    },
-    'TKT-003': {
-        status: 'new',
-        assignedBy: 'Supervisor Lisa',
-        equipment: 'Truck #089',
-        reporter: 'Sarah Driver',
-        issue: 'Brake system malfunction',
-        priority: 'High',
-        assignedDate: 'Aug 30'
-    }
-};
+let allTickets = [];
+let currentUser = null;
 
 // Navigation functionality
 function navigateTo(sectionId) {
@@ -150,7 +122,10 @@ function filterTicketsByStatus(status) {
     filterButtons.forEach(btn => {
         btn.classList.remove('active');
     });
-    event.target.classList.add('active');
+    
+    // Find and activate the clicked button
+    const clickedButton = event ? event.target : filterButtons[0];
+    clickedButton.classList.add('active');
 
     // Filter tickets
     tickets.forEach(ticket => {
@@ -172,6 +147,185 @@ function filterTicketsByStatus(status) {
 
     // Update ticket count
     ticketCount.textContent = `${visibleCount} ticket${visibleCount !== 1 ? 's' : ''}`;
+}
+
+// Load tickets from backend
+async function loadTickets() {
+    const ticketsList = document.getElementById('allTicketsList');
+    const ticketCount = document.getElementById('ticketCount');
+    
+    // Show loading state
+    ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-spinner fa-spin" style="font-size: 2rem;"></i><p style="margin-top: 15px;">Loading tickets...</p></div>';
+    
+    try {
+        const response = await API.get('/fault-tickets');
+        
+        if (response.status === 'success' && response.data) {
+            const tickets = response.data.tickets || response.data || [];
+            
+            // Filter tickets assigned to current user
+            allTickets = tickets.filter(ticket => {
+                // Check if ticket has assignments and if current user is assigned
+                if (ticket.assignments && Array.isArray(ticket.assignments)) {
+                    return ticket.assignments.some(assignment => 
+                        assignment.assigned_to === currentUser.id
+                    );
+                }
+                return false;
+            });
+            
+            if (allTickets.length > 0) {
+                renderTickets(allTickets);
+                ticketCount.textContent = `${allTickets.length} ticket${allTickets.length !== 1 ? 's' : ''}`;
+                
+                // Update dashboard counts
+                updateDashboardCounts(allTickets);
+            } else {
+                ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px;"></i><p>No tickets assigned to you yet</p></div>';
+                ticketCount.textContent = '0 tickets';
+            }
+        } else {
+            throw new Error(response.message || 'Failed to load tickets');
+        }
+    } catch (error) {
+        console.error('Error loading tickets:', error);
+        ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 15px;"></i><p>Error loading tickets. Please try again.</p></div>';
+    }
+}
+
+// Render tickets
+function renderTickets(tickets) {
+    const ticketsList = document.getElementById('allTicketsList');
+    
+    if (tickets.length === 0) {
+        ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px;"></i><p>No tickets found</p></div>';
+        return;
+    }
+    
+    ticketsList.innerHTML = tickets.map(ticket => {
+        const ticketIdFormatted = `TKT-${String(ticket.id).padStart(3, '0')}`;
+        const status = (ticket.status || 'New').toLowerCase().replace(/\s+/g, '-');
+        const priority = ticket.priority || 'Medium';
+        const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
+        const reporterName = ticket.reported_by_name || ticket.reporter_full_name || 'Unknown';
+        const description = ticket.description || 'No description';
+        const createdDate = new Date(ticket.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        
+        // Get assignment details
+        const assignment = ticket.assignments && ticket.assignments.length > 0 ? ticket.assignments[0] : null;
+        const assignedBy = assignment ? (assignment.assigned_by_name || 'Supervisor') : 'Unknown';
+        const assignedDate = assignment ? new Date(assignment.assigned_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : createdDate;
+        
+        // Determine action buttons based on status
+        let actionButtons = '';
+        if (status === 'new' || status === 'pending') {
+            actionButtons = `
+                <button class="btn btn-primary btn-mini" onclick="processTicket(${ticket.id})">
+                    <i class="fas fa-play"></i> Start Work
+                </button>
+                <button class="btn btn-warning btn-mini" onclick="requestPartsForTicket(${ticket.id})">
+                    <i class="fas fa-tools"></i> Request Parts
+                </button>
+                <button class="btn btn-secondary btn-mini" onclick="viewTicket(${ticket.id})">
+                    <i class="fas fa-eye"></i> View
+                </button>
+            `;
+        } else if (status === 'in-progress') {
+            actionButtons = `
+                <button class="btn btn-primary btn-mini" onclick="updateWork(${ticket.id})">
+                    <i class="fas fa-tasks"></i> Update Progress
+                </button>
+                <button class="btn btn-success btn-mini" onclick="markDone(${ticket.id})">
+                    <i class="fas fa-check-double"></i> Mark Done
+                </button>
+                <button class="btn btn-secondary btn-mini" onclick="viewTicket(${ticket.id})">
+                    <i class="fas fa-eye"></i> View
+                </button>
+            `;
+        } else {
+            actionButtons = `
+                <button class="btn btn-secondary btn-mini" onclick="viewTicket(${ticket.id})">
+                    <i class="fas fa-eye"></i> View Details
+                </button>
+            `;
+        }
+        
+        return `
+            <div class="ticket-item" data-status="${status}">
+                <div class="ticket-details">
+                    <strong>${ticketIdFormatted}</strong>
+                    <div class="ticket-meta">Equipment: ${assetName} | Reporter: ${reporterName}</div>
+                    <div class="ticket-issue">${description}</div>
+                    <div class="ticket-meta">Assigned by: ${assignedBy} | Priority: ${priority} | Date: ${assignedDate}</div>
+                </div>
+                <div class="ticket-actions">
+                    <span class="status-badge status-${status}">${ticket.status || 'New'}</span>
+                    <div class="action-buttons">
+                        ${actionButtons}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Update dashboard counts
+function updateDashboardCounts(tickets) {
+    const newCount = tickets.filter(t => {
+        const status = (t.status || 'New').toLowerCase();
+        return status === 'new' || status === 'pending';
+    }).length;
+    
+    const inProgressCount = tickets.filter(t => 
+        (t.status || '').toLowerCase() === 'in-progress'
+    ).length;
+    
+    const completedToday = tickets.filter(t => {
+        const status = (t.status || '').toLowerCase();
+        const isCompleted = status === 'completed' || status === 'resolved';
+        if (!isCompleted) return false;
+        
+        const today = new Date();
+        const updatedDate = new Date(t.updated_at);
+        return updatedDate.toDateString() === today.toDateString();
+    }).length;
+    
+    const dashNewCount = document.getElementById('dashNewCount');
+    const dashProgressCount = document.getElementById('dashProgressCount');
+    const dashCompleteCount = document.getElementById('dashCompleteCount');
+    
+    if (dashNewCount) dashNewCount.textContent = newCount;
+    if (dashProgressCount) dashProgressCount.textContent = inProgressCount;
+    if (dashCompleteCount) dashCompleteCount.textContent = completedToday;
+}
+
+// View ticket details
+function viewTicket(ticketId) {
+    window.location.href = `/view-ticket/?id=${ticketId}`;
+}
+
+// Process ticket (start work)
+function processTicket(ticketId) {
+    openModal('processTicketModal', ticketId);
+}
+
+// Update work progress
+function updateWork(ticketId) {
+    openModal('updateWorkModal', ticketId);
+}
+
+// Mark ticket as done
+function markDone(ticketId) {
+    openModal('markDoneModal', ticketId);
+}
+
+// Request parts for ticket
+function requestPartsForTicket(ticketId) {
+    const ticket = allTickets.find(t => t.id === ticketId);
+    if (ticket) {
+        document.getElementById('relatedTicketId').value = `TKT-${String(ticketId).padStart(3, '0')}`;
+    }
+    openModal('requestPartsModal');
 }
 
 // Filter parts requests by status
@@ -327,19 +481,7 @@ function addTicketToList(ticketData) {
     ticketsList.insertAdjacentHTML('afterbegin', newTicketHTML);
 }
 
-// Ticket Management Functions
-function processTicket(ticketId) {
-    openModal('processTicketModal', ticketId);
-}
-
-function updateWorkProgress(ticketId) {
-    openModal('updateWorkModal', ticketId);
-}
-
-function markTicketDone(ticketId) {
-    openModal('markDoneModal', ticketId);
-}
-
+// Request parts function (called from action buttons)
 function requestPartsForTicket(ticketId) {
     // Open the main request parts modal and pre-fill ticket ID
     const modal = document.getElementById('requestPartsModal');
@@ -555,135 +697,8 @@ function showTicketDetails(ticketId) {
             `;
 }
 
-function moveTicketToInProgress(ticketId) {
-    const ticketElement = document.getElementById(`ticket-${ticketId}`);
-    if (ticketElement) {
-        // Update status badge
-        const statusBadge = ticketElement.querySelector('.status-badge');
-        statusBadge.className = 'status-badge status-in-progress';
-        statusBadge.textContent = 'In Progress';
-
-        // Update buttons
-        const actionButtons = ticketElement.querySelector('.action-buttons');
-        actionButtons.innerHTML = `
-                    <button class="btn btn-primary btn-mini" onclick="updateWorkProgress('${ticketId}')">Update Work</button>
-                    <button class="btn btn-warning btn-mini" onclick="requestPartsForTicket('${ticketId}')">Request Parts</button>
-                    <button class="btn btn-success btn-mini" onclick="markTicketDone('${ticketId}')">Mark Done</button>
-                `;
-
-        // Move from new to in-progress section
-        const inProgressList = document.getElementById('inProgressTicketsList');
-        const noProgressMsg = document.getElementById('noProgressTickets');
-
-        if (noProgressMsg) {
-            noProgressMsg.style.display = 'none';
-        }
-
-        inProgressList.appendChild(ticketElement);
-        ticketElement.setAttribute('data-status', 'in-progress');
-
-        // Update work done status
-        const ticketDetails = ticketElement.querySelector('.ticket-details');
-        const existingStatus = ticketDetails.querySelector('.work-status');
-        if (existingStatus) {
-            existingStatus.remove();
-        }
-
-        const statusDiv = document.createElement('div');
-        statusDiv.className = 'work-status';
-        statusDiv.style.cssText = 'margin-top: 8px; padding: 8px; background: #f0f9ff; border-radius: 4px; font-size: 12px;';
-        statusDiv.innerHTML = '<strong>Current Status:</strong> Work started - initial assessment complete';
-        ticketDetails.appendChild(statusDiv);
-    }
-}
-
-function moveTicketToCompleted(ticketId) {
-    const ticketElement = document.getElementById(`ticket-${ticketId}`);
-    if (ticketElement) {
-        // Update status badge
-        const statusBadge = ticketElement.querySelector('.status-badge');
-        statusBadge.className = 'status-badge status-done';
-        statusBadge.textContent = 'Done';
-
-        // Remove action buttons
-        const actionButtons = ticketElement.querySelector('.action-buttons');
-        actionButtons.innerHTML = '<small style="color: var(--muted);">Sent to Supervisor</small>';
-
-        // Move to completed section
-        const completedList = document.getElementById('completedTicketsList');
-        completedList.innerHTML = ''; // Clear "no tickets" message
-        completedList.appendChild(ticketElement);
-        ticketElement.setAttribute('data-status', 'done');
-
-        // Update work status
-        const workStatus = ticketElement.querySelector('.work-status');
-        if (workStatus) {
-            workStatus.innerHTML = '<strong>Status:</strong> Work completed - sent to supervisor for review';
-            workStatus.style.background = '#e8f5e8';
-        }
-    }
-}
-
-function updateDashboardCounts() {
-    const newCount = document.querySelectorAll('[data-status="new"]').length;
-    const progressCount = document.querySelectorAll('[data-status="in-progress"]').length;
-    const doneCount = document.querySelectorAll('[data-status="done"]').length;
-
-    document.getElementById('dashNewCount').textContent = newCount;
-    document.getElementById('dashProgressCount').textContent = progressCount;
-    document.getElementById('dashCompleteCount').textContent = doneCount;
-}
-
 // Form submissions
 function initializeForms() {
-    // Process Ticket Form
-    document.getElementById('processTicketForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-        const ticketId = document.getElementById('processTicketId').value;
-
-        ticketData[ticketId].status = 'in-progress';
-        moveTicketToInProgress(ticketId);
-        updateDashboardCounts();
-
-        showToast(`Work started on ${ticketId}. Status changed to "In Progress". Supervisor ${ticketData[ticketId].assignedBy} has been notified.`);
-        closeModal('processTicketModal');
-        this.reset();
-    });
-
-    // Update Work Form
-    document.getElementById('updateWorkForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-        const ticketId = document.getElementById('updateTicketId').value;
-        const workDone = this.querySelector('textarea[placeholder*="Describe work completed"]').value;
-
-        // Update the work status display
-        const ticketElement = document.getElementById(`ticket-${ticketId}`);
-        const workStatus = ticketElement.querySelector('.work-status');
-        if (workStatus) {
-            workStatus.innerHTML = `<strong>Current Status:</strong> ${workDone}`;
-        }
-
-        ticketData[ticketId].workDone = workDone;
-
-        showToast(`Work progress updated for ${ticketId}. Supervisor ${ticketData[ticketId].assignedBy} has been notified.`);
-        closeModal('updateWorkModal');
-        this.reset();
-    });
-
-    // Mark Done Form
-    document.getElementById('markDoneForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-        const ticketId = document.getElementById('doneTicketId').value;
-
-        ticketData[ticketId].status = 'done';
-        moveTicketToCompleted(ticketId);
-        updateDashboardCounts();
-
-        showToast(`${ticketId} marked as DONE! Work summary sent to Supervisor ${ticketData[ticketId].assignedBy} for review.`);
-        closeModal('markDoneModal');
-        this.reset();
-    });
-
     // Request Parts Form
     document.getElementById('requestPartsForm').addEventListener('submit', function (e) {
         e.preventDefault();
@@ -823,6 +838,8 @@ function toggleSidebar() {
     // Load user data
     const user = await Auth.checkAuth();
     if (user) {
+        currentUser = user; // Store for ticket filtering
+        
         // Update user name
         const fullName = user.full_name || user.name || 'Technical Officer';
         const userNameElement = document.getElementById('userName');
@@ -847,13 +864,15 @@ function toggleSidebar() {
         if (roleElement && user.role) {
             roleElement.textContent = user.role;
         }
+        
+        // Load tickets after user data is loaded
+        await loadTickets();
     }
 })();
 
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', function () {
     initializeForms();
-    updateDashboardCounts();
 
     // Set today's date as default for date inputs
     const today = new Date().toISOString().split('T')[0];

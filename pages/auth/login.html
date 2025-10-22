@@ -368,23 +368,11 @@
             const loginBtn = form.querySelector('.login-btn');
             const alertMessage = document.getElementById('alertMessage');
 
-            // Check if already logged in
-            checkExistingSession();
-
             // Real-time validation
             inputs.forEach(input => {
                 input.addEventListener('blur', validateField);
                 input.addEventListener('input', clearError);
             });
-
-            async function checkExistingSession() {
-                const user = await Auth.checkAuth();
-                if (user) {
-                    // User is already logged in, redirect to their dashboard
-                    Auth.redirectToDashboard(user);
-                }
-                // If user is null, they're not logged in - stay on login page (expected behavior)
-            }
 
             function showAlert(message, type) {
                 alertMessage.textContent = message;
