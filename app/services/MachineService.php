@@ -25,6 +25,16 @@ class MachineService {
             }
         }
         
+        // Validate last service date is not in the future
+        if (!empty($data['last_service_date'])) {
+            $lastServiceDate = strtotime($data['last_service_date']);
+            $today = strtotime(date('Y-m-d'));
+            
+            if ($lastServiceDate > $today) {
+                throw new Exception("Last service date cannot be in the future");
+            }
+        }
+        
         // Check if model number already exists
         $existing = $this->machineModel->findOne(['model_number' => $data['model_number']]);
         if ($existing) {
@@ -50,6 +60,16 @@ class MachineService {
         $machine = $this->machineModel->findById($id);
         if (!$machine) {
             throw new Exception("Machine not found");
+        }
+        
+        // Validate last service date is not in the future
+        if (!empty($data['last_service_date'])) {
+            $lastServiceDate = strtotime($data['last_service_date']);
+            $today = strtotime(date('Y-m-d'));
+            
+            if ($lastServiceDate > $today) {
+                throw new Exception("Last service date cannot be in the future");
+            }
         }
         
         // Check if model number is being changed and if it conflicts
