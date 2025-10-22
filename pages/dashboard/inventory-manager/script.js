@@ -308,7 +308,7 @@ function displayMachines(machineList) {
                     <i class="fas fa-tools"></i> ${machine.supplier_name}
                 </div>
                 <div class="item-description">
-                    Status: <span class="status-badge ${getStatusClass(machine.status)}">${machine.status}</span>
+                    Status: <span class="status-text ${getStatusClass(machine.status)}">${machine.status}</span>
                     ${machine.next_service_date ? `| Next Service: ${Utils.formatDate(machine.next_service_date)}` : ''}
                 </div>
                 ${machine.components && Array.isArray(machine.components) ? `<div class="item-meta"><i class="fas fa-list"></i> Components: ${machine.components.join(', ')}</div>` : ''}
@@ -697,7 +697,7 @@ function viewMachineDetails(id) {
             <p><strong>Machine Name:</strong> ${machine.machine_name}</p>
             <p><strong>Model Number:</strong> ${machine.model_number}</p>
             <p><strong>Location:</strong> ${machine.location}</p>
-            <p><strong>Status:</strong> <span class="status-badge ${getStatusClass(machine.status)}">${machine.status}</span></p>
+            <p><strong>Status:</strong> <span class="status-text ${getStatusClass(machine.status)}">${machine.status}</span></p>
         </div>
         <div class="form-section">
             <h5><i class="fas fa-truck"></i> Supplier Information</h5>
@@ -771,7 +771,7 @@ function displayVehicles(vehicleList) {
                     <i class="fas fa-tachometer-alt"></i> ${vehicle.current_mileage} km
                 </div>
                 <div class="item-description">
-                    Status: <span class="status-badge ${getStatusClass(vehicle.status)}">${vehicle.status}</span>
+                    Status: <span class="status-text ${getStatusClass(vehicle.status)}">${vehicle.status}</span>
                     ${vehicle.next_service_date ? `| Next Service: ${Utils.formatDate(vehicle.next_service_date)}` : ''}
                     ${vehicle.next_service_mileage ? ` (at ${vehicle.next_service_mileage} km)` : ''}
                 </div>
@@ -1258,7 +1258,7 @@ function viewVehicleDetails(id) {
             <p><strong>Fuel Type:</strong> ${vehicle.fuel_type}</p>
             ${vehicle.fuel_efficiency ? `<p><strong>Fuel Efficiency:</strong> ${vehicle.fuel_efficiency} km/L</p>` : ''}
             <p><strong>Current Mileage:</strong> ${vehicle.current_mileage} km</p>
-            <p><strong>Status:</strong> <span class="status-badge ${getStatusClass(vehicle.status)}">${vehicle.status}</span></p>
+            <p><strong>Status:</strong> <span class="status-text ${getStatusClass(vehicle.status)}">${vehicle.status}</span></p>
         </div>
         <div class="form-section">
             <h5><i class="fas fa-truck"></i> Supplier Information</h5>
@@ -1697,7 +1697,7 @@ function addPartToCatalog(partName, partNumber, category, quantity, location, su
             <div class="item-meta">Linked Machines: TBD</div>
         </div>
         <div class="item-actions">
-            <span class="status-badge ${stockBadge}">${stockText}</span>
+            <span class="status-text ${stockBadge}">${stockText}</span>
             <div class="action-buttons">
                 <button class="btn btn-secondary btn-small" onclick="viewPartDetails('${partNumber}')"><i class="fas fa-eye"></i> View</button>
                 <button class="btn btn-primary btn-small" onclick="editPart('${partNumber}')"><i class="fas fa-edit"></i> Edit</button>
@@ -1884,8 +1884,8 @@ document.getElementById('editPartForm').addEventListener('submit', function(e) {
         const stockText = quantity > 10 ? 'In Stock' : (quantity > 0 ? 'Low Stock' : 'Out of Stock');
         
         partElement.setAttribute('data-status', stockStatus);
-        const badge = partElement.querySelector('.status-badge');
-        badge.className = `status-badge ${stockBadge}`;
+        const badge = partElement.querySelector('.status-text');
+        badge.className = `status-text ${stockBadge}`;
         badge.textContent = stockText;
     }
     
@@ -2128,7 +2128,7 @@ function moveOrderToApproved(orderId) {
             <div class="item-meta">Approved by: ${currentUser?.full_name || 'Inventory Manager'} | Dispatched: Pending</div>
         </div>
         <div class="item-actions">
-            <span class="status-badge status-approved">Approved</span>
+            <span class="status-text status-approved">Approved</span>
             <div class="action-buttons">
                 <button class="btn btn-secondary btn-small" onclick="viewOrderDetails('${orderId}')"><i class="fas fa-eye"></i> View</button>
                 <button class="btn btn-warning btn-small" onclick="printOrderDetails('${orderId}')"><i class="fas fa-print"></i> Print</button>
@@ -2169,7 +2169,7 @@ function moveOrderToRejected(orderId) {
             <div class="item-meta">Rejected by: ${currentUser?.full_name || 'Inventory Manager'} | Reason: ${reason}</div>
         </div>
         <div class="item-actions">
-            <span class="status-badge status-rejected">Rejected</span>
+            <span class="status-text status-rejected">Rejected</span>
             <div class="action-buttons">
                 <button class="btn btn-secondary btn-small" onclick="viewOrderDetails('${orderId}')"><i class="fas fa-eye"></i> View</button>
                 <button class="btn btn-success btn-small" onclick="reconsiderOrder('${orderId}')"><i class="fas fa-redo"></i> Reconsider</button>
@@ -2201,7 +2201,7 @@ function viewOrderDetails(orderId) {
             <h5><i class="fas fa-info-circle"></i> Order Information</h5>
             <div class="form-grid">
                 <div><strong>Order ID:</strong> ${orderId}</div>
-                <div><strong>Status:</strong> <span class="status-badge status-approved">Approved</span></div>
+                <div><strong>Status:</strong> <span class="status-text status-approved">Approved</span></div>
                 <div><strong>Requested Date:</strong> Aug 15, 2025</div>
                 <div><strong>Approved Date:</strong> Aug 16, 2025</div>
             </div>
@@ -2231,8 +2231,8 @@ function viewTicketDetails(ticketId) {
         <div class="form-section">
             <h5><i class="fas fa-info-circle"></i> Ticket Information</h5>
             <div style="margin-bottom: 10px;"><strong>Ticket ID:</strong> ${ticketId}</div>
-            <div style="margin-bottom: 10px;"><strong>Status:</strong> <span class="status-badge status-pending">Open</span></div>
-            <div style="margin-bottom: 10px;"><strong>Priority:</strong> <span class="status-badge status-low-stock">High</span></div>
+            <div style="margin-bottom: 10px;"><strong>Status:</strong> <span class="status-text status-pending">Open</span></div>
+            <div style="margin-bottom: 10px;"><strong>Priority:</strong> <span class="status-text status-low-stock">High</span></div>
             <div style="margin-bottom: 10px;"><strong>Created By:</strong> Technical Officer</div>
             <div style="margin-bottom: 10px;"><strong>Created Date:</strong> ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
         </div>
@@ -2361,7 +2361,7 @@ document.getElementById('addUsageForm')?.addEventListener('submit', function(e) 
         <td>${formattedDate}</td>
         <td>${partsUsed}</td>
         <td>Rs. ${parseFloat(cost).toFixed(2)}</td>
-        <td><span class="status-badge ${statusClass}">${frequency}</span></td>
+        <td><span class="status-text ${statusClass}">${frequency}</span></td>
         <td>
             <button class="btn btn-secondary btn-small" onclick="viewUsageDetails('${selectedItemId}')"><i class="fas fa-eye"></i> View</button>
             <button class="btn btn-primary btn-small" onclick="editUsageRecord('${selectedItemId}')"><i class="fas fa-edit"></i> Edit</button>

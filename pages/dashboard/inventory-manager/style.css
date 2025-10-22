@@ -283,9 +283,23 @@ body {
     letter-spacing: 0.5px;
 }
 
+/* Status text without badge background */
+.status-text {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
 .status-in-stock {
     background: var(--kelly-green);
     color: #fff;
+}
+
+.status-text.status-in-stock {
+    background: none;
+    color: var(--kelly-green);
 }
 
 .status-low-stock {
@@ -293,9 +307,19 @@ body {
     color: #000;
 }
 
+.status-text.status-low-stock {
+    background: none;
+    color: #d97706;
+}
+
 .status-out-of-stock {
     background: var(--danger);
     color: #fff;
+}
+
+.status-text.status-out-of-stock {
+    background: none;
+    color: var(--danger);
 }
 
 .status-pending {
@@ -303,9 +327,19 @@ body {
     color: #000;
 }
 
+.status-text.status-pending {
+    background: none;
+    color: #d97706;
+}
+
 .status-approved {
     background: var(--ok);
     color: #fff;
+}
+
+.status-text.status-approved {
+    background: none;
+    color: var(--ok);
 }
 
 .status-rejected {
@@ -313,9 +347,19 @@ body {
     color: #fff;
 }
 
+.status-text.status-rejected {
+    background: none;
+    color: var(--danger);
+}
+
 .status-normal {
     background: #6b7280;
     color: #fff;
+}
+
+.status-text.status-normal {
+    background: none;
+    color: #6b7280;
 }
 
 .status-critical {
@@ -323,14 +367,29 @@ body {
     color: #fff;
 }
 
+.status-text.status-critical {
+    background: none;
+    color: var(--danger);
+}
+
 .status-completed {
     background: var(--ok);
     color: #fff;
 }
 
+.status-text.status-completed {
+    background: none;
+    color: var(--ok);
+}
+
 .status-assigned {
     background: var(--royal-blue);
     color: #fff;
+}
+
+.status-text.status-assigned {
+    background: none;
+    color: var(--royal-blue);
 }
 
 /* Buttons */

@@ -127,7 +127,7 @@ function viewUserDetails(empId) {
             <div class="form-grid">
                 <div><strong>Role:</strong> ${user.role}</div>
                 <div><strong>Department:</strong> ${user.department}</div>
-                <div><strong>Status:</strong> <span class="status-badge status-active">${user.status}</span></div>
+                <div><strong>Status:</strong> <span class="status-text status-active">${user.status}</span></div>
                 <div><strong>Account Created:</strong> ${user.created}</div>
             </div>
         </div>
