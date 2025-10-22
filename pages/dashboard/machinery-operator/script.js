@@ -420,6 +420,14 @@ async function openModal(modalId) {
         
         // Load machines when opening report fault modal
         if (modalId === 'reportFaultModal') {
+            // Clear any previous errors
+            const errorDiv = document.getElementById('faultFormErrors');
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+                errorDiv.innerHTML = '';
+            }
+            
+            // Load machines dropdown
             await loadMachinesForFaultReport();
         }
     }
@@ -477,6 +485,15 @@ function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.remove('active');
+        
+        // Clear errors when closing report fault modal
+        if (modalId === 'reportFaultModal') {
+            const errorDiv = document.getElementById('faultFormErrors');
+            if (errorDiv) {
+                errorDiv.style.display = 'none';
+                errorDiv.innerHTML = '';
+            }
+        }
     }
 }
 
@@ -651,7 +668,32 @@ async function handleFaultSubmission() {
         } else {
             // Handle validation errors
             if (response.errors) {
-                Utils.showFormErrors('faultFormErrors', response.errors);
+                // Extract actual error messages from nested structure
+                const errors = response.errors.errors || response.errors;
+                
+                // Display errors in error div
+                const errorDiv = document.getElementById('faultFormErrors');
+                errorDiv.style.display = 'block';
+                errorDiv.innerHTML = '';
+                
+                // Create error list
+                const errorList = document.createElement('ul');
+                errorList.style.margin = '0';
+                errorList.style.paddingLeft = '20px';
+                
+                Object.keys(errors).forEach(field => {
+                    const li = document.createElement('li');
+                    li.textContent = errors[field];
+                    errorList.appendChild(li);
+                });
+                
+                errorDiv.appendChild(errorList);
+                
+                // Scroll to top of modal to show errors
+                const modal = document.querySelector('#reportFaultModal .modal-content');
+                if (modal) {
+                    modal.scrollTop = 0;
+                }
             } else {
                 showToast(response.message || 'Failed to submit fault report', 'error');
             }
