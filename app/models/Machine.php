@@ -15,7 +15,8 @@ class Machine extends BaseModel {
     protected function getSchema() {
         return [
             'id' => 'INT AUTO_INCREMENT PRIMARY KEY',
-            'model_number' => 'VARCHAR(100) UNIQUE NOT NULL',
+            'serial_number' => 'VARCHAR(100) UNIQUE NOT NULL',
+            'model_number' => 'VARCHAR(100) NOT NULL',
             'machine_name' => 'VARCHAR(255) NOT NULL',
             'location' => 'VARCHAR(255) NOT NULL',
             'warranty_expiry' => 'DATE NULL',
@@ -121,8 +122,9 @@ class Machine extends BaseModel {
         
         // Apply search
         if ($search) {
-            $sql .= " AND (machine_name LIKE ? OR model_number LIKE ? OR location LIKE ?)";
+            $sql .= " AND (machine_name LIKE ? OR model_number LIKE ? OR serial_number LIKE ? OR location LIKE ?)";
             $searchTerm = "%{$search}%";
+            $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -170,8 +172,9 @@ class Machine extends BaseModel {
         }
         
         if ($search) {
-            $sql .= " AND (machine_name LIKE ? OR model_number LIKE ? OR location LIKE ?)";
+            $sql .= " AND (machine_name LIKE ? OR model_number LIKE ? OR serial_number LIKE ? OR location LIKE ?)";
             $searchTerm = "%{$search}%";
+            $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -203,5 +206,12 @@ class Machine extends BaseModel {
         }
         
         return $machines;
+    }
+    
+    /**
+     * Find machine by serial number
+     */
+    public function findBySerialNumber($serialNumber) {
+        return $this->findOne(['serial_number' => $serialNumber]);
     }
 }

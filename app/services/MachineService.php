@@ -18,7 +18,7 @@ class MachineService {
      */
     public function createMachine($data, $userId) {
         // Validate required fields
-        $required = ['model_number', 'machine_name', 'location', 'supplier_name', 'service_interval_days'];
+        $required = ['serial_number', 'model_number', 'machine_name', 'location', 'supplier_name', 'service_interval_days'];
         foreach ($required as $field) {
             if (empty($data[$field])) {
                 throw new Exception("Field '$field' is required");
@@ -35,10 +35,10 @@ class MachineService {
             }
         }
         
-        // Check if model number already exists
-        $existing = $this->machineModel->findOne(['model_number' => $data['model_number']]);
+        // Check if serial number already exists
+        $existing = $this->machineModel->findBySerialNumber($data['serial_number']);
         if ($existing) {
-            throw new Exception("Machine with model number '{$data['model_number']}' already exists");
+            throw new Exception("Machine with serial number '{$data['serial_number']}' already exists");
         }
         
         // Add created_by
@@ -72,11 +72,11 @@ class MachineService {
             }
         }
         
-        // Check if model number is being changed and if it conflicts
-        if (isset($data['model_number']) && $data['model_number'] !== $machine['model_number']) {
-            $existing = $this->machineModel->findOne(['model_number' => $data['model_number']]);
+        // Check if serial number is being changed and if it conflicts
+        if (isset($data['serial_number']) && $data['serial_number'] !== $machine['serial_number']) {
+            $existing = $this->machineModel->findBySerialNumber($data['serial_number']);
             if ($existing) {
-                throw new Exception("Machine with model number '{$data['model_number']}' already exists");
+                throw new Exception("Machine with serial number '{$data['serial_number']}' already exists");
             }
         }
         

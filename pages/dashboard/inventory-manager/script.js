@@ -207,32 +207,27 @@ async function loadSectionData(sectionId) {
 async function loadDashboardData() {
     try {
         // Load machines and vehicles count
-        const [machinesResponse, vehiclesResponse, machinesDueResponse, vehiclesDueResponse] = await Promise.all([
+        const [machinesResponse, vehiclesResponse] = await Promise.all([
             API.get('/machines'),
-            API.get('/vehicles'), 
-            API.get('/machines/due-service'),
-            API.get('/vehicles/due-service')
+            API.get('/vehicles')
         ]);
 
-        // Update dashboard statistics
-        document.getElementById('totalMachines').textContent = machinesResponse.data?.machines?.length || 0;
-        document.getElementById('totalVehicles').textContent = vehiclesResponse.data?.vehicles?.length || 0;
-        document.getElementById('machinesDueService').textContent = machinesDueResponse.data?.machines?.length || 0;
-        document.getElementById('vehiclesDueService').textContent = vehiclesDueResponse.data?.vehicles?.length || 0;
-
-        // Update urgent items
-        updateUrgentItems(machinesDueResponse.data?.machines || [], vehiclesDueResponse.data?.vehicles || []);
+        // Update dashboard statistics if elements exist
+        const totalMachinesEl = document.getElementById('totalMachines');
+        const totalVehiclesEl = document.getElementById('totalVehicles');
+        
+        if (totalMachinesEl) {
+            totalMachinesEl.textContent = machinesResponse.data?.machines?.length || 0;
+        }
+        if (totalVehiclesEl) {
+            totalVehiclesEl.textContent = vehiclesResponse.data?.vehicles?.length || 0;
+        }
         
         // Update recent activity
         updateRecentActivity();
         
     } catch (error) {
         console.error('Failed to load dashboard data:', error);
-        // Set default values
-        ['totalMachines', 'totalVehicles', 'machinesDueService', 'vehiclesDueService'].forEach(id => {
-            const element = document.getElementById(id);
-            if (element) element.textContent = '-';
-        });
     }
 }
 
@@ -308,8 +303,9 @@ function displayMachines(machineList) {
             <div class="item-details">
                 <strong><i class="fas fa-cog"></i> ${machine.machine_name} - ${machine.model_number}</strong>
                 <div class="item-meta">
-                    <i class="fas fa-map-marker-alt"></i> Location: ${machine.location} | 
-                    <i class="fas fa-tools"></i> Supplier: ${machine.supplier_name}
+                    <i class="fas fa-barcode"></i> SN: ${machine.serial_number} | 
+                    <i class="fas fa-map-marker-alt"></i> ${machine.location} | 
+                    <i class="fas fa-tools"></i> ${machine.supplier_name}
                 </div>
                 <div class="item-description">
                     Status: <span class="status-badge ${getStatusClass(machine.status)}">${machine.status}</span>
@@ -420,22 +416,33 @@ function createMachineModal(machine = null) {
                     <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
                     <div class="form-row">
                         <div class="form-group">
+                            <label class="form-label">Serial Number *</label>
+                            <input type="text" class="form-input" id="serialNumber" 
+                                   value="${machine?.serial_number || ''}" 
+                                   placeholder="e.g., SN-EXC-001" required
+                                   ${isEdit ? 'readonly' : ''}>
+                            <small style="color: var(--muted); display: block; margin-top: 4px;">Unique identifier for this machine</small>
+                        </div>
+                        <div class="form-group">
                             <label class="form-label">Machine Name *</label>
                             <input type="text" class="form-input" id="machineName" 
                                    value="${machine?.machine_name || ''}" required>
                         </div>
+                    </div>
+                    <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Model Number *</label>
                             <input type="text" class="form-input" id="modelNumber" 
-                                   value="${machine?.model_number || ''}" required>
+                                   value="${machine?.model_number || ''}" 
+                                   placeholder="e.g., CAT-320D" required>
                         </div>
-                    </div>
-                    <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Location *</label>
                             <input type="text" class="form-input" id="location" 
                                    value="${machine?.location || ''}" required>
                         </div>
+                    </div>
+                    <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Status</label>
                             <select class="form-select" id="status">
@@ -624,6 +631,7 @@ function getMachineFormData() {
         .map(cb => cb.value);
     
     return {
+        serial_number: document.getElementById('serialNumber').value,
         machine_name: document.getElementById('machineName').value,
         model_number: document.getElementById('modelNumber').value,
         location: document.getElementById('location').value,
@@ -685,6 +693,7 @@ function viewMachineDetails(id) {
     const modal = createDetailsModal('Machine Details', `
         <div class="form-section">
             <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
+            <p><strong>Serial Number:</strong> ${machine.serial_number}</p>
             <p><strong>Machine Name:</strong> ${machine.machine_name}</p>
             <p><strong>Model Number:</strong> ${machine.model_number}</p>
             <p><strong>Location:</strong> ${machine.location}</p>

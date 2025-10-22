@@ -1,6 +1,74 @@
 # AssetCare360 Backend - Changelog
 
-## Latest Updates (October 21, 2025)
+## Latest Updates (October 22, 2025)
+
+### 🔧 Machine Management Improvements
+
+#### 1. Serial Number as Unique Identifier
+- **Breaking Change**: Machines now use `serial_number` as the primary unique identifier instead of `model_number`
+- Added new required field: **Serial Number** (e.g., SN-EXC-001)
+- `model_number` can now have duplicates (same model, different serial numbers)
+- Benefits:
+  - Proper unique identification of each machine instance
+  - Allows multiple machines of the same model
+  - Industry standard approach for asset tracking
+- **Database Changes**:
+  ```sql
+  -- Automatically handled by migration script
+  -- Run: php migrations/add_machine_serial_number.php
+  ```
+
+#### 2. Last Service Date Validation
+- Added validation to ensure last service date cannot be in the future
+- **Frontend Validation**:
+  - Date picker limited to today's date or earlier
+  - Helper text shows "Cannot be in the future"
+  - JavaScript validation before form submission
+- **Backend Validation**:
+  - Server-side check in MachineService
+  - Clear error message: "Last service date cannot be in the future"
+  - Applies to both create and update operations
+
+#### 3. Enhanced Machine Display
+- Serial numbers now displayed prominently in machine listings
+- Format: `SN: [SERIAL_NUMBER]` with barcode icon
+- Machine details modal includes serial number at the top
+- Search functionality enhanced to include serial numbers
+
+### 🔧 Backend Improvements
+
+#### Machine Model Updates
+- Added `serial_number` column (VARCHAR(100), UNIQUE, NOT NULL)
+- Added `findBySerialNumber()` method for lookups
+- Updated search to include serial numbers
+- Migration script generates serial numbers for existing machines
+
+#### Machine Service Updates
+- Changed required fields to include `serial_number`
+- Uniqueness check now uses serial number instead of model number
+- Validation for last service date in both create and update operations
+
+### 📝 Frontend Improvements
+
+#### Inventory Manager Dashboard
+- Added serial number field to machine creation form
+- Serial number is read-only when editing (immutable identifier)
+- Added placeholder text: "e.g., SN-EXC-001"
+- Helper text: "Unique identifier for this machine"
+- Form validation ensures serial number is provided
+- Last service date field has max date validation
+
+### 🐛 Bug Fixes
+
+#### Machinery Operator Dashboard
+- Fixed validation error handling in fault ticket creation
+- Errors now properly displayed in error container
+- Added proper error message extraction from nested response structure
+- Error container styled with red background for visibility
+- Added `name` attributes to form fields for proper error mapping
+- Added minimum length validation (10 characters) for fault description
+
+## Previous Updates (October 21, 2025)
 
 ### ✨ New Features
 
