@@ -318,6 +318,16 @@ async function loadFaultTickets() {
                         ? ticket.assignments.map(a => a.technician_name).join(', ')
                         : 'Unassigned';
                     
+                    // Check if ticket can be edited (only "Assigned" status tickets can be edited)
+                    const canEdit = ticket.status && ticket.status.toLowerCase() === 'assigned';
+                    const editButton = canEdit 
+                        ? `<button class="btn btn-small btn-primary" onclick="editTicketAssignment(${ticket.id})" style="margin-left: 5px;">
+                               <i class="fas fa-edit"></i> Edit
+                           </button>`
+                        : `<button class="btn btn-small btn-secondary" disabled style="margin-left: 5px; opacity: 0.5; cursor: not-allowed;" title="Only tickets with 'Assigned' status can be edited">
+                               <i class="fas fa-edit"></i> Edit
+                           </button>`;
+                    
                     return `
                         <tr>
                             <td>TKT-${String(ticket.id).padStart(3, '0')}</td>
@@ -330,9 +340,7 @@ async function loadFaultTickets() {
                                 <button class="btn btn-small btn-secondary" onclick="viewTicketDetails(${ticket.id})">
                                     <i class="fas fa-eye"></i> View
                                 </button>
-                                <button class="btn btn-small btn-primary" onclick="editTicketAssignment(${ticket.id})" style="margin-left: 5px;">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
+                                ${editButton}
                             </td>
                         </tr>
                     `;
@@ -542,6 +550,12 @@ async function loadTicketForAssignment(ticketId, isEdit = false) {
         const ticketResponse = await API.get(`/fault-tickets/${ticketId}`);
         const ticket = ticketResponse.data;
         
+        // If editing, check if ticket status is "Assigned"
+        if (isEdit && ticket.status && ticket.status.toLowerCase() !== 'assigned') {
+            showToast('Only tickets with "Assigned" status can be edited', 'error');
+            return;
+        }
+        
         // Update modal title based on mode
         const modalTitle = document.querySelector('#assignTicketModal .modal-title');
         if (modalTitle) {
@@ -591,10 +605,11 @@ async function loadTicketForAssignment(ticketId, isEdit = false) {
             }
         }
         
-        // Store ticket ID for submission
+        // Store ticket ID and edit mode for submission
         const assignForm = document.getElementById('assignTicketForm');
         if (assignForm) {
             assignForm.dataset.ticketId = ticketId;
+            assignForm.dataset.isEdit = isEdit ? 'true' : 'false';
         }
         
         // Show modal
@@ -646,15 +661,37 @@ async function loadTechniciansWithWorkload() {
             
             return `
                 <label class="checkbox-item">
-                    <input type="checkbox" name="technicians" value="${tech.id}">
+                    <input type="checkbox" name="technicians" value="${tech.id}" onchange="updateTechnicianWarning()">
                     <span>${tech.full_name || tech.username}</span>
                     <span class="technician-workload ${workloadClass}">${workloadText}</span>
                 </label>
             `;
         }).join('');
+        
+        // Initial warning check
+        updateTechnicianWarning();
     } catch (error) {
         console.error('Error loading technicians:', error);
         showToast('Failed to load technicians', 'error');
+    }
+}
+
+function updateTechnicianWarning() {
+    const form = document.getElementById('assignTicketForm');
+    const isEdit = form?.dataset.isEdit === 'true';
+    const warningDiv = document.getElementById('noTechnicianWarning');
+    
+    if (!warningDiv || !isEdit) {
+        if (warningDiv) warningDiv.style.display = 'none';
+        return;
+    }
+    
+    const selectedTechnicians = document.querySelectorAll('input[name="technicians"]:checked');
+    
+    if (selectedTechnicians.length === 0) {
+        warningDiv.style.display = 'block';
+    } else {
+        warningDiv.style.display = 'none';
     }
 }
 
@@ -663,14 +700,21 @@ async function handleAssignTicket(event) {
     
     const form = event.target;
     const ticketId = form.dataset.ticketId;
+    const isEdit = form.dataset.isEdit === 'true';
     
     // Get selected technicians
     const selectedTechnicians = Array.from(form.querySelectorAll('input[name="technicians"]:checked'))
         .map(cb => parseInt(cb.value));
     
+    // Check if no technicians selected
     if (selectedTechnicians.length === 0) {
-        showToast('Please select at least one technician', 'error');
-        return;
+        if (!isEdit) {
+            // For new assignments, at least one technician is required
+            showToast('Please select at least one technician', 'error');
+            return;
+        }
+        // For edit mode with no technicians selected, proceed to unassign all
+        // (visual warning is already shown in the modal)
     }
     
     const formData = new FormData(form);
@@ -680,7 +724,7 @@ async function handleAssignTicket(event) {
     const capitalizedPriority = priority.charAt(0).toUpperCase() + priority.slice(1);
     
     const assignmentData = {
-        technician_ids: selectedTechnicians, // Now supports multiple technicians
+        technician_ids: selectedTechnicians, // Now supports multiple technicians (can be empty array for unassignment)
         priority: capitalizedPriority,
         expected_completion_date: formData.get('expected_completion'),
         notes: formData.get('notes')
@@ -692,7 +736,12 @@ async function handleAssignTicket(event) {
         
         // Close modal and show success
         closeAssignTicketModal();
-        showToast('Ticket assigned successfully', 'success');
+        
+        if (selectedTechnicians.length === 0) {
+            showToast('All technicians unassigned. Ticket moved to Unassigned.', 'success');
+        } else {
+            showToast('Ticket assigned successfully', 'success');
+        }
         
         // Reload tickets
         loadFaultTickets();
@@ -716,6 +765,12 @@ function closeAssignTicketModal() {
     // Uncheck all technician checkboxes
     const checkboxes = form.querySelectorAll('input[name="technicians"]');
     checkboxes.forEach(cb => cb.checked = false);
+    
+    // Hide warning message
+    const warningDiv = document.getElementById('noTechnicianWarning');
+    if (warningDiv) {
+        warningDiv.style.display = 'none';
+    }
 }
 
 async function viewTicketDetails(ticketId) {

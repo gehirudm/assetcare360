@@ -490,11 +490,25 @@ class FaultTicketService {
                 ];
             }
             
-            // Validate required fields
-            if (empty($data['technician_ids']) || !is_array($data['technician_ids'])) {
+            // Check if ticket can be modified based on its current status
+            $currentStatus = strtolower($ticket['status'] ?? 'open');
+            
+            // Allow assignment/editing only for "Open" (unassigned) or "Assigned" status tickets
+            // Prevent modification of tickets that are "In Progress", "Completed", or "Closed"
+            $editableStatuses = ['open', 'assigned'];
+            
+            if (!in_array($currentStatus, $editableStatuses)) {
                 return [
                     'success' => false,
-                    'message' => 'At least one technician must be selected'
+                    'message' => 'This ticket cannot be modified. Only tickets with "Open" or "Assigned" status can be edited. Current status: ' . ucfirst($ticket['status'])
+                ];
+            }
+            
+            // Validate technician_ids is an array
+            if (!isset($data['technician_ids']) || !is_array($data['technician_ids'])) {
+                return [
+                    'success' => false,
+                    'message' => 'Invalid technician data'
                 ];
             }
             
@@ -508,6 +522,26 @@ class FaultTicketService {
                 }
                 
                 $this->faultTicketModel->updateTicket($ticketId, ['priority' => $data['priority']]);
+            }
+            
+            // Check if technician_ids is empty (unassignment)
+            if (empty($data['technician_ids'])) {
+                // Remove all current assignments
+                $this->assignmentModel->assignTechnicians(
+                    $ticketId,
+                    [], // Empty array will remove all assignments
+                    $user['id'],
+                    null,
+                    null
+                );
+                
+                // Update ticket status back to "Open" (unassigned)
+                $this->faultTicketModel->updateTicket($ticketId, ['status' => 'Open']);
+                
+                return [
+                    'success' => true,
+                    'message' => 'All technicians unassigned. Ticket moved to Unassigned status.'
+                ];
             }
             
             // Assign technicians
