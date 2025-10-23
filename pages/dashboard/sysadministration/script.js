@@ -93,7 +93,7 @@ class UserManagement {
                 </div>
                 <div class="user-actions">
                     <button class="btn btn-small btn-primary" onclick="userManagement.viewUserDetails(${user.id})">
-                        👁️ View
+                        <i class="fas fa-eye"></i> View
                     </button>
                     <div style="position: relative; display: inline-block;">
                         <button class="btn btn-secondary btn-small" onclick="toggleUserMenu(${user.id}, event)" id="user-menu-btn-${user.id}">
