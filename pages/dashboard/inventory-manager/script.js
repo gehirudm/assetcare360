@@ -315,10 +315,10 @@ function displayMachines(machineList) {
             </div>
             <div class="item-actions">
                 <div class="action-buttons">
-                    <button class="btn btn-small btn-secondary" onclick="viewMachineDetails(${machine.id})">
+                    <button class="btn btn-small btn-primary" onclick="viewMachineDetails(${machine.id})">
                         <i class="fas fa-eye"></i> VIEW
                     </button>
-                    <button class="btn btn-small btn-primary" onclick="editMachine(${machine.id})">
+                    <button class="btn btn-small btn-secondary" onclick="editMachine(${machine.id})">
                         <i class="fas fa-edit"></i> EDIT
                     </button>
                     <div class="dropdown-container">
@@ -784,10 +784,10 @@ function displayVehicles(vehicleList) {
             </div>
             <div class="item-actions">
                 <div class="action-buttons">
-                    <button class="btn btn-small btn-secondary" onclick="viewVehicleDetails(${vehicle.id})">
+                    <button class="btn btn-small btn-primary" onclick="viewVehicleDetails(${vehicle.id})">
                         <i class="fas fa-eye"></i> VIEW
                     </button>
-                    <button class="btn btn-small btn-primary" onclick="editVehicle(${vehicle.id})">
+                    <button class="btn btn-small btn-secondary" onclick="editVehicle(${vehicle.id})">
                         <i class="fas fa-edit"></i> EDIT
                     </button>
                     <div class="dropdown-container">
@@ -1703,8 +1703,8 @@ function addPartToCatalog(partName, partNumber, category, quantity, location, su
         <div class="item-actions">
             <span class="status-text ${stockBadge}">${stockText}</span>
             <div class="action-buttons">
-                <button class="btn btn-secondary btn-small" onclick="viewPartDetails('${partNumber}')"><i class="fas fa-eye"></i> View</button>
-                <button class="btn btn-primary btn-small" onclick="editPart('${partNumber}')"><i class="fas fa-edit"></i> Edit</button>
+                <button class="btn btn-primary btn-small" onclick="viewPartDetails('${partNumber}')"><i class="fas fa-eye"></i> View</button>
+                <button class="btn btn-secondary btn-small" onclick="editPart('${partNumber}')"><i class="fas fa-edit"></i> Edit</button>
                 ${quantity <= 10 ? `<button class="btn btn-warning btn-small" onclick="reorderPart('${partNumber}')"><i class="fas fa-sync"></i> Reorder</button>` : ''}
                 <button class="btn btn-danger btn-small" onclick="deletePart('${partNumber}')"><i class="fas fa-trash"></i> Delete</button>
             </div>

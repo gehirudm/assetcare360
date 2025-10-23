@@ -262,8 +262,12 @@ class UserManagement {
         const modalHTML = `
             <div id="editUserModal" class="modal">
                 <div class="modal-content">
-                    <button class="close" onclick="closeModal('editUserModal')">&times;</button>
-                    <h2 style="color: var(--tang-blue); margin-bottom: 20px;">✏️ Edit User</h2>
+                    <div class="modal-header">
+                        <h2><i class="fas fa-user-edit"></i> Edit User</h2>
+                        <button class="btn-close" onclick="closeModal('editUserModal')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                     
                     <form id="editUserForm">
                         <input type="hidden" name="user_id" />
@@ -432,10 +436,34 @@ class UserManagement {
     }
 
     async deleteUser(userId) {
-        if (!confirm('WARNING: Are you sure you want to delete this user? This action cannot be undone!')) {
-            return;
+        // Show custom confirmation modal
+        const confirmMessage = document.getElementById('deleteConfirmMessage');
+        const confirmButton = document.getElementById('deleteConfirmButton');
+        
+        if (confirmMessage && confirmButton) {
+            confirmMessage.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: var(--danger);"></i>
+                </div>
+                <strong style="color: var(--danger); font-size: 18px; display: block; margin-bottom: 15px;">⚠️ Warning: This action cannot be undone!</strong>
+                Are you sure you want to delete this user?<br>
+                This will permanently remove the user account and all associated data.
+            `;
+            
+            // Remove any existing event listeners and add new one
+            const newConfirmButton = confirmButton.cloneNode(true);
+            confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+            
+            newConfirmButton.onclick = async () => {
+                closeModal('deleteConfirmModal');
+                await this.performDeleteUser(userId);
+            };
+            
+            openModal('deleteConfirmModal');
         }
+    }
 
+    async performDeleteUser(userId) {
         try {
             const response = await API.delete(`/users/${userId}`);
             
