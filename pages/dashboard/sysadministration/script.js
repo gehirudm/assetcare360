@@ -86,7 +86,7 @@ class UserManagement {
                     <div class="user-meta">Email: ${user.email}</div>
                     <div class="user-meta">Role: ${user.role}</div>
                     <div class="user-meta">
-                        Status: <span class="status-badge ${user.is_active ? 'status-active' : 'status-inactive'}">
+                        Status: <span class="status-text ${user.is_active ? 'status-active' : 'status-inactive'}">
                             ${user.is_active ? 'Active' : 'Inactive'}
                         </span>
                     </div>
@@ -95,23 +95,30 @@ class UserManagement {
                     <button class="btn btn-small btn-primary" onclick="userManagement.viewUserDetails(${user.id})">
                         👁️ View
                     </button>
-                    <button class="btn btn-small btn-secondary" onclick="userManagement.editUser(${user.id})">
-                        ✏️ Edit
-                    </button>
-                    <button class="btn btn-small btn-warning" onclick="userManagement.resetPassword(${user.id})">
-                        🔑 Reset Password
-                    </button>
-                    ${user.is_active ? 
-                        `<button class="btn btn-small btn-danger" onclick="userManagement.suspendUser(${user.id})">
-                            ⛔ Suspend
-                        </button>` :
-                        `<button class="btn btn-small btn-success" onclick="userManagement.activateUser(${user.id})">
-                            ✓ Activate
-                        </button>`
-                    }
-                    <button class="btn btn-small btn-danger" onclick="userManagement.deleteUser(${user.id})">
-                        🗑️ Delete
-                    </button>
+                    <div style="position: relative; display: inline-block;">
+                        <button class="btn btn-secondary btn-small" onclick="toggleUserMenu(${user.id}, event)" id="user-menu-btn-${user.id}">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div class="dropdown-menu" id="user-menu-${user.id}" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: white; border: 1px solid var(--stone-200); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 180px; z-index: 1000;">
+                            <button onclick="userManagement.editUser(${user.id}); closeUserMenu(${user.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text-700);" onmouseover="this.style.background='var(--stone-50)'" onmouseout="this.style.background='none'">
+                                <i class="fas fa-edit" style="width: 16px;"></i> Edit
+                            </button>
+                            <button onclick="userManagement.resetPassword(${user.id}); closeUserMenu(${user.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text-700);" onmouseover="this.style.background='var(--stone-50)'" onmouseout="this.style.background='none'">
+                                <i class="fas fa-key" style="width: 16px;"></i> Reset Password
+                            </button>
+                            ${user.is_active ? 
+                                `<button onclick="userManagement.suspendUser(${user.id}); closeUserMenu(${user.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--warn);" onmouseover="this.style.background='var(--stone-50)'" onmouseout="this.style.background='none'">
+                                    <i class="fas fa-ban" style="width: 16px;"></i> Suspend
+                                </button>` :
+                                `<button onclick="userManagement.activateUser(${user.id}); closeUserMenu(${user.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--ok);" onmouseover="this.style.background='var(--stone-50)'" onmouseout="this.style.background='none'">
+                                    <i class="fas fa-check-circle" style="width: 16px;"></i> Activate
+                                </button>`
+                            }
+                            <button onclick="userManagement.deleteUser(${user.id}); closeUserMenu(${user.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--danger);" onmouseover="this.style.background='var(--red-50)'" onmouseout="this.style.background='none'">
+                                <i class="fas fa-trash" style="width: 16px;"></i> Delete
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         `).join('');
@@ -188,7 +195,7 @@ class UserManagement {
                             <h5>🏢 Work Information</h5>
                             <div class="form-grid">
                                 <div><strong>Role:</strong> ${user.role}</div>
-                                <div><strong>Status:</strong> <span class="status-badge ${user.is_active ? 'status-active' : 'status-inactive'}">
+                                <div><strong>Status:</strong> <span class="status-text ${user.is_active ? 'status-active' : 'status-inactive'}">
                                     ${user.is_active ? 'Active' : 'Inactive'}
                                 </span></div>
                                 <div><strong>Account Created:</strong> ${Utils.formatDate(user.created_at)}</div>
@@ -461,6 +468,35 @@ class UserManagement {
 
 // Initialize UserManagement when script loads
 const userManagement = new UserManagement();
+
+// ==================== USER MENU DROPDOWN FUNCTIONS ====================
+
+function toggleUserMenu(userId, event) {
+    event.stopPropagation();
+    const menu = document.getElementById(`user-menu-${userId}`);
+    
+    // Close all other menus
+    document.querySelectorAll('.dropdown-menu').forEach(m => {
+        if (m.id !== `user-menu-${userId}`) {
+            m.style.display = 'none';
+        }
+    });
+    
+    // Toggle current menu
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+function closeUserMenu(userId) {
+    const menu = document.getElementById(`user-menu-${userId}`);
+    if (menu) menu.style.display = 'none';
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function() {
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.style.display = 'none';
+    });
+});
 
 // ==================== TAB-BASED FILTERING ====================
 
@@ -1197,25 +1233,25 @@ function viewPettyCashHistory(employeeId) {
                         <td>Oct 18, 2025</td>
                         <td>$150</td>
                         <td>Vehicle parts procurement</td>
-                        <td><span class="status-badge status-completed">Approved</span></td>
+                        <td><span class="status-text status-completed">Approved</span></td>
                     </tr>
                     <tr>
                         <td>Oct 15, 2025</td>
                         <td>$85</td>
                         <td>Tool maintenance</td>
-                        <td><span class="status-badge status-completed">Approved</span></td>
+                        <td><span class="status-text status-completed">Approved</span></td>
                     </tr>
                     <tr>
                         <td>Oct 12, 2025</td>
                         <td>$220</td>
                         <td>Emergency repairs</td>
-                        <td><span class="status-badge status-pending">Pending</span></td>
+                        <td><span class="status-text status-pending">Pending</span></td>
                     </tr>
                     <tr>
                         <td>Oct 10, 2025</td>
                         <td>$95</td>
                         <td>Fuel expenses</td>
-                        <td><span class="status-badge status-completed">Approved</span></td>
+                        <td><span class="status-text status-completed">Approved</span></td>
                     </tr>
                 </tbody>
             </table>
@@ -1353,7 +1389,7 @@ function previewTemplate(templateId) {
             <div style="background: var(--light-bg); padding: 20px; border-radius: 8px; margin-top: 15px;">
                 <div style="margin-bottom: 15px;">
                     <strong>Template ID:</strong> ${templateId}<br>
-                    <strong>Type:</strong> <span class="status-badge status-normal">${template.type}</span>
+                    <strong>Type:</strong> <span class="status-text status-normal">${template.type}</span>
                 </div>
                 ${template.type === 'Email' ? `
                     <div style="margin-bottom: 15px; padding: 10px; background: white; border-left: 4px solid var(--tang-blue);">
@@ -1565,7 +1601,7 @@ function viewUserSession(employeeId) {
             <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-top: 10px;">
                 <strong>Employee ID:</strong> ${employeeId}<br>
                 <strong>Name:</strong> John Smith<br>
-                <strong>Role:</strong> <span class="status-badge status-supervisor">Supervisor</span><br>
+                <strong>Role:</strong> <span class="status-text status-supervisor">Supervisor</span><br>
                 <strong>Email:</strong> john.smith@company.com
             </div>
         </div>

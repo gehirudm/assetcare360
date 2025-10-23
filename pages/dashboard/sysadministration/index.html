@@ -172,7 +172,7 @@
                                     <div class="activity-description">Successful login from authorized location</div>
                                 </div>
                                 <div class="activity-status">
-                                    <span class="status-badge status-approved">SUCCESS</span>
+                                    <span class="status-text status-approved">SUCCESS</span>
                                 </div>
                             </div>
 
@@ -184,7 +184,7 @@
                                     <div class="activity-description">New user account created successfully</div>
                                 </div>
                                 <div class="activity-status">
-                                    <span class="status-badge status-completed">CREATED</span>
+                                    <span class="status-text status-completed">CREATED</span>
                                 </div>
                             </div>
 
@@ -196,7 +196,7 @@
                                     <div class="activity-description">Updated role with new access rights</div>
                                 </div>
                                 <div class="activity-status">
-                                    <span class="status-badge status-pending">UPDATED</span>
+                                    <span class="status-text status-pending">UPDATED</span>
                                 </div>
                             </div>
 
@@ -208,7 +208,7 @@
                                     <div class="activity-description">Multiple failed login attempts detected</div>
                                 </div>
                                 <div class="activity-status">
-                                    <span class="status-badge status-rejected">FAILED</span>
+                                    <span class="status-text status-rejected">FAILED</span>
                                 </div>
                             </div>
                         </div>
@@ -230,7 +230,7 @@
                                     <div class="activity-description">Oil change overdue, immediate action required</div>
                                 </div>
                                 <div class="activity-status">
-                                    <span class="status-badge status-critical">CRITICAL</span>
+                                    <span class="status-text status-critical">CRITICAL</span>
                                 </div>
                             </div>
 
@@ -241,7 +241,7 @@
                                     <div class="activity-description">Manual backup recommended for critical data</div>
                                 </div>
                                 <div class="activity-status">
-                                    <span class="status-badge status-pending">PENDING</span>
+                                    <span class="status-text status-pending">PENDING</span>
                                 </div>
                             </div>
                         </div>
@@ -288,7 +288,7 @@
                     <div class="card">
                         <div class="card-header">
                             <span>👥 User Accounts</span>
-                            <span id="userCount" class="status-badge status-normal">0 users</span>
+                            <span id="userCount" class="status-text status-normal">0 users</span>
                         </div>
                         <div id="userList">
                             <p style="text-align: center; padding: 20px; color: var(--muted);">Loading users...</p>
@@ -439,7 +439,7 @@
                                     <td>Oil Change</td>
                                     <td>5,000 km</td>
                                     <td>6 months</td>
-                                    <td><span class="status-badge status-active">Active</span></td>
+                                    <td><span class="status-text status-active">Active</span></td>
                                     <td>
                                         <button class="btn btn-secondary btn-small" onclick="editServiceInterval('SI-001')">Edit</button>
                                         <button class="btn btn-danger btn-small" onclick="deleteServiceInterval('SI-001')">Delete</button>
@@ -450,7 +450,7 @@
                                     <td>Major Service</td>
                                     <td>10,000 km</td>
                                     <td>12 months</td>
-                                    <td><span class="status-badge status-active">Active</span></td>
+                                    <td><span class="status-text status-active">Active</span></td>
                                     <td>
                                         <button class="btn btn-secondary btn-small" onclick="editServiceInterval('SI-002')">Edit</button>
                                         <button class="btn btn-danger btn-small" onclick="deleteServiceInterval('SI-002')">Delete</button>
@@ -461,7 +461,7 @@
                                     <td>Hydraulic System Check</td>
                                     <td>500 hours</td>
                                     <td>3 months</td>
-                                    <td><span class="status-badge status-active">Active</span></td>
+                                    <td><span class="status-text status-active">Active</span></td>
                                     <td>
                                         <button class="btn btn-secondary btn-small" onclick="editServiceInterval('SI-003')">Edit</button>
                                         <button class="btn btn-danger btn-small" onclick="deleteServiceInterval('SI-003')">Delete</button>
@@ -472,7 +472,7 @@
                                     <td>Brake Inspection</td>
                                     <td>15,000 km</td>
                                     <td>12 months</td>
-                                    <td><span class="status-badge status-active">Active</span></td>
+                                    <td><span class="status-text status-active">Active</span></td>
                                     <td>
                                         <button class="btn btn-secondary btn-small" onclick="editServiceInterval('SI-004')">Edit</button>
                                         <button class="btn btn-danger btn-small" onclick="deleteServiceInterval('SI-004')">Delete</button>
@@ -538,7 +538,7 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><span class="status-badge status-supervisor">Supervisor</span></td>
+                                        <td><span class="status-text status-supervisor">Supervisor</span></td>
                                         <td>$500</td>
                                         <td>$5,000</td>
                                         <td>Above $200</td>
@@ -547,7 +547,7 @@
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td><span class="status-badge status-officer">Technical Officer</span></td>
+                                        <td><span class="status-text status-officer">Technical Officer</span></td>
                                         <td>$200</td>
                                         <td>$2,000</td>
                                         <td>Above $100</td>
@@ -556,7 +556,7 @@
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td><span class="status-badge status-manager">Maintenance Manager</span></td>
+                                        <td><span class="status-text status-manager">Maintenance Manager</span></td>
                                         <td>$1,000</td>
                                         <td>$10,000</td>
                                         <td>Above $500</td>
@@ -608,10 +608,10 @@
                             <tbody>
                                 <tr>
                                     <td>John Smith (EMP-001)</td>
-                                    <td><span class="status-badge status-supervisor">Supervisor</span></td>
+                                    <td><span class="status-text status-supervisor">Supervisor</span></td>
                                     <td>$3,200 / $5,000</td>
                                     <td>$1,800</td>
-                                    <td><span class="status-badge status-active">Normal</span></td>
+                                    <td><span class="status-text status-active">Normal</span></td>
                                     <td>
                                         <button class="btn btn-secondary btn-small" onclick="viewPettyCashHistory('EMP-001')">View History</button>
                                         <button class="btn btn-primary btn-small" onclick="adjustLimit('EMP-001')">Adjust Limit</button>
@@ -619,10 +619,10 @@
                                 </tr>
                                 <tr>
                                     <td>Michael Chen (EMP-003)</td>
-                                    <td><span class="status-badge status-officer">Technical Officer</span></td>
+                                    <td><span class="status-text status-officer">Technical Officer</span></td>
                                     <td>$1,850 / $2,000</td>
                                     <td>$150</td>
-                                    <td><span class="status-badge status-pending">Near Limit</span></td>
+                                    <td><span class="status-text status-pending">Near Limit</span></td>
                                     <td>
                                         <button class="btn btn-secondary btn-small" onclick="viewPettyCashHistory('EMP-003')">View History</button>
                                         <button class="btn btn-primary btn-small" onclick="adjustLimit('EMP-003')">Adjust Limit</button>
@@ -659,7 +659,7 @@
                                 </div>
                             </div>
                             <div class="user-actions">
-                                <span class="status-badge status-active">Active</span>
+                                <span class="status-text status-active">Active</span>
                                 <div style="margin-top: 5px;">
                                     <button class="btn btn-secondary btn-small" onclick="previewTemplate('TPL-001')">Preview</button>
                                     <button class="btn btn-secondary btn-small" onclick="editTemplate('TPL-001')">Edit</button>
@@ -678,7 +678,7 @@
                                 </div>
                             </div>
                             <div class="user-actions">
-                                <span class="status-badge status-active">Active</span>
+                                <span class="status-text status-active">Active</span>
                                 <div style="margin-top: 5px;">
                                     <button class="btn btn-secondary btn-small" onclick="previewTemplate('TPL-002')">Preview</button>
                                     <button class="btn btn-secondary btn-small" onclick="editTemplate('TPL-002')">Edit</button>
@@ -697,7 +697,7 @@
                                 </div>
                             </div>
                             <div class="user-actions">
-                                <span class="status-badge status-active">Active</span>
+                                <span class="status-text status-active">Active</span>
                                 <div style="margin-top: 5px;">
                                     <button class="btn btn-secondary btn-small" onclick="previewTemplate('TPL-003')">Preview</button>
                                     <button class="btn btn-secondary btn-small" onclick="editTemplate('TPL-003')">Edit</button>
@@ -716,7 +716,7 @@
                                 </div>
                             </div>
                             <div class="user-actions">
-                                <span class="status-badge status-active">Active</span>
+                                <span class="status-text status-active">Active</span>
                                 <div style="margin-top: 5px;">
                                     <button class="btn btn-secondary btn-small" onclick="previewTemplate('TPL-004')">Preview</button>
                                     <button class="btn btn-secondary btn-small" onclick="editTemplate('TPL-004')">Edit</button>
@@ -738,7 +738,7 @@
                                 </div>
                             </div>
                             <div class="user-actions">
-                                <span class="status-badge status-active">Active</span>
+                                <span class="status-text status-active">Active</span>
                                 <div style="margin-top: 5px;">
                                     <button class="btn btn-secondary btn-small" onclick="editTemplate('TPL-SMS-001')">Edit</button>
                                     <button class="btn btn-warning btn-small" onclick="testTemplate('TPL-SMS-001')">Test Send</button>
@@ -755,7 +755,7 @@
                                 </div>
                             </div>
                             <div class="user-actions">
-                                <span class="status-badge status-active">Active</span>
+                                <span class="status-text status-active">Active</span>
                                 <div style="margin-top: 5px;">
                                     <button class="btn btn-secondary btn-small" onclick="editTemplate('TPL-SMS-002')">Edit</button>
                                     <button class="btn btn-warning btn-small" onclick="testTemplate('TPL-SMS-002')">Test Send</button>
@@ -806,7 +806,7 @@
                     <div class="card">
                         <div class="card-header">
                             <span>📋 System Event Logs</span>
-                            <span id="logCount" class="status-badge status-normal">0 logs</span>
+                            <span id="logCount" class="status-text status-normal">0 logs</span>
                         </div>
                         
                         <div id="logsList">
@@ -902,7 +902,7 @@
                     <div class="card">
                         <div class="card-header">
                             <span>🟢 Currently Active Users</span>
-                            <span id="activeUserCount" class="status-badge status-normal">0 active</span>
+                            <span id="activeUserCount" class="status-text status-normal">0 active</span>
                         </div>
                         <table class="table">
                             <thead>
@@ -918,7 +918,7 @@
                             <tbody id="activeUsersList">
                                 <tr data-role="Supervisor">
                                     <td>John Smith (EMP-001)</td>
-                                    <td><span class="status-badge status-supervisor">Supervisor</span></td>
+                                    <td><span class="status-text status-supervisor">Supervisor</span></td>
                                     <td>Today 9:30 AM (2h 15m)</td>
                                     <td>192.168.1.45</td>
                                     <td>Viewing Breakdown Tickets</td>
@@ -929,7 +929,7 @@
                                 </tr>
                                 <tr data-role="Inventory Manager">
                                     <td>Sarah Johnson (EMP-002)</td>
-                                    <td><span class="status-badge status-manager">Inventory Manager</span></td>
+                                    <td><span class="status-text status-manager">Inventory Manager</span></td>
                                     <td>Today 8:15 AM (3h 30m)</td>
                                     <td>192.168.1.52</td>
                                     <td>Managing Inventory</td>
@@ -940,7 +940,7 @@
                                 </tr>
                                 <tr data-role="Driver">
                                     <td>David Martinez (EMP-007)</td>
-                                    <td><span class="status-badge status-driver">Driver</span></td>
+                                    <td><span class="status-text status-driver">Driver</span></td>
                                     <td>Today 10:00 AM (1h 45m)</td>
                                     <td>192.168.1.89</td>
                                     <td>Viewing Dashboard</td>
@@ -1072,8 +1072,12 @@
     <!-- Create User Modal -->
     <div id="createUserModal" class="modal">
         <div class="modal-content">
-            <button class="close" onclick="closeModal('createUserModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Create New User Account</h2>
+            <div class="modal-header">
+                <h2><i class="fas fa-user-plus"></i> Create New User Account</h2>
+                <button class="btn-close" onclick="closeModal('createUserModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
             <form id="createUserForm">
                 <div class="form-section">
                     <h5>👤 Personal Information</h5>

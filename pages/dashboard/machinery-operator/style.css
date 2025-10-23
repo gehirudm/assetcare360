@@ -479,9 +479,23 @@ body {
     letter-spacing: 0.5px;
 }
 
+/* Status text without badge background */
+.status-text {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
 .status-pending { 
     background: var(--warn); 
     color: #000; 
+}
+
+.status-text.status-pending {
+    background: none;
+    color: #d97706;
 }
 
 .status-approved { 
@@ -489,9 +503,19 @@ body {
     color: #fff; 
 }
 
+.status-text.status-approved {
+    background: none;
+    color: var(--ok);
+}
+
 .status-rejected { 
     background: var(--danger); 
     color: #fff; 
+}
+
+.status-text.status-rejected {
+    background: none;
+    color: var(--danger);
 }
 
 .status-in-progress { 
@@ -499,9 +523,19 @@ body {
     color: #fff; 
 }
 
+.status-text.status-in-progress {
+    background: none;
+    color: var(--royal-blue-2);
+}
+
 .status-resolved { 
     background: var(--kelly-green); 
     color: #fff; 
+}
+
+.status-text.status-resolved {
+    background: none;
+    color: var(--kelly-green);
 }
 
 .status-complete { 
@@ -509,9 +543,19 @@ body {
     color: #fff; 
 }
 
+.status-text.status-complete {
+    background: none;
+    color: var(--kelly-green);
+}
+
 .status-completed { 
     background: var(--kelly-green); 
     color: #fff; 
+}
+
+.status-text.status-completed {
+    background: none;
+    color: var(--kelly-green);
 }
 
 .status-submitted { 
@@ -519,9 +563,19 @@ body {
     color: #fff; 
 }
 
+.status-text.status-submitted {
+    background: none;
+    color: var(--royal-blue);
+}
+
 .status-operational {
     background: var(--ok);
     color: #fff;
+}
+
+.status-text.status-operational {
+    background: none;
+    color: var(--ok);
 }
 
 .status-under-repair {
@@ -529,9 +583,19 @@ body {
     color: #000;
 }
 
+.status-text.status-under-repair {
+    background: none;
+    color: #d97706;
+}
+
 .status-critical {
     background: var(--danger);
     color: #fff;
+}
+
+.status-text.status-critical {
+    background: none;
+    color: var(--danger);
 }
 
 /* ==================== BUTTONS ==================== */
