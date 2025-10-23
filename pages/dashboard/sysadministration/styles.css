@@ -653,11 +653,20 @@ body {
     margin-bottom: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
+    position: relative;
+    z-index: 1;
 }
 
 .user-item:hover {
     box-shadow: var(--shadow);
     transform: translateY(-1px);
+    z-index: 10;
+}
+
+/* Ensure user-item with active dropdown is on top */
+.user-item:has(.dropdown-menu[style*="display: block"]),
+.user-item.dropdown-active {
+    z-index: 100;
 }
 
 .user-details {
