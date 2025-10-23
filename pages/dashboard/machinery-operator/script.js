@@ -1129,6 +1129,47 @@ async function viewFaultDetails(id) {
         const statusInfo = getStatusInfo(fault.status);
         const updateText = getUpdateText(fault.status);
 
+        // Build assigned technicians section (only show when status is "Assigned" and there are assignments)
+        let assignedTechniciansHtml = '';
+        if (fault.status === 'Assigned' && fault.assignments && fault.assignments.length > 0) {
+            assignedTechniciansHtml = `
+                <div class="form-section">
+                    <h5><i class="fas fa-user-check"></i> Assigned Technicians (${fault.assignments.length})</h5>
+                    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+                        ${fault.assignments.map(assignment => `
+                            <div style="padding: 12px; background: var(--stone-50); border-radius: 8px; border: 1px solid var(--stone-200);">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                    <i class="fas fa-user" style="color: var(--royal-blue);"></i>
+                                    <strong>${assignment.technician_name || 'N/A'}</strong>
+                                    ${assignment.technician_employee_id ? `<span style="color: var(--muted); font-size: 0.9em;">(${assignment.technician_employee_id})</span>` : ''}
+                                </div>
+                                ${assignment.technician_email ? `
+                                    <div style="font-size: 0.9em; color: var(--text-600); margin-left: 24px;">
+                                        <i class="fas fa-envelope" style="width: 16px;"></i> ${assignment.technician_email}
+                                    </div>
+                                ` : ''}
+                                ${assignment.technician_phone ? `
+                                    <div style="font-size: 0.9em; color: var(--text-600); margin-left: 24px;">
+                                        <i class="fas fa-phone" style="width: 16px;"></i> ${assignment.technician_phone}
+                                    </div>
+                                ` : ''}
+                                ${assignment.assigned_by_name ? `
+                                    <div style="font-size: 0.85em; color: var(--muted); margin-top: 8px; margin-left: 24px;">
+                                        Assigned by: ${assignment.assigned_by_name}
+                                    </div>
+                                ` : ''}
+                                ${assignment.expected_completion_date ? `
+                                    <div style="font-size: 0.85em; color: var(--muted); margin-top: 4px; margin-left: 24px;">
+                                        Expected Completion: ${new Date(assignment.expected_completion_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
         // Build images section
         let imagesHtml = '';
         if (fault.images && fault.images.length > 0) {
@@ -1176,6 +1217,7 @@ async function viewFaultDetails(id) {
                             ${fault.description || 'No description provided'}
                         </div>
                     </div>
+                    ${assignedTechniciansHtml}
                     ${imagesHtml}
                     <div class="form-section">
                         <h5><i class="fas fa-tasks"></i> Status</h5>

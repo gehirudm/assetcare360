@@ -55,6 +55,16 @@ class FaultTicketAssignment extends BaseModel {
         try {
             $this->db->beginTransaction();
             
+            // Get currently active assignments for this ticket
+            $currentAssignments = $this->getTicketAssignments($faultTicketId);
+            $currentTechnicianIds = array_column($currentAssignments, 'assigned_to');
+            
+            // Remove technicians who are no longer selected
+            $techniciansToRemove = array_diff($currentTechnicianIds, $technicianIds);
+            foreach ($techniciansToRemove as $technicianId) {
+                $this->removeAssignment($faultTicketId, $technicianId);
+            }
+            
             $assignedCount = 0;
             foreach ($technicianIds as $technicianId) {
                 // Check if already assigned and active
