@@ -293,9 +293,23 @@ body {
     white-space: nowrap;
 }
 
+/* Status text without badge background */
+.status-text {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
 .status-normal {
     background: var(--royal-blue);
     color: #fff;
+}
+
+.status-text.status-normal {
+    background: none;
+    color: var(--royal-blue);
 }
 
 .status-active {
@@ -303,9 +317,19 @@ body {
     color: #fff;
 }
 
+.status-text.status-active {
+    background: none;
+    color: var(--kelly-green);
+}
+
 .status-inactive {
     background: var(--muted);
     color: #fff;
+}
+
+.status-text.status-inactive {
+    background: none;
+    color: var(--muted);
 }
 
 .status-pending {
@@ -313,9 +337,19 @@ body {
     color: #000;
 }
 
+.status-text.status-pending {
+    background: none;
+    color: var(--warn);
+}
+
 .status-suspended {
     background: var(--danger);
     color: #fff;
+}
+
+.status-text.status-suspended {
+    background: none;
+    color: var(--danger);
 }
 
 .status-approved {
@@ -323,9 +357,19 @@ body {
     color: #fff;
 }
 
+.status-text.status-approved {
+    background: none;
+    color: var(--ok);
+}
+
 .status-rejected {
     background: var(--danger);
     color: #fff;
+}
+
+.status-text.status-rejected {
+    background: none;
+    color: var(--danger);
 }
 
 .status-completed {
@@ -333,9 +377,19 @@ body {
     color: #fff;
 }
 
+.status-text.status-completed {
+    background: none;
+    color: var(--kelly-green);
+}
+
 .status-critical {
     background: var(--danger);
     color: #fff;
+}
+
+.status-text.status-critical {
+    background: none;
+    color: var(--danger);
 }
 
 .status-admin {
@@ -343,9 +397,19 @@ body {
     color: #fff;
 }
 
+.status-text.status-admin {
+    background: none;
+    color: #8b5cf6;
+}
+
 .status-supervisor {
     background: #3b82f6;
     color: #fff;
+}
+
+.status-text.status-supervisor {
+    background: none;
+    color: #3b82f6;
 }
 
 .status-inventory-manager {
@@ -353,14 +417,29 @@ body {
     color: #fff;
 }
 
+.status-text.status-inventory-manager {
+    background: none;
+    color: #06b6d4;
+}
+
 .status-machinary-operator {
     background: #10b981;
     color: #fff;
 }
 
+.status-text.status-machinary-operator {
+    background: none;
+    color: #10b981;
+}
+
 .status-driver {
     background: #f59e0b;
     color: #000;
+}
+
+.status-text.status-driver {
+    background: none;
+    color: #f59e0b;
 }
 
 /* Buttons */
@@ -669,11 +748,59 @@ body {
     max-width: 600px;
     max-height: 90vh;
     border-radius: 15px;
-    padding: 30px;
+    padding: 0;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    overflow-y: auto;
+    overflow: hidden;
     position: relative;
     margin: auto;
+}
+
+.modal-header {
+    background: var(--gradient-blue);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 15px 15px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.btn-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: rotate(90deg);
+}
+
+.modal-content form {
+    padding: 30px;
+    max-height: calc(90vh - 80px);
+    overflow-y: auto;
 }
 
 .close {

@@ -302,9 +302,24 @@ body {
     white-space: nowrap;
 }
 
+/* Status text without badge background */
+.status-text {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
 .status-pending {
     background: var(--warn);
     color: #000;
+}
+
+.status-text.status-pending {
+    background: none;
+    color: #d97706;
 }
 
 .status-approved {
@@ -312,9 +327,19 @@ body {
     color: #fff;
 }
 
+.status-text.status-approved {
+    background: none;
+    color: var(--ok);
+}
+
 .status-rejected {
     background: var(--danger);
     color: #fff;
+}
+
+.status-text.status-rejected {
+    background: none;
+    color: var(--danger);
 }
 
 .status-assigned {
@@ -322,9 +347,19 @@ body {
     color: #fff;
 }
 
+.status-text.status-assigned {
+    background: none;
+    color: var(--royal-blue);
+}
+
 .status-in-progress {
     background: #f59e0b;
     color: #000;
+}
+
+.status-text.status-in-progress {
+    background: none;
+    color: #f59e0b;
 }
 
 .status-completed {
@@ -332,9 +367,19 @@ body {
     color: #fff;
 }
 
+.status-text.status-completed {
+    background: none;
+    color: var(--kelly-green);
+}
+
 .status-outsourced {
     background: #6b7280;
     color: #fff;
+}
+
+.status-text.status-outsourced {
+    background: none;
+    color: #6b7280;
 }
 
 .status-operational {
@@ -342,14 +387,69 @@ body {
     color: #fff;
 }
 
-.status-under-repair {
+.status-text.status-operational {
+    background: none;
+    color: var(--ok);
+}
+
+.status-under-repair, .status-repair {
     background: var(--warn);
     color: #000;
+}
+
+.status-text.status-under-repair, .status-text.status-repair {
+    background: none;
+    color: #d97706;
+}
+
+.status-maintenance {
+    background: #f59e0b;
+    color: #000;
+}
+
+.status-text.status-maintenance {
+    background: none;
+    color: #f59e0b;
 }
 
 .status-critical {
     background: var(--danger);
     color: #fff;
+}
+
+.status-text.status-critical {
+    background: none;
+    color: var(--danger);
+}
+
+.status-urgent {
+    background: var(--danger);
+    color: #fff;
+}
+
+.status-text.status-urgent {
+    background: none;
+    color: var(--danger);
+}
+
+.status-normal {
+    background: #6b7280;
+    color: #fff;
+}
+
+.status-text.status-normal {
+    background: none;
+    color: #6b7280;
+}
+
+.status-warn {
+    background: var(--warn);
+    color: #000;
+}
+
+.status-text.status-warn {
+    background: none;
+    color: #d97706;
 }
 
 /* ==================== BUTTONS ==================== */
@@ -815,8 +915,29 @@ body {
     font-size: 0.8125rem;
 }
 
+/* Priority text without badge background */
+.priority-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    white-space: nowrap;
+}
+
+.priority-text i {
+    font-size: 0.9rem;
+}
+
 .priority-badge.priority-low {
     background: #d1fae5;
+    color: #065f46;
+}
+
+.priority-text.priority-low {
+    background: none;
     color: #065f46;
 }
 
@@ -825,15 +946,30 @@ body {
     color: #92400e;
 }
 
+.priority-text.priority-medium {
+    background: none;
+    color: #d97706;
+}
+
 .priority-badge.priority-high {
     background: #fed7aa;
     color: #9a3412;
+}
+
+.priority-text.priority-high {
+    background: none;
+    color: #ea580c;
 }
 
 .priority-badge.priority-critical {
     background: #fee2e2;
     color: #991b1b;
     animation: pulse-critical 2s ease-in-out infinite;
+}
+
+.priority-text.priority-critical {
+    background: none;
+    color: #dc2626;
 }
 
 @keyframes pulse-critical {

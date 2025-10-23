@@ -171,7 +171,7 @@
                                     <div class="activity-description">All checks passed, vehicle cleared for operation</div>
                                 </div>
                                 <div class="activity-status">
-                                    <span class="status-badge status-approved">APPROVED</span>
+                                    <span class="status-text status-approved">APPROVED</span>
                                 </div>
                             </div>
 
@@ -183,7 +183,7 @@
                                     <div class="activity-description">Hydraulic system leak - High priority</div>
                                 </div>
                                 <div class="activity-status">
-                                    <span class="status-badge status-assigned">ASSIGNED</span>
+                                    <span class="status-text status-assigned">ASSIGNED</span>
                                 </div>
                             </div>
 
@@ -195,7 +195,7 @@
                                     <div class="activity-description">Brake system repair completed and verified</div>
                                 </div>
                                 <div class="activity-status">
-                                    <span class="status-badge status-completed">COMPLETED</span>
+                                    <span class="status-text status-completed">COMPLETED</span>
                                 </div>
                             </div>
                         </div>
@@ -314,7 +314,7 @@
                     <div class="card">
                         <div class="card-header">
                             <span><i class="fas fa-wrench"></i> Repairs Awaiting Green-Light</span>
-                            <span class="status-badge status-pending">6 pending</span>
+                            <span class="status-text status-pending">6 pending</span>
                         </div>
                         <div id="pendingRepairsList">
                             <div class="item-card" data-id="REP-001">
@@ -325,7 +325,7 @@
                                     <div class="item-meta">Estimated Cost: $2,500 | Parts: Engine gaskets, filters, oil</div>
                                 </div>
                                 <div class="item-actions">
-                                    <span class="status-badge status-urgent">Urgent</span>
+                                    <span class="status-text status-urgent">Urgent</span>
                                     <div class="action-buttons">
                                         <button class="btn btn-secondary btn-small" onclick="viewRepairDetails('REP-001')"><i class="fas fa-eye"></i> View</button>
                                         <button class="btn btn-success btn-small" onclick="greenLightRepair('REP-001')"><i class="fas fa-check"></i> Approve</button>
@@ -342,7 +342,7 @@
                                     <div class="item-meta">Estimated Cost: $1,800 | Parts: Transmission seals, fluid</div>
                                 </div>
                                 <div class="item-actions">
-                                    <span class="status-badge status-normal">Normal</span>
+                                    <span class="status-text status-normal">Normal</span>
                                     <div class="action-buttons">
                                         <button class="btn btn-secondary btn-small" onclick="viewRepairDetails('REP-002')"><i class="fas fa-eye"></i> View</button>
                                         <button class="btn btn-success btn-small" onclick="greenLightRepair('REP-002')"><i class="fas fa-check"></i> Approve</button>
@@ -380,7 +380,7 @@
                                     <td>Tech Mike</td>
                                     <td>Oct 18, 2025</td>
                                     <td>Oct 20, 2025</td>
-                                    <td><span class="status-badge status-in-progress">On Track</span></td>
+                                    <td><span class="status-text status-in-progress">On Track</span></td>
                                     <td>
                                         <button class="btn btn-secondary btn-small" onclick="viewRepairProgress('REP-010')"><i class="fas fa-eye"></i> View</button>
                                         <button class="btn btn-primary btn-small" onclick="updateRepairTimeline('REP-010')"><i class="fas fa-calendar"></i> Update</button>
@@ -403,7 +403,7 @@
                                     <div class="item-meta">Asset: Vehicle V-115 | Service Center: AutoTech Solutions</div>
                                     <div class="item-description">Sent: Oct 15, 2025 | Expected Return: Oct 25, 2025</div>
                                 </div>
-                                <span class="status-badge status-outsourced">Outsourced</span>
+                                <span class="status-text status-outsourced">Outsourced</span>
                             </div>
                         </div>
                     </div>
@@ -438,7 +438,7 @@
                     <div class="card">
                         <div class="card-header">
                             <span><i class="fas fa-file-invoice-dollar"></i> Budget Approvals</span>
-                            <span class="status-badge status-pending" id="budgetCountBadge">5 budgets</span>
+                            <span class="status-text status-pending" id="budgetCountBadge">5 budgets</span>
                         </div>
                         <table class="table">
                             <thead>
@@ -461,7 +461,7 @@
                                     <td>
                                         <small>Tire replacement<br>Submitted by: Driver Kamal</small>
                                     </td>
-                                    <td><span class="status-badge status-urgent">Urgent</span></td>
+                                    <td><span class="status-text status-urgent">Urgent</span></td>
                                     <td class="budget-actions">
                                         <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('BUD-001')"><i class="fas fa-eye"></i> View</button>
                                         <button class="btn btn-success btn-small" onclick="approveBudget('BUD-001')"><i class="fas fa-check"></i> Approve</button>
@@ -476,7 +476,7 @@
                                     <td>
                                         <small>Battery replacement<br>Submitted by: Driver Saman</small>
                                     </td>
-                                    <td><span class="status-badge status-normal">Normal</span></td>
+                                    <td><span class="status-text status-normal">Normal</span></td>
                                     <td class="budget-actions">
                                         <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('BUD-002')"><i class="fas fa-eye"></i> View</button>
                                         <button class="btn btn-success btn-small" onclick="approveBudget('BUD-002')"><i class="fas fa-check"></i> Approve</button>
@@ -491,7 +491,7 @@
                                     <td>
                                         <small>Brake system repair<br>Submitted by: Driver Nimal</small>
                                     </td>
-                                    <td><span class="status-badge status-urgent">Urgent</span></td>
+                                    <td><span class="status-text status-urgent">Urgent</span></td>
                                     <td class="budget-actions">
                                         <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('BUD-003')"><i class="fas fa-eye"></i> View</button>
                                         <button class="btn btn-success btn-small" onclick="approveBudget('BUD-003')"><i class="fas fa-check"></i> Approve</button>
@@ -506,7 +506,7 @@
                                     <td>
                                         <small>Coolant system leak<br>Submitted by: Driver Anil</small>
                                     </td>
-                                    <td><span class="status-badge status-normal">Normal</span></td>
+                                    <td><span class="status-text status-normal">Normal</span></td>
                                     <td class="budget-actions">
                                         <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('BUD-004')"><i class="fas fa-eye"></i> View</button>
                                         <button class="btn btn-success btn-small" onclick="approveBudget('BUD-004')"><i class="fas fa-check"></i> Approve</button>
@@ -521,7 +521,7 @@
                                     <td>
                                         <small>Transmission issue<br>Submitted by: Driver Sunil</small>
                                     </td>
-                                    <td><span class="status-badge status-urgent">Urgent</span></td>
+                                    <td><span class="status-text status-urgent">Urgent</span></td>
                                     <td class="budget-actions">
                                         <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('BUD-005')"><i class="fas fa-eye"></i> View</button>
                                         <button class="btn btn-success btn-small" onclick="approveBudget('BUD-005')"><i class="fas fa-check"></i> Approve</button>
@@ -630,7 +630,7 @@
                                     <td>Vehicle</td>
                                     <td>Toyota Hiace LKA-1234</td>
                                     <td>Depot A</td>
-                                    <td><span class="status-badge status-operational">Operational</span></td>
+                                    <td><span class="status-text status-operational">Operational</span></td>
                                     <td>2024-01-15</td>
                                     <td>2024-04-15</td>
                                     <td>
@@ -643,7 +643,7 @@
                                     <td>Vehicle</td>
                                     <td>Isuzu NPR LKA-5678</td>
                                     <td>Workshop</td>
-                                    <td><span class="status-badge status-maintenance">In Maintenance</span></td>
+                                    <td><span class="status-text status-maintenance">In Maintenance</span></td>
                                     <td>2024-01-20</td>
                                     <td>2024-02-05</td>
                                     <td>
@@ -656,7 +656,7 @@
                                     <td>Vehicle</td>
                                     <td>Mitsubishi Canter LKA-9012</td>
                                     <td>Workshop</td>
-                                    <td><span class="status-badge status-repair">Under Repair</span></td>
+                                    <td><span class="status-text status-repair">Under Repair</span></td>
                                     <td>2024-01-10</td>
                                     <td>TBD</td>
                                     <td>
@@ -669,7 +669,7 @@
                                     <td>Machine</td>
                                     <td>CAT Excavator 320D</td>
                                     <td>Site B</td>
-                                    <td><span class="status-badge status-operational">Operational</span></td>
+                                    <td><span class="status-text status-operational">Operational</span></td>
                                     <td>2024-01-18</td>
                                     <td>2024-04-18</td>
                                     <td>
@@ -682,7 +682,7 @@
                                     <td>Machine</td>
                                     <td>JCB Backhoe 3CX</td>
                                     <td>Site C</td>
-                                    <td><span class="status-badge status-operational">Operational</span></td>
+                                    <td><span class="status-text status-operational">Operational</span></td>
                                     <td>2024-01-12</td>
                                     <td>2024-04-12</td>
                                     <td>
@@ -755,7 +755,7 @@
                                     <td>Ranjith Silva</td>
                                     <td>Engine Specialist</td>
                                     <td>2</td>
-                                    <td><span class="status-badge status-normal">Available</span></td>
+                                    <td><span class="status-text status-normal">Available</span></td>
                                     <td>3</td>
                                     <td>
                                         <button class="btn btn-secondary btn-small" onclick="viewTechnicianDetails('TECH-001')"><i class="fas fa-eye"></i> View</button>
@@ -766,7 +766,7 @@
                                     <td>Pradeep Fernando</td>
                                     <td>Transmission Expert</td>
                                     <td>3</td>
-                                    <td><span class="status-badge status-warn">Busy</span></td>
+                                    <td><span class="status-text status-warn">Busy</span></td>
                                     <td>2</td>
                                     <td>
                                         <button class="btn btn-secondary btn-small" onclick="viewTechnicianDetails('TECH-002')"><i class="fas fa-eye"></i> View</button>
@@ -777,7 +777,7 @@
                                     <td>Mahesh Perera</td>
                                     <td>Electrical Systems</td>
                                     <td>1</td>
-                                    <td><span class="status-badge status-normal">Available</span></td>
+                                    <td><span class="status-text status-normal">Available</span></td>
                                     <td>4</td>
                                     <td>
                                         <button class="btn btn-secondary btn-small" onclick="viewTechnicianDetails('TECH-003')"><i class="fas fa-eye"></i> View</button>
@@ -788,7 +788,7 @@
                                     <td>Chaminda Rathnayake</td>
                                     <td>Brake Systems</td>
                                     <td>1</td>
-                                    <td><span class="status-badge status-normal">Available</span></td>
+                                    <td><span class="status-text status-normal">Available</span></td>
                                     <td>5</td>
                                     <td>
                                         <button class="btn btn-secondary btn-small" onclick="viewTechnicianDetails('TECH-004')"><i class="fas fa-eye"></i> View</button>
@@ -799,7 +799,7 @@
                                     <td>Kasun Dissanayake</td>
                                     <td>Heavy Machinery</td>
                                     <td>1</td>
-                                    <td><span class="status-badge status-normal">Available</span></td>
+                                    <td><span class="status-text status-normal">Available</span></td>
                                     <td>2</td>
                                     <td>
                                         <button class="btn btn-secondary btn-small" onclick="viewTechnicianDetails('TECH-005')"><i class="fas fa-eye"></i> View</button>
@@ -810,7 +810,7 @@
                                     <td>Tharindu Jayasinghe</td>
                                     <td>General Maintenance</td>
                                     <td>0</td>
-                                    <td><span class="status-badge status-normal">Available</span></td>
+                                    <td><span class="status-text status-normal">Available</span></td>
                                     <td>3</td>
                                     <td>
                                         <button class="btn btn-secondary btn-small" onclick="viewTechnicianDetails('TECH-006')"><i class="fas fa-eye"></i> View</button>

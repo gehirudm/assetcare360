@@ -158,7 +158,7 @@ function loadAssignedMachines() {
                 <div class="item-description">Hours: ${machine.hours} | ${machine.serviceInfo}</div>
             </div>
             <div class="item-actions">
-                <span class="status-badge ${machine.statusClass}">${machine.status}</span>
+                <span class="status-text ${machine.statusClass}">${machine.status}</span>
                 <button class="btn btn-secondary btn-small" onclick="viewMachine('${machine.id}')">
                     <i class="fas fa-eye"></i> View
                 </button>
@@ -208,7 +208,7 @@ async function loadFaultReports() {
                                 <button onclick="editFaultTicket(${fault.id}); closeTicketMenu(${fault.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text-700);" onmouseover="this.style.background='var(--stone-50)'" onmouseout="this.style.background='none'">
                                     <i class="fas fa-edit" style="width: 16px;"></i> Edit
                                 </button>
-                                <button onclick="deleteFaultTicket(${fault.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--red-600);" onmouseover="this.style.background='var(--red-50)'" onmouseout="this.style.background='none'">
+                                <button onclick="deleteFaultTicket(${fault.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--danger);" onmouseover="this.style.background='var(--red-50)'" onmouseout="this.style.background='none'">
                                     <i class="fas fa-trash" style="width: 16px;"></i> Delete
                                 </button>
                             </div>
@@ -225,7 +225,7 @@ async function loadFaultReports() {
                             <div class="item-meta">Priority: ${fault.priority} | Photos: ${imageCount} attached | Location: ${fault.location}</div>
                         </div>
                         <div class="item-actions">
-                            <span class="status-badge ${statusInfo.class}">${statusInfo.label}</span>
+                            <span class="status-text ${statusInfo.class}">${statusInfo.label}</span>
                             <div style="display: flex; gap: 8px; align-items: center;">
                                 ${actionButtons}
                             </div>
@@ -275,7 +275,7 @@ function loadConditionUpdates() {
                 <div class="item-description">Hours: ${update.hours} | ${update.condition}</div>
             </div>
             <div class="item-actions">
-                <span class="status-badge ${update.statusClass}">${update.statusLabel}</span>
+                <span class="status-text ${update.statusClass}">${update.statusLabel}</span>
                 <button class="btn btn-secondary btn-small" onclick="viewUpdateDetails('${update.id}')">
                     <i class="fas fa-eye"></i> View
                 </button>
@@ -314,25 +314,6 @@ async function loadTickets() {
                     </button>
                 `;
                 
-                // Add edit/delete dropdown for pending tickets
-                if (isPending) {
-                    actionButtons += `
-                        <div style="position: relative; display: inline-block;">
-                            <button class="btn btn-secondary btn-small" onclick="toggleTicketMenu(${ticket.id}, event)" id="ticket-menu-btn-${ticket.id}">
-                                <i class="fas fa-ellipsis-v"></i>
-                            </button>
-                            <div class="dropdown-menu" id="ticket-menu-${ticket.id}" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: white; border: 1px solid var(--stone-200); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 150px; z-index: 1000;">
-                                <button onclick="editFaultTicket(${ticket.id}); closeTicketMenu(${ticket.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text-700);" onmouseover="this.style.background='var(--stone-50)'" onmouseout="this.style.background='none'">
-                                    <i class="fas fa-edit" style="width: 16px;"></i> Edit
-                                </button>
-                                <button onclick="deleteFaultTicket(${ticket.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--red-600);" onmouseover="this.style.background='var(--red-50)'" onmouseout="this.style.background='none'">
-                                    <i class="fas fa-trash" style="width: 16px;"></i> Delete
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }
-                
                 return `
                     <div class="item-card" data-status="${ticket.status.toLowerCase().replace(' ', '-')}">
                         <div class="item-details">
@@ -342,7 +323,7 @@ async function loadTickets() {
                             <div class="item-meta">Last Update: ${updateText}</div>
                         </div>
                         <div class="item-actions" style="display: flex; gap: 8px; align-items: center;">
-                            <span class="status-badge ${statusInfo.class}">${statusInfo.label}</span>
+                            <span class="status-text ${statusInfo.class}">${statusInfo.label}</span>
                             ${actionButtons}
                         </div>
                     </div>
@@ -1090,7 +1071,7 @@ function viewMachine(id) {
                     <h5><i class="fas fa-wrench"></i> Machine Information</h5>
                     <div style="margin-bottom: 8px;"><strong>Machine ID:</strong> ${id}</div>
                     <div style="margin-bottom: 8px;"><strong>Type:</strong> ${machine.type}</div>
-                    <div style="margin-bottom: 8px;"><strong>Status:</strong> <span class="status-badge ${machine.status === 'Operational' ? 'status-approved' : 'status-pending'}">${machine.status}</span></div>
+                    <div style="margin-bottom: 8px;"><strong>Status:</strong> <span class="status-text ${machine.status === 'Operational' ? 'status-approved' : 'status-pending'}">${machine.status}</span></div>
                     <div style="margin-bottom: 8px;"><strong>Location:</strong> ${machine.location}</div>
                 </div>
                 <div class="form-section">
@@ -1240,7 +1221,7 @@ async function viewFaultDetails(id) {
                     ${imagesHtml}
                     <div class="form-section">
                         <h5><i class="fas fa-tasks"></i> Status</h5>
-                        <div style="margin-bottom: 8px;"><strong>Current Status:</strong> <span class="status-badge ${statusInfo.class}">${statusInfo.text}</span></div>
+                        <div style="margin-bottom: 8px;"><strong>Current Status:</strong> <span class="status-text ${statusInfo.class}">${statusInfo.text}</span></div>
                         <div style="margin-bottom: 8px;"><strong>Last Update:</strong> ${updateText}</div>
                         ${fault.updated_at !== fault.created_at ? `<div style="margin-bottom: 8px;"><strong>Updated On:</strong> ${formatDate(fault.updated_at)}</div>` : ''}
                     </div>
@@ -1332,7 +1313,7 @@ function viewUpdateDetails(id) {
                 </div>
                 <div class="form-section">
                     <h5><i class="fas fa-check-circle"></i> Review Status</h5>
-                    <div style="margin-bottom: 8px;"><strong>Status:</strong> <span class="status-badge ${update.statusClass}">${update.status}</span></div>
+                    <div style="margin-bottom: 8px;"><strong>Status:</strong> <span class="status-text ${update.statusClass}">${update.status}</span></div>
                     <div style="margin-bottom: 8px;"><strong>Reviewed By:</strong> ${update.reviewedBy}</div>
                     ${update.reviewNotes ? `<div style="margin-bottom: 8px;"><strong>Review Notes:</strong> ${update.reviewNotes}</div>` : ''}
                 </div>

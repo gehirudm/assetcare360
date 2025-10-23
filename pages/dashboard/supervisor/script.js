@@ -135,7 +135,7 @@ async function loadDailyCheckReports() {
             <td>${report.submittedBy}</td>
             <td><i class="fas fa-${report.type === 'driver' ? 'car' : 'cog'}"></i> ${report.type}</td>
             <td>${report.date}</td>
-            <td><span class="status-badge status-${report.status.toLowerCase()}">${report.status}</span></td>
+            <td><span class="status-text status-${report.status.toLowerCase()}">${report.status}</span></td>
             <td>
                 <button class="btn btn-secondary btn-small" onclick="viewReport('${report.id}')">
                     <i class="fas fa-eye"></i> View
@@ -170,7 +170,7 @@ function applyReportFilters() {
     let visibleCount = 0;
     
     rows.forEach(row => {
-        const rowStatus = row.querySelector('.status-badge').textContent.toLowerCase();
+        const rowStatus = row.querySelector('.status-text').textContent.toLowerCase();
         const rowType = row.getAttribute('data-type');
         
         const matchesStatus = currentReportStatusFilter === 'all' || rowStatus === currentReportStatusFilter;
@@ -222,6 +222,7 @@ function rejectReport(reportId) {
 
 let currentTicketStatusFilter = 'all';
 let currentTicketSourceFilter = 'all';
+let allTickets = []; // Store all tickets for filtering
 
 async function loadFaultTickets() {
     try {
@@ -238,116 +239,10 @@ async function loadFaultTickets() {
         
         if (response.status === 'success' && response.data) {
             // Handle nested data structure: {data: {tickets: []}}
-            const tickets = response.data.tickets || response.data || [];
+            allTickets = response.data.tickets || response.data || [];
             
-            // Separate unassigned and assigned tickets based on assignments array
-            const unassignedTickets = tickets.filter(t => !t.assignments || t.assignments.length === 0);
-            const assignedTickets = tickets.filter(t => t.assignments && t.assignments.length > 0 && t.status !== 'Resolved' && t.status !== 'Closed');
-            
-            // Display unassigned tickets
-            if (unassignedTickets.length > 0) {
-                unassignedList.innerHTML = unassignedTickets.map(ticket => {
-                    const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
-                    const description = ticket.description || 'No description';
-                    const reporterName = ticket.reported_by_name || ticket.reporter_full_name || 'Unknown';
-                    const createdDate = new Date(ticket.created_at);
-                    const formattedDate = createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                    const formattedTime = createdDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-                    
-                    // Get first line of description for title
-                    const descriptionLines = description.split('\n').filter(line => line.trim());
-                    const title = descriptionLines[0] || description;
-                    const details = descriptionLines.slice(1).join(' ') || '';
-                    
-                    // Determine urgency level for styling
-                    const priority = (ticket.priority || 'Medium').toLowerCase();
-                    const urgencyClass = `urgency-${priority}`;
-                    
-                    return `
-                        <div class="fault-ticket-card ${urgencyClass}">
-                            <div class="ticket-card-header">
-                                <div class="ticket-header-left">
-                                    <span class="ticket-id">TKT-${String(ticket.id).padStart(3, '0')}</span>
-                                    <h3 class="ticket-card-title">${title}</h3>
-                                </div>
-                                <div class="ticket-header-right">
-                                    <span class="priority-badge priority-${priority}">
-                                        <i class="fas fa-exclamation-circle"></i> ${priority.toUpperCase()}
-                                    </span>
-                                    <div class="ticket-actions-inline">
-                                        <button class="btn-compact btn-view" onclick="viewTicketDetails(${ticket.id})" title="View Details">
-                                            <i class="fas fa-eye"></i> <span>View</span>
-                                        </button>
-                                        <button class="btn-compact btn-assign" onclick="assignTicket(${ticket.id})" title="Assign Ticket">
-                                            <i class="fas fa-user-plus"></i> <span>Assign</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="ticket-card-meta">
-                                <span class="meta-item">
-                                    <i class="fas fa-wrench"></i> <strong>Machine:</strong> ${assetName}
-                                </span>
-                                <span class="meta-item">
-                                    <i class="fas fa-user"></i> <strong>Reported By:</strong> ${reporterName}
-                                </span>
-                                <span class="meta-item">
-                                    <i class="fas fa-calendar"></i> <strong>Date:</strong> ${formattedDate}
-                                </span>
-                                <span class="meta-item">
-                                    <i class="fas fa-clock"></i> <strong>Time:</strong> ${formattedTime}
-                                </span>
-                            </div>
-                            ${details ? `<div class="ticket-card-description">${details}</div>` : ''}
-                        </div>
-                    `;
-                }).join('');
-            } else {
-                unassignedList.innerHTML = '<p style="text-align: center; color: var(--muted);">No unassigned tickets</p>';
-            }
-            
-            // Display assigned tickets
-            if (assignedTickets.length > 0) {
-                tbody.innerHTML = assignedTickets.map(ticket => {
-                    const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
-                    const description = ticket.description || 'No description';
-                    const shortDesc = description.split('\n')[0]; // Get first line
-                    
-                    // Get assigned technicians names
-                    const assignedTo = ticket.assignments && ticket.assignments.length > 0
-                        ? ticket.assignments.map(a => a.technician_name).join(', ')
-                        : 'Unassigned';
-                    
-                    // Check if ticket can be edited (only "Assigned" status tickets can be edited)
-                    const canEdit = ticket.status && ticket.status.toLowerCase() === 'assigned';
-                    const editButton = canEdit 
-                        ? `<button class="btn btn-small btn-primary" onclick="editTicketAssignment(${ticket.id})" style="margin-left: 5px;">
-                               <i class="fas fa-edit"></i> Edit
-                           </button>`
-                        : `<button class="btn btn-small btn-secondary" disabled style="margin-left: 5px; opacity: 0.5; cursor: not-allowed;" title="Only tickets with 'Assigned' status can be edited">
-                               <i class="fas fa-edit"></i> Edit
-                           </button>`;
-                    
-                    return `
-                        <tr>
-                            <td>TKT-${String(ticket.id).padStart(3, '0')}</td>
-                            <td>${assetName}</td>
-                            <td>${shortDesc}</td>
-                            <td><span class="status-badge status-${ticket.priority ? ticket.priority.toLowerCase() : 'medium'}">${(ticket.priority || 'MEDIUM').toUpperCase()}</span></td>
-                            <td>${assignedTo}</td>
-                            <td><span class="status-badge status-${(ticket.status || 'open').toLowerCase().replace(' ', '-')}">${(ticket.status || 'OPEN').toUpperCase()}</span></td>
-                            <td>
-                                <button class="btn btn-small btn-secondary" onclick="viewTicketDetails(${ticket.id})">
-                                    <i class="fas fa-eye"></i> View
-                                </button>
-                                ${editButton}
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-            } else {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--muted);">No active tickets</td></tr>';
-            }
+            // Apply current filters
+            displayFilteredTickets();
         } else {
             throw new Error('Failed to load tickets');
         }
@@ -359,19 +254,167 @@ async function loadFaultTickets() {
     }
 }
 
+function displayFilteredTickets() {
+    const unassignedList = document.getElementById('unassignedTicketsList');
+    const tbody = document.getElementById('activeTicketsBody');
+    
+    // Filter tickets based on current filters
+    let filteredTickets = allTickets.filter(ticket => {
+        // Status filter
+        let matchesStatus = true;
+        if (currentTicketStatusFilter !== 'all') {
+            const ticketStatus = (ticket.status || '').toLowerCase().replace(' ', '-');
+            const hasAssignments = ticket.assignments && ticket.assignments.length > 0;
+            
+            if (currentTicketStatusFilter === 'unassigned') {
+                matchesStatus = !hasAssignments;
+            } else if (currentTicketStatusFilter === 'assigned') {
+                matchesStatus = hasAssignments && ticketStatus !== 'completed' && ticketStatus !== 'resolved';
+            } else if (currentTicketStatusFilter === 'in-progress') {
+                matchesStatus = ticketStatus === 'in-progress' || ticketStatus === 'in progress';
+            } else if (currentTicketStatusFilter === 'completed') {
+                matchesStatus = ticketStatus === 'completed' || ticketStatus === 'resolved' || ticketStatus === 'closed';
+            }
+        }
+        
+        // Source filter
+        let matchesSource = true;
+        if (currentTicketSourceFilter !== 'all') {
+            const reporterRole = (ticket.reporter_role || ticket.reported_by_role || '').toLowerCase();
+            matchesSource = reporterRole.includes(currentTicketSourceFilter.toLowerCase());
+        }
+        
+        return matchesStatus && matchesSource;
+    });
+    
+    // Separate into unassigned and assigned
+    const unassignedTickets = filteredTickets.filter(t => !t.assignments || t.assignments.length === 0);
+    const assignedTickets = filteredTickets.filter(t => t.assignments && t.assignments.length > 0 && t.status !== 'Resolved' && t.status !== 'Closed');
+    
+    // Display unassigned tickets
+    if (unassignedTickets.length > 0) {
+        unassignedList.innerHTML = unassignedTickets.map(ticket => {
+            const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
+            const description = ticket.description || 'No description';
+            const reporterName = ticket.reported_by_name || ticket.reporter_full_name || 'Unknown';
+            const createdDate = new Date(ticket.created_at);
+            const formattedDate = createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const formattedTime = createdDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            
+            // Get first line of description for title
+            const descriptionLines = description.split('\n').filter(line => line.trim());
+            const title = descriptionLines[0] || description;
+            const details = descriptionLines.slice(1).join(' ') || '';
+            
+            // Determine urgency level for styling
+            const priority = (ticket.priority || 'Medium').toLowerCase();
+            const urgencyClass = `urgency-${priority}`;
+            
+            return `
+                <div class="fault-ticket-card ${urgencyClass}">
+                    <div class="ticket-card-header">
+                        <div class="ticket-header-left">
+                            <span class="ticket-id">TKT-${String(ticket.id).padStart(3, '0')}</span>
+                            <h3 class="ticket-card-title">${title}</h3>
+                        </div>
+                        <div class="ticket-header-right">
+                            <span class="priority-text priority-${priority}">
+                                <i class="fas fa-exclamation-circle"></i> ${priority.toUpperCase()}
+                            </span>
+                            <div class="ticket-actions-inline">
+                                <button class="btn btn-small btn-secondary" onclick="viewTicketDetails(${ticket.id})">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button class="btn btn-small btn-primary" onclick="assignTicket(${ticket.id})" style="margin-left: 5px;">
+                                    <i class="fas fa-user-plus"></i> Assign
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ticket-card-meta">
+                        <span class="meta-item">
+                            <i class="fas fa-wrench"></i> <strong>Machine:</strong> ${assetName}
+                        </span>
+                        <span class="meta-item">
+                            <i class="fas fa-user"></i> <strong>Reported By:</strong> ${reporterName}
+                        </span>
+                        <span class="meta-item">
+                            <i class="fas fa-calendar"></i> <strong>Date:</strong> ${formattedDate}
+                        </span>
+                        <span class="meta-item">
+                            <i class="fas fa-clock"></i> <strong>Time:</strong> ${formattedTime}
+                        </span>
+                    </div>
+                    ${details ? `<div class="ticket-card-description">${details}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+    } else {
+        unassignedList.innerHTML = '<p style="text-align: center; color: var(--muted);">No unassigned tickets match the current filters</p>';
+    }
+    
+    // Display assigned tickets
+    if (assignedTickets.length > 0) {
+        tbody.innerHTML = assignedTickets.map(ticket => {
+            const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
+            const description = ticket.description || 'No description';
+            const shortDesc = description.split('\n')[0]; // Get first line
+            
+            // Get assigned technicians names
+            const assignedTo = ticket.assignments && ticket.assignments.length > 0
+                ? ticket.assignments.map(a => a.technician_name).join(', ')
+                : 'Unassigned';
+            
+            return `
+                <tr>
+                    <td>TKT-${String(ticket.id).padStart(3, '0')}</td>
+                    <td>${assetName}</td>
+                    <td>${shortDesc}</td>
+                    <td><span class="status-text status-${ticket.priority ? ticket.priority.toLowerCase() : 'medium'}">${(ticket.priority || 'MEDIUM').toUpperCase()}</span></td>
+                    <td>${assignedTo}</td>
+                    <td><span class="status-text status-${(ticket.status || 'open').toLowerCase().replace(' ', '-')}">${(ticket.status || 'OPEN').toUpperCase()}</span></td>
+                    <td>
+                        <button class="btn btn-small btn-secondary" onclick="viewTicketDetails(${ticket.id})">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button class="btn btn-small btn-primary" onclick="editTicketAssignment(${ticket.id})" style="margin-left: 5px;">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } else {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--muted);">No active tickets match the current filters</td></tr>';
+    }
+}
+
 function filterTicketsByStatus(status) {
     currentTicketStatusFilter = status;
-    applyTicketFilters();
+    
+    // Update active button - only in the same parent container
+    const parentContainer = event.target.parentElement;
+    parentContainer.querySelectorAll('button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    displayFilteredTickets();
+    showToast(`Showing ${status === 'all' ? 'all' : status} tickets`);
 }
 
 function filterTicketsBySource(source) {
     currentTicketSourceFilter = source;
-    applyTicketFilters();
-}
-
-function applyTicketFilters() {
-    showToast('Filters applied');
-    // TODO: Implement filtering logic
+    
+    // Update active button - only in the same parent container
+    const parentContainer = event.target.parentElement;
+    parentContainer.querySelectorAll('button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    displayFilteredTickets();
+    showToast(`Showing ${source === 'all' ? 'all sources' : source + ' tickets'}`);
 }
 
 async function createNewTicket() {
@@ -817,11 +860,11 @@ async function viewTicketDetails(ticketId) {
                     </div>
                     <div class="detail-item">
                         <label>Status:</label>
-                        <span class="status-badge status-${(ticket.status || 'open').toLowerCase().replace('_', '-')}">${(ticket.status || 'OPEN').toUpperCase().replace('_', ' ')}</span>
+                        <span class="status-text status-${(ticket.status || 'open').toLowerCase().replace('_', '-')}">${(ticket.status || 'OPEN').toUpperCase().replace('_', ' ')}</span>
                     </div>
                     <div class="detail-item">
                         <label>Priority:</label>
-                        <span class="status-badge status-${ticket.priority ? ticket.priority.toLowerCase() : 'normal'}">${(ticket.priority || 'NORMAL').toUpperCase()}</span>
+                        <span class="status-text status-${ticket.priority ? ticket.priority.toLowerCase() : 'normal'}">${(ticket.priority || 'NORMAL').toUpperCase()}</span>
                     </div>
                     <div class="detail-item">
                         <label>Machine:</label>
@@ -1291,7 +1334,7 @@ function approveBudget(budgetId) {
                 const actionsCell = row.querySelector('.budget-actions');
                 if (actionsCell) {
                     actionsCell.innerHTML = `
-                        <span class="status-badge status-completed">✅ Approved</span>
+                        <span class="status-text status-completed">✅ Approved</span>
                         <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('${budgetId}')"><i class="fas fa-eye"></i> View</button>
                     `;
                 }
@@ -1323,7 +1366,7 @@ function rejectBudget(budgetId) {
                 const actionsCell = row.querySelector('.budget-actions');
                 if (actionsCell) {
                     actionsCell.innerHTML = `
-                        <span class="status-badge status-rejected">❌ Rejected</span>
+                        <span class="status-text status-rejected">❌ Rejected</span>
                         <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('${budgetId}')"><i class="fas fa-eye"></i> View</button>
                     `;
                 }

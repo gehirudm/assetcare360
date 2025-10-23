@@ -283,9 +283,23 @@ body {
     letter-spacing: 0.5px;
 }
 
+/* Status text without badge background */
+.status-text {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
 .status-in-stock {
     background: var(--kelly-green);
     color: #fff;
+}
+
+.status-text.status-in-stock {
+    background: none;
+    color: var(--kelly-green);
 }
 
 .status-low-stock {
@@ -293,9 +307,19 @@ body {
     color: #000;
 }
 
+.status-text.status-low-stock {
+    background: none;
+    color: #d97706;
+}
+
 .status-out-of-stock {
     background: var(--danger);
     color: #fff;
+}
+
+.status-text.status-out-of-stock {
+    background: none;
+    color: var(--danger);
 }
 
 .status-pending {
@@ -303,9 +327,19 @@ body {
     color: #000;
 }
 
+.status-text.status-pending {
+    background: none;
+    color: #d97706;
+}
+
 .status-approved {
     background: var(--ok);
     color: #fff;
+}
+
+.status-text.status-approved {
+    background: none;
+    color: var(--ok);
 }
 
 .status-rejected {
@@ -313,9 +347,19 @@ body {
     color: #fff;
 }
 
+.status-text.status-rejected {
+    background: none;
+    color: var(--danger);
+}
+
 .status-normal {
     background: #6b7280;
     color: #fff;
+}
+
+.status-text.status-normal {
+    background: none;
+    color: #6b7280;
 }
 
 .status-critical {
@@ -323,14 +367,29 @@ body {
     color: #fff;
 }
 
+.status-text.status-critical {
+    background: none;
+    color: var(--danger);
+}
+
 .status-completed {
     background: var(--ok);
     color: #fff;
 }
 
+.status-text.status-completed {
+    background: none;
+    color: var(--ok);
+}
+
 .status-assigned {
     background: var(--royal-blue);
     color: #fff;
+}
+
+.status-text.status-assigned {
+    background: none;
+    color: var(--royal-blue);
 }
 
 /* Buttons */
@@ -636,10 +695,16 @@ body {
     max-width: 600px;
     max-height: 90vh;
     border-radius: 15px;
-    padding: 30px;
+    padding: 0;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    overflow-y: auto;
+    overflow: hidden;
     position: relative;
+}
+
+.modal-content form {
+    padding: 30px;
+    max-height: calc(90vh - 80px);
+    overflow-y: auto;
 }
 
 .close {
@@ -1157,43 +1222,59 @@ body {
 
 /* Modal Header and Close Button */
 .modal-header {
+    background: var(--gradient-blue);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 15px 15px 0 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid var(--stone-200);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin: 0;
+    border: none;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: white;
 }
 
 .modal-header h4 {
     margin: 0;
-    color: var(--text-900);
+    color: white;
     font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .btn-close {
-    position: absolute;
-    right: 15px;
-    top: 15px;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-    color: #fff;
-    width: 35px;
-    height: 35px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    background: var(--royal-blue);
+    cursor: pointer;
+    font-size: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: none;
-    transition: all 0.2s ease;
-    line-height: 1;
-    padding: 0;
+    transition: all 0.3s ease;
+    position: relative;
+    right: auto;
+    top: auto;
 }
 
 .btn-close:hover {
-    background: var(--tang-blue);
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
     transform: rotate(90deg);
 }
 
