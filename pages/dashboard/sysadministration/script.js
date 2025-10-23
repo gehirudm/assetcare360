@@ -502,27 +502,56 @@ const userManagement = new UserManagement();
 function toggleUserMenu(userId, event) {
     event.stopPropagation();
     const menu = document.getElementById(`user-menu-${userId}`);
+    const button = document.getElementById(`user-menu-btn-${userId}`);
+    const userItem = button ? button.closest('.user-item') : null;
     
-    // Close all other menus
+    // Close all other menus and remove active class from all items
     document.querySelectorAll('.dropdown-menu').forEach(m => {
         if (m.id !== `user-menu-${userId}`) {
             m.style.display = 'none';
+            // Remove active class from parent user-item
+            const parentItem = m.closest('.user-item');
+            if (parentItem) {
+                parentItem.classList.remove('dropdown-active');
+            }
         }
     });
     
     // Toggle current menu
-    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    const isVisible = menu.style.display === 'block';
+    menu.style.display = isVisible ? 'none' : 'block';
+    
+    // Toggle active class on parent user-item
+    if (userItem) {
+        if (isVisible) {
+            userItem.classList.remove('dropdown-active');
+        } else {
+            userItem.classList.add('dropdown-active');
+        }
+    }
 }
 
 function closeUserMenu(userId) {
     const menu = document.getElementById(`user-menu-${userId}`);
-    if (menu) menu.style.display = 'none';
+    if (menu) {
+        menu.style.display = 'none';
+        // Remove active class from parent user-item
+        const userItem = menu.closest('.user-item');
+        if (userItem) {
+            userItem.classList.remove('dropdown-active');
+        }
+    }
 }
 
 // Close dropdowns when clicking outside
 document.addEventListener('click', function() {
     document.querySelectorAll('.dropdown-menu').forEach(menu => {
         menu.style.display = 'none';
+        // Remove active class from parent user-item
+        const userItem = menu.closest('.user-item');
+        if (userItem) {
+            userItem.classList.remove('dropdown-active');
+        }
     });
 });
 
