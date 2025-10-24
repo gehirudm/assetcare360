@@ -53,7 +53,7 @@ async function loadUserProfile() {
         showToast('Failed to load profile data', 'error');
         // Redirect to login if not authenticated
         setTimeout(() => {
-            window.location.href = '/pages/login/';
+            window.location.href = '/auth/login.html';
         }, 2000);
     }
 }
@@ -247,7 +247,7 @@ function logout() {
 function goBackToDashboard() {
     const userData = window.currentUserData;
     if (!userData) {
-        window.location.href = '/pages/dashboard/';
+        window.location.href = '/auth/login.html';
         return;
     }
     
@@ -256,11 +256,11 @@ function goBackToDashboard() {
     const dashboardPath = CONFIG.ROUTES.DASHBOARD[roleKey];
     
     if (dashboardPath) {
-        window.location.href = '/pages' + dashboardPath;
+        window.location.href = dashboardPath;
     } else {
         // Fallback to login if role not found
         console.warn('Dashboard not found for role:', userData.role);
-        window.location.href = '/pages/dashboard/';
+        window.location.href = '/auth/login.html';
     }
 }
 
@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const user = await Auth.checkAuth();
     
     if (!user) {
-        window.location.href = '/pages/login/';
+        window.location.href = '/auth/login.html';
         return;
     }
     
