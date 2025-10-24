@@ -179,6 +179,77 @@ class AuthService {
     }
     
     /**
+     * Get user profile with complete details
+     */
+    public function getUserProfile($userId) {
+        $user = $this->userModel->getUserById($userId);
+        
+        if (!$user) {
+            return [
+                'success' => false,
+                'message' => 'User not found'
+            ];
+        }
+        
+        return [
+            'success' => true,
+            'message' => 'Profile retrieved successfully',
+            'data' => $user
+        ];
+    }
+    
+    /**
+     * Update user profile
+     */
+    public function updateProfile($userId, $fullName, $phone = null) {
+        $user = $this->userModel->findById($userId);
+        
+        if (!$user) {
+            return [
+                'success' => false,
+                'message' => 'User not found'
+            ];
+        }
+        
+        // Validate full name
+        if (empty($fullName)) {
+            return [
+                'success' => false,
+                'message' => 'Full name is required'
+            ];
+        }
+        
+        // Prepare update data
+        $updateData = [
+            'full_name' => $fullName
+        ];
+        
+        // Add phone if provided
+        if ($phone !== null) {
+            $updateData['phone'] = $phone;
+        }
+        
+        // Update user
+        $result = $this->userModel->update($userId, $updateData);
+        
+        if (!$result) {
+            return [
+                'success' => false,
+                'message' => 'Failed to update profile'
+            ];
+        }
+        
+        // Get updated user data
+        $updatedUser = $this->userModel->getUserById($userId);
+        
+        return [
+            'success' => true,
+            'message' => 'Profile updated successfully',
+            'data' => $updatedUser
+        ];
+    }
+    
+    /**
      * Request password reset (forgot password)
      * In a real application, this would send an email with a reset token
      */

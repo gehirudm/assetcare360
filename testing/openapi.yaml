@@ -242,6 +242,124 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /auth/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Get user profile
+      description: Get complete profile information for the current user from database (includes all user fields except password)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Profile retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 15
+                      employee_id:
+                        type: string
+                        example: "LITRO-TECHOFFICER-001"
+                      full_name:
+                        type: string
+                        example: "Technical Officer One"
+                      role:
+                        type: string
+                        example: "Technical Officer"
+                      department:
+                        type: string
+                        nullable: true
+                        example: "Engineering"
+                      email:
+                        type: string
+                        nullable: true
+                        example: "officer@example.com"
+                      phone:
+                        type: string
+                        nullable: true
+                        example: "+94771234567"
+                      is_active:
+                        type: integer
+                        example: 1
+                      force_password_change:
+                        type: integer
+                        example: 0
+                      last_login:
+                        type: string
+                        format: date-time
+                        nullable: true
+                        example: "2025-10-24 14:30:00"
+                      created_at:
+                        type: string
+                        format: date-time
+                        example: "2025-01-15 10:00:00"
+                      updated_at:
+                        type: string
+                        format: date-time
+                        example: "2025-10-24 14:30:00"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    
+    put:
+      tags:
+        - Authentication
+      summary: Update user profile
+      description: Update the current user's profile information (full name and phone number)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - full_name
+              properties:
+                full_name:
+                  type: string
+                  example: "John Smith"
+                  description: User's full name
+                phone:
+                  type: string
+                  example: "+94771234567"
+                  description: User's phone number (optional)
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Profile updated successfully"
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /auth/validate:
     get:
       tags:

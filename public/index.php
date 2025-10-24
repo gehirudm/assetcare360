@@ -69,6 +69,8 @@ $router = new Router();
 $router->post('/auth/login', 'AuthController', 'login');
 $router->post('/auth/logout', 'AuthController', 'logout');
 $router->get('/auth/me', 'AuthController', 'me');
+$router->get('/auth/profile', 'AuthController', 'getProfile');
+$router->put('/auth/profile', 'AuthController', 'updateProfile');
 $router->post('/auth/change-password', 'AuthController', 'changePassword');
 $router->get('/auth/validate', 'AuthController', 'validateToken');
 $router->post('/auth/forgot-password', 'AuthController', 'forgotPassword');

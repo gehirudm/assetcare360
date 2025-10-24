@@ -61,6 +61,23 @@ class AuthController {
     }
     
     /**
+     * Get complete user profile
+     * GET /api/auth/profile
+     * Returns full user details from database
+     */
+    public function getProfile() {
+        $user = RoleMiddleware::authenticate();
+        
+        $result = $this->authService->getUserProfile($user['id']);
+        
+        if ($result['success']) {
+            Response::success($result['data'], 'Profile retrieved successfully');
+        } else {
+            Response::error($result['message'], 404);
+        }
+    }
+    
+    /**
      * Logout endpoint (clears auth cookie)
      * POST /api/auth/logout
      */
@@ -97,6 +114,35 @@ class AuthController {
         
         if ($result['success']) {
             Response::success(null, $result['message']);
+        } else {
+            Response::error($result['message'], 400);
+        }
+    }
+    
+    /**
+     * Update user profile
+     * PUT /api/auth/profile
+     */
+    public function updateProfile() {
+        $user = RoleMiddleware::authenticate();
+        
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$input) {
+            Response::error('Invalid JSON data', 400);
+        }
+        
+        $fullName = $input['full_name'] ?? null;
+        $phone = $input['phone'] ?? null;
+        
+        if (!$fullName) {
+            Response::error('Full name is required', 400);
+        }
+        
+        $result = $this->authService->updateProfile($user['id'], $fullName, $phone);
+        
+        if ($result['success']) {
+            Response::success($result['data'], $result['message']);
         } else {
             Response::error($result['message'], 400);
         }

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - AssetCare360</title>
+    
+    <!-- FontAwesome -->
+    <script src="https://kit.fontawesome.com/a422e631ad.js" crossorigin="anonymous"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="brand-logo">
+                    <span class="brand-name">AssetCare<span class="brand-highlight">360</span></span>
+                </div>
+                <div class="header-divider"></div>
+                <h1 class="header-title">
+                    <i class="fas fa-user-circle"></i> User Profile
+                </h1>
+            </div>
+            <div class="header-user">
+                <button class="btn btn-secondary" onclick="goBackToDashboard()">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </button>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="main-wrapper">
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Profile Overview Section -->
+                <section class="content-section active">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-user"></i> My Profile</h2>
+                        <p class="page-subtitle">View and manage your account information</p>
+                    </div>
+
+                    <!-- Profile Summary Card -->
+                    <div class="profile-summary-card">
+                        <div class="profile-avatar-section">
+                            <div class="profile-avatar-large" id="profileAvatarLarge">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="profile-name-section">
+                                <h2 id="profileFullName">Loading...</h2>
+                                <p id="profileRole" class="profile-role-badge">Loading...</p>
+                                <p id="profileEmployeeId" class="profile-employee-id">Loading...</p>
+                            </div>
+                        </div>
+                        <div class="profile-status-section">
+                            <span id="profileStatus" class="status-badge status-active">Active</span>
+                        </div>
+                    </div>
+
+                    <!-- Profile Details Tabs -->
+                    <div class="profile-tabs">
+                        <button class="profile-tab active" data-tab="personal-info">
+                            <i class="fas fa-user"></i> Personal Information
+                        </button>
+                        <button class="profile-tab" data-tab="security">
+                            <i class="fas fa-lock"></i> Security
+                        </button>
+                        <button class="profile-tab" data-tab="activity">
+                            <i class="fas fa-chart-line"></i> Activity Log
+                        </button>
+                    </div>
+
+                    <!-- Personal Information Tab -->
+                    <div class="tab-content active" id="personal-info">
+                        <div class="card">
+                            <div class="card-header">
+                                <span><i class="fas fa-info-circle"></i> Personal Details</span>
+                                <button class="btn btn-small btn-primary" onclick="openEditProfileModal()">
+                                    <i class="fas fa-edit"></i> Edit Profile
+                                </button>
+                            </div>
+                            <div class="profile-details-grid">
+                                <div class="profile-detail-item">
+                                    <label><i class="fas fa-user"></i> Full Name</label>
+                                    <span id="detailFullName">Loading...</span>
+                                </div>
+                                <div class="profile-detail-item">
+                                    <label><i class="fas fa-id-badge"></i> Employee ID</label>
+                                    <span id="detailEmployeeId">Loading...</span>
+                                </div>
+                                <div class="profile-detail-item">
+                                    <label><i class="fas fa-envelope"></i> Email Address</label>
+                                    <span id="detailEmail">Loading...</span>
+                                </div>
+                                <div class="profile-detail-item">
+                                    <label><i class="fas fa-phone"></i> Phone Number</label>
+                                    <span id="detailPhone">Loading...</span>
+                                </div>
+                                <div class="profile-detail-item">
+                                    <label><i class="fas fa-briefcase"></i> Role</label>
+                                    <span id="detailRole">Loading...</span>
+                                </div>
+                                <div class="profile-detail-item">
+                                    <label><i class="fas fa-calendar-alt"></i> Joined Date</label>
+                                    <span id="detailCreatedAt">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security Tab -->
+                    <div class="tab-content" id="security">
+                        <div class="card">
+                            <div class="card-header">
+                                <span><i class="fas fa-shield-alt"></i> Password & Security</span>
+                            </div>
+                            <div style="padding: 20px;">
+                                <div class="security-section">
+                                    <div class="security-item">
+                                        <div class="security-item-icon">
+                                            <i class="fas fa-key"></i>
+                                        </div>
+                                        <div class="security-item-content">
+                                            <h4>Password</h4>
+                                            <p>Last changed: <span id="lastPasswordChange">Never</span></p>
+                                        </div>
+                                        <div class="security-item-action">
+                                            <button class="btn btn-secondary btn-small" onclick="openChangePasswordModal()">
+                                                <i class="fas fa-edit"></i> Change Password
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="security-item">
+                                        <div class="security-item-icon">
+                                            <i class="fas fa-clock"></i>
+                                        </div>
+                                        <div class="security-item-content">
+                                            <h4>Last Login</h4>
+                                            <p id="lastLoginTime">Loading...</p>
+                                        </div>
+                                    </div>
+                                    <div class="security-item" id="forcePasswordChangeAlert" style="display: none;">
+                                        <div class="security-item-icon warning">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                        </div>
+                                        <div class="security-item-content">
+                                            <h4>Password Change Required</h4>
+                                            <p>You are required to change your password. Please update it for security reasons.</p>
+                                        </div>
+                                        <div class="security-item-action">
+                                            <button class="btn btn-warning btn-small" onclick="openChangePasswordModal()">
+                                                <i class="fas fa-key"></i> Update Now
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Activity Log Tab -->
+                    <div class="tab-content" id="activity">
+                        <div class="card">
+                            <div class="card-header">
+                                <span><i class="fas fa-history"></i> Recent Activity</span>
+                            </div>
+                            <div id="activityLogContainer">
+                                <p style="text-align: center; padding: 40px; color: var(--muted);">
+                                    <i class="fas fa-info-circle" style="font-size: 2rem; display: block; margin-bottom: 10px;"></i>
+                                    Activity logging feature coming soon
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="editProfileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> Edit Profile</h2>
+                <button class="btn-close" onclick="closeModal('editProfileModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="editProfileForm">
+                <div class="form-section">
+                    <h5><i class="fas fa-user"></i> Personal Information</h5>
+                    <div class="form-group">
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" class="form-input" id="editFullName" name="full_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" class="form-input" id="editPhone" name="phone" placeholder="+94 XX XXX XXXX">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-input" id="editEmail" name="email" disabled>
+                        <small style="color: var(--muted);">Email cannot be changed. Contact administrator if needed.</small>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editProfileModal')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-key"></i> Change Password</h2>
+                <button class="btn-close" onclick="closeModal('changePasswordModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="changePasswordForm">
+                <div class="form-section">
+                    <h5><i class="fas fa-lock"></i> Password Information</h5>
+                    <div class="form-group">
+                        <label class="form-label">Current Password *</label>
+                        <input type="password" class="form-input" id="currentPassword" name="current_password" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">New Password *</label>
+                        <input type="password" class="form-input" id="newPassword" name="new_password" required minlength="8">
+                        <small style="color: var(--muted);">Minimum 8 characters</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confirm New Password *</label>
+                        <input type="password" class="form-input" id="confirmPassword" name="confirm_password" required minlength="8">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('changePasswordModal')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-key"></i> Change Password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Scripts -->
+    <script src="../js/auth.js"></script>
+    <script src="../js/utils.js"></script>
+    <script src="../js/config.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
