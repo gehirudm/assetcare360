@@ -5,6 +5,8 @@
 /logs/*.log
 /logs/*.txt
 
+# Mama sahan
+
 # Configuration (if using environment-specific configs)
 .env
 config/database.local.php
