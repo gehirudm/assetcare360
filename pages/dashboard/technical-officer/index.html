@@ -238,102 +238,13 @@
 
                     <div class="card">
                         <div class="card-header">
-                            <span>� Tickets</span>
-                            <span id="ticketCount" class="status-badge status-normal">5 tickets</span>
+                            <span><i class="fas fa-ticket-alt"></i> Tickets</span>
+                            <span id="ticketCount" class="status-badge status-normal">Loading...</span>
                         </div>
-                        <div id="allTicketsList">
-                            <!-- New Tickets -->
-                            <div class="ticket-item" data-status="new">
-                                <div class="ticket-details">
-                                    <strong>TKT-002</strong>
-                                    <div class="ticket-meta">Equipment: Machine #205 | Reporter: Mike Operator</div>
-                                    <div class="ticket-issue">Hydraulic leak in main cylinder</div>
-                                    <div class="ticket-meta">Assigned by: Supervisor Mike | Priority: Medium | Date: Aug 30</div>
-                                </div>
-                                <div class="ticket-actions">
-                                    <span class="status-badge status-new">New</span>
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-mini" onclick="processTicket('TKT-002')">Process</button>
-                                        <button class="btn btn-warning btn-mini" onclick="requestPartsForTicket('TKT-002')">Request Parts</button>
-                                        <button class="btn btn-secondary btn-mini" onclick="viewTicketDetails('TKT-002')">View Details</button>
-                                    </div>
-                                </div>
-                            </div>
+                        <div id="allTicketsList" class="inventory-list">
+                            <!-- Tickets will be loaded dynamically -->
 
-                            <div class="ticket-item" data-status="new">
-                                <div class="ticket-details">
-                                    <strong>TKT-003</strong>
-                                    <div class="ticket-meta">Equipment: Truck #089 | Reporter: Sarah Driver</div>
-                                    <div class="ticket-issue">Brake system malfunction</div>
-                                    <div class="ticket-meta">Assigned by: Supervisor Lisa | Priority: High | Date: Aug 30</div>
-                                </div>
-                                <div class="ticket-actions">
-                                    <span class="status-badge status-new">New</span>
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-mini" onclick="processTicket('TKT-003')">Process</button>
-                                        <button class="btn btn-warning btn-mini" onclick="requestPartsForTicket('TKT-003')">Request Parts</button>
-                                        <button class="btn btn-secondary btn-mini" onclick="viewTicketDetails('TKT-003')">View Details</button>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <!-- In Progress Tickets -->
-                            <div class="ticket-item" data-status="in-progress">
-                                <div class="ticket-details">
-                                    <strong>TKT-001</strong>
-                                    <div class="ticket-meta">Equipment: Vehicle #101 | Reporter: John Driver</div>
-                                    <div class="ticket-issue">Engine overheating</div>
-                                    <div class="ticket-meta">Assigned by: Supervisor John | Priority: High | Started: Aug 28</div>
-                                    <div style="margin-top: 8px; padding: 8px; background: #f0f9ff; border-radius: 4px; font-size: 12px;">
-                                        <strong>Current Status:</strong> Installing new radiator - 60% complete
-                                    </div>
-                                </div>
-                                <div class="ticket-actions">
-                                    <span class="status-badge status-in-progress">In Progress</span>
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-mini" onclick="updateWorkProgress('TKT-001')">Update Work</button>
-                                        <button class="btn btn-warning btn-mini" onclick="requestPartsForTicket('TKT-001')">Request Parts</button>
-                                        <button class="btn btn-success btn-mini" onclick="markTicketDone('TKT-001')">Mark Done</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Completed Tickets -->
-                            <div class="ticket-item" data-status="completed">
-                                <div class="ticket-details">
-                                    <strong>TKT-004</strong>
-                                    <div class="ticket-meta">Equipment: Van #112 | Reporter: Malika Nishantha</div>
-                                    <div class="ticket-issue">Transmission fluid leak repaired</div>
-                                    <div class="ticket-meta">Assigned by: Supervisor John | Priority: Medium | Completed: Aug 29</div>
-                                    <div style="margin-top: 8px; padding: 8px; background: #f0fdf4; border-radius: 4px; font-size: 12px;">
-                                        <strong>Resolution:</strong> Replaced transmission seals and refilled fluid. Vehicle tested and operational.
-                                    </div>
-                                </div>
-                                <div class="ticket-actions">
-                                    <span class="status-badge status-complete">Completed</span>
-                                    <div class="action-buttons">
-                                        <button class="btn btn-secondary btn-mini" onclick="viewTicketDetails('TKT-004')">View Details</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="ticket-item" data-status="completed">
-                                <div class="ticket-details">
-                                    <strong>TKT-005</strong>
-                                    <div class="ticket-meta">Equipment: Machine #150 | Reporter: Gehiru Damindu</div>
-                                    <div class="ticket-issue">Gas cylinder valve replacement completed</div>
-                                    <div class="ticket-meta">Assigned by: Supervisor Mike | Priority: High | Completed: Aug 28</div>
-                                    <div style="margin-top: 8px; padding: 8px; background: #f0fdf4; border-radius: 4px; font-size: 12px;">
-                                        <strong>Resolution:</strong> Replaced faulty pressure valve and tested system. All safety checks passed.
-                                    </div>
-                                </div>
-                                <div class="ticket-actions">
-                                    <span class="status-badge status-complete">Completed</span>
-                                    <div class="action-buttons">
-                                        <button class="btn btn-secondary btn-mini" onclick="viewTicketDetails('TKT-005')">View Details</button>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                         <div id="noTicketsMessage" style="display: none; text-align: center; color: var(--muted); padding: 20px;">
                             No tickets found for this filter
@@ -363,116 +274,11 @@
 
                     <div class="card">
                         <div class="card-header">
-                            <span>📋 My Parts Requests</span>
-                            <span id="partsCount" class="status-badge status-normal">2 requests</span>
+                            <span><i class="fas fa-tools"></i> My Parts Requests</span>
+                            <span id="partsCount" class="status-badge status-normal">Loading...</span>
                         </div>
-                        <div id="allPartsRequests">
-                        
-                        <!-- Request 1 -->
-                        <div class="request-item" data-status="approved" style="display: block; padding: 20px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                                <strong style="font-size: 1.1rem; color: var(--tang-blue);">REQ-001</strong>
-                                <span class="status-badge status-approved">Approved</span>
-                            </div>
-                            
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px;">
-                                <div>
-                                    <span style="color: var(--muted); font-size: 0.9rem;">Ticket ID</span>
-                                    <div style="font-weight: 500; margin-top: 3px;">TKT-001</div>
-                                </div>
-                                <div>
-                                    <span style="color: var(--muted); font-size: 0.9rem;">Equipment</span>
-                                    <div style="font-weight: 500; margin-top: 3px;">Vehicle #101</div>
-                                </div>
-                                <div>
-                                    <span style="color: var(--muted); font-size: 0.9rem;">Reporter</span>
-                                    <div style="font-weight: 500; margin-top: 3px;">Tech Officer</div>
-                                </div>
-                                <div>
-                                    <span style="color: var(--muted); font-size: 0.9rem;">Requested Date</span>
-                                    <div style="font-weight: 500; margin-top: 3px;">Aug 20, 2025</div>
-                                </div>
-                            </div>
-
-                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--stone-200);">
-                                <span style="color: var(--muted); font-size: 0.9rem;">Issue Description</span>
-                                <div style="margin-top: 8px; line-height: 1.6; color: var(--text-700);">
-                                    Required for brake system repair on Vehicle #101
-                                </div>
-                            </div>
-
-                            <div style="margin-top: 15px;">
-                                <span style="color: var(--muted); font-size: 0.9rem; font-weight: 600;">🔧 Spare Parts Required</span>
-                                <div style="margin-top: 10px;">
-                                    <div style="background: #f8f9fa; border-radius: 8px; padding: 15px;">
-                                        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-                                            <span style="color: var(--text-700); font-weight: 500;">Brake Pads - BP-001</span>
-                                            <span style="color: var(--text-900); font-weight: 600;">Qty: 4</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style="margin-top: 15px; display: flex; gap: 10px;">
-                                <button class="btn btn-secondary btn-small">Track Status</button>
-                                <button class="btn btn-primary btn-small" onclick="viewPartRequestDetails('REQ-001')">View Details</button>
-                            </div>
-                        </div>
-
-                        <!-- Request 2 -->
-                        <div class="request-item" data-status="pending" style="display: block; padding: 20px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                                <strong style="font-size: 1.1rem; color: var(--tang-blue);">REQ-002</strong>
-                                <span class="status-badge status-pending">Pending</span>
-                            </div>
-                            
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px;">
-                                <div>
-                                    <span style="color: var(--muted); font-size: 0.9rem;">Ticket ID</span>
-                                    <div style="font-weight: 500; margin-top: 3px;">TKT-003</div>
-                                </div>
-                                <div>
-                                    <span style="color: var(--muted); font-size: 0.9rem;">Equipment</span>
-                                    <div style="font-weight: 500; margin-top: 3px;">Machine #205</div>
-                                </div>
-                                <div>
-                                    <span style="color: var(--muted); font-size: 0.9rem;">Reporter</span>
-                                    <div style="font-weight: 500; margin-top: 3px;">Tech Officer</div>
-                                </div>
-                                <div>
-                                    <span style="color: var(--muted); font-size: 0.9rem;">Requested Date</span>
-                                    <div style="font-weight: 500; margin-top: 3px;">Aug 22, 2025</div>
-                                </div>
-                            </div>
-
-                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--stone-200);">
-                                <span style="color: var(--muted); font-size: 0.9rem;">Issue Description</span>
-                                <div style="margin-top: 8px; line-height: 1.6; color: var(--text-700);">
-                                    Preventive maintenance for hydraulic system
-                                </div>
-                            </div>
-
-                            <div style="margin-top: 15px;">
-                                <span style="color: var(--muted); font-size: 0.9rem; font-weight: 600;">🔧 Spare Parts Required</span>
-                                <div style="margin-top: 10px;">
-                                    <div style="background: #f8f9fa; border-radius: 8px; padding: 15px;">
-                                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--stone-200);">
-                                            <span style="color: var(--text-700); font-weight: 500;">Oil Filter - OF-205</span>
-                                            <span style="color: var(--text-900); font-weight: 600;">Qty: 2</span>
-                                        </div>
-                                        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
-                                            <span style="color: var(--text-700); font-weight: 500;">Hydraulic Pump - HYD-250</span>
-                                            <span style="color: var(--text-900); font-weight: 600;">Qty: 1</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style="margin-top: 15px; display: flex; gap: 10px;">
-                                <button class="btn btn-secondary btn-small">Track Status</button>
-                                <button class="btn btn-primary btn-small" onclick="viewPartRequestDetails('REQ-002')">View Details</button>
-                            </div>
-                        </div>
+                        <div id="allPartsRequests" class="inventory-list">
+                            <!-- Parts requests will be loaded dynamically -->
                         </div>
                         <div id="noPartsMessage" style="display: none; text-align: center; color: var(--muted); padding: 20px;">
                             No parts requests found for this filter
@@ -502,34 +308,11 @@
 
                     <div class="card">
                         <div class="card-header">
-                            <span>🛡️ Warranty Claims</span>
-                            <span id="warrantyCount" class="status-badge status-normal">2 claims</span>
+                            <span><i class="fas fa-shield-alt"></i> Warranty Claims</span>
+                            <span id="warrantyCount" class="status-badge status-normal">Loading...</span>
                         </div>
-                        <div id="allWarrantyClaims">
-                        <div class="request-item" data-status="approved">
-                            <div class="ticket-details">
-                                <strong>WC-001</strong>
-                                <div class="ticket-meta">Part: Engine Block (ENG-500) | Equipment: Vehicle #101</div>
-                                <div class="ticket-issue">Warranty expires: Dec 15, 2025</div>
-                                <div class="ticket-meta">To: Inventory Manager</div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-approved">Approved</span>
-                                <button class="btn btn-secondary btn-small">Track</button>
-                            </div>
-                        </div>
-                        <div class="request-item" data-status="pending">
-                            <div class="ticket-details">
-                                <strong>WC-002</strong>
-                                <div class="ticket-meta">Part: Hydraulic Pump (HYD-250) | Equipment: Machine #205</div>
-                                <div class="ticket-issue">Warranty expires: Sep 10, 2025</div>
-                                <div class="ticket-meta">To: Inventory Manager</div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-pending">Pending</span>
-                                <button class="btn btn-secondary btn-small">Track</button>
-                            </div>
-                        </div>
+                        <div id="allWarrantyClaims" class="inventory-list">
+                            <!-- Warranty claims will be loaded dynamically -->
                         </div>
                         <div id="noWarrantyMessage" style="display: none; text-align: center; color: var(--muted); padding: 20px;">
                             No warranty claims found for this filter

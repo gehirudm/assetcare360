@@ -217,17 +217,39 @@ async function loadFaultReports() {
                 }
                 
                 return `
-                    <div class="item-card" data-status="${fault.status.toLowerCase().replace(' ', '-')}">
+                    <div class="inventory-item" data-status="${fault.status.toLowerCase().replace(' ', '-')}">
                         <div class="item-details">
-                            <strong>TKT-${String(fault.id).padStart(3, '0')}</strong>
-                            <div class="item-meta">Machine: ${fault.machine_name || 'Unknown'} | Submitted: ${formatDate(fault.created_at)}</div>
-                            <div class="item-description">${fault.description}</div>
-                            <div class="item-meta">Priority: ${fault.priority} | Photos: ${imageCount} attached | Location: ${fault.location}</div>
+                            <strong><i class="fas fa-ticket-alt"></i> TKT-${String(fault.id).padStart(3, '0')}</strong>
+                            <div class="item-meta">
+                                <i class="fas fa-cogs"></i> ${fault.machine_name || 'Unknown'} | 
+                                <i class="fas fa-calendar"></i> ${formatDate(fault.created_at)}
+                            </div>
+                            <div class="item-description">
+                                <span class="status-text ${statusInfo.class}">${statusInfo.label}</span> | 
+                                <i class="fas fa-flag"></i> ${fault.priority} | 
+                                <i class="fas fa-map-marker-alt"></i> ${fault.location}
+                            </div>
                         </div>
                         <div class="item-actions">
-                            <span class="status-text ${statusInfo.class}">${statusInfo.label}</span>
-                            <div style="display: flex; gap: 8px; align-items: center;">
-                                ${actionButtons}
+                            <div class="action-buttons">
+                                <button class="btn btn-primary btn-small" onclick="viewFaultDetails(${fault.id})">
+                                    <i class="fas fa-eye"></i> VIEW
+                                </button>
+                                ${isPending ? `
+                                <div style="position: relative; display: inline-block;">
+                                    <button class="btn btn-secondary btn-small" onclick="toggleTicketMenu(${fault.id}, event)" id="ticket-menu-btn-${fault.id}">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <div class="dropdown-menu" id="ticket-menu-${fault.id}" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: white; border: 1px solid var(--stone-200); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 150px; z-index: 1000;">
+                                        <button onclick="editFaultTicket(${fault.id}); closeTicketMenu(${fault.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text-700);" onmouseover="this.style.background='var(--stone-50)'" onmouseout="this.style.background='none'">
+                                            <i class="fas fa-edit" style="width: 16px;"></i> Edit
+                                        </button>
+                                        <button onclick="deleteFaultTicket(${fault.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--danger);" onmouseover="this.style.background='var(--red-50)'" onmouseout="this.style.background='none'">
+                                            <i class="fas fa-trash" style="width: 16px;"></i> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                                ` : ''}
                             </div>
                         </div>
                     </div>
@@ -268,17 +290,24 @@ function loadConditionUpdates() {
 
     const container = document.getElementById('updatesContainer');
     container.innerHTML = updates.map(update => `
-        <div class="item-card" data-status="${update.status}">
+        <div class="inventory-item" data-status="${update.status}">
             <div class="item-details">
-                <strong>${update.id}</strong>
-                <div class="item-meta">Machine: ${update.machine} | Submitted: ${update.submitted}</div>
-                <div class="item-description">Hours: ${update.hours} | ${update.condition}</div>
+                <strong><i class="fas fa-clipboard-check"></i> ${update.id}</strong>
+                <div class="item-meta">
+                    <i class="fas fa-cogs"></i> ${update.machine} | 
+                    <i class="fas fa-calendar"></i> ${update.submitted}
+                </div>
+                <div class="item-description">
+                    <span class="status-text ${update.statusClass}">${update.statusLabel}</span> | 
+                    <i class="fas fa-clock"></i> ${update.hours}
+                </div>
             </div>
             <div class="item-actions">
-                <span class="status-text ${update.statusClass}">${update.statusLabel}</span>
-                <button class="btn btn-secondary btn-small" onclick="viewUpdateDetails('${update.id}')">
-                    <i class="fas fa-eye"></i> View
-                </button>
+                <div class="action-buttons">
+                    <button class="btn btn-primary btn-small" onclick="viewUpdateDetails('${update.id}')">
+                        <i class="fas fa-eye"></i> VIEW
+                    </button>
+                </div>
             </div>
         </div>
     `).join('');
@@ -315,16 +344,24 @@ async function loadTickets() {
                 `;
                 
                 return `
-                    <div class="item-card" data-status="${ticket.status.toLowerCase().replace(' ', '-')}">
+                    <div class="inventory-item" data-status="${ticket.status.toLowerCase().replace(' ', '-')}">
                         <div class="item-details">
-                            <strong>TKT-${String(ticket.id).padStart(3, '0')}</strong>
-                            <div class="item-meta">Machine: ${ticket.machine_name || 'Unknown'} | Submitted: ${formatDate(ticket.created_at)}</div>
-                            <div class="item-description">${ticket.description}</div>
-                            <div class="item-meta">Last Update: ${updateText}</div>
+                            <strong><i class="fas fa-ticket-alt"></i> TKT-${String(ticket.id).padStart(3, '0')}</strong>
+                            <div class="item-meta">
+                                <i class="fas fa-cogs"></i> ${ticket.machine_name || 'Unknown'} | 
+                                <i class="fas fa-calendar"></i> ${formatDate(ticket.created_at)}
+                            </div>
+                            <div class="item-description">
+                                <span class="status-text ${statusInfo.class}">${statusInfo.label}</span> | 
+                                ${updateText}
+                            </div>
                         </div>
-                        <div class="item-actions" style="display: flex; gap: 8px; align-items: center;">
-                            <span class="status-text ${statusInfo.class}">${statusInfo.label}</span>
-                            ${actionButtons}
+                        <div class="item-actions">
+                            <div class="action-buttons">
+                                <button class="btn btn-primary btn-small" onclick="viewFaultDetails(${ticket.id})">
+                                    <i class="fas fa-eye"></i> VIEW
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -466,6 +503,7 @@ function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.remove('active');
+        document.body.style.overflow = '';
         
         // Clear errors when closing report fault modal
         if (modalId === 'reportFaultModal') {
@@ -475,7 +513,35 @@ function closeModal(modalId) {
                 errorDiv.innerHTML = '';
             }
         }
+        
+        // Remove dynamically created modals
+        if (modalId.startsWith('detailsModal_')) {
+            setTimeout(() => modal.remove(), 300);
+        }
     }
+}
+
+function createDetailsModal(title, content) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'detailsModal_' + Date.now();
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> ${title}</h2>
+                <button class="btn-close" onclick="closeModal('${modal.id}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="form-section">
+                ${content}
+            </div>
+            <button class="btn btn-secondary" onclick="closeModal('${modal.id}')"><i class="fas fa-times"></i> Close</button>
+        </div>
+    `;
+    
+    return modal;
 }
 
 // Close modal on outside click
@@ -1191,49 +1257,35 @@ async function viewFaultDetails(id) {
             `;
         }
         
-        const detailsModal = document.createElement('div');
-        detailsModal.className = 'modal active';
-        detailsModal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2><i class="fas fa-exclamation-triangle"></i> Fault Report #${fault.id}</h2>
-                    <button class="btn-close" onclick="this.closest('.modal').remove()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div style="padding: 30px;">
-                    <div class="form-section">
-                        <h5><i class="fas fa-info-circle"></i> Fault Information</h5>
-                        <div style="margin-bottom: 8px;"><strong>Ticket ID:</strong> #${fault.id}</div>
-                        <div style="margin-bottom: 8px;"><strong>Machine:</strong> ${fault.machine_name || 'Unknown'}</div>
-                        <div style="margin-bottom: 8px;"><strong>Location:</strong> ${fault.location || 'Not specified'}</div>
-                        <div style="margin-bottom: 8px;"><strong>Submitted:</strong> ${formatDate(fault.created_at)}</div>
-                        <div style="margin-bottom: 8px;"><strong>Priority:</strong> <span class="priority-badge priority-${fault.priority?.toLowerCase()}">${fault.priority || 'Medium'}</span></div>
-                        <div style="margin-bottom: 8px;"><strong>Reported By:</strong> ${fault.reported_by_name || 'N/A'}</div>
-                    </div>
-                    <div class="form-section">
-                        <h5><i class="fas fa-file-alt"></i> Description</h5>
-                        <div style="padding: 12px; background: var(--stone-50); border-radius: 8px; border: 1px solid var(--stone-200);">
-                            ${fault.description || 'No description provided'}
-                        </div>
-                    </div>
-                    ${assignedTechniciansHtml}
-                    ${imagesHtml}
-                    <div class="form-section">
-                        <h5><i class="fas fa-tasks"></i> Status</h5>
-                        <div style="margin-bottom: 8px;"><strong>Current Status:</strong> <span class="status-text ${statusInfo.class}">${statusInfo.text}</span></div>
-                        <div style="margin-bottom: 8px;"><strong>Last Update:</strong> ${updateText}</div>
-                        ${fault.updated_at !== fault.created_at ? `<div style="margin-bottom: 8px;"><strong>Updated On:</strong> ${formatDate(fault.updated_at)}</div>` : ''}
-                    </div>
-                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--stone-200); display: flex; gap: 10px; justify-content: flex-end;">
-                        <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">
-                            <i class="fas fa-times"></i> Close
-                        </button>
-                    </div>
-                </div>
+        const modal = createDetailsModal(`Fault Report TKT-${String(fault.id).padStart(3, '0')}`, `
+            <div class="form-section">
+                <h5><i class="fas fa-info-circle"></i> Fault Information</h5>
+                <p><strong>Ticket ID:</strong> TKT-${String(fault.id).padStart(3, '0')}</p>
+                <p><strong>Machine:</strong> ${fault.machine_name || 'Unknown'}</p>
+                <p><strong>Location:</strong> ${fault.location || 'Not specified'}</p>
+                <p><strong>Submitted:</strong> ${formatDate(fault.created_at)}</p>
+                <p><strong>Priority:</strong> <span class="priority-badge priority-${fault.priority?.toLowerCase()}">${fault.priority || 'Medium'}</span></p>
+                <p><strong>Reported By:</strong> ${fault.reported_by_name || 'N/A'}</p>
+                <p><strong>Current Status:</strong> <span class="status-text ${statusInfo.class}">${statusInfo.text}</span></p>
             </div>
-        `;
-        document.body.appendChild(detailsModal);
+            
+            <div class="form-section">
+                <h5><i class="fas fa-file-alt"></i> Description</h5>
+                <p style="white-space: pre-wrap; border-left: none; padding: 12px; background: var(--background); border-radius: 6px;">${fault.description || 'No description provided'}</p>
+            </div>
+            
+            ${assignedTechniciansHtml}
+            ${imagesHtml}
+            
+            <div class="form-section">
+                <h5><i class="fas fa-clock"></i> Timeline</h5>
+                <p><strong>Last Update:</strong> ${updateText}</p>
+                ${fault.updated_at !== fault.created_at ? `<p><strong>Updated On:</strong> ${formatDate(fault.updated_at)}</p>` : ''}
+            </div>
+        `);
+        
+        document.body.appendChild(modal);
+        modal.classList.add('active');
     } catch (error) {
         // Remove loading modal if exists
         const loading = document.getElementById('loadingModal');
@@ -1279,53 +1331,41 @@ function viewUpdateDetails(id) {
     const update = updateData[id];
     if (!update) return;
 
-    const detailsModal = document.createElement('div');
-    detailsModal.className = 'modal active';
-    detailsModal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-clipboard-check"></i> Condition Update - ${id}</h2>
-                <button class="btn-close" onclick="this.closest('.modal').remove()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div style="padding: 30px;">
-                <div class="form-section">
-                    <h5><i class="fas fa-cog"></i> Machine Information</h5>
-                    <div style="margin-bottom: 8px;"><strong>Update ID:</strong> ${id}</div>
-                    <div style="margin-bottom: 8px;"><strong>Machine:</strong> ${update.machine}</div>
-                    <div style="margin-bottom: 8px;"><strong>Submitted:</strong> ${update.submitted}</div>
-                    <div style="margin-bottom: 8px;"><strong>Current Hours:</strong> ${update.hours}</div>
-                </div>
-                <div class="form-section">
-                    <h5><i class="fas fa-chart-bar"></i> Condition Assessment</h5>
-                    <div style="margin-bottom: 8px;"><strong>Overall Condition:</strong> ${update.condition}</div>
-                    <div style="margin-bottom: 8px;"><strong>Engine Performance:</strong> ${update.enginePerf}</div>
-                    <div style="margin-bottom: 8px;"><strong>Hydraulic System:</strong> ${update.hydraulicSys}</div>
-                </div>
-                <div class="form-section">
-                    <h5><i class="fas fa-clipboard-list"></i> Detailed Observations</h5>
-                    <div>${update.observations}</div>
-                </div>
-                <div class="form-section">
-                    <h5><i class="fas fa-tools"></i> Maintenance Recommendations</h5>
-                    <div>${update.recommendations}</div>
-                </div>
-                <div class="form-section">
-                    <h5><i class="fas fa-check-circle"></i> Review Status</h5>
-                    <div style="margin-bottom: 8px;"><strong>Status:</strong> <span class="status-text ${update.statusClass}">${update.status}</span></div>
-                    <div style="margin-bottom: 8px;"><strong>Reviewed By:</strong> ${update.reviewedBy}</div>
-                    ${update.reviewNotes ? `<div style="margin-bottom: 8px;"><strong>Review Notes:</strong> ${update.reviewNotes}</div>` : ''}
-                </div>
-                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--stone-200); display: flex; gap: 10px; justify-content: flex-end;">
-                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">
-                        <i class="fas fa-times"></i> Close
-                    </button>
-                </div>
-            </div>
+    const modal = createDetailsModal(`Condition Update - ${id}`, `
+        <div class="form-section">
+            <h5><i class="fas fa-cog"></i> Machine Information</h5>
+            <p><strong>Update ID:</strong> ${id}</p>
+            <p><strong>Machine:</strong> ${update.machine}</p>
+            <p><strong>Submitted:</strong> ${update.submitted}</p>
+            <p><strong>Current Hours:</strong> ${update.hours}</p>
         </div>
-    `;
-    document.body.appendChild(detailsModal);
+        
+        <div class="form-section">
+            <h5><i class="fas fa-chart-bar"></i> Condition Assessment</h5>
+            <p><strong>Overall Condition:</strong> ${update.condition}</p>
+            <p><strong>Engine Performance:</strong> ${update.enginePerf}</p>
+            <p><strong>Hydraulic System:</strong> ${update.hydraulicSys}</p>
+        </div>
+        
+        <div class="form-section">
+            <h5><i class="fas fa-clipboard-list"></i> Detailed Observations</h5>
+            <p style="white-space: pre-wrap; border-left: none; padding: 12px; background: var(--background); border-radius: 6px;">${update.observations}</p>
+        </div>
+        
+        <div class="form-section">
+            <h5><i class="fas fa-tools"></i> Maintenance Recommendations</h5>
+            <p style="white-space: pre-wrap; border-left: none; padding: 12px; background: var(--background); border-radius: 6px;">${update.recommendations}</p>
+        </div>
+        <div class="form-section">
+            <h5><i class="fas fa-check-circle"></i> Review Status</h5>
+            <p><strong>Status:</strong> <span class="status-text ${update.statusClass}">${update.status}</span></p>
+            <p><strong>Reviewed By:</strong> ${update.reviewedBy}</p>
+            ${update.reviewNotes ? `<p><strong>Review Notes:</strong></p><p style="white-space: pre-wrap; border-left: none; padding: 12px; background: var(--background); border-radius: 6px;">${update.reviewNotes}</p>` : ''}
+        </div>
+    `);
+    
+    document.body.appendChild(modal);
+    modal.classList.add('active');
 }
 
 function viewTicketTimeline(id) {

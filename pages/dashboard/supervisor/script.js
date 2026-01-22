@@ -117,37 +117,55 @@ let currentReportSourceFilter = 'all';
 
 async function loadDailyCheckReports() {
     const tbody = document.getElementById('reportsTableBody');
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading reports...</td></tr>';
+    tbody.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Loading reports...</p>';
     
     // TODO: Replace with actual API call
     // const reports = await API.get('/daily-check-reports');
     
     // Sample data
     const reports = [
-        { id: 'DCR-001', asset: 'TRK-101', submittedBy: 'John Doe', type: 'driver', date: '2025-10-21', status: 'Pending' },
-        { id: 'DCR-002', asset: 'EXC-045', submittedBy: 'Jane Smith', type: 'operator', date: '2025-10-21', status: 'Pending' }
+        { id: 'DCR-001', asset: 'TRK-101', assetName: 'Toyota Hiace', submittedBy: 'John Doe', type: 'driver', date: '2025-10-21', status: 'Pending', description: 'Daily pre-trip inspection completed' },
+        { id: 'DCR-002', asset: 'EXC-045', assetName: 'CAT Excavator 320D', submittedBy: 'Jane Smith', type: 'operator', date: '2025-10-21', status: 'Pending', description: 'Daily operational check completed' },
+        { id: 'DCR-003', asset: 'TRK-105', assetName: 'Isuzu NPR', submittedBy: 'Mike Johnson', type: 'driver', date: '2025-10-20', status: 'Approved', description: 'All systems operational' },
+        { id: 'DCR-004', asset: 'BAC-012', assetName: 'JCB Backhoe', submittedBy: 'Sarah Lee', type: 'operator', date: '2025-10-20', status: 'Approved', description: 'Routine maintenance check passed' }
     ];
     
     tbody.innerHTML = reports.map(report => `
-        <tr data-id="${report.id}" data-type="${report.type}">
-            <td>${report.id}</td>
-            <td>${report.asset}</td>
-            <td>${report.submittedBy}</td>
-            <td><i class="fas fa-${report.type === 'driver' ? 'car' : 'cog'}"></i> ${report.type}</td>
-            <td>${report.date}</td>
-            <td><span class="status-text status-${report.status.toLowerCase()}">${report.status}</span></td>
-            <td>
-                <button class="btn btn-secondary btn-small" onclick="viewReport('${report.id}')">
-                    <i class="fas fa-eye"></i> View
-                </button>
-                <button class="btn btn-success btn-small" onclick="approveReport('${report.id}')">
-                    <i class="fas fa-check"></i> Approve
-                </button>
-                <button class="btn btn-danger btn-small" onclick="rejectReport('${report.id}')">
-                    <i class="fas fa-times"></i> Reject
-                </button>
-            </td>
-        </tr>
+        <div class="inventory-item" data-id="${report.id}" data-type="${report.type}" data-status="${report.status.toLowerCase()}">
+            <div class="item-details">
+                <strong><i class="fas fa-clipboard-check"></i> ${report.id} - ${report.assetName}</strong>
+                <div class="item-meta">
+                    <i class="fas fa-user"></i> ${report.submittedBy} | 
+                    <i class="fas fa-tag"></i> ${report.type.charAt(0).toUpperCase() + report.type.slice(1)}
+                </div>
+                <div class="item-meta">
+                    <span class="status-text status-${report.status.toLowerCase()}">${report.status.toUpperCase()}</span> | 
+                    <i class="fas fa-calendar"></i> ${report.date}
+                </div>
+            </div>
+            <div class="item-actions">
+                <div class="action-buttons">
+                    <button class="btn btn-primary btn-small" onclick="viewReport('${report.id}')">
+                        <i class="fas fa-eye"></i> VIEW
+                    </button>
+                    ${report.status === 'Pending' ? `
+                        <div class="dropdown-container">
+                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'report-${report.id}')">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div class="dropdown-menu" id="dropdown-report-${report.id}">
+                                <button class="dropdown-item" onclick="approveReport('${report.id}'); closeAllDropdowns();">
+                                    <i class="fas fa-check"></i> Approve
+                                </button>
+                                <button class="dropdown-item danger" onclick="rejectReport('${report.id}'); closeAllDropdowns();">
+                                    <i class="fas fa-times"></i> Reject
+                                </button>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        </div>
     `).join('');
 }
 
@@ -166,21 +184,21 @@ function filterReportsBySource(source) {
 }
 
 function applyReportFilters() {
-    const rows = document.querySelectorAll('#pendingReportsTable tr[data-id]');
+    const items = document.querySelectorAll('#reportsTableBody .inventory-item');
     let visibleCount = 0;
     
-    rows.forEach(row => {
-        const rowStatus = row.querySelector('.status-text').textContent.toLowerCase();
-        const rowType = row.getAttribute('data-type');
+    items.forEach(item => {
+        const itemStatus = item.getAttribute('data-status');
+        const itemType = item.getAttribute('data-type');
         
-        const matchesStatus = currentReportStatusFilter === 'all' || rowStatus === currentReportStatusFilter;
-        const matchesSource = currentReportSourceFilter === 'all' || rowType === currentReportSourceFilter;
+        const matchesStatus = currentReportStatusFilter === 'all' || itemStatus === currentReportStatusFilter.toLowerCase();
+        const matchesSource = currentReportSourceFilter === 'all' || itemType === currentReportSourceFilter;
         
         if (matchesStatus && matchesSource) {
-            row.style.display = '';
+            item.style.display = '';
             visibleCount++;
         } else {
-            row.style.display = 'none';
+            item.style.display = 'none';
         }
     });
     
@@ -188,8 +206,51 @@ function applyReportFilters() {
 }
 
 function viewReport(reportId) {
-    showToast(`Viewing report ${reportId}`, 'info');
-    // TODO: Implement view report modal
+    // Sample data - replace with actual API call
+    const reportData = {
+        'DCR-001': { id: 'DCR-001', asset: 'TRK-101', assetName: 'Toyota Hiace', submittedBy: 'John Doe', type: 'driver', date: '2025-10-21', time: '08:30 AM', status: 'Pending', description: 'Daily pre-trip inspection completed', odometer: '45,230 km', fuelLevel: '75%', issues: 'None reported', notes: 'All systems operational' },
+        'DCR-002': { id: 'DCR-002', asset: 'EXC-045', assetName: 'CAT Excavator 320D', submittedBy: 'Jane Smith', type: 'operator', date: '2025-10-21', time: '07:00 AM', status: 'Pending', description: 'Daily operational check completed', hours: '1,250 hrs', fuelLevel: '60%', issues: 'Minor hydraulic leak noted', notes: 'Scheduled for inspection' }
+    };
+    
+    const report = reportData[reportId] || reportData['DCR-001'];
+    
+    const content = `
+        <div class="form-section">
+            <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
+            <p><strong>Report ID:</strong> <span style="color: var(--royal-blue);">${report.id}</span></p>
+            <p><strong>Date & Time:</strong> ${report.date} at ${report.time}</p>
+            <p><strong>Status:</strong> <span class="status-text status-${report.status.toLowerCase()}">${report.status}</span></p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-user"></i> Personnel & Asset</h5>
+            <p><strong>Asset:</strong> ${report.asset} - ${report.assetName}</p>
+            <p><strong>Type:</strong> <i class="fas fa-${report.type === 'driver' ? 'car' : 'cogs'}"></i> ${report.type.charAt(0).toUpperCase() + report.type.slice(1)}</p>
+            <p><strong>Submitted By:</strong> <i class="fas fa-user"></i> ${report.submittedBy}</p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-clipboard-check"></i> Check Details</h5>
+            <p><strong>Description:</strong></p>
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${report.description}</p>
+            <p><strong>${report.type === 'driver' ? 'Odometer' : 'Engine Hours'}:</strong> ${report.type === 'driver' ? report.odometer : report.hours}</p>
+            <p><strong>Fuel Level:</strong> ${report.fuelLevel}</p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-exclamation-triangle"></i> Issues Reported</h5>
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px; ${report.issues !== 'None reported' ? 'border: 1px solid #dc3545; background-color: #f8d7da;' : ''}">${report.issues}</p>
+        </div>
+
+        ${report.notes ? `
+            <div class="form-section">
+                <h5><i class="fas fa-sticky-note"></i> Additional Notes</h5>
+                <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${report.notes}</p>
+            </div>
+        ` : ''}
+    `;
+    
+    createDetailsModal('Daily Check Report Details', content);
 }
 
 function approveReport(reportId) {
@@ -231,8 +292,10 @@ async function loadFaultTickets() {
         unassignedList.innerHTML = '<p style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
         
         // Load active tickets
-        const tbody = document.getElementById('activeTicketsBody');
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading tickets...</td></tr>';
+        const activeList = document.getElementById('activeTicketsList');
+        if (activeList) {
+            activeList.innerHTML = '<p style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading tickets...</p>';
+        }
         
         // Fetch tickets from backend
         const response = await API.get('/fault-tickets');
@@ -249,7 +312,10 @@ async function loadFaultTickets() {
     } catch (error) {
         console.error('Error loading fault tickets:', error);
         document.getElementById('unassignedTicketsList').innerHTML = '<p style="text-align: center; color: var(--danger);">Error loading tickets</p>';
-        document.getElementById('activeTicketsBody').innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--danger);">Error loading tickets</td></tr>';
+        const activeList = document.getElementById('activeTicketsList');
+        if (activeList) {
+            activeList.innerHTML = '<p style="text-align: center; color: var(--danger);">Error loading tickets</p>';
+        }
         showToast('Failed to load fault tickets', 'error');
     }
 }
@@ -301,91 +367,116 @@ function displayFilteredTickets() {
             const formattedDate = createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             const formattedTime = createdDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
             
-            // Get first line of description for title
-            const descriptionLines = description.split('\n').filter(line => line.trim());
-            const title = descriptionLines[0] || description;
-            const details = descriptionLines.slice(1).join(' ') || '';
-            
-            // Determine urgency level for styling
             const priority = (ticket.priority || 'Medium').toLowerCase();
-            const urgencyClass = `urgency-${priority}`;
+            const shortDesc = description.split('\n')[0] || description;
             
             return `
-                <div class="fault-ticket-card ${urgencyClass}">
-                    <div class="ticket-card-header">
-                        <div class="ticket-header-left">
-                            <span class="ticket-id">TKT-${String(ticket.id).padStart(3, '0')}</span>
-                            <h3 class="ticket-card-title">${title}</h3>
+                <div class="inventory-item">
+                    <div class="item-details">
+                        <strong><i class="fas fa-ticket-alt"></i> TKT-${String(ticket.id).padStart(3, '0')}</strong>
+                        <div class="item-meta">
+                            <i class="fas fa-wrench"></i> ${assetName} | 
+                            <i class="fas fa-user"></i> ${reporterName}
                         </div>
-                        <div class="ticket-header-right">
-                            <span class="priority-text priority-${priority}">
-                                <i class="fas fa-exclamation-circle"></i> ${priority.toUpperCase()}
-                            </span>
-                            <div class="ticket-actions-inline">
-                                <button class="btn btn-small btn-secondary" onclick="viewTicketDetails(${ticket.id})">
-                                    <i class="fas fa-eye"></i> View
+                        <div class="item-description">
+                            ${shortDesc}
+                        </div>
+                        <div class="item-meta">
+                            <span class="status-text status-${priority}">${priority.toUpperCase()}</span> | 
+                            <i class="fas fa-calendar"></i> ${formattedDate} ${formattedTime}
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <div class="action-buttons">
+                            <button class="btn btn-primary btn-small" onclick="viewTicketDetails(${ticket.id})"><i class="fas fa-eye"></i> VIEW</button>
+                            <div class="dropdown-container">
+                                <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'ticket-${ticket.id}')">
+                                    <i class="fas fa-ellipsis-v"></i>
                                 </button>
-                                <button class="btn btn-small btn-primary" onclick="assignTicket(${ticket.id})" style="margin-left: 5px;">
-                                    <i class="fas fa-user-plus"></i> Assign
-                                </button>
+                                <div class="dropdown-menu" id="dropdown-ticket-${ticket.id}">
+                                    <button class="dropdown-item" onclick="assignTicket(${ticket.id}); closeAllDropdowns();">
+                                        <i class="fas fa-user-plus"></i> Assign Technician
+                                    </button>
+                                    <button class="dropdown-item" onclick="editTicket(${ticket.id}); closeAllDropdowns();">
+                                        <i class="fas fa-edit"></i> Edit Ticket
+                                    </button>
+                                    <button class="dropdown-item danger" onclick="deleteTicket(${ticket.id}); closeAllDropdowns();">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="ticket-card-meta">
-                        <span class="meta-item">
-                            <i class="fas fa-wrench"></i> <strong>Machine:</strong> ${assetName}
-                        </span>
-                        <span class="meta-item">
-                            <i class="fas fa-user"></i> <strong>Reported By:</strong> ${reporterName}
-                        </span>
-                        <span class="meta-item">
-                            <i class="fas fa-calendar"></i> <strong>Date:</strong> ${formattedDate}
-                        </span>
-                        <span class="meta-item">
-                            <i class="fas fa-clock"></i> <strong>Time:</strong> ${formattedTime}
-                        </span>
-                    </div>
-                    ${details ? `<div class="ticket-card-description">${details}</div>` : ''}
                 </div>
             `;
         }).join('');
     } else {
-        unassignedList.innerHTML = '<p style="text-align: center; color: var(--muted);">No unassigned tickets match the current filters</p>';
+        unassignedList.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 20px;">No unassigned tickets match the current filters</p>';
     }
     
     // Display assigned tickets
+    const activeList = document.getElementById('activeTicketsList');
     if (assignedTickets.length > 0) {
-        tbody.innerHTML = assignedTickets.map(ticket => {
+        activeList.innerHTML = assignedTickets.map(ticket => {
             const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
             const description = ticket.description || 'No description';
-            const shortDesc = description.split('\n')[0]; // Get first line
+            const shortDesc = description.split('\n')[0];
             
-            // Get assigned technicians names
             const assignedTo = ticket.assignments && ticket.assignments.length > 0
                 ? ticket.assignments.map(a => a.technician_name).join(', ')
                 : 'Unassigned';
             
+            const priority = (ticket.priority || 'Medium').toLowerCase();
+            const status = (ticket.status || 'open').toLowerCase().replace(' ', '-');
+            
             return `
-                <tr>
-                    <td>TKT-${String(ticket.id).padStart(3, '0')}</td>
-                    <td>${assetName}</td>
-                    <td>${shortDesc}</td>
-                    <td><span class="status-text status-${ticket.priority ? ticket.priority.toLowerCase() : 'medium'}">${(ticket.priority || 'MEDIUM').toUpperCase()}</span></td>
-                    <td>${assignedTo}</td>
-                    <td><span class="status-text status-${(ticket.status || 'open').toLowerCase().replace(' ', '-')}">${(ticket.status || 'OPEN').toUpperCase()}</span></td>
-                    <td>
-                        <button class="btn btn-small btn-secondary" onclick="viewTicketDetails(${ticket.id})">
-                            <i class="fas fa-eye"></i> View
-                        </button>
-                        <button class="btn btn-small btn-primary" onclick="editTicketAssignment(${ticket.id})" style="margin-left: 5px;">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                    </td>
-                </tr>
+                <div class="inventory-item">
+                    <div class="item-details">
+                        <strong><i class="fas fa-ticket-alt"></i> TKT-${String(ticket.id).padStart(3, '0')}</strong>
+                        <div class="item-meta">
+                            <i class="fas fa-wrench"></i> ${assetName} | 
+                            <i class="fas fa-user-cog"></i> ${assignedTo}
+                        </div>
+                        <div class="item-description">
+                            ${shortDesc}
+                        </div>
+                        <div class="item-meta">
+                            <span class="status-text status-${priority}">${(ticket.priority || 'MEDIUM').toUpperCase()}</span> | 
+                            <span class="status-text status-${status}">${(ticket.status || 'OPEN').toUpperCase().replace('-', ' ')}</span>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <div class="action-buttons">
+                            <button class="btn btn-primary btn-small" onclick="viewTicketDetails(${ticket.id})"><i class="fas fa-eye"></i> VIEW</button>
+                            <div class="dropdown-container">
+                                <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'active-${ticket.id}')">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <div class="dropdown-menu" id="dropdown-active-${ticket.id}">
+                                    <button class="dropdown-item" onclick="editTicketAssignment(${ticket.id}); closeAllDropdowns();">
+                                        <i class="fas fa-edit"></i> Edit Assignment
+                                    </button>
+                                    <button class="dropdown-item" onclick="reassignTicket(${ticket.id}); closeAllDropdowns();">
+                                        <i class="fas fa-user-cog"></i> Reassign
+                                    </button>
+                                    <button class="dropdown-item" onclick="markTicketComplete(${ticket.id}); closeAllDropdowns();">
+                                        <i class="fas fa-check-circle"></i> Mark Complete
+                                    </button>
+                                    <button class="dropdown-item" onclick="printTicket(${ticket.id}); closeAllDropdowns();">
+                                        <i class="fas fa-print"></i> Print
+                                    </button>
+                                    <button class="dropdown-item danger" onclick="deleteTicket(${ticket.id}); closeAllDropdowns();">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             `;
         }).join('');
     } else {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--muted);">No active tickets match the current filters</td></tr>';
+        activeList.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 20px;">No active tickets match the current filters</p>';
     }
 }
 
@@ -427,6 +518,7 @@ async function createNewTicket() {
     // Show modal
     const modal = document.getElementById('createTicketModal');
     modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
     
     // Reset form
     const form = document.getElementById('createTicketForm');
@@ -509,7 +601,10 @@ async function loadMachinesForTicket() {
 
 function closeCreateTicketModal() {
     const modal = document.getElementById('createTicketModal');
-    modal.classList.remove('active');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
 }
 
 async function loadTechniciansForAssignment() {
@@ -600,7 +695,7 @@ async function loadTicketForAssignment(ticketId, isEdit = false) {
         }
         
         // Update modal title based on mode
-        const modalTitle = document.querySelector('#assignTicketModal .modal-title');
+        const modalTitle = document.querySelector('#assignTicketModal .modal-header h2');
         if (modalTitle) {
             modalTitle.innerHTML = isEdit 
                 ? '<i class="fas fa-edit"></i> Edit Ticket Assignment'
@@ -659,6 +754,8 @@ async function loadTicketForAssignment(ticketId, isEdit = false) {
         const assignModal = document.getElementById('assignTicketModal');
         if (assignModal) {
             assignModal.style.display = 'flex';
+            assignModal.style.opacity = '0';
+            document.body.style.overflow = 'hidden';
             setTimeout(() => {
                 assignModal.style.opacity = '1';
             }, 10);
@@ -796,10 +893,13 @@ async function handleAssignTicket(event) {
 
 function closeAssignTicketModal() {
     const modal = document.getElementById('assignTicketModal');
-    modal.style.opacity = '0';
-    setTimeout(() => {
-        modal.style.display = 'none';
-    }, 300); // Wait for opacity transition
+    if (modal) {
+        modal.style.opacity = '0';
+        setTimeout(() => {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }, 300); // Wait for opacity transition
+    }
     
     // Reset form
     const form = document.getElementById('assignTicketForm');
@@ -831,8 +931,8 @@ async function viewTicketDetails(ticketId) {
         if (ticket.images && ticket.images.length > 0) {
             const baseURL = CONFIG.API_BASE_URL.replace('/api', ''); // Remove /api from the URL
             imagesHTML = `
-                <div class="ticket-detail-section">
-                    <h3>Attached Images</h3>
+                <div class="form-section">
+                    <h5><i class="fas fa-images"></i> Attached Images</h5>
                     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
                         ${ticket.images.map(img => `
                             <div style="border: 1px solid var(--stone-200); border-radius: 8px; overflow: hidden;">
@@ -851,81 +951,43 @@ async function viewTicketDetails(ticketId) {
         }
         
         const detailsHTML = `
-            <div class="ticket-detail-section">
-                <h3>Ticket Information</h3>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <label>Ticket ID:</label>
-                        <span>TKT-${String(ticket.id).padStart(3, '0')}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Status:</label>
-                        <span class="status-text status-${(ticket.status || 'open').toLowerCase().replace('_', '-')}">${(ticket.status || 'OPEN').toUpperCase().replace('_', ' ')}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Priority:</label>
-                        <span class="status-text status-${ticket.priority ? ticket.priority.toLowerCase() : 'normal'}">${(ticket.priority || 'NORMAL').toUpperCase()}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Machine:</label>
-                        <span>${assetName}</span>
-                    </div>
-                    ${ticket.location ? `
-                    <div class="detail-item">
-                        <label>Location:</label>
-                        <span>${ticket.location}</span>
-                    </div>
-                    ` : ''}
-                </div>
+            <div class="form-section">
+                <h5><i class="fas fa-info-circle"></i> Ticket Information</h5>
+                <p><strong>Ticket ID:</strong> TKT-${String(ticket.id).padStart(3, '0')}</p>
+                <p><strong>Status:</strong> <span class="status-text status-${(ticket.status || 'open').toLowerCase().replace('_', '-')}">${(ticket.status || 'OPEN').toUpperCase().replace('_', ' ')}</span></p>
+                <p><strong>Priority:</strong> <span class="status-text status-${ticket.priority ? ticket.priority.toLowerCase() : 'normal'}">${(ticket.priority || 'NORMAL').toUpperCase()}</span></p>
+                <p><strong>Machine:</strong> ${assetName}</p>
+                ${ticket.location ? `<p><strong>Location:</strong> ${ticket.location}</p>` : ''}
             </div>
             
-            <div class="ticket-detail-section">
-                <h3>Description</h3>
-                <p style="white-space: pre-wrap;">${ticket.description || 'No description provided'}</p>
+            <div class="form-section">
+                <h5><i class="fas fa-clipboard-list"></i> Description</h5>
+                <p style="white-space: pre-wrap; border-left: none; padding: 12px; background: var(--background); border-radius: 6px;">${ticket.description || 'No description provided'}</p>
             </div>
             
             ${imagesHTML}
             
-            <div class="ticket-detail-section">
-                <h3>Assignment Details</h3>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <label>Reported By:</label>
-                        <span>${ticket.reported_by_name || ticket.reporter_full_name || 'N/A'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Assigned To:</label>
-                        <span>${ticket.assignments && ticket.assignments.length > 0 
-                            ? ticket.assignments.map(a => a.technician_name).join(', ') 
-                            : 'Unassigned'}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Created:</label>
-                        <span>${createdDate}</span>
-                    </div>
-                    <div class="detail-item">
-                        <label>Last Updated:</label>
-                        <span>${updatedDate}</span>
-                    </div>
-                    ${ticket.assignments && ticket.assignments.length > 0 && ticket.assignments[0].expected_completion_date ? `
-                    <div class="detail-item">
-                        <label>Expected Completion:</label>
-                        <span>${new Date(ticket.assignments[0].expected_completion_date).toLocaleDateString()}</span>
-                    </div>
-                    ` : ''}
-                    ${ticket.assignments && ticket.assignments.length > 0 && ticket.assignments[0].notes ? `
-                    <div class="detail-item" style="grid-column: 1 / -1;">
-                        <label>Assignment Notes:</label>
-                        <p style="white-space: pre-wrap; margin: 5px 0 0 0;">${ticket.assignments[0].notes}</p>
-                    </div>
-                    ` : ''}
-                </div>
+            <div class="form-section">
+                <h5><i class="fas fa-user-cog"></i> Assignment Details</h5>
+                <p><strong>Reported By:</strong> ${ticket.reported_by_name || ticket.reporter_full_name || 'N/A'}</p>
+                <p><strong>Assigned To:</strong> ${ticket.assignments && ticket.assignments.length > 0 
+                    ? ticket.assignments.map(a => a.technician_name).join(', ') 
+                    : 'Unassigned'}</p>
+                <p><strong>Created:</strong> ${createdDate}</p>
+                <p><strong>Last Updated:</strong> ${updatedDate}</p>
+                ${ticket.assignments && ticket.assignments.length > 0 && ticket.assignments[0].expected_completion_date ? `
+                <p><strong>Expected Completion:</strong> ${new Date(ticket.assignments[0].expected_completion_date).toLocaleDateString()}</p>
+                ` : ''}
+                ${ticket.assignments && ticket.assignments.length > 0 && ticket.assignments[0].notes ? `
+                <p><strong>Assignment Notes:</strong></p>
+                <p style="white-space: pre-wrap; border-left: none; padding: 12px; background: var(--background); border-radius: 6px;">${ticket.assignments[0].notes}</p>
+                ` : ''}
             </div>
             
             ${ticket.resolution_notes ? `
-            <div class="ticket-detail-section">
-                <h3>Resolution Notes</h3>
-                <p style="white-space: pre-wrap;">${ticket.resolution_notes}</p>
+            <div class="form-section">
+                <h5><i class="fas fa-check-circle"></i> Resolution Notes</h5>
+                <p style="white-space: pre-wrap; border-left: none; padding: 12px; background: var(--background); border-radius: 6px;">${ticket.resolution_notes}</p>
             </div>
             ` : ''}
         `;
@@ -936,6 +998,8 @@ async function viewTicketDetails(ticketId) {
         // Show modal
         const viewModal = document.getElementById('viewTicketModal');
         viewModal.style.display = 'flex';
+        viewModal.style.opacity = '0';
+        document.body.style.overflow = 'hidden';
         setTimeout(() => {
             viewModal.style.opacity = '1';
         }, 10);
@@ -947,11 +1011,14 @@ async function viewTicketDetails(ticketId) {
 
 function closeViewTicketModal() {
     const modal = document.getElementById('viewTicketModal');
-    modal.style.opacity = '0';
-    setTimeout(() => {
-        modal.style.display = 'none';
-        document.getElementById('viewTicketContent').innerHTML = '';
-    }, 300);
+    if (modal) {
+        modal.style.opacity = '0';
+        setTimeout(() => {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+            document.getElementById('viewTicketContent').innerHTML = '';
+        }, 300);
+    }
 }
 
 // ==================== REPAIR MANAGEMENT ====================
@@ -1157,6 +1224,55 @@ async function confirmAction() {
     }
 }
 
+// ==================== DETAILS MODAL ====================
+
+function createDetailsModal(title, content) {
+    // Remove any existing details modal
+    const existingModal = document.getElementById('detailsModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'detailsModal';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> ${title}</h2>
+                <button class="btn-close" onclick="closeDetailsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="form-section">
+                ${content}
+            </div>
+            <button class="btn btn-secondary" onclick="closeDetailsModal()"><i class="fas fa-times"></i> Close</button>
+        </div>
+    `;
+    
+    // Close on outside click
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            closeDetailsModal();
+        }
+    };
+    
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+    modal.classList.add('active');
+}
+
+function closeDetailsModal() {
+    const modal = document.getElementById('detailsModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
 // ==================== LOGOUT ====================
 
 function logout() {
@@ -1220,8 +1336,67 @@ if (window.innerWidth <= 768) {
 // ==================== REPAIR MANAGEMENT FUNCTIONS ====================
 
 function viewRepairDetails(repairId) {
-    showToast(`Viewing repair ${repairId} details`, 'info');
-    // TODO: Implement detailed repair view modal
+    // Sample data - replace with actual API call
+    const repairData = {
+        'REP-001': { id: 'REP-001', title: 'Engine Overhaul', asset: 'Vehicle V-105', assetName: 'Toyota Hiace LKA-1234', ticket: 'TKT-050', technician: 'Mike Johnson', priority: 'Urgent', estimatedCost: '$2,500', estimatedTime: '2 days', description: 'Complete engine overhaul required due to excessive oil consumption and performance issues', parts: 'Engine gaskets, oil filters, air filters, spark plugs, engine oil', status: 'Pending Approval' },
+        'REP-002': { id: 'REP-002', title: 'Transmission Repair', asset: 'Vehicle V-108', assetName: 'Isuzu NPR LKA-5678', ticket: 'TKT-051', technician: 'Sarah Williams', priority: 'Normal', estimatedCost: '$1,800', estimatedTime: '1.5 days', description: 'Transmission fluid leak detected along with gear shifting issues', parts: 'Transmission seals, gasket kit, transmission fluid', status: 'Pending Approval' }
+    };
+    
+    const repair = repairData[repairId] || repairData['REP-001'];
+    
+    const content = `
+        <div style="padding: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div>
+                    <strong>Repair ID:</strong><br>
+                    <span style="color: var(--royal-blue);">${repair.id}</span>
+                </div>
+                <div>
+                    <strong>Priority:</strong><br>
+                    <span class="status-text status-${repair.priority.toLowerCase()}">${repair.priority.toUpperCase()}</span>
+                </div>
+                <div>
+                    <strong>Asset:</strong><br>
+                    ${repair.assetName}
+                </div>
+                <div>
+                    <strong>Related Ticket:</strong><br>
+                    ${repair.ticket}
+                </div>
+                <div>
+                    <strong>Assigned Technician:</strong><br>
+                    <i class="fas fa-user-cog"></i> ${repair.technician}
+                </div>
+                <div>
+                    <strong>Status:</strong><br>
+                    <span class="status-text status-pending">${repair.status}</span>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <strong>Issue Description:</strong><br>
+                <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${repair.description}</p>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div>
+                    <strong>Estimated Cost:</strong><br>
+                    <span style="font-size: 1.2em; color: var(--royal-blue);">${repair.estimatedCost}</span>
+                </div>
+                <div>
+                    <strong>Estimated Time:</strong><br>
+                    <span style="font-size: 1.2em;">${repair.estimatedTime}</span>
+                </div>
+            </div>
+            
+            <div>
+                <strong>Required Parts:</strong><br>
+                <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${repair.parts}</p>
+            </div>
+        </div>
+    `;
+    
+    createDetailsModal('Repair Details', content);
 }
 
 function greenLightRepair(repairId) {
@@ -1260,8 +1435,58 @@ function markAsOutsourced(repairId) {
 }
 
 function viewRepairProgress(repairId) {
-    showToast(`Viewing progress for repair ${repairId}`, 'info');
-    // TODO: Implement progress view modal
+    // Sample data - replace with actual API call
+    const progressData = {
+        'REP-010': { id: 'REP-010', title: 'Hydraulic System', asset: 'Machine M-205', assetName: 'CAT Excavator 320D', technician: 'Mike Johnson', startDate: 'Oct 18, 2025', expectedDate: 'Oct 20, 2025', status: 'On Track', progress: '60%', completedSteps: 'Initial diagnosis completed, Hydraulic pump removed, System flushed', remainingSteps: 'Install new pump, Test system, Final inspection', notes: 'Work is progressing well, no delays expected' }
+    };
+    
+    const progress = progressData[repairId] || progressData['REP-010'];
+    
+    const content = `
+        <div class="form-section">
+            <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
+            <p><strong>Repair ID:</strong> <span style="color: var(--royal-blue);">${progress.id}</span></p>
+            <p><strong>Status:</strong> <span class="status-text status-in-progress">${progress.status.toUpperCase()}</span></p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-car"></i> Asset & Assignment</h5>
+            <p><strong>Asset:</strong> ${progress.assetName}</p>
+            <p><strong>Technician:</strong> <i class="fas fa-user-cog"></i> ${progress.technician}</p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-calendar-alt"></i> Timeline</h5>
+            <p><strong>Start Date:</strong> <i class="fas fa-calendar-check"></i> ${progress.startDate}</p>
+            <p><strong>Expected Completion:</strong> <i class="fas fa-calendar-check"></i> ${progress.expectedDate}</p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-chart-line"></i> Progress</h5>
+            <div style="margin-top: 8px; background: var(--background); border-radius: 6px; padding: 8px;">
+                <div style="width: 100%; background: #e0e0e0; border-radius: 4px; height: 24px; position: relative;">
+                    <div style="width: ${progress.progress}; background: var(--kelly-green); border-radius: 4px; height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">${progress.progress}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-check-circle"></i> Completed Steps</h5>
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${progress.completedSteps}</p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-tasks"></i> Remaining Steps</h5>
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${progress.remainingSteps}</p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-sticky-note"></i> Notes</h5>
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${progress.notes}</p>
+        </div>
+    `;
+    
+    createDetailsModal('Repair Progress', content);
 }
 
 function updateRepairTimeline(repairId) {
@@ -1316,8 +1541,58 @@ function filterBudgetsByStatus(status) {
 }
 
 function viewBudgetDetails(budgetId) {
-    showToast(`Viewing budget ${budgetId} details`, 'info');
-    // TODO: Implement detailed budget view modal with breakdown and garage details
+    // Sample data - replace with actual API call
+    const budgetData = {
+        'BUD-001': { id: 'BUD-001', breakdown: 'BR-003', asset: 'Vehicle LKA-1234', assetName: 'Toyota Hiace', description: 'Tire replacement - In-route breakdown', submittedBy: 'Driver Kamal', submittedDate: '2025-10-21', priority: 'Urgent', requestedAmount: 'LKR 12,500', breakdown: 'Tires (4x): LKR 10,000\nLabor: LKR 1,500\nAlignment: LKR 1,000', location: 'Colombo - Kandy Road (near Kadawatha)', reason: 'Front left tire burst during trip, inspection revealed all tires worn beyond safe limits' },
+        'BUD-002': { id: 'BUD-002', breakdown: 'BR-005', asset: 'Vehicle LKA-5678', assetName: 'Isuzu NPR', description: 'Battery replacement', submittedBy: 'Driver Saman', submittedDate: '2025-10-21', priority: 'Normal', requestedAmount: 'LKR 8,750', breakdown: 'Battery: LKR 7,500\nLabor: LKR 1,000\nTerminal cleaning: LKR 250', location: 'Galle depot', reason: 'Battery completely dead, unable to start vehicle after overnight parking' }
+    };
+    
+    const budget = budgetData[budgetId] || budgetData['BUD-001'];
+    
+    const content = `
+        <div class="form-section">
+            <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
+            <p><strong>Budget ID:</strong> <span style="color: var(--royal-blue);">${budget.id}</span></p>
+            <p><strong>Priority:</strong> <span class="status-text status-${budget.priority.toLowerCase()}">${budget.priority.toUpperCase()}</span></p>
+            <p><strong>Submitted Date:</strong> <i class="fas fa-calendar"></i> ${budget.submittedDate}</p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-car"></i> Asset & Breakdown</h5>
+            <p><strong>Asset:</strong> ${budget.assetName} (${budget.asset})</p>
+            <p><strong>Breakdown ID:</strong> ${budget.breakdown}</p>
+            <p><strong>Submitted By:</strong> <i class="fas fa-user"></i> ${budget.submittedBy}</p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-clipboard-list"></i> Description</h5>
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${budget.description}</p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-map-marker-alt"></i> Location</h5>
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${budget.location}</p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-question-circle"></i> Reason</h5>
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${budget.reason}</p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-receipt"></i> Cost Breakdown</h5>
+            <div style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px; white-space: pre-line;">${budget.breakdown}</div>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-dollar-sign"></i> Total Amount</h5>
+            <div style="padding: 15px; background: linear-gradient(135deg, var(--royal-blue), var(--tang-blue)); color: white; border-radius: 8px; text-align: center;">
+                <span style="font-size: 1.5em; font-weight: bold;">${budget.requestedAmount}</span>
+            </div>
+        </div>
+    `;
+    
+    createDetailsModal('Budget Approval Details', content);
 }
 
 function approveBudget(budgetId) {
@@ -1434,8 +1709,52 @@ function filterAssets(status) {
 }
 
 function viewAssetDetails(assetId) {
-    showToast(`Viewing details for asset ${assetId}`, 'info');
-    // TODO: Implement detailed asset view modal
+    // Sample data - replace with actual API call
+    const assetData = {
+        'VEH-001': { id: 'VEH-001', name: 'Toyota Hiace LKA-1234', type: 'Vehicle', category: 'Passenger Van', location: 'Depot A', status: 'Operational', lastService: '2024-01-15', nextService: '2024-04-15', mileage: '45,230 km', assignedTo: 'Driver John Doe', fuelType: 'Diesel', year: '2020', condition: 'Good' },
+        'VEH-002': { id: 'VEH-002', name: 'Isuzu NPR LKA-5678', type: 'Vehicle', category: 'Light Truck', location: 'Workshop', status: 'In Maintenance', lastService: '2024-01-20', nextService: '2024-02-05', mileage: '78,500 km', assignedTo: 'Unassigned', fuelType: 'Diesel', year: '2019', condition: 'Fair' },
+        'VEH-003': { id: 'VEH-003', name: 'Mitsubishi Canter LKA-9012', type: 'Vehicle', category: 'Medium Truck', location: 'Workshop', status: 'Under Repair', lastService: '2024-01-10', nextService: 'TBD', mileage: '125,400 km', assignedTo: 'Unassigned', fuelType: 'Diesel', year: '2018', condition: 'Needs Repair' },
+        'MAC-001': { id: 'MAC-001', name: 'CAT Excavator 320D', type: 'Machine', category: 'Heavy Equipment', location: 'Site B', status: 'Operational', lastService: '2024-01-18', nextService: '2024-04-18', hours: '1,250 hrs', assignedTo: 'Operator Jane Smith', fuelType: 'Diesel', year: '2021', condition: 'Excellent' },
+        'MAC-002': { id: 'MAC-002', name: 'JCB Backhoe 3CX', type: 'Machine', category: 'Heavy Equipment', location: 'Site C', status: 'Operational', lastService: '2024-01-12', nextService: '2024-04-12', hours: '890 hrs', assignedTo: 'Operator Mike Johnson', fuelType: 'Diesel', year: '2022', condition: 'Excellent' }
+    };
+    
+    const asset = assetData[assetId] || assetData['VEH-001'];
+    
+    const content = `
+        <div class="form-section">
+            <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
+            <p><strong>Asset ID:</strong> <span style="color: var(--royal-blue);">${asset.id}</span></p>
+            <p><strong>Name:</strong> ${asset.name}</p>
+            <p><strong>Status:</strong> <span class="status-text status-${asset.status.toLowerCase().replace(' ', '-')}">${asset.status.toUpperCase()}</span></p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-cog"></i> Asset Details</h5>
+            <p><strong>Type:</strong> <i class="fas fa-${asset.type === 'Vehicle' ? 'truck' : 'cogs'}"></i> ${asset.type} - ${asset.category}</p>
+            <p><strong>Location:</strong> <i class="fas fa-map-marker-alt"></i> ${asset.location}</p>
+            <p><strong>Year:</strong> ${asset.year}</p>
+            <p><strong>Fuel Type:</strong> ${asset.fuelType}</p>
+            <p><strong>Condition:</strong> ${asset.condition}</p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-tachometer-alt"></i> Usage</h5>
+            <p><strong>${asset.type === 'Vehicle' ? 'Mileage' : 'Engine Hours'}:</strong> <span style="font-size: 1.1em; color: var(--royal-blue);">${asset.type === 'Vehicle' ? asset.mileage : asset.hours}</span></p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-user"></i> Assignment</h5>
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${asset.assignedTo}</p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-wrench"></i> Service Information</h5>
+            <p><strong>Last Service:</strong> <i class="fas fa-calendar-check"></i> ${asset.lastService}</p>
+            <p><strong>Next Service:</strong> <i class="fas fa-calendar-alt"></i> ${asset.nextService}</p>
+        </div>
+    `;
+    
+    createDetailsModal('Asset Details', content);
 }
 
 function updateAssetStatus(assetId) {
@@ -1446,8 +1765,63 @@ function updateAssetStatus(assetId) {
 // ==================== TECHNICIAN ASSIGNMENTS FUNCTIONS ====================
 
 function viewTechnicianDetails(techId) {
-    showToast(`Viewing details for technician ${techId}`, 'info');
-    // TODO: Implement detailed technician view modal
+    // Sample data - replace with actual API call
+    const techData = {
+        'TECH-001': { id: 'TECH-001', name: 'Ranjith Silva', specialization: 'Engine Specialist', currentAssignments: 2, status: 'Available', completedThisWeek: 3, completedThisMonth: 12, experience: '8 years', phone: '+94 77 123 4567', email: 'ranjith.silva@assetcare360.com', activeTickets: 'TKT-050 (Engine Overhaul), TKT-048 (Oil Change)', certifications: 'ASE Master Technician, Diesel Engine Specialist' }
+    };
+    
+    const tech = techData[techId] || techData['TECH-001'];
+    
+    const content = `
+        <div class="form-section">
+            <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
+            <p><strong>Technician ID:</strong> <span style="color: var(--royal-blue);">${tech.id}</span></p>
+            <p><strong>Name:</strong> ${tech.name}</p>
+            <p><strong>Status:</strong> <span class="status-text status-normal">${tech.status.toUpperCase()}</span></p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-user-cog"></i> Professional Details</h5>
+            <p><strong>Specialization:</strong> <i class="fas fa-wrench"></i> ${tech.specialization}</p>
+            <p><strong>Experience:</strong> ${tech.experience}</p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-address-book"></i> Contact Information</h5>
+            <p><strong>Phone:</strong> <i class="fas fa-phone"></i> ${tech.phone}</p>
+            <p><strong>Email:</strong> <i class="fas fa-envelope"></i> ${tech.email}</p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-certificate"></i> Certifications</h5>
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${tech.certifications}</p>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-chart-bar"></i> Workload Statistics</h5>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                <div style="text-align: center; padding: 15px; background: var(--background); border-radius: 8px;">
+                    <div style="font-size: 2em; font-weight: bold; color: var(--tang-blue);">${tech.currentAssignments}</div>
+                    <div style="margin-top: 5px; color: var(--muted);">Current Assignments</div>
+                </div>
+                <div style="text-align: center; padding: 15px; background: var(--background); border-radius: 8px;">
+                    <div style="font-size: 2em; font-weight: bold; color: var(--kelly-green);">${tech.completedThisWeek}</div>
+                    <div style="margin-top: 5px; color: var(--muted);">Completed This Week</div>
+                </div>
+                <div style="text-align: center; padding: 15px; background: var(--background); border-radius: 8px;">
+                    <div style="font-size: 2em; font-weight: bold; color: var(--royal-blue);">${tech.completedThisMonth}</div>
+                    <div style="margin-top: 5px; color: var(--muted);">Completed This Month</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h5><i class="fas fa-tasks"></i> Active Tickets</h5>
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${tech.activeTickets}</p>
+        </div>
+    `;
+    
+    createDetailsModal('Technician Details', content);
 }
 
 function assignNewTicket(techId) {
@@ -1459,13 +1833,16 @@ function assignNewTicket(techId) {
 
 // Close modals on backdrop click
 window.addEventListener('click', (event) => {
-    if (event.target.classList.contains('modal') && event.target.style.display === 'block') {
-        if (event.target.id === 'createTicketModal') {
-            closeCreateTicketModal();
-        } else if (event.target.id === 'assignTicketModal') {
-            closeAssignTicketModal();
-        } else if (event.target.id === 'viewTicketModal') {
-            closeViewTicketModal();
+    if (event.target.classList.contains('modal')) {
+        const modalDisplay = window.getComputedStyle(event.target).display;
+        if (modalDisplay === 'flex' || event.target.classList.contains('active')) {
+            if (event.target.id === 'createTicketModal') {
+                closeCreateTicketModal();
+            } else if (event.target.id === 'assignTicketModal') {
+                closeAssignTicketModal();
+            } else if (event.target.id === 'viewTicketModal') {
+                closeViewTicketModal();
+            }
         }
     }
 });
@@ -1477,12 +1854,69 @@ document.addEventListener('keydown', (event) => {
         const assignModal = document.getElementById('assignTicketModal');
         const viewModal = document.getElementById('viewTicketModal');
         
-        if (createModal && createModal.style.display === 'block') {
+        if (createModal && (createModal.classList.contains('active') || window.getComputedStyle(createModal).display === 'flex')) {
             closeCreateTicketModal();
-        } else if (assignModal && assignModal.style.display === 'block') {
+        } else if (assignModal && window.getComputedStyle(assignModal).display === 'flex') {
             closeAssignTicketModal();
-        } else if (viewModal && viewModal.style.display === 'block') {
+        } else if (viewModal && window.getComputedStyle(viewModal).display === 'flex') {
             closeViewTicketModal();
         }
     }
 });
+// ==================== DROPDOWN MENU FUNCTIONS ====================
+
+function toggleDropdown(event, dropdownId) {
+    event.stopPropagation();
+    const dropdown = document.getElementById(`dropdown-${dropdownId}`);
+    const allDropdowns = document.querySelectorAll('.dropdown-menu');
+    
+    // Close all other dropdowns
+    allDropdowns.forEach(d => {
+        if (d !== dropdown) {
+            d.classList.remove('show');
+        }
+    });
+    
+    // Toggle current dropdown
+    dropdown.classList.toggle('show');
+}
+
+function closeAllDropdowns() {
+    document.querySelectorAll('.dropdown-menu').forEach(dropdown => {
+        dropdown.classList.remove('show');
+    });
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('.dropdown-container')) {
+        closeAllDropdowns();
+    }
+});
+
+// Placeholder functions for dropdown actions
+function reassignTicket(ticketId) {
+    assignTicket(ticketId);
+}
+
+function markTicketComplete(ticketId) {
+    // Implementation for marking ticket complete
+    console.log('Mark ticket complete:', ticketId);
+    showToast('Feature coming soon', 'info');
+}
+
+function printTicket(ticketId) {
+    // Implementation for printing ticket
+    console.log('Print ticket:', ticketId);
+    showToast('Feature coming soon', 'info');
+}
+
+function editTicket(ticketId) {
+    // Implementation for editing ticket
+    console.log('Edit ticket:', ticketId);
+    showToast('Feature coming soon', 'info');
+}
+
+function editTicketAssignment(ticketId) {
+    assignTicket(ticketId);
+}

@@ -5,9 +5,12 @@
  */
 
 const CONFIG = {
+    // Version for cache busting
+    VERSION: '1.0.1',
+    
     // API Base URL - Update this based on your environment
     API_BASE_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:8000/api'
+        ? 'http://localhost:8080/api'
         : 'https://api.assetcare360.com/api',
     
     // Storage Keys

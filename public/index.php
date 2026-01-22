@@ -21,7 +21,7 @@ if (CORS_ENABLED && !empty($origin)) {
 
 // Set headers
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: ' . $allowedOrigin);
+header('Access-Control-Allow-Origin: ' . $allowedOrigin); 
 header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Access-Control-Allow-Credentials: true'); // Allow cookies to be sent

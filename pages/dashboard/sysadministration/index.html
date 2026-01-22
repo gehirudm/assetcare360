@@ -54,10 +54,6 @@
                         <i class="nav-icon fas fa-users"></i>
                         <span>User Accounts</span>
                     </div>
-                    <div class="nav-item" data-section="permissions">
-                        <i class="nav-icon fas fa-lock"></i>
-                        <span>Permissions & Roles</span>
-                    </div>
                     <div class="nav-item" data-section="service-config">
                         <i class="nav-icon fas fa-cogs"></i>
                         <span>Service Configuration</span>
@@ -290,118 +286,11 @@
                             <span>👥 User Accounts</span>
                             <span id="userCount" class="status-text status-normal">0 users</span>
                         </div>
-                        <div id="userList">
+                        <div id="userList" class="inventory-list">
                             <p style="text-align: center; padding: 20px; color: var(--muted);">Loading users...</p>
                         </div>
                         <div id="noUsersMessage" style="display: none; text-align: center; color: var(--muted); padding: 20px;">
                             No users found for this filter
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Permissions & Roles Section -->
-                <section class="content-section" id="permissions">
-                    <div class="page-header">
-                        <h1 class="page-title">Permissions & Roles</h1>
-                        <p class="page-subtitle">Manage role-based access control</p>
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <button class="btn btn-primary" onclick="openModal('createRoleModal')">
-                            ➕ Create New Role
-                        </button>
-                    </div>
-
-                    <!-- Permission Matrix -->
-                    <div class="card">
-                        <div class="card-header">🔐 Permission Matrix</div>
-                        <div class="permission-matrix">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Module / Feature</th>
-                                        <th>System Admin</th>
-                                        <th>Supervisor</th>
-                                        <th>Inventory Manager</th>
-                                        <th>Technical Officer</th>
-                                        <th>Driver</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td><strong>User Management</strong></td>
-                                        <td>✅ Full Access</td>
-                                        <td>❌ No Access</td>
-                                        <td>❌ No Access</td>
-                                        <td>❌ No Access</td>
-                                        <td>❌ No Access</td>
-                                        <td><button class="btn btn-secondary btn-small" onclick="editPermission('user-management')">Edit</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>Breakdown Tickets</strong></td>
-                                        <td>✅ View All</td>
-                                        <td>✅ Create/Approve</td>
-                                        <td>👁️ View Only</td>
-                                        <td>✅ Create/Update</td>
-                                        <td>✅ Create Only</td>
-                                        <td><button class="btn btn-secondary btn-small" onclick="editPermission('breakdown-tickets')">Edit</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>Inventory Management</strong></td>
-                                        <td>✅ View All</td>
-                                        <td>👁️ View Only</td>
-                                        <td>✅ Full Access</td>
-                                        <td>✅ Request Parts</td>
-                                        <td>❌ No Access</td>
-                                        <td><button class="btn btn-secondary btn-small" onclick="editPermission('inventory')">Edit</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>Service Intervals</strong></td>
-                                        <td>✅ Configure</td>
-                                        <td>👁️ View Only</td>
-                                        <td>❌ No Access</td>
-                                        <td>👁️ View Only</td>
-                                        <td>👁️ View Only</td>
-                                        <td><button class="btn btn-secondary btn-small" onclick="editPermission('service-intervals')">Edit</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>Petty Cash Management</strong></td>
-                                        <td>✅ Configure</td>
-                                        <td>✅ Approve/View</td>
-                                        <td>❌ No Access</td>
-                                        <td>✅ Request</td>
-                                        <td>❌ No Access</td>
-                                        <td><button class="btn btn-secondary btn-small" onclick="editPermission('petty-cash')">Edit</button></td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>Reports & Analytics</strong></td>
-                                        <td>✅ All Reports</td>
-                                        <td>✅ Department Reports</td>
-                                        <td>✅ Inventory Reports</td>
-                                        <td>👁️ Basic Reports</td>
-                                        <td>👁️ Own Reports</td>
-                                        <td><button class="btn btn-secondary btn-small" onclick="editPermission('reports')">Edit</button></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Audit Trail -->
-                    <div class="card">
-                        <div class="card-header">📋 Permission Change Audit Trail</div>
-                        <div class="log-entry">
-                            <div class="log-timestamp">Oct 18, 2025 - 10:30 AM</div>
-                            <div><strong>Action:</strong> Permission Updated - Inventory Management</div>
-                            <div><strong>Changed By:</strong> System Admin (SA-001)</div>
-                            <div><strong>Details:</strong> Technical Officer role granted "Request Parts" access</div>
-                        </div>
-                        <div class="log-entry">
-                            <div class="log-timestamp">Oct 17, 2025 - 3:15 PM</div>
-                            <div><strong>Action:</strong> New Role Created - Maintenance Manager</div>
-                            <div><strong>Changed By:</strong> System Admin (SA-001)</div>
-                            <div><strong>Details:</strong> Full maintenance module access granted</div>
                         </div>
                     </div>
                 </section>

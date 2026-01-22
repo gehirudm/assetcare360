@@ -301,17 +301,15 @@ function displayMachines(machineList) {
     machinesList.innerHTML = machineList.map(machine => `
         <div class="inventory-item" data-id="${machine.id}" data-status="${machine.status}">
             <div class="item-details">
-                <strong><i class="fas fa-cog"></i> ${machine.machine_name} - ${machine.model_number}</strong>
+                <strong><i class="fas fa-cog"></i> ${machine.machine_name}</strong>
                 <div class="item-meta">
-                    <i class="fas fa-barcode"></i> SN: ${machine.serial_number} | 
-                    <i class="fas fa-map-marker-alt"></i> ${machine.location} | 
-                    <i class="fas fa-tools"></i> ${machine.supplier_name}
+                    <i class="fas fa-hashtag"></i> ${machine.model_number} | 
+                    <i class="fas fa-barcode"></i> ${machine.serial_number}
                 </div>
                 <div class="item-description">
-                    Status: <span class="status-text ${getStatusClass(machine.status)}">${machine.status}</span>
-                    ${machine.next_service_date ? `| Next Service: ${Utils.formatDate(machine.next_service_date)}` : ''}
+                    <span class="status-text ${getStatusClass(machine.status)}">${machine.status}</span> | 
+                    <i class="fas fa-map-marker-alt"></i> ${machine.location}
                 </div>
-                ${machine.components && Array.isArray(machine.components) ? `<div class="item-meta"><i class="fas fa-list"></i> Components: ${machine.components.join(', ')}</div>` : ''}
             </div>
             <div class="item-actions">
                 <div class="action-buttons">
@@ -717,7 +715,9 @@ function viewMachineDetails(id) {
         ${machine.components && Array.isArray(machine.components) ? `
             <div class="form-section">
                 <h5><i class="fas fa-list"></i> Components</h5>
-                <p>${machine.components.join(', ')}</p>
+                <div class="components-list">
+                    ${machine.components.map(comp => `<span class="component-badge">${comp}</span>`).join('')}
+                </div>
             </div>
         ` : ''}
         ${machine.notes ? `
@@ -766,20 +766,14 @@ function displayVehicles(vehicleList) {
     vehiclesList.innerHTML = vehicleList.map(vehicle => `
         <div class="inventory-item" data-id="${vehicle.id}" data-status="${vehicle.status}">
             <div class="item-details">
-                <strong><i class="fas fa-truck"></i> ${vehicle.vehicle_name} - ${vehicle.number_plate}</strong>
+                <strong><i class="fas fa-truck"></i> ${vehicle.vehicle_name}</strong>
                 <div class="item-meta">
-                    <i class="fas fa-car"></i> ${vehicle.vehicle_type} | 
-                    <i class="fas fa-gas-pump"></i> ${vehicle.fuel_type} |
-                    <i class="fas fa-tachometer-alt"></i> ${vehicle.current_mileage} km
+                    <i class="fas fa-id-card"></i> ${vehicle.number_plate} | 
+                    <i class="fas fa-car"></i> ${vehicle.vehicle_type}
                 </div>
                 <div class="item-description">
-                    Status: <span class="status-text ${getStatusClass(vehicle.status)}">${vehicle.status}</span>
-                    ${vehicle.next_service_date ? `| Next Service: ${Utils.formatDate(vehicle.next_service_date)}` : ''}
-                    ${vehicle.next_service_mileage ? ` (at ${vehicle.next_service_mileage} km)` : ''}
-                </div>
-                <div class="item-meta">
-                    <i class="fas fa-industry"></i> ${vehicle.supplier_name} | 
-                    <i class="fas fa-barcode"></i> Chassis: ${vehicle.chassis_number}
+                    <span class="status-text ${getStatusClass(vehicle.status)}">${vehicle.status}</span> | 
+                    <i class="fas fa-tachometer-alt"></i> ${vehicle.current_mileage} km
                 </div>
             </div>
             <div class="item-actions">
@@ -1405,10 +1399,16 @@ function createDetailsModal(title, content) {
     
     modal.innerHTML = `
         <div class="modal-content">
-            <button class="close" onclick="closeModal('${modal.id}')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">${title}</h2>
-            <div>${content}</div>
-            <button class="btn btn-secondary" onclick="closeModal('${modal.id}')">Close</button>
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> ${title}</h2>
+                <button class="btn-close" onclick="closeModal('${modal.id}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="form-section">
+                ${content}
+            </div>
+            <button class="btn btn-secondary" onclick="closeModal('${modal.id}')"><i class="fas fa-times"></i> Close</button>
         </div>
     `;
     
@@ -1419,6 +1419,7 @@ function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
     }
 }
 
@@ -1426,6 +1427,7 @@ function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.remove('active');
+        document.body.style.overflow = '';
         // Remove dynamically created modals
         if (modalId.startsWith('detailsModal_') || modalId.includes('Machine') || modalId.includes('Vehicle')) {
             setTimeout(() => modal.remove(), 300);
@@ -1695,18 +1697,35 @@ function addPartToCatalog(partName, partNumber, category, quantity, location, su
     newItem.setAttribute('data-id', partNumber);
     newItem.innerHTML = `
         <div class="item-details">
-            <strong>${partName} - ${partNumber}</strong>
-            <div class="item-meta">Category: ${category.charAt(0).toUpperCase() + category.slice(1)} Parts | Quantity: ${quantity} units</div>
-            <div class="item-description">Location: ${location} | Supplier: ${supplier}</div>
-            <div class="item-meta">Linked Machines: TBD</div>
+            <strong><i class="fas fa-box"></i> ${partName}</strong>
+            <div class="item-meta">
+                <i class="fas fa-hashtag"></i> ${partNumber} | 
+                <i class="fas fa-tag"></i> ${category.charAt(0).toUpperCase() + category.slice(1)} Parts
+            </div>
+            <div class="item-description">
+                <span class="status-text ${stockBadge}">${stockText}</span> | 
+                <i class="fas fa-boxes"></i> ${quantity} units
+            </div>
         </div>
         <div class="item-actions">
-            <span class="status-text ${stockBadge}">${stockText}</span>
             <div class="action-buttons">
-                <button class="btn btn-primary btn-small" onclick="viewPartDetails('${partNumber}')"><i class="fas fa-eye"></i> View</button>
-                <button class="btn btn-secondary btn-small" onclick="editPart('${partNumber}')"><i class="fas fa-edit"></i> Edit</button>
-                ${quantity <= 10 ? `<button class="btn btn-warning btn-small" onclick="reorderPart('${partNumber}')"><i class="fas fa-sync"></i> Reorder</button>` : ''}
-                <button class="btn btn-danger btn-small" onclick="deletePart('${partNumber}')"><i class="fas fa-trash"></i> Delete</button>
+                <button class="btn btn-primary btn-small" onclick="viewPartDetails('${partNumber}')"><i class="fas fa-eye"></i> VIEW</button>
+                <button class="btn btn-secondary btn-small" onclick="editPart('${partNumber}')"><i class="fas fa-edit"></i> EDIT</button>
+                <div class="dropdown-container">
+                    <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'part-${partNumber}')">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div class="dropdown-menu" id="dropdown-part-${partNumber}">
+                        ${quantity <= 10 ? `
+                            <button class="dropdown-item" onclick="reorderPart('${partNumber}'); closeAllDropdowns();">
+                                <i class="fas fa-sync"></i> Reorder
+                            </button>
+                        ` : ''}
+                        <button class="dropdown-item danger" onclick="deletePart('${partNumber}'); closeAllDropdowns();">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     `;
@@ -1718,15 +1737,14 @@ function addPartToCatalog(partName, partNumber, category, quantity, location, su
 }
 
 // READ - View Part Details
-function viewPartDetails(partId) {
-    const title = document.getElementById('detailsTitle');
-    const content = document.getElementById('detailsContent');
-    
+function viewPartDetails(partId) {    
     const partDetails = {
         'BP-001': {
-            name: 'Brake Pads - BP-001',
+            name: 'Brake Pads',
+            partNumber: 'BP-001',
             category: 'Brake System',
             quantity: 45,
+            stockStatus: 'In Stock',
             location: 'Warehouse A-15',
             supplier: 'Ravindu Lakshan',
             supplierContact: '+94-77-123-4567',
@@ -1739,9 +1757,11 @@ function viewPartDetails(partId) {
             totalValue: 'Rs. 2,047.50'
         },
         'OF-205': {
-            name: 'Oil Filter - OF-205',
+            name: 'Oil Filter',
+            partNumber: 'OF-205',
             category: 'Filtration System',
             quantity: 8,
+            stockStatus: 'Low Stock',
             location: 'Warehouse B-03',
             supplier: 'FilterMax Ltd.',
             supplierContact: '+94-77-234-5678',
@@ -1754,9 +1774,11 @@ function viewPartDetails(partId) {
             totalValue: 'Rs. 1,000.00'
         },
         'HYD-250': {
-            name: 'Hydraulic Pump - HYD-250',
+            name: 'Hydraulic Pump',
+            partNumber: 'HYD-250',
             category: 'Hydraulic System',
             quantity: 0,
+            stockStatus: 'Out of Stock',
             location: 'Warehouse C-08',
             supplier: 'Hydraulic Systems Pro',
             supplierContact: '+94-77-345-6789',
@@ -1772,8 +1794,10 @@ function viewPartDetails(partId) {
 
     const part = partDetails[partId] || {
         name: `Part ${partId}`,
+        partNumber: partId,
         category: 'Unknown',
         quantity: 0,
+        stockStatus: 'Unknown',
         location: 'N/A',
         supplier: 'N/A',
         supplierContact: 'N/A',
@@ -1786,39 +1810,40 @@ function viewPartDetails(partId) {
         totalValue: 'Rs. 0.00'
     };
     
-    title.textContent = part.name + ' Details';
-    content.innerHTML = `
+    const modal = createDetailsModal('Spare Part Details', `
         <div class="form-section">
             <h5><i class="fas fa-box"></i> Part Information</h5>
-            <div class="form-grid">
-                <div><strong>Category:</strong> ${part.category}</div>
-                <div><strong>Quantity:</strong> ${part.quantity} units</div>
-                <div><strong>Location:</strong> ${part.location}</div>
-                <div><strong>Unit Cost:</strong> ${part.unitCost}</div>
-                <div><strong>Total Value:</strong> ${part.totalValue}</div>
-                <div><strong>Last Service:</strong> ${part.lastService}</div>
-            </div>
+            <p><strong>Part Name:</strong> ${part.name}</p>
+            <p><strong>Part Number:</strong> ${part.partNumber}</p>
+            <p><strong>Category:</strong> ${part.category}</p>
+            <p><strong>Quantity:</strong> ${part.quantity} units</p>
+            <p><strong>Stock Status:</strong> <span class="status-text">${part.stockStatus}</span></p>
+            <p><strong>Location:</strong> ${part.location}</p>
+            <p><strong>Unit Cost:</strong> ${part.unitCost}</p>
+            <p><strong>Total Value:</strong> ${part.totalValue}</p>
         </div>
         <div class="form-section">
             <h5><i class="fas fa-truck"></i> Supplier Information</h5>
-            <div class="form-grid">
-                <div><strong>Supplier:</strong> ${part.supplier}</div>
-                <div><strong>Contact:</strong> ${part.supplierContact}</div>
-            </div>
-            <div><strong>Address:</strong> ${part.supplierAddress}</div>
+            <p><strong>Supplier:</strong> ${part.supplier}</p>
+            <p><strong>Contact:</strong> ${part.supplierContact}</p>
+            <p><strong>Address:</strong> ${part.supplierAddress}</p>
         </div>
         <div class="form-section">
             <h5><i class="fas fa-shield-alt"></i> Warranty Details</h5>
-            <div><strong>Status:</strong> ${part.warranty}</div>
-            <div><strong>Terms:</strong> ${part.warrantyTerms}</div>
+            <p><strong>Status:</strong> ${part.warranty}</p>
+            <p><strong>Terms:</strong> ${part.warrantyTerms}</p>
+            <p><strong>Last Service:</strong> ${part.lastService}</p>
         </div>
         <div class="form-section">
-            <h5><i class="fas fa-link"></i> Linked Machines</h5>
-            <div>${part.linkedMachines.join(', ')}</div>
+            <h5><i class="fas fa-link"></i> Linked Machines/Vehicles</h5>
+            <div class="components-list">
+                ${part.linkedMachines.map(machine => `<span class="component-badge">${machine}</span>`).join('')}
+            </div>
         </div>
-    `;
+    `);
     
-    openModal('detailsModal');
+    document.body.appendChild(modal);
+    modal.classList.add('active');
 }
 
 // UPDATE - Edit Part
@@ -2032,12 +2057,11 @@ function approveOrder(orderId) {
     const title = document.getElementById('orderActionTitle');
     const content = document.getElementById('orderActionContent');
     
-    title.textContent = 'Approve Order';
+    title.innerHTML = '<i class="fas fa-check-circle"></i> Approve Order';
     content.innerHTML = `
-        <div class="form-section">
-            <h5><i class="fas fa-check-circle"></i> Approve Order: ${orderId}</h5>
-            <p>Are you sure you want to approve this order?</p>
-            <div style="margin: 20px 0;">
+        <form onsubmit="event.preventDefault(); confirmApproval('${orderId}');">
+            <div class="form-section">
+                <p>Are you sure you want to approve order <strong>${orderId}</strong>?</p>
                 <div class="form-group">
                     <label class="form-label">Approval Notes (Optional)</label>
                     <textarea class="form-textarea" id="approvalNotes" placeholder="Add any notes for this approval..."></textarea>
@@ -2047,11 +2071,9 @@ function approveOrder(orderId) {
                     <input type="date" class="form-input" id="deliveryDate" required>
                 </div>
             </div>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success" onclick="confirmApproval('${orderId}')"><i class="fas fa-check"></i> Confirm Approval</button>
-                <button class="btn btn-secondary" onclick="closeModal('orderActionModal')"><i class="fas fa-times"></i> Cancel</button>
-            </div>
-        </div>
+            <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Confirm Approval</button>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('orderActionModal')"><i class="fas fa-times"></i> Cancel</button>
+        </form>
     `;
     
     openModal('orderActionModal');
@@ -2061,12 +2083,11 @@ function rejectOrder(orderId) {
     const title = document.getElementById('orderActionTitle');
     const content = document.getElementById('orderActionContent');
     
-    title.textContent = 'Reject Order';
+    title.innerHTML = '<i class="fas fa-times-circle"></i> Reject Order';
     content.innerHTML = `
-        <div class="form-section">
-            <h5><i class="fas fa-times-circle"></i> Reject Order: ${orderId}</h5>
-            <p>Please provide a reason for rejecting this order:</p>
-            <div style="margin: 20px 0;">
+        <form onsubmit="event.preventDefault(); confirmRejection('${orderId}');">
+            <div class="form-section">
+                <p>Please provide a reason for rejecting order <strong>${orderId}</strong>:</p>
                 <div class="form-group">
                     <label class="form-label">Rejection Reason</label>
                     <select class="form-select" id="rejectionReason" required>
@@ -2083,11 +2104,9 @@ function rejectOrder(orderId) {
                     <textarea class="form-textarea" id="rejectionComments" placeholder="Provide detailed reason for rejection..." required></textarea>
                 </div>
             </div>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn btn-danger" onclick="confirmRejection('${orderId}')"><i class="fas fa-times"></i> Confirm Rejection</button>
-                <button class="btn btn-secondary" onclick="closeModal('orderActionModal')">Cancel</button>
-            </div>
-        </div>
+            <button type="submit" class="btn btn-danger"><i class="fas fa-times"></i> Confirm Rejection</button>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('orderActionModal')">Cancel</button>
+        </form>
     `;
     
     openModal('orderActionModal');
@@ -2195,35 +2214,31 @@ function updatePendingCount() {
     }
 }
 
-function viewOrderDetails(orderId) {
-    const title = document.getElementById('detailsTitle');
-    const content = document.getElementById('detailsContent');
-    
-    title.textContent = `Order Details - ${orderId}`;
-    content.innerHTML = `
+function viewOrderDetails(orderId) {    
+    const modal = createDetailsModal('Order Details', `
         <div class="form-section">
             <h5><i class="fas fa-info-circle"></i> Order Information</h5>
-            <div class="form-grid">
-                <div><strong>Order ID:</strong> ${orderId}</div>
-                <div><strong>Status:</strong> <span class="status-text status-approved">Approved</span></div>
-                <div><strong>Requested Date:</strong> Aug 15, 2025</div>
-                <div><strong>Approved Date:</strong> Aug 16, 2025</div>
-            </div>
+            <p><strong>Order ID:</strong> ${orderId}</p>
+            <p><strong>Status:</strong> <span class="status-text status-approved">Approved</span></p>
+            <p><strong>Requested Date:</strong> Aug 15, 2025</p>
+            <p><strong>Approved Date:</strong> Aug 16, 2025</p>
         </div>
         <div class="form-section">
             <h5><i class="fas fa-box"></i> Items Requested</h5>
-            <p>Brake pads (BP-001) - Quantity: 4 units</p>
-            <p>For Ticket: TKT-001</p>
+            <p><strong>Part:</strong> Brake pads (BP-001)</p>
+            <p><strong>Quantity:</strong> 4 units</p>
+            <p><strong>For Ticket:</strong> TKT-001</p>
         </div>
         <div class="form-section">
             <h5><i class="fas fa-user"></i> Approval Chain</h5>
-            <div><strong>Requestor:</strong> Technical Officer</div>
-            <div><strong>Supervisor:</strong> Senash Adeesha</div>
-            <div><strong>Approved By:</strong> Inventory Manager</div>
+            <p><strong>Requestor:</strong> Technical Officer</p>
+            <p><strong>Supervisor:</strong> Senash Adeesha</p>
+            <p><strong>Approved By:</strong> Inventory Manager</p>
         </div>
-    `;
+    `);
     
-    openModal('detailsModal');
+    document.body.appendChild(modal);
+    modal.classList.add('active');
 }
 
 function viewTicketDetails(ticketId) {
@@ -2473,6 +2488,7 @@ function viewAllActivities() {
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('modal')) {
         e.target.classList.remove('active');
+        document.body.style.overflow = '';
     }
 });
 
@@ -2480,5 +2496,6 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         const activeModals = document.querySelectorAll('.modal.active');
         activeModals.forEach(modal => modal.classList.remove('active'));
+        document.body.style.overflow = '';
     }
 });

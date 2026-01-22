@@ -544,8 +544,8 @@
             gap: 12px;
         }
 
-        /* Ticket Items */
-        .ticket-item, .trip-item {
+        /* Ticket Items & Inventory Items */
+        .ticket-item, .trip-item, .inventory-item {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
@@ -557,36 +557,39 @@
             margin-bottom: 10px;
             cursor: pointer;
             transition: all 0.2s ease;
+            position: relative;
+            z-index: 1;
         }
 
-        .ticket-item:hover, .trip-item:hover {
+        .ticket-item:hover, .trip-item:hover, .inventory-item:hover {
             box-shadow: var(--shadow);
             transform: translateY(-1px);
+            z-index: 10;
         }
 
-        .ticket-details {
+        .ticket-details, .item-details {
             flex: 1;
         }
 
-        .ticket-details strong {
+        .ticket-details strong, .item-details strong {
             color: var(--text-700);
             display: block;
             margin-bottom: 4px;
         }
 
-        .ticket-meta {
+        .ticket-meta, .item-meta {
             color: var(--muted);
             font-size: 13px;
             margin-bottom: 2px;
         }
 
-        .ticket-issue {
+        .ticket-issue, .item-description {
             color: var(--text-700);
             font-size: 14px;
             margin-bottom: 4px;
         }
 
-        .ticket-actions {
+        .ticket-actions, .item-actions {
             text-align: right;
             white-space: nowrap;
             display: flex;
@@ -594,6 +597,86 @@
             gap: 6px;
             align-items: flex-end;
         }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .dropdown-container {
+            position: relative;
+        }
+
+        .dropdown-trigger {
+            padding: 6px 10px !important;
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            min-width: 180px;
+            z-index: 1000;
+            margin-top: 4px;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 15px;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-700);
+            transition: background 0.2s;
+        }
+
+        .dropdown-item:hover {
+            background: var(--stone-100);
+        }
+
+        .dropdown-item:first-child {
+            border-radius: 8px 8px 0 0;
+        }
+
+        .dropdown-item:last-child {
+            border-radius: 0 0 8px 8px;
+        }
+
+        .dropdown-item.danger {
+            color: var(--danger);
+        }
+
+        .dropdown-item.danger:hover {
+            background: #fee;
+        }
+
+        .status-text {
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-text.status-in-stock { color: var(--ok); }
+        .status-text.status-low-stock { color: var(--warn); }
+        .status-text.status-out-of-stock { color: var(--danger); }
+        .status-text.status-pending { color: var(--warn); }
+        .status-text.status-completed { color: var(--kelly-green); }
 
         /* Notifications */
         .notification-item {
@@ -667,7 +750,9 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.35);
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
             z-index: 1000;
             align-items: center;
             justify-content: center;
@@ -683,10 +768,58 @@
             max-width: 600px;
             max-height: 90vh;
             border-radius: 15px;
-            padding: 30px;
+            padding: 0;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow-y: auto;
             position: relative;
+        }
+
+        .modal-header {
+            background: var(--gradient-blue);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .form-section {
+            padding: 30px;
+        }
+
+        .modal-content .btn {
+            margin: 0 30px 30px 30px;
         }
 
         .close {
@@ -755,14 +888,17 @@
         /* Priority Indicators */
         .priority-high {
             border-left: 4px solid var(--danger);
+            background: #fff !important;
         }
 
         .priority-medium {
             border-left: 4px solid var(--warn);
+            background: #fff !important;
         }
 
         .priority-low {
             border-left: 4px solid var(--ok);
+            background: #fff !important;
         }
 
         /* Service Due Indicators */
@@ -1294,40 +1430,106 @@
                                 <button class="filter-btn" onclick="filterTripsByStatus('ready')">Ready</button>
                             </div>
                         </div>
-                        <div class="trip-item priority-low" data-status="completed">
-                            <div class="ticket-details">
-                                <strong>TRP-001</strong>
-                                <div class="ticket-meta">Route: Colombo → Kandy | Date: Aug 25, 2024</div>
-                                <div class="ticket-issue">Distance: 125 km | Duration: 3h 15m</div>
-                                <div class="ticket-meta">Start: 08:30 AM | End: 11:45 AM</div>
+                        <div class="inventory-item" data-status="completed">
+                            <div class="item-details">
+                                <strong><i class="fas fa-route"></i> TRP-001</strong>
+                                <div class="item-meta">
+                                    <i class="fas fa-map-marker-alt"></i> Colombo → Kandy | 
+                                    <i class="fas fa-calendar"></i> Aug 25, 2024
+                                </div>
+                                <div class="item-description">
+                                    <span class="status-text status-completed">COMPLETED</span> | 
+                                    <i class="fas fa-road"></i> 125 km | 
+                                    <i class="fas fa-clock"></i> 3h 15m
+                                </div>
                             </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-complete">Completed</span>
-                                <button class="btn btn-secondary btn-small" onclick="viewTripDetails('TRP-001')">View Details</button>
+                            <div class="item-actions">
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-primary" onclick="viewTripDetails('TRP-001')">
+                                        <i class="fas fa-eye"></i> VIEW
+                                    </button>
+                                    <div class="dropdown-container">
+                                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'trip-TRP-001')">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu" id="dropdown-trip-TRP-001">
+                                            <button class="dropdown-item" onclick="printTrip('TRP-001')">
+                                                <i class="fas fa-print"></i> Print Trip
+                                            </button>
+                                            <button class="dropdown-item" onclick="exportTrip('TRP-001')">
+                                                <i class="fas fa-download"></i> Export
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="trip-item priority-low" data-status="completed">
-                            <div class="ticket-details">
-                                <strong>TRP-002</strong>
-                                <div class="ticket-meta">Route: Kandy → Galle | Date: Aug 25, 2024</div>
-                                <div class="ticket-issue">Distance: 95 km | Duration: 3h 30m</div>
-                                <div class="ticket-meta">Start: 01:00 PM | End: 04:30 PM</div>
+                        <div class="inventory-item" data-status="completed">
+                            <div class="item-details">
+                                <strong><i class="fas fa-route"></i> TRP-002</strong>
+                                <div class="item-meta">
+                                    <i class="fas fa-map-marker-alt"></i> Kandy → Galle | 
+                                    <i class="fas fa-calendar"></i> Aug 25, 2024
+                                </div>
+                                <div class="item-description">
+                                    <span class="status-text status-completed">COMPLETED</span> | 
+                                    <i class="fas fa-road"></i> 95 km | 
+                                    <i class="fas fa-clock"></i> 3h 30m
+                                </div>
                             </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-complete">Completed</span>
-                                <button class="btn btn-secondary btn-small" onclick="viewTripDetails('TRP-002')">View Details</button>
+                            <div class="item-actions">
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-primary" onclick="viewTripDetails('TRP-002')">
+                                        <i class="fas fa-eye"></i> VIEW
+                                    </button>
+                                    <div class="dropdown-container">
+                                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'trip-TRP-002')">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu" id="dropdown-trip-TRP-002">
+                                            <button class="dropdown-item" onclick="printTrip('TRP-002')">
+                                                <i class="fas fa-print"></i> Print Trip
+                                            </button>
+                                            <button class="dropdown-item" onclick="exportTrip('TRP-002')">
+                                                <i class="fas fa-download"></i> Export
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="trip-item priority-medium" data-status="ready" id="trip-TRP-003">
-                            <div class="ticket-details">
-                                <strong>TRP-003</strong>
-                                <div class="ticket-meta">Route: Galle → Colombo | Date: Aug 25, 2024</div>
-                                <div class="ticket-issue" id="trip-TRP-003-distance">Distance: 0 km | Estimated Duration: 2h 30m</div>
-                                <div class="ticket-meta" id="trip-TRP-003-status">Status: Ready to start</div>
+                        <div class="inventory-item" data-status="ready" id="trip-TRP-003">
+                            <div class="item-details">
+                                <strong><i class="fas fa-route"></i> TRP-003</strong>
+                                <div class="item-meta">
+                                    <i class="fas fa-map-marker-alt"></i> Galle → Colombo | 
+                                    <i class="fas fa-calendar"></i> Aug 25, 2024
+                                </div>
+                                <div class="item-description" id="trip-TRP-003-distance">
+                                    <span class="status-text status-pending">READY</span> | 
+                                    <i class="fas fa-road"></i> 0 km | 
+                                    <i class="fas fa-clock"></i> Estimated 2h 30m
+                                </div>
                             </div>
-                            <div class="ticket-actions" id="trip-TRP-003-actions">
-                                <span class="status-badge status-pending" id="trip-TRP-003-badge">Ready</span>
-                                <button class="btn btn-primary btn-small" onclick="startTripConfirm('TRP-003')">Start Trip</button>
+                            <div class="item-actions" id="trip-TRP-003-actions">
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-primary" onclick="startTripConfirm('TRP-003')">
+                                        <i class="fas fa-play"></i> START
+                                    </button>
+                                    <div class="dropdown-container">
+                                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'trip-TRP-003')">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu" id="dropdown-trip-TRP-003">
+                                            <button class="dropdown-item" onclick="viewTripDetails('TRP-003')">
+                                                <i class="fas fa-eye"></i> View Details
+                                            </button>
+                                            <button class="dropdown-item danger" onclick="cancelTrip('TRP-003')">
+                                                <i class="fas fa-times"></i> Cancel Trip
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1355,40 +1557,104 @@
                                 <button class="filter-btn" onclick="filterChecksByStatus('rejected')">Rejected</button>
                             </div>
                         </div>
-                        <div class="ticket-item priority-low" data-status="approved" id="check-VC-001">
-                            <div class="ticket-details">
-                                <strong>VC-001</strong>
-                                <div class="ticket-meta">Vehicle: LKA-1234 | Submitted: Aug 25, 07:30 AM</div>
-                                <div class="ticket-issue">All systems operational - No issues detected</div>
-                                <div class="ticket-meta">Odometer: 45,230 km | Fuel: 75%</div>
+                        <div class="inventory-item" data-status="approved" id="check-VC-001">
+                            <div class="item-details">
+                                <strong><i class="fas fa-check-circle"></i> VC-001</strong>
+                                <div class="item-meta">
+                                    <i class="fas fa-car"></i> Vehicle: LKA-1234 | 
+                                    <i class="fas fa-clock"></i> Aug 25, 07:30 AM
+                                </div>
+                                <div class="item-description">
+                                    <span class="status-text status-completed">APPROVED</span> | 
+                                    <i class="fas fa-tachometer-alt"></i> Odometer: 45,230 km | 
+                                    <i class="fas fa-gas-pump"></i> Fuel: 75%
+                                </div>
                             </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-approved">Approved</span>
-                                <button class="btn btn-secondary btn-small" onclick="viewCheckDetails('VC-001')">View Details</button>
+                            <div class="item-actions">
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-primary" onclick="viewCheckDetails('VC-001')">
+                                        <i class="fas fa-eye"></i> VIEW
+                                    </button>
+                                    <div class="dropdown-container">
+                                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'check-VC-001')">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu" id="dropdown-check-VC-001">
+                                            <button class="dropdown-item" onclick="printCheck('VC-001')">
+                                                <i class="fas fa-print"></i> Print Check
+                                            </button>
+                                            <button class="dropdown-item" onclick="exportCheck('VC-001')">
+                                                <i class="fas fa-download"></i> Export
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="ticket-item priority-medium" data-status="approved" id="check-VC-002">
-                            <div class="ticket-details">
-                                <strong>VC-002</strong>
-                                <div class="ticket-meta">Vehicle: LKA-1234 | Submitted: Aug 24, 07:45 AM</div>
-                                <div class="ticket-issue">Minor tire pressure issue noted - Corrected before departure</div>
-                                <div class="ticket-meta">Odometer: 45,010 km | Fuel: 80%</div>
+                        <div class="inventory-item" data-status="approved" id="check-VC-002">
+                            <div class="item-details">
+                                <strong><i class="fas fa-check-circle"></i> VC-002</strong>
+                                <div class="item-meta">
+                                    <i class="fas fa-car"></i> Vehicle: LKA-1234 | 
+                                    <i class="fas fa-clock"></i> Aug 24, 07:45 AM
+                                </div>
+                                <div class="item-description">
+                                    <span class="status-text status-completed">APPROVED</span> | 
+                                    Minor tire pressure issue - Corrected
+                                </div>
                             </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-approved">Approved</span>
-                                <button class="btn btn-secondary btn-small" onclick="viewCheckDetails('VC-002')">View Details</button>
+                            <div class="item-actions">
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-primary" onclick="viewCheckDetails('VC-002')">
+                                        <i class="fas fa-eye"></i> VIEW
+                                    </button>
+                                    <div class="dropdown-container">
+                                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'check-VC-002')">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu" id="dropdown-check-VC-002">
+                                            <button class="dropdown-item" onclick="printCheck('VC-002')">
+                                                <i class="fas fa-print"></i> Print Check
+                                            </button>
+                                            <button class="dropdown-item" onclick="exportCheck('VC-002')">
+                                                <i class="fas fa-download"></i> Export
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="ticket-item priority-high" data-status="rejected" id="check-VC-003">
-                            <div class="ticket-details">
-                                <strong>VC-003</strong>
-                                <div class="ticket-meta">Vehicle: LKA-1234 | Submitted: Aug 23, 07:15 AM</div>
-                                <div class="ticket-issue">Brake system check failed - Vehicle not cleared for operation</div>
-                                <div class="ticket-meta">Odometer: 44,890 km | Fuel: 65%</div>
+                        <div class="inventory-item" data-status="rejected" id="check-VC-003">
+                            <div class="item-details">
+                                <strong><i class="fas fa-times-circle"></i> VC-003</strong>
+                                <div class="item-meta">
+                                    <i class="fas fa-car"></i> Vehicle: LKA-1234 | 
+                                    <i class="fas fa-clock"></i> Aug 23, 07:15 AM
+                                </div>
+                                <div class="item-description">
+                                    <span class="status-text status-out-of-stock">REJECTED</span> | 
+                                    Brake system check failed - Not cleared
+                                </div>
                             </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-rejected">Rejected</span>
-                                <button class="btn btn-secondary btn-small" onclick="viewCheckDetails('VC-003')">View Details</button>
+                            <div class="item-actions">
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-primary" onclick="viewCheckDetails('VC-003')">
+                                        <i class="fas fa-eye"></i> VIEW
+                                    </button>
+                                    <div class="dropdown-container">
+                                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'check-VC-003')">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu" id="dropdown-check-VC-003">
+                                            <button class="dropdown-item" onclick="resubmitCheck('VC-003')">
+                                                <i class="fas fa-redo"></i> Resubmit Check
+                                            </button>
+                                            <button class="dropdown-item" onclick="printCheck('VC-003')">
+                                                <i class="fas fa-print"></i> Print Check
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1452,41 +1718,103 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="ticket-item priority-high" data-type="breakdown" data-status="in-progress" id="breakdown-BR-001">
-                            <div class="ticket-details">
-                                <strong>BR-001</strong>
-                                <div class="ticket-meta">Vehicle: LKA-1234 | Submitted: Aug 22, 03:15 PM | Type: Breakdown</div>
-                                <div class="ticket-issue">Engine overheating - Emergency stop required</div>
-                                <div class="ticket-meta">Status: Technical Officer assigned</div>
+                        <div class="inventory-item" data-type="breakdown" data-status="in-progress" id="breakdown-BR-001">
+                            <div class="item-details">
+                                <strong><i class="fas fa-wrench"></i> BR-001</strong>
+                                <div class="item-meta">
+                                    <i class="fas fa-car"></i> Vehicle: LKA-1234 | 
+                                    <i class="fas fa-clock"></i> Aug 22, 03:15 PM
+                                </div>
+                                <div class="item-description">
+                                    <span class="status-text status-pending">IN PROGRESS</span> | 
+                                    Engine overheating - Technical Officer assigned
+                                </div>
                             </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-in-progress">In Progress</span>
-                                <button class="btn btn-secondary btn-small" onclick="trackBreakdown('BR-001')">Track Status</button>
+                            <div class="item-actions">
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-primary" onclick="trackBreakdown('BR-001')">
+                                        <i class="fas fa-eye"></i> TRACK
+                                    </button>
+                                    <div class="dropdown-container">
+                                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'breakdown-BR-001')">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu" id="dropdown-breakdown-BR-001">
+                                            <button class="dropdown-item" onclick="viewBreakdownDetails('BR-001')">
+                                                <i class="fas fa-info-circle"></i> View Details
+                                            </button>
+                                            <button class="dropdown-item" onclick="contactTechnician('BR-001')">
+                                                <i class="fas fa-phone"></i> Contact Technician
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="ticket-item priority-medium" data-type="breakdown" data-status="resolved" id="breakdown-BR-002">
-                            <div class="ticket-details">
-                                <strong>BR-002</strong>
-                                <div class="ticket-meta">Vehicle: LKA-1234 | Submitted: Aug 15, 10:00 AM | Type: Breakdown</div>
-                                <div class="ticket-issue">Brake system warning light activated</div>
-                                <div class="ticket-meta">Resolution: Brake pads replaced</div>
+                        <div class="inventory-item" data-type="breakdown" data-status="resolved" id="breakdown-BR-002">
+                            <div class="item-details">
+                                <strong><i class="fas fa-check-circle"></i> BR-002</strong>
+                                <div class="item-meta">
+                                    <i class="fas fa-car"></i> Vehicle: LKA-1234 | 
+                                    <i class="fas fa-clock"></i> Aug 15, 10:00 AM
+                                </div>
+                                <div class="item-description">
+                                    <span class="status-text status-completed">RESOLVED</span> | 
+                                    Brake system warning - Brake pads replaced
+                                </div>
                             </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-resolved">Resolved</span>
-                                <button class="btn btn-secondary btn-small" onclick="viewBreakdownDetails('BR-002')">View Details</button>
+                            <div class="item-actions">
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-primary" onclick="viewBreakdownDetails('BR-002')">
+                                        <i class="fas fa-eye"></i> VIEW
+                                    </button>
+                                    <div class="dropdown-container">
+                                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'breakdown-BR-002')">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu" id="dropdown-breakdown-BR-002">
+                                            <button class="dropdown-item" onclick="printBreakdown('BR-002')">
+                                                <i class="fas fa-print"></i> Print Report
+                                            </button>
+                                            <button class="dropdown-item" onclick="exportBreakdown('BR-002')">
+                                                <i class="fas fa-download"></i> Export
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="ticket-item priority-high" data-type="in-route" data-status="in-progress" id="breakdown-BR-003">
-                            <div class="ticket-details">
-                                <strong>BR-003</strong>
-                                <div class="ticket-meta">Vehicle: LKA-1234 | Submitted: Aug 23, 11:45 AM | Type: Breakdown in Route</div>
-                                <div class="ticket-issue">Tire puncture during trip - Temporary spare installed</div>
-                                <div class="ticket-meta">Location: Matara Road | Trip: TRP-002 | Status: Awaiting tire replacement</div>
+                        <div class="inventory-item" data-type="in-route" data-status="in-progress" id="breakdown-BR-003">
+                            <div class="item-details">
+                                <strong><i class="fas fa-exclamation-triangle"></i> BR-003</strong>
+                                <div class="item-meta">
+                                    <i class="fas fa-map-marker-alt"></i> Matara Road | 
+                                    <i class="fas fa-clock"></i> Aug 23, 11:45 AM
+                                </div>
+                                <div class="item-description">
+                                    <span class="status-text status-pending">IN PROGRESS</span> | 
+                                    Tire puncture - Awaiting replacement
+                                </div>
                             </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-in-progress">In Progress</span>
-                                <button class="btn btn-secondary btn-small" onclick="trackBreakdown('BR-003')">🏪 Nearby Garages</button>
-                                <button class="btn btn-success btn-small" onclick="completeBreakdown('BR-003')">✅ Complete</button>
+                            <div class="item-actions">
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-primary" onclick="trackBreakdown('BR-003')">
+                                        <i class="fas fa-warehouse"></i> GARAGES
+                                    </button>
+                                    <div class="dropdown-container">
+                                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'breakdown-BR-003')">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu" id="dropdown-breakdown-BR-003">
+                                            <button class="dropdown-item" onclick="viewBreakdownDetails('BR-003')">
+                                                <i class="fas fa-info-circle"></i> View Details
+                                            </button>
+                                            <button class="dropdown-item" onclick="completeBreakdown('BR-003')">
+                                                <i class="fas fa-check"></i> Mark Complete
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1507,28 +1835,80 @@
 
                     <div class="card">
                         <div class="card-header">⛽ Recent Fuel Logs</div>
-                        <div class="ticket-item priority-low">
-                            <div class="ticket-details">
-                                <strong>FL-001</strong>
-                                <div class="ticket-meta">Date: Aug 24, 2024 02:30 PM | Station: IOC - Kandy Road</div>
-                                <div class="ticket-issue">Volume: 45 L | Cost: Rs. 12,500 | Odometer: 45,100 km</div>
-                                <div class="ticket-meta">Efficiency: 8.3 km/L | Previous Fill: Aug 20</div>
+                        <div class="inventory-item">
+                            <div class="item-details">
+                                <strong><i class="fas fa-gas-pump"></i> FL-001</strong>
+                                <div class="item-meta">
+                                    <i class="fas fa-calendar"></i> Aug 24, 2024 02:30 PM | 
+                                    <i class="fas fa-map-marker-alt"></i> IOC - Kandy Road
+                                </div>
+                                <div class="item-description">
+                                    <i class="fas fa-fill-drip"></i> 45 L | 
+                                    <i class="fas fa-dollar-sign"></i> Rs. 12,500 | 
+                                    <i class="fas fa-tachometer-alt"></i> 45,100 km | 
+                                    Efficiency: 8.3 km/L
+                                </div>
                             </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-approved">Logged</span>
-                                <button class="btn btn-secondary btn-small" onclick="viewFuelDetails('FL-001')">View Details</button>
+                            <div class="item-actions">
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-primary" onclick="viewFuelDetails('FL-001')">
+                                        <i class="fas fa-eye"></i> VIEW
+                                    </button>
+                                    <div class="dropdown-container">
+                                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'fuel-FL-001')">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu" id="dropdown-fuel-FL-001">
+                                            <button class="dropdown-item" onclick="editFuelLog('FL-001')">
+                                                <i class="fas fa-edit"></i> Edit Log
+                                            </button>
+                                            <button class="dropdown-item" onclick="printFuelLog('FL-001')">
+                                                <i class="fas fa-print"></i> Print Receipt
+                                            </button>
+                                            <button class="dropdown-item danger" onclick="deleteFuelLog('FL-001')">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="ticket-item priority-low">
-                            <div class="ticket-details">
-                                <strong>FL-002</strong>
-                                <div class="ticket-meta">Date: Aug 20, 2024 09:15 AM | Station: CPC - Colombo</div>
-                                <div class="ticket-issue">Volume: 50 L | Cost: Rs. 13,800 | Odometer: 44,800 km</div>
-                                <div class="ticket-meta">Efficiency: 8.0 km/L | Previous Fill: Aug 16</div>
+                        <div class="inventory-item">
+                            <div class="item-details">
+                                <strong><i class="fas fa-gas-pump"></i> FL-002</strong>
+                                <div class="item-meta">
+                                    <i class="fas fa-calendar"></i> Aug 20, 2024 09:15 AM | 
+                                    <i class="fas fa-map-marker-alt"></i> CPC - Colombo
+                                </div>
+                                <div class="item-description">
+                                    <i class="fas fa-fill-drip"></i> 50 L | 
+                                    <i class="fas fa-dollar-sign"></i> Rs. 13,800 | 
+                                    <i class="fas fa-tachometer-alt"></i> 44,800 km | 
+                                    Efficiency: 8.0 km/L
+                                </div>
                             </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-approved">Logged</span>
-                                <button class="btn btn-secondary btn-small" onclick="viewFuelDetails('FL-002')">View Details</button>
+                            <div class="item-actions">
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-primary" onclick="viewFuelDetails('FL-002')">
+                                        <i class="fas fa-eye"></i> VIEW
+                                    </button>
+                                    <div class="dropdown-container">
+                                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'fuel-FL-002')">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu" id="dropdown-fuel-FL-002">
+                                            <button class="dropdown-item" onclick="editFuelLog('FL-002')">
+                                                <i class="fas fa-edit"></i> Edit Log
+                                            </button>
+                                            <button class="dropdown-item" onclick="printFuelLog('FL-002')">
+                                                <i class="fas fa-print"></i> Print Receipt
+                                            </button>
+                                            <button class="dropdown-item danger" onclick="deleteFuelLog('FL-002')">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1591,26 +1971,72 @@
 
                     <div class="card">
                         <div class="card-header">🎫 My Transport Tickets</div>
-                        <div class="ticket-item">
-                            <div class="ticket-details">
-                                <strong>TT-001</strong>
-                                <div class="ticket-meta">Route: Colombo → Kandy | Date: Aug 25, 2024</div>
-                                <div class="ticket-issue">Cargo: Spare parts crates (350 kg) | Trip: TRP-001</div>
-                                <div class="ticket-meta">Delivery Status: Completed and verified</div>
+                        <div class="inventory-item">
+                            <div class="item-details">
+                                <strong><i class="fas fa-ticket-alt"></i> TT-001</strong>
+                                <div class="item-meta">
+                                    <i class="fas fa-route"></i> Colombo → Kandy | 
+                                    <i class="fas fa-calendar"></i> Aug 25, 2024
+                                </div>
+                                <div class="item-description">
+                                    <span class="status-text status-completed">COMPLETED</span> | 
+                                    <i class="fas fa-box"></i> Spare parts crates (350 kg) | 
+                                    Trip: TRP-001
+                                </div>
                             </div>
-                            <div class="ticket-actions">
-                                <button class="btn btn-secondary btn-small" onclick="viewTicketDetails('TT-001')">View Details</button>
+                            <div class="item-actions">
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-primary" onclick="viewTicketDetails('TT-001')">
+                                        <i class="fas fa-eye"></i> VIEW
+                                    </button>
+                                    <div class="dropdown-container">
+                                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'ticket-TT-001')">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu" id="dropdown-ticket-TT-001">
+                                            <button class="dropdown-item" onclick="printTicket('TT-001')">
+                                                <i class="fas fa-print"></i> Print Ticket
+                                            </button>
+                                            <button class="dropdown-item" onclick="exportTicket('TT-001')">
+                                                <i class="fas fa-download"></i> Export
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="ticket-item">
-                            <div class="ticket-details">
-                                <strong>TT-002</strong>
-                                <div class="ticket-meta">Route: Kandy → Galle | Date: Aug 25, 2024</div>
-                                <div class="ticket-issue">Cargo: Machinery components (500 kg) | Trip: TRP-002</div>
-                                <div class="ticket-meta">Delivery Status: In transit</div>
+                        <div class="inventory-item">
+                            <div class="item-details">
+                                <strong><i class="fas fa-ticket-alt"></i> TT-002</strong>
+                                <div class="item-meta">
+                                    <i class="fas fa-route"></i> Kandy → Galle | 
+                                    <i class="fas fa-calendar"></i> Aug 25, 2024
+                                </div>
+                                <div class="item-description">
+                                    <span class="status-text status-pending">IN TRANSIT</span> | 
+                                    <i class="fas fa-box"></i> Machinery components (500 kg) | 
+                                    Trip: TRP-002
+                                </div>
                             </div>
-                            <div class="ticket-actions">
-                                <button class="btn btn-secondary btn-small" onclick="viewTicketDetails('TT-002')">View Details</button>
+                            <div class="item-actions">
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-primary" onclick="viewTicketDetails('TT-002')">
+                                        <i class="fas fa-eye"></i> VIEW
+                                    </button>
+                                    <div class="dropdown-container">
+                                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'ticket-TT-002')">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu" id="dropdown-ticket-TT-002">
+                                            <button class="dropdown-item" onclick="updateDeliveryStatus('TT-002')">
+                                                <i class="fas fa-check"></i> Update Status
+                                            </button>
+                                            <button class="dropdown-item" onclick="printTicket('TT-002')">
+                                                <i class="fas fa-print"></i> Print Ticket
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1739,8 +2165,12 @@
     <!-- Start Trip Modal -->
     <div id="startTripModal" class="modal">
         <div class="modal-content">
-            <button class="close" onclick="closeModal('startTripModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Start New Trip</h2>
+            <div class="modal-header">
+                <h2><i class="fas fa-route"></i> Start New Trip</h2>
+                <button class="btn-close" onclick="closeModal('startTripModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
             <form id="startTripForm">
                 <div class="form-section">
                     <h5>🧭 Trip Information</h5>
@@ -1787,8 +2217,12 @@
     <!-- Daily Check Modal -->
     <div id="dailyCheckModal" class="modal">
         <div class="modal-content">
-            <button class="close" onclick="closeModal('dailyCheckModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Submit Daily Vehicle Check</h2>
+            <div class="modal-header">
+                <h2><i class="fas fa-clipboard-check"></i> Submit Daily Vehicle Check</h2>
+                <button class="btn-close" onclick="closeModal('dailyCheckModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
             <form id="dailyCheckForm">
                 <div class="form-section">
                     <h5>🚚 Vehicle Information</h5>
@@ -1875,8 +2309,10 @@
     <!-- Breakdown Modal -->
     <div id="breakdownModal" class="modal">
         <div class="modal-content">
-            <button class="close" onclick="closeModal('breakdownModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Report Vehicle Breakdown</h2>
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> Report Vehicle Breakdown</h2>
+                <button class="btn-close" onclick="closeModal('breakdownModal')">&times;</button>
+            </div>
             <form id="breakdownForm">
                 <div class="form-section">
                     <h5>🚨 Incident Details</h5>
@@ -1935,8 +2371,10 @@
     <!-- Breakdown in Route Modal -->
     <div id="breakdownInRouteModal" class="modal">
         <div class="modal-content">
-            <button class="close" onclick="closeModal('breakdownInRouteModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Report Breakdown in Route</h2>
+            <div class="modal-header">
+                <h2><i class="fas fa-road"></i> Report Breakdown in Route</h2>
+                <button class="btn-close" onclick="closeModal('breakdownInRouteModal')">&times;</button>
+            </div>
             <form id="breakdownInRouteForm">
                 <div class="form-section">
                     <h5>🚨 Incident Details</h5>
@@ -2005,8 +2443,10 @@
     <!-- Technician Tracking Modal -->
     <div id="technicianTrackingModal" class="modal">
         <div class="modal-content">
-            <button class="close" onclick="closeModal('technicianTrackingModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">🔧 Assigned Technician</h2>
+            <div class="modal-header">
+                <h2><i class="fas fa-user-cog"></i> Assigned Technician</h2>
+                <button class="btn-close" onclick="closeModal('technicianTrackingModal')">&times;</button>
+            </div>
             
             <div class="form-section">
                 <h5>📋 Breakdown Details</h5>
@@ -2102,8 +2542,10 @@
     <!-- Nearby Garages Modal -->
     <div id="nearbyGaragesModal" class="modal">
         <div class="modal-content">
-            <button class="close" onclick="closeModal('nearbyGaragesModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">🏪 Nearby Garages</h2>
+            <div class="modal-header">
+                <h2><i class="fas fa-store"></i> Nearby Garages</h2>
+                <button class="btn-close" onclick="closeModal('nearbyGaragesModal')">&times;</button>
+            </div>
             
             <div class="form-section">
                 <h5>📍 Your Current Location: Matara Road</h5>
@@ -2224,8 +2666,10 @@
     <!-- Complete Breakdown Modal -->
     <div id="completeBreakdownModal" class="modal">
         <div class="modal-content">
-            <button class="close" onclick="closeModal('completeBreakdownModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Complete Breakdown Repair</h2>
+            <div class="modal-header">
+                <h2><i class="fas fa-tools"></i> Complete Breakdown Repair</h2>
+                <button class="btn-close" onclick="closeModal('completeBreakdownModal')">&times;</button>
+            </div>
             <form id="completeBreakdownForm">
                 <input type="hidden" id="completeBreakdownId">
                 <div class="form-section">
@@ -2261,8 +2705,10 @@
     <!-- Fuel & Mileage Modal -->
     <div id="fuelMileageModal" class="modal">
         <div class="modal-content">
-            <button class="close" onclick="closeModal('fuelMileageModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Log Fuel & Mileage</h2>
+            <div class="modal-header">
+                <h2><i class="fas fa-gas-pump"></i> Log Fuel & Mileage</h2>
+                <button class="btn-close" onclick="closeModal('fuelMileageModal')">&times;</button>
+            </div>
             <form id="fuelMileageForm">
                 <div class="form-section">
                     <h5>⛽ Refuel Details</h5>
@@ -2315,8 +2761,10 @@
     <!-- Transport Ticket Modal -->
     <div id="transportTicketModal" class="modal">
         <div class="modal-content">
-            <button class="close" onclick="closeModal('transportTicketModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Create Transport Ticket</h2>
+            <div class="modal-header">
+                <h2><i class="fas fa-ticket-alt"></i> Create Transport Ticket</h2>
+                <button class="btn-close" onclick="closeModal('transportTicketModal')">&times;</button>
+            </div>
             <form id="transportTicketForm">
                 <div class="form-section">
                     <h5>🧭 Route & Schedule</h5>
@@ -2729,8 +3177,42 @@
             const modal = document.getElementById(modalId);
             if (modal) {
                 modal.classList.remove('active');
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+                // Remove dynamically created modals
+                if (modalId.startsWith('detailsModal_')) {
+                    setTimeout(() => modal.remove(), 300);
+                }
             }
         }
+
+        // Dropdown menu toggle
+        function toggleDropdown(event, dropdownId) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('dropdown-' + dropdownId);
+            const allDropdowns = document.querySelectorAll('.dropdown-menu');
+            
+            // Close all other dropdowns
+            allDropdowns.forEach(d => {
+                if (d !== dropdown) {
+                    d.classList.remove('show');
+                }
+            });
+            
+            // Toggle current dropdown
+            if (dropdown) {
+                dropdown.classList.toggle('show');
+            }
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown-container')) {
+                document.querySelectorAll('.dropdown-menu').forEach(dropdown => {
+                    dropdown.classList.remove('show');
+                });
+            }
+        });
 
         // Toast notification
         function showToast(message) {
@@ -2790,7 +3272,7 @@
             `;
             
             // Update trip item styling
-            tripElement.className = 'trip-item priority-high';
+            tripElement.className = 'inventory-item';
             
             showToast(`Trip ${tripId} started at ${startTime}!`);
             
@@ -2843,7 +3325,7 @@
             `;
             
             // Update trip item styling
-            tripElement.className = 'trip-item priority-low';
+            tripElement.className = 'inventory-item';
             
             showToast(`Trip ${tripId} completed successfully!`);
             
@@ -2860,13 +3342,6 @@
         }
 
         function viewTripDetails(tripId) {
-            // Get trip data from the DOM
-            const tripElement = document.getElementById(`trip-${tripId}`);
-            if (!tripElement) {
-                showToast(`Trip ${tripId} not found`);
-                return;
-            }
-            
             // Initialize global trip data if not exists
             if (!window.allTripsData) {
                 window.allTripsData = {
@@ -2909,70 +3384,90 @@
                 };
             }
             
-            // Get trip data - update dynamic fields from DOM for existing trips
-            let trip = window.allTripsData[tripId];
-            
-            if (trip) {
-                // Update dynamic data from DOM for trips that may have changed status
-                const statusBadgeElement = tripElement.querySelector('.status-badge');
-                if (statusBadgeElement) {
-                    trip.status = statusBadgeElement.textContent;
-                }
-                
-                // Update start time if stored in data attribute
-                const startTime = tripElement.getAttribute('data-start-time');
-                if (startTime) {
-                    trip.startTime = startTime;
-                }
-                
-                // Update end time from status element if available
-                const statusElement = tripElement.querySelector('.ticket-meta');
-                if (statusElement && statusElement.textContent.includes('End:')) {
-                    const endTimeMatch = statusElement.textContent.match(/End:\s*(.+?)(?:\s*\||$)/);
-                    if (endTimeMatch) {
-                        trip.endTime = endTimeMatch[1].trim();
-                    }
-                }
-                
-                // Update distance from ticket-issue element
-                const distanceElement = tripElement.querySelector('.ticket-issue');
-                if (distanceElement && distanceElement.textContent.includes('Distance:')) {
-                    const distanceMatch = distanceElement.textContent.match(/Distance:\s*([^|]+)/);
-                    if (distanceMatch) {
-                        trip.distance = distanceMatch[1].trim();
-                    }
-                }
-            }
+            const trip = window.allTripsData[tripId];
             
             if (!trip) {
                 showToast(`Trip data for ${tripId} not found`);
                 return;
             }
             
-            // Populate modal
-            document.getElementById('detail-trip-id').textContent = trip.id;
-            document.getElementById('detail-trip-route').textContent = trip.route;
-            document.getElementById('detail-trip-date').textContent = trip.date;
-            document.getElementById('detail-trip-distance').textContent = trip.distance;
-            document.getElementById('detail-trip-duration').textContent = trip.duration;
-            document.getElementById('detail-trip-start-time').textContent = trip.startTime;
-            document.getElementById('detail-trip-end-time').textContent = trip.endTime;
+            // Create modal with trip details
+            const modal = createDetailsModal('Trip Details', `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <strong>Trip ID:</strong>
+                        <p>${trip.id}</p>
+                    </div>
+                    <div>
+                        <strong>Status:</strong>
+                        <p><span class="status-text status-${trip.status === 'Completed' ? 'completed' : 'pending'}">${trip.status}</span></p>
+                    </div>
+                    <div>
+                        <strong>Route:</strong>
+                        <p>${trip.route}</p>
+                    </div>
+                    <div>
+                        <strong>Date:</strong>
+                        <p>${trip.date}</p>
+                    </div>
+                    <div>
+                        <strong>Distance:</strong>
+                        <p>${trip.distance}</p>
+                    </div>
+                    <div>
+                        <strong>Duration:</strong>
+                        <p>${trip.duration}</p>
+                    </div>
+                    <div>
+                        <strong>Start Time:</strong>
+                        <p>${trip.startTime}</p>
+                    </div>
+                    <div>
+                        <strong>End Time:</strong>
+                        <p>${trip.endTime}</p>
+                    </div>
+                    <div>
+                        <strong>Odometer:</strong>
+                        <p>${trip.odometer} km</p>
+                    </div>
+                    <div>
+                        <strong>Cargo:</strong>
+                        <p>${trip.cargo}</p>
+                    </div>
+                </div>
+            `);
             
-            // Update status badge
-            const statusBadge = document.getElementById('detail-trip-status');
-            statusBadge.textContent = trip.status;
-            statusBadge.className = 'status-badge';
+            document.body.appendChild(modal);
+            setTimeout(() => openModal(modal.id), 10);
+        }
+
+        function createDetailsModal(title, content) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.id = 'detailsModal_' + Date.now();
             
-            if (trip.status === 'Completed') {
-                statusBadge.classList.add('status-complete');
-            } else if (trip.status === 'In Progress') {
-                statusBadge.classList.add('status-processing');
-            } else if (trip.status === 'Ready') {
-                statusBadge.classList.add('status-pending');
-            }
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>${title}</h2>
+                        <button class="btn-close" onclick="closeModal('${modal.id}')">&times;</button>
+                    </div>
+                    <div class="form-section">
+                        ${content}
+                    </div>
+                    <button class="btn btn-secondary" onclick="closeModal('${modal.id}')"><i class="fas fa-times"></i> Close</button>
+                </div>
+            `;
             
-            // Open modal
-            openModal('tripDetailsModal');
+            document.body.appendChild(modal);
+            document.body.style.overflow = 'hidden';
+            
+            // Trigger animation
+            setTimeout(() => {
+                modal.style.display = 'flex';
+            }, 10);
+            
+            return modal;
         }
 
         function viewCheckDetails(checkId) {
@@ -3113,11 +3608,340 @@
         });
 
         function viewBreakdownDetails(breakdownId) {
-            showToast(`Loading details for ${breakdownId}`);
+            // Sample breakdown data
+            const breakdownData = {
+                'BR-001': {
+                    id: 'BR-001',
+                    status: 'Assigned',
+                    date: 'Aug 24, 2024',
+                    time: '10:15 AM',
+                    vehicle: 'LKA-1234',
+                    location: 'Galle Road, Near Hikkaduwa',
+                    trip: 'TRP-002',
+                    issue: 'Engine overheating',
+                    description: 'Engine temperature gauge showing red. Steam visible from hood. Unusual smell detected. Engine making knocking sounds.',
+                    priority: 'High',
+                    technician: 'T. Perera',
+                    techContact: '+94 77 123 4567',
+                    techETA: '20 minutes',
+                    estimatedCost: 'LKR 15,000 - 25,000'
+                },
+                'BR-002': {
+                    id: 'BR-002',
+                    status: 'In Progress',
+                    date: 'Aug 25, 2024',
+                    time: '09:30 AM',
+                    vehicle: 'LKA-1234',
+                    location: 'Matara Road',
+                    trip: 'TRP-002',
+                    issue: 'Tire damage',
+                    description: 'Front right tire punctured. Visible nail in tire. Unable to continue journey safely.',
+                    priority: 'Medium',
+                    technician: 'K. Silva',
+                    techContact: '+94 71 987 6543',
+                    techETA: 'On site',
+                    estimatedCost: 'LKR 5,000 - 8,000'
+                },
+                'BR-003': {
+                    id: 'BR-003',
+                    status: 'Completed',
+                    date: 'Aug 23, 2024',
+                    time: '02:45 PM',
+                    vehicle: 'LKA-1234',
+                    location: 'Colombo-Kandy Road',
+                    trip: 'TRP-001',
+                    issue: 'Electrical problem',
+                    description: 'Dashboard lights flickering. Battery warning light on. Alternator suspected.',
+                    priority: 'High',
+                    technician: 'R. Fernando',
+                    techContact: '+94 76 555 1234',
+                    techETA: 'Completed',
+                    actualCost: 'LKR 18,500',
+                    resolution: 'Alternator replaced. Battery tested and found to be good. All electrical systems now functioning normally.'
+                }
+            };
+            
+            const breakdown = breakdownData[breakdownId];
+            if (!breakdown) {
+                showToast(`Breakdown ${breakdownId} not found`, 'error');
+                return;
+            }
+            
+            // Build status badge
+            let statusClass = 'status-pending';
+            if (breakdown.status === 'In Progress') statusClass = 'status-in-progress';
+            if (breakdown.status === 'Completed') statusClass = 'status-completed';
+            if (breakdown.status === 'Assigned') statusClass = 'status-assigned';
+            
+            // Build priority badge
+            let priorityClass = 'priority-medium';
+            if (breakdown.priority === 'High') priorityClass = 'priority-high';
+            if (breakdown.priority === 'Low') priorityClass = 'priority-low';
+            
+            const content = `
+                <div style="display: grid; gap: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                        <div>
+                            <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Breakdown ID</div>
+                            <div style="font-weight: 600; font-size: 1.1rem;">${breakdown.id}</div>
+                        </div>
+                        <div>
+                            <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Status</div>
+                            <div><span class="status-text ${statusClass}">${breakdown.status}</span></div>
+                        </div>
+                        <div>
+                            <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Date</div>
+                            <div style="font-weight: 500;">${breakdown.date}</div>
+                        </div>
+                        <div>
+                            <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Time</div>
+                            <div style="font-weight: 500;">${breakdown.time}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                        <h4 style="margin: 0 0 15px 0; color: #2563eb;"><i class="fas fa-exclamation-circle"></i> Issue Details</h4>
+                        <div style="display: grid; gap: 12px;">
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Vehicle</div>
+                                <div style="font-weight: 500;">${breakdown.vehicle}</div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Location</div>
+                                <div style="font-weight: 500;">${breakdown.location}</div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Related Trip</div>
+                                <div style="font-weight: 500;">${breakdown.trip}</div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Issue Type</div>
+                                <div style="font-weight: 600; color: #dc3545;">${breakdown.issue}</div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Priority</div>
+                                <div><span class="status-text ${priorityClass}">${breakdown.priority}</span></div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Description</div>
+                                <div style="padding: 10px; background: white; border-radius: 6px; border-left: 3px solid #dc3545;">${breakdown.description}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                        <h4 style="margin: 0 0 15px 0; color: #2563eb;"><i class="fas fa-user-cog"></i> Technician Information</h4>
+                        <div style="display: grid; gap: 12px;">
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Assigned Technician</div>
+                                <div style="font-weight: 600;">${breakdown.technician}</div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Contact Number</div>
+                                <div style="font-weight: 500;"><i class="fas fa-phone"></i> ${breakdown.techContact}</div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">ETA</div>
+                                <div style="font-weight: 500; color: ${breakdown.techETA === 'On site' ? '#28a745' : '#ff9800'};"><i class="fas fa-clock"></i> ${breakdown.techETA}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                        <h4 style="margin: 0 0 15px 0; color: #2563eb;"><i class="fas fa-dollar-sign"></i> Cost Information</h4>
+                        <div style="display: grid; gap: 12px;">
+                            ${breakdown.actualCost ? `
+                                <div>
+                                    <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Actual Cost</div>
+                                    <div style="font-weight: 600; font-size: 1.1rem; color: #28a745;">${breakdown.actualCost}</div>
+                                </div>
+                            ` : `
+                                <div>
+                                    <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Estimated Cost</div>
+                                    <div style="font-weight: 600; font-size: 1.1rem; color: #ff9800;">${breakdown.estimatedCost}</div>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                    
+                    ${breakdown.resolution ? `
+                        <div style="padding: 20px; background: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+                            <h4 style="margin: 0 0 10px 0; color: #155724;"><i class="fas fa-check-circle"></i> Resolution</h4>
+                            <div style="color: #155724;">${breakdown.resolution}</div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            createDetailsModal(`<i class="fas fa-tools"></i> Breakdown Details - ${breakdownId}`, content);
         }
 
         function viewFuelDetails(fuelId) {
-            showToast(`Loading details for ${fuelId}`);
+            // Sample fuel log data
+            const fuelData = {
+                'FL-001': {
+                    id: 'FL-001',
+                    date: 'Aug 25, 2024',
+                    time: '08:30 AM',
+                    vehicle: 'LKA-1234',
+                    station: 'Shell - Galle Road',
+                    location: 'Colombo 03',
+                    fuelType: 'Diesel',
+                    quantity: '45 liters',
+                    pricePerLiter: 'LKR 280',
+                    totalCost: 'LKR 12,600',
+                    odometerBefore: '45,010 km',
+                    odometerAfter: '45,230 km',
+                    distanceCovered: '220 km',
+                    fuelEfficiency: '4.89 km/L',
+                    paymentMethod: 'Company Card',
+                    receiptNumber: 'SH-2024-08-1234',
+                    attendant: 'Kasun Perera',
+                    notes: 'Regular refuel during Colombo-Kandy route. Tank filled to 95% capacity.',
+                    trip: 'TRP-001'
+                },
+                'FL-002': {
+                    id: 'FL-002',
+                    date: 'Aug 23, 2024',
+                    time: '02:15 PM',
+                    vehicle: 'LKA-1234',
+                    station: 'Caltex - Kandy Road',
+                    location: 'Peradeniya',
+                    fuelType: 'Diesel',
+                    quantity: '38 liters',
+                    pricePerLiter: 'LKR 280',
+                    totalCost: 'LKR 10,640',
+                    odometerBefore: '44,670 km',
+                    odometerAfter: '44,890 km',
+                    distanceCovered: '220 km',
+                    fuelEfficiency: '5.79 km/L',
+                    paymentMethod: 'Company Card',
+                    receiptNumber: 'CX-2024-08-5678',
+                    attendant: 'Nimal Silva',
+                    notes: 'Midway refuel. Better efficiency on highway routes.',
+                    trip: 'TRP-002'
+                }
+            };
+            
+            const fuel = fuelData[fuelId];
+            if (!fuel) {
+                showToast(`Fuel log ${fuelId} not found`, 'error');
+                return;
+            }
+            
+            // Calculate efficiency color
+            const efficiency = parseFloat(fuel.fuelEfficiency);
+            let efficiencyColor = '#28a745'; // Good
+            if (efficiency < 4) efficiencyColor = '#dc3545'; // Poor
+            else if (efficiency < 5) efficiencyColor = '#ff9800'; // Average
+            
+            const content = `
+                <div style="display: grid; gap: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                        <div>
+                            <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Log ID</div>
+                            <div style="font-weight: 600; font-size: 1.1rem;">${fuel.id}</div>
+                        </div>
+                        <div>
+                            <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Vehicle</div>
+                            <div style="font-weight: 600; font-size: 1.1rem;">${fuel.vehicle}</div>
+                        </div>
+                        <div>
+                            <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Date</div>
+                            <div style="font-weight: 500;">${fuel.date}</div>
+                        </div>
+                        <div>
+                            <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Time</div>
+                            <div style="font-weight: 500;">${fuel.time}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                        <h4 style="margin: 0 0 15px 0; color: #2563eb;"><i class="fas fa-gas-pump"></i> Refuel Details</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Fuel Station</div>
+                                <div style="font-weight: 600;">${fuel.station}</div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Location</div>
+                                <div style="font-weight: 500;">${fuel.location}</div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Fuel Type</div>
+                                <div style="font-weight: 600; color: #2563eb;">${fuel.fuelType}</div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Quantity</div>
+                                <div style="font-weight: 600; font-size: 1.1rem; color: #28a745;">${fuel.quantity}</div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Price per Liter</div>
+                                <div style="font-weight: 500;">${fuel.pricePerLiter}</div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Total Cost</div>
+                                <div style="font-weight: 600; font-size: 1.1rem; color: #dc3545;">${fuel.totalCost}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                        <h4 style="margin: 0 0 15px 0; color: #2563eb;"><i class="fas fa-tachometer-alt"></i> Odometer & Efficiency</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Odometer (Before)</div>
+                                <div style="font-weight: 500;">${fuel.odometerBefore}</div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Odometer (After)</div>
+                                <div style="font-weight: 500;">${fuel.odometerAfter}</div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Distance Covered</div>
+                                <div style="font-weight: 600; color: #2563eb;">${fuel.distanceCovered}</div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Fuel Efficiency</div>
+                                <div style="font-weight: 700; font-size: 1.2rem; color: ${efficiencyColor};">
+                                    <i class="fas fa-chart-line"></i> ${fuel.fuelEfficiency}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                        <h4 style="margin: 0 0 15px 0; color: #2563eb;"><i class="fas fa-receipt"></i> Payment & Receipt</h4>
+                        <div style="display: grid; gap: 12px;">
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Payment Method</div>
+                                <div style="font-weight: 600;">${fuel.paymentMethod}</div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Receipt Number</div>
+                                <div style="font-weight: 500; font-family: monospace;">${fuel.receiptNumber}</div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Attendant</div>
+                                <div style="font-weight: 500;">${fuel.attendant}</div>
+                            </div>
+                            <div>
+                                <div style="color: #6c757d; font-size: 0.875rem; margin-bottom: 5px;">Related Trip</div>
+                                <div style="font-weight: 600; color: #2563eb;">${fuel.trip}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${fuel.notes ? `
+                        <div style="padding: 20px; background: #e7f3ff; border-radius: 8px; border-left: 4px solid #2563eb;">
+                            <h4 style="margin: 0 0 10px 0; color: #1e40af;"><i class="fas fa-sticky-note"></i> Notes</h4>
+                            <div style="color: #1e40af;">${fuel.notes}</div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            createDetailsModal(`<i class="fas fa-gas-pump"></i> Fuel Log Details - ${fuelId}`, content);
         }
 
         function viewTicketDetails(ticketId) {
@@ -3244,6 +4068,95 @@
             button.parentElement.remove();
         }
 
+        // Trip dropdown actions
+        function printTrip(tripId) {
+            showToast(`Preparing to print trip ${tripId}...`);
+            // Would typically open a print dialog or generate PDF
+            console.log(`Print trip: ${tripId}`);
+        }
+
+        function exportTrip(tripId) {
+            showToast(`Exporting trip ${tripId} data...`);
+            // Would typically download trip data as CSV/PDF
+            console.log(`Export trip: ${tripId}`);
+        }
+
+        function cancelTrip(tripId) {
+            if (confirm(`Are you sure you want to cancel trip ${tripId}?`)) {
+                const tripElement = document.getElementById(`trip-${tripId}`);
+                if (tripElement) {
+                    tripElement.remove();
+                    showToast(`Trip ${tripId} has been cancelled.`);
+                }
+            }
+        }
+
+        // Vehicle check actions
+        function printCheck(checkId) {
+            showToast(`Preparing to print check ${checkId}...`);
+            console.log(`Print check: ${checkId}`);
+        }
+
+        function exportCheck(checkId) {
+            showToast(`Exporting check ${checkId} data...`);
+            console.log(`Export check: ${checkId}`);
+        }
+
+        function resubmitCheck(checkId) {
+            showToast(`Resubmitting check ${checkId}...`);
+            console.log(`Resubmit check: ${checkId}`);
+        }
+
+        // Breakdown actions
+        function printBreakdown(breakdownId) {
+            showToast(`Preparing to print breakdown report ${breakdownId}...`);
+            console.log(`Print breakdown: ${breakdownId}`);
+        }
+
+        function exportBreakdown(breakdownId) {
+            showToast(`Exporting breakdown ${breakdownId} data...`);
+            console.log(`Export breakdown: ${breakdownId}`);
+        }
+
+        function contactTechnician(breakdownId) {
+            showToast(`Contacting technician for ${breakdownId}...`);
+            console.log(`Contact technician: ${breakdownId}`);
+        }
+
+        // Fuel log actions
+        function editFuelLog(fuelId) {
+            showToast(`Opening edit form for fuel log ${fuelId}...`);
+            console.log(`Edit fuel log: ${fuelId}`);
+        }
+
+        function printFuelLog(fuelId) {
+            showToast(`Preparing to print fuel log ${fuelId}...`);
+            console.log(`Print fuel log: ${fuelId}`);
+        }
+
+        function deleteFuelLog(fuelId) {
+            if (confirm(`Are you sure you want to delete fuel log ${fuelId}?`)) {
+                showToast(`Fuel log ${fuelId} has been deleted.`);
+                console.log(`Delete fuel log: ${fuelId}`);
+            }
+        }
+
+        // Transport ticket actions
+        function printTicket(ticketId) {
+            showToast(`Preparing to print ticket ${ticketId}...`);
+            console.log(`Print ticket: ${ticketId}`);
+        }
+
+        function exportTicket(ticketId) {
+            showToast(`Exporting ticket ${ticketId} data...`);
+            console.log(`Export ticket: ${ticketId}`);
+        }
+
+        function updateDeliveryStatus(ticketId) {
+            showToast(`Updating delivery status for ${ticketId}...`);
+            console.log(`Update delivery status: ${ticketId}`);
+        }
+
         // ==================== FILTER FUNCTIONS ====================
         let currentTripFilter = 'all';
         let currentCheckFilter = 'all';
@@ -3257,7 +4170,7 @@
         }
 
         function applyTripFilters() {
-            const trips = document.querySelectorAll('.trip-item[data-status]');
+            const trips = document.querySelectorAll('.inventory-item[data-status], .trip-item[data-status]');
             let visibleCount = 0;
             
             trips.forEach(trip => {
@@ -3281,7 +4194,7 @@
         }
 
         function applyCheckFilters() {
-            const checks = document.querySelectorAll('#vehicle-check .ticket-item[data-status]');
+            const checks = document.querySelectorAll('#vehicle-check .inventory-item[data-status], #vehicle-check .ticket-item[data-status]');
             let visibleCount = 0;
             
             checks.forEach(check => {
@@ -3315,7 +4228,7 @@
         }
 
         function applyBreakdownFilters() {
-            const breakdowns = document.querySelectorAll('#breakdown .ticket-item');
+            const breakdowns = document.querySelectorAll('#breakdown .inventory-item, #breakdown .ticket-item');
             let visibleCount = 0;
             
             breakdowns.forEach(breakdown => {
@@ -3361,7 +4274,7 @@
                 // Create new trip element
                 const tripContainer = document.querySelector('#trip-log .card .trip-item').parentElement;
                 const newTripHTML = `
-                    <div class="trip-item priority-medium" data-status="ready" id="trip-${newTripId}">
+                    <div class="inventory-item" data-status="ready" id="trip-${newTripId}">
                         <div class="ticket-details">
                             <strong>${newTripId}</strong>
                             <div class="ticket-meta">Route: ${origin} → ${destination} | Date: ${today}</div>

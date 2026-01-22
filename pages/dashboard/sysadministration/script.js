@@ -79,44 +79,46 @@ class UserManagement {
         }
 
         userList.innerHTML = users.map(user => `
-            <div class="user-item" data-role="${user.role}" data-status="${user.is_active ? 'active' : 'inactive'}">
-                <div class="user-details">
-                    <strong>${user.full_name}</strong>
-                    <div class="user-meta">Employee ID: ${user.employee_id}</div>
-                    <div class="user-meta">Email: ${user.email}</div>
-                    <div class="user-meta">Role: ${user.role}</div>
-                    <div class="user-meta">
-                        Status: <span class="status-text ${user.is_active ? 'status-active' : 'status-inactive'}">
-                            ${user.is_active ? 'Active' : 'Inactive'}
-                        </span>
+            <div class="inventory-item" data-role="${user.role}" data-status="${user.is_active ? 'active' : 'inactive'}">
+                <div class="item-details">
+                    <strong><i class="fas fa-user"></i> ${user.full_name}</strong>
+                    <div class="item-meta">
+                        <i class="fas fa-id-badge"></i> ${user.employee_id} | 
+                        <i class="fas fa-user-tag"></i> ${user.role}
+                    </div>
+                    <div class="item-description">
+                        <span class="status-text ${user.is_active ? 'status-active' : 'status-inactive'}">${user.is_active ? 'Active' : 'Inactive'}</span> | 
+                        <i class="fas fa-envelope"></i> ${user.email}
                     </div>
                 </div>
-                <div class="user-actions">
-                    <button class="btn btn-small btn-primary" onclick="userManagement.viewUserDetails(${user.id})">
-                        <i class="fas fa-eye"></i> View
-                    </button>
-                    <div style="position: relative; display: inline-block;">
-                        <button class="btn btn-secondary btn-small" onclick="toggleUserMenu(${user.id}, event)" id="user-menu-btn-${user.id}">
-                            <i class="fas fa-ellipsis-v"></i>
+                <div class="item-actions">
+                    <div class="action-buttons">
+                        <button class="btn btn-small btn-primary" onclick="userManagement.viewUserDetails(${user.id})">
+                            <i class="fas fa-eye"></i> VIEW
                         </button>
-                        <div class="dropdown-menu" id="user-menu-${user.id}" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: white; border: 1px solid var(--stone-200); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 180px; z-index: 1000;">
-                            <button onclick="userManagement.editUser(${user.id}); closeUserMenu(${user.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text-700);" onmouseover="this.style.background='var(--stone-50)'" onmouseout="this.style.background='none'">
-                                <i class="fas fa-edit" style="width: 16px;"></i> Edit
+                        <div class="dropdown-container">
+                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleUserDropdown(event, 'user-${user.id}')">
+                                <i class="fas fa-ellipsis-v"></i>
                             </button>
-                            <button onclick="userManagement.resetPassword(${user.id}); closeUserMenu(${user.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text-700);" onmouseover="this.style.background='var(--stone-50)'" onmouseout="this.style.background='none'">
-                                <i class="fas fa-key" style="width: 16px;"></i> Reset Password
-                            </button>
-                            ${user.is_active ? 
-                                `<button onclick="userManagement.suspendUser(${user.id}); closeUserMenu(${user.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--warn);" onmouseover="this.style.background='var(--stone-50)'" onmouseout="this.style.background='none'">
-                                    <i class="fas fa-ban" style="width: 16px;"></i> Suspend
-                                </button>` :
-                                `<button onclick="userManagement.activateUser(${user.id}); closeUserMenu(${user.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--ok);" onmouseover="this.style.background='var(--stone-50)'" onmouseout="this.style.background='none'">
-                                    <i class="fas fa-check-circle" style="width: 16px;"></i> Activate
-                                </button>`
-                            }
-                            <button onclick="userManagement.deleteUser(${user.id}); closeUserMenu(${user.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--danger);" onmouseover="this.style.background='var(--red-50)'" onmouseout="this.style.background='none'">
-                                <i class="fas fa-trash" style="width: 16px;"></i> Delete
-                            </button>
+                            <div class="dropdown-menu" id="dropdown-user-${user.id}">
+                                <button class="dropdown-item" onclick="userManagement.editUser(${user.id}); closeDropdown('user-${user.id}')">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="dropdown-item" onclick="userManagement.resetPassword(${user.id}); closeDropdown('user-${user.id}')">
+                                    <i class="fas fa-key"></i> Reset Password
+                                </button>
+                                ${user.is_active ? 
+                                    `<button class="dropdown-item" onclick="userManagement.suspendUser(${user.id}); closeDropdown('user-${user.id}')">
+                                        <i class="fas fa-ban"></i> Suspend
+                                    </button>` :
+                                    `<button class="dropdown-item" onclick="userManagement.activateUser(${user.id}); closeDropdown('user-${user.id}')">
+                                        <i class="fas fa-check-circle"></i> Activate
+                                    </button>`
+                                }
+                                <button class="dropdown-item danger" onclick="userManagement.deleteUser(${user.id}); closeDropdown('user-${user.id}')">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -547,13 +549,39 @@ function closeUserMenu(userId) {
 document.addEventListener('click', function() {
     document.querySelectorAll('.dropdown-menu').forEach(menu => {
         menu.style.display = 'none';
-        // Remove active class from parent user-item
-        const userItem = menu.closest('.user-item');
+        // Remove active class from parent items
+        const userItem = menu.closest('.user-item, .inventory-item');
         if (userItem) {
             userItem.classList.remove('dropdown-active');
         }
     });
 });
+
+// New dropdown functions for inventory-item structure
+function toggleUserDropdown(event, dropdownId) {
+    event.stopPropagation();
+    const fullId = `dropdown-${dropdownId}`;
+    const menu = document.getElementById(fullId);
+    
+    // Close all other dropdowns
+    document.querySelectorAll('.dropdown-menu').forEach(m => {
+        if (m.id !== fullId) {
+            m.style.display = 'none';
+        }
+    });
+    
+    // Toggle current dropdown
+    if (menu) {
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+}
+
+function closeDropdown(dropdownId) {
+    const menu = document.getElementById(`dropdown-${dropdownId}`);
+    if (menu) {
+        menu.style.display = 'none';
+    }
+}
 
 // ==================== TAB-BASED FILTERING ====================
 
