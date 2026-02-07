@@ -191,4 +191,18 @@ class VehicleController {
             Response::error($e->getMessage(), 500);
         }
     }
+    
+    /**
+     * GET /api/vehicles/next-id
+     * Get the next available vehicle ID
+     */
+    public function getNextId() {
+        try {
+            $nextId = $this->vehicleService->getNextVehicleId();
+            
+            Response::success(['next_id' => $nextId]);
+        } catch (Exception $e) {
+            Response::error($e->getMessage(), 500);
+        }
+    }
 }

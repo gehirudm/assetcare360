@@ -159,4 +159,18 @@ class MachineController {
             Response::error($e->getMessage(), 500);
         }
     }
+    
+    /**
+     * GET /api/machines/next-id
+     * Get the next available machine ID
+     */
+    public function getNextId() {
+        try {
+            $nextId = $this->machineService->getNextMachineId();
+            
+            Response::success(['next_id' => $nextId]);
+        } catch (Exception $e) {
+            Response::error($e->getMessage(), 500);
+        }
+    }
 }
