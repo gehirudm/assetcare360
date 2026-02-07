@@ -19,7 +19,7 @@ class Product extends BaseModel {
     protected function getSchema() {
         return [
             'id' => 'INT AUTO_INCREMENT PRIMARY KEY',
-            'product_id' => 'VARCHAR(50) UNIQUE NOT NULL',
+            'sparepart_id' => 'VARCHAR(50) UNIQUE NOT NULL',
             'sku' => 'VARCHAR(100) UNIQUE NULL',
             'name' => 'VARCHAR(255) NOT NULL',
             'description' => 'TEXT NULL',
@@ -55,19 +55,19 @@ class Product extends BaseModel {
     }
     
     /**
-     * Generate next product ID in format SPR-001, SPR-002, etc.
+     * Generate next sparepart ID in format SPR-001, SPR-002, etc.
      */
     public function generateProductId() {
-        $sql = "SELECT product_id FROM `{$this->table}` ORDER BY id DESC LIMIT 1";
+        $sql = "SELECT sparepart_id FROM `{$this->table}` ORDER BY id DESC LIMIT 1";
         $stmt = $this->db->query($sql);
         $lastProduct = $stmt->fetch();
         
-        if (!$lastProduct || empty($lastProduct['product_id'])) {
+        if (!$lastProduct || empty($lastProduct['sparepart_id'])) {
             return 'SPR-001';
         }
         
         // Extract the numeric part from SPR-XXX format
-        $lastId = $lastProduct['product_id'];
+        $lastId = $lastProduct['sparepart_id'];
         preg_match('/SPR-(\\d+)/', $lastId, $matches);
         
         if (!empty($matches[1])) {

@@ -40,10 +40,10 @@ class ProductService {
      */
     public function getProductById($id) {
         try {
-            // Check if it's a product_id (starts with SPR-) or database ID (numeric)
+            // Check if it's a sparepart_id (starts with SPR-) or database ID (numeric)
             if (preg_match('/^SPR-\d+$/', $id)) {
-                // It's a product_id like SPR-001
-                $product = $this->productModel->findOne(['product_id' => $id, 'is_active' => 1]);
+                // It's a sparepart_id like SPR-001
+                $product = $this->productModel->findOne(['sparepart_id' => $id, 'is_active' => 1]);
             } else {
                 // It's a database ID
                 $product = $this->productModel->findById($id);
@@ -105,9 +105,9 @@ class ProductService {
                 }
             }
             
-            // Auto-generate product_id if not provided
-            if (empty($data['product_id'])) {
-                $data['product_id'] = $this->productModel->generateProductId();
+            // Auto-generate sparepart_id if not provided
+            if (empty($data['sparepart_id'])) {
+                $data['sparepart_id'] = $this->productModel->generateProductId();
             }
             
             // Set default values
@@ -127,7 +127,7 @@ class ProductService {
             if ($productId) {
                 return [
                     'status' => 'success',
-                    'data' => ['id' => $productId, 'product_id' => $data['product_id']],
+                    'data' => ['id' => $productId, 'sparepart_id' => $data['sparepart_id']],
                     'message' => 'Product created successfully'
                 ];
             }
@@ -158,8 +158,8 @@ class ProductService {
                 ];
             }
             
-            // Don't allow updating product_id
-            unset($data['product_id']);
+            // Don't allow updating sparepart_id
+            unset($data['sparepart_id']);
             
             $success = $this->productModel->update($id, $data);
             

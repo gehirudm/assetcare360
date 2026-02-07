@@ -215,9 +215,8 @@ async function loadSectionData(sectionId) {
                 await loadVehicles();
                 break;
             case 'catalog':
-                // Initialize catalog count
-                const catalogItems = document.querySelectorAll('#catalogItems .inventory-item');
-                updateCatalogCount(catalogItems.length);
+                // Load spare parts from database
+                await loadSpareParts();
                 break;
             case 'orders-approvals':
                 // Load orders if implemented
@@ -1810,37 +1809,183 @@ function updateCompatibilityOptions() {
     }
 }
 
+// ==================== SPARE PARTS / PRODUCTS API FUNCTIONS ====================
+
+// Load spare parts from database
+async function loadSpareParts() {
+    try {
+        showLoading(true);
+        const response = await API.get('/products');
+        
+        if (response.status === 'success' && response.data && response.data.products) {
+            const products = response.data.products;
+            displaySpareParts(products);
+            updateCatalogCount(products.length);
+        } else {
+            console.error('Failed to load spare parts:', response.message);
+            Utils.showToast('Failed to load spare parts', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading spare parts:', error);
+        Utils.showToast('Error loading spare parts', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Display spare parts in the catalog
+function displaySpareParts(products) {
+    const catalogItems = document.getElementById('catalogItems');
+    catalogItems.innerHTML = '';
+    
+    if (products.length === 0) {
+        catalogItems.innerHTML = '<div class="no-data"><i class="fas fa-box-open"></i><p>No spare parts in catalog</p></div>';
+        return;
+    }
+    
+    products.forEach(product => {
+        const quantity = parseInt(product.quantity) || 0;
+        const stockStatus = quantity > 10 ? 'in-stock' : (quantity > 0 ? 'low-stock' : 'out-of-stock');
+        const stockBadge = quantity > 10 ? 'status-in-stock' : (quantity > 0 ? 'status-low-stock' : 'status-out-of-stock');
+        const stockText = quantity > 10 ? 'In Stock' : (quantity > 0 ? 'Low Stock' : 'Out of Stock');
+        
+        const newItem = document.createElement('div');
+        newItem.className = 'inventory-item';
+        newItem.setAttribute('data-status', stockStatus);
+        newItem.setAttribute('data-category', product.category || 'unknown');
+        newItem.setAttribute('data-id', product.sparepart_id);
+        newItem.innerHTML = `
+            <div class="item-details">
+                <strong><i class="fas fa-box"></i> ${product.name}</strong>
+                <div class="item-meta">
+                    <i class="fas fa-hashtag"></i> ${product.sparepart_id} | 
+                    <i class="fas fa-tag"></i> ${(product.category || 'Unknown').charAt(0).toUpperCase() + (product.category || 'Unknown').slice(1)} Parts
+                </div>
+                <div class="item-description">
+                    <span class="status-text ${stockBadge}">${stockText}</span> | 
+                    <i class="fas fa-boxes"></i> ${quantity} units
+                </div>
+            </div>
+            <div class="item-actions">
+                <div class="action-buttons">
+                    <button class="btn btn-primary btn-small" onclick="viewPartDetails('${product.sparepart_id}')"><i class="fas fa-eye"></i> VIEW</button>
+                    <button class="btn btn-secondary btn-small" onclick="editPart('${product.sparepart_id}')"><i class="fas fa-edit"></i> EDIT</button>
+                    <div class="dropdown-container">
+                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'part-${product.sparepart_id}')">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div class="dropdown-menu" id="dropdown-part-${product.sparepart_id}">
+                            ${quantity <= 10 ? `
+                                <button class="dropdown-item" onclick="reorderPart('${product.sparepart_id}'); closeAllDropdowns();">
+                                    <i class="fas fa-sync"></i> Reorder
+                                </button>
+                            ` : ''}
+                            <button class="dropdown-item danger" onclick="deletePart('${product.sparepart_id}'); closeAllDropdowns();">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        catalogItems.appendChild(newItem);
+    });
+}
+
 // CREATE - Add Part
 async function openAddPartModal() {
     try {
-        // This would need a backend endpoint /api/products/next-id
-        // For now, we'll set a placeholder
-        const nextId = 'SPR-' + String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
-        document.getElementById('productIdDisplay').value = nextId;
+        // Fetch next sparepart ID from backend
+        const response = await API.get('/products/next-id');
+        if (response.status === 'success' && response.data && response.data.next_id) {
+            document.getElementById('sparepartIdDisplay').value = response.data.next_id;
+        } else {
+            throw new Error('Failed to get next sparepart ID');
+        }
         openModal('addPartModal');
     } catch (error) {
-        console.error('Failed to get next product ID:', error);
-        document.getElementById('productIdDisplay').value = 'SPR-###';
+        console.error('Failed to get next sparepart ID:', error);
+        Utils.showToast('Failed to get next sparepart ID', 'error');
+        document.getElementById('sparepartIdDisplay').value = 'SPR-###';
         openModal('addPartModal');
     }
 }
 
-document.getElementById('addPartForm').addEventListener('submit', function(e) {
+document.getElementById('addPartForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    const productId = document.getElementById('productIdDisplay').value;
+    const sparepartId = document.getElementById('sparepartIdDisplay').value;
     const partName = document.getElementById('partName').value;
     const category = document.getElementById('partCategory').value;
     const quantity = document.getElementById('partQuantity').value;
     const location = document.getElementById('partLocation').value;
-    const supplier = document.getElementById('partSupplier').value;
+    const supplier = document.getElementById('partSupplier').value || '';
+    const supplierContact = document.getElementById('partSupplierContact')?.value || '';
+    const supplierAddress = document.getElementById('partSupplierAddress')?.value || '';
     
-    addPartToCatalog(partName, productId, category, quantity, location, supplier);
+    // Build warranty info from period and start date
+    const warrantyPeriod = document.getElementById('partWarrantyPeriod')?.value || '';
+    const warrantyStart = document.getElementById('partWarrantyStart')?.value || '';
+    let warranty = '';
+    if (warrantyPeriod && warrantyStart) {
+        const startDate = new Date(warrantyStart);
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + parseInt(warrantyPeriod));
+        warranty = `Active until ${endDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+    } else if (warrantyPeriod) {
+        warranty = `${warrantyPeriod} months warranty`;
+    }
     
-    Utils.showToast(`✅ ${partName} added to catalog successfully!`, 'success');
-    closeModal('addPartModal');
-    this.reset();
+    const warrantyTerms = document.getElementById('partWarrantyTerms')?.value || '';
+    
+    // Get compatible machines and vehicles
+    const compatibleMachines = Array.from(document.querySelectorAll('input[name="compatibleMachines"]:checked'))
+        .map(cb => cb.value);
+    const compatibleVehicles = Array.from(document.querySelectorAll('input[name="compatibleVehicles"]:checked'))
+        .map(cb => cb.value);
+    
+    // Save spare part to database
+    await saveSparePart({
+        sparepart_id: sparepartId,
+        name: partName,
+        category: category,
+        quantity: parseInt(quantity),
+        location: location,
+        supplier: supplier,
+        supplier_contact: supplierContact,
+        supplier_address: supplierAddress,
+        warranty: warranty,
+        warranty_terms: warrantyTerms,
+        compatible_machines: JSON.stringify(compatibleMachines),
+        compatible_vehicles: JSON.stringify(compatibleVehicles)
+    });
 });
+
+async function saveSparePart(data) {
+    try {
+        showLoading(true);
+        console.log('Saving spare part:', data);
+        const response = await API.post('/products', data);
+        console.log('API response:', response);
+        
+        if (response.status === 'success') {
+            Utils.showToast(`✅ ${data.name} added to catalog successfully!`, 'success');
+            closeModal('addPartModal');
+            document.getElementById('addPartForm').reset();
+            // Reload spare parts
+            await loadSpareParts();
+        } else {
+            console.error('Failed to add spare part:', response);
+            Utils.showToast(`Failed to add spare part: ${response.message}`, 'error');
+        }
+    } catch (error) {
+        console.error('Error saving spare part:', error);
+        Utils.showToast('Error saving spare part', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
 
 function addPartToCatalog(partName, productId, category, quantity, location, supplier) {
     const catalogItems = document.getElementById('catalogItems');
@@ -1895,113 +2040,87 @@ function addPartToCatalog(partName, productId, category, quantity, location, sup
 }
 
 // READ - View Part Details
-function viewPartDetails(partId) {    
-    const partDetails = {
-        'BP-001': {
-            name: 'Brake Pads',
-            partNumber: 'BP-001',
-            category: 'Brake System',
-            quantity: 45,
-            stockStatus: 'In Stock',
-            location: 'Warehouse A-15',
-            supplier: 'Ravindu Lakshan',
-            supplierContact: '+94-77-123-4567',
-            supplierAddress: '123 Brake Street, Colombo, Sri Lanka',
-            warranty: 'Active until Dec 2025',
-            warrantyTerms: 'Full replacement warranty for manufacturing defects',
-            lastService: 'Aug 15, 2025',
-            linkedMachines: ['Vehicle #101', 'Vehicle #089', 'Vehicle #112'],
-            unitCost: 'Rs. 45.50',
-            totalValue: 'Rs. 2,047.50'
-        },
-        'OF-205': {
-            name: 'Oil Filter',
-            partNumber: 'OF-205',
-            category: 'Filtration System',
-            quantity: 8,
-            stockStatus: 'Low Stock',
-            location: 'Warehouse B-03',
-            supplier: 'FilterMax Ltd.',
-            supplierContact: '+94-77-234-5678',
-            supplierAddress: '456 Filter Ave, Colombo, Sri Lanka',
-            warranty: 'Active until Mar 2026',
-            warrantyTerms: '12-month warranty against defects',
-            lastService: 'Sep 10, 2025',
-            linkedMachines: ['Excavator #205', 'Loader #210', 'Crane #215'],
-            unitCost: 'Rs. 125.00',
-            totalValue: 'Rs. 1,000.00'
-        },
-        'HYD-250': {
-            name: 'Hydraulic Pump',
-            partNumber: 'HYD-250',
-            category: 'Hydraulic System',
-            quantity: 0,
-            stockStatus: 'Out of Stock',
-            location: 'Warehouse C-08',
-            supplier: 'Hydraulic Systems Pro',
-            supplierContact: '+94-77-345-6789',
-            supplierAddress: '789 Hydraulic Road, Colombo, Sri Lanka',
-            warranty: 'Active until Jun 2026',
-            warrantyTerms: '18-month warranty with free service',
-            lastService: 'Jul 20, 2025',
-            linkedMachines: ['Excavator #045', 'Bulldozer #067'],
-            unitCost: 'Rs. 25,500.00',
-            totalValue: 'Rs. 0.00'
+async function viewPartDetails(partId) {
+    try {
+        showLoading(true);
+        
+        // Fetch part details from database
+        const response = await API.get(`/products/${partId}`);
+        
+        if (response.status !== 'success' || !response.data) {
+            Utils.showToast('Failed to load spare part details', 'error');
+            return;
         }
-    };
-
-    const part = partDetails[partId] || {
-        name: `Part ${partId}`,
-        partNumber: partId,
-        category: 'Unknown',
-        quantity: 0,
-        stockStatus: 'Unknown',
-        location: 'N/A',
-        supplier: 'N/A',
-        supplierContact: 'N/A',
-        supplierAddress: 'N/A',
-        warranty: 'N/A',
-        warrantyTerms: 'N/A',
-        lastService: 'N/A',
-        linkedMachines: ['N/A'],
-        unitCost: 'Rs. 0.00',
-        totalValue: 'Rs. 0.00'
-    };
-    
-    const modal = createDetailsModal('Spare Part Details', `
-        <div class="form-section">
-            <h5><i class="fas fa-box"></i> Part Information</h5>
-            <p><strong>Product ID:</strong> ${part.partNumber}</p>
-            <p><strong>Part Name:</strong> ${part.name}</p>
-            <p><strong>Category:</strong> ${part.category}</p>
-            <p><strong>Quantity:</strong> ${part.quantity} units</p>
-            <p><strong>Stock Status:</strong> <span class="status-text">${part.stockStatus}</span></p>
-            <p><strong>Location:</strong> ${part.location}</p>
-            <p><strong>Unit Cost:</strong> ${part.unitCost}</p>
-            <p><strong>Total Value:</strong> ${part.totalValue}</p>
-        </div>
-        <div class="form-section">
-            <h5><i class="fas fa-truck"></i> Supplier Information</h5>
-            <p><strong>Supplier:</strong> ${part.supplier}</p>
-            <p><strong>Contact:</strong> ${part.supplierContact}</p>
-            <p><strong>Address:</strong> ${part.supplierAddress}</p>
-        </div>
-        <div class="form-section">
-            <h5><i class="fas fa-shield-alt"></i> Warranty Details</h5>
-            <p><strong>Status:</strong> ${part.warranty}</p>
-            <p><strong>Terms:</strong> ${part.warrantyTerms}</p>
-            <p><strong>Last Service:</strong> ${part.lastService}</p>
-        </div>
-        <div class="form-section">
-            <h5><i class="fas fa-link"></i> Linked Machines/Vehicles</h5>
-            <div class="components-list">
-                ${part.linkedMachines.map(machine => `<span class="component-badge">${machine}</span>`).join('')}
+        
+        const part = response.data;
+        
+        // Parse JSON fields
+        const compatibleMachines = part.compatible_machines ? JSON.parse(part.compatible_machines) : [];
+        const compatibleVehicles = part.compatible_vehicles ? JSON.parse(part.compatible_vehicles) : [];
+        
+        // Determine stock status
+        const quantity = parseInt(part.quantity) || 0;
+        const stockStatus = quantity > 10 ? 'In Stock' : (quantity > 0 ? 'Low Stock' : 'Out of Stock');
+        const stockBadge = quantity > 10 ? 'status-in-stock' : (quantity > 0 ? 'status-low-stock' : 'status-out-of-stock');
+        
+        // Format category
+        const categoryDisplay = part.category === 'vehicles' ? 'Vehicle Parts' : 'Machine Parts';
+        
+        const modal = createDetailsModal('Spare Part Details', `
+            <div class="form-section">
+                <h5><i class="fas fa-box"></i> Part Information</h5>
+                <p><strong>Sparepart ID:</strong> ${part.sparepart_id}</p>
+                <p><strong>Part Name:</strong> ${part.name}</p>
+                <p><strong>Category:</strong> ${categoryDisplay}</p>
+                <p><strong>Quantity:</strong> ${quantity} units</p>
+                <p><strong>Stock Status:</strong> <span class="status-text ${stockBadge}">${stockStatus}</span></p>
+                <p><strong>Storage Location:</strong> ${part.location || 'N/A'}</p>
+                ${part.unit_price ? `<p><strong>Unit Price:</strong> Rs. ${parseFloat(part.unit_price).toFixed(2)}</p>` : ''}
+                ${part.reorder_level ? `<p><strong>Reorder Level:</strong> ${part.reorder_level} units</p>` : ''}
             </div>
-        </div>
-    `);
-    
-    document.body.appendChild(modal);
-    modal.classList.add('active');
+            <div class="form-section">
+                <h5><i class="fas fa-truck"></i> Supplier Information</h5>
+                <p><strong>Supplier Name:</strong> ${part.supplier || 'N/A'}</p>
+                <p><strong>Contact:</strong> ${part.supplier_contact || 'N/A'}</p>
+                <p><strong>Address:</strong> ${part.supplier_address || 'N/A'}</p>
+            </div>
+            <div class="form-section">
+                <h5><i class="fas fa-shield-alt"></i> Warranty Details</h5>
+                <p><strong>Warranty Period:</strong> ${part.warranty || 'N/A'}</p>
+                <p><strong>Warranty Terms:</strong> ${part.warranty_terms || 'N/A'}</p>
+            </div>
+            <div class="form-section">
+                <h5><i class="fas fa-cog"></i> Compatible Machines</h5>
+                <div class="components-list">
+                    ${compatibleMachines.length > 0 
+                        ? compatibleMachines.map(machine => `<span class="component-badge">${machine}</span>`).join('') 
+                        : '<span class="text-muted">No compatible machines specified</span>'}
+                </div>
+            </div>
+            <div class="form-section">
+                <h5><i class="fas fa-truck"></i> Compatible Vehicles</h5>
+                <div class="components-list">
+                    ${compatibleVehicles.length > 0 
+                        ? compatibleVehicles.map(vehicle => `<span class="component-badge">${vehicle}</span>`).join('') 
+                        : '<span class="text-muted">No compatible vehicles specified</span>'}
+                </div>
+            </div>
+            <div class="form-section">
+                <h5><i class="fas fa-clock"></i> Record Information</h5>
+                <p><strong>Created:</strong> ${new Date(part.created_at).toLocaleString()}</p>
+                <p><strong>Last Updated:</strong> ${new Date(part.updated_at).toLocaleString()}</p>
+            </div>
+        `);
+        
+        document.body.appendChild(modal);
+        modal.classList.add('active');
+        
+    } catch (error) {
+        console.error('Error loading part details:', error);
+        Utils.showToast('Error loading spare part details', 'error');
+    } finally {
+        showLoading(false);
+    }
 }
 
 // UPDATE - Edit Part
@@ -2077,21 +2196,40 @@ document.getElementById('editPartForm').addEventListener('submit', function(e) {
 });
 
 // DELETE - Delete Part
-function deletePart(partId) {
+async function deletePart(partId) {
     const deleteMessage = document.getElementById('deleteMessage');
     deleteMessage.textContent = `Are you sure you want to delete part ${partId}? This action cannot be undone.`;
     
     const confirmBtn = document.getElementById('confirmDeleteBtn');
-    confirmBtn.onclick = function() {
-        const partElement = document.querySelector(`#catalogItems [data-id="${partId}"]`);
-        if (partElement) {
-            partElement.remove();
-            Utils.showToast(`🗑️ Part ${partId} deleted successfully!`, 'success');
+    confirmBtn.onclick = async function() {
+        try {
+            showLoading(true);
             
-            const items = document.querySelectorAll('#catalogItems .inventory-item');
-            updateCatalogCount(items.length);
+            // Find the sparepart from sparepart_id
+            const partElement = document.querySelector(`#catalogItems [data-id="${partId}"]`);
+            if (!partElement) {
+                Utils.showToast('Part not found', 'error');
+                closeModal('deleteModal');
+                return;
+            }
+            
+            // Delete from database
+            const response = await API.delete(`/products/${partId}`);
+            
+            if (response.status === 'success') {
+                Utils.showToast(`🗑️ Part ${partId} deleted successfully!`, 'success');
+                closeModal('deleteModal');
+                // Reload spare parts
+                await loadSpareParts();
+            } else {
+                Utils.showToast(`Failed to delete part: ${response.message}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting part:', error);
+            Utils.showToast('Error deleting part', 'error');
+        } finally {
+            showLoading(false);
         }
-        closeModal('deleteModal');
     };
     
     openModal('deleteModal');
