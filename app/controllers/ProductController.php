@@ -27,7 +27,17 @@ class ProductController {
     /**
      * Get product by ID
      */
-    public function show($id) {
+    public function show() {
+        $id = $_GET['id'] ?? null;
+        
+        if (!$id) {
+            Response::json([
+                'status' => 'error',
+                'message' => 'Product ID is required'
+            ], 400);
+            return;
+        }
+        
         $result = $this->productService->getProductById($id);
         Response::json($result);
     }
@@ -61,7 +71,17 @@ class ProductController {
     /**
      * Update product
      */
-    public function update($id) {
+    public function update() {
+        $id = $_GET['id'] ?? null;
+        
+        if (!$id) {
+            Response::json([
+                'status' => 'error',
+                'message' => 'Product ID is required'
+            ], 400);
+            return;
+        }
+        
         $data = json_decode(file_get_contents('php://input'), true);
         
         if (!$data) {
@@ -79,7 +99,17 @@ class ProductController {
     /**
      * Delete product
      */
-    public function destroy($id) {
+    public function destroy() {
+        $id = $_GET['id'] ?? null;
+        
+        if (!$id) {
+            Response::json([
+                'status' => 'error',
+                'message' => 'Product ID is required'
+            ], 400);
+            return;
+        }
+        
         $result = $this->productService->deleteProduct($id);
         Response::json($result);
     }
@@ -87,7 +117,17 @@ class ProductController {
     /**
      * Update product quantity
      */
-    public function updateQuantity($id) {
+    public function updateQuantity() {
+        $id = $_GET['id'] ?? null;
+        
+        if (!$id) {
+            Response::json([
+                'status' => 'error',
+                'message' => 'Product ID is required'
+            ], 400);
+            return;
+        }
+        
         $data = json_decode(file_get_contents('php://input'), true);
         
         if (!$data || !isset($data['quantity'])) {

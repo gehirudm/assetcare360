@@ -71,4 +71,13 @@ class Response {
     public static function serverError($message = 'Internal server error') {
         self::error($message, 500);
     }
+    
+    /**
+     * Send JSON response (generic)
+     */
+    public static function json($data, $statusCode = 200) {
+        http_response_code($statusCode);
+        echo json_encode($data);
+        exit;
+    }
 }

@@ -36,11 +36,18 @@ class ProductService {
     }
     
     /**
-     * Get product by ID
+     * Get product by ID (database ID or product_id like SPR-001)
      */
     public function getProductById($id) {
         try {
-            $product = $this->productModel->findById($id);
+            // Check if it's a product_id (starts with SPR-) or database ID (numeric)
+            if (preg_match('/^SPR-\d+$/', $id)) {
+                // It's a product_id like SPR-001
+                $product = $this->productModel->findOne(['product_id' => $id, 'is_active' => 1]);
+            } else {
+                // It's a database ID
+                $product = $this->productModel->findById($id);
+            }
             
             if (!$product) {
                 return [
@@ -177,11 +184,21 @@ class ProductService {
     }
     
     /**
-     * Delete product
+     * Delete product (supports both database ID and product_id)
      */
     public function deleteProduct($id) {
         try {
-            $product = $this->productModel->findById($id);
+            // Check if it's a product_id (starts with SPR-) or database ID (numeric)
+            if (preg_match('/^SPR-\d+$/', $id)) {
+                // It's a product_id like SPR-001
+                $product = $this->productModel->findOne(['product_id' => $id, 'is_active' => 1]);
+                if ($product) {
+                    $id = $product['id']; // Use database ID for update
+                }
+            } else {
+                // It's a database ID
+                $product = $this->productModel->findById($id);
+            }
             
             if (!$product) {
                 return [

@@ -3,14 +3,14 @@
 require_once __DIR__ . '/BaseModel.php';
 
 /**
- * Example Product Model
- * Demonstrates how to create a new model with automatic table creation
+ * SparePart Model
+ * Manages spare parts inventory for machines and vehicles
  * 
- * This model will automatically create the 'products' table when first used.
+ * This model uses the 'spareparts' table to store spare parts information.
  * All standard CRUD operations are inherited from BaseModel.
  */
 class Product extends BaseModel {
-    protected $table = 'products';
+    protected $table = 'spareparts';
     
     /**
      * Define table schema
@@ -25,9 +25,15 @@ class Product extends BaseModel {
             'description' => 'TEXT NULL',
             'category' => 'VARCHAR(100) NULL',
             'quantity' => 'INT DEFAULT 0',
-            'unit_price' => 'DECIMAL(10,2) NOT NULL',
+            'unit_price' => 'DECIMAL(10,2) DEFAULT 0.00',
             'reorder_level' => 'INT DEFAULT 10',
             'supplier' => 'VARCHAR(255) NULL',
+            'supplier_contact' => 'VARCHAR(100) NULL',
+            'supplier_address' => 'TEXT NULL',
+            'warranty' => 'VARCHAR(255) NULL',
+            'warranty_terms' => 'TEXT NULL',
+            'compatible_machines' => 'JSON NULL',
+            'compatible_vehicles' => 'JSON NULL',
             'location' => 'VARCHAR(255) NULL',
             'is_active' => 'TINYINT(1) DEFAULT 1',
             'created_by' => 'INT NULL',
