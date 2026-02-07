@@ -54,6 +54,7 @@ require_once __DIR__ . '/../app/controllers/UserController.php';
 require_once __DIR__ . '/../app/controllers/LogController.php';
 require_once __DIR__ . '/../app/controllers/MachineController.php';
 require_once __DIR__ . '/../app/controllers/VehicleController.php';
+require_once __DIR__ . '/../app/controllers/ProductController.php';
 require_once __DIR__ . '/../app/controllers/FaultTicketController.php';
 require_once __DIR__ . '/../app/controllers/BudgetReportController.php';
 require_once __DIR__ . '/../app/controllers/FileController.php';
@@ -101,6 +102,7 @@ $router->get('/logs/user/:id', 'LogController', 'getUserLogs');
 $router->get('/logs', 'LogController', 'index');
 
 // Machine management routes (Inventory Manager and above)
+$router->get('/machines/next-id', 'MachineController', 'getNextId');
 $router->get('/machines/due-service', 'MachineController', 'dueForService');
 $router->get('/machines', 'MachineController', 'index');
 $router->post('/machines', 'MachineController', 'store');
@@ -109,6 +111,7 @@ $router->put('/machines/:id', 'MachineController', 'update');
 $router->delete('/machines/:id', 'MachineController', 'delete');
 
 // Vehicle management routes (Inventory Manager and above)
+$router->get('/vehicles/next-id', 'VehicleController', 'getNextId');
 $router->get('/vehicles/due-service', 'VehicleController', 'dueForService');
 $router->get('/vehicles', 'VehicleController', 'index');
 $router->post('/vehicles', 'VehicleController', 'store');
@@ -116,6 +119,15 @@ $router->get('/vehicles/:id', 'VehicleController', 'show');
 $router->put('/vehicles/:id', 'VehicleController', 'update');
 $router->patch('/vehicles/:id/mileage', 'VehicleController', 'updateMileage');
 $router->delete('/vehicles/:id', 'VehicleController', 'delete');
+
+// Product/Spare parts management routes (Inventory Manager and above)
+$router->get('/products/next-id', 'ProductController', 'getNextId');
+$router->get('/products', 'ProductController', 'index');
+$router->post('/products', 'ProductController', 'store');
+$router->get('/products/:id', 'ProductController', 'show');
+$router->put('/products/:id', 'ProductController', 'update');
+$router->patch('/products/:id/quantity', 'ProductController', 'updateQuantity');
+$router->delete('/products/:id', 'ProductController', 'destroy');
 
 // Fault ticket routes (Machinery Operator and above)
 $router->get('/fault-tickets', 'FaultTicketController', 'index');

@@ -18,7 +18,7 @@ class VehicleService {
      */
     public function createVehicle($data, $userId) {
         // Validate required fields
-        $required = ['vehicle_name', 'model_number', 'chassis_number', 'number_plate', 
+        $required = ['vehicle_name', 'number_plate', 
                      'vehicle_type', 'fuel_type', 'supplier_name', 'service_interval_type'];
         foreach ($required as $field) {
             if (empty($data[$field])) {
@@ -208,5 +208,12 @@ class VehicleService {
      */
     public function getVehiclesDueForService() {
         return $this->vehicleModel->getVehiclesDueForService();
+    }
+    
+    /**
+     * Get next vehicle ID
+     */
+    public function getNextVehicleId() {
+        return $this->vehicleModel->generateVehicleId();
     }
 }

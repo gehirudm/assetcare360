@@ -44,6 +44,42 @@ let vehicles = [];
 let currentMachineFilter = 'all';
 let currentVehicleFilter = 'all';
 
+// Machine types with their specific components (Litro Gas company equipment)
+const MACHINE_TYPES = {
+    'LPG Cylinder Filling Machine': ['Filling Valve', 'Pressure Gauge', 'Flow Meter', 'Control Panel', 'Safety Relief Valve', 'Weighing System', 'Conveyor Belt'],
+    'Gas Cylinder Testing Machine': ['Hydraulic Pump', 'Pressure Gauge', 'Control Panel', 'Safety Valve', 'Test Chamber', 'Pressure Regulator'],
+    'Cylinder Painting Machine': ['Spray Gun', 'Air Compressor', 'Paint Tank', 'Control Panel', 'Conveyor System', 'Ventilation System'],
+    'Valve Crimping Machine': ['Hydraulic Press', 'Control Panel', 'Valve Holder', 'Safety Guard', 'Pressure Gauge'],
+    'Gas Leak Detector': ['Sensor Unit', 'Display Panel', 'Alarm System', 'Battery', 'Calibration Unit'],
+    'Cylinder Washing Machine': ['Water Pump', 'Heating Element', 'Control Panel', 'Drainage System', 'Conveyor Belt', 'Drying Unit'],
+    'LPG Storage Tank': ['Pressure Gauge', 'Safety Relief Valve', 'Level Indicator', 'Temperature Sensor', 'Emergency Shut-off Valve'],
+    'Gas Compressor': ['Motor', 'Compressor Unit', 'Cooling System', 'Control Panel', 'Pressure Switch', 'Oil Filter', 'Air Filter'],
+    'Forklift': ['Engine', 'Hydraulic System', 'Control Panel', 'Cooling System', 'Forks', 'Mast', 'Steering System', 'Brakes'],
+    'Delivery Truck': ['Engine', 'Transmission', 'Braking System', 'Suspension', 'Electrical System', 'Cooling System', 'Cargo Space'],
+    'Cylinder Carousel System': ['Motor', 'Control Panel', 'Rotating Platform', 'Safety Sensors', 'Drive Belt', 'Emergency Stop'],
+    'Vaporizer': ['Heat Exchanger', 'Control Panel', 'Pressure Regulator', 'Safety Valve', 'Temperature Sensor']
+};
+
+// Available locations
+const LOCATIONS = [
+    'LOCATION 1',
+    'LOCATION 2',
+    'LOCATION 3',
+    'LOCATION 4'
+];
+
+// Vehicle types with their specific components (Litro Gas company vehicles)
+const VEHICLE_TYPES = {
+    'LPG Distribution Truck': ['Engine', 'Transmission', 'Braking System', 'Suspension', 'LPG Tank', 'Pressure Regulator', 'Safety Valve', 'Loading System'],
+    'Cylinder Delivery Van': ['Engine', 'Transmission', 'Braking System', 'Suspension', 'Cargo Space', 'Loading Ramp', 'Safety Straps'],
+    'Forklift': ['Engine', 'Hydraulic System', 'Control Panel', 'Cooling System', 'Forks', 'Mast', 'Steering System', 'Brakes'],
+    'Tanker Lorry': ['Engine', 'Transmission', 'Braking System', 'Tank Body', 'Pump System', 'Safety Valve', 'Emergency Shut-off', 'Discharge System'],
+    'Staff Car': ['Engine', 'Transmission', 'Braking System', 'Suspension', 'Electrical System', 'Air Conditioning', 'Safety Features'],
+    'Pickup Truck': ['Engine', 'Transmission', 'Braking System', 'Suspension', 'Cargo Bed', 'Towing System'],
+    'Three-Wheeler': ['Engine', 'Transmission', 'Braking System', 'Cargo Space', 'Suspension'],
+    'Motorcycle': ['Engine', 'Transmission', 'Braking System', 'Suspension', 'Electrical System']
+};
+
 async function initializeApp() {
     try {
         showLoading(true);
@@ -304,7 +340,7 @@ function displayMachines(machineList) {
                 <strong><i class="fas fa-cog"></i> ${machine.machine_name}</strong>
                 <div class="item-meta">
                     <i class="fas fa-hashtag"></i> ${machine.model_number} | 
-                    <i class="fas fa-barcode"></i> ${machine.serial_number}
+                    <i class="fas fa-barcode"></i> ${machine.machine_id}
                 </div>
                 <div class="item-description">
                     <span class="status-text ${getStatusClass(machine.status)}">${machine.status}</span> | 
@@ -389,13 +425,24 @@ async function refreshMachines() {
 
 // ==================== MACHINE CRUD OPERATIONS ====================
 
-function openAddMachineModal() {
-    const modal = createMachineModal();
+async function openAddMachineModal() {
+    // Fetch next machine ID before creating the modal
+    let nextMachineId = 'MCH-001';
+    try {
+        const response = await API.get('/machines/next-id');
+        if (response.status === 'success' && response.data.next_id) {
+            nextMachineId = response.data.next_id;
+        }
+    } catch (error) {
+        console.error('Failed to fetch next machine ID:', error);
+    }
+    
+    const modal = createMachineModal(null, nextMachineId);
     document.body.appendChild(modal);
     modal.classList.add('active');
 }
 
-function createMachineModal(machine = null) {
+function createMachineModal(machine = null, nextMachineId = 'MCH-001') {
     const isEdit = !!machine;
     const modal = document.createElement('div');
     modal.className = 'modal';
@@ -416,17 +463,20 @@ function createMachineModal(machine = null) {
                     <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Serial Number *</label>
-                            <input type="text" class="form-input" id="serialNumber" 
-                                   value="${machine?.serial_number || ''}" 
-                                   placeholder="e.g., SN-EXC-001" required
-                                   ${isEdit ? 'readonly' : ''}>
-                            <small style="color: var(--muted); display: block; margin-top: 4px;">Unique identifier for this machine</small>
+                            <label class="form-label">Machine ID</label>
+                            <input type="text" class="form-input" id="machineIdDisplay" 
+                                   value="${machine?.machine_id || nextMachineId}" 
+                                   placeholder="${nextMachineId}" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
+                            <small style="color: var(--muted); display: block; margin-top: 4px;">Automatically generated unique identifier</small>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Machine Name *</label>
-                            <input type="text" class="form-input" id="machineName" 
-                                   value="${machine?.machine_name || ''}" required>
+                            <select class="form-select" id="machineName" required onchange="updateMachineComponents()">
+                                <option value="">Select Machine Type</option>
+                                ${Object.keys(MACHINE_TYPES).map(type => `
+                                    <option value="${type}" ${machine?.machine_name === type ? 'selected' : ''}>${type}</option>
+                                `).join('')}
+                            </select>
                         </div>
                     </div>
                     <div class="form-row">
@@ -438,8 +488,12 @@ function createMachineModal(machine = null) {
                         </div>
                         <div class="form-group">
                             <label class="form-label">Location *</label>
-                            <input type="text" class="form-input" id="location" 
-                                   value="${machine?.location || ''}" required>
+                            <select class="form-select" id="location" required>
+                                <option value="">Select Location</option>
+                                ${LOCATIONS.map(loc => `
+                                    <option value="${loc}" ${machine?.location === loc ? 'selected' : ''}>${loc}</option>
+                                `).join('')}
+                            </select>
                         </div>
                     </div>
                     <div class="form-row">
@@ -505,8 +559,8 @@ function createMachineModal(machine = null) {
                     <h5><i class="fas fa-cogs"></i> Machine Components</h5>
                     <div class="form-group">
                         <label class="form-label">Select Components</label>
-                        <div class="components-grid">
-                            ${CONFIG.MACHINE_COMPONENTS.map((component, index) => {
+                        <div class="components-grid" id="componentsGrid">
+                            ${machine?.machine_name && MACHINE_TYPES[machine.machine_name] ? MACHINE_TYPES[machine.machine_name].map(component => {
                                 const isChecked = machine?.components?.includes(component) ? 'checked' : '';
                                 return `
                                     <label class="component-checkbox">
@@ -514,7 +568,7 @@ function createMachineModal(machine = null) {
                                         <span>${component}</span>
                                     </label>
                                 `;
-                            }).join('')}
+                            }).join('') : '<p style="color: var(--muted); padding: 1rem;">Please select a machine type to see available components</p>'}
                         </div>
                     </div>
                 </div>
@@ -540,9 +594,56 @@ function createMachineModal(machine = null) {
     setTimeout(() => {
         const form = modal.querySelector('form');
         form.addEventListener('submit', isEdit ? handleEditMachine : handleAddMachine);
+        
+        // Fetch next machine ID for add form
+        if (!isEdit) {
+            fetchAndDisplayNextMachineId(modal);
+        }
     }, 100);
-
+    
     return modal;
+}
+
+// Update machine components based on selected machine type
+function updateMachineComponents() {
+    const machineType = document.getElementById('machineName')?.value;
+    const componentsGrid = document.getElementById('componentsGrid');
+    
+    if (!componentsGrid) return;
+    
+    if (!machineType || !MACHINE_TYPES[machineType]) {
+        componentsGrid.innerHTML = '<p style="color: var(--muted); padding: 1rem;">Please select a machine type to see available components</p>';
+        return;
+    }
+    
+    const components = MACHINE_TYPES[machineType];
+    componentsGrid.innerHTML = components.map(component => `
+        <label class="component-checkbox">
+            <input type="checkbox" name="machineComponent" value="${component}" checked>
+            <span>${component}</span>
+        </label>
+    `).join('');
+}
+
+// Update vehicle components based on selected vehicle type
+function updateVehicleComponents() {
+    const vehicleType = document.getElementById('vehicleName')?.value;
+    const componentsGrid = document.getElementById('vehicleComponentsGrid');
+    
+    if (!componentsGrid) return;
+    
+    if (!vehicleType || !VEHICLE_TYPES[vehicleType]) {
+        componentsGrid.innerHTML = '<p style="color: var(--muted); padding: 1rem;">Please select a vehicle type to see available components</p>';
+        return;
+    }
+    
+    const components = VEHICLE_TYPES[vehicleType];
+    componentsGrid.innerHTML = components.map(component => `
+        <label class="component-checkbox">
+            <input type="checkbox" name="vehicleComponent" value="${component}" checked>
+            <span>${component}</span>
+        </label>
+    `).join('');
 }
 
 async function handleAddMachine(e) {
@@ -631,7 +732,6 @@ function getMachineFormData() {
         .map(cb => cb.value);
     
     return {
-        serial_number: document.getElementById('serialNumber').value,
         machine_name: document.getElementById('machineName').value,
         model_number: document.getElementById('modelNumber').value,
         location: document.getElementById('location').value,
@@ -693,7 +793,7 @@ function viewMachineDetails(id) {
     const modal = createDetailsModal('Machine Details', `
         <div class="form-section">
             <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
-            <p><strong>Serial Number:</strong> ${machine.serial_number}</p>
+            <p><strong>Machine ID:</strong> ${machine.machine_id}</p>
             <p><strong>Machine Name:</strong> ${machine.machine_name}</p>
             <p><strong>Model Number:</strong> ${machine.model_number}</p>
             <p><strong>Location:</strong> ${machine.location}</p>
@@ -847,13 +947,24 @@ async function refreshVehicles() {
 
 // ==================== VEHICLE CRUD OPERATIONS ====================
 
-function openAddVehicleModal() {
-    const modal = createVehicleModal();
+async function openAddVehicleModal() {
+    // Fetch next vehicle ID before creating the modal
+    let nextVehicleId = 'VEH-001';
+    try {
+        const response = await API.get('/vehicles/next-id');
+        if (response.status === 'success' && response.data.next_id) {
+            nextVehicleId = response.data.next_id;
+        }
+    } catch (error) {
+        console.error('Failed to fetch next vehicle ID:', error);
+    }
+    
+    const modal = createVehicleModal(null, nextVehicleId);
     document.body.appendChild(modal);
     modal.classList.add('active');
 }
 
-function createVehicleModal(vehicle = null) {
+function createVehicleModal(vehicle = null, nextVehicleId = 'VEH-001') {
     const isEdit = !!vehicle;
     const modal = document.createElement('div');
     modal.className = 'modal';
@@ -874,14 +985,20 @@ function createVehicleModal(vehicle = null) {
                     <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Vehicle Name *</label>
-                            <input type="text" class="form-input" id="vehicleName" 
-                                   value="${vehicle?.vehicle_name || ''}" required>
+                            <label class="form-label">Vehicle ID</label>
+                            <input type="text" class="form-input" id="vehicleIdDisplay" 
+                                   value="${vehicle?.vehicle_id || nextVehicleId}" 
+                                   placeholder="${nextVehicleId}" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
+                            <small style="color: var(--muted); display: block; margin-top: 4px;">Automatically generated unique identifier</small>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Model Number *</label>
-                            <input type="text" class="form-input" id="vehicleModel" 
-                                   value="${vehicle?.model_number || ''}" required>
+                            <label class="form-label">Vehicle Type *</label>
+                            <select class="form-select" id="vehicleName" required onchange="updateVehicleComponents()">
+                                <option value="">Select Vehicle Type</option>
+                                ${Object.keys(VEHICLE_TYPES).map(type => `
+                                    <option value="${type}" ${vehicle?.vehicle_name === type ? 'selected' : ''}>${type}</option>
+                                `).join('')}
+                            </select>
                         </div>
                     </div>
                     <div class="form-row">
@@ -891,20 +1008,12 @@ function createVehicleModal(vehicle = null) {
                                    value="${vehicle?.number_plate || ''}" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Chassis Number *</label>
+                            <label class="form-label">Chassis Number</label>
                             <input type="text" class="form-input" id="chassisNumber" 
-                                   value="${vehicle?.chassis_number || ''}" required>
+                                   value="${vehicle?.chassis_number || ''}">
                         </div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Vehicle Type *</label>
-                            <select class="form-select" id="vehicleType" required>
-                                ${CONFIG.VEHICLE_TYPES.map(type => 
-                                    `<option value="${type}" ${vehicle?.vehicle_type === type ? 'selected' : ''}>${type}</option>`
-                                ).join('')}
-                            </select>
-                        </div>
                         <div class="form-group">
                             <label class="form-label">Fuel Type *</label>
                             <select class="form-select" id="fuelType" required>
@@ -915,11 +1024,6 @@ function createVehicleModal(vehicle = null) {
                         </div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Fuel Efficiency (km/L)</label>
-                            <input type="number" step="0.1" class="form-input" id="fuelEfficiency" 
-                                   value="${vehicle?.fuel_efficiency || ''}">
-                        </div>
                         <div class="form-group">
                             <label class="form-label">Current Mileage (km)</label>
                             <input type="number" class="form-input" id="currentMileage" 
@@ -1011,8 +1115,8 @@ function createVehicleModal(vehicle = null) {
                     <h5><i class="fas fa-cogs"></i> Vehicle Components</h5>
                     <div class="form-group">
                         <label class="form-label">Select Components</label>
-                        <div class="components-grid">
-                            ${CONFIG.VEHICLE_COMPONENTS.map((component, index) => {
+                        <div class="components-grid" id="vehicleComponentsGrid">
+                            ${vehicle?.vehicle_name && VEHICLE_TYPES[vehicle.vehicle_name] ? VEHICLE_TYPES[vehicle.vehicle_name].map(component => {
                                 const isChecked = vehicle?.components?.includes(component) ? 'checked' : '';
                                 return `
                                     <label class="component-checkbox">
@@ -1020,7 +1124,7 @@ function createVehicleModal(vehicle = null) {
                                         <span>${component}</span>
                                     </label>
                                 `;
-                            }).join('')}
+                            }).join('') : '<p style="color: var(--muted); padding: 1rem;">Please select a vehicle type to see available components</p>'}
                         </div>
                     </div>
                 </div>
@@ -1168,9 +1272,8 @@ function getVehicleFormData() {
         model_number: document.getElementById('vehicleModel').value,
         number_plate: document.getElementById('numberPlate').value,
         chassis_number: document.getElementById('chassisNumber').value,
-        vehicle_type: document.getElementById('vehicleType').value,
+        vehicle_type: document.getElementById('vehicleName').value,
         fuel_type: document.getElementById('fuelType').value,
-        fuel_efficiency: document.getElementById('fuelEfficiency').value ? parseFloat(document.getElementById('fuelEfficiency').value) : null,
         current_mileage: parseInt(document.getElementById('currentMileage').value) || 0,
         status: document.getElementById('vehicleStatus').value,
         supplier_name: document.getElementById('vehicleSupplierName').value,
@@ -1248,13 +1351,12 @@ function viewVehicleDetails(id) {
     const modal = createDetailsModal('Vehicle Details', `
         <div class="form-section">
             <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
+            <p><strong>Vehicle ID:</strong> ${vehicle.vehicle_id}</p>
             <p><strong>Vehicle Name:</strong> ${vehicle.vehicle_name}</p>
-            <p><strong>Model Number:</strong> ${vehicle.model_number}</p>
             <p><strong>Number Plate:</strong> ${vehicle.number_plate}</p>
             <p><strong>Chassis Number:</strong> ${vehicle.chassis_number}</p>
             <p><strong>Vehicle Type:</strong> ${vehicle.vehicle_type}</p>
             <p><strong>Fuel Type:</strong> ${vehicle.fuel_type}</p>
-            ${vehicle.fuel_efficiency ? `<p><strong>Fuel Efficiency:</strong> ${vehicle.fuel_efficiency} km/L</p>` : ''}
             <p><strong>Current Mileage:</strong> ${vehicle.current_mileage} km</p>
             <p><strong>Status:</strong> <span class="status-text ${getStatusClass(vehicle.status)}">${vehicle.status}</span></p>
         </div>
@@ -1600,6 +1702,86 @@ async function updateItemStatus(id, type, status) {
 let currentStockFilter = 'all';
 let currentCategoryFilter = 'all';
 
+// Define spare part names for each category
+const SPARE_PART_NAMES = {
+    vehicles: [
+        'Brake Pads',
+        'Oil Filter',
+        'Air Filter',
+        'Fuel Filter',
+        'Battery',
+        'Tyres',
+        'Engine Oil',
+        'Transmission Fluid',
+        'Spark Plugs',
+        'Alternator',
+        'Radiator',
+        'Water Pump',
+        'Timing Belt',
+        'Clutch Kit',
+        'Suspension Parts',
+        'Headlights',
+        'Wiper Blades'
+    ],
+    machines: [
+        'Hydraulic Pump',
+        'Hydraulic Fluid',
+        'Pressure Valve',
+        'Gas Cylinder',
+        'Pressure Regulator',
+        'Safety Valve',
+        'Compressor Belt',
+        'Compressor Oil',
+        'Seals and Gaskets',
+        'Hoses',
+        'Filters',
+        'Bearings',
+        'Motor Components',
+        'Control Panel Parts',
+        'Sensors',
+        'Electrical Components',
+        'Pneumatic Parts'
+    ]
+};
+
+// Update part name dropdown based on selected category
+function updatePartNameOptions() {
+    const category = document.getElementById('partCategory').value;
+    const partNameSelect = document.getElementById('partName');
+    
+    partNameSelect.innerHTML = '<option value="">Select Part Name</option>';
+    
+    if (category && SPARE_PART_NAMES[category]) {
+        SPARE_PART_NAMES[category].forEach(partName => {
+            const option = document.createElement('option');
+            option.value = partName;
+            option.textContent = partName;
+            partNameSelect.appendChild(option);
+        });
+    }
+}
+
+// Update part name dropdown for edit form
+function updateEditPartNameOptions() {
+    const category = document.getElementById('editPartCategory').value;
+    const partNameSelect = document.getElementById('editPartName');
+    const currentValue = partNameSelect.value;
+    
+    partNameSelect.innerHTML = '<option value="">Select Part Name</option>';
+    
+    if (category && SPARE_PART_NAMES[category]) {
+        SPARE_PART_NAMES[category].forEach(partName => {
+            const option = document.createElement('option');
+            option.value = partName;
+            option.textContent = partName;
+            if (partName === currentValue) {
+                option.selected = true;
+            }
+            partNameSelect.appendChild(option);
+        });
+    }
+}
+
 // Update compatibility checkboxes based on selected category
 function updateCompatibilityOptions() {
     const category = document.getElementById('partCategory').value;
@@ -1608,54 +1790,20 @@ function updateCompatibilityOptions() {
     
     if (category === 'vehicles') {
         label.textContent = 'Compatible Vehicles';
-        container.innerHTML = `
+        const vehicleTypesList = Object.keys(VEHICLE_TYPES);
+        container.innerHTML = vehicleTypesList.map(vehicleType => `
             <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="compatibility" value="Transport-Vehicle"> Transport Vehicle
+                <input type="checkbox" name="compatibility" value="${vehicleType}"> ${vehicleType}
             </label>
-            <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="compatibility" value="Gas-Distribution-Vehicle"> Gas Distribution Vehicle
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="compatibility" value="Service-Truck"> Service Truck
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="compatibility" value="Delivery-Van"> Delivery Van
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="compatibility" value="Utility-Vehicle"> Utility Vehicle
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="compatibility" value="Maintenance-Vehicle"> Maintenance Vehicle
-            </label>
-        `;
+        `).join('');
     } else if (category === 'machines') {
         label.textContent = 'Compatible Machines';
-        container.innerHTML = `
+        const machineTypesList = Object.keys(MACHINE_TYPES);
+        container.innerHTML = machineTypesList.map(machineType => `
             <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="compatibility" value="Gas-Filling-Machine"> Gas Filling Machine
+                <input type="checkbox" name="compatibility" value="${machineType}"> ${machineType}
             </label>
-            <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="compatibility" value="Gas-Compressor"> Gas Compressor
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="compatibility" value="Cylinder-Testing-Machine"> Cylinder Testing Machine
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="compatibility" value="Gas-Transfer-Pump"> Gas Transfer Pump
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="compatibility" value="Storage-Tank-System"> Storage Tank System
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="compatibility" value="Pressure-Regulator"> Pressure Regulator
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="compatibility" value="Loading-Unloading-System"> Loading/Unloading System
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="compatibility" value="Gas-Leak-Detector"> Gas Leak Detector
-            </label>
-        `;
+        `).join('');
     } else {
         label.textContent = 'Compatible Machines/Vehicles';
         container.innerHTML = '<p style="color: #999; grid-column: 1 / -1;">Please select a category first</p>';
@@ -1663,28 +1811,38 @@ function updateCompatibilityOptions() {
 }
 
 // CREATE - Add Part
-function openAddPartModal() {
-    openModal('addPartModal');
+async function openAddPartModal() {
+    try {
+        // This would need a backend endpoint /api/products/next-id
+        // For now, we'll set a placeholder
+        const nextId = 'SPR-' + String(Math.floor(Math.random() * 900) + 100).padStart(3, '0');
+        document.getElementById('productIdDisplay').value = nextId;
+        openModal('addPartModal');
+    } catch (error) {
+        console.error('Failed to get next product ID:', error);
+        document.getElementById('productIdDisplay').value = 'SPR-###';
+        openModal('addPartModal');
+    }
 }
 
 document.getElementById('addPartForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
+    const productId = document.getElementById('productIdDisplay').value;
     const partName = document.getElementById('partName').value;
-    const partNumber = document.getElementById('partNumber').value;
     const category = document.getElementById('partCategory').value;
     const quantity = document.getElementById('partQuantity').value;
     const location = document.getElementById('partLocation').value;
     const supplier = document.getElementById('partSupplier').value;
     
-    addPartToCatalog(partName, partNumber, category, quantity, location, supplier);
+    addPartToCatalog(partName, productId, category, quantity, location, supplier);
     
     Utils.showToast(`✅ ${partName} added to catalog successfully!`, 'success');
     closeModal('addPartModal');
     this.reset();
 });
 
-function addPartToCatalog(partName, partNumber, category, quantity, location, supplier) {
+function addPartToCatalog(partName, productId, category, quantity, location, supplier) {
     const catalogItems = document.getElementById('catalogItems');
     const stockStatus = quantity > 10 ? 'in-stock' : (quantity > 0 ? 'low-stock' : 'out-of-stock');
     const stockBadge = quantity > 10 ? 'status-in-stock' : (quantity > 0 ? 'status-low-stock' : 'status-out-of-stock');
@@ -1694,12 +1852,12 @@ function addPartToCatalog(partName, partNumber, category, quantity, location, su
     newItem.className = 'inventory-item';
     newItem.setAttribute('data-status', stockStatus);
     newItem.setAttribute('data-category', category);
-    newItem.setAttribute('data-id', partNumber);
+    newItem.setAttribute('data-id', productId);
     newItem.innerHTML = `
         <div class="item-details">
             <strong><i class="fas fa-box"></i> ${partName}</strong>
             <div class="item-meta">
-                <i class="fas fa-hashtag"></i> ${partNumber} | 
+                <i class="fas fa-hashtag"></i> ${productId} | 
                 <i class="fas fa-tag"></i> ${category.charAt(0).toUpperCase() + category.slice(1)} Parts
             </div>
             <div class="item-description">
@@ -1709,19 +1867,19 @@ function addPartToCatalog(partName, partNumber, category, quantity, location, su
         </div>
         <div class="item-actions">
             <div class="action-buttons">
-                <button class="btn btn-primary btn-small" onclick="viewPartDetails('${partNumber}')"><i class="fas fa-eye"></i> VIEW</button>
-                <button class="btn btn-secondary btn-small" onclick="editPart('${partNumber}')"><i class="fas fa-edit"></i> EDIT</button>
+                <button class="btn btn-primary btn-small" onclick="viewPartDetails('${productId}')"><i class="fas fa-eye"></i> VIEW</button>
+                <button class="btn btn-secondary btn-small" onclick="editPart('${productId}')"><i class="fas fa-edit"></i> EDIT</button>
                 <div class="dropdown-container">
-                    <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'part-${partNumber}')">
+                    <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'part-${productId}')">
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
-                    <div class="dropdown-menu" id="dropdown-part-${partNumber}">
+                    <div class="dropdown-menu" id="dropdown-part-${productId}">
                         ${quantity <= 10 ? `
-                            <button class="dropdown-item" onclick="reorderPart('${partNumber}'); closeAllDropdowns();">
+                            <button class="dropdown-item" onclick="reorderPart('${productId}'); closeAllDropdowns();">
                                 <i class="fas fa-sync"></i> Reorder
                             </button>
                         ` : ''}
-                        <button class="dropdown-item danger" onclick="deletePart('${partNumber}'); closeAllDropdowns();">
+                        <button class="dropdown-item danger" onclick="deletePart('${productId}'); closeAllDropdowns();">
                             <i class="fas fa-trash"></i> Delete
                         </button>
                     </div>
@@ -1813,8 +1971,8 @@ function viewPartDetails(partId) {
     const modal = createDetailsModal('Spare Part Details', `
         <div class="form-section">
             <h5><i class="fas fa-box"></i> Part Information</h5>
+            <p><strong>Product ID:</strong> ${part.partNumber}</p>
             <p><strong>Part Name:</strong> ${part.name}</p>
-            <p><strong>Part Number:</strong> ${part.partNumber}</p>
             <p><strong>Category:</strong> ${part.category}</p>
             <p><strong>Quantity:</strong> ${part.quantity} units</p>
             <p><strong>Stock Status:</strong> <span class="status-text">${part.stockStatus}</span></p>
@@ -1849,29 +2007,25 @@ function viewPartDetails(partId) {
 // UPDATE - Edit Part
 function editPart(partId) {
     document.getElementById('editPartId').value = partId;
+    document.getElementById('editProductId').value = partId;
     
     // Find the part element
     const partElement = document.querySelector(`[data-id="${partId}"]`);
     if (partElement) {
-        const partText = partElement.querySelector('strong').textContent;
-        const parts = partText.split(' - ');
-        document.getElementById('editPartName').value = parts[0];
-        document.getElementById('editPartNumber').value = parts[1] || partId;
-        
-        // Get other details
+        // Get category first to populate part names
         const category = partElement.getAttribute('data-category');
         document.getElementById('editPartCategory').value = category;
+        updateEditPartNameOptions();
         
-        const metaText = partElement.querySelector('.item-meta').textContent;
-        const quantityMatch = metaText.match(/Quantity: (\d+)/);
-        if (quantityMatch) {
-            document.getElementById('editPartQuantity').value = quantityMatch[1];
-        }
+        // Get part name from the display
+        const partText = partElement.querySelector('strong').textContent;
+        const partName = partText.replace(/[\s\S]*?\s/, '').trim();
+        document.getElementById('editPartName').value = partName;
         
         const descText = partElement.querySelector('.item-description').textContent;
-        const locationMatch = descText.match(/Location: ([^|]+)/);
-        if (locationMatch) {
-            document.getElementById('editPartLocation').value = locationMatch[1].trim();
+        const quantityMatch = descText.match(/(\d+)\s+units/);
+        if (quantityMatch) {
+            document.getElementById('editPartQuantity').value = quantityMatch[1];
         }
     }
     
@@ -1883,7 +2037,6 @@ document.getElementById('editPartForm').addEventListener('submit', function(e) {
     
     const partId = document.getElementById('editPartId').value;
     const partName = document.getElementById('editPartName').value;
-    const partNumber = document.getElementById('editPartNumber').value;
     const quantity = document.getElementById('editPartQuantity').value;
     const category = document.getElementById('editPartCategory').value;
     const location = document.getElementById('editPartLocation').value;
@@ -1892,7 +2045,7 @@ document.getElementById('editPartForm').addEventListener('submit', function(e) {
     const partElement = document.querySelector(`[data-id="${partId}"]`);
     if (partElement) {
         const strongElement = partElement.querySelector('strong');
-        strongElement.textContent = `${partName} - ${partNumber}`;
+        strongElement.innerHTML = `<i class="fas fa-box"></i> ${partName}`;
         
         // Update category
         partElement.setAttribute('data-category', category);
