@@ -133,6 +133,55 @@ class EndpointRegistry {
             'category' => 'Inventory Management',
             'description' => 'Remove product from inventory'
         ],
+        
+        // Sparepart Usage Tracking Endpoints
+        'GET:/api/usage' => [
+            'action' => 'List Usage Records',
+            'category' => 'Usage Tracking',
+            'description' => 'Retrieve sparepart usage history'
+        ],
+        'POST:/api/usage' => [
+            'action' => 'Create Usage Record',
+            'category' => 'Usage Tracking',
+            'description' => 'Record sparepart issuance'
+        ],
+        'GET:/api/usage/sparepart/:id' => [
+            'action' => 'Get Usage History',
+            'category' => 'Usage Tracking',
+            'description' => 'Get usage history for specific sparepart'
+        ],
+        'GET:/api/usage/stats/:id' => [
+            'action' => 'Get Usage Stats',
+            'category' => 'Usage Tracking',
+            'description' => 'Get usage statistics for sparepart'
+        ],
+        
+        // Sparepart Addition Tracking Endpoints
+        'GET:/api/additions' => [
+            'action' => 'List Addition Records',
+            'category' => 'Stock Management',
+            'description' => 'Retrieve sparepart stock additions history'
+        ],
+        'POST:/api/additions' => [
+            'action' => 'Create Addition Record',
+            'category' => 'Stock Management',
+            'description' => 'Record sparepart stock addition'
+        ],
+        'GET:/api/additions/sparepart/:id' => [
+            'action' => 'Get Addition History',
+            'category' => 'Stock Management',
+            'description' => 'Get addition history for specific sparepart'
+        ],
+        'PUT:/api/additions/:id' => [
+            'action' => 'Update Addition Record',
+            'category' => 'Stock Management',
+            'description' => 'Update a sparepart stock addition record'
+        ],
+        'DELETE:/api/additions/:id' => [
+            'action' => 'Delete Addition Record',
+            'category' => 'Stock Management',
+            'description' => 'Delete a sparepart stock addition record'
+        ],
     ];
     
     /**
