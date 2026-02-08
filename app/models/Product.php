@@ -27,11 +27,6 @@ class Product extends BaseModel {
             'quantity' => 'INT DEFAULT 0',
             'unit_price' => 'DECIMAL(10,2) DEFAULT 0.00',
             'reorder_level' => 'INT DEFAULT 10',
-            'supplier' => 'VARCHAR(255) NULL',
-            'supplier_contact' => 'VARCHAR(100) NULL',
-            'supplier_address' => 'TEXT NULL',
-            'warranty' => 'VARCHAR(255) NULL',
-            'warranty_terms' => 'TEXT NULL',
             'compatible_machines' => 'JSON NULL',
             'compatible_vehicles' => 'JSON NULL',
             'location' => 'VARCHAR(255) NULL',
@@ -39,7 +34,8 @@ class Product extends BaseModel {
             'created_by' => 'INT NULL',
             'updated_by' => 'INT NULL',
             'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
-            'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
+            'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+            'last_issue_date' => 'DATE NULL'
         ];
     }
     

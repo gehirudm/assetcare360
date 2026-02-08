@@ -20,7 +20,7 @@ class ProductService {
                 $conditions['category'] = $filters['category'];
             }
             
-            $products = $this->productModel->findAll($conditions, 'name ASC');
+            $products = $this->productModel->findAll($conditions, 'sparepart_id ASC');
             
             return [
                 'status' => 'success',
@@ -95,7 +95,7 @@ class ProductService {
     public function createProduct($data) {
         try {
             // Validate required fields
-            $required = ['name', 'category', 'quantity', 'location', 'supplier'];
+            $required = ['name', 'category', 'quantity', 'location'];
             foreach ($required as $field) {
                 if (empty($data[$field])) {
                     return [
@@ -108,6 +108,12 @@ class ProductService {
             // Auto-generate sparepart_id if not provided
             if (empty($data['sparepart_id'])) {
                 $data['sparepart_id'] = $this->productModel->generateProductId();
+            }
+            
+            // Remove fields that don't belong to the spareparts table
+            $additionOnlyFields = ['warranty_period', 'warranty_start', 'warranty_terms', 'supplier_contact', 'supplier_address', 'supplier'];
+            foreach ($additionOnlyFields as $field) {
+                unset($data[$field]);
             }
             
             // Set default values
@@ -149,7 +155,12 @@ class ProductService {
      */
     public function updateProduct($id, $data) {
         try {
-            $product = $this->productModel->findById($id);
+            // Support both database ID and sparepart_id (SPR-XXX)
+            if (preg_match('/^SPR-\d+$/', $id)) {
+                $product = $this->productModel->findOne(['sparepart_id' => $id]);
+            } else {
+                $product = $this->productModel->findById($id);
+            }
             
             if (!$product) {
                 return [
@@ -158,15 +169,24 @@ class ProductService {
                 ];
             }
             
+            // Use the database ID for the update
+            $dbId = $product['id'];
+            
             // Don't allow updating sparepart_id
             unset($data['sparepart_id']);
             
-            $success = $this->productModel->update($id, $data);
+            // Remove fields that don't belong to the spareparts table
+            $additionOnlyFields = ['warranty_period', 'warranty_start', 'warranty_terms', 'supplier_contact', 'supplier_address', 'supplier'];
+            foreach ($additionOnlyFields as $field) {
+                unset($data[$field]);
+            }
+            
+            $success = $this->productModel->update($dbId, $data);
             
             if ($success) {
                 return [
                     'status' => 'success',
-                    'data' => ['id' => $id],
+                    'data' => ['id' => $dbId],
                     'message' => 'Product updated successfully'
                 ];
             }
