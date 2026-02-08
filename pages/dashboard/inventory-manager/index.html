@@ -74,6 +74,10 @@
                         <i class="nav-icon fas fa-list-alt"></i>
                         <span>Spare Parts Catalog</span>
                     </div>
+                    <div class="nav-item" data-section="sparepart-addition">
+                        <i class="nav-icon fas fa-plus-circle"></i>
+                        <span>Sparepart Addition</span>
+                    </div>
                     <div class="nav-item" data-section="orders-approvals">
                         <i class="nav-icon fas fa-clipboard-check"></i>
                         <span>Orders & Approvals</span>
@@ -105,7 +109,7 @@
                                 </div>
                                 <div class="summary-details">
                                     <div class="summary-title">Spare Parts</div>
-                                    <div class="summary-number">187</div>
+                                    <div class="summary-number" id="totalPartsCount">0</div>
                                     <div class="summary-description">total parts in catalog</div>
                                 </div>
                             </div>
@@ -114,15 +118,15 @@
                             </div>
                         </div>
 
-                        <div class="summary-card clickable" onclick="navigateTo('orders-approvals')">
+                        <div class="summary-card clickable" onclick="navigateTo('catalog')">
                             <div class="summary-card-content">
                                 <div class="summary-icon">
-                                    <i class="fas fa-clipboard-check"></i>
+                                    <i class="fas fa-exclamation-circle"></i>
                                 </div>
                                 <div class="summary-details">
-                                    <div class="summary-title">Pending Orders</div>
-                                    <div class="summary-number">3</div>
-                                    <div class="summary-description">orders awaiting approval</div>
+                                    <div class="summary-title">Out of Stock</div>
+                                    <div class="summary-number" id="outOfStockCount">0</div>
+                                    <div class="summary-description">items need restocking</div>
                                 </div>
                             </div>
                             <div class="summary-arrow">
@@ -137,7 +141,7 @@
                                 </div>
                                 <div class="summary-details">
                                     <div class="summary-title">Low Stock Alerts</div>
-                                    <div class="summary-number">23</div>
+                                    <div class="summary-number" id="lowStockCount">0</div>
                                     <div class="summary-description">items below threshold</div>
                                 </div>
                             </div>
@@ -153,7 +157,7 @@
                                 </div>
                                 <div class="summary-details">
                                     <div class="summary-title">Total Assets</div>
-                                    <div class="summary-number">100</div>
+                                    <div class="summary-number" id="totalAssetsCount">0</div>
                                     <div class="summary-description">vehicles & machines managed</div>
                                 </div>
                             </div>
@@ -277,7 +281,7 @@
                     </div>
                     
                     <div class="search-bar">
-                        <input type="text" id="catalogSearch" class="search-input" placeholder="Search by part name, number, or machine...">
+                        <input type="text" id="catalogSearch" class="search-input" placeholder="Search by sparepart name, number, or machine...">
                         <button class="btn btn-primary" onclick="openAddPartModal()">
                             <i class="fas fa-plus"></i> Add New Sparepart
                         </button>
@@ -426,7 +430,7 @@
                                 <thead>
                                     <tr>
                                         <th>Request ID</th>
-                                        <th>Part Name</th>
+                                        <th>Sparepart Name</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -580,113 +584,76 @@
                     </div>
                 </section>
 
+                <!-- Sparepart Addition Section -->
+                <section class="content-section" id="sparepart-addition">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-plus-circle"></i> Sparepart Addition</h2>
+                        <p class="page-subtitle">Add new stock to existing spareparts or record new stock arrivals</p>
+                    </div>
+
+                    <div class="search-bar">
+                        <input type="text" id="additionSearch" class="search-input" placeholder="Search by sparepart name, ID, or supplier..." oninput="filterAdditions()">
+                        <button class="btn btn-primary" onclick="openAddStockModal()">
+                            <i class="fas fa-plus"></i> Add Stock
+                        </button>
+                        <button class="btn btn-secondary" onclick="loadRecentAdditions()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+
+                    <div class="filter-controls" id="additionCategoryFilter">
+                        <button class="filter-btn active" onclick="filterAdditionsByCategory('all')">All Categories</button>
+                        <button class="filter-btn" onclick="filterAdditionsByCategory('vehicles')">Vehicles</button>
+                        <button class="filter-btn" onclick="filterAdditionsByCategory('machines')">Machines</button>
+                    </div>
+
+                    <!-- Recent Stock Additions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-history"></i> Stock Additions</span>
+                            <span id="additionsCount" class="status-text status-normal">0 items</span>
+                        </div>
+                        <div id="recentAdditionsItems">
+                            <div style="text-align: center; padding: 40px; color: #6b7280;">
+                                <i class="fas fa-spinner fa-spin" style="font-size: 2em; margin-bottom: 10px;"></i>
+                                <p>Loading recent additions...</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Usage Tracking -->
                 <section class="content-section" id="usage-tracking">
                     <div class="page-header">
                         <h1 class="page-title">Usage Tracking</h1>
-                        <p class="page-subtitle">Track availability, consumption and generate reports</p>
+                        <p class="page-subtitle">Track sparepart issuance - select a sparepart and click Update to issue</p>
                     </div>
 
-                    <!-- Usage by Machine -->
+                    <div class="search-bar">
+                        <input type="text" id="usageSearch" class="search-input" placeholder="Search by sparepart ID or name..." oninput="filterUsageTable()">
+                    </div>
+
+                    <!-- Available Spareparts List -->
                     <div class="card">
                         <div class="card-header">
-                            <span><i class="fas fa-chart-line"></i> Usage by Machine (Shared with Maintenance Manager)</span>
-                            <button class="btn btn-primary btn-small" onclick="addMachineUsage()"><i class="fas fa-plus"></i> Add Entry</button>
+                            <span><i class="fas fa-boxes"></i> Available Spareparts</span>
                         </div>
                         <table class="table">
                             <thead>
                                 <tr>
-                                    <th>Machine ID</th>
-                                    <th>Last Repair</th>
-                                    <th>Parts Used</th>
-                                    <th>Cost</th>
-                                    <th>Usage Frequency</th>
+                                    <th>Sparepart ID</th>
+                                    <th>Sparepart Name</th>
+                                    <th>Category</th>
+                                    <th>Available Qty</th>
+                                    <th>Issued Qty</th>
+                                    <th>Last Issue Date</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="usageTableBody">
-                                <tr data-id="Vehicle-101">
-                                    <td>Vehicle #101</td>
-                                    <td>Aug 19, 2025</td>
-                                    <td>Brake pads, Brake discs, Brake fluid</td>
-                                    <td>Rs. 850</td>
-                                    <td><span class="status-text status-low-stock">High</span></td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn btn-primary btn-small" onclick="viewUsageDetails('Vehicle-101')"><i class="fas fa-eye"></i> VIEW</button>
-                                            <div class="dropdown-container">
-                                                <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'usage-Vehicle-101')">
-                                                    <i class="fas fa-ellipsis-v"></i>
-                                                </button>
-                                                <div class="dropdown-menu" id="dropdown-usage-Vehicle-101">
-                                                    <button class="dropdown-item" onclick="editUsageRecord('Vehicle-101'); closeAllDropdowns();">
-                                                        <i class="fas fa-edit"></i> Edit
-                                                    </button>
-                                                    <button class="dropdown-item" onclick="generateMachineReport('Vehicle-101'); closeAllDropdowns();">
-                                                        <i class="fas fa-chart-bar"></i> Generate Report
-                                                    </button>
-                                                    <button class="dropdown-item danger" onclick="deleteUsageRecord('Vehicle-101'); closeAllDropdowns();">
-                                                        <i class="fas fa-trash"></i> Delete
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr data-id="Machine-205">
-                                    <td>Machine #205</td>
-                                    <td>Aug 15, 2025</td>
-                                    <td>Hydraulic seals, Hydraulic fluid</td>
-                                    <td>Rs. 1,200</td>
-                                    <td><span class="status-text status-pending">Medium</span></td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn btn-primary btn-small" onclick="viewUsageDetails('Machine-205')"><i class="fas fa-eye"></i> VIEW</button>
-                                            <div class="dropdown-container">
-                                                <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'usage-Machine-205')">
-                                                    <i class="fas fa-ellipsis-v"></i>
-                                                </button>
-                                                <div class="dropdown-menu" id="dropdown-usage-Machine-205">
-                                                    <button class="dropdown-item" onclick="editUsageRecord('Machine-205'); closeAllDropdowns();">
-                                                        <i class="fas fa-edit"></i> Edit
-                                                    </button>
-                                                    <button class="dropdown-item" onclick="generateMachineReport('Machine-205'); closeAllDropdowns();">
-                                                        <i class="fas fa-chart-bar"></i> Generate Report
-                                                    </button>
-                                                    <button class="dropdown-item danger" onclick="deleteUsageRecord('Machine-205'); closeAllDropdowns();">
-                                                        <i class="fas fa-trash"></i> Delete
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr data-id="Excavator-045">
-                                    <td>Excavator #045</td>
-                                    <td>Aug 10, 2025</td>
-                                    <td>Engine filters, Engine oil</td>
-                                    <td>Rs. 650</td>
-                                    <td><span class="status-text status-in-stock">Low</span></td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn btn-primary btn-small" onclick="viewUsageDetails('Excavator-045')"><i class="fas fa-eye"></i> VIEW</button>
-                                            <div class="dropdown-container">
-                                                <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'usage-Excavator-045')">
-                                                    <i class="fas fa-ellipsis-v"></i>
-                                                </button>
-                                                <div class="dropdown-menu" id="dropdown-usage-Excavator-045">
-                                                    <button class="dropdown-item" onclick="editUsageRecord('Excavator-045'); closeAllDropdowns();">
-                                                        <i class="fas fa-edit"></i> Edit
-                                                    </button>
-                                                    <button class="dropdown-item" onclick="generateMachineReport('Excavator-045'); closeAllDropdowns();">
-                                                        <i class="fas fa-chart-bar"></i> Generate Report
-                                                    </button>
-                                                    <button class="dropdown-item danger" onclick="deleteUsageRecord('Excavator-045'); closeAllDropdowns();">
-                                                        <i class="fas fa-trash"></i> Delete
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 30px; color: #6b7280;">
+                                        <i class="fas fa-spinner fa-spin"></i> Loading spareparts...
                                     </td>
                                 </tr>
                             </tbody>
@@ -795,7 +762,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Category *</label>
-                            <select class="form-select" id="partCategory" required onchange="updatePartNameOptions(); updateCompatibilityOptions();">
+                            <select class="form-select" id="partCategory" required onchange="updateSparepartNameOptions(); updateCompatibilityOptions();">
                                 <option value="">Select Category</option>
                                 <option value="vehicles">Vehicles</option>
                                 <option value="machines">Machines</option>
@@ -804,14 +771,10 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Part Name *</label>
-                            <select class="form-select" id="partName" required>
+                            <label class="form-label">Sparepart Name *</label>
+                            <select class="form-select" id="sparepartName" required>
                                 <option value="">Select Category First</option>
                             </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Quantity *</label>
-                            <input type="number" class="form-input" id="partQuantity" min="0" required>
                         </div>
                     </div>
                     <div class="form-group">
@@ -823,42 +786,6 @@
                             <option value="LOCATION 3">LOCATION 3</option>
                             <option value="LOCATION 4">LOCATION 4</option>
                         </select>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h5><i class="fas fa-truck"></i> Supplier Details</h5>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Supplier Name</label>
-                            <input type="text" class="form-input" id="partSupplier" placeholder="Enter supplier name" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Supplier Contact</label>
-                            <input type="text" class="form-input" id="partSupplierContact" placeholder="Enter supplier contact">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Supplier Address</label>
-                        <textarea class="form-textarea" id="partSupplierAddress" placeholder="Enter supplier address"></textarea>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h5><i class="fas fa-shield-alt"></i> Warranty Details</h5>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Warranty Period (months)</label>
-                            <input type="number" class="form-input" id="partWarrantyPeriod" min="0" max="60">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Warranty Start Date</label>
-                            <input type="date" class="form-input" id="partWarrantyStart">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Warranty Terms</label>
-                        <textarea class="form-textarea" id="partWarrantyTerms" placeholder="Enter warranty terms and conditions"></textarea>
                     </div>
                 </div>
 
@@ -893,29 +820,29 @@
                     <h5><i class="fas fa-box"></i> Basic Information</h5>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Product ID</label>
-                            <input type="text" class="form-input" id="editProductId" 
+                            <label class="form-label">Sparepart ID</label>
+                            <input type="text" class="form-input" id="editSparepartId" 
                                    readonly style="background-color: #f3f4f6; cursor: not-allowed;">
-                            <small style="color: var(--muted); display: block; margin-top: 4px;">Product identifier (cannot be changed)</small>
+                            <small style="color: var(--muted); display: block; margin-top: 4px;">Sparepart identifier (cannot be changed)</small>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Part Name *</label>
-                            <select class="form-select" id="editPartName" required>
-                                <option value="">Select Part Name</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Category *</label>
-                            <select class="form-select" id="editPartCategory" required onchange="updateEditPartNameOptions();">
+                            <select class="form-select" id="editPartCategory" required onchange="updateEditSparepartNameOptions(); updateEditCompatibilityOptions();">
                                 <option value="">Select Category</option>
                                 <option value="vehicles">Vehicles</option>
                                 <option value="machines">Machines</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Quantity</label>
+                            <label class="form-label">Sparepart Name *</label>
+                            <select class="form-select" id="editSparepartName" required>
+                                <option value="">Select Category First</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Quantity *</label>
                             <input type="number" class="form-input" id="editPartQuantity" min="0" required>
                         </div>
                     </div>
@@ -930,6 +857,35 @@
                         </select>
                     </div>
                 </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-truck"></i> Supplier Details</h5>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Supplier Name</label>
+                            <input type="text" class="form-input" id="editPartSupplier" placeholder="Enter supplier name" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Supplier Contact</label>
+                            <input type="text" class="form-input" id="editPartSupplierContact" placeholder="Enter supplier contact">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Supplier Address</label>
+                        <textarea class="form-textarea" id="editPartSupplierAddress" placeholder="Enter supplier address"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-link"></i> Machine Compatibility</h5>
+                    <div class="form-group">
+                        <label class="form-label" id="editCompatibilityLabel">Compatible Machines/Vehicles</label>
+                        <div id="editCompatibilityCheckboxes" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
+                            <p style="color: #999; grid-column: 1 / -1;">Please select a category first</p>
+                        </div>
+                    </div>
+                </div>
+
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update Part</button>
                 <button type="button" class="btn btn-secondary" onclick="closeModal('editPartModal')"><i class="fas fa-times"></i> Cancel</button>
             </form>
@@ -980,8 +936,8 @@
                     <h5><i class="fas fa-clipboard-list"></i> Reorder Information</h5>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Part Name</label>
-                            <input type="text" class="form-input" id="reorderPartName" readonly>
+                            <label class="form-label">Sparepart Name</label>
+                            <input type="text" class="form-input" id="reorderSparepartName" readonly>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Current Stock</label>
@@ -1025,54 +981,174 @@
     </div>
 
     <!-- Add Usage Entry Modal -->
-    <div id="addUsageModal" class="modal">
+    <!-- Issue Sparepart Modal -->
+    <div id="issueModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2><i class="fas fa-plus-circle"></i> Add Usage Entry</h2>
-                <button class="btn-close" onclick="closeModal('addUsageModal')">
+                <h2><i class="fas fa-share-square"></i> Issue Sparepart</h2>
+                <button class="btn-close" onclick="closeModal('issueModal')">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form id="addUsageForm">
-                <div class="form-section">
-                    <h5><i class="fas fa-cog"></i> Machine/Vehicle Information</h5>
-                    <div class="form-group">
-                        <label class="form-label">Select Machine/Vehicle</label>
-                        <select class="form-select" id="usageItemSelect" required>
-                            <option value="">-- Select a machine or vehicle --</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Last Repair Date</label>
-                        <input type="date" class="form-input" id="usageRepairDate" required>
-                    </div>
-                </div>
+            <form id="issueForm">
+                <input type="hidden" id="issuePartId">
+                <input type="hidden" id="issuePartDbId">
 
                 <div class="form-section">
-                    <h5><i class="fas fa-tools"></i> Usage Details</h5>
-                    <div class="form-group">
-                        <label class="form-label">Parts Used</label>
-                        <textarea class="form-textarea" id="usagePartsUsed" placeholder="Enter parts used (comma separated)" required></textarea>
+                    <h5><i class="fas fa-box"></i> Sparepart Details</h5>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Sparepart ID</label>
+                            <input type="text" class="form-input" id="issueSparepartId" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Sparepart Name</label>
+                            <input type="text" class="form-input" id="issueSparepartName" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
+                        </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Cost (Rs.)</label>
-                            <input type="number" class="form-input" id="usageCost" step="0.01" min="0" placeholder="0.00" required>
+                            <label class="form-label">Available Quantity</label>
+                            <input type="text" class="form-input" id="issueAvailableQty" readonly style="background-color: #f3f4f6; cursor: not-allowed; font-weight: 600; color: #2563eb;">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Usage Frequency</label>
-                            <select class="form-select" id="usageFrequency" required>
-                                <option value="">Select Frequency</option>
-                                <option value="High">High</option>
-                                <option value="Medium">Medium</option>
-                                <option value="Low">Low</option>
-                            </select>
+                            <label class="form-label">Issue Date</label>
+                            <input type="text" class="form-input" id="issueDate" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
                         </div>
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Add Entry</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal('addUsageModal')"><i class="fas fa-times"></i> Cancel</button>
+                <div class="form-section">
+                    <h5><i class="fas fa-edit"></i> Issuance Details</h5>
+                    <div class="form-group">
+                        <label class="form-label">Number of Parts Issued *</label>
+                        <input type="number" class="form-input" id="issueQuantity" min="1" placeholder="Enter number of parts to issue" required>
+                        <small style="color: #6b7280; margin-top: 4px; display: block;">Must not exceed available quantity</small>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Update &amp; Issue</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('issueModal')"><i class="fas fa-times"></i> Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Addition Detail Modal -->
+    <div id="additionDetailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> Stock Addition Details</h2>
+                <button class="btn-close" onclick="closeModal('additionDetailModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="additionDetailContent" style="padding: 20px;">
+                <!-- Content will be populated dynamically -->
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('additionDetailModal')"><i class="fas fa-times"></i> Close</button>
+        </div>
+    </div>
+
+    <!-- Add Stock Modal -->
+    <div id="addStockModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-plus-circle"></i> Add New Spare Part</h2>
+                <button class="btn-close" onclick="closeModal('addStockModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="addStockForm">
+                <div class="form-section">
+                    <h5><i class="fas fa-box"></i> Basic Information</h5>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Sparepart ID</label>
+                            <input type="text" class="form-input" id="addStockSparepartIdDisplay" 
+                                   placeholder="Auto-generated" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
+                            <small style="color: var(--muted); display: block; margin-top: 4px;">Automatically generated unique identifier</small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Category *</label>
+                            <select class="form-select" id="addStockCategory" required onchange="updateAddStockSparepartNameOptions(); updateAddStockCompatibilityOptions();">
+                                <option value="">Select Category</option>
+                                <option value="vehicles">Vehicles</option>
+                                <option value="machines">Machines</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Sparepart Name *</label>
+                            <select class="form-select" id="addStockSparepartName" required>
+                                <option value="">Select Category First</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Quantity *</label>
+                            <input type="number" class="form-input" id="addStockQuantity" min="0" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Storage Location *</label>
+                        <select class="form-select" id="addStockLocation" required>
+                            <option value="">Select Location</option>
+                            <option value="LOCATION 1">LOCATION 1</option>
+                            <option value="LOCATION 2">LOCATION 2</option>
+                            <option value="LOCATION 3">LOCATION 3</option>
+                            <option value="LOCATION 4">LOCATION 4</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-truck"></i> Supplier Details</h5>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Supplier Name</label>
+                            <input type="text" class="form-input" id="addStockSupplier" placeholder="Enter supplier name" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Supplier Contact</label>
+                            <input type="text" class="form-input" id="addStockSupplierContact" placeholder="Enter supplier contact">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Supplier Address</label>
+                        <textarea class="form-textarea" id="addStockSupplierAddress" placeholder="Enter supplier address"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-shield-alt"></i> Warranty Details</h5>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Warranty Period (months)</label>
+                            <input type="number" class="form-input" id="addStockWarrantyPeriod" min="0" max="60">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Warranty Start Date</label>
+                            <input type="date" class="form-input" id="addStockWarrantyStart">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Warranty Terms</label>
+                        <textarea class="form-textarea" id="addStockWarrantyTerms" placeholder="Enter warranty terms and conditions"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-link"></i> Machine Compatibility</h5>
+                    <div class="form-group">
+                        <label class="form-label" id="addStockCompatibilityLabel">Compatible Machines/Vehicles</label>
+                        <div id="addStockCompatibilityCheckboxes" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
+                            <p style="color: #999; grid-column: 1 / -1;">Please select a category first</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Add to Catalog</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addStockModal')"><i class="fas fa-times"></i> Cancel</button>
             </form>
         </div>
     </div>
@@ -1132,6 +1208,6 @@
     </div>
 
     <!-- Load JavaScript -->
-    <script src="script.js?v=1.2.3"></script>
+    <script src="script.js?v=1.7.0"></script>
 </body>
 </html>
