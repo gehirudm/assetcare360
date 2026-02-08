@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Supervisor Dashboard</title>
+    <script src="../js/config.js"></script>
     <style>
         :root {
             --royal-blue: hsla(219, 89%, 53%, 1);
@@ -750,11 +751,15 @@
                     </div>
                     <div class="nav-item" data-section="daily-check-reports">
                         <span class="nav-icon">📋</span>
-                        <span>Daily Check Reports</span>
+                        <span>Weekly Check Reports</span>
                     </div>
                     <div class="nav-item" data-section="fault-tickets">
                         <span class="nav-icon">🎫</span>
                         <span>Fault Tickets</span>
+                    </div>
+                    <div class="nav-item" data-section="breakdown-reports">
+                        <span class="nav-icon">🚨</span>
+                        <span>Breakdown Reports</span>
                     </div>
                     <div class="nav-item" data-section="repair-management">
                         <span class="nav-icon">🔧</span>
@@ -773,6 +778,10 @@
                         <span class="nav-icon">👷</span>
                         <span>Technician Assignments</span>
                     </div>
+                    <div class="nav-item" data-section="reports">
+                        <span class="nav-icon">📑</span>
+                        <span>Reports</span>
+                    </div>
                 </nav>
             </aside>
 
@@ -789,7 +798,7 @@
                         <div class="summary-card">
                             <div class="summary-title">Pending Approvals</div>
                             <div class="summary-content">
-                                • Daily Check Reports: 8 pending<br>
+                                • Weekly Check Reports: 8 pending<br>
                                 • Repair Budgets: 5 pending<br>
                                 • Total Actions Required: 13
                             </div>
@@ -820,7 +829,7 @@
                             <span>⚡ Quick Actions</span>
                         </div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button class="btn btn-primary" onclick="navigateTo('daily-check-reports')">📋 Review Daily Checks</button>
+                            <button class="btn btn-primary" onclick="navigateTo('daily-check-reports')">📋 Review Weekly Checks</button>
                             <button class="btn btn-success" onclick="navigateTo('spare-part-orders')">📦 Approve Orders</button>
                             <button class="btn btn-warning" onclick="navigateTo('fault-tickets')">🎫 Assign Tickets</button>
                             <button class="btn btn-danger" onclick="navigateTo('repair-management')">🔧 Manage Repairs</button>
@@ -834,7 +843,7 @@
                         </div>
                         <div class="item-card">
                             <div class="item-details">
-                                <strong>Daily Check Approved</strong>
+                                <strong>Weekly Check Approved</strong>
                                 <div class="item-meta">Driver: John Doe | Vehicle: V-101 | 2 hours ago</div>
                                 <div class="item-description">All checks passed, vehicle cleared for operation</div>
                             </div>
@@ -859,10 +868,10 @@
                     </div>
                 </section>
 
-                <!-- Daily Check Reports Section -->
+                <!-- Weekly Check Reports Section -->
                 <section class="content-section" id="daily-check-reports">
                     <div class="page-header">
-                        <h1 class="page-title">Daily Check Reports</h1>
+                        <h1 class="page-title">Weekly Check Reports</h1>
                         <p class="page-subtitle">Review vehicle checks from drivers and condition updates from machinery operators</p>
                     </div>
 
@@ -884,7 +893,7 @@
                     <!-- Pending Reports -->
                     <div class="card">
                         <div class="card-header">
-                            <span>📋 Pending Daily Check Reports</span>
+                            <span>📋 Pending Weekly Check Reports</span>
                             <span class="status-badge status-pending">8 pending</span>
                         </div>
                         <table class="table">
@@ -1234,6 +1243,69 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </section>
+
+                <!-- Breakdown Reports Section -->
+                <section class="content-section" id="breakdown-reports">
+                    <div class="page-header">
+                        <h1 class="page-title">Breakdown Reports</h1>
+                        <p class="page-subtitle">View and manage breakdown reports from drivers and machinery operators</p>
+                    </div>
+
+                    <!-- Filter Controls -->
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                        <div class="filter-controls">
+                            <span style="font-weight: 600; margin-right: 10px;">Type:</span>
+                            <button class="filter-btn active" onclick="filterBreakdownsByType('all')">All Breakdowns</button>
+                            <button class="filter-btn" onclick="filterBreakdownsByType('vehicle')">Vehicle Breakdowns</button>
+                            <button class="filter-btn" onclick="filterBreakdownsByType('route')">Route Breakdowns</button>
+                        </div>
+                        <div class="filter-controls">
+                            <span style="font-weight: 600; margin-right: 10px;">Severity:</span>
+                            <button class="filter-btn active" onclick="filterBreakdownsBySeverity('all')">All Severities</button>
+                            <button class="filter-btn" onclick="filterBreakdownsBySeverity('critical')">Critical</button>
+                            <button class="filter-btn" onclick="filterBreakdownsBySeverity('high')">High</button>
+                            <button class="filter-btn" onclick="filterBreakdownsBySeverity('medium')">Medium</button>
+                            <button class="filter-btn" onclick="filterBreakdownsBySeverity('low')">Low</button>
+                        </div>
+                        <div class="filter-controls">
+                            <span style="font-weight: 600; margin-right: 10px;">Status:</span>
+                            <button class="filter-btn active" onclick="filterBreakdownsByStatus('all')">All Status</button>
+                            <button class="filter-btn" onclick="filterBreakdownsByStatus('Pending')">Pending</button>
+                            <button class="filter-btn" onclick="filterBreakdownsByStatus('Resolved')">Resolved</button>
+                        </div>
+                    </div>
+
+                    <!-- Breakdown Statistics -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div class="card" style="padding: 15px;">
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Total Breakdowns</div>
+                            <div style="font-size: 28px; font-weight: 700; color: var(--tang-blue);" id="totalBreakdownsCount">0</div>
+                        </div>
+                        <div class="card" style="padding: 15px;">
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Pending</div>
+                            <div style="font-size: 28px; font-weight: 700; color: var(--rust-orange);" id="pendingBreakdownsCount">0</div>
+                        </div>
+                        <div class="card" style="padding: 15px;">
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Resolved</div>
+                            <div style="font-size: 28px; font-weight: 700; color: var(--forest-green);" id="resolvedBreakdownsCount">0</div>
+                        </div>
+                        <div class="card" style="padding: 15px;">
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Critical</div>
+                            <div style="font-size: 28px; font-weight: 700; color: var(--fire-red);" id="criticalBreakdownsCount">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Breakdown List -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span>🚨 All Breakdown Reports</span>
+                            <span class="status-badge status-urgent" id="breakdownListBadge">0 breakdowns</span>
+                        </div>
+                        <div id="breakdownReportsList" style="max-height: 600px; overflow-y: auto;">
+                            <!-- Breakdown cards will be dynamically loaded here -->
+                        </div>
                     </div>
                 </section>
 
@@ -1656,6 +1728,76 @@
                         </table>
                     </div>
                 </section>
+
+                <!-- Reports Section -->
+                <section class="content-section" id="reports">
+                    <div class="page-header">
+                        <h1 class="page-title">Reports</h1>
+                        <p class="page-subtitle">View reports from Drivers and Machinery Operators</p>
+                    </div>
+
+                    <!-- Reports Summary Statistics -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div class="card" style="padding: 15px;">
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Total Driver Reports</div>
+                            <div style="font-size: 28px; font-weight: 700; color: var(--tang-blue);" id="totalDriverReportsCount">0</div>
+                        </div>
+                        <div class="card" style="padding: 15px;">
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Total Operator Reports</div>
+                            <div style="font-size: 28px; font-weight: 700; color: var(--royal-blue);" id="totalOperatorReportsCount">0</div>
+                        </div>
+                        <div class="card" style="padding: 15px;">
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Pending Reports</div>
+                            <div style="font-size: 28px; font-weight: 700; color: #f59e0b;" id="totalPendingReportsCount">0</div>
+                        </div>
+                        <div class="card" style="padding: 15px;">
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Critical Reports</div>
+                            <div style="font-size: 28px; font-weight: 700; color: #e74c3c;" id="totalCriticalReportsCount">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Filter Controls -->
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                        <div class="filter-controls">
+                            <span style="font-weight: 600; margin-right: 10px;">Source:</span>
+                            <button class="filter-btn active" onclick="filterReportsBySource('all')">All Reports</button>
+                            <button class="filter-btn" onclick="filterReportsBySource('driver')">Driver Reports</button>
+                            <button class="filter-btn" onclick="filterReportsBySource('operator')">Operator Reports</button>
+                        </div>
+                        <div class="filter-controls">
+                            <span style="font-weight: 600; margin-right: 10px;">Status:</span>
+                            <button class="filter-btn active" onclick="filterReportsByReportStatus('all')">All Status</button>
+                            <button class="filter-btn" onclick="filterReportsByReportStatus('Pending')">Pending</button>
+                            <button class="filter-btn" onclick="filterReportsByReportStatus('Resolved')">Resolved</button>
+                        </div>
+                    </div>
+
+                    <!-- Driver Reports Section -->
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div class="card-header">
+                            <span>🚗 Driver Breakdown Reports</span>
+                            <span class="status-badge status-pending" id="driverReportsBadge">0 reports</span>
+                        </div>
+                        <div id="driverReportsList" style="max-height: 400px; overflow-y: auto;">
+                            <div style="padding: 40px; text-align: center; color: var(--muted);">
+                                <div>Loading driver reports...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Machinery Operator Reports Section -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span>⚙️ Machinery Operator Fault Tickets</span>
+                            <span class="status-badge status-pending" id="operatorReportsBadge">0 reports</span>
+                        </div>
+                        <div id="operatorReportsList" style="max-height: 400px; overflow-y: auto;">
+                            <div style="padding: 40px; text-align: center; color: var(--muted);">
+                                <div>Loading operator reports...</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </main>
         </div>
     </div>
@@ -1675,7 +1817,7 @@
     <div id="approveReportModal" class="modal">
         <div class="modal-content">
             <button class="close" onclick="closeModal('approveReportModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Approve Daily Check Report</h2>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Approve Weekly Check Report</h2>
             <form id="approveReportForm">
                 <div class="form-section">
                     <h5>📋 Report Information</h5>
@@ -1698,7 +1840,7 @@
     <div id="rejectReportModal" class="modal">
         <div class="modal-content">
             <button class="close" onclick="closeModal('rejectReportModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Reject Daily Check Report</h2>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Reject Weekly Check Report</h2>
             <form id="rejectReportForm">
                 <div class="form-section">
                     <h5>❌ Rejection Information</h5>
@@ -2146,7 +2288,7 @@
             }, 3000);
         }
 
-        // ==================== DAILY CHECK REPORTS ====================
+        // ==================== WEEKLY CHECK REPORTS ====================
         
         let currentReportStatusFilter = 'all';
         let currentReportSourceFilter = 'all';
@@ -2196,7 +2338,7 @@
         }
 
         function viewReport(reportId) {
-            // Daily check reports data for both drivers and machinery operators
+            // Weekly check reports data for both drivers and machinery operators
             const reportsData = {
                 'DCR-001': {
                     id: 'DCR-001',
@@ -2369,7 +2511,7 @@
             const title = document.getElementById('detailsTitle');
             const content = document.getElementById('detailsContent');
             
-            title.textContent = `Daily Check Report ${reportId}`;
+            title.textContent = `Weekly Check Report ${reportId}`;
             
             let checkItemsHTML = report.checkItems.map(item => 
                 `<div style="padding: 8px; background: ${item.icon === '⚠️' ? '#fff3cd' : 'var(--light-bg)'}; border-radius: 6px; margin-bottom: 8px;">
@@ -2895,6 +3037,290 @@
             this.reset();
         });
 
+        // ==================== BREAKDOWN REPORTS ====================
+        
+        let currentBreakdownTypeFilter = 'all';
+        let currentBreakdownSeverityFilter = 'all';
+        let currentBreakdownStatusFilter = 'all';
+        let allBreakdownsData = []; // Store all breakdowns data
+
+        // Load breakdown reports from API
+        async function loadBreakdownReports() {
+            try {
+                const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+                
+                // Load vehicle breakdowns
+                const vehicleResponse = await fetch(`${CONFIG.API_BASE_URL}/breakdown-reports`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                // Load route breakdowns
+                const routeResponse = await fetch(`${CONFIG.API_BASE_URL}/route-breakdowns`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!vehicleResponse.ok || !routeResponse.ok) {
+                    throw new Error('Failed to load breakdown reports');
+                }
+
+                const vehicleData = await vehicleResponse.json();
+                const routeData = await routeResponse.json();
+                
+                allBreakdownsData = [];
+                
+                if (vehicleData.status === 'success') {
+                    vehicleData.data.reports.forEach(report => {
+                        allBreakdownsData.push({
+                            ...report,
+                            type: 'vehicle',
+                            breakdown_id: report.breakdown_id,
+                            breakdown_type: report.breakdown_type,
+                            severity: report.severity,
+                            status: report.status,
+                            description: report.description,
+                            vehicle_number: report.vehicle_number,
+                            driver_name: report.driver_name,
+                            breakdown_date: report.breakdown_date,
+                            created_at: report.created_at
+                        });
+                    });
+                }
+                
+                if (routeData.status === 'success') {
+                    routeData.data.breakdowns.forEach(breakdown => {
+                        allBreakdownsData.push({
+                            ...breakdown,
+                            type: 'route',
+                            breakdown_id: breakdown.route_breakdown_id,
+                            breakdown_type: breakdown.breakdown_type,
+                            severity: breakdown.severity,
+                            status: breakdown.status,
+                            description: breakdown.description,
+                            vehicle_number: breakdown.vehicle_number,
+                            driver_name: breakdown.driver_name,
+                            breakdown_date: breakdown.breakdown_datetime,
+                            location: breakdown.breakdown_location,
+                            created_at: breakdown.created_at
+                        });
+                    });
+                }
+                
+                displayBreakdownReports();
+                updateBreakdownStatistics();
+            } catch (error) {
+                console.error('Error loading breakdown reports:', error);
+                showToast('Failed to load breakdown reports');
+            }
+        }
+
+        // Display breakdown reports in the UI
+        function displayBreakdownReports() {
+            const breakdownList = document.getElementById('breakdownReportsList');
+            if (!breakdownList) return;
+
+            // Clear existing
+            breakdownList.innerHTML = '';
+
+            // Apply filters
+            let filteredBreakdowns = allBreakdownsData.filter(breakdown => {
+                const matchesType = currentBreakdownTypeFilter === 'all' || breakdown.type === currentBreakdownTypeFilter;
+                const matchesSeverity = currentBreakdownSeverityFilter === 'all' || breakdown.severity === currentBreakdownSeverityFilter;
+                const matchesStatus = currentBreakdownStatusFilter === 'all' || breakdown.status === currentBreakdownStatusFilter;
+                return matchesType && matchesSeverity && matchesStatus;
+            });
+
+            // Sort by created date descending
+            filteredBreakdowns.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            filteredBreakdowns.forEach(breakdown => {
+                const card = createBreakdownCard(breakdown);
+                breakdownList.appendChild(card);
+            });
+
+            // Update badge count
+            const badge = document.getElementById('breakdownListBadge');
+            if (badge) {
+                badge.textContent = `${filteredBreakdowns.length} breakdown${filteredBreakdowns.length !== 1 ? 's' : ''}`;
+            }
+
+            if (filteredBreakdowns.length === 0) {
+                breakdownList.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--muted);">No breakdown reports found</div>';
+            }
+        }
+
+        // Create breakdown card HTML element
+        function createBreakdownCard(breakdown) {
+            const card = document.createElement('div');
+            card.className = 'item-card';
+            card.setAttribute('data-type', breakdown.type);
+            card.setAttribute('data-severity', breakdown.severity);
+            card.setAttribute('data-status', breakdown.status);
+
+            const severityClass = breakdown.severity === 'critical' ? 'status-critical' :
+                                 breakdown.severity === 'high' ? 'status-urgent' :
+                                 breakdown.severity === 'medium' ? 'status-medium' : 'status-low';
+
+            const statusClass = breakdown.status === 'Pending' ? 'status-urgent' : 'status-complete';
+
+            const typeLabel = breakdown.type === 'vehicle' ? 'Vehicle Breakdown' : 'Route Breakdown';
+            const typeIcon = breakdown.type === 'vehicle' ? '🚗' : '🛣️';
+
+            card.innerHTML = `
+                <div class="item-details">
+                    <strong>${typeIcon} ${breakdown.breakdown_id} - ${breakdown.breakdown_type}</strong>
+                    <div class="item-meta">Vehicle: ${breakdown.vehicle_number || 'N/A'} | Driver: ${breakdown.driver_name || 'N/A'} | ${formatDate(breakdown.breakdown_date)}</div>
+                    <div class="item-description">${breakdown.description}</div>
+                    ${breakdown.location ? `<div class="item-meta" style="margin-top: 5px;">📍 ${breakdown.location}</div>` : ''}
+                </div>
+                <div class="item-actions">
+                    <div style="display: flex; flex-direction: column; gap: 5px; align-items: flex-end;">
+                        <span class="status-badge ${severityClass}">${breakdown.severity}</span>
+                        <span class="status-badge ${statusClass}">${breakdown.status}</span>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary btn-small" onclick="viewBreakdownDetailsModal('${breakdown.breakdown_id}', '${breakdown.type}', ${breakdown.id})">👁️ View</button>
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Update breakdown statistics
+        function updateBreakdownStatistics() {
+            const total = allBreakdownsData.length;
+            const pending = allBreakdownsData.filter(b => b.status === 'Pending').length;
+            const resolved = allBreakdownsData.filter(b => b.status === 'Resolved').length;
+            const critical = allBreakdownsData.filter(b => b.severity === 'critical').length;
+
+            document.getElementById('totalBreakdownsCount').textContent = total;
+            document.getElementById('pendingBreakdownsCount').textContent = pending;
+            document.getElementById('resolvedBreakdownsCount').textContent = resolved;
+            document.getElementById('criticalBreakdownsCount').textContent = critical;
+        }
+
+        // Filter functions
+        function filterBreakdownsByType(type) {
+            document.querySelectorAll('#breakdown-reports .filter-controls:first-child .filter-btn').forEach(b => {
+                b.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            currentBreakdownTypeFilter = type;
+            displayBreakdownReports();
+        }
+
+        function filterBreakdownsBySeverity(severity) {
+            document.querySelectorAll('#breakdown-reports .filter-controls:nth-child(2) .filter-btn').forEach(b => {
+                b.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            currentBreakdownSeverityFilter = severity;
+            displayBreakdownReports();
+        }
+
+        function filterBreakdownsByStatus(status) {
+            document.querySelectorAll('#breakdown-reports .filter-controls:nth-child(3) .filter-btn').forEach(b => {
+                b.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            currentBreakdownStatusFilter = status;
+            displayBreakdownReports();
+        }
+
+        // View breakdown details in modal
+        function viewBreakdownDetailsModal(breakdownId, type, id) {
+            const breakdown = allBreakdownsData.find(b => b.breakdown_id === breakdownId && b.id === id && b.type === type);
+            
+            if (!breakdown) {
+                showToast('Breakdown report not found');
+                return;
+            }
+
+            const title = document.getElementById('detailsTitle');
+            const content = document.getElementById('detailsContent');
+            
+            title.textContent = `${breakdownId} - Breakdown Details`;
+            
+            const severityClass = breakdown.severity === 'critical' ? 'status-critical' :
+                                 breakdown.severity === 'high' ? 'status-urgent' :
+                                 breakdown.severity === 'medium' ? 'status-medium' : 'status-low';
+
+            const statusClass = breakdown.status === 'Pending' ? 'status-urgent' : 'status-complete';
+            const typeLabel = type === 'vehicle' ? 'Vehicle Breakdown' : 'Route Breakdown';
+
+            content.innerHTML = `
+                <div class="form-section">
+                    <h5>🚨 Breakdown Information</h5>
+                    <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Breakdown ID</div>
+                                <div style="font-weight: 600; font-size: 16px;">${breakdown.breakdown_id}</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Type</div>
+                                <div style="font-weight: 600;">${typeLabel}</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Status</div>
+                                <div><span class="status-badge ${statusClass}">${breakdown.status}</span></div>
+                            </div>
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Severity</div>
+                                <div><span class="status-badge ${severityClass}">${breakdown.severity}</span></div>
+                            </div>
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Breakdown Type</div>
+                                <div style="font-weight: 600; text-transform: capitalize;">${breakdown.breakdown_type}</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Date</div>
+                                <div style="font-weight: 600;">${formatDate(breakdown.breakdown_date)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5>📝 Breakdown Details</h5>
+                    <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <div style="margin-bottom: 15px;">
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Description</div>
+                            <div style="font-weight: 600; padding: 10px; background: white; border-radius: 6px;">${breakdown.description}</div>
+                        </div>
+                        ${breakdown.location ? `
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Location</div>
+                            <div style="font-weight: 600;">📍 ${breakdown.location}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5>🚗 Vehicle & Driver Information</h5>
+                    <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Vehicle</div>
+                                <div style="font-weight: 600;">${breakdown.vehicle_number || 'N/A'}</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Driver</div>
+                                <div style="font-weight: 600;">${breakdown.driver_name || 'N/A'}</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Reported At</div>
+                                <div style="font-weight: 600;">${formatDate(breakdown.created_at)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            openModal('detailsModal');
+        }
+
         function closeTicket(ticketId) {
             document.getElementById('closeTicketId').value = ticketId;
             document.getElementById('closeTicketIdDisplay').value = ticketId;
@@ -3386,6 +3812,342 @@
             showToast(`Opening assignment form for ${techName}...`);
         }
 
+        // ==================== REPORTS PAGE ====================
+        
+        let allDriverReports = [];
+        let allOperatorReports = [];
+        let currentReportSourceFilter = 'all';
+        let currentReportStatusFilter = 'all';
+
+        // Load all reports data
+        async function loadAllReports() {
+            try {
+                const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+                
+                // Load driver breakdown reports (vehicle breakdowns + route breakdowns)
+                const vehicleResponse = await fetch(`${CONFIG.API_BASE_URL}/breakdown-reports`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const routeResponse = await fetch(`${CONFIG.API_BASE_URL}/route-breakdowns`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                // Load machinery operator fault tickets
+                const faultResponse = await fetch(`${CONFIG.API_BASE_URL}/fault-tickets`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                allDriverReports = [];
+                allOperatorReports = [];
+
+                // Process vehicle breakdowns
+                if (vehicleResponse.ok) {
+                    const vehicleData = await vehicleResponse.json();
+                    if (vehicleData.status === 'success' && vehicleData.data.reports) {
+                        vehicleData.data.reports.forEach(report => {
+                            allDriverReports.push({
+                                ...report,
+                                report_type: 'Vehicle Breakdown',
+                                report_id: report.breakdown_id,
+                                date: report.breakdown_date,
+                                source: 'driver'
+                            });
+                        });
+                    }
+                }
+
+                // Process route breakdowns
+                if (routeResponse.ok) {
+                    const routeData = await routeResponse.json();
+                    if (routeData.status === 'success' && routeData.data.breakdowns) {
+                        routeData.data.breakdowns.forEach(breakdown => {
+                            allDriverReports.push({
+                                ...breakdown,
+                                report_type: 'Route Breakdown',
+                                report_id: breakdown.route_breakdown_id,
+                                date: breakdown.breakdown_datetime,
+                                source: 'driver'
+                            });
+                        });
+                    }
+                }
+
+                // Process fault tickets from machinery operators
+                if (faultResponse.ok) {
+                    const faultData = await faultResponse.json();
+                    if (faultData.status === 'success' && faultData.data.tickets) {
+                        faultData.data.tickets.forEach(ticket => {
+                            allOperatorReports.push({
+                                ...ticket,
+                                report_type: 'Fault Ticket',
+                                report_id: ticket.ticket_id,
+                                severity: ticket.priority || 'medium',
+                                date: ticket.created_at,
+                                source: 'operator'
+                            });
+                        });
+                    }
+                }
+
+                // Update UI
+                displayDriverReports();
+                displayOperatorReports();
+                updateReportStatistics();
+
+            } catch (error) {
+                console.error('Error loading reports:', error);
+                showToast('Failed to load reports');
+            }
+        }
+
+        // Display driver reports
+        function displayDriverReports() {
+            const container = document.getElementById('driverReportsList');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            let filteredReports = allDriverReports.filter(report => {
+                const matchesSource = currentReportSourceFilter === 'all' || currentReportSourceFilter === 'driver';
+                const matchesStatus = currentReportStatusFilter === 'all' || report.status === currentReportStatusFilter;
+                return matchesSource && matchesStatus;
+            });
+
+            // Sort by date descending
+            filteredReports.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // Update badge
+            const badge = document.getElementById('driverReportsBadge');
+            if (badge) {
+                badge.textContent = `${filteredReports.length} report${filteredReports.length !== 1 ? 's' : ''}`;
+            }
+
+            if (filteredReports.length === 0) {
+                container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--muted);">No driver reports found</div>';
+                return;
+            }
+
+            filteredReports.forEach(report => {
+                const severityClass = report.severity === 'critical' ? 'status-critical' :
+                                     report.severity === 'high' ? 'status-urgent' :
+                                     report.severity === 'medium' ? 'status-medium' : 'status-low';
+                const statusClass = report.status === 'Pending' ? 'status-urgent' : 'status-complete';
+
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.innerHTML = `
+                    <div class="item-details">
+                        <strong>🚗 ${report.report_id} - ${report.breakdown_type || report.report_type}</strong>
+                        <div class="item-meta">
+                            ${report.report_type} | Vehicle: ${report.number_plate || 'N/A'} | Driver: ${report.driver_name || 'N/A'} | ${formatDate(report.date)}
+                        </div>
+                        <div class="item-description">${report.description || 'No description'}</div>
+                        ${report.breakdown_location ? `<div class="item-meta" style="margin-top: 5px;">📍 ${report.breakdown_location}</div>` : ''}
+                    </div>
+                    <div class="item-actions">
+                        <div style="display: flex; flex-direction: column; gap: 5px; align-items: flex-end;">
+                            <span class="status-badge ${severityClass}">${report.severity || 'N/A'}</span>
+                            <span class="status-badge ${statusClass}">${report.status}</span>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary btn-small" onclick="viewReportDetails('driver', '${report.report_id}', ${report.id})">👁️ View</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Display operator reports (fault tickets)
+        function displayOperatorReports() {
+            const container = document.getElementById('operatorReportsList');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            let filteredReports = allOperatorReports.filter(report => {
+                const matchesSource = currentReportSourceFilter === 'all' || currentReportSourceFilter === 'operator';
+                const matchesStatus = currentReportStatusFilter === 'all' || 
+                                      (currentReportStatusFilter === 'Pending' && report.status !== 'completed') ||
+                                      (currentReportStatusFilter === 'Resolved' && report.status === 'completed');
+                return matchesSource && matchesStatus;
+            });
+
+            // Sort by date descending
+            filteredReports.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // Update badge
+            const badge = document.getElementById('operatorReportsBadge');
+            if (badge) {
+                badge.textContent = `${filteredReports.length} report${filteredReports.length !== 1 ? 's' : ''}`;
+            }
+
+            if (filteredReports.length === 0) {
+                container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--muted);">No operator reports found</div>';
+                return;
+            }
+
+            filteredReports.forEach(report => {
+                const severityClass = report.severity === 'critical' ? 'status-critical' :
+                                     report.severity === 'high' ? 'status-urgent' :
+                                     report.severity === 'medium' ? 'status-medium' : 'status-low';
+                const statusClass = report.status === 'completed' ? 'status-complete' : 'status-urgent';
+                const displayStatus = report.status === 'completed' ? 'Resolved' : report.status || 'Pending';
+
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.innerHTML = `
+                    <div class="item-details">
+                        <strong>⚙️ ${report.report_id} - ${report.fault_type || 'Fault Report'}</strong>
+                        <div class="item-meta">
+                            Fault Ticket | Machine: ${report.machine_id || 'N/A'} | Reported by: ${report.reported_by_name || 'Operator'} | ${formatDate(report.date)}
+                        </div>
+                        <div class="item-description">${report.description || 'No description'}</div>
+                    </div>
+                    <div class="item-actions">
+                        <div style="display: flex; flex-direction: column; gap: 5px; align-items: flex-end;">
+                            <span class="status-badge ${severityClass}">${report.severity || 'medium'}</span>
+                            <span class="status-badge ${statusClass}">${displayStatus}</span>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary btn-small" onclick="viewReportDetails('operator', '${report.report_id}', ${report.id})">👁️ View</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Update report statistics
+        function updateReportStatistics() {
+            const totalDriver = allDriverReports.length;
+            const totalOperator = allOperatorReports.length;
+            const pendingDriver = allDriverReports.filter(r => r.status === 'Pending').length;
+            const pendingOperator = allOperatorReports.filter(r => r.status !== 'completed').length;
+            const criticalDriver = allDriverReports.filter(r => r.severity === 'critical').length;
+            const criticalOperator = allOperatorReports.filter(r => r.severity === 'critical' || r.priority === 'critical').length;
+
+            document.getElementById('totalDriverReportsCount').textContent = totalDriver;
+            document.getElementById('totalOperatorReportsCount').textContent = totalOperator;
+            document.getElementById('totalPendingReportsCount').textContent = pendingDriver + pendingOperator;
+            document.getElementById('totalCriticalReportsCount').textContent = criticalDriver + criticalOperator;
+        }
+
+        // Filter reports by source
+        function filterReportsBySource(source) {
+            document.querySelectorAll('#reports .filter-controls:first-child .filter-btn').forEach(b => {
+                b.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            currentReportSourceFilter = source;
+            
+            // Show/hide sections based on filter
+            const driverSection = document.getElementById('driverReportsList').closest('.card');
+            const operatorSection = document.getElementById('operatorReportsList').closest('.card');
+            
+            if (source === 'driver') {
+                driverSection.style.display = 'block';
+                operatorSection.style.display = 'none';
+            } else if (source === 'operator') {
+                driverSection.style.display = 'none';
+                operatorSection.style.display = 'block';
+            } else {
+                driverSection.style.display = 'block';
+                operatorSection.style.display = 'block';
+            }
+            
+            displayDriverReports();
+            displayOperatorReports();
+        }
+
+        // Filter reports by status
+        function filterReportsByReportStatus(status) {
+            document.querySelectorAll('#reports .filter-controls:nth-child(2) .filter-btn').forEach(b => {
+                b.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            currentReportStatusFilter = status;
+            displayDriverReports();
+            displayOperatorReports();
+        }
+
+        // View report details
+        function viewReportDetails(type, reportId, id) {
+            const title = document.getElementById('detailsTitle');
+            const content = document.getElementById('detailsContent');
+            
+            let report;
+            if (type === 'driver') {
+                report = allDriverReports.find(r => r.id == id);
+            } else {
+                report = allOperatorReports.find(r => r.id == id);
+            }
+
+            if (!report) {
+                showToast('Report not found', 'error');
+                return;
+            }
+
+            title.textContent = `${reportId} - ${report.report_type}`;
+
+            if (type === 'driver') {
+                content.innerHTML = `
+                    <div class="form-section">
+                        <h5>🚗 Driver Report Details</h5>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div><strong>Report ID:</strong> ${report.report_id}</div>
+                            <div><strong>Type:</strong> ${report.report_type}</div>
+                            <div><strong>Vehicle:</strong> ${report.number_plate || 'N/A'}</div>
+                            <div><strong>Driver:</strong> ${report.driver_name || 'N/A'}</div>
+                            <div><strong>Severity:</strong> <span style="color: ${report.severity === 'critical' ? '#e74c3c' : report.severity === 'high' ? '#f39c12' : '#27ae60'}">${report.severity}</span></div>
+                            <div><strong>Status:</strong> <span style="color: ${report.status === 'Pending' ? '#f39c12' : '#27ae60'}">${report.status}</span></div>
+                            <div><strong>Breakdown Type:</strong> ${report.breakdown_type || 'N/A'}</div>
+                            <div><strong>Date:</strong> ${formatDate(report.date)}</div>
+                        </div>
+                    </div>
+                    <div class="form-section">
+                        <h5>📝 Description</h5>
+                        <p>${report.description || 'No description provided'}</p>
+                    </div>
+                    ${report.breakdown_location ? `
+                    <div class="form-section">
+                        <h5>📍 Location</h5>
+                        <p>${report.breakdown_location}</p>
+                    </div>
+                    ` : ''}
+                `;
+            } else {
+                content.innerHTML = `
+                    <div class="form-section">
+                        <h5>⚙️ Machinery Operator Report Details</h5>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div><strong>Ticket ID:</strong> ${report.report_id}</div>
+                            <div><strong>Type:</strong> Fault Ticket</div>
+                            <div><strong>Machine ID:</strong> ${report.machine_id || 'N/A'}</div>
+                            <div><strong>Reported By:</strong> ${report.reported_by_name || 'Operator'}</div>
+                            <div><strong>Priority:</strong> <span style="color: ${report.priority === 'critical' ? '#e74c3c' : report.priority === 'high' ? '#f39c12' : '#27ae60'}">${report.priority || 'medium'}</span></div>
+                            <div><strong>Status:</strong> <span style="color: ${report.status === 'completed' ? '#27ae60' : '#f39c12'}">${report.status || 'pending'}</span></div>
+                            <div><strong>Fault Type:</strong> ${report.fault_type || 'N/A'}</div>
+                            <div><strong>Date:</strong> ${formatDate(report.date)}</div>
+                        </div>
+                    </div>
+                    <div class="form-section">
+                        <h5>📝 Description</h5>
+                        <p>${report.description || 'No description provided'}</p>
+                    </div>
+                    ${report.assigned_to_name ? `
+                    <div class="form-section">
+                        <h5>👷 Assignment</h5>
+                        <p>Assigned to: ${report.assigned_to_name}</p>
+                    </div>
+                    ` : ''}
+                `;
+            }
+
+            openModal('viewReportModal');
+        }
+
         // ==================== UTILITY FUNCTIONS ====================
         
         function logout() {
@@ -3407,6 +4169,12 @@
                     input.value = today;
                 }
             });
+
+            // Load breakdown reports data
+            loadBreakdownReports();
+            
+            // Load all reports data for Reports page
+            loadAllReports();
 
             // Mobile menu button for responsive design
             if (window.innerWidth <= 768) {
