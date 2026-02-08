@@ -30,6 +30,7 @@ class FaultTicket extends BaseModel {
     protected function getSchema() {
         return [
             'id' => 'INT AUTO_INCREMENT PRIMARY KEY',
+            'ticket_id' => 'VARCHAR(20) NOT NULL UNIQUE',
             'machine_id' => 'INT NOT NULL',
             'reported_by' => 'INT NOT NULL',
             'description' => 'TEXT NOT NULL',
@@ -58,7 +59,9 @@ class FaultTicket extends BaseModel {
      * Get all fault tickets with filters
      */
     public function getAllTickets($filters = []) {
-        $sql = "SELECT ft.*, 
+        $sql = "SELECT ft.id, ft.ticket_id, ft.machine_id, ft.reported_by, 
+                       ft.description, ft.priority, ft.location, ft.status,
+                       ft.created_at, ft.updated_at,
                        m.model_number as machine_model_number,
                        m.machine_name as machine_name,
                        u.employee_id as reporter_employee_id,
@@ -118,7 +121,9 @@ class FaultTicket extends BaseModel {
      * Get fault ticket by ID with related data
      */
     public function getTicketById($id) {
-        $sql = "SELECT ft.*, 
+        $sql = "SELECT ft.id, ft.ticket_id, ft.machine_id, ft.reported_by, 
+                       ft.description, ft.priority, ft.location, ft.status,
+                       ft.created_at, ft.updated_at,
                        m.model_number as machine_model_number,
                        m.machine_name as machine_name,
                        u.employee_id as reporter_employee_id,
@@ -146,13 +151,17 @@ class FaultTicket extends BaseModel {
      * Create a new fault ticket
      */
     public function createTicket($data) {
+        // Generate next ticket_id
+        $ticketId = $this->generateNextTicketId();
+        
         $sql = "INSERT INTO `{$this->table}` 
-                (machine_id, reported_by, description, priority, location, status) 
+                (ticket_id, machine_id, reported_by, description, priority, location, status) 
                 VALUES 
-                (?, ?, ?, ?, ?, ?)";
+                (?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $this->db->prepare($sql);
         $result = $stmt->execute([
+            $ticketId,
             $data['machine_id'],
             $data['reported_by'],
             $data['description'],
@@ -162,6 +171,29 @@ class FaultTicket extends BaseModel {
         ]);
         
         return $result ? $this->db->lastInsertId() : false;
+    }
+    
+    /**
+     * Generate next ticket ID in format TKT-001
+     */
+    private function generateNextTicketId() {
+        $sql = "SELECT ticket_id FROM `{$this->table}` 
+                WHERE ticket_id LIKE 'TKT-%' 
+                ORDER BY id DESC LIMIT 1";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $lastTicket = $stmt->fetch();
+        
+        if ($lastTicket && $lastTicket['ticket_id']) {
+            // Extract number from TKT-XXX format
+            $lastNumber = intval(substr($lastTicket['ticket_id'], 4));
+            $nextNumber = $lastNumber + 1;
+        } else {
+            $nextNumber = 1;
+        }
+        
+        return 'TKT-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
     }
     
     /**

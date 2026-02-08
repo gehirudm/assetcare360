@@ -94,7 +94,9 @@ abstract class BaseModel {
         }
         
         foreach ($indexes as $indexName => $columns) {
-            $sql = "CREATE INDEX IF NOT EXISTS `{$indexName}` ON `{$this->table}` ($columns)";
+            // Handle both array and string format for columns
+            $columnsList = is_array($columns) ? implode(', ', $columns) : $columns;
+            $sql = "CREATE INDEX IF NOT EXISTS `{$indexName}` ON `{$this->table}` ($columnsList)";
             try {
                 $this->db->exec($sql);
             } catch (PDOException $e) {

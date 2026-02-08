@@ -81,8 +81,17 @@ class RoleMiddleware {
         
         // If no cookie, fall back to Authorization header
         if (!$token) {
-            $headers = getallheaders();
-            $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? null;
+            // Try getallheaders() first
+            $authHeader = null;
+            if (function_exists('getallheaders')) {
+                $headers = getallheaders();
+                $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? null;
+            }
+            
+            // Fallback to $_SERVER superglobal
+            if (!$authHeader) {
+                $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null;
+            }
             
             if ($authHeader && preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
                 $token = $matches[1];
