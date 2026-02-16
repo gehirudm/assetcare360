@@ -404,182 +404,54 @@
                 </section>
 
                 <!-- Orders & Approvals -->
-                                <!-- Orders & Approvals -->
                 <section class="content-section" id="orders-approvals">
                     <div class="page-header">
                         <h2 class="page-title"><i class="fas fa-clipboard-check"></i> Orders & Approvals</h2>
-                        <p class="page-subtitle">Manage order approvals and rejections</p>
+                        <p class="page-subtitle">Manage spare part requests from Technical Officers</p>
+                    </div>
+
+                    <!-- Stats Cards -->
+                    <div class="stats-bar" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                        <div class="card" style="padding: 15px; text-align: center;">
+                            <div style="font-size: 1.8rem; font-weight: 700; color: var(--tang-blue);" id="ordersTotalCount">0</div>
+                            <div style="font-size: 0.85rem; color: #6b7280;">Total Requests</div>
+                        </div>
+                        <div class="card" style="padding: 15px; text-align: center;">
+                            <div style="font-size: 1.8rem; font-weight: 700; color: #f59e0b;" id="ordersPendingCount">0</div>
+                            <div style="font-size: 0.85rem; color: #6b7280;">Pending</div>
+                        </div>
+                        <div class="card" style="padding: 15px; text-align: center;">
+                            <div style="font-size: 1.8rem; font-weight: 700; color: #10b981;" id="ordersApprovedCount">0</div>
+                            <div style="font-size: 0.85rem; color: #6b7280;">Approved</div>
+                        </div>
+                        <div class="card" style="padding: 15px; text-align: center;">
+                            <div style="font-size: 1.8rem; font-weight: 700; color: #ef4444;" id="ordersRejectedCount">0</div>
+                            <div style="font-size: 0.85rem; color: #6b7280;">Rejected</div>
+                        </div>
+                    </div>
+
+                    <!-- Search Bar -->
+                    <div class="search-bar">
+                        <input type="text" id="orderSearch" class="search-input" placeholder="Search by request ID, ticket, equipment, or parts..." oninput="filterSparePartOrders()">
+                        <button class="btn btn-secondary" onclick="loadSparePartOrders()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
                     </div>
 
                     <!-- Filter Tabs -->
-                    <div class="filter-controls" style="margin-bottom: 20px;">
+                    <div class="filter-controls" id="orderFilterTabs">
                         <button class="filter-btn active" onclick="filterOrdersByStatus('all')">All Orders</button>
-                        <button class="filter-btn" onclick="filterOrdersByStatus('pending')">Pending</button>
-                        <button class="filter-btn" onclick="filterOrdersByStatus('approved')">Approved</button>
-                        <button class="filter-btn" onclick="filterOrdersByStatus('rejected')">Rejected</button>
+                        <button class="filter-btn" onclick="filterOrdersByStatus('Pending')">Pending</button>
+                        <button class="filter-btn" onclick="filterOrdersByStatus('Approved')">Approved</button>
+                        <button class="filter-btn" onclick="filterOrdersByStatus('Issued')">Issued</button>
+                        <button class="filter-btn" onclick="filterOrdersByStatus('Rejected')">Rejected</button>
                     </div>
 
-                    <!-- Pending Orders Table -->
-                    <div class="card order-section" data-status="pending">
-                        <div class="card-header">
-                            <span><i class="fas fa-clock"></i> Pending Orders</span>
-                            <span id="pendingCount" class="status-text status-pending">3 pending</span>
-                        </div>
-                        <div id="pendingOrders">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Request ID</th>
-                                        <th>Sparepart Name</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr data-id="REQ-001">
-                                        <td>REQ-001</td>
-                                        <td><strong>Brake pads</strong></td>
-                                        <td><span class="status-text status-pending">Pending</span></td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button class="btn btn-primary btn-small" onclick="viewOrderDetails('REQ-001')"><i class="fas fa-eye"></i> VIEW</button>
-                                                <div class="dropdown-container">
-                                                    <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'order-REQ-001')">
-                                                        <i class="fas fa-ellipsis-v"></i>
-                                                    </button>
-                                                    <div class="dropdown-menu" id="dropdown-order-REQ-001">
-                                                        <button class="dropdown-item" onclick="approveOrder('REQ-001'); closeAllDropdowns();">
-                                                            <i class="fas fa-check"></i> Approve
-                                                        </button>
-                                                        <button class="dropdown-item danger" onclick="rejectOrder('REQ-001'); closeAllDropdowns();">
-                                                            <i class="fas fa-times"></i> Reject
-                                                        </button>
-                                                        <button class="dropdown-item" onclick="viewTicketDetails('TKT-001'); closeAllDropdowns();">
-                                                            <i class="fas fa-ticket-alt"></i> View Ticket
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr data-id="REQ-002">
-                                        <td>REQ-002</td>
-                                        <td><strong>Oil filters</strong></td>
-                                        <td><span class="status-text status-pending">Pending</span></td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button class="btn btn-primary btn-small" onclick="viewOrderDetails('REQ-002')"><i class="fas fa-eye"></i> VIEW</button>
-                                                <div class="dropdown-container">
-                                                    <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'order-REQ-002')">
-                                                        <i class="fas fa-ellipsis-v"></i>
-                                                    </button>
-                                                    <div class="dropdown-menu" id="dropdown-order-REQ-002">
-                                                        <button class="dropdown-item" onclick="approveOrder('REQ-002'); closeAllDropdowns();">
-                                                            <i class="fas fa-check"></i> Approve
-                                                        </button>
-                                                        <button class="dropdown-item danger" onclick="rejectOrder('REQ-002'); closeAllDropdowns();">
-                                                            <i class="fas fa-times"></i> Reject
-                                                        </button>
-                                                        <button class="dropdown-item" onclick="viewTicketDetails('TKT-002'); closeAllDropdowns();">
-                                                            <i class="fas fa-ticket-alt"></i> View Ticket
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr data-id="REQ-003">
-                                        <td>REQ-003</td>
-                                        <td><strong>Hydraulic Pump</strong></td>
-                                        <td><span class="status-text status-critical">Critical</span></td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button class="btn btn-primary btn-small" onclick="viewOrderDetails('REQ-003')"><i class="fas fa-eye"></i> VIEW</button>
-                                                <div class="dropdown-container">
-                                                    <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'order-REQ-003')">
-                                                        <i class="fas fa-ellipsis-v"></i>
-                                                    </button>
-                                                    <div class="dropdown-menu" id="dropdown-order-REQ-003">
-                                                        <button class="dropdown-item" onclick="approveOrder('REQ-003'); closeAllDropdowns();">
-                                                            <i class="fas fa-check"></i> Approve
-                                                        </button>
-                                                        <button class="dropdown-item danger" onclick="rejectOrder('REQ-003'); closeAllDropdowns();">
-                                                            <i class="fas fa-times"></i> Reject
-                                                        </button>
-                                                        <button class="dropdown-item" onclick="viewTicketDetails('TKT-003'); closeAllDropdowns();">
-                                                            <i class="fas fa-ticket-alt"></i> View Ticket
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Approved Orders -->
-                    <div class="card order-section" data-status="approved">
-                        <div class="card-header">
-                            <span><i class="fas fa-check-circle"></i> Approved Orders</span>
-                            <button class="btn btn-secondary btn-small" onclick="viewAllApprovedOrders()"><i class="fas fa-eye"></i> View All</button>
-                        </div>
-                        <div id="approvedOrders">
-                            <div class="inventory-item" data-id="REQ-004">
-                                <div class="item-details">
-                                    <strong><i class="fas fa-file-alt"></i> REQ-004</strong>
-                                    <div class="item-meta">Brake discs</div>
-                                    <div class="item-description"><span class="status-text status-approved">Approved</span></div>
-                                </div>
-                                <div class="item-actions">
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewOrderDetails('REQ-004')"><i class="fas fa-eye"></i> VIEW</button>
-                                        <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'order-REQ-004')">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div class="dropdown-menu" id="dropdown-order-REQ-004">
-                                                <button class="dropdown-item" onclick="printOrderDetails('REQ-004'); closeAllDropdowns();">
-                                                    <i class="fas fa-print"></i> Print
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Rejected Orders -->
-                    <div class="card order-section" data-status="rejected">
-                        <div class="card-header">
-                            <span><i class="fas fa-times-circle"></i> Rejected Orders</span>
-                            <button class="btn btn-secondary btn-small" onclick="viewAllRejectedOrders()"><i class="fas fa-eye"></i> View All</button>
-                        </div>
-                        <div id="rejectedOrders">
-                            <div class="inventory-item" data-id="REQ-005">
-                                <div class="item-details">
-                                    <strong><i class="fas fa-file-alt"></i> REQ-005</strong>
-                                    <div class="item-meta">Engine coolant</div>
-                                    <div class="item-description"><span class="status-text status-rejected">Rejected</span></div>
-                                </div>
-                                <div class="item-actions">
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewOrderDetails('REQ-005')"><i class="fas fa-eye"></i> VIEW</button>
-                                        <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'order-REQ-005')">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div class="dropdown-menu" id="dropdown-order-REQ-005">
-                                                <button class="dropdown-item" onclick="reconsiderOrder('REQ-005'); closeAllDropdowns();">
-                                                    <i class="fas fa-redo"></i> Reconsider
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                    <!-- Orders List (vehicle-list style) -->
+                    <div id="ordersList">
+                        <div style="text-align: center; padding: 40px; color: #6b7280;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 2em; margin-bottom: 10px;"></i>
+                            <p>Loading spare part requests...</p>
                         </div>
                     </div>
                 </section>
