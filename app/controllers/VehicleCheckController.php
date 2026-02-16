@@ -17,6 +17,11 @@ class VehicleCheckController {
      */
     public function index() {
         try {
+            // Handle single check query by id
+            if (isset($_GET['id'])) {
+                return $this->show();
+            }
+            
             $filters = [];
             
             if (isset($_GET['vehicle_registration'])) {
