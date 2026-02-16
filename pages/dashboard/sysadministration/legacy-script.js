@@ -114,7 +114,7 @@ function viewUserDetails(empId) {
     title.textContent = `User Details - ${user.name}`;
     content.innerHTML = `
         <div class="form-section">
-            <h5>👤 Personal Information</h5>
+            <h5>Personal Information</h5>
             <div class="form-grid">
                 <div><strong>Full Name:</strong> ${user.name}</div>
                 <div><strong>Employee ID:</strong> ${user.empId}</div>
@@ -123,7 +123,7 @@ function viewUserDetails(empId) {
             </div>
         </div>
         <div class="form-section">
-            <h5>🏢 Work Information</h5>
+            <h5>Work Information</h5>
             <div class="form-grid">
                 <div><strong>Role:</strong> ${user.role}</div>
                 <div><strong>Department:</strong> ${user.department}</div>
@@ -132,14 +132,14 @@ function viewUserDetails(empId) {
             </div>
         </div>
         <div class="form-section">
-            <h5>📊 Activity Statistics</h5>
+            <h5>Activity Statistics</h5>
             <div class="form-grid">
                 <div><strong>Last Login:</strong> ${user.lastLogin}</div>
                 <div><strong>Total Logins:</strong> ${user.loginCount}</div>
             </div>
         </div>
         <div class="form-section">
-            <h5>🔐 Permissions</h5>
+            <h5>Permissions</h5>
             <div>${user.permissions.map(p => `• ${p}`).join('<br>')}</div>
         </div>
     `;
