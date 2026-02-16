@@ -783,7 +783,7 @@
                     <span>System Admin</span>
                 </div>
                 <button class="logout-btn" onclick="logout()">
-                    <span>🚪</span>
+                    <span><i class="fas fa-sign-out-alt"></i></span>
                     Logout
                 </button>
             </div>
@@ -794,35 +794,35 @@
                 <h2>System Admin</h2>
                 <nav>
                     <div class="nav-item active" data-section="dashboard">
-                        <span class="nav-icon">📊</span>
+                        <span class="nav-icon"><i class="fas fa-chart-bar"></i></span>
                         <span>Dashboard</span>
                     </div>
                     <div class="nav-item" data-section="user-accounts">
-                        <span class="nav-icon">👥</span>
+                        <span class="nav-icon"><i class="fas fa-users"></i></span>
                         <span>User Accounts</span>
                     </div>
                     <div class="nav-item" data-section="permissions">
-                        <span class="nav-icon">🔐</span>
+                        <span class="nav-icon"><i class="fas fa-lock"></i></span>
                         <span>Permissions & Roles</span>
                     </div>
                     <div class="nav-item" data-section="service-config">
-                        <span class="nav-icon">⚙️</span>
+                        <span class="nav-icon"><i class="fas fa-cog"></i></span>
                         <span>Service Configuration</span>
                     </div>
                     <div class="nav-item" data-section="petty-cash-config">
-                        <span class="nav-icon">💰</span>
+                        <span class="nav-icon"><i class="fas fa-money-bill-wave"></i></span>
                         <span>Petty Cash Config</span>
                     </div>
                     <div class="nav-item" data-section="notifications-config">
-                        <span class="nav-icon">📧</span>
+                        <span class="nav-icon"><i class="fas fa-envelope"></i></span>
                         <span>Notification Templates</span>
                     </div>
                     <div class="nav-item" data-section="system-logs">
-                        <span class="nav-icon">📋</span>
+                        <span class="nav-icon"><i class="fas fa-clipboard-list"></i></span>
                         <span>System Logs</span>
                     </div>
                     <div class="nav-item" data-section="activity-tracking">
-                        <span class="nav-icon">📈</span>
+                        <span class="nav-icon"><i class="fas fa-chart-line"></i></span>
                         <span>User Activity Tracking</span>
                     </div>
                 </nav>
@@ -871,39 +871,39 @@
                     <div class="card">
                         <div class="card-header">⚡ Quick Actions</div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button class="btn btn-primary" onclick="openModal('createUserModal')">➕ Create User</button>
-                            <button class="btn btn-primary" onclick="navigateToSection('service-config')">⚙️ Configure System</button>
-                            <button class="btn btn-warning" onclick="openModal('resetPasswordModal')">🔐 Reset Password</button>
-                            <button class="btn btn-secondary" onclick="navigateToSection('system-logs')">🧾 View Logs</button>
+                            <button class="btn btn-primary" onclick="openModal('createUserModal')"><i class="fas fa-plus"></i> Create User</button>
+                            <button class="btn btn-primary" onclick="navigateToSection('service-config')"><i class="fas fa-cog"></i> Configure System</button>
+                            <button class="btn btn-warning" onclick="openModal('resetPasswordModal')"><i class="fas fa-lock"></i> Reset Password</button>
+                            <button class="btn btn-secondary" onclick="navigateToSection('system-logs')"><i class="fas fa-file-invoice"></i> View Logs</button>
                         </div>
                     </div>
 
                     <!-- Recent Activity Feed -->
                     <div class="card">
-                        <div class="card-header">📈 Recent Activity</div>
+                        <div class="card-header"><i class="fas fa-chart-line"></i> Recent Activity</div>
                         <div class="notification-item info">
-                            <span class="notification-icon">🔵</span>
+                            <span class="notification-icon"><i class="fas fa-circle text-primary"></i></span>
                             <div>
                                 <strong>User Login:</strong> Supervisor John logged in from 192.168.1.45
                                 <div style="font-size: 12px; color: var(--muted);">2 minutes ago</div>
                             </div>
                         </div>
                         <div class="notification-item success">
-                            <span class="notification-icon">✅</span>
+                            <span class="notification-icon"><i class="fas fa-check-circle"></i></span>
                             <div>
                                 <strong>Account Created:</strong> New Technical Officer account created by Admin
                                 <div style="font-size: 12px; color: var(--muted);">15 minutes ago</div>
                             </div>
                         </div>
                         <div class="notification-item warning">
-                            <span class="notification-icon">⚠️</span>
+                            <span class="notification-icon"><i class="fas fa-exclamation-triangle"></i></span>
                             <div>
                                 <strong>Permission Changed:</strong> Inventory Manager role updated with new access rights
                                 <div style="font-size: 12px; color: var(--muted);">1 hour ago</div>
                             </div>
                         </div>
                         <div class="notification-item danger">
-                            <span class="notification-icon">❌</span>
+                            <span class="notification-icon"><i class="fas fa-times-circle"></i></span>
                             <div>
                                 <strong>Failed Login:</strong> 3 failed login attempts for user 'driver_05'
                                 <div style="font-size: 12px; color: var(--muted);">2 hours ago</div>
@@ -913,15 +913,15 @@
 
                     <!-- System Alerts -->
                     <div class="card">
-                        <div class="card-header">🚨 System Alerts</div>
+                        <div class="card-header"><i class="fas fa-exclamation-circle"></i> System Alerts</div>
                         <div class="notification-item danger">
-                            <span class="notification-icon">⏰</span>
+                            <span class="notification-icon"><i class="fas fa-clock"></i></span>
                             <div>
                                 <strong>Service Interval Alert:</strong> Vehicle #045 overdue for service by 15 days
                             </div>
                         </div>
                         <div class="notification-item warning">
-                            <span class="notification-icon">💾</span>
+                            <span class="notification-icon"><i class="fas fa-save"></i></span>
                             <div>
                                 <strong>Backup Reminder:</strong> Manual backup recommended for critical data
                             </div>
@@ -938,10 +938,10 @@
 
                     <div style="margin-bottom: 20px;">
                         <button class="btn btn-primary" onclick="openModal('createUserModal')">
-                            ➕ Create New User
+                            <i class="fas fa-plus"></i> Create New User
                         </button>
                         <button class="btn btn-secondary" onclick="exportUsers()">
-                            📥 Export Users
+                            <i class="fas fa-download"></i> Export Users
                         </button>
                     </div>
 
@@ -966,7 +966,7 @@
 
                     <!-- User List -->
                     <div class="card">
-                        <div class="card-header">👥 User Accounts</div>
+                        <div class="card-header"><i class="fas fa-users"></i> User Accounts</div>
                         <div id="userList">
                             <div class="user-item" data-role="supervisor" data-status="active">
                                 <div class="user-details">
@@ -1051,13 +1051,13 @@
 
                     <div style="margin-bottom: 20px;">
                         <button class="btn btn-primary" onclick="openModal('createRoleModal')">
-                            ➕ Create New Role
+                            <i class="fas fa-plus"></i> Create New Role
                         </button>
                     </div>
 
                     <!-- Permission Matrix -->
                     <div class="card">
-                        <div class="card-header">🔐 Permission Matrix</div>
+                        <div class="card-header"><i class="fas fa-lock"></i> Permission Matrix</div>
                         <div class="permission-matrix">
                             <table class="table">
                                 <thead>
@@ -1074,56 +1074,56 @@
                                 <tbody>
                                     <tr>
                                         <td><strong>User Management</strong></td>
-                                        <td>✅ Full Access</td>
-                                        <td>❌ No Access</td>
-                                        <td>❌ No Access</td>
-                                        <td>❌ No Access</td>
-                                        <td>❌ No Access</td>
+                                        <td><i class="fas fa-check-circle"></i> Full Access</td>
+                                        <td><i class="fas fa-times-circle"></i> No Access</td>
+                                        <td><i class="fas fa-times-circle"></i> No Access</td>
+                                        <td><i class="fas fa-times-circle"></i> No Access</td>
+                                        <td><i class="fas fa-times-circle"></i> No Access</td>
                                         <td><button class="btn btn-secondary btn-small" onclick="editPermission('user-management')">Edit</button></td>
                                     </tr>
                                     <tr>
                                         <td><strong>Breakdown Tickets</strong></td>
-                                        <td>✅ View All</td>
-                                        <td>✅ Create/Approve</td>
-                                        <td>👁️ View Only</td>
-                                        <td>✅ Create/Update</td>
-                                        <td>✅ Create Only</td>
+                                        <td><i class="fas fa-check-circle"></i> View All</td>
+                                        <td><i class="fas fa-check-circle"></i> Create/Approve</td>
+                                        <td><i class="fas fa-eye"></i> View Only</td>
+                                        <td><i class="fas fa-check-circle"></i> Create/Update</td>
+                                        <td><i class="fas fa-check-circle"></i> Create Only</td>
                                         <td><button class="btn btn-secondary btn-small" onclick="editPermission('breakdown-tickets')">Edit</button></td>
                                     </tr>
                                     <tr>
                                         <td><strong>Inventory Management</strong></td>
-                                        <td>✅ View All</td>
-                                        <td>👁️ View Only</td>
-                                        <td>✅ Full Access</td>
-                                        <td>✅ Request Parts</td>
-                                        <td>❌ No Access</td>
+                                        <td><i class="fas fa-check-circle"></i> View All</td>
+                                        <td><i class="fas fa-eye"></i> View Only</td>
+                                        <td><i class="fas fa-check-circle"></i> Full Access</td>
+                                        <td><i class="fas fa-check-circle"></i> Request Parts</td>
+                                        <td><i class="fas fa-times-circle"></i> No Access</td>
                                         <td><button class="btn btn-secondary btn-small" onclick="editPermission('inventory')">Edit</button></td>
                                     </tr>
                                     <tr>
                                         <td><strong>Service Intervals</strong></td>
-                                        <td>✅ Configure</td>
-                                        <td>👁️ View Only</td>
-                                        <td>❌ No Access</td>
-                                        <td>👁️ View Only</td>
-                                        <td>👁️ View Only</td>
+                                        <td><i class="fas fa-check-circle"></i> Configure</td>
+                                        <td><i class="fas fa-eye"></i> View Only</td>
+                                        <td><i class="fas fa-times-circle"></i> No Access</td>
+                                        <td><i class="fas fa-eye"></i> View Only</td>
+                                        <td><i class="fas fa-eye"></i> View Only</td>
                                         <td><button class="btn btn-secondary btn-small" onclick="editPermission('service-intervals')">Edit</button></td>
                                     </tr>
                                     <tr>
                                         <td><strong>Petty Cash Management</strong></td>
-                                        <td>✅ Configure</td>
-                                        <td>✅ Approve/View</td>
-                                        <td>❌ No Access</td>
-                                        <td>✅ Request</td>
-                                        <td>❌ No Access</td>
+                                        <td><i class="fas fa-check-circle"></i> Configure</td>
+                                        <td><i class="fas fa-check-circle"></i> Approve/View</td>
+                                        <td><i class="fas fa-times-circle"></i> No Access</td>
+                                        <td><i class="fas fa-check-circle"></i> Request</td>
+                                        <td><i class="fas fa-times-circle"></i> No Access</td>
                                         <td><button class="btn btn-secondary btn-small" onclick="editPermission('petty-cash')">Edit</button></td>
                                     </tr>
                                     <tr>
                                         <td><strong>Reports & Analytics</strong></td>
-                                        <td>✅ All Reports</td>
-                                        <td>✅ Department Reports</td>
-                                        <td>✅ Inventory Reports</td>
-                                        <td>👁️ Basic Reports</td>
-                                        <td>👁️ Own Reports</td>
+                                        <td><i class="fas fa-check-circle"></i> All Reports</td>
+                                        <td><i class="fas fa-check-circle"></i> Department Reports</td>
+                                        <td><i class="fas fa-check-circle"></i> Inventory Reports</td>
+                                        <td><i class="fas fa-eye"></i> Basic Reports</td>
+                                        <td><i class="fas fa-eye"></i> Own Reports</td>
                                         <td><button class="btn btn-secondary btn-small" onclick="editPermission('reports')">Edit</button></td>
                                     </tr>
                                 </tbody>
@@ -1133,7 +1133,7 @@
 
                     <!-- Audit Trail -->
                     <div class="card">
-                        <div class="card-header">📋 Permission Change Audit Trail</div>
+                        <div class="card-header"><i class="fas fa-clipboard-list"></i> Permission Change Audit Trail</div>
                         <div class="log-entry">
                             <div class="log-timestamp">Oct 18, 2025 - 10:30 AM</div>
                             <div><strong>Action:</strong> Permission Updated - Inventory Management</div>
@@ -1158,13 +1158,13 @@
 
                     <div style="margin-bottom: 20px;">
                         <button class="btn btn-primary" onclick="openModal('addServiceIntervalModal')">
-                            ➕ Add Service Interval
+                            <i class="fas fa-plus"></i> Add Service Interval
                         </button>
                     </div>
 
                     <!-- Service Intervals Table -->
                     <div class="card">
-                        <div class="card-header">⚙️ Service Interval Settings</div>
+                        <div class="card-header"><i class="fas fa-cog"></i> Service Interval Settings</div>
                         <table class="table">
                             <thead>
                                 <tr>
@@ -1227,9 +1227,9 @@
 
                     <!-- Overdue Services Alert -->
                     <div class="card">
-                        <div class="card-header">🚨 Overdue Service Alerts</div>
+                        <div class="card-header"><i class="fas fa-exclamation-circle"></i> Overdue Service Alerts</div>
                         <div class="notification-item danger">
-                            <span class="notification-icon">⚠️</span>
+                            <span class="notification-icon"><i class="fas fa-exclamation-triangle"></i></span>
                             <div>
                                 <strong>Vehicle #045:</strong> Oil change overdue by 15 days (Last service: Sep 20, 2025)
                                 <div style="margin-top: 5px;">
@@ -1239,7 +1239,7 @@
                             </div>
                         </div>
                         <div class="notification-item warning">
-                            <span class="notification-icon">⏰</span>
+                            <span class="notification-icon"><i class="fas fa-clock"></i></span>
                             <div>
                                 <strong>Machine #078:</strong> Hydraulic check due in 3 days (Last service: Jul 18, 2025)
                                 <div style="margin-top: 5px;">
@@ -1260,15 +1260,15 @@
 
                     <div style="margin-bottom: 20px;">
                         <button class="btn btn-primary" onclick="openModal('setPettyCashLimitModal')">
-                            💰 Set New Limit
+                            <i class="fas fa-money-bill-wave"></i> Set New Limit
                         </button>
                     </div>
 
                     <!-- Global Settings -->
                     <div class="card">
-                        <div class="card-header">⚙️ Global Petty Cash Settings</div>
+                        <div class="card-header"><i class="fas fa-cog"></i> Global Petty Cash Settings</div>
                         <div class="form-section">
-                            <h5>💵 Default Allowances</h5>
+                            <h5><i class="fas fa-dollar-sign"></i> Default Allowances</h5>
                             <table class="table">
                                 <thead>
                                     <tr>
@@ -1314,7 +1314,7 @@
 
                     <!-- Current Usage -->
                     <div class="card">
-                        <div class="card-header">📊 Current Month Usage Overview</div>
+                        <div class="card-header"><i class="fas fa-chart-bar"></i> Current Month Usage Overview</div>
                         <div class="grid">
                             <div class="stat-card">
                                 <div class="stat-number" style="color: var(--royal-blue);">$12,450</div>
@@ -1333,7 +1333,7 @@
 
                     <!-- Individual Allowances -->
                     <div class="card">
-                        <div class="card-header">👤 Individual User Allowances</div>
+                        <div class="card-header"><i class="fas fa-user"></i> Individual User Allowances</div>
                         <div class="search-bar">
                             <input type="text" class="search-input" placeholder="Search by employee name or ID..." id="pettyCashUserSearch">
                         </div>
@@ -1385,13 +1385,13 @@
 
                     <div style="margin-bottom: 20px;">
                         <button class="btn btn-primary" onclick="openModal('createTemplateModal')">
-                            ➕ Create New Template
+                            <i class="fas fa-plus"></i> Create New Template
                         </button>
                     </div>
 
                     <!-- Template List -->
                     <div class="card">
-                        <div class="card-header">📧 Email Templates</div>
+                        <div class="card-header"><i class="fas fa-envelope"></i> Email Templates</div>
                         <div class="user-item">
                             <div class="user-details">
                                 <strong>Breakdown Alert Notification</strong>
@@ -1471,7 +1471,7 @@
 
                     <!-- SMS Templates -->
                     <div class="card">
-                        <div class="card-header">📱 SMS Templates</div>
+                        <div class="card-header"><i class="fas fa-mobile-alt"></i> SMS Templates</div>
                         <div class="user-item">
                             <div class="user-details">
                                 <strong>Breakdown Alert SMS</strong>
@@ -1517,10 +1517,10 @@
 
                     <div style="margin-bottom: 20px;">
                         <button class="btn btn-secondary" onclick="exportLogs()">
-                            📥 Export Logs
+                            <i class="fas fa-download"></i> Export Logs
                         </button>
                         <button class="btn btn-danger" onclick="confirmClearLogs()">
-                            🗑️ Clear Old Logs
+                            <i class="fas fa-trash"></i> Clear Old Logs
                         </button>
                     </div>
 
@@ -1545,7 +1545,7 @@
 
                     <!-- System Logs Display -->
                     <div class="card">
-                        <div class="card-header">📋 System Event Logs</div>
+                        <div class="card-header"><i class="fas fa-clipboard-list"></i> System Event Logs</div>
                         
                         <div class="log-entry">
                             <div class="log-timestamp">Oct 18, 2025 - 11:45 AM</div>
@@ -1674,7 +1674,7 @@
 
                     <!-- Activity Timeline -->
                     <div class="card">
-                        <div class="card-header">📊 Activity Summary (Last 24 Hours)</div>
+                        <div class="card-header"><i class="fas fa-chart-bar"></i> Activity Summary (Last 24 Hours)</div>
                         <div class="grid">
                             <div class="stat-card">
                                 <div class="stat-number" style="color: var(--kelly-green);">38</div>
@@ -1693,7 +1693,7 @@
 
                     <!-- User Activity Details -->
                     <div class="card">
-                        <div class="card-header">📈 Detailed User Activity</div>
+                        <div class="card-header"><i class="fas fa-chart-line"></i> Detailed User Activity</div>
                         <div class="search-bar">
                             <input type="text" class="search-input" placeholder="Search by user name or employee ID..." id="activityUserSearch">
                             <select class="filter-select" id="activityDateFilter">
@@ -1759,9 +1759,9 @@
 
                     <!-- Inactivity Report -->
                     <div class="card">
-                        <div class="card-header">⚠️ User Inactivity Report</div>
+                        <div class="card-header"><i class="fas fa-exclamation-triangle"></i> User Inactivity Report</div>
                         <div class="notification-item warning">
-                            <span class="notification-icon">⏰</span>
+                            <span class="notification-icon"><i class="fas fa-clock"></i></span>
                             <div>
                                 <strong>No Recent Activity:</strong> Robert Williams (EMP-004) - Last login: 8 days ago
                                 <div style="margin-top: 5px;">
@@ -1794,7 +1794,7 @@
             <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Create New User Account</h2>
             <form id="createUserForm">
                 <div class="form-section">
-                    <h5>👤 Personal Information</h5>
+                    <h5><i class="fas fa-user"></i> Personal Information</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Full Name</label>
@@ -1818,7 +1818,7 @@
                 </div>
 
                 <div class="form-section">
-                    <h5>🏢 Work Information</h5>
+                    <h5><i class="fas fa-building"></i> Work Information</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Role</label>
@@ -1848,7 +1848,7 @@
                 </div>
 
                 <div class="form-section">
-                    <h5>🔐 Account Settings</h5>
+                    <h5><i class="fas fa-lock"></i> Account Settings</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Temporary Password</label>
@@ -1884,7 +1884,7 @@
             <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Reset User Password</h2>
             <form id="resetPasswordForm">
                 <div class="form-section">
-                    <h5>🔑 Password Reset</h5>
+                    <h5><i class="fas fa-key"></i> Password Reset</h5>
                     <div class="form-group">
                         <label class="form-label">Select User</label>
                         <select class="form-select" required>
@@ -1920,7 +1920,7 @@
             <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Add Service Interval</h2>
             <form id="addServiceIntervalForm">
                 <div class="form-section">
-                    <h5>⚙️ Service Configuration</h5>
+                    <h5><i class="fas fa-cog"></i> Service Configuration</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Vehicle/Machine Type</label>
@@ -1965,7 +1965,7 @@
             <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Set Petty Cash Limit</h2>
             <form id="setPettyCashLimitForm">
                 <div class="form-section">
-                    <h5>💰 Allowance Configuration</h5>
+                    <h5><i class="fas fa-money-bill-wave"></i> Allowance Configuration</h5>
                     <div class="form-group">
                         <label class="form-label">Role</label>
                         <select class="form-select" required>
@@ -2006,7 +2006,7 @@
             <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Create Notification Template</h2>
             <form id="createTemplateForm">
                 <div class="form-section">
-                    <h5>📧 Template Information</h5>
+                    <h5><i class="fas fa-envelope"></i> Template Information</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Template Name</label>
@@ -2035,7 +2035,7 @@
                 </div>
 
                 <div class="form-section">
-                    <h5>✉️ Email Content (if Email type)</h5>
+                    <h5><i class="fas fa-envelope-open-text"></i> Email Content (if Email type)</h5>
                     <div class="form-group">
                         <label class="form-label">Subject Line</label>
                         <input type="text" class="form-input" placeholder="Use variables like {vehicle_id}, {ticket_id}">
@@ -2047,7 +2047,7 @@
                 </div>
 
                 <div class="form-section">
-                    <h5>📱 SMS Content (if SMS type)</h5>
+                    <h5><i class="fas fa-mobile-alt"></i> SMS Content (if SMS type)</h5>
                     <div class="form-group">
                         <label class="form-label">Message (160 characters max)</label>
                         <textarea class="form-textarea" rows="3" placeholder="Enter SMS template" maxlength="160"></textarea>
@@ -2067,7 +2067,7 @@
             <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Create New Role</h2>
             <form id="createRoleForm">
                 <div class="form-section">
-                    <h5>🔐 Role Information</h5>
+                    <h5><i class="fas fa-lock"></i> Role Information</h5>
                     <div class="form-group">
                         <label class="form-label">Role Name</label>
                         <input type="text" class="form-input" placeholder="e.g., Fleet Manager" required>
@@ -2079,7 +2079,7 @@
                 </div>
 
                 <div class="form-section">
-                    <h5>✅ Permissions</h5>
+                    <h5><i class="fas fa-check-circle"></i> Permissions</h5>
                     <div class="form-check">
                         <input type="checkbox" id="perm-user-management">
                         <label for="perm-user-management">User Management</label>
@@ -2221,7 +2221,7 @@
             title.textContent = `User Details - ${user.name}`;
             content.innerHTML = `
                 <div class="form-section">
-                    <h5>👤 Personal Information</h5>
+                    <h5><i class="fas fa-user"></i> Personal Information</h5>
                     <div class="form-grid">
                         <div><strong>Full Name:</strong> ${user.name}</div>
                         <div><strong>Employee ID:</strong> ${user.empId}</div>
@@ -2230,7 +2230,7 @@
                     </div>
                 </div>
                 <div class="form-section">
-                    <h5>🏢 Work Information</h5>
+                    <h5><i class="fas fa-building"></i> Work Information</h5>
                     <div class="form-grid">
                         <div><strong>Role:</strong> ${user.role}</div>
                         <div><strong>Department:</strong> ${user.department}</div>
@@ -2239,14 +2239,14 @@
                     </div>
                 </div>
                 <div class="form-section">
-                    <h5>📊 Activity Statistics</h5>
+                    <h5><i class="fas fa-chart-bar"></i> Activity Statistics</h5>
                     <div class="form-grid">
                         <div><strong>Last Login:</strong> ${user.lastLogin}</div>
                         <div><strong>Total Logins:</strong> ${user.loginCount}</div>
                     </div>
                 </div>
                 <div class="form-section">
-                    <h5>🔐 Permissions</h5>
+                    <h5><i class="fas fa-lock"></i> Permissions</h5>
                     <div>${user.permissions.map(p => `• ${p}`).join('<br>')}</div>
                 </div>
             `;
