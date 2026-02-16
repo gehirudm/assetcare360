@@ -10,7 +10,7 @@ const CONFIG = {
     
     // API Base URL - Update this based on your environment
     API_BASE_URL: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:8001/api'
+        ? 'http://localhost:8000/api'
         : 'https://api.assetcare360.com/api',
     
     // Storage Keys

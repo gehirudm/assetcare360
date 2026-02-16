@@ -114,7 +114,7 @@ function displayTicketDetails(ticket) {
     document.getElementById('mainContent').style.display = 'block';
 
     // Ticket ID Badge
-    const ticketIdFormatted = `TKT-${String(ticket.id).padStart(3, '0')}`;
+    const ticketIdFormatted = ticket.ticket_id || ('MBD-' + String(ticket.id).padStart(3, '0'));
     document.getElementById('ticketIdBadge').textContent = ticketIdFormatted;
     document.getElementById('ticketId').textContent = ticketIdFormatted;
 
@@ -263,7 +263,7 @@ async function loadPriorTickets(machineId) {
                 }
                 
                 priorTicketsList.innerHTML = priorTickets.map(ticket => {
-                    const ticketIdFormatted = `TKT-${String(ticket.id).padStart(3, '0')}`;
+                    const ticketIdFormatted = ticket.ticket_id || ('MBD-' + String(ticket.id).padStart(3, '0'));
                     const status = (ticket.status || 'New').toLowerCase().replace(/\s+/g, '-');
                     const priority = (ticket.priority || 'Medium').toLowerCase();
 
@@ -389,7 +389,7 @@ function renderAllTickets() {
     const currentTicketId = ticketData.id;
     
     content.innerHTML = allMachineTickets.map(ticket => {
-        const ticketIdFormatted = `TKT-${String(ticket.id).padStart(3, '0')}`;
+        const ticketIdFormatted = ticket.ticket_id || ('MBD-' + String(ticket.id).padStart(3, '0'));
         const status = (ticket.status || 'New').toLowerCase().replace(/\s+/g, '-');
         const priority = (ticket.priority || 'Medium').toLowerCase();
         const isCurrent = ticket.id === currentTicketId;
