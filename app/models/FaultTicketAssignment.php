@@ -50,6 +50,7 @@ class FaultTicketAssignment extends BaseModel {
     
     /**
      * Assign technicians to a fault ticket
+     * Returns array of ['count' => int, 'assignment_ids' => array]
      */
     public function assignTechnicians($faultTicketId, $technicianIds, $assignedBy, $expectedCompletionDate = null, $notes = null) {
         try {
@@ -66,6 +67,8 @@ class FaultTicketAssignment extends BaseModel {
             }
             
             $assignedCount = 0;
+            $assignmentIds = [];
+            
             foreach ($technicianIds as $technicianId) {
                 // Check if already assigned and active
                 $existing = $this->getActiveAssignment($faultTicketId, $technicianId);
@@ -79,6 +82,7 @@ class FaultTicketAssignment extends BaseModel {
                             WHERE id = ?";
                     $stmt = $this->db->prepare($sql);
                     $stmt->execute([$expectedCompletionDate, $notes, $existing['id']]);
+                    $assignmentIds[] = ['id' => $existing['id'], 'technician_id' => $technicianId, 'is_new' => false];
                 } else {
                     // Create new assignment
                     $sql = "INSERT INTO `{$this->table}` 
@@ -86,13 +90,14 @@ class FaultTicketAssignment extends BaseModel {
                             VALUES (?, ?, ?, ?, ?)";
                     $stmt = $this->db->prepare($sql);
                     $stmt->execute([$faultTicketId, $technicianId, $assignedBy, $expectedCompletionDate, $notes]);
+                    $assignmentIds[] = ['id' => $this->db->lastInsertId(), 'technician_id' => $technicianId, 'is_new' => true];
                 }
                 
                 $assignedCount++;
             }
             
             $this->db->commit();
-            return $assignedCount;
+            return ['count' => $assignedCount, 'assignment_ids' => $assignmentIds];
             
         } catch (\Exception $e) {
             $this->db->rollBack();

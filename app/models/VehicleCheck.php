@@ -12,25 +12,31 @@ class VehicleCheck {
      * Get all vehicle checks with optional filtering
      */
     public function getAllChecks($filters = []) {
-        $query = "SELECT * FROM {$this->table} WHERE 1=1";
+        $query = "SELECT vc.*, 
+                         u.full_name as driver_name,
+                         r.full_name as reviewed_by_name
+                  FROM {$this->table} vc
+                  LEFT JOIN users u ON vc.driver_id = u.id
+                  LEFT JOIN users r ON vc.reviewed_by = r.id
+                  WHERE 1=1";
         $params = [];
         
         if (!empty($filters['vehicle_registration'])) {
-            $query .= " AND vehicle_registration = :vehicle_registration";
+            $query .= " AND vc.vehicle_registration = :vehicle_registration";
             $params[':vehicle_registration'] = $filters['vehicle_registration'];
         }
         
         if (!empty($filters['status'])) {
-            $query .= " AND status = :status";
+            $query .= " AND vc.status = :status";
             $params[':status'] = $filters['status'];
         }
         
         if (!empty($filters['driver_id'])) {
-            $query .= " AND driver_id = :driver_id";
+            $query .= " AND vc.driver_id = :driver_id";
             $params[':driver_id'] = $filters['driver_id'];
         }
         
-        $query .= " ORDER BY week_end_date DESC, id DESC";
+        $query .= " ORDER BY vc.week_end_date DESC, vc.id DESC";
         
         $stmt = $this->db->prepare($query);
         $stmt->execute($params);
@@ -41,7 +47,13 @@ class VehicleCheck {
      * Get a specific check by check_id
      */
     public function getCheckByCheckId($checkId) {
-        $query = "SELECT * FROM {$this->table} WHERE check_id = :check_id LIMIT 1";
+        $query = "SELECT vc.*, 
+                         u.full_name as driver_name,
+                         r.full_name as reviewed_by_name
+                  FROM {$this->table} vc
+                  LEFT JOIN users u ON vc.driver_id = u.id
+                  LEFT JOIN users r ON vc.reviewed_by = r.id
+                  WHERE vc.check_id = :check_id LIMIT 1";
         $stmt = $this->db->prepare($query);
         $stmt->execute([':check_id' => $checkId]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -115,8 +127,8 @@ class VehicleCheck {
      */
     public function getNextCheckId() {
         $query = "SELECT check_id FROM {$this->table} 
-                  WHERE check_id LIKE 'CHK-%' 
-                  ORDER BY CAST(SUBSTRING(check_id, 5) AS UNSIGNED) DESC 
+                  WHERE check_id LIKE 'VCHK-%' 
+                  ORDER BY CAST(SUBSTRING(check_id, 6) AS UNSIGNED) DESC 
                   LIMIT 1";
         
         $stmt = $this->db->prepare($query);
@@ -124,13 +136,13 @@ class VehicleCheck {
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if ($result) {
-            $lastNumber = intval(substr($result['check_id'], 4));
+            $lastNumber = intval(substr($result['check_id'], 5));
             $nextNumber = $lastNumber + 1;
         } else {
             $nextNumber = 1;
         }
         
-        return 'CHK-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        return 'VCHK-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
     }
     
     /**

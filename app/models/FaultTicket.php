@@ -20,6 +20,7 @@ class FaultTicket extends BaseModel {
     const STATUS_ASSIGNED = 'Assigned';
     const STATUS_WAITING_BUDGET = 'Waiting for Budget Approval';
     const STATUS_WAITING_PARTS = 'Waiting for Spare Parts';
+    const STATUS_PARTS_APPROVED = 'Parts Approved';
     const STATUS_IN_PROGRESS = 'In Progress';
     const STATUS_RESOLVED = 'Resolved';
     const STATUS_CLOSED = 'Closed';
@@ -31,7 +32,9 @@ class FaultTicket extends BaseModel {
         return [
             'id' => 'INT AUTO_INCREMENT PRIMARY KEY',
             'ticket_id' => 'VARCHAR(20) NOT NULL UNIQUE',
-            'machine_id' => 'INT NOT NULL',
+            'machine_id' => 'INT NULL',
+            'breakdown_report_id' => 'VARCHAR(50) NULL',
+            'breakdown_type' => 'VARCHAR(50) NULL',
             'reported_by' => 'INT NOT NULL',
             'description' => 'TEXT NOT NULL',
             'priority' => "ENUM('Low', 'Medium', 'High', 'Critical') NOT NULL DEFAULT 'Medium'",
@@ -48,6 +51,7 @@ class FaultTicket extends BaseModel {
     protected function getIndexes() {
         return [
             'idx_machine_id' => 'machine_id',
+            'idx_breakdown_report_id' => 'breakdown_report_id',
             'idx_reported_by' => 'reported_by',
             'idx_status' => 'status',
             'idx_priority' => 'priority',
@@ -59,13 +63,17 @@ class FaultTicket extends BaseModel {
      * Get all fault tickets with filters
      */
     public function getAllTickets($filters = []) {
-        $sql = "SELECT ft.id, ft.ticket_id, ft.machine_id, ft.reported_by, 
+        $sql = "SELECT ft.id, ft.ticket_id, ft.machine_id, 
+                       ft.breakdown_report_id, ft.breakdown_type,
+                       ft.reported_by, 
                        ft.description, ft.priority, ft.location, ft.status,
+                       ft.resolution_notes, ft.resolved_at,
                        ft.created_at, ft.updated_at,
                        m.model_number as machine_model_number,
                        m.machine_name as machine_name,
                        u.employee_id as reporter_employee_id,
-                       u.full_name as reporter_full_name
+                       u.full_name as reporter_full_name,
+                       u.role as reporter_role
                 FROM `{$this->table}` ft
                 LEFT JOIN machines m ON ft.machine_id = m.id
                 LEFT JOIN users u ON ft.reported_by = u.id
@@ -103,13 +111,16 @@ class FaultTicket extends BaseModel {
         $stmt->execute($params);
         $tickets = $stmt->fetchAll();
         
-        // Get images for each ticket
+        // Get images and assignments for each ticket
         if ($tickets) {
             require_once __DIR__ . '/FaultTicketImage.php';
             $imageModel = new FaultTicketImage();
             
             foreach ($tickets as &$ticket) {
                 $ticket['images'] = $imageModel->getImagesByTicketId($ticket['id']);
+                
+                // Get assignments for this ticket
+                $ticket['assignments'] = $this->getAssignmentsByTicketId($ticket['id']);
             }
             unset($ticket); // Break reference
         }
@@ -118,16 +129,37 @@ class FaultTicket extends BaseModel {
     }
     
     /**
+     * Get assignments for a ticket
+     */
+    private function getAssignmentsByTicketId($ticketId) {
+        $sql = "SELECT fta.*, 
+                       u.full_name as technician_name,
+                       u.employee_id as technician_employee_id
+                FROM fault_ticket_assignments fta
+                LEFT JOIN users u ON fta.assigned_to = u.id
+                WHERE fta.fault_ticket_id = ?
+                ORDER BY fta.assigned_at DESC";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$ticketId]);
+        return $stmt->fetchAll();
+    }
+    
+    /**
      * Get fault ticket by ID with related data
      */
     public function getTicketById($id) {
-        $sql = "SELECT ft.id, ft.ticket_id, ft.machine_id, ft.reported_by, 
+        $sql = "SELECT ft.id, ft.ticket_id, ft.machine_id, 
+                       ft.breakdown_report_id, ft.breakdown_type,
+                       ft.reported_by, 
                        ft.description, ft.priority, ft.location, ft.status,
+                       ft.resolution_notes, ft.resolved_at,
                        ft.created_at, ft.updated_at,
                        m.model_number as machine_model_number,
                        m.machine_name as machine_name,
                        u.employee_id as reporter_employee_id,
-                       u.full_name as reporter_full_name
+                       u.full_name as reporter_full_name,
+                       u.role as reporter_role
                 FROM `{$this->table}` ft
                 LEFT JOIN machines m ON ft.machine_id = m.id
                 LEFT JOIN users u ON ft.reported_by = u.id
@@ -142,6 +174,9 @@ class FaultTicket extends BaseModel {
             require_once __DIR__ . '/FaultTicketImage.php';
             $imageModel = new FaultTicketImage();
             $ticket['images'] = $imageModel->getImagesByTicketId($id);
+            
+            // Get assignments
+            $ticket['assignments'] = $this->getAssignmentsByTicketId($id);
         }
         
         return $ticket;
@@ -151,18 +186,31 @@ class FaultTicket extends BaseModel {
      * Create a new fault ticket
      */
     public function createTicket($data) {
-        // Generate next ticket_id
-        $ticketId = $this->generateNextTicketId();
+        // Determine ticket prefix based on breakdown type
+        // MBD = Machine Breakdown, VBD = Vehicle Breakdown, RBD = Route Breakdown
+        $prefix = 'MBD'; // Default for machinery
+        
+        if (!empty($data['breakdown_type'])) {
+            if ($data['breakdown_type'] === 'vehicle_breakdown') {
+                $prefix = 'VBD';
+            } elseif ($data['breakdown_type'] === 'route_breakdown') {
+                $prefix = 'RBD';
+            }
+        }
+        
+        $ticketId = $this->generateNextTicketId($prefix);
         
         $sql = "INSERT INTO `{$this->table}` 
-                (ticket_id, machine_id, reported_by, description, priority, location, status) 
+                (ticket_id, machine_id, breakdown_report_id, breakdown_type, reported_by, description, priority, location, status) 
                 VALUES 
-                (?, ?, ?, ?, ?, ?, ?)";
+                (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $this->db->prepare($sql);
         $result = $stmt->execute([
             $ticketId,
-            $data['machine_id'],
+            $data['machine_id'] ?? null,
+            $data['breakdown_report_id'] ?? null,
+            $data['breakdown_type'] ?? null,
             $data['reported_by'],
             $data['description'],
             $data['priority'],
@@ -174,26 +222,26 @@ class FaultTicket extends BaseModel {
     }
     
     /**
-     * Generate next ticket ID in format TKT-001
+     * Generate next ticket ID in format VBD-001 (vehicle) or MBD-001 (machine)
      */
-    private function generateNextTicketId() {
+    private function generateNextTicketId($prefix = 'MBD') {
         $sql = "SELECT ticket_id FROM `{$this->table}` 
-                WHERE ticket_id LIKE 'TKT-%' 
-                ORDER BY id DESC LIMIT 1";
+                WHERE ticket_id LIKE ? 
+                ORDER BY CAST(SUBSTRING(ticket_id, 5) AS UNSIGNED) DESC LIMIT 1";
         
         $stmt = $this->db->prepare($sql);
-        $stmt->execute();
+        $stmt->execute([$prefix . '-%']);
         $lastTicket = $stmt->fetch();
         
         if ($lastTicket && $lastTicket['ticket_id']) {
-            // Extract number from TKT-XXX format
-            $lastNumber = intval(substr($lastTicket['ticket_id'], 4));
+            // Extract number from PREFIX-XXX format
+            $lastNumber = intval(substr($lastTicket['ticket_id'], strlen($prefix) + 1));
             $nextNumber = $lastNumber + 1;
         } else {
             $nextNumber = 1;
         }
         
-        return 'TKT-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        return $prefix . '-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
     }
     
     /**
@@ -256,6 +304,10 @@ class FaultTicket extends BaseModel {
     public static function getValidStatuses() {
         return [
             self::STATUS_OPEN,
+            self::STATUS_ASSIGNED,
+            self::STATUS_WAITING_BUDGET,
+            self::STATUS_WAITING_PARTS,
+            self::STATUS_PARTS_APPROVED,
             self::STATUS_IN_PROGRESS,
             self::STATUS_RESOLVED,
             self::STATUS_CLOSED
