@@ -222,6 +222,41 @@ class FaultTicketController {
     }
     
     /**
+     * Mark fault ticket as completed/resolved
+     * POST /fault-tickets/:id/complete
+     */
+    public function complete() {
+        try {
+            $id = $_GET['id'] ?? null;
+            
+            if (!$id) {
+                Response::error('Fault ticket ID is required', 400);
+                return;
+            }
+            
+            $user = $this->getAuthenticatedUser();
+            if (!$user) {
+                Response::error('Unauthorized', 401);
+                return;
+            }
+            
+            $data = json_decode(file_get_contents('php://input'), true) ?? [];
+            
+            $result = $this->faultTicketService->completeTicket($id, $data, $user);
+            
+            if (!$result['success']) {
+                Response::error($result['message'] ?? 'Failed to complete ticket', 400);
+                return;
+            }
+            
+            Response::success(null, $result['message']);
+            
+        } catch (\Exception $e) {
+            Response::error('Error completing fault ticket: ' . $e->getMessage(), 500);
+        }
+    }
+    
+    /**
      * Parse multipart form data for PUT/PATCH requests
      * PHP only parses multipart data for POST requests by default
      */

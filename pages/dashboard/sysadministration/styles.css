@@ -1334,3 +1334,121 @@ body {
         flex-direction: column;
     }
 }
+
+/* ==================== INVENTORY ITEM STYLES ==================== */
+
+.inventory-list {
+    padding: 0;
+}
+
+.inventory-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.inventory-item:hover {
+    box-shadow: var(--shadow);
+    transform: translateY(-1px);
+    z-index: 10;
+}
+
+.item-details {
+    flex: 1;
+}
+
+.item-details strong {
+    color: var(--text-700);
+    display: block;
+    margin-bottom: 4px;
+    font-size: 15px;
+}
+
+.item-meta {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 2px;
+}
+
+.item-description {
+    color: var(--text-700);
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.item-actions {
+    text-align: right;
+    white-space: nowrap;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Dropdown Container and Menu */
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid var(--stone-200);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 180px;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.dropdown-item {
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-700);
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.dropdown-item:hover {
+    background: var(--stone-100);
+}
+
+.dropdown-item.danger {
+    color: var(--danger);
+}
+
+.dropdown-item.danger:hover {
+    background: #fee;
+}
+
+.dropdown-item i {
+    width: 16px;
+}

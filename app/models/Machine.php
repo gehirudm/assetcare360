@@ -15,7 +15,8 @@ class Machine extends BaseModel {
     protected function getSchema() {
         return [
             'id' => 'INT AUTO_INCREMENT PRIMARY KEY',
-            'serial_number' => 'VARCHAR(100) UNIQUE NOT NULL',
+            'machine_id' => 'VARCHAR(50) UNIQUE NOT NULL',
+            'serial_number' => 'VARCHAR(100) NULL',
             'model_number' => 'VARCHAR(100) NOT NULL',
             'machine_name' => 'VARCHAR(255) NOT NULL',
             'location' => 'VARCHAR(255) NOT NULL',
@@ -48,9 +49,38 @@ class Machine extends BaseModel {
     }
     
     /**
+     * Generate next machine ID in format MCH-001, MCH-002, etc.
+     */
+    public function generateMachineId() {
+        $sql = "SELECT machine_id FROM `{$this->table}` ORDER BY id DESC LIMIT 1";
+        $stmt = $this->db->query($sql);
+        $lastMachine = $stmt->fetch();
+        
+        if (!$lastMachine || empty($lastMachine['machine_id'])) {
+            return 'MCH-001';
+        }
+        
+        // Extract the numeric part from MCH-XXX format
+        $lastId = $lastMachine['machine_id'];
+        preg_match('/MCH-(\d+)/', $lastId, $matches);
+        
+        if (!empty($matches[1])) {
+            $nextNumber = intval($matches[1]) + 1;
+            return 'MCH-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        }
+        
+        return 'MCH-001';
+    }
+    
+    /**
      * Create machine with components
      */
     public function createMachine($data) {
+        // Auto-generate machine_id if not provided
+        if (empty($data['machine_id'])) {
+            $data['machine_id'] = $this->generateMachineId();
+        }
+        
         // Convert components array to JSON if provided
         if (isset($data['components']) && is_array($data['components'])) {
             $data['components'] = json_encode($data['components']);
@@ -122,7 +152,7 @@ class Machine extends BaseModel {
         
         // Apply search
         if ($search) {
-            $sql .= " AND (machine_name LIKE ? OR model_number LIKE ? OR serial_number LIKE ? OR location LIKE ?)";
+            $sql .= " AND (machine_name LIKE ? OR model_number LIKE ? OR machine_id LIKE ? OR location LIKE ?)";
             $searchTerm = "%{$search}%";
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -172,7 +202,7 @@ class Machine extends BaseModel {
         }
         
         if ($search) {
-            $sql .= " AND (machine_name LIKE ? OR model_number LIKE ? OR serial_number LIKE ? OR location LIKE ?)";
+            $sql .= " AND (machine_name LIKE ? OR model_number LIKE ? OR machine_id LIKE ? OR location LIKE ?)";
             $searchTerm = "%{$search}%";
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -209,9 +239,19 @@ class Machine extends BaseModel {
     }
     
     /**
+     * Find machine by machine ID
+     */
+    public function findByMachineId($machineId) {
+        return $this->findOne(['machine_id' => $machineId]);
+    }
+    
+    /**
      * Find machine by serial number
      */
     public function findBySerialNumber($serialNumber) {
+        if (empty($serialNumber)) {
+            return null;
+        }
         return $this->findOne(['serial_number' => $serialNumber]);
     }
 }

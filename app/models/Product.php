@@ -3,14 +3,14 @@
 require_once __DIR__ . '/BaseModel.php';
 
 /**
- * Example Product Model
- * Demonstrates how to create a new model with automatic table creation
+ * SparePart Model
+ * Manages spare parts inventory for machines and vehicles
  * 
- * This model will automatically create the 'products' table when first used.
+ * This model uses the 'spareparts' table to store spare parts information.
  * All standard CRUD operations are inherited from BaseModel.
  */
 class Product extends BaseModel {
-    protected $table = 'products';
+    protected $table = 'spareparts';
     
     /**
      * Define table schema
@@ -19,20 +19,23 @@ class Product extends BaseModel {
     protected function getSchema() {
         return [
             'id' => 'INT AUTO_INCREMENT PRIMARY KEY',
-            'sku' => 'VARCHAR(100) UNIQUE NOT NULL',
+            'sparepart_id' => 'VARCHAR(50) UNIQUE NOT NULL',
+            'sku' => 'VARCHAR(100) UNIQUE NULL',
             'name' => 'VARCHAR(255) NOT NULL',
             'description' => 'TEXT NULL',
             'category' => 'VARCHAR(100) NULL',
             'quantity' => 'INT DEFAULT 0',
-            'unit_price' => 'DECIMAL(10,2) NOT NULL',
+            'unit_price' => 'DECIMAL(10,2) DEFAULT 0.00',
             'reorder_level' => 'INT DEFAULT 10',
-            'supplier' => 'VARCHAR(255) NULL',
+            'compatible_machines' => 'JSON NULL',
+            'compatible_vehicles' => 'JSON NULL',
             'location' => 'VARCHAR(255) NULL',
             'is_active' => 'TINYINT(1) DEFAULT 1',
             'created_by' => 'INT NULL',
             'updated_by' => 'INT NULL',
             'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
-            'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
+            'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+            'last_issue_date' => 'DATE NULL'
         ];
     }
     
@@ -45,6 +48,30 @@ class Product extends BaseModel {
             'idx_active' => 'is_active',
             'idx_reorder' => 'quantity, reorder_level'
         ];
+    }
+    
+    /**
+     * Generate next sparepart ID in format SPR-001, SPR-002, etc.
+     */
+    public function generateProductId() {
+        $sql = "SELECT sparepart_id FROM `{$this->table}` ORDER BY id DESC LIMIT 1";
+        $stmt = $this->db->query($sql);
+        $lastProduct = $stmt->fetch();
+        
+        if (!$lastProduct || empty($lastProduct['sparepart_id'])) {
+            return 'SPR-001';
+        }
+        
+        // Extract the numeric part from SPR-XXX format
+        $lastId = $lastProduct['sparepart_id'];
+        preg_match('/SPR-(\\d+)/', $lastId, $matches);
+        
+        if (!empty($matches[1])) {
+            $nextNumber = intval($matches[1]) + 1;
+            return 'SPR-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        }
+        
+        return 'SPR-001';
     }
     
     /**

@@ -242,7 +242,7 @@ body {
 /* Grid and Cards */
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
     margin-bottom: 30px;
 }
@@ -255,6 +255,7 @@ body {
     margin-bottom: 20px;
     box-shadow: var(--shadow);
     transition: all 0.3s ease;
+    overflow: visible;
 }
 
 .card:hover {
@@ -350,6 +351,16 @@ body {
 .status-text.status-rejected {
     background: none;
     color: var(--danger);
+}
+
+.status-resolved, .status-issued {
+    background: #059669;
+    color: #fff;
+}
+
+.status-text.status-resolved, .status-text.status-issued {
+    background: none;
+    color: #059669;
 }
 
 .status-normal {
@@ -517,6 +528,41 @@ body {
     gap: 8px;
 }
 
+.form-section p {
+    margin: 10px 0;
+    padding: 8px 12px;
+    background: white;
+    border-radius: 6px;
+    border-left: 3px solid var(--royal-blue);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.form-section p strong {
+    display: inline-block;
+    min-width: 180px;
+    color: var(--text-900);
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.components-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.component-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    background: var(--royal-blue);
+    color: white;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -647,7 +693,7 @@ body {
     margin-top: 20px;
     background: white;
     border-radius: 10px;
-    overflow: hidden;
+    overflow: visible;
     box-shadow: var(--shadow);
 }
 
@@ -669,6 +715,7 @@ body {
 
 .table td:last-child {
     white-space: nowrap;
+    position: relative;
 }
 
 /* Modal */
@@ -679,7 +726,9 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
     z-index: 1000;
     align-items: center;
     justify-content: center;
@@ -697,14 +746,14 @@ body {
     border-radius: 15px;
     padding: 0;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     position: relative;
 }
 
 .modal-content form {
     padding: 30px;
-    max-height: calc(90vh - 80px);
-    overflow-y: auto;
+    max-height: none;
 }
 
 .close {
@@ -1243,6 +1292,7 @@ body {
     align-items: center;
     gap: 10px;
     color: white;
+    flex: 1;
 }
 
 .modal-header h4 {
@@ -1252,6 +1302,7 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
+    flex: 1;
 }
 
 .btn-close {
@@ -1267,9 +1318,8 @@ body {
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
-    position: relative;
-    right: auto;
-    top: auto;
+    flex-shrink: 0;
+    margin-left: auto;
 }
 
 .btn-close:hover {

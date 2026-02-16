@@ -10,10 +10,16 @@ class UserManagement {
 
     init() {
         // Load users when DOM is ready
-        document.addEventListener('DOMContentLoaded', () => {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                this.setupEventListeners();
+                this.loadUsers();
+            });
+        } else {
+            // DOM already loaded
             this.setupEventListeners();
             this.loadUsers();
-        });
+        }
     }
 
     setupEventListeners() {
@@ -71,52 +77,62 @@ class UserManagement {
 
     renderUsers(users) {
         const userList = document.getElementById('userList');
+        const userCount = document.getElementById('userCount');
+        
         if (!userList) return;
 
         if (users.length === 0) {
             userList.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 20px;">No users found</p>';
+            if (userCount) userCount.textContent = '0 users';
             return;
         }
 
+        // Update user count
+        if (userCount) {
+            userCount.textContent = `${users.length} user${users.length !== 1 ? 's' : ''}`;
+        }
+
         userList.innerHTML = users.map(user => `
-            <div class="user-item" data-role="${user.role}" data-status="${user.is_active ? 'active' : 'inactive'}">
-                <div class="user-details">
-                    <strong>${user.full_name}</strong>
-                    <div class="user-meta">Employee ID: ${user.employee_id}</div>
-                    <div class="user-meta">Email: ${user.email}</div>
-                    <div class="user-meta">Role: ${user.role}</div>
-                    <div class="user-meta">
-                        Status: <span class="status-text ${user.is_active ? 'status-active' : 'status-inactive'}">
-                            ${user.is_active ? 'Active' : 'Inactive'}
-                        </span>
+            <div class="user-item inventory-item" data-role="${user.role}" data-status="${user.is_active ? 'active' : 'inactive'}">
+                <div class="item-details">
+                    <strong><i class="fas fa-user"></i> ${user.full_name}</strong>
+                    <div class="item-meta">
+                        <i class="fas fa-id-badge"></i> ${user.employee_id} | 
+                        <i class="fas fa-user-tag"></i> ${user.role}
+                    </div>
+                    <div class="item-description">
+                        <span class="status-text ${user.is_active ? 'status-active' : 'status-inactive'}">${user.is_active ? 'Active' : 'Inactive'}</span> | 
+                        <i class="fas fa-envelope"></i> ${user.email}
                     </div>
                 </div>
-                <div class="user-actions">
-                    <button class="btn btn-small btn-primary" onclick="userManagement.viewUserDetails(${user.id})">
-                        <i class="fas fa-eye"></i> View
-                    </button>
-                    <div style="position: relative; display: inline-block;">
-                        <button class="btn btn-secondary btn-small" onclick="toggleUserMenu(${user.id}, event)" id="user-menu-btn-${user.id}">
-                            <i class="fas fa-ellipsis-v"></i>
+                <div class="item-actions">
+                    <div class="action-buttons">
+                        <button class="btn btn-small btn-primary" onclick="userManagement.viewUserDetails(${user.id})">
+                            <i class="fas fa-eye"></i> VIEW
                         </button>
-                        <div class="dropdown-menu" id="user-menu-${user.id}" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background: white; border: 1px solid var(--stone-200); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); min-width: 180px; z-index: 1000;">
-                            <button onclick="userManagement.editUser(${user.id}); closeUserMenu(${user.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text-700);" onmouseover="this.style.background='var(--stone-50)'" onmouseout="this.style.background='none'">
-                                <i class="fas fa-edit" style="width: 16px;"></i> Edit
+                        <div class="dropdown-container">
+                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleUserDropdown(event, 'user-${user.id}')">
+                                <i class="fas fa-ellipsis-v"></i>
                             </button>
-                            <button onclick="userManagement.resetPassword(${user.id}); closeUserMenu(${user.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text-700);" onmouseover="this.style.background='var(--stone-50)'" onmouseout="this.style.background='none'">
-                                <i class="fas fa-key" style="width: 16px;"></i> Reset Password
-                            </button>
-                            ${user.is_active ? 
-                                `<button onclick="userManagement.suspendUser(${user.id}); closeUserMenu(${user.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--warn);" onmouseover="this.style.background='var(--stone-50)'" onmouseout="this.style.background='none'">
-                                    <i class="fas fa-ban" style="width: 16px;"></i> Suspend
-                                </button>` :
-                                `<button onclick="userManagement.activateUser(${user.id}); closeUserMenu(${user.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--ok);" onmouseover="this.style.background='var(--stone-50)'" onmouseout="this.style.background='none'">
-                                    <i class="fas fa-check-circle" style="width: 16px;"></i> Activate
-                                </button>`
-                            }
-                            <button onclick="userManagement.deleteUser(${user.id}); closeUserMenu(${user.id})" style="width: 100%; padding: 10px 16px; border: none; background: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--danger);" onmouseover="this.style.background='var(--red-50)'" onmouseout="this.style.background='none'">
-                                <i class="fas fa-trash" style="width: 16px;"></i> Delete
-                            </button>
+                            <div class="dropdown-menu" id="dropdown-user-${user.id}">
+                                <button class="dropdown-item" onclick="userManagement.editUser(${user.id}); closeDropdown('user-${user.id}')">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="dropdown-item" onclick="userManagement.resetPassword(${user.id}); closeDropdown('user-${user.id}')">
+                                    <i class="fas fa-key"></i> Reset Password
+                                </button>
+                                ${user.is_active ? 
+                                    `<button class="dropdown-item" onclick="userManagement.suspendUser(${user.id}); closeDropdown('user-${user.id}')">
+                                        <i class="fas fa-ban"></i> Suspend
+                                    </button>` :
+                                    `<button class="dropdown-item" onclick="userManagement.activateUser(${user.id}); closeDropdown('user-${user.id}')">
+                                        <i class="fas fa-check-circle"></i> Activate
+                                    </button>`
+                                }
+                                <button class="dropdown-item danger" onclick="userManagement.deleteUser(${user.id}); closeDropdown('user-${user.id}')">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -183,7 +199,7 @@ class UserManagement {
                     title.textContent = `User Details - ${user.full_name}`;
                     content.innerHTML = `
                         <div class="form-section">
-                            <h5>👤 Personal Information</h5>
+                            <h5>Personal Information</h5>
                             <div class="form-grid">
                                 <div><strong>Full Name:</strong> ${user.full_name}</div>
                                 <div><strong>Employee ID:</strong> ${user.employee_id}</div>
@@ -192,7 +208,7 @@ class UserManagement {
                             </div>
                         </div>
                         <div class="form-section">
-                            <h5>🏢 Work Information</h5>
+                            <h5>Work Information</h5>
                             <div class="form-grid">
                                 <div><strong>Role:</strong> ${user.role}</div>
                                 <div><strong>Status:</strong> <span class="status-text ${user.is_active ? 'status-active' : 'status-inactive'}">
@@ -203,7 +219,7 @@ class UserManagement {
                             </div>
                         </div>
                         <div class="form-section">
-                            <h5>🔒 Security</h5>
+                            <h5>Security</h5>
                             <div class="form-grid">
                                 <div><strong>Requires Password Change:</strong> ${user.require_password_change ? 'Yes' : 'No'}</div>
                                 <div><strong>Account Status:</strong> ${user.is_active ? 'Active' : 'Suspended'}</div>
@@ -308,7 +324,7 @@ class UserManagement {
                                 Cancel
                             </button>
                             <button type="submit" class="btn btn-primary">
-                                💾 Update User
+                                Update User
                             </button>
                         </div>
                     </form>
@@ -445,7 +461,7 @@ class UserManagement {
                 <div style="text-align: center; margin-bottom: 20px;">
                     <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: var(--danger);"></i>
                 </div>
-                <strong style="color: var(--danger); font-size: 18px; display: block; margin-bottom: 15px;">⚠️ Warning: This action cannot be undone!</strong>
+                <strong style="color: var(--danger); font-size: 18px; display: block; margin-bottom: 15px;">Warning: This action cannot be undone!</strong>
                 Are you sure you want to delete this user?<br>
                 This will permanently remove the user account and all associated data.
             `;
@@ -547,13 +563,39 @@ function closeUserMenu(userId) {
 document.addEventListener('click', function() {
     document.querySelectorAll('.dropdown-menu').forEach(menu => {
         menu.style.display = 'none';
-        // Remove active class from parent user-item
-        const userItem = menu.closest('.user-item');
+        // Remove active class from parent items
+        const userItem = menu.closest('.user-item, .inventory-item');
         if (userItem) {
             userItem.classList.remove('dropdown-active');
         }
     });
 });
+
+// New dropdown functions for inventory-item structure
+function toggleUserDropdown(event, dropdownId) {
+    event.stopPropagation();
+    const fullId = `dropdown-${dropdownId}`;
+    const menu = document.getElementById(fullId);
+    
+    // Close all other dropdowns
+    document.querySelectorAll('.dropdown-menu').forEach(m => {
+        if (m.id !== fullId) {
+            m.style.display = 'none';
+        }
+    });
+    
+    // Toggle current dropdown
+    if (menu) {
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+}
+
+function closeDropdown(dropdownId) {
+    const menu = document.getElementById(`dropdown-${dropdownId}`);
+    if (menu) {
+        menu.style.display = 'none';
+    }
+}
 
 // ==================== TAB-BASED FILTERING ====================
 
@@ -1021,7 +1063,7 @@ function editPermission(module) {
     content.innerHTML = `
         <form id="editPermissionForm">
             <div class="form-section">
-                <h5>🔐 Select Roles with Access</h5>
+                <h5>Select Roles with Access</h5>
                 ${['Admin', 'Maintenance Manager', 'Inventory Manager', 'Technical Officer', 'Supervisor', 'Machinary Operator', 'Driver', 'Auction Officer'].map(role => `
                     <div class="form-check">
                         <input type="checkbox" id="perm-${role.toLowerCase().replace(/\s+/g, '-')}" ${['Admin', 'Supervisor'].includes(role) ? 'checked' : ''}>
@@ -1030,7 +1072,7 @@ function editPermission(module) {
                 `).join('')}
             </div>
             <div class="form-section">
-                <h5>📝 Access Level</h5>
+                <h5>Access Level</h5>
                 <div class="form-group">
                     <label class="form-label">Permission Type</label>
                     <select class="form-select" required>
@@ -1087,7 +1129,7 @@ function editServiceInterval(intervalId) {
     content.innerHTML = `
         <form id="editServiceIntervalForm">
             <div class="form-section">
-                <h5>⚙️ Service Configuration</h5>
+                <h5>Service Configuration</h5>
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Vehicle/Machine Type</label>
@@ -1144,7 +1186,7 @@ function editServiceInterval(intervalId) {
 }
 
 function deleteServiceInterval(intervalId) {
-    if (confirm(`⚠️ Delete Service Interval\n\nAre you sure you want to delete service interval ${intervalId}?\n\nThis action cannot be undone.`)) {
+    if (confirm(`Delete Service Interval\n\nAre you sure you want to delete service interval ${intervalId}?\n\nThis action cannot be undone.`)) {
         console.log(`Deleting service interval: ${intervalId}`);
         
         // Here you would make an API call to delete the interval
@@ -1223,7 +1265,7 @@ function editPettyCashLimit(role) {
     content.innerHTML = `
         <form id="editPettyCashForm">
             <div class="form-section">
-                <h5>💰 Allowance Configuration</h5>
+                <h5>Allowance Configuration</h5>
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Daily Limit ($)</label>
@@ -1275,7 +1317,7 @@ function viewPettyCashHistory(employeeId) {
     
     content.innerHTML = `
         <div class="form-section">
-            <h5>📊 Transaction History</h5>
+            <h5>Transaction History</h5>
             <table class="table" style="margin-top: 15px;">
                 <thead>
                     <tr>
@@ -1340,7 +1382,7 @@ function adjustLimit(employeeId) {
     content.innerHTML = `
         <form id="adjustLimitForm">
             <div class="form-section">
-                <h5>💰 Individual Limit Adjustment</h5>
+                <h5>Individual Limit Adjustment</h5>
                 <div class="form-group">
                     <label class="form-label">Current Monthly Limit</label>
                     <input type="text" class="form-input" value="$2,000" readonly disabled>
@@ -1442,7 +1484,7 @@ function previewTemplate(templateId) {
     
     content.innerHTML = `
         <div class="form-section">
-            <h5>📧 Template Preview</h5>
+            <h5>Template Preview</h5>
             <div style="background: var(--light-bg); padding: 20px; border-radius: 8px; margin-top: 15px;">
                 <div style="margin-bottom: 15px;">
                     <strong>Template ID:</strong> ${templateId}<br>
@@ -1458,7 +1500,7 @@ function previewTemplate(templateId) {
 ${template.body}
                 </div>
                 <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 5px; font-size: 12px;">
-                    <strong>📝 Variables:</strong> {vehicle_id}, {location}, {priority}, {ticket_id}, {recipient_name}, {timestamp}, etc.
+                    <strong>Variables:</strong> {vehicle_id}, {location}, {priority}, {ticket_id}, {recipient_name}, {timestamp}, etc.
                 </div>
             </div>
         </div>
@@ -1510,7 +1552,7 @@ function editTemplate(templateId) {
     content.innerHTML = `
         <form id="editTemplateForm">
             <div class="form-section">
-                <h5>📧 Template Information</h5>
+                <h5>Template Information</h5>
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Template Name</label>
@@ -1538,7 +1580,7 @@ function editTemplate(templateId) {
 
             ${template.type === 'email' ? `
             <div class="form-section">
-                <h5>✉️ Email Content</h5>
+                <h5>Email Content</h5>
                 <div class="form-group">
                     <label class="form-label">Subject Line</label>
                     <input type="text" class="form-input" value="${template.subject || ''}" placeholder="Use variables like {vehicle_id}, {ticket_id}">
@@ -1550,7 +1592,7 @@ function editTemplate(templateId) {
             </div>
             ` : `
             <div class="form-section">
-                <h5>📱 SMS Content</h5>
+                <h5>SMS Content</h5>
                 <div class="form-group">
                     <label class="form-label">Message (160 characters max)</label>
                     <textarea class="form-textarea" rows="3" maxlength="160">${template.body}</textarea>
@@ -1600,7 +1642,7 @@ function testTemplate(templateId) {
     content.innerHTML = `
         <form id="testTemplateForm">
             <div class="form-section">
-                <h5>📧 Send Test Notification</h5>
+                <h5>Send Test Notification</h5>
                 <p style="color: var(--muted); margin-bottom: 15px;">
                     Send a test notification using this template to verify it's working correctly.
                 </p>
@@ -1610,11 +1652,11 @@ function testTemplate(templateId) {
                 </div>
                 <div class="form-group">
                     <label class="form-label">Test Data (JSON format)</label>
-                    <textarea class="form-textarea" rows="6" placeholder='{\n  "vehicle_id": "VEH-001",\n  "location": "Main Depot",\n  "priority": "High",\n  "ticket_id": "TKT-123"\n}'>{
+                    <textarea class="form-textarea" rows="6" placeholder='{\n  "vehicle_id": "VEH-001",\n  "location": "Main Depot",\n  "priority": "High",\n  "ticket_id": "MBD-123"\n}'>{
   "vehicle_id": "VEH-001",
   "location": "Main Depot",
   "priority": "High",
-  "ticket_id": "TKT-123",
+  "ticket_id": "MBD-123",
   "recipient_name": "Test User"
 }</textarea>
                     <small style="color: var(--muted);">Variables will be replaced with these values</small>
@@ -1654,7 +1696,7 @@ function viewUserSession(employeeId) {
     
     content.innerHTML = `
         <div class="form-section">
-            <h5>👤 User Information</h5>
+            <h5>User Information</h5>
             <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-top: 10px;">
                 <strong>Employee ID:</strong> ${employeeId}<br>
                 <strong>Name:</strong> John Smith<br>
@@ -1664,7 +1706,7 @@ function viewUserSession(employeeId) {
         </div>
 
         <div class="form-section">
-            <h5>🔐 Session Details</h5>
+            <h5>Session Details</h5>
             <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-top: 10px;">
                 <strong>Login Time:</strong> Today 9:30 AM<br>
                 <strong>Session Duration:</strong> 2h 15m<br>
@@ -1676,7 +1718,7 @@ function viewUserSession(employeeId) {
         </div>
 
         <div class="form-section">
-            <h5>📊 Session Activity</h5>
+            <h5>Session Activity</h5>
             <table class="table" style="margin-top: 10px;">
                 <thead>
                     <tr>
@@ -1731,7 +1773,7 @@ function viewUserSession(employeeId) {
 }
 
 function forceLogout(employeeId) {
-    if (confirm(`⚠️ Force Logout\n\nAre you sure you want to force logout ${employeeId}?\n\nThis will immediately terminate their active session and they will need to log in again.\n\nThis action should only be used in emergencies or security concerns.`)) {
+    if (confirm(`Force Logout\n\nAre you sure you want to force logout ${employeeId}?\n\nThis will immediately terminate their active session and they will need to log in again.\n\nThis action should only be used in emergencies or security concerns.`)) {
         console.log(`Forcing logout for: ${employeeId}`);
         
         // Here you would make an API call to terminate the session
@@ -1757,7 +1799,7 @@ function viewFullActivityLog(employeeId) {
     
     content.innerHTML = `
         <div class="form-section">
-            <h5>📈 User Activity History</h5>
+            <h5>User Activity History</h5>
             <div style="margin-bottom: 15px;">
                 <strong>Employee:</strong> John Smith (${employeeId})<br>
                 <strong>Role:</strong> Supervisor<br>
@@ -1791,7 +1833,7 @@ function viewFullActivityLog(employeeId) {
                             <td>Oct 18, 11:43 AM</td>
                             <td>Viewed Details</td>
                             <td>Breakdown Management</td>
-                            <td>Ticket TKT-156</td>
+                            <td>Ticket MBD-156</td>
                         </tr>
                         <tr>
                             <td>Oct 18, 11:35 AM</td>
@@ -1815,7 +1857,7 @@ function viewFullActivityLog(employeeId) {
                             <td>Oct 18, 9:45 AM</td>
                             <td>Approved Ticket</td>
                             <td>Breakdown Management</td>
-                            <td>Ticket TKT-155</td>
+                            <td>Ticket MBD-155</td>
                         </tr>
                         <tr>
                             <td>Oct 18, 9:30 AM</td>

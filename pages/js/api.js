@@ -31,7 +31,19 @@ const API = {
                 credentials: 'include' // Include cookies
             });
             
-            const data = await response.json();
+            // Check if response has content before parsing JSON
+            const text = await response.text();
+            if (!text) {
+                throw new Error('Empty response from server');
+            }
+            
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse JSON response:', text);
+                throw new Error('Server returned invalid JSON response');
+            }
             
             // Handle 401 Unauthorized (except for /auth/me which returns success: false)
             if (response.status === 401) {

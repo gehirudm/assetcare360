@@ -15,13 +15,13 @@ class Vehicle extends BaseModel {
     protected function getSchema() {
         return [
             'id' => 'INT AUTO_INCREMENT PRIMARY KEY',
+            'vehicle_id' => 'VARCHAR(50) UNIQUE NOT NULL',
             'vehicle_name' => 'VARCHAR(255) NOT NULL',
-            'model_number' => 'VARCHAR(100) NOT NULL',
-            'chassis_number' => 'VARCHAR(100) UNIQUE NOT NULL',
+            'model_number' => 'VARCHAR(100) NULL',
+            'chassis_number' => 'VARCHAR(100) NULL',
             'number_plate' => 'VARCHAR(20) UNIQUE NOT NULL',
             'vehicle_type' => "ENUM('Truck', 'Van', 'Car', 'Bus', 'Bike', 'Three-Wheeler', 'Lorry', 'Tanker', 'Other') NOT NULL",
             'fuel_type' => "ENUM('Petrol', 'Diesel', 'Electric', 'Hybrid', 'LPG', 'CNG') NOT NULL",
-            'fuel_efficiency' => 'DECIMAL(5,2) NULL COMMENT "Mileage in km/L"',
             'warranty_expiry' => 'DATE NULL',
             'warranty_provider' => 'VARCHAR(255) NULL',
             'supplier_name' => 'VARCHAR(255) NOT NULL',
@@ -57,9 +57,37 @@ class Vehicle extends BaseModel {
     }
     
     /**
+     * Generate next vehicle ID in format VEH-001, VEH-002, etc.\n     */
+    public function generateVehicleId() {
+        $sql = "SELECT vehicle_id FROM `{$this->table}` ORDER BY id DESC LIMIT 1";
+        $stmt = $this->db->query($sql);
+        $lastVehicle = $stmt->fetch();
+        
+        if (!$lastVehicle || empty($lastVehicle['vehicle_id'])) {
+            return 'VEH-001';
+        }
+        
+        // Extract the numeric part from VEH-XXX format
+        $lastId = $lastVehicle['vehicle_id'];
+        preg_match('/VEH-(\\d+)/', $lastId, $matches);
+        
+        if (!empty($matches[1])) {
+            $nextNumber = intval($matches[1]) + 1;
+            return 'VEH-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        }
+        
+        return 'VEH-001';
+    }
+    
+    /**
      * Create vehicle
      */
     public function createVehicle($data) {
+        // Auto-generate vehicle_id if not provided
+        if (empty($data['vehicle_id'])) {
+            $data['vehicle_id'] = $this->generateVehicleId();
+        }
+        
         // Encode components if provided as array
         if (isset($data['components']) && is_array($data['components'])) {
             $data['components'] = json_encode($data['components']);

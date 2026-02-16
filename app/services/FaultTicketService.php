@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../models/FaultTicket.php';
 require_once __DIR__ . '/../models/FaultTicketImage.php';
 require_once __DIR__ . '/../models/FaultTicketAssignment.php';
+require_once __DIR__ . '/../../config/Database.php';
 
 class FaultTicketService {
     private $faultTicketModel;
@@ -28,11 +29,13 @@ class FaultTicketService {
     public function validate($data, $files = []) {
         $errors = [];
         
-        // Validate machine_id
-        if (empty($data['machine_id'])) {
-            $errors['machine_id'] = 'Machine is required';
-        } elseif (!is_numeric($data['machine_id'])) {
+        // Validate machine_id or vehicle_id (at least one is required)
+        if (empty($data['machine_id']) && empty($data['vehicle_id'])) {
+            $errors['machine_id'] = 'Machine or Vehicle is required';
+        } elseif (!empty($data['machine_id']) && !is_numeric($data['machine_id'])) {
             $errors['machine_id'] = 'Invalid machine ID';
+        } elseif (!empty($data['vehicle_id']) && !is_numeric($data['vehicle_id'])) {
+            $errors['vehicle_id'] = 'Invalid vehicle ID';
         }
         
         // Validate description
@@ -49,7 +52,7 @@ class FaultTicketService {
             $errors['priority'] = 'Invalid priority level';
         }
         
-        // Note: Location is no longer required from user input - will be fetched from machine
+        // Note: Location is no longer required from user input - will be fetched from machine/vehicle
         
         // Validate images if provided
         if (!empty($files) && isset($files['photos'])) {
@@ -148,30 +151,65 @@ class FaultTicketService {
         }
         
         try {
-            // Fetch machine location
-            require_once __DIR__ . '/../models/Machine.php';
-            $machineModel = new Machine();
-            $machine = $machineModel->findById($data['machine_id']);
+            $location = 'Unknown Location';
+            $machineId = null;
+            $vehicleId = null;
             
-            if (!$machine) {
-                return [
-                    'success' => false,
-                    'message' => 'Machine not found'
-                ];
+            // Handle machine-based tickets
+            if (!empty($data['machine_id'])) {
+                require_once __DIR__ . '/../models/Machine.php';
+                $machineModel = new Machine();
+                $machine = $machineModel->findById($data['machine_id']);
+                
+                if (!$machine) {
+                    return [
+                        'success' => false,
+                        'message' => 'Machine not found'
+                    ];
+                }
+                
+                $location = $machine['location'] ?? 'Unknown Location';
+                $machineId = $data['machine_id'];
             }
             
-            // Use machine's location
-            $location = $machine['location'] ?? 'Unknown Location';
+            // Handle vehicle-based tickets  
+            if (!empty($data['vehicle_id'])) {
+                require_once __DIR__ . '/../models/Vehicle.php';
+                $vehicleModel = new Vehicle();
+                $vehicle = $vehicleModel->findById($data['vehicle_id']);
+                
+                if (!$vehicle) {
+                    return [
+                        'success' => false,
+                        'message' => 'Vehicle not found'
+                    ];
+                }
+                
+                $location = $vehicle['current_location'] ?? $vehicle['location'] ?? 'Unknown Location';
+                $vehicleId = $data['vehicle_id'];
+            }
             
             // Create fault ticket
-            $ticketId = $this->faultTicketModel->createTicket([
-                'machine_id' => $data['machine_id'],
+            $ticketData = [
                 'reported_by' => $data['reported_by'],
                 'description' => $data['description'],
                 'priority' => $data['priority'],
                 'location' => $location,
                 'status' => FaultTicket::STATUS_OPEN
-            ]);
+            ];
+            
+            // Add machine_id if provided
+            if ($machineId) {
+                $ticketData['machine_id'] = $machineId;
+            }
+            
+            // Add breakdown report link if provided
+            if (!empty($data['breakdown_report_id'])) {
+                $ticketData['breakdown_report_id'] = $data['breakdown_report_id'];
+                $ticketData['breakdown_type'] = $data['breakdown_type'] ?? null;
+            }
+            
+            $ticketId = $this->faultTicketModel->createTicket($ticketData);
             
             if (!$ticketId) {
                 return [
@@ -309,6 +347,18 @@ class FaultTicketService {
         // Get assignments for this ticket
         if (isset($ticket['id'])) {
             $ticket['assignments'] = $this->assignmentModel->getTicketAssignments($ticket['id']);
+            
+            // Get work updates from ticket_work_updates table
+            $conn = Database::getInstance()->getConnection();
+            $workStmt = $conn->prepare("
+                SELECT twu.*, u.full_name as technician_name
+                FROM ticket_work_updates twu
+                LEFT JOIN users u ON twu.technical_officer_id = u.id
+                WHERE twu.ticket_id = ?
+                ORDER BY twu.created_at DESC
+            ");
+            $workStmt->execute([$ticket['id']]);
+            $ticket['work_updates'] = $workStmt->fetchAll(\PDO::FETCH_ASSOC);
         }
         
         // Format image URLs for frontend
@@ -357,21 +407,45 @@ class FaultTicketService {
                 ];
             }
             
-            // Only allow editing if status is Open (Pending)
-            if ($ticket['status'] !== 'Open') {
+            // Check if this is ONLY a status change (technical officer workflow)
+            // Allow resolution_notes to be included when changing status
+            $isStatusChangeOnly = isset($data['status']) && 
+                (count($data) === 1 || (count($data) === 2 && isset($data['resolution_notes'])));
+            
+            // Define allowed status transitions for technical officer workflow
+            $allowedTransitions = [
+                // From Open/Assigned → Waiting for Spare Parts (request parts)
+                'Open' => ['In Progress', 'Waiting for Spare Parts', 'Resolved', 'Closed'],
+                'Assigned' => ['In Progress', 'Waiting for Spare Parts', 'Resolved', 'Closed'],
+                // From Waiting for Spare Parts → Parts Approved (inventory manager approves)
+                'Waiting for Spare Parts' => ['Parts Approved', 'Resolved', 'Closed'],
+                // From Parts Approved → In Progress (tech officer starts work)
+                'Parts Approved' => ['In Progress', 'Resolved', 'Closed'],
+                // From In Progress → Resolved/Closed
+                'In Progress' => ['Resolved', 'Closed'],
+                // From Resolved → Closed
+                'Resolved' => ['Closed'],
+            ];
+            
+            $isValidStatusTransition = $isStatusChangeOnly && 
+                isset($allowedTransitions[$ticket['status']]) && 
+                in_array($data['status'], $allowedTransitions[$ticket['status']]);
+            
+            // Only allow full editing if status is Open (Pending), but allow status transitions
+            if (!$isValidStatusTransition && $ticket['status'] !== 'Open') {
                 return [
                     'success' => false,
                     'message' => 'Only pending tickets can be edited'
                 ];
             }
             
-            // Check ownership - allow Supervisor and Admin to update any ticket
+            // Check ownership - allow Supervisor, Admin, and Technical Officer to update any ticket
             if ($user) {
                 $userId = $user['id'];
                 $userRole = $user['role'] ?? null;
                 
-                // Supervisors and Admins can update any ticket
-                $canUpdateAnyTicket = in_array($userRole, ['Supervisor', 'Admin']);
+                // Supervisors, Admins, and Technical Officers can update any ticket
+                $canUpdateAnyTicket = in_array($userRole, ['Supervisor', 'Admin', 'Technical Officer']);
                 
                 // Regular users can only edit their own tickets
                 if (!$canUpdateAnyTicket && $ticket['reported_by'] != $userId) {
@@ -450,6 +524,15 @@ class FaultTicketService {
                         'message' => 'Failed to update fault ticket'
                     ];
                 }
+                
+                // If status is being changed to Resolved, sync the breakdown report status
+                if (isset($data['status']) && $data['status'] === 'Resolved') {
+                    $logFile = __DIR__ . '/../../logs/breakdown_sync.log';
+                    file_put_contents($logFile, date('Y-m-d H:i:s') . " - update() calling updateBreakdownReportStatus\n", FILE_APPEND);
+                    file_put_contents($logFile, "  Ticket breakdown_report_id: " . ($ticket['breakdown_report_id'] ?? 'NULL') . "\n", FILE_APPEND);
+                    file_put_contents($logFile, "  Ticket breakdown_type: " . ($ticket['breakdown_type'] ?? 'NULL') . "\n", FILE_APPEND);
+                    $this->updateBreakdownReportStatus($ticket, 'Resolved');
+                }
             }
             
             return [
@@ -493,14 +576,14 @@ class FaultTicketService {
             // Check if ticket can be modified based on its current status
             $currentStatus = strtolower($ticket['status'] ?? 'open');
             
-            // Allow assignment/editing only for "Open" (unassigned) or "Assigned" status tickets
-            // Prevent modification of tickets that are "In Progress", "Completed", or "Closed"
-            $editableStatuses = ['open', 'assigned'];
+            // Allow assignment/editing only for "Open", "Pending" (unassigned) or "Assigned" status tickets
+            // Prevent modification of tickets that are "In Progress", "Completed", "Resolved" or "Closed"
+            $editableStatuses = ['open', 'pending', 'assigned'];
             
             if (!in_array($currentStatus, $editableStatuses)) {
                 return [
                     'success' => false,
-                    'message' => 'This ticket cannot be modified. Only tickets with "Open" or "Assigned" status can be edited. Current status: ' . ucfirst($ticket['status'])
+                    'message' => 'This ticket cannot be modified. Only tickets with "Open", "Pending" or "Assigned" status can be edited. Current status: ' . ucfirst($ticket['status'])
                 ];
             }
             
@@ -545,7 +628,7 @@ class FaultTicketService {
             }
             
             // Assign technicians
-            $assignedCount = $this->assignmentModel->assignTechnicians(
+            $assignmentResult = $this->assignmentModel->assignTechnicians(
                 $ticketId,
                 $data['technician_ids'],
                 $user['id'],
@@ -553,8 +636,17 @@ class FaultTicketService {
                 $data['notes'] ?? null
             );
             
+            $assignedCount = $assignmentResult['count'];
+            $assignmentIds = $assignmentResult['assignment_ids'];
+            
+            // Create repair tickets for newly assigned technicians
+            $this->createRepairTicketsForAssignments($assignmentIds, $ticketId, $ticket, $data['expected_completion_date'] ?? null);
+            
             // Update ticket status to "Assigned"
             $this->faultTicketModel->updateTicket($ticketId, ['status' => 'Assigned']);
+            
+            // Update linked breakdown report status if exists
+            $this->updateBreakdownReportStatus($ticket, 'Assigned');
             
             return [
                 'success' => true,
@@ -567,6 +659,204 @@ class FaultTicketService {
                 'success' => false,
                 'message' => 'Error assigning technicians: ' . $e->getMessage()
             ];
+        }
+    }
+    
+    /**
+     * Complete/Finish a fault ticket
+     * Updates status across fault_tickets, tec_fault_repair_ticket, and spare_part_requests
+     */
+    public function completeTicket($id, $data = [], $user = null) {
+        try {
+            $ticket = $this->faultTicketModel->getTicketById($id);
+            
+            if (!$ticket) {
+                return [
+                    'success' => false,
+                    'message' => 'Fault ticket not found'
+                ];
+            }
+            
+            // Only allow completing tickets that are "In Progress"
+            if ($ticket['status'] !== 'In Progress') {
+                return [
+                    'success' => false,
+                    'message' => 'Only tickets that are In Progress can be marked as finished. Current status: ' . $ticket['status']
+                ];
+            }
+            
+            $db = Database::getInstance()->getConnection();
+            $db->beginTransaction();
+            
+            try {
+                // 1. Update fault_tickets → Resolved
+                $stmt = $db->prepare("UPDATE fault_tickets SET status = 'Resolved', resolved_at = NOW(), updated_at = NOW() WHERE id = ?");
+                $stmt->execute([$id]);
+                
+                // 2. Update all linked tec_fault_repair_ticket → Completed
+                $stmt = $db->prepare("UPDATE tec_fault_repair_ticket SET repair_status = 'Completed', updated_at = NOW() WHERE fault_ticket_id = ?");
+                $stmt->execute([$id]);
+                
+                // 3. Update linked spare_part_requests → Issued (parts have been used)
+                $stmt = $db->prepare("UPDATE spare_part_requests SET status = 'Issued', updated_at = NOW() WHERE fault_ticket_id = ? AND status = 'Approved'");
+                $stmt->execute([$id]);
+                
+                // 4. Store work summary and resolution notes if provided
+                if (!empty($data['work_summary'])) {
+                    $stmt = $db->prepare("UPDATE fault_tickets SET resolution_notes = ? WHERE id = ?");
+                    $stmt->execute([$data['work_summary'], $id]);
+                }
+                
+                // 5. Update linked breakdown report status
+                $logFile = __DIR__ . '/../../logs/breakdown_sync.log';
+                file_put_contents($logFile, date('Y-m-d H:i:s') . " - completeTicket() calling updateBreakdownReportStatus\n", FILE_APPEND);
+                file_put_contents($logFile, "  Ticket ID: $id\n", FILE_APPEND);
+                file_put_contents($logFile, "  breakdown_report_id: " . ($ticket['breakdown_report_id'] ?? 'NULL') . "\n", FILE_APPEND);
+                file_put_contents($logFile, "  breakdown_type: " . ($ticket['breakdown_type'] ?? 'NULL') . "\n", FILE_APPEND);
+                $this->updateBreakdownReportStatus($ticket, 'Resolved');
+                
+                $db->commit();
+                
+                return [
+                    'success' => true,
+                    'message' => 'Ticket marked as finished. Status updated to Resolved across all related records.'
+                ];
+                
+            } catch (\Exception $e) {
+                $db->rollBack();
+                throw $e;
+            }
+            
+        } catch (\Exception $e) {
+            error_log("FaultTicketService completeTicket error: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Error completing ticket: ' . $e->getMessage()
+            ];
+        }
+    }
+    
+    /**
+     * Update linked breakdown report status
+     */
+    private function updateBreakdownReportStatus($ticket, $newStatus) {
+        error_log("updateBreakdownReportStatus called - breakdown_report_id: " . ($ticket['breakdown_report_id'] ?? 'NULL') . ", breakdown_type: " . ($ticket['breakdown_type'] ?? 'NULL') . ", newStatus: " . $newStatus);
+        
+        if (empty($ticket['breakdown_report_id'])) {
+            error_log("updateBreakdownReportStatus: No breakdown_report_id, returning early");
+            return;
+        }
+        
+        try {
+            $db = Database::getInstance()->getConnection();
+            $breakdownReportId = $ticket['breakdown_report_id'];
+            $breakdownType = $ticket['breakdown_type'] ?? '';
+            
+            // Write to a file for debugging
+            $logFile = __DIR__ . '/../../logs/breakdown_sync.log';
+            $logDir = dirname($logFile);
+            if (!is_dir($logDir)) {
+                mkdir($logDir, 0777, true);
+            }
+            file_put_contents($logFile, date('Y-m-d H:i:s') . " - updateBreakdownReportStatus called\n", FILE_APPEND);
+            file_put_contents($logFile, "  breakdownReportId: $breakdownReportId\n", FILE_APPEND);
+            file_put_contents($logFile, "  breakdownType: $breakdownType\n", FILE_APPEND);
+            file_put_contents($logFile, "  newStatus: $newStatus\n", FILE_APPEND);
+            
+            error_log("updateBreakdownReportStatus: breakdownReportId=$breakdownReportId, breakdownType=$breakdownType");
+            
+            // Determine which table to update based on breakdown_type
+            if ($breakdownType === 'vehicle_breakdown') {
+                $sql = "UPDATE vehicle_breakdown SET status = ? WHERE breakdown_id = ?";
+                $stmt = $db->prepare($sql);
+                $stmt->execute([$newStatus, $breakdownReportId]);
+                $rowCount = $stmt->rowCount();
+                file_put_contents($logFile, "  Updated vehicle_breakdown, rows affected: $rowCount\n", FILE_APPEND);
+                error_log("Updated vehicle_breakdown, rows affected: " . $rowCount);
+            } elseif ($breakdownType === 'route_breakdown') {
+                $sql = "UPDATE vehicle_breakdown_inroute SET status = ? WHERE route_breakdown_id = ?";
+                $stmt = $db->prepare($sql);
+                $stmt->execute([$newStatus, $breakdownReportId]);
+                $rowCount = $stmt->rowCount();
+                file_put_contents($logFile, "  Updated vehicle_breakdown_inroute, rows affected: $rowCount\n", FILE_APPEND);
+                error_log("Updated vehicle_breakdown_inroute, rows affected: " . $rowCount);
+            } elseif ($breakdownType === 'machine_breakdown') {
+                $sql = "UPDATE machine_breakdown SET status = ? WHERE breakdown_id = ?";
+                $stmt = $db->prepare($sql);
+                $stmt->execute([$newStatus, $breakdownReportId]);
+                $rowCount = $stmt->rowCount();
+                file_put_contents($logFile, "  Updated machine_breakdown, rows affected: $rowCount\n", FILE_APPEND);
+                error_log("Updated machine_breakdown, rows affected: " . $rowCount);
+            } else {
+                // Fallback: try to find the breakdown in all tables by ID pattern
+                if (strpos($breakdownReportId, 'MBD-') === 0) {
+                    // Machine breakdown
+                    $sql = "UPDATE machine_breakdown SET status = ? WHERE breakdown_id = ?";
+                    $stmt = $db->prepare($sql);
+                    $stmt->execute([$newStatus, $breakdownReportId]);
+                } elseif (strpos($breakdownReportId, 'VBD-') === 0) {
+                    // Vehicle breakdown
+                    $sql = "UPDATE vehicle_breakdown SET status = ? WHERE breakdown_id = ?";
+                    $stmt = $db->prepare($sql);
+                    $stmt->execute([$newStatus, $breakdownReportId]);
+                } elseif (strpos($breakdownReportId, 'RBD-') === 0) {
+                    // Route breakdown
+                    $sql = "UPDATE vehicle_breakdown_inroute SET status = ? WHERE route_breakdown_id = ?";
+                    $stmt = $db->prepare($sql);
+                    $stmt->execute([$newStatus, $breakdownReportId]);
+                } else {
+                    // Try vehicle_breakdown first, then machine_breakdown
+                    $sql = "UPDATE vehicle_breakdown SET status = ? WHERE breakdown_id = ?";
+                    $stmt = $db->prepare($sql);
+                    $stmt->execute([$newStatus, $breakdownReportId]);
+                    
+                    if ($stmt->rowCount() === 0) {
+                        $sql = "UPDATE machine_breakdown SET status = ? WHERE breakdown_id = ?";
+                        $stmt = $db->prepare($sql);
+                        $stmt->execute([$newStatus, $breakdownReportId]);
+                    }
+                    
+                    if ($stmt->rowCount() === 0) {
+                        $sql = "UPDATE vehicle_breakdown_inroute SET status = ? WHERE route_breakdown_id = ?";
+                        $stmt = $db->prepare($sql);
+                        $stmt->execute([$newStatus, $breakdownReportId]);
+                    }
+                }
+            }
+            
+        } catch (\Exception $e) {
+            error_log("Error updating breakdown report status: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Create repair tickets for newly assigned technicians
+     */
+    private function createRepairTicketsForAssignments($assignmentIds, $faultTicketId, $faultTicket, $expectedCompletionDate = null) {
+        require_once __DIR__ . '/../models/TecFaultRepairTicket.php';
+        
+        try {
+            $repairTicketModel = new TecFaultRepairTicket();
+            
+            foreach ($assignmentIds as $assignment) {
+                // Only create repair ticket for new assignments
+                if ($assignment['is_new']) {
+                    // Check if repair ticket already exists for this assignment
+                    $existing = $repairTicketModel->findByAssignmentId($assignment['id']);
+                    
+                    if (!$existing) {
+                        $repairTicketModel->createFromAssignment(
+                            $assignment['id'],
+                            $faultTicketId,
+                            $assignment['technician_id'],
+                            $faultTicket,
+                            $expectedCompletionDate
+                        );
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            error_log("Error creating repair tickets: " . $e->getMessage());
         }
     }
     

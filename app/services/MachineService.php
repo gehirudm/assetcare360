@@ -18,7 +18,7 @@ class MachineService {
      */
     public function createMachine($data, $userId) {
         // Validate required fields
-        $required = ['serial_number', 'model_number', 'machine_name', 'location', 'supplier_name', 'service_interval_days'];
+        $required = ['model_number', 'machine_name', 'location', 'supplier_name', 'service_interval_days'];
         foreach ($required as $field) {
             if (empty($data[$field])) {
                 throw new Exception("Field '$field' is required");
@@ -33,12 +33,6 @@ class MachineService {
             if ($lastServiceDate > $today) {
                 throw new Exception("Last service date cannot be in the future");
             }
-        }
-        
-        // Check if serial number already exists
-        $existing = $this->machineModel->findBySerialNumber($data['serial_number']);
-        if ($existing) {
-            throw new Exception("Machine with serial number '{$data['serial_number']}' already exists");
         }
         
         // Add created_by
@@ -69,14 +63,6 @@ class MachineService {
             
             if ($lastServiceDate > $today) {
                 throw new Exception("Last service date cannot be in the future");
-            }
-        }
-        
-        // Check if serial number is being changed and if it conflicts
-        if (isset($data['serial_number']) && $data['serial_number'] !== $machine['serial_number']) {
-            $existing = $this->machineModel->findBySerialNumber($data['serial_number']);
-            if ($existing) {
-                throw new Exception("Machine with serial number '{$data['serial_number']}' already exists");
             }
         }
         
@@ -147,5 +133,12 @@ class MachineService {
      */
     public function getMachinesDueForService() {
         return $this->machineModel->getMachinesDueForService();
+    }
+    
+    /**
+     * Get next machine ID
+     */
+    public function getNextMachineId() {
+        return $this->machineModel->generateMachineId();
     }
 }
