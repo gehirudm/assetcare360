@@ -58,6 +58,10 @@
                         <i class="nav-icon fas fa-tools"></i>
                         <span>Spare Part Management</span>
                     </div>
+                    <div class="nav-item" data-section="inventory">
+                        <i class="nav-icon fas fa-warehouse"></i>
+                        <span>Inventory Management</span>
+                    </div>
                     <div class="nav-item" data-section="service-warranty">
                         <i class="nav-icon fas fa-shield-alt"></i>
                         <span>Service & Warranty</span>
@@ -224,14 +228,16 @@
 
                     <div style="margin-bottom: 20px;">
                         <button class="btn btn-primary" onclick="openModal('createRepairTicketModal')">
-                            ➕ Create New Repair Ticket
+                            <i class="fas fa-plus"></i> Create New Repair Ticket
                         </button>
                     </div>
 
                     <!-- Tab Filters -->
                     <div class="filter-controls" id="ticketFilterTabs">
                         <button class="filter-btn active" onclick="filterTicketsByStatus('all')">All Tickets</button>
-                        <button class="filter-btn" onclick="filterTicketsByStatus('new')">To Be Processed</button>
+                        <button class="filter-btn" onclick="filterTicketsByStatus('pending')">Pending</button>
+                        <button class="filter-btn" onclick="filterTicketsByStatus('waiting-for-spare-parts')">Waiting for Parts</button>
+                        <button class="filter-btn" onclick="filterTicketsByStatus('parts-approved')">Parts Approved</button>
                         <button class="filter-btn" onclick="filterTicketsByStatus('in-progress')">In Progress</button>
                         <button class="filter-btn" onclick="filterTicketsByStatus('completed')">Completed</button>
                     </div>
@@ -286,6 +292,34 @@
                     </div>
                 </section>
 
+                <!-- Inventory Management -->
+                <section class="content-section" id="inventory">
+                    <div class="page-header">
+                        <h1 class="page-title">Inventory Management</h1>
+                        <p class="page-subtitle">Manage and view vehicles and machines</p>
+                    </div>
+
+                    <!-- Tab Filters -->
+                    <div class="filter-controls" id="inventoryFilterTabs">
+                        <button class="filter-btn active" onclick="filterInventoryByType('all')">All Assets</button>
+                        <button class="filter-btn" onclick="filterInventoryByType('vehicle')">Vehicles</button>
+                        <button class="filter-btn" onclick="filterInventoryByType('machine')">Machines</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-warehouse"></i> Assets Inventory</span>
+                            <span id="inventoryCount" class="status-badge status-normal">Loading...</span>
+                        </div>
+                        <div id="allInventoryList" class="inventory-list">
+                            <!-- Inventory items will be loaded dynamically -->
+                        </div>
+                        <div id="noInventoryMessage" style="display: none; text-align: center; color: var(--muted); padding: 20px;">
+                            No inventory items found for this filter
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Service & Warranty -->
                 <section class="content-section" id="service-warranty">
                     <div class="page-header">
@@ -334,7 +368,7 @@
                     </div>
 
                     <div class="card">
-                        <div class="card-header">📝 Recent Feedback Submissions</div>
+                        <div class="card-header"><i class="fas fa-file-alt"></i> Recent Feedback Submissions</div>
                         <div class="request-item">
                             <div class="ticket-details">
                                 <strong>FB-001</strong>
@@ -361,7 +395,7 @@
             <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Create New Repair Ticket</h2>
             <form id="createRepairTicketForm">
                 <div class="form-section">
-                    <h5>🚗 Asset Information</h5>
+                    <h5><i class="fas fa-car"></i> Asset Information</h5>
                     <div class="form-group">
                         <label class="form-label">Asset Type *</label>
                         <select class="form-input" id="assetType" required>
@@ -381,7 +415,7 @@
                 </div>
 
                 <div class="form-section">
-                    <h5>🔧 Fault Details</h5>
+                    <h5><i class="fas fa-wrench"></i> Fault Details</h5>
                     <div class="form-group">
                         <label class="form-label">Fault Category *</label>
                         <select class="form-input" id="faultCategory" required>
@@ -417,7 +451,7 @@
                 </div>
 
                 <div class="form-section">
-                    <h5>⚙️ Repair Management</h5>
+                    <h5><i class="fas fa-cog"></i> Repair Management</h5>
                     <div class="form-group">
                         <label class="form-label">Repair Type *</label>
                         <select class="form-input" id="repairType" required onchange="toggleOutsourcedFields()">
@@ -477,7 +511,7 @@
             <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Start Working on Ticket</h2>
             <form id="processTicketForm">
                 <div class="form-section">
-                    <h5>🔧 Begin Work</h5>
+                    <h5><i class="fas fa-wrench"></i> Begin Work</h5>
                     <div class="form-group">
                         <label class="form-label">Ticket ID</label>
                         <input type="text" class="form-input" id="processTicketId" readonly>
@@ -500,32 +534,34 @@
     <div id="updateWorkModal" class="modal">
         <div class="modal-content">
             <button class="close" onclick="closeModal('updateWorkModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Update Work Progress</h2>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Finish Work</h2>
             <form id="updateWorkForm">
                 <div class="form-section">
-                    <h5>📋 Work Progress Update</h5>
+                    <h5><i class="fas fa-check-circle"></i> Work Completion</h5>
                     <div class="form-group">
                         <label class="form-label">Ticket ID</label>
                         <input type="text" class="form-input" id="updateTicketId" readonly>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Work Done Today</label>
-                        <textarea class="form-textarea" placeholder="Describe work completed in this session..." required></textarea>
-                    </div>
-                    <div class="form-group">
                         <label class="form-label">Parts Used (if any)</label>
-                        <textarea class="form-textarea" placeholder="List any parts used..."></textarea>
+                        <div id="updatePartsUsedContainer" style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; max-height: 180px; overflow-y: auto; background: #fafafa;">
+                            <p style="color: #999; font-size: 0.9rem; margin: 0;" id="noPartsMessage">No spare parts were requested for this ticket.</p>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Time Spent (hours)</label>
                         <input type="number" class="form-input" step="0.5" min="0" placeholder="Hours worked" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Current Status</label>
-                        <textarea class="form-textarea" placeholder="Current status and next steps..." required></textarea>
+                        <label class="form-label">Description About the Machine Update</label>
+                        <textarea class="form-textarea" placeholder="Describe the machine condition and updates made..." required></textarea>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary">Update Progress & Notify Supervisor</button>
+                <div style="display: flex; gap: 12px; margin-top: 10px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        <i class="fas fa-check-circle"></i> Finish
+                    </button>
+                </div>
             </form>
         </div>
     </div>
@@ -537,7 +573,7 @@
             <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Mark Ticket as Done</h2>
             <form id="markDoneForm">
                 <div class="form-section">
-                    <h5>✅ Work Completion Summary</h5>
+                    <h5><i class="fas fa-check-circle"></i> Work Completion Summary</h5>
                     <div class="form-group">
                         <label class="form-label">Ticket ID</label>
                         <input type="text" class="form-input" id="doneTicketId" readonly>
@@ -576,29 +612,32 @@
     <!-- Request Parts Modal -->
     <div id="requestPartsModal" class="modal">
         <div class="modal-content">
-            <button class="close" onclick="closeModal('requestPartsModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">📋 Request Spare Parts</h2>
-            <form id="requestPartsForm">
+            <div class="modal-header">
+                <h2><i class="fas fa-clipboard-list"></i> Request Spare Parts</h2>
+                <button class="btn-close" onclick="closeModal('requestPartsModal')"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="requestPartsForm" style="padding: 20px 30px;">
+                <input type="hidden" id="requestingTicketId" value="">
                 <div class="form-section">
-                    <h5>🎫 Ticket Information</h5>
+                    <h5><i class="fas fa-ticket-alt"></i> Ticket Information</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Ticket ID</label>
-                            <input type="text" class="form-input" placeholder="Enter ticket ID (if related)" id="relatedTicketId">
+                            <input type="text" class="form-input" placeholder="Enter ticket ID (if related)" id="relatedTicketId" readonly style="background-color: #f0f0f0;">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Equipment</label>
-                            <input type="text" class="form-input" placeholder="Enter equipment/machine ID" required>
+                            <input type="text" class="form-input" id="equipmentInput" placeholder="Enter equipment/machine ID" required>
                         </div>
                     </div>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label class="form-label">Reporter</label>
-                            <input type="text" class="form-input" id="reporterName" value="Tech Officer" readonly style="background-color: #f0f0f0;">
+                            <label class="form-label">Location</label>
+                            <input type="text" class="form-input" id="locationInput" placeholder="Location" readonly style="background-color: #f0f0f0;">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Priority</label>
-                            <select class="form-select" required>
+                            <select class="form-select" id="prioritySelect" required>
                                 <option value="">Select Priority</option>
                                 <option value="low">Low</option>
                                 <option value="medium">Medium</option>
@@ -607,18 +646,47 @@
                             </select>
                         </div>
                     </div>
-                </div>
-
-                <div class="form-section">
-                    <h5>📝 Issue Description</h5>
-                    <div class="form-group">
-                        <label class="form-label">Issue Description</label>
-                        <textarea class="form-textarea" placeholder="Describe the issue or reason for spare parts request" rows="4" required></textarea>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Reported By</label>
+                            <input type="text" class="form-input" id="reportedByInput" readonly style="background-color: #f0f0f0;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Reported Date</label>
+                            <input type="text" class="form-input" id="reportedDateInput" readonly style="background-color: #f0f0f0;">
+                        </div>
                     </div>
                 </div>
 
                 <div class="form-section">
-                    <h5>🔧 Spare Parts Required</h5>
+                    <h5><i class="fas fa-exclamation-circle"></i> Original Issue Description</h5>
+                    <div class="form-group">
+                        <label class="form-label">Issue Details</label>
+                        <textarea id="originalIssueTextarea" class="form-textarea" placeholder="Original issue description from ticket" rows="4" readonly style="background-color: #f0f0f0;"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-edit"></i> Additional Notes (Optional)</h5>
+                    <div class="form-group">
+                        <label class="form-label">Spare Parts Request Notes</label>
+                        <textarea id="additionalNotesTextarea" class="form-textarea" placeholder="Add any additional observations, diagnostics, or notes about the spare parts needed..." rows="3"></textarea>
+                        <small style="color: var(--muted); margin-top: 5px; display: block;">Add any extra information about why specific parts are needed or additional findings during inspection.</small>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="noSparePartsNeeded" onchange="toggleSparePartsSection(this.checked)" style="width: 18px; height: 18px;">
+                            <span style="font-weight: 500; color: var(--tang-blue);">No Spare Parts Needed for this Ticket</span>
+                        </label>
+                        <small style="color: var(--muted); display: block; margin-top: 5px; margin-left: 28px;">Check this if the repair can be done without any spare parts</small>
+                    </div>
+                </div>
+
+                <div class="form-section" id="sparePartsSection">
+                    <h5><i class="fas fa-wrench"></i> Spare Parts Required</h5>
                     <div id="sparePartsContainer">
                         <div class="spare-part-item" style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
                             <div class="form-grid">
@@ -646,13 +714,13 @@
                         </div>
                     </div>
                     <button type="button" class="btn btn-secondary" onclick="addPartField()" style="margin-top: 10px;">
-                        ➕ Add Another Part
+                        <i class="fas fa-plus"></i> Add Another Part
                     </button>
                 </div>
 
                 <div style="margin-top: 20px; display: flex; gap: 10px;">
-                    <button type="submit" class="btn btn-primary">Submit Request to Supervisor</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('requestPartsModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Submit & Start Work</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('requestPartsModal')"><i class="fas fa-times"></i> Cancel</button>
                 </div>
             </form>
         </div>
@@ -666,7 +734,7 @@
             <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Claim Warranty</h2>
             <form id="warrantyClaimForm">
                 <div class="form-section">
-                    <h5>🛡️ Warranty Information</h5>
+                    <h5><i class="fas fa-shield-alt"></i> Warranty Information</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Part Number</label>
@@ -704,7 +772,7 @@
             <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Submit Asset Feedback</h2>
             <form id="assetFeedbackForm">
                 <div class="form-section">
-                    <h5>💬 Asset Performance Feedback</h5>
+                    <h5><i class="fas fa-comments"></i> Asset Performance Feedback</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Equipment ID</label>
@@ -745,10 +813,21 @@
 
     <!-- View Details Modal -->
     <div id="viewDetailsModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 800px;">
             <button class="close" onclick="closeModal('viewDetailsModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Ticket Details</h2>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-ticket-alt"></i> Ticket Details</h2>
             <div id="ticketDetailsContent">
+                <!-- Details will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- View Inventory Item Details Modal -->
+    <div id="viewInventoryModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <button class="close" onclick="closeModal('viewInventoryModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-info-circle"></i> Asset Details</h2>
+            <div id="inventoryDetailsContent">
                 <!-- Details will be populated by JavaScript -->
             </div>
         </div>
@@ -758,7 +837,7 @@
     <div id="viewPartRequestModal" class="modal">
         <div class="modal-content" style="max-width: 700px;">
             <button class="close" onclick="closeModal('viewPartRequestModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">📋 Spare Parts Request Details</h2>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-clipboard-list"></i> Spare Parts Request Details</h2>
             <div id="partRequestDetailsContent">
                 <!-- Details will be populated by JavaScript -->
             </div>
