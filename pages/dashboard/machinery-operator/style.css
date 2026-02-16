@@ -521,6 +521,16 @@ body {
     color: var(--danger);
 }
 
+.status-assigned { 
+    background: #2563eb; 
+    color: #fff; 
+}
+
+.status-text.status-assigned {
+    background: none;
+    color: #2563eb;
+}
+
 .status-in-progress { 
     background: var(--royal-blue-2); 
     color: #fff; 

@@ -53,7 +53,7 @@
                     </div>
                     <div class="nav-item" data-section="condition-updates">
                         <i class="nav-icon fas fa-clipboard-check"></i>
-                        <span>Condition Updates</span>
+                        <span>Weekly Check Reports</span>
                     </div>
                     <div class="nav-item" data-section="ticket-tracking">
                         <i class="nav-icon fas fa-ticket-alt"></i>
@@ -98,7 +98,7 @@
                                     <i class="fas fa-clipboard-check"></i>
                                 </div>
                                 <div class="summary-details">
-                                    <div class="summary-title">Condition Updates</div>
+                                    <div class="summary-title">Weekly Check Reports</div>
                                     <div class="summary-number">1</div>
                                     <div class="summary-description">pending supervisor review</div>
                                 </div>
@@ -165,9 +165,9 @@
                             <!-- Activity Item 2 -->
                             <div class="activity-item">
                                 <div class="activity-content">
-                                    <div class="activity-title">Condition Update Reviewed</div>
+                                    <div class="activity-title">Weekly Check Reviewed</div>
                                     <div class="activity-meta">Loader #128 | Supervisor Approved | 3 hours ago</div>
-                                    <div class="activity-description">Daily condition update approved by supervisor</div>
+                                    <div class="activity-description">Weekly check report approved by supervisor</div>
                                 </div>
                                 <div class="activity-status">
                                     <span class="status-text status-approved">APPROVED</span>
@@ -278,28 +278,28 @@
                     </div>
                 </section>
 
-                <!-- Condition Updates Section -->
+                <!-- Weekly Check Reports Section -->
                 <section class="content-section" id="condition-updates">
                     <div class="page-header">
-                        <h1 class="page-title">Condition Updates</h1>
+                        <h1 class="page-title">Weekly Check Reports</h1>
                         <p class="page-subtitle">Enter usage hours and observed conditions</p>
                     </div>
 
                     <div style="margin-bottom: 20px;">
                         <button class="btn btn-primary" onclick="openModal('conditionUpdateModal')">
-                            <i class="fas fa-plus"></i> Submit Condition Update
+                            <i class="fas fa-plus"></i> Submit Weekly Check Report
                         </button>
                     </div>
 
                     <div class="filter-controls">
                         <button class="filter-btn active" onclick="filterUpdates('all')">All Updates</button>
                         <button class="filter-btn" onclick="filterUpdates('pending')">Pending</button>
-                        <button class="filter-btn" onclick="filterUpdates('approved')">Reviewed</button>
+                        <button class="filter-btn" onclick="filterUpdates('approved')">Approved</button>
                     </div>
 
                     <div class="card">
                         <div class="card-header">
-                            <span><i class="fas fa-edit"></i> Recent Condition Updates</span>
+                            <span><i class="fas fa-edit"></i> Recent Weekly Check Reports</span>
                             <span class="status-text status-pending">1 pending review</span>
                         </div>
                         <div id="updatesContainer" class="inventory-list">
@@ -488,11 +488,11 @@
         </div>
     </div>
 
-    <!-- Condition Update Modal -->
+    <!-- Weekly Check Report Modal -->
     <div id="conditionUpdateModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2><i class="fas fa-clipboard-check"></i> Machine Condition Update</h2>
+                <h2><i class="fas fa-clipboard-check"></i> Machine Weekly Check Report</h2>
                 <button class="btn-close" onclick="closeModal('conditionUpdateModal')">
                     <i class="fas fa-times"></i>
                 </button>
@@ -500,20 +500,14 @@
             <form id="conditionUpdateForm">
                 <div class="form-section">
                     <h5><i class="fas fa-cogs"></i> Machine Information</h5>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label">Machine</label>
-                            <select class="form-select" id="updateMachine" required>
-                                <option value="">Select Machine</option>
-                                <option value="EXC-045">Excavator #045</option>
-                                <option value="TRK-203">Truck #203</option>
-                                <option value="LOD-128">Loader #128</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Current Hours</label>
-                            <input type="number" class="form-input" id="updateHours" required placeholder="e.g., 1847">
-                        </div>
+                    <div class="form-group">
+                        <label class="form-label">Machine</label>
+                        <select class="form-select" id="updateMachine" required>
+                            <option value="">Select Machine</option>
+                            <option value="EXC-045">Excavator #045</option>
+                            <option value="TRK-203">Truck #203</option>
+                            <option value="LOD-128">Loader #128</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Overall Condition</label>
