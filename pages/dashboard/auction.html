@@ -583,7 +583,7 @@
                     <span>Emma Thompson</span>
                 </div>
                 <button class="logout-btn" onclick="logout()">
-                    <span>🚪</span> Logout
+                    <span><i class="fas fa-sign-out-alt"></i></span> Logout
                 </button>
             </div>
         </header>
@@ -593,27 +593,27 @@
                 <h2>Auction Officer</h2>
                 <nav>
                     <div class="nav-item active" data-section="dashboard">
-                        <span class="nav-icon">📊</span>
+                        <span class="nav-icon"><i class="fas fa-chart-bar"></i></span>
                         <span>Dashboard</span>
                     </div>
                     <div class="nav-item" data-section="active-auctions">
-                        <span class="nav-icon">🔨</span>
+                        <span class="nav-icon"><i class="fas fa-gavel"></i></span>
                         <span>Active Auctions</span>
                     </div>
                     <div class="nav-item" data-section="assets">
-                        <span class="nav-icon">🚚</span>
+                        <span class="nav-icon"><i class="fas fa-truck"></i></span>
                         <span>Assets for Auction</span>
                     </div>
                     <div class="nav-item" data-section="bidders">
-                        <span class="nav-icon">👥</span>
+                        <span class="nav-icon"><i class="fas fa-users"></i></span>
                         <span>Bidder Management</span>
                     </div>
                     <div class="nav-item" data-section="schedule">
-                        <span class="nav-icon">📅</span>
+                        <span class="nav-icon"><i class="fas fa-calendar-alt"></i></span>
                         <span>Auction Schedule</span>
                     </div>
                     <div class="nav-item" data-section="reports">
-                        <span class="nav-icon">📈</span>
+                        <span class="nav-icon"><i class="fas fa-chart-line"></i></span>
                         <span>Reports</span>
                     </div>
                 </nav>
@@ -662,16 +662,16 @@
                             <span>⚡ Quick Actions</span>
                         </div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button class="btn btn-primary" onclick="navigateTo('active-auctions')">🔨 Create Auction</button>
-                            <button class="btn btn-primary" onclick="navigateTo('bidders')">👥 Register Bidder</button>
-                            <button class="btn btn-primary" onclick="navigateTo('schedule')">📅 Schedule Auction</button>
-                            <button class="btn btn-success" onclick="navigateTo('reports')">📊 View Reports</button>
+                            <button class="btn btn-primary" onclick="navigateTo('active-auctions')"><i class="fas fa-gavel"></i> Create Auction</button>
+                            <button class="btn btn-primary" onclick="navigateTo('bidders')"><i class="fas fa-users"></i> Register Bidder</button>
+                            <button class="btn btn-primary" onclick="navigateTo('schedule')"><i class="fas fa-calendar-alt"></i> Schedule Auction</button>
+                            <button class="btn btn-success" onclick="navigateTo('reports')"><i class="fas fa-chart-bar"></i> View Reports</button>
                         </div>
                     </div>
 
                     <div class="card">
                         <div class="card-header">
-                            <span>📈 Recent Activities</span>
+                            <span><i class="fas fa-chart-line"></i> Recent Activities</span>
                         </div>
                         <div class="item-card">
                             <div class="item-details">
@@ -712,7 +712,7 @@
 
                     <div class="card">
                         <div class="card-header">
-                            <span>🔨 Active Auctions</span>
+                            <span><i class="fas fa-gavel"></i> Active Auctions</span>
                             <span class="status-badge status-active">3 active</span>
                         </div>
                         <div id="auctionsContainer">
@@ -724,8 +724,8 @@
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-in-progress">Ending Soon</span>
-                                    <button class="btn btn-secondary btn-small" onclick="viewAuctionDetails('AUC-2024-001')">👁️ View</button>
-                                    <button class="btn btn-secondary btn-small" onclick="viewBidders('AUC-2024-001')">👥 Bidders</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewAuctionDetails('AUC-2024-001')"><i class="fas fa-eye"></i> View</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidders('AUC-2024-001')"><i class="fas fa-users"></i> Bidders</button>
                                 </div>
                             </div>
                             <div class="item-card" data-status="active">
@@ -736,8 +736,8 @@
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-active">Active</span>
-                                    <button class="btn btn-secondary btn-small" onclick="viewAuctionDetails('AUC-2024-002')">👁️ View</button>
-                                    <button class="btn btn-secondary btn-small" onclick="viewBidders('AUC-2024-002')">👥 Bidders</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewAuctionDetails('AUC-2024-002')"><i class="fas fa-eye"></i> View</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidders('AUC-2024-002')"><i class="fas fa-users"></i> Bidders</button>
                                 </div>
                             </div>
                             <div class="item-card" data-status="starting-soon">
@@ -748,8 +748,8 @@
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-pending">Starting Soon</span>
-                                    <button class="btn btn-secondary btn-small" onclick="viewAuctionDetails('AUC-2024-003')">👁️ View</button>
-                                    <button class="btn btn-secondary btn-small" onclick="viewBidders('AUC-2024-003')">👥 Bidders</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewAuctionDetails('AUC-2024-003')"><i class="fas fa-eye"></i> View</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidders('AUC-2024-003')"><i class="fas fa-users"></i> Bidders</button>
                                 </div>
                             </div>
                         </div>
@@ -773,7 +773,7 @@
 
                     <div class="card">
                         <div class="card-header">
-                            <span>🚚 Assets Ready for Auction</span>
+                            <span><i class="fas fa-truck"></i> Assets Ready for Auction</span>
                             <span class="status-badge status-pending">8 available</span>
                         </div>
                         <div id="assetsContainer">
@@ -785,8 +785,8 @@
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-pending">Fair</span>
-                                    <button class="btn btn-primary btn-small" onclick="viewAssetDetails('Truck LKC-7890')">👁️ View</button>
-                                    <button class="btn btn-success btn-small" onclick="scheduleAssetAuction('Truck LKC-7890')">📅 Schedule</button>
+                                    <button class="btn btn-primary btn-small" onclick="viewAssetDetails('Truck LKC-7890')"><i class="fas fa-eye"></i> View</button>
+                                    <button class="btn btn-success btn-small" onclick="scheduleAssetAuction('Truck LKC-7890')"><i class="fas fa-calendar-alt"></i> Schedule</button>
                                 </div>
                             </div>
                             <div class="item-card" data-status="good" data-type="equipment">
@@ -797,8 +797,8 @@
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-approved">Good</span>
-                                    <button class="btn btn-primary btn-small" onclick="viewAssetDetails('Excavator EX-003')">👁️ View</button>
-                                    <button class="btn btn-success btn-small" onclick="scheduleAssetAuction('Excavator EX-003')">📅 Schedule</button>
+                                    <button class="btn btn-primary btn-small" onclick="viewAssetDetails('Excavator EX-003')"><i class="fas fa-eye"></i> View</button>
+                                    <button class="btn btn-success btn-small" onclick="scheduleAssetAuction('Excavator EX-003')"><i class="fas fa-calendar-alt"></i> Schedule</button>
                                 </div>
                             </div>
                             <div class="item-card" data-status="fair" data-type="equipment">
@@ -809,8 +809,8 @@
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-pending">Fair</span>
-                                    <button class="btn btn-primary btn-small" onclick="viewAssetDetails('Generator GEN-002')">👁️ View</button>
-                                    <button class="btn btn-success btn-small" onclick="scheduleAssetAuction('Generator GEN-002')">📅 Schedule</button>
+                                    <button class="btn btn-primary btn-small" onclick="viewAssetDetails('Generator GEN-002')"><i class="fas fa-eye"></i> View</button>
+                                    <button class="btn btn-success btn-small" onclick="scheduleAssetAuction('Generator GEN-002')"><i class="fas fa-calendar-alt"></i> Schedule</button>
                                 </div>
                             </div>
                         </div>
@@ -838,7 +838,7 @@
 
                     <div class="card">
                         <div class="card-header">
-                            <span>👥 Registered Bidders</span>
+                            <span><i class="fas fa-users"></i> Registered Bidders</span>
                             <span class="status-badge status-approved">47 total, 5 pending</span>
                         </div>
                         <div id="biddersContainer">
@@ -851,7 +851,7 @@
                                 <div class="item-actions">
                                     <span class="status-badge status-pending">Pending</span>
                                     <button class="btn btn-success btn-small" onclick="approveBidder('BID-045')">✓ Approve</button>
-                                    <button class="btn btn-secondary btn-small" onclick="viewBidderDetails('BID-045')">👁️ View</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidderDetails('BID-045')"><i class="fas fa-eye"></i> View</button>
                                 </div>
                             </div>
                             <div class="item-card" data-status="verified" data-type="company">
@@ -862,7 +862,7 @@
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-approved">Verified</span>
-                                    <button class="btn btn-secondary btn-small" onclick="viewBidderDetails('BID-014')">👁️ View</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidderDetails('BID-014')"><i class="fas fa-eye"></i> View</button>
                                 </div>
                             </div>
                             <div class="item-card" data-status="verified" data-type="individual">
@@ -873,7 +873,7 @@
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-approved">Verified</span>
-                                    <button class="btn btn-secondary btn-small" onclick="viewBidderDetails('BID-032')">👁️ View</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidderDetails('BID-032')"><i class="fas fa-eye"></i> View</button>
                                 </div>
                             </div>
                             <div class="item-card" data-status="pending" data-type="company">
@@ -885,7 +885,7 @@
                                 <div class="item-actions">
                                     <span class="status-badge status-pending">Pending</span>
                                     <button class="btn btn-success btn-small" onclick="approveBidder('BID-050')">✓ Approve</button>
-                                    <button class="btn btn-secondary btn-small" onclick="viewBidderDetails('BID-050')">👁️ View</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidderDetails('BID-050')"><i class="fas fa-eye"></i> View</button>
                                 </div>
                             </div>
                         </div>
@@ -908,7 +908,7 @@
 
                     <div class="card">
                         <div class="card-header">
-                            <span>📅 Upcoming Auctions</span>
+                            <span><i class="fas fa-calendar-alt"></i> Upcoming Auctions</span>
                             <span class="status-badge status-scheduled">3 scheduled</span>
                         </div>
                         <div id="scheduleContainer">
@@ -920,8 +920,8 @@
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-scheduled">Scheduled</span>
-                                    <button class="btn btn-secondary btn-small" onclick="editSchedule('AUC-2024-004')">✏️ Edit</button>
-                                    <button class="btn btn-success btn-small" onclick="publishAuction('AUC-2024-004')">📢 Publish</button>
+                                    <button class="btn btn-secondary btn-small" onclick="editSchedule('AUC-2024-004')"><i class="fas fa-edit"></i> Edit</button>
+                                    <button class="btn btn-success btn-small" onclick="publishAuction('AUC-2024-004')"><i class="fas fa-bullhorn"></i> Publish</button>
                                 </div>
                             </div>
                             <div class="item-card" data-status="scheduled" data-period="this-week">
@@ -932,8 +932,8 @@
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-scheduled">Scheduled</span>
-                                    <button class="btn btn-secondary btn-small" onclick="editSchedule('AUC-2024-005')">✏️ Edit</button>
-                                    <button class="btn btn-success btn-small" onclick="publishAuction('AUC-2024-005')">📢 Publish</button>
+                                    <button class="btn btn-secondary btn-small" onclick="editSchedule('AUC-2024-005')"><i class="fas fa-edit"></i> Edit</button>
+                                    <button class="btn btn-success btn-small" onclick="publishAuction('AUC-2024-005')"><i class="fas fa-bullhorn"></i> Publish</button>
                                 </div>
                             </div>
                             <div class="item-card" data-status="scheduled" data-period="this-week">
@@ -944,8 +944,8 @@
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-scheduled">Scheduled</span>
-                                    <button class="btn btn-secondary btn-small" onclick="editSchedule('AUC-2024-006')">✏️ Edit</button>
-                                    <button class="btn btn-success btn-small" onclick="publishAuction('AUC-2024-006')">📢 Publish</button>
+                                    <button class="btn btn-secondary btn-small" onclick="editSchedule('AUC-2024-006')"><i class="fas fa-edit"></i> Edit</button>
+                                    <button class="btn btn-success btn-small" onclick="publishAuction('AUC-2024-006')"><i class="fas fa-bullhorn"></i> Publish</button>
                                 </div>
                             </div>
                         </div>
@@ -960,7 +960,7 @@
                     </div>
 
                     <div class="card">
-                        <div class="card-header">📈 Report Filters</div>
+                        <div class="card-header"><i class="fas fa-chart-line"></i> Report Filters</div>
                         <form id="reportFilters">
                             <div class="form-grid">
                                 <div class="form-group">
@@ -998,7 +998,7 @@
 
                     <div class="card">
                         <div class="card-header">
-                            <span>📊 Auction Report Results</span>
+                            <span><i class="fas fa-chart-bar"></i> Auction Report Results</span>
                             <span class="status-badge status-approved">3 results</span>
                         </div>
                         <div id="reportsContainer">
@@ -1010,7 +1010,7 @@
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-in-progress">Ending Soon</span>
-                                    <button class="btn btn-secondary btn-small" onclick="viewReportDetails('AUC-2024-001')">👁️ View</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewReportDetails('AUC-2024-001')"><i class="fas fa-eye"></i> View</button>
                                 </div>
                             </div>
                             <div class="item-card" data-status="active">
@@ -1021,7 +1021,7 @@
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-active">Active</span>
-                                    <button class="btn btn-secondary btn-small" onclick="viewReportDetails('AUC-2024-002')">👁️ View</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewReportDetails('AUC-2024-002')"><i class="fas fa-eye"></i> View</button>
                                 </div>
                             </div>
                             <div class="item-card" data-status="scheduled">
@@ -1032,7 +1032,7 @@
                                 </div>
                                 <div class="item-actions">
                                     <span class="status-badge status-pending">Starting Soon</span>
-                                    <button class="btn btn-secondary btn-small" onclick="viewReportDetails('AUC-2024-003')">👁️ View</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewReportDetails('AUC-2024-003')"><i class="fas fa-eye"></i> View</button>
                                 </div>
                             </div>
                         </div>
@@ -1050,7 +1050,7 @@
             <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Create New Auction</h2>
             <form id="createAuctionForm">
                 <div class="form-section">
-                    <h5>🆔 Basic Details</h5>
+                    <h5><i class="fas fa-id-card"></i> Basic Details</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Auction ID *</label>
@@ -1083,7 +1083,7 @@
                     </div>
                 </div>
                 <div class="form-section">
-                    <h5>📝 Notes</h5>
+                    <h5><i class="fas fa-sticky-note"></i> Notes</h5>
                     <textarea class="form-textarea" placeholder="Inspection notes, disclosures, etc."></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary">Create Auction</button>
@@ -1099,7 +1099,7 @@
             <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Register Bidder</h2>
             <form id="registerBidderForm">
                 <div class="form-section">
-                    <h5>👤 Bidder Information</h5>
+                    <h5><i class="fas fa-user"></i> Bidder Information</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Full Name *</label>
@@ -1153,7 +1153,7 @@
             <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Schedule Auction</h2>
             <form id="scheduleAuctionForm">
                 <div class="form-section">
-                    <h5>📅 Timing</h5>
+                    <h5><i class="fas fa-calendar-alt"></i> Timing</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Auction ID *</label>
@@ -1331,7 +1331,7 @@
                     <button class="close" onclick="this.closest('.modal').remove()">&times;</button>
                     <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Auction Details - ${id}</h2>
                     <div class="form-section">
-                        <h5>🔨 Auction Information</h5>
+                        <h5><i class="fas fa-gavel"></i> Auction Information</h5>
                         <div><strong>Auction ID:</strong> ${id}</div>
                         <div><strong>Asset:</strong> Truck LX-A-9876 (2019)</div>
                         <div><strong>Status:</strong> <span class="status-badge status-in-progress">Active - Ending Soon</span></div>
@@ -1341,7 +1341,7 @@
                         <div><strong>Time Remaining:</strong> 2 hours 15 minutes</div>
                     </div>
                     <div class="form-section">
-                        <h5>💰 Bidding Information</h5>
+                        <h5><i class="fas fa-money-bill-wave"></i> Bidding Information</h5>
                         <div><strong>Reserve Price:</strong> $18,000</div>
                         <div><strong>Starting Bid:</strong> $18,000</div>
                         <div><strong>Current Bid:</strong> $18,500</div>
@@ -1351,7 +1351,7 @@
                         <div><strong>Bid Increment:</strong> $100</div>
                     </div>
                     <div class="form-section">
-                        <h5>🚚 Asset Details</h5>
+                        <h5><i class="fas fa-truck"></i> Asset Details</h5>
                         <div><strong>Make/Model:</strong> Truck LX-A-9876</div>
                         <div><strong>Year:</strong> 2019</div>
                         <div><strong>Mileage:</strong> 85,000 km</div>
@@ -1359,7 +1359,7 @@
                         <div><strong>Location:</strong> Main Depot - Colombo</div>
                     </div>
                     <div class="form-section">
-                        <h5>📊 Bidding Activity</h5>
+                        <h5><i class="fas fa-chart-bar"></i> Bidding Activity</h5>
                         <div style="margin-bottom: 8px;">
                             <strong>Recent Bids:</strong><br>
                             $18,500 - BID-032 (M. Jayasekara) - 5 min ago<br>
@@ -1382,7 +1382,7 @@
                     <button class="close" onclick="this.closest('.modal').remove()">&times;</button>
                     <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Bidders for ${auctionId}</h2>
                     <div class="form-section">
-                        <h5>👥 Registered Bidders (12)</h5>
+                        <h5><i class="fas fa-users"></i> Registered Bidders (12)</h5>
                         <div style="margin-bottom: 8px;">
                             <strong>Active Bidders:</strong><br><br>
                             <strong>BID-032</strong> - M. Jayasekara | Individual<br>

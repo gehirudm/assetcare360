@@ -400,6 +400,11 @@
             color: #fff;
         }
 
+        .status-assigned {
+            background: #2563eb;
+            color: #fff;
+        }
+
         .status-resolved {
             background: var(--kelly-green);
             color: #fff;
@@ -680,6 +685,7 @@
         .status-text.status-out-of-stock { color: var(--danger); }
         .status-text.status-pending { color: var(--warn); }
         .status-text.status-completed { color: var(--kelly-green); }
+        .status-text.status-assigned { color: #2563eb; }
 
         .badge {
             display: inline-block;
@@ -1528,7 +1534,7 @@
 
                     <div class="card">
                         <div class="card-header">
-                            📋 My Weekly Check History
+                            <i class="fas fa-clipboard-list"></i> My Weekly Check History
                             <div class="filter-controls">
                                 <button class="filter-btn active" onclick="filterChecksByStatus('all')">All</button>
                                 <button class="filter-btn" onclick="filterChecksByStatus('approved')">Approved</button>
@@ -1539,7 +1545,7 @@
                     </div>
 
                     <div class="card">
-                        <div class="card-header">✅ Weekly Inspection Checklist Items</div>
+                        <div class="card-header"><i class="fas fa-check-square"></i> Weekly Inspection Checklist Items</div>
                         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
                             <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">
                                 <strong>✓</strong> Engine Oil Level
@@ -1581,7 +1587,7 @@
 
                     <div class="card">
                         <div class="card-header">
-                            🚨 My Submitted Reports
+                            <i class="fas fa-exclamation-circle"></i> My Submitted Reports
                             <div style="display: flex; flex-direction: column; gap: 8px;">
                                 <div class="filter-controls">
                                     <span style="font-weight: 600; margin-right: 10px;">Type:</span>
@@ -1615,7 +1621,7 @@
                     </div>
 
                     <div class="card">
-                        <div class="card-header">⛽ Recent Fuel Logs</div>
+                        <div class="card-header"><i class="fas fa-gas-pump"></i> Recent Fuel Logs</div>
                         <div class="inventory-item">
                             <div class="item-details">
                                 <strong><i class="fas fa-gas-pump"></i> FL-001</strong>
@@ -1751,7 +1757,7 @@
                     </div>
 
                     <div class="card">
-                        <div class="card-header">🎫 My Transport Tickets</div>
+                        <div class="card-header"><i class="fas fa-ticket-alt"></i> My Transport Tickets</div>
                         <div class="inventory-item">
                             <div class="item-details">
                                 <strong><i class="fas fa-ticket-alt"></i> TT-001</strong>
@@ -1832,7 +1838,7 @@
 
                     <div class="grid">
                         <div class="card">
-                            <div class="card-header">🏪 AutoCare Service Center</div>
+                            <div class="card-header"><i class="fas fa-store"></i> AutoCare Service Center</div>
                             <div style="margin-bottom: 10px;">
                                 <div style="margin-bottom: 5px;"><strong>Address:</strong> 123 Galle Road, Colombo 03</div>
                                 <div style="margin-bottom: 5px;"><strong>Distance:</strong> 2.5 km from your location</div>
@@ -1847,7 +1853,7 @@
                         </div>
                         
                         <div class="card">
-                            <div class="card-header">🔧 Reliable Motors</div>
+                            <div class="card-header"><i class="fas fa-wrench"></i> Reliable Motors</div>
                             <div style="margin-bottom: 10px;">
                                 <div style="margin-bottom: 5px;"><strong>Address:</strong> 456 Kandy Road, Kadawatha</div>
                                 <div style="margin-bottom: 5px;"><strong>Distance:</strong> 8.2 km from your location</div>
@@ -1862,7 +1868,7 @@
                         </div>
 
                         <div class="card">
-                            <div class="card-header">🛠️ Quick Fix Auto</div>
+                            <div class="card-header"><i class="fas fa-tools"></i> Quick Fix Auto</div>
                             <div style="margin-bottom: 10px;">
                                 <div style="margin-bottom: 5px;"><strong>Address:</strong> 789 High Level Road, Nugegoda</div>
                                 <div style="margin-bottom: 5px;"><strong>Distance:</strong> 12.1 km from your location</div>
@@ -1878,7 +1884,7 @@
                     </div>
 
                     <div class="card">
-                        <div class="card-header">📍 All Registered Garages</div>
+                        <div class="card-header"><i class="fas fa-map-marker-alt"></i> All Registered Garages</div>
                         <table class="table">
                             <thead>
                                 <tr>
@@ -1954,7 +1960,7 @@
             </div>
             <form id="startTripForm">
                 <div class="form-section">
-                    <h5>🧭 Trip Information</h5>
+                    <h5><i class="fas fa-compass"></i> Trip Information</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Origin *</label>
@@ -1997,7 +2003,7 @@
             <form id="endTripForm">
                 <input type="hidden" id="endTripId">
                 <div class="form-section">
-                    <h5>🏁 Trip Completion</h5>
+                    <h5><i class="fas fa-flag-checkered"></i> Trip Completion</h5>
                     <div class="form-group">
                         <label class="form-label">Final Odometer Reading *</label>
                         <input type="number" class="form-input" id="endTripOdometer" min="0" placeholder="Enter final odometer reading" required>
@@ -2043,7 +2049,7 @@
             <form id="editTripForm">
                 <input type="hidden" id="editTripId">
                 <div class="form-section">
-                    <h5>🧭 Trip Information</h5>
+                    <h5><i class="fas fa-compass"></i> Trip Information</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Origin *</label>
@@ -2092,7 +2098,7 @@
             </div>
             <form id="dailyCheckForm">
                 <div class="form-section">
-                    <h5>🚚 Vehicle & Inspection Details</h5>
+                    <h5><i class="fas fa-truck"></i> Vehicle & Inspection Details</h5>
                     <div style="margin-bottom: 15px; padding: 12px; background: #e3f2fd; border-left: 4px solid #2196F3; border-radius: 4px;">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-car" style="color: #2196F3;"></i>
@@ -2114,7 +2120,7 @@
                 </div>
 
                 <div class="form-section">
-                    <h5>✅ Weekly Inspection Checklist</h5>
+                    <h5><i class="fas fa-check-square"></i> Weekly Inspection Checklist</h5>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                         <div class="form-group">
                             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
@@ -2156,7 +2162,7 @@
                 </div>
 
                 <div class="form-section">
-                    <h5>📝 Additional Notes</h5>
+                    <h5><i class="fas fa-sticky-note"></i> Additional Notes</h5>
                     <textarea class="form-textarea" placeholder="Optional notes or observations about vehicle condition..."></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Submit Weekly Check</button>
@@ -2173,7 +2179,7 @@
             </div>
             <form id="breakdownForm">
                 <div class="form-section">
-                    <h5>🚨 Incident Details</h5>
+                    <h5><i class="fas fa-exclamation-circle"></i> Incident Details</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Vehicle Registration *</label>
@@ -2206,14 +2212,14 @@
                 </div>
 
                 <div class="form-section">
-                    <h5>📝 Problem Description</h5>
+                    <h5><i class="fas fa-file-alt"></i> Problem Description</h5>
                     <textarea id="breakdownDescription" class="form-textarea" placeholder="Describe the problem in detail: symptoms, dashboard lights, unusual noises, smells, or behaviors..." required></textarea>
                 </div>
 
                 <div class="form-section">
-                    <h5>📷 Photo Documentation</h5>
+                    <h5><i class="fas fa-camera"></i> Photo Documentation</h5>
                     <div class="photo-upload" onclick="document.getElementById('breakdownPhotos').click()">
-                        <div style="font-size: 2rem; margin-bottom: 10px;">📷</div>
+                        <div style="font-size: 2rem; margin-bottom: 10px;"><i class="fas fa-camera"></i></div>
                         <div style="font-weight: 600; margin-bottom: 5px;">Click to upload photos</div>
                         <div style="color: var(--muted); font-size: 14px;">Upload photos of the issue (max 5 files)</div>
                         <input type="file" id="breakdownPhotos" multiple accept="image/*" style="display: none;" onchange="handlePhotoUpload(this, 'breakdownPhotoList')">
@@ -2235,7 +2241,7 @@
             </div>
             <form id="breakdownInRouteForm">
                 <div class="form-section">
-                    <h5>🚨 Incident Details</h5>
+                    <h5><i class="fas fa-exclamation-circle"></i> Incident Details</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Vehicle Registration *</label>
@@ -2278,14 +2284,14 @@
                 </div>
 
                 <div class="form-section">
-                    <h5>📝 Problem Description</h5>
+                    <h5><i class="fas fa-file-alt"></i> Problem Description</h5>
                     <textarea id="routeBreakdownDescription" class="form-textarea" placeholder="Describe the problem in detail: symptoms, dashboard lights, unusual noises, smells, or behaviors..." required></textarea>
                 </div>
 
                 <div class="form-section">
-                    <h5>📷 Photo Documentation</h5>
+                    <h5><i class="fas fa-camera"></i> Photo Documentation</h5>
                     <div class="photo-upload" onclick="document.getElementById('breakdownInRoutePhotos').click()">
-                        <div style="font-size: 2rem; margin-bottom: 10px;">📷</div>
+                        <div style="font-size: 2rem; margin-bottom: 10px;"><i class="fas fa-camera"></i></div>
                         <div style="font-weight: 600; margin-bottom: 5px;">Click to upload photos</div>
                         <div style="color: var(--muted); font-size: 14px;">Upload photos of the issue (max 5 files)</div>
                         <input type="file" id="breakdownInRoutePhotos" multiple accept="image/*" style="display: none;" onchange="handlePhotoUpload(this, 'breakdownInRoutePhotoList')">
@@ -2307,7 +2313,7 @@
             </div>
             
             <div class="form-section">
-                <h5>📋 Breakdown Details</h5>
+                <h5><i class="fas fa-clipboard-list"></i> Breakdown Details</h5>
                 <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div>
@@ -2331,7 +2337,7 @@
             </div>
 
             <div class="form-section">
-                <h5>👨‍🔧 Technician Information</h5>
+                <h5><i class="fas fa-user-cog"></i> Technician Information</h5>
                 <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
                         <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--tang-blue); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 600;">
@@ -2344,19 +2350,19 @@
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div>
-                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">📞 Contact</div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;"><i class="fas fa-phone"></i> Contact</div>
                             <div style="font-weight: 600;">+94 77 123 4567</div>
                         </div>
                         <div>
-                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">📧 Email</div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;"><i class="fas fa-envelope"></i> Email</div>
                             <div style="font-weight: 600;">kamal.p@company.lk</div>
                         </div>
                         <div>
-                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">🆔 Employee ID</div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;"><i class="fas fa-id-badge"></i> Employee ID</div>
                             <div style="font-weight: 600;">TECH-045</div>
                         </div>
                         <div>
-                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">⏱️ Assigned Time</div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;"><i class="fas fa-clock"></i> Assigned Time</div>
                             <div style="font-weight: 600;">Aug 22, 03:30 PM</div>
                         </div>
                     </div>
@@ -2364,7 +2370,7 @@
             </div>
 
             <div class="form-section">
-                <h5>📝 Work Progress</h5>
+                <h5><i class="fas fa-tasks"></i> Work Progress</h5>
                 <div style="background: var(--light-bg); padding: 15px; border-radius: 8px;">
                     <div style="margin-bottom: 15px;">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
@@ -2391,7 +2397,7 @@
             </div>
 
             <div style="display: flex; gap: 10px;">
-                <button class="btn btn-primary" onclick="alert('Calling technician...')">📞 Call Technician</button>
+                <button class="btn btn-primary" onclick="alert('Calling technician...')"><i class="fas fa-phone"></i> Call Technician</button>
                 <button class="btn btn-secondary" onclick="closeModal('technicianTrackingModal')">Close</button>
             </div>
         </div>
@@ -2406,7 +2412,7 @@
             </div>
             
             <div class="form-section">
-                <h5>📍 Your Current Location: Matara Road</h5>
+                <h5><i class="fas fa-map-marker-alt"></i> Your Current Location: Matara Road</h5>
                 <p style="color: var(--muted); margin-bottom: 20px;">Showing authorized garages within 10km radius</p>
                 
                 <div style="display: flex; flex-direction: column; gap: 15px;">
@@ -2423,25 +2429,25 @@
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
                             <div>
-                                <div style="color: var(--muted); font-size: 12px;">📍 Distance</div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-map-marker-alt"></i> Distance</div>
                                 <div style="font-weight: 600;">2.3 km away</div>
                             </div>
                             <div>
-                                <div style="color: var(--muted); font-size: 12px;">⭐ Rating</div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-star"></i> Rating</div>
                                 <div style="font-weight: 600;">4.8/5 (234 reviews)</div>
                             </div>
                             <div>
-                                <div style="color: var(--muted); font-size: 12px;">📞 Contact</div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-phone"></i> Contact</div>
                                 <div style="font-weight: 600;">+94 41 222 3456</div>
                             </div>
                             <div>
-                                <div style="color: var(--muted); font-size: 12px;">⏱️ ETA</div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-clock"></i> ETA</div>
                                 <div style="font-weight: 600;">5 mins drive</div>
                             </div>
                         </div>
                         <div style="display: flex; gap: 10px;">
-                            <button class="btn btn-primary btn-small" onclick="alert('Calling garage...')">📞 Call</button>
-                            <button class="btn btn-secondary btn-small" onclick="alert('Getting directions...')">🗺️ Directions</button>
+                            <button class="btn btn-primary btn-small" onclick="alert('Calling garage...')"><i class="fas fa-phone"></i> Call</button>
+                            <button class="btn btn-secondary btn-small" onclick="alert('Getting directions...')"><i class="fas fa-map"></i> Directions</button>
                         </div>
                     </div>
 
@@ -2458,25 +2464,25 @@
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
                             <div>
-                                <div style="color: var(--muted); font-size: 12px;">📍 Distance</div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-map-marker-alt"></i> Distance</div>
                                 <div style="font-weight: 600;">4.7 km away</div>
                             </div>
                             <div>
-                                <div style="color: var(--muted); font-size: 12px;">⭐ Rating</div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-star"></i> Rating</div>
                                 <div style="font-weight: 600;">4.6/5 (189 reviews)</div>
                             </div>
                             <div>
-                                <div style="color: var(--muted); font-size: 12px;">📞 Contact</div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-phone"></i> Contact</div>
                                 <div style="font-weight: 600;">+94 41 234 5678</div>
                             </div>
                             <div>
-                                <div style="color: var(--muted); font-size: 12px;">⏱️ ETA</div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-clock"></i> ETA</div>
                                 <div style="font-weight: 600;">10 mins drive</div>
                             </div>
                         </div>
                         <div style="display: flex; gap: 10px;">
-                            <button class="btn btn-primary btn-small" onclick="alert('Calling garage...')">📞 Call</button>
-                            <button class="btn btn-secondary btn-small" onclick="alert('Getting directions...')">🗺️ Directions</button>
+                            <button class="btn btn-primary btn-small" onclick="alert('Calling garage...')"><i class="fas fa-phone"></i> Call</button>
+                            <button class="btn btn-secondary btn-small" onclick="alert('Getting directions...')"><i class="fas fa-map"></i> Directions</button>
                         </div>
                     </div>
 
@@ -2493,25 +2499,25 @@
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
                             <div>
-                                <div style="color: var(--muted); font-size: 12px;">📍 Distance</div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-map-marker-alt"></i> Distance</div>
                                 <div style="font-weight: 600;">6.1 km away</div>
                             </div>
                             <div>
-                                <div style="color: var(--muted); font-size: 12px;">⭐ Rating</div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-star"></i> Rating</div>
                                 <div style="font-weight: 600;">4.5/5 (156 reviews)</div>
                             </div>
                             <div>
-                                <div style="color: var(--muted); font-size: 12px;">📞 Contact</div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-phone"></i> Contact</div>
                                 <div style="font-weight: 600;">+94 41 345 6789</div>
                             </div>
                             <div>
-                                <div style="color: var(--muted); font-size: 12px;">⏱️ ETA</div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-clock"></i> ETA</div>
                                 <div style="font-weight: 600;">12 mins drive</div>
                             </div>
                         </div>
                         <div style="display: flex; gap: 10px;">
-                            <button class="btn btn-primary btn-small" onclick="alert('Calling garage...')">📞 Call</button>
-                            <button class="btn btn-secondary btn-small" onclick="alert('Getting directions...')">🗺️ Directions</button>
+                            <button class="btn btn-primary btn-small" onclick="alert('Calling garage...')"><i class="fas fa-phone"></i> Call</button>
+                            <button class="btn btn-secondary btn-small" onclick="alert('Getting directions...')"><i class="fas fa-map"></i> Directions</button>
                         </div>
                     </div>
                 </div>
@@ -2531,7 +2537,7 @@
             <form id="completeBreakdownForm">
                 <input type="hidden" id="completeBreakdownId">
                 <div class="form-section">
-                    <h5>💰 Repair Budget Information</h5>
+                    <h5><i class="fas fa-money-bill-wave"></i> Repair Budget Information</h5>
                     <div class="form-group">
                         <label class="form-label">Breakdown ID</label>
                         <input type="text" class="form-input" id="breakdownIdDisplay" readonly>
@@ -2554,7 +2560,7 @@
                         <input type="text" class="form-input" id="invoiceNumber" placeholder="Invoice or receipt number">
                     </div>
                 </div>
-                <button type="submit" class="btn btn-success">✅ Mark as Resolved</button>
+                <button type="submit" class="btn btn-success"><i class="fas fa-check-circle"></i> Mark as Resolved</button>
                 <button type="button" class="btn btn-secondary" onclick="closeModal('completeBreakdownModal')">Cancel</button>
             </form>
         </div>
@@ -2569,7 +2575,7 @@
             </div>
             <form id="fuelMileageForm">
                 <div class="form-section">
-                    <h5>⛽ Refuel Details</h5>
+                    <h5><i class="fas fa-gas-pump"></i> Refuel Details</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Vehicle Registration *</label>
@@ -2625,7 +2631,7 @@
             </div>
             <form id="transportTicketForm">
                 <div class="form-section">
-                    <h5>🧭 Route & Schedule</h5>
+                    <h5><i class="fas fa-compass"></i> Route & Schedule</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Origin *</label>
@@ -2649,7 +2655,7 @@
                 </div>
 
                 <div class="form-section">
-                    <h5>📦 Cargo Details</h5>
+                    <h5><i class="fas fa-box"></i> Cargo Details</h5>
                     <div class="form-group">
                         <label class="form-label">Cargo Description *</label>
                         <input type="text" class="form-input" placeholder="Describe the cargo" required>
@@ -2686,10 +2692,10 @@
     <div id="ticketDetailsModal" class="modal">
         <div class="modal-content">
             <button class="close" onclick="closeModal('ticketDetailsModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">🎫 Transport Ticket Details</h2>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-ticket-alt"></i> Transport Ticket Details</h2>
             
             <div class="form-section">
-                <h5>📋 Ticket Information</h5>
+                <h5><i class="fas fa-clipboard-list"></i> Ticket Information</h5>
                 <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div>
@@ -2713,7 +2719,7 @@
             </div>
 
             <div class="form-section">
-                <h5>🧭 Route Information</h5>
+                <h5><i class="fas fa-compass"></i> Route Information</h5>
                 <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div>
@@ -2737,7 +2743,7 @@
             </div>
 
             <div class="form-section">
-                <h5>📦 Cargo Details</h5>
+                <h5><i class="fas fa-box"></i> Cargo Details</h5>
                 <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                         <div>
@@ -2767,7 +2773,7 @@
             </div>
 
             <div class="form-section">
-                <h5>👤 Recipient Information</h5>
+                <h5><i class="fas fa-user"></i> Recipient Information</h5>
                 <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div>
@@ -2791,7 +2797,7 @@
             </div>
 
             <div class="form-section">
-                <h5>✅ Delivery Status</h5>
+                <h5><i class="fas fa-check-circle"></i> Delivery Status</h5>
                 <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div>
@@ -2815,7 +2821,7 @@
             </div>
 
             <div style="display: flex; gap: 10px;">
-                <button class="btn btn-primary" onclick="alert('Printing ticket...')">🖨️ Print Ticket</button>
+                <button class="btn btn-primary" onclick="alert('Printing ticket...')"><i class="fas fa-print"></i> Print Ticket</button>
                 <button class="btn btn-secondary" onclick="closeModal('ticketDetailsModal')">Close</button>
             </div>
         </div>
@@ -2825,10 +2831,10 @@
     <div id="tripDetailsModal" class="modal">
         <div class="modal-content">
             <button class="close" onclick="closeModal('tripDetailsModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">📋 Trip Details</h2>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-clipboard-list"></i> Trip Details</h2>
             
             <div class="form-section">
-                <h5>🆔 Trip Information</h5>
+                <h5><i class="fas fa-id-card"></i> Trip Information</h5>
                 <div style="display: grid; gap: 10px;">
                     <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
                         <strong>Trip ID:</strong>
@@ -2842,7 +2848,7 @@
             </div>
 
             <div class="form-section">
-                <h5>🚗 Route Details</h5>
+                <h5><i class="fas fa-route"></i> Route Details</h5>
                 <div style="display: grid; gap: 10px;">
                     <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
                         <strong>Route:</strong>
@@ -2860,7 +2866,7 @@
             </div>
 
             <div class="form-section">
-                <h5>⏰ Time Information</h5>
+                <h5><i class="fas fa-clock"></i> Time Information</h5>
                 <div style="display: grid; gap: 10px;">
                     <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
                         <strong>Date:</strong>
@@ -2878,7 +2884,7 @@
             </div>
 
             <div class="form-section">
-                <h5>🚚 Vehicle Information</h5>
+                <h5><i class="fas fa-truck"></i> Vehicle Information</h5>
                 <div style="display: grid; gap: 10px;">
                     <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
                         <strong>Vehicle:</strong>
@@ -2906,7 +2912,7 @@
             </div>
             
             <div class="form-section">
-                <h5>🆔 Check Information</h5>
+                <h5><i class="fas fa-id-card"></i> Check Information</h5>
                 <div style="display: grid; gap: 10px;">
                     <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
                         <strong>Check ID:</strong>
@@ -2924,7 +2930,7 @@
             </div>
 
             <div class="form-section">
-                <h5>🚚 Vehicle Information</h5>
+                <h5><i class="fas fa-truck"></i> Vehicle Information</h5>
                 <div style="display: grid; gap: 10px;">
                     <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
                         <strong>Vehicle:</strong>
@@ -2938,7 +2944,7 @@
             </div>
 
             <div class="form-section">
-                <h5>✅ Checklist Items</h5>
+                <h5><i class="fas fa-check-square"></i> Checklist Items</h5>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div style="display: flex; align-items: center; gap: 8px; padding: 10px; background: #e8f5e8; border-radius: 6px;">
                         <i class="fas fa-check-circle" style="color: #27ae60;"></i> Engine Oil Level
@@ -2962,14 +2968,14 @@
             </div>
 
             <div class="form-section">
-                <h5>📝 Additional Notes</h5>
+                <h5><i class="fas fa-sticky-note"></i> Additional Notes</h5>
                 <div style="padding: 15px; background: #f8f9fa; border-radius: 6px; min-height: 50px;">
                     <p id="detail-check-notes" style="margin: 0; color: var(--text-700);">-</p>
                 </div>
             </div>
 
             <div class="form-section" id="detail-check-rejection-section" style="display: none;">
-                <h5>❌ Rejection Reason</h5>
+                <h5><i class="fas fa-times-circle"></i> Rejection Reason</h5>
                 <div style="padding: 15px; background: #fee; border-radius: 6px; border: 1px solid #fcc;">
                     <p id="detail-check-rejection" style="margin: 0; color: var(--danger);">-</p>
                 </div>
@@ -2982,133 +2988,7 @@
     </div>
 
     <!-- Breakdown Details Modal -->
-    <div id="breakdownDetailsModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-exclamation-triangle"></i> Breakdown Details</h2>
-                <button class="btn-close" onclick="closeModal('breakdownDetailsModal')">&times;</button>
-            </div>
-            
-            <div class="form-section">
-                <h5>📋 Breakdown Information</h5>
-                <div style="background: var(--stone-200); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div>
-                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Breakdown ID</div>
-                            <div style="font-weight: 600; font-size: 18px;" id="breakdown-detail-id">-</div>
-                        </div>
-                        <div>
-                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Status</div>
-                            <div style="font-weight: 600;" id="breakdown-detail-status">-</div>
-                        </div>
-                        <div>
-                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Date</div>
-                            <div style="font-weight: 600;" id="breakdown-detail-date">-</div>
-                        </div>
-                        <div>
-                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Severity</div>
-                            <div style="font-weight: 600;" id="breakdown-detail-severity">-</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-section">
-                <h5>🚗 Vehicle Information</h5>
-                <div style="background: var(--stone-200); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div>
-                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Vehicle Plate</div>
-                            <div style="font-weight: 600;" id="breakdown-detail-vehicle">-</div>
-                        </div>
-                        <div>
-                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Breakdown Type</div>
-                            <div style="font-weight: 600;" id="breakdown-detail-type">-</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-section">
-                <h5>📝 Description</h5>
-                <div style="padding: 15px; background: var(--stone-200); border-radius: 8px; min-height: 60px;">
-                    <p id="breakdown-detail-description" style="margin: 0; color: var(--text-700);">-</p>
-                </div>
-            </div>
-
-            <button class="btn btn-secondary" onclick="closeModal('breakdownDetailsModal')">
-                <i class="fas fa-times"></i> Close
-            </button>
-        </div>
-    </div>
-
-    <!-- Route Breakdown Details Modal -->
-    <div id="routeBreakdownDetailsModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-road"></i> Route Breakdown Details</h2>
-                <button class="btn-close" onclick="closeModal('routeBreakdownDetailsModal')">&times;</button>
-            </div>
-            
-            <div class="form-section">
-                <h5>📋 Breakdown Information</h5>
-                <div style="background: var(--stone-200); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div>
-                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Breakdown ID</div>
-                            <div style="font-weight: 600; font-size: 18px;" id="route-detail-id">-</div>
-                        </div>
-                        <div>
-                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Status</div>
-                            <div style="font-weight: 600;" id="route-detail-status">-</div>
-                        </div>
-                        <div>
-                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Date & Time</div>
-                            <div style="font-weight: 600;" id="route-detail-datetime">-</div>
-                        </div>
-                        <div>
-                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Severity</div>
-                            <div style="font-weight: 600;" id="route-detail-severity">-</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-section">
-                <h5>🚗 Vehicle Information</h5>
-                <div style="background: var(--stone-200); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div>
-                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Vehicle Plate</div>
-                            <div style="font-weight: 600;" id="route-detail-vehicle">-</div>
-                        </div>
-                        <div>
-                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Breakdown Type</div>
-                            <div style="font-weight: 600;" id="route-detail-type">-</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-section">
-                <h5>📍 Location</h5>
-                <div style="padding: 15px; background: var(--stone-200); border-radius: 8px; margin-bottom: 20px;">
-                    <p id="route-detail-location" style="margin: 0; color: var(--text-700); font-weight: 600;">-</p>
-                </div>
-            </div>
-
-            <div class="form-section">
-                <h5>📝 Description</h5>
-                <div style="padding: 15px; background: var(--stone-200); border-radius: 8px; min-height: 60px;">
-                    <p id="route-detail-description" style="margin: 0; color: var(--text-700);">-</p>
-                </div>
-            </div>
-
-            <button class="btn btn-secondary" onclick="closeModal('routeBreakdownDetailsModal')">
-                <i class="fas fa-times"></i> Close
-            </button>
-        </div>
-    </div>
+    <!-- Breakdown Details Modals are now created dynamically by viewBreakdownDetails() and viewRouteBreakdownDetails() -->
 
     <!-- Toast Notification -->
     <div id="toast" class="toast">
@@ -3170,7 +3050,7 @@
                 modal.style.display = 'none';
                 document.body.style.overflow = '';
                 // Remove dynamically created modals
-                if (modalId.startsWith('detailsModal_')) {
+                if (modalId.startsWith('detailsModal_') || modalId.startsWith('dynamic')) {
                     setTimeout(() => modal.remove(), 300);
                 }
             }
@@ -3591,7 +3471,7 @@
                 }
             }
             
-            showToast(`✅ Breakdown ${breakdownId} marked as resolved! Budget: LKR ${parseFloat(budget).toLocaleString()}`);
+            showToast(`Breakdown ${breakdownId} marked as resolved! Budget: LKR ${parseFloat(budget).toLocaleString()}`);
             closeModal('completeBreakdownModal');
             this.reset();
         });
@@ -4144,8 +4024,7 @@
                     check.week_end_date === weekEndDate && check.status !== 'rejected'
                 );
                 
-                const isWeekComplete = dayOfWeek === 0; // Sunday
-                
+                // Allow daily submissions - removed Sunday-only restriction
                 if (existingCheck) {
                     if (statusSpan) statusSpan.style.display = 'inline';
                     checkBtn.innerHTML = '<i class="fas fa-check-circle"></i> Week Check Submitted';
@@ -4154,15 +4033,8 @@
                     checkBtn.disabled = true;
                     checkBtn.style.opacity = '0.7';
                     checkBtn.style.cursor = 'not-allowed';
-                } else if (!isWeekComplete) {
-                    if (statusSpan) statusSpan.style.display = 'none';
-                    checkBtn.innerHTML = '<i class="fas fa-clock"></i> Available on Sunday';
-                    checkBtn.classList.remove('btn-secondary');
-                    checkBtn.classList.add('btn-primary');
-                    checkBtn.disabled = true;
-                    checkBtn.style.opacity = '0.6';
-                    checkBtn.style.cursor = 'not-allowed';
                 } else {
+                    // Button is always enabled for submission (any day of the week)
                     if (statusSpan) statusSpan.style.display = 'none';
                     checkBtn.innerHTML = '<i class="fas fa-clipboard-check"></i> Submit Weekly Vehicle Check';
                     checkBtn.classList.remove('btn-secondary');
@@ -4452,38 +4324,48 @@
             container.innerHTML = '';
             container.appendChild(header);
 
-            // Combine both types and limit to 2 most recent breakdowns
+            // Combine both types
             const allBreakdowns = [];
             
             // Add regular breakdown reports
             reports.forEach(report => {
+                // Use fault ticket status if available, otherwise use breakdown status
+                // This ensures driver sees the actual work status, not just the breakdown report status
+                const actualStatus = report.ticket_status || report.status;
+                
                 allBreakdowns.push({
                     type: 'breakdown',
                     id: report.id,
                     breakdown_id: report.breakdown_id,
-                    status: report.status,
+                    status: actualStatus,
                     severity: report.severity,
                     date: new Date(report.breakdown_date),
                     dateStr: new Date(report.breakdown_date).toLocaleDateString('en-US', { 
                         month: 'short', day: 'numeric', year: 'numeric' 
                     }),
-                    data: report
+                    data: report,
+                    assigned_technicians: report.assigned_technicians || []
                 });
             });
             
             // Add route breakdowns
             routeBreakdowns.forEach(breakdown => {
+                // Use fault ticket status if available, otherwise use breakdown status
+                // This ensures driver sees the actual work status, not just the breakdown report status
+                const actualStatus = breakdown.ticket_status || breakdown.status;
+                
                 allBreakdowns.push({
                     type: 'route',
                     id: breakdown.id,
                     breakdown_id: breakdown.route_breakdown_id,
-                    status: breakdown.status,
+                    status: actualStatus,
                     severity: breakdown.severity,
                     date: new Date(breakdown.breakdown_datetime),
                     dateStr: new Date(breakdown.breakdown_datetime).toLocaleString('en-US', { 
                         month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
                     }),
-                    data: breakdown
+                    data: breakdown,
+                    assigned_technicians: breakdown.assigned_technicians || []
                 });
             });
 
@@ -4494,9 +4376,38 @@
 
             // Display all breakdowns
             allBreakdowns.forEach(item => {
-                const statusClass = item.status === 'Resolved' ? 'status-completed' : '';
-                const statusColor = item.status === 'Pending' ? '#f39c12' : '#27ae60';
-                const dataStatus = item.status === 'Resolved' ? 'resolved' : 'in-progress';
+                // Define status colors and classes for all possible statuses
+                let statusColor, statusClass, dataStatus;
+                
+                switch(item.status) {
+                    case 'Resolved':
+                        statusColor = '#10b981';
+                        statusClass = 'status-completed';
+                        dataStatus = 'resolved';
+                        break;
+                    case 'Assigned':
+                        statusColor = '#2563eb';
+                        statusClass = 'status-assigned';
+                        dataStatus = 'assigned';
+                        break;
+                    case 'In Progress':
+                        statusColor = '#8b5cf6';
+                        statusClass = 'status-in-progress';
+                        dataStatus = 'in-progress';
+                        break;
+                    case 'Waiting for Spare Parts':
+                    case 'Parts Approved':
+                        statusColor = '#f59e0b';
+                        statusClass = 'status-waiting';
+                        dataStatus = 'waiting';
+                        break;
+                    case 'Pending':
+                    default:
+                        statusColor = '#f39c12';
+                        statusClass = 'status-pending';
+                        dataStatus = 'pending';
+                        break;
+                }
                 
                 const severityIcon = item.severity === 'critical' ? 'fa-exclamation-circle' : 
                                     item.severity === 'high' ? 'fa-exclamation-triangle' : 'fa-info-circle';
@@ -4522,6 +4433,15 @@
 
                 const breakdownType = item.type === 'route' ? item.data.breakdown_type : item.data.breakdown_type;
                 
+                // Build technician info if assigned (only show when not Pending)
+                let technicianInfo = '';
+                if (item.status !== 'Pending' && item.assigned_technicians && item.assigned_technicians.length > 0) {
+                    const techNames = item.assigned_technicians.map(t => t.technician_name || t.name).join(', ');
+                    technicianInfo = `<div style="margin-top: 5px; color: #2563eb; font-size: 12px; font-weight: 500;">
+                        <i class="fas fa-user-cog"></i> Assigned to: ${techNames}
+                    </div>`;
+                }
+
                 // Edit and delete functions based on type
                 const editFunction = item.type === 'route' ? 
                     `editRouteBreakdown(${item.id})` : 
@@ -4538,11 +4458,15 @@
                                 <i class="fas fa-clock"></i> ${item.dateStr}
                             </div>
                             <div class="item-description">
-                                <span class="status-text ${statusClass}" style="color: ${statusColor}; font-weight: 600;">${item.status.toUpperCase()}</span> | 
+                                ${item.status === 'Resolved' 
+                                    ? '<span style="background: #10b981; color: white; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;"><i class="fas fa-check-circle"></i> FINISHED</span>'
+                                    : '<span style="color: ' + statusColor + '; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">' + item.status.toUpperCase() + '</span>'} | 
                                 <span style="color: ${severityColor}; font-weight: 500;">${item.severity.toUpperCase()}</span> | 
                                 <span style="color: #555; font-weight: 500;">${breakdownType}</span>
                                 <br>
                                 ${additionalInfo}
+                                ${technicianInfo}
+                                ${item.status === 'Resolved' && item.assigned_technicians && item.assigned_technicians.length > 0 ? `<div style="margin-top: 5px; color: #10b981; font-size: 12px; font-weight: 500;"><i class="fas fa-user-check"></i> Resolved by: ${item.assigned_technicians.map(t => t.technician_name || t.name).join(', ')}</div>` : ''}
                             </div>
                         </div>
                         <div class="item-actions">
@@ -4752,81 +4676,344 @@
             }
         }
 
-        function viewBreakdownDetails(breakdownId, id) {
+        async function viewBreakdownDetails(breakdownId, id) {
             console.log('=== VIEW BUTTON CLICKED ===');
             console.log('Breakdown ID:', breakdownId, 'Database ID:', id);
             
-            // Find the breakdown in cached data
-            let breakdown = breakdownDataCache.reports.find(r => r.id == id);
+            // Fetch fresh data from API to get work_updates
+            let breakdown;
+            try {
+                const response = await API.get(`/breakdown-reports/${id}`);
+                if (response.status === 'success' && response.data && response.data.report) {
+                    breakdown = response.data.report;
+                } else {
+                    // Fallback to cached data
+                    breakdown = breakdownDataCache.reports.find(r => r.id == id);
+                }
+            } catch (error) {
+                console.error('Error fetching breakdown details:', error);
+                // Fallback to cached data
+                breakdown = breakdownDataCache.reports.find(r => r.id == id);
+            }
             
             if (!breakdown) {
-                console.error('Breakdown not found in cache');
+                console.error('Breakdown not found');
                 showToast('Breakdown details not found', 'error');
                 return;
             }
             
             console.log('Found breakdown data:', breakdown);
+
+            const statusColor = breakdown.status === 'Resolved' ? '#27ae60' : breakdown.status === 'Assigned' ? '#2563eb' : breakdown.status === 'In Progress' ? '#3498db' : '#f39c12';
+            const severityColor = breakdown.severity === 'critical' ? '#e74c3c' : breakdown.severity === 'high' ? '#e67e22' : breakdown.severity === 'medium' ? '#f39c12' : '#27ae60';
+            const date = new Date(breakdown.breakdown_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            // Build assigned technicians section - only show when NOT Pending
+            let assignedTechniciansHtml = '';
+            if (breakdown.status !== 'Pending' && breakdown.assigned_technicians && breakdown.assigned_technicians.length > 0) {
+                assignedTechniciansHtml = `
+                    <div class="form-section">
+                        <h5><i class="fas fa-user-cog"></i> Assigned Technicians</h5>
+                        <div style="display: grid; gap: 10px;">
+                            ${breakdown.assigned_technicians.map(tech => `
+                                <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                    <strong>Technician:</strong>
+                                    <span>${tech.technician_name || tech.name || 'N/A'}</span>
+                                </div>
+                                ${tech.technician_phone || tech.phone ? `
+                                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                        <strong>Contact:</strong>
+                                        <span>${tech.technician_phone || tech.phone}</span>
+                                    </div>
+                                ` : ''}
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Remove any existing dynamic breakdown detail modal
+            const existingModal = document.getElementById('dynamicBreakdownDetailModal');
+            if (existingModal) existingModal.remove();
+
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.id = 'dynamicBreakdownDetailModal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-exclamation-triangle"></i> Breakdown Report Details</h2>
+                        <button class="btn-close" onclick="closeModal('dynamicBreakdownDetailModal')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h5><i class="fas fa-id-card"></i> Breakdown Information</h5>
+                        <div style="display: grid; gap: 10px;">
+                            <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                <strong>Breakdown ID:</strong>
+                                <span>${breakdown.breakdown_id || breakdownId}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                <strong>Status:</strong>
+                                <span style="padding: 4px 12px; border-radius: 12px; font-size: 0.85em; color: white; background: ${statusColor};">${breakdown.status || 'Pending'}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                <strong>Date:</strong>
+                                <span>${date}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h5><i class="fas fa-truck"></i> Vehicle Information</h5>
+                        <div style="display: grid; gap: 10px;">
+                            <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                <strong>Vehicle:</strong>
+                                <span>${breakdown.number_plate || 'Unknown'}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                <strong>Breakdown Type:</strong>
+                                <span>${breakdown.breakdown_type || 'Not specified'}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                <strong>Severity:</strong>
+                                <span style="padding: 4px 12px; border-radius: 12px; font-size: 0.85em; color: white; background: ${severityColor}; text-transform: uppercase;">${breakdown.severity || 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h5><i class="fas fa-file-alt"></i> Description</h5>
+                        <div style="padding: 15px; background: #f8f9fa; border-radius: 6px; min-height: 50px;">
+                            <p style="margin: 0; color: var(--text-700);">${breakdown.description || 'No description provided'}</p>
+                        </div>
+                    </div>
+                    
+                    ${assignedTechniciansHtml}
+                    
+                    ${(breakdown.status === 'Resolved' || breakdown.status === 'Finished' || breakdown.status === 'Completed') && breakdown.work_updates && breakdown.work_updates.length > 0 ? `
+                    <div class="form-section">
+                        <h5><i class="fas fa-check-circle" style="color: #27ae60;"></i> Work Completed - Finishing Details</h5>
+                        ${breakdown.work_updates.map(update => `
+                        <div style="padding: 15px; background: #e8f5e9; border-radius: 6px; border-left: 4px solid #27ae60; margin-bottom: 10px;">
+                            <p style="margin: 0 0 8px 0; font-weight: 600; color: #27ae60;">
+                                <i class="fas fa-user-cog"></i> ${update.technician_name || 'Technical Officer'}
+                            </p>
+                            <p style="margin: 0 0 8px 0; color: var(--text-700);">
+                                <strong>Work Description:</strong> ${update.machine_description || 'N/A'}
+                            </p>
+                            <p style="margin: 0 0 8px 0; color: var(--text-700);">
+                                <strong>Parts Used:</strong> ${update.parts_used || 'None'}
+                            </p>
+                            <p style="margin: 0 0 8px 0; color: var(--text-700);">
+                                <strong>Time Spent:</strong> ${update.time_spent ? update.time_spent + ' hours' : 'N/A'}
+                            </p>
+                            <p style="margin: 0 0 8px 0; color: var(--text-700);">
+                                <strong>Status:</strong> <span class="status-text ${update.work_status === 'Completed' ? 'status-ok' : 'status-warning'}">${update.work_status}</span>
+                            </p>
+                            <p style="margin: 0; color: #666; font-size: 0.9em;">
+                                <i class="fas fa-calendar-check"></i> Updated: ${new Date(update.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                        </div>
+                        `).join('')}
+                    </div>
+                    ` : ((breakdown.status === 'Resolved' || breakdown.status === 'Finished' || breakdown.status === 'Completed') && breakdown.resolution_notes ? `
+                    <div class="form-section">
+                        <h5><i class="fas fa-check-circle" style="color: #27ae60;"></i> Work Completed - Finishing Details</h5>
+                        <div style="padding: 15px; background: #e8f5e9; border-radius: 6px; border-left: 4px solid #27ae60;">
+                            <p style="margin: 0 0 10px 0; color: var(--text-700);">${breakdown.resolution_notes}</p>
+                            ${breakdown.resolved_at ? `
+                            <p style="margin: 0; color: #666; font-size: 0.9em;">
+                                <i class="fas fa-calendar-check"></i> Resolved on: ${new Date(breakdown.resolved_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                            ` : ''}
+                        </div>
+                    </div>
+                    ` : '')}
+                    
+                    <button class="btn btn-secondary" onclick="closeModal('dynamicBreakdownDetailModal')">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                    </button>
+                </div>
+            `;
             
-            // Populate modal fields
-            document.getElementById('breakdown-detail-id').textContent = breakdown.breakdown_id || breakdownId;
-            document.getElementById('breakdown-detail-status').textContent = breakdown.status || '-';
-            document.getElementById('breakdown-detail-status').style.color = breakdown.status === 'Resolved' ? '#27ae60' : '#f39c12';
-            
-            const date = new Date(breakdown.breakdown_date).toLocaleDateString('en-US', { 
-                month: 'short', day: 'numeric', year: 'numeric' 
-            });
-            document.getElementById('breakdown-detail-date').textContent = date;
-            document.getElementById('breakdown-detail-severity').textContent = breakdown.severity || '-';
-            document.getElementById('breakdown-detail-severity').style.color = 
-                breakdown.severity === 'critical' ? '#e74c3c' : 
-                breakdown.severity === 'high' ? '#e67e22' : '#27ae60';
-            
-            document.getElementById('breakdown-detail-vehicle').textContent = breakdown.number_plate || '-';
-            document.getElementById('breakdown-detail-type').textContent = breakdown.breakdown_type || '-';
-            document.getElementById('breakdown-detail-description').textContent = breakdown.description || 'No description provided';
-            
-            // Show modal
-            console.log('Opening modal...');
-            openModal('breakdownDetailsModal');
+            document.body.appendChild(modal);
         }
 
-        function viewRouteBreakdownDetails(breakdownId, id) {
+        async function viewRouteBreakdownDetails(breakdownId, id) {
             console.log('=== VIEW ROUTE BREAKDOWN CLICKED ===');
             console.log('Breakdown ID:', breakdownId, 'Database ID:', id);
             
-            // Find the breakdown in cached data
-            let breakdown = breakdownDataCache.routeBreakdowns.find(r => r.id == id);
+            // Fetch fresh data from API to get work_updates
+            let breakdown;
+            try {
+                const response = await API.get(`/route-breakdowns/${id}`);
+                if (response.status === 'success' && response.data && response.data.breakdown) {
+                    breakdown = response.data.breakdown;
+                } else {
+                    // Fallback to cached data
+                    breakdown = breakdownDataCache.routeBreakdowns.find(r => r.id == id);
+                }
+            } catch (error) {
+                console.error('Error fetching route breakdown details:', error);
+                // Fallback to cached data
+                breakdown = breakdownDataCache.routeBreakdowns.find(r => r.id == id);
+            }
             
             if (!breakdown) {
-                console.error('Route breakdown not found in cache');
+                console.error('Route breakdown not found');
                 showToast('Breakdown details not found', 'error');
                 return;
             }
             
             console.log('Found breakdown data:', breakdown);
+
+            const statusColor = breakdown.status === 'Resolved' ? '#27ae60' : breakdown.status === 'Assigned' ? '#2563eb' : breakdown.status === 'In Progress' ? '#3498db' : '#f39c12';
+            const severityColor = breakdown.severity === 'critical' ? '#e74c3c' : breakdown.severity === 'high' ? '#e67e22' : breakdown.severity === 'medium' ? '#f39c12' : '#27ae60';
+            const datetime = new Date(breakdown.breakdown_datetime).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            // Build assigned technicians section - only show when NOT Pending
+            let assignedTechniciansHtml = '';
+            if (breakdown.status !== 'Pending' && breakdown.assigned_technicians && breakdown.assigned_technicians.length > 0) {
+                assignedTechniciansHtml = `
+                    <div class="form-section">
+                        <h5><i class="fas fa-user-cog"></i> Assigned Technicians</h5>
+                        <div style="display: grid; gap: 10px;">
+                            ${breakdown.assigned_technicians.map(tech => `
+                                <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                    <strong>Technician:</strong>
+                                    <span>${tech.technician_name || tech.name || 'N/A'}</span>
+                                </div>
+                                ${tech.technician_phone || tech.phone ? `
+                                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                        <strong>Contact:</strong>
+                                        <span>${tech.technician_phone || tech.phone}</span>
+                                    </div>
+                                ` : ''}
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Remove any existing dynamic route detail modal
+            const existingModal = document.getElementById('dynamicRouteDetailModal');
+            if (existingModal) existingModal.remove();
+
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.id = 'dynamicRouteDetailModal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-road"></i> Route Breakdown Details</h2>
+                        <button class="btn-close" onclick="closeModal('dynamicRouteDetailModal')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h5><i class="fas fa-id-card"></i> Breakdown Information</h5>
+                        <div style="display: grid; gap: 10px;">
+                            <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                <strong>Breakdown ID:</strong>
+                                <span>${breakdown.route_breakdown_id || breakdownId}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                <strong>Status:</strong>
+                                <span style="padding: 4px 12px; border-radius: 12px; font-size: 0.85em; color: white; background: ${statusColor};">${breakdown.status || 'Pending'}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                <strong>Date & Time:</strong>
+                                <span>${datetime}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h5><i class="fas fa-truck"></i> Vehicle Information</h5>
+                        <div style="display: grid; gap: 10px;">
+                            <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                <strong>Vehicle:</strong>
+                                <span>${breakdown.number_plate || 'Unknown'}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                <strong>Breakdown Type:</strong>
+                                <span>${breakdown.breakdown_type || 'Not specified'}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                <strong>Severity:</strong>
+                                <span style="padding: 4px 12px; border-radius: 12px; font-size: 0.85em; color: white; background: ${severityColor}; text-transform: uppercase;">${breakdown.severity || 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h5><i class="fas fa-map-marker-alt"></i> Location</h5>
+                        <div style="padding: 15px; background: #f8f9fa; border-radius: 6px; min-height: 50px;">
+                            <p style="margin: 0; color: var(--text-700); font-weight: 600;">${breakdown.breakdown_location || 'Location not provided'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h5><i class="fas fa-file-alt"></i> Description</h5>
+                        <div style="padding: 15px; background: #f8f9fa; border-radius: 6px; min-height: 50px;">
+                            <p style="margin: 0; color: var(--text-700);">${breakdown.description || 'No description provided'}</p>
+                        </div>
+                    </div>
+                    
+                    ${assignedTechniciansHtml}
+                    
+                    ${(breakdown.status === 'Resolved' || breakdown.status === 'Finished' || breakdown.status === 'Completed') && breakdown.work_updates && breakdown.work_updates.length > 0 ? `
+                    <div class="form-section">
+                        <h5><i class="fas fa-check-circle" style="color: #27ae60;"></i> Work Completed - Finishing Details</h5>
+                        ${breakdown.work_updates.map(update => `
+                        <div style="padding: 15px; background: #e8f5e9; border-radius: 6px; border-left: 4px solid #27ae60; margin-bottom: 10px;">
+                            <p style="margin: 0 0 8px 0; font-weight: 600; color: #27ae60;">
+                                <i class="fas fa-user-cog"></i> ${update.technician_name || 'Technical Officer'}
+                            </p>
+                            <p style="margin: 0 0 8px 0; color: var(--text-700);">
+                                <strong>Work Description:</strong> ${update.machine_description || 'N/A'}
+                            </p>
+                            <p style="margin: 0 0 8px 0; color: var(--text-700);">
+                                <strong>Parts Used:</strong> ${update.parts_used || 'None'}
+                            </p>
+                            <p style="margin: 0 0 8px 0; color: var(--text-700);">
+                                <strong>Time Spent:</strong> ${update.time_spent ? update.time_spent + ' hours' : 'N/A'}
+                            </p>
+                            <p style="margin: 0 0 8px 0; color: var(--text-700);">
+                                <strong>Status:</strong> <span class="status-text ${update.work_status === 'Completed' ? 'status-ok' : 'status-warning'}">${update.work_status}</span>
+                            </p>
+                            <p style="margin: 0; color: #666; font-size: 0.9em;">
+                                <i class="fas fa-calendar-check"></i> Updated: ${new Date(update.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                        </div>
+                        `).join('')}
+                    </div>
+                    ` : ((breakdown.status === 'Resolved' || breakdown.status === 'Finished' || breakdown.status === 'Completed') && breakdown.resolution_notes ? `
+                    <div class="form-section">
+                        <h5><i class="fas fa-check-circle" style="color: #27ae60;"></i> Work Completed - Finishing Details</h5>
+                        <div style="padding: 15px; background: #e8f5e9; border-radius: 6px; border-left: 4px solid #27ae60;">
+                            <p style="margin: 0 0 10px 0; color: var(--text-700);">${breakdown.resolution_notes}</p>
+                            ${breakdown.resolved_at ? `
+                            <p style="margin: 0; color: #666; font-size: 0.9em;">
+                                <i class="fas fa-calendar-check"></i> Resolved on: ${new Date(breakdown.resolved_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                            ` : ''}
+                        </div>
+                    </div>
+                    ` : '')}
+                    
+                    <button class="btn btn-secondary" onclick="closeModal('dynamicRouteDetailModal')">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            `;
             
-            // Populate modal fields
-            document.getElementById('route-detail-id').textContent = breakdown.route_breakdown_id || breakdownId;
-            document.getElementById('route-detail-status').textContent = breakdown.status || '-';
-            document.getElementById('route-detail-status').style.color = breakdown.status === 'Resolved' ? '#27ae60' : '#f39c12';
-            
-            const datetime = new Date(breakdown.breakdown_datetime).toLocaleString('en-US', { 
-                month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' 
-            });
-            document.getElementById('route-detail-datetime').textContent = datetime;
-            document.getElementById('route-detail-severity').textContent = breakdown.severity || '-';
-            document.getElementById('route-detail-severity').style.color = 
-                breakdown.severity === 'critical' ? '#e74c3c' : 
-                breakdown.severity === 'high' ? '#e67e22' : '#27ae60';
-            
-            document.getElementById('route-detail-vehicle').textContent = breakdown.number_plate || '-';
-            document.getElementById('route-detail-type').textContent = breakdown.breakdown_type || '-';
-            document.getElementById('route-detail-location').textContent = breakdown.breakdown_location || 'Location not provided';
-            document.getElementById('route-detail-description').textContent = breakdown.description || 'No description provided';
-            
-            // Show modal
-            console.log('Opening modal...');
-            openModal('routeBreakdownDetailsModal');
+            document.body.appendChild(modal);
         }
 
         // Global trip counter
@@ -5411,7 +5598,7 @@
             const statusColor = getStatusColor(tripData.status);
             const detailsHTML = `
                 <div class="form-section">
-                    <h5>🆔 Trip Information</h5>
+                    <h5><i class="fas fa-id-card"></i> Trip Information</h5>
                     <div style="display: grid; gap: 10px;">
                         <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
                             <strong>Trip ID:</strong>
@@ -5433,7 +5620,7 @@
                 </div>
                 
                 <div class="form-section">
-                    <h5>🔢 Odometer Readings</h5>
+                    <h5><i class="fas fa-tachometer-alt"></i> Odometer Readings</h5>
                     <div style="display: grid; gap: 10px;">
                         <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
                             <strong>Starting Odometer:</strong>
@@ -5452,7 +5639,7 @@
                 </div>
                 
                 <div class="form-section">
-                    <h5>⏱️ Time Information</h5>
+                    <h5><i class="fas fa-clock"></i> Time Information</h5>
                     <div style="display: grid; gap: 10px;">
                         <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
                             <strong>Start Time:</strong>
@@ -5471,7 +5658,7 @@
                 </div>
                 
                 <div class="form-section">
-                    <h5>📦 Cargo Information</h5>
+                    <h5><i class="fas fa-box"></i> Cargo Information</h5>
                     <div style="padding: 15px; background: #f8f9fa; border-radius: 6px; min-height: 50px;">
                         <p style="margin: 0; color: var(--text-700);">${tripData.cargo || '<em>No cargo details provided</em>'}</p>
                     </div>
@@ -5479,7 +5666,7 @@
                 
                 ${tripData.notes ? `
                 <div class="form-section">
-                    <h5>📝 Completion Notes</h5>
+                    <h5><i class="fas fa-sticky-note"></i> Completion Notes</h5>
                     <div style="padding: 15px; background: #f8f9fa; border-radius: 6px; min-height: 50px;">
                         <p style="margin: 0; color: var(--text-700);">${tripData.notes}</p>
                     </div>
@@ -5845,6 +6032,12 @@
             
             // Check weekly vehicle check status
             updateWeeklyCheckStatus();
+            
+            // Refresh vehicle checks every 30 seconds to see status updates
+            setInterval(() => {
+                loadVehicleChecks();
+                updateWeeklyCheckStatus();
+            }, 30000); // 30 seconds
             
             // Initialize user display
             const userName = "John Driver"; // This would come from session/auth

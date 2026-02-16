@@ -792,7 +792,7 @@
                     <span>Maintenance Manager</span>
                 </div>
                 <button class="logout-btn" onclick="logout()">
-                    <span>🚪</span>
+                    <span><i class="fas fa-sign-out-alt"></i></span>
                     Logout
                 </button>
             </div>
@@ -803,31 +803,31 @@
                 <h2>Maintenance Manager</h2>
                 <nav>
                     <div class="nav-item active" data-section="dashboard">
-                        <span class="nav-icon">📊</span>
+                        <span class="nav-icon"><i class="fas fa-chart-bar"></i></span>
                         <span>Dashboard</span>
                     </div>
                     <div class="nav-item" data-section="fault-tickets">
-                        <span class="nav-icon">🎫</span>
+                        <span class="nav-icon"><i class="fas fa-ticket-alt"></i></span>
                         <span>Fault Tickets</span>
                     </div>
                     <div class="nav-item" data-section="service-records">
-                        <span class="nav-icon">📝</span>
+                        <span class="nav-icon"><i class="fas fa-file-alt"></i></span>
                         <span>Service Records</span>
                     </div>
                     <div class="nav-item" data-section="cost-approvals">
-                        <span class="nav-icon">💰</span>
+                        <span class="nav-icon"><i class="fas fa-money-bill-wave"></i></span>
                         <span>Cost Approvals</span>
                     </div>
                     <div class="nav-item" data-section="service-warranty">
-                        <span class="nav-icon">🛡️</span>
+                        <span class="nav-icon"><i class="fas fa-shield-alt"></i></span>
                         <span>Service & Warranty Monitor</span>
                     </div>
                     <div class="nav-item" data-section="service-reports">
-                        <span class="nav-icon">📋</span>
+                        <span class="nav-icon"><i class="fas fa-clipboard-list"></i></span>
                         <span>Service Report Management</span>
                     </div>
                     <div class="nav-item" data-section="notifications">
-                        <span class="nav-icon">🔔</span>
+                        <span class="nav-icon"><i class="fas fa-bell"></i></span>
                         <span>Notifications</span>
                     </div>
                 </nav>
@@ -861,7 +861,7 @@
                     <div class="grid">
                         <!-- Recent Fault Tickets -->
                         <div class="card">
-                            <div class="card-header">🎫 Recent Fault Tickets</div>
+                            <div class="card-header"><i class="fas fa-ticket-alt"></i> Recent Fault Tickets</div>
                             <div class="ticket-item" onclick="navigateToSection('fault-tickets')">
                                 <div class="ticket-details">
                                     <strong>TKT-001</strong>
@@ -887,7 +887,7 @@
 
                         <!-- Pending Cost Approvals -->
                         <div class="card">
-                            <div class="card-header">💰 Pending Cost Approvals</div>
+                            <div class="card-header"><i class="fas fa-money-bill-wave"></i> Pending Cost Approvals</div>
                             <div class="request-item" onclick="navigateToSection('cost-approvals')">
                                 <div class="ticket-details">
                                     <strong>CA-001</strong>
@@ -914,21 +914,21 @@
 
                     <!-- Critical Notifications -->
                     <div class="card">
-                        <div class="card-header">🚨 Critical Notifications</div>
+                        <div class="card-header"><i class="fas fa-exclamation-circle"></i> Critical Notifications</div>
                         <div class="notification-item danger">
-                            <span class="notification-icon">⏰</span>
+                            <span class="notification-icon"><i class="fas fa-clock"></i></span>
                             <div>
                                 <strong>Warranty Expiring:</strong> 3 warranty claims expire this week
                             </div>
                         </div>
                         <div class="notification-item warning">
-                            <span class="notification-icon">💰</span>
+                            <span class="notification-icon"><i class="fas fa-money-bill-wave"></i></span>
                             <div>
                                 <strong>Cost Approval:</strong> Engine repair cost ₹45,000 pending approval
                             </div>
                         </div>
                         <div class="notification-item info">
-                            <span class="notification-icon">📋</span>
+                            <span class="notification-icon"><i class="fas fa-clipboard-list"></i></span>
                             <div>
                                 <strong>Service Reports:</strong> 3 reports pending review
                             </div>
@@ -937,7 +937,7 @@
 
                     <!-- Recent Activities -->
                     <div class="card">
-                        <div class="card-header">📝 Recent Activities</div>
+                        <div class="card-header"><i class="fas fa-file-alt"></i> Recent Activities</div>
                         <table class="table">
                             <thead>
                                 <tr>
@@ -987,13 +987,13 @@
                     </div>
 
                     <div class="card">
-                        <div class="card-header">🎫 All Fault Tickets</div>
+                        <div class="card-header"><i class="fas fa-ticket-alt"></i> All Fault Tickets</div>
                         
                         <!-- Tickets from Drivers -->
                         <div class="ticket-item" data-status="in-progress" onclick="viewTicketDetails('TKT-001')">
                             <div class="ticket-details">
                                 <strong>TKT-001</strong>
-                                <div class="ticket-meta">🚗 Vehicle LKA-1234 | 👤 Reporter: Driver Kamal | 📋 Via: Supervisor John</div>
+                                <div class="ticket-meta"><i class="fas fa-car"></i> Vehicle LKA-1234 | <i class="fas fa-user"></i> Reporter: Driver Kamal | <i class="fas fa-clipboard-list"></i> Via: Supervisor John</div>
                                 <div class="ticket-issue">Engine overheating - Temperature gauge showing red zone during highway drive</div>
                                 <div class="ticket-meta">Created: Aug 20, 2025 | Assigned: Technical Officer Nimal | Priority: High</div>
                             </div>
@@ -1006,7 +1006,7 @@
                         <div class="ticket-item" data-status="pending" onclick="viewTicketDetails('TKT-002')">
                             <div class="ticket-details">
                                 <strong>TKT-002</strong>
-                                <div class="ticket-meta">🏗️ Machine #205 | 👤 Reporter: Operator Mike | 📋 Via: Supervisor Mike</div>
+                                <div class="ticket-meta"><i class="fas fa-industry"></i> Machine #205 | <i class="fas fa-user"></i> Reporter: Operator Mike | <i class="fas fa-clipboard-list"></i> Via: Supervisor Mike</div>
                                 <div class="ticket-issue">Hydraulic leak - Fluid pooling under main cylinder assembly</div>
                                 <div class="ticket-meta">Created: Aug 22, 2025 | Status: Awaiting assignment | Priority: Medium</div>
                             </div>
@@ -1019,7 +1019,7 @@
                         <div class="ticket-item" data-status="complete" onclick="viewTicketDetails('TKT-003')">
                             <div class="ticket-details">
                                 <strong>TKT-003</strong>
-                                <div class="ticket-meta">🚗 Vehicle LKA-5678 | 👤 Reporter: Driver Sarah | 📋 Via: Supervisor John</div>
+                                <div class="ticket-meta"><i class="fas fa-car"></i> Vehicle LKA-5678 | <i class="fas fa-user"></i> Reporter: Driver Sarah | <i class="fas fa-clipboard-list"></i> Via: Supervisor John</div>
                                 <div class="ticket-issue">Brake system malfunction - Reduced braking efficiency, grinding noise</div>
                                 <div class="ticket-meta">Completed: Aug 19, 2025 | Duration: 21 hours | Resolved by: Tech Officer Anil</div>
                             </div>
@@ -1032,7 +1032,7 @@
                         <div class="ticket-item" data-status="in-progress" onclick="viewTicketDetails('TKT-004')">
                             <div class="ticket-details">
                                 <strong>TKT-004</strong>
-                                <div class="ticket-meta">🏗️ Machine #180 | 👤 Reporter: Operator Tom | 📋 Via: Supervisor Mike</div>
+                                <div class="ticket-meta"><i class="fas fa-industry"></i> Machine #180 | <i class="fas fa-user"></i> Reporter: Operator Tom | <i class="fas fa-clipboard-list"></i> Via: Supervisor Mike</div>
                                 <div class="ticket-issue">Engine smoke - Black smoke from exhaust, power loss</div>
                                 <div class="ticket-meta">Created: Aug 23, 2025 | Assigned: Technical Officer Sunil | Priority: High</div>
                             </div>
@@ -1045,7 +1045,7 @@
                         <div class="ticket-item" data-status="pending" onclick="viewTicketDetails('TKT-005')">
                             <div class="ticket-details">
                                 <strong>TKT-005</strong>
-                                <div class="ticket-meta">🚗 Vehicle LKA-9012 | 👤 Reporter: Driver Nimal | 📋 Via: Supervisor Lisa</div>
+                                <div class="ticket-meta"><i class="fas fa-car"></i> Vehicle LKA-9012 | <i class="fas fa-user"></i> Reporter: Driver Nimal | <i class="fas fa-clipboard-list"></i> Via: Supervisor Lisa</div>
                                 <div class="ticket-issue">Steering wheel vibration - Excessive vibration at high speeds</div>
                                 <div class="ticket-meta">Created: Aug 24, 2025 | Status: Awaiting parts | Priority: Medium</div>
                             </div>
@@ -1058,7 +1058,7 @@
                         <div class="ticket-item" data-status="pending" onclick="viewTicketDetails('TKT-006')">
                             <div class="ticket-details">
                                 <strong>TKT-006</strong>
-                                <div class="ticket-meta">🏗️ Machine #312 | 👤 Reporter: Operator Saman | 📋 Via: Supervisor Mike</div>
+                                <div class="ticket-meta"><i class="fas fa-industry"></i> Machine #312 | <i class="fas fa-user"></i> Reporter: Operator Saman | <i class="fas fa-clipboard-list"></i> Via: Supervisor Mike</div>
                                 <div class="ticket-issue">Cooling system failure - Engine temperature rising, coolant leak detected</div>
                                 <div class="ticket-meta">Created: Aug 25, 2025 | Status: Awaiting assignment | Priority: High</div>
                             </div>
@@ -1071,7 +1071,7 @@
                         <div class="ticket-item" data-status="in-progress" onclick="viewTicketDetails('TKT-007')">
                             <div class="ticket-details">
                                 <strong>TKT-007</strong>
-                                <div class="ticket-meta">🚗 Vehicle LKA-3456 | 👤 Reporter: Driver Anil | 📋 Via: Supervisor John</div>
+                                <div class="ticket-meta"><i class="fas fa-car"></i> Vehicle LKA-3456 | <i class="fas fa-user"></i> Reporter: Driver Anil | <i class="fas fa-clipboard-list"></i> Via: Supervisor John</div>
                                 <div class="ticket-issue">Transmission slipping - Difficulty in gear shifting, delayed engagement</div>
                                 <div class="ticket-meta">Created: Aug 25, 2025 | Assigned: Technical Officer Nimal | Priority: Medium</div>
                             </div>
@@ -1084,7 +1084,7 @@
                         <div class="ticket-item" data-status="complete" onclick="viewTicketDetails('TKT-008')">
                             <div class="ticket-details">
                                 <strong>TKT-008</strong>
-                                <div class="ticket-meta">🏗️ Machine #150 | 👤 Reporter: Operator Damindu | 📋 Via: Supervisor Mike</div>
+                                <div class="ticket-meta"><i class="fas fa-industry"></i> Machine #150 | <i class="fas fa-user"></i> Reporter: Operator Damindu | <i class="fas fa-clipboard-list"></i> Via: Supervisor Mike</div>
                                 <div class="ticket-issue">Gas cylinder valve replacement - Pressure valve malfunction</div>
                                 <div class="ticket-meta">Completed: Aug 18, 2025 | Duration: 8 hours | Resolved by: Tech Officer Sunil</div>
                             </div>
@@ -1097,7 +1097,7 @@
                         <div class="ticket-item" data-status="pending" onclick="viewTicketDetails('TKT-009')">
                             <div class="ticket-details">
                                 <strong>TKT-009</strong>
-                                <div class="ticket-meta">🚗 Vehicle LKA-7890 | 👤 Reporter: Driver Sunil | 📋 Via: Supervisor Lisa</div>
+                                <div class="ticket-meta"><i class="fas fa-car"></i> Vehicle LKA-7890 | <i class="fas fa-user"></i> Reporter: Driver Sunil | <i class="fas fa-clipboard-list"></i> Via: Supervisor Lisa</div>
                                 <div class="ticket-issue">Battery failure - Vehicle won't start, electrical system issues</div>
                                 <div class="ticket-meta">Created: Aug 26, 2025 | Status: Parts ordered | Priority: High</div>
                             </div>
@@ -1110,7 +1110,7 @@
                         <div class="ticket-item" data-status="in-progress" onclick="viewTicketDetails('TKT-010')">
                             <div class="ticket-details">
                                 <strong>TKT-010</strong>
-                                <div class="ticket-meta">🏗️ Machine #420 | 👤 Reporter: Operator Pradeep | 📋 Via: Supervisor Mike</div>
+                                <div class="ticket-meta"><i class="fas fa-industry"></i> Machine #420 | <i class="fas fa-user"></i> Reporter: Operator Pradeep | <i class="fas fa-clipboard-list"></i> Via: Supervisor Mike</div>
                                 <div class="ticket-issue">Electrical system fault - Control panel unresponsive, display errors</div>
                                 <div class="ticket-meta">Created: Aug 26, 2025 | Assigned: Technical Officer Anil | Priority: Medium</div>
                             </div>
@@ -1123,7 +1123,7 @@
                         <div class="ticket-item" data-status="complete" onclick="viewTicketDetails('TKT-011')">
                             <div class="ticket-details">
                                 <strong>TKT-011</strong>
-                                <div class="ticket-meta">🚗 Vehicle LKA-2345 | 👤 Reporter: Driver Chaminda | 📋 Via: Supervisor John</div>
+                                <div class="ticket-meta"><i class="fas fa-car"></i> Vehicle LKA-2345 | <i class="fas fa-user"></i> Reporter: Driver Chaminda | <i class="fas fa-clipboard-list"></i> Via: Supervisor John</div>
                                 <div class="ticket-issue">Air conditioning failure - No cooling, compressor noise</div>
                                 <div class="ticket-meta">Completed: Aug 21, 2025 | Duration: 5 hours | Resolved by: Tech Officer Nimal</div>
                             </div>
@@ -1136,7 +1136,7 @@
                         <div class="ticket-item" data-status="pending" onclick="viewTicketDetails('TKT-012')">
                             <div class="ticket-details">
                                 <strong>TKT-012</strong>
-                                <div class="ticket-meta">🏗️ Machine #505 | 👤 Reporter: Operator Ruwan | 📋 Via: Supervisor Mike</div>
+                                <div class="ticket-meta"><i class="fas fa-industry"></i> Machine #505 | <i class="fas fa-user"></i> Reporter: Operator Ruwan | <i class="fas fa-clipboard-list"></i> Via: Supervisor Mike</div>
                                 <div class="ticket-issue">Fuel system clogged - Engine sputtering, poor fuel efficiency</div>
                                 <div class="ticket-meta">Created: Aug 27, 2025 | Status: Awaiting assignment | Priority: Low</div>
                             </div>
@@ -1149,7 +1149,7 @@
 
                     <!-- Ticket Statistics -->
                     <div class="card">
-                        <div class="card-header">📊 Ticket Statistics</div>
+                        <div class="card-header"><i class="fas fa-chart-bar"></i> Ticket Statistics</div>
                         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
                             <div class="stats-card stats-active">
                                 <div class="stats-number">12</div>
@@ -1188,7 +1188,7 @@
                         <!-- Vehicles Tab -->
                         <div id="vehicles-tab" class="tab-content active">
                             <div class="card">
-                                <div class="card-header">🚗 Vehicle Service Records</div>
+                                <div class="card-header"><i class="fas fa-car"></i> Vehicle Service Records</div>
                                 <table class="table">
                                     <thead>
                                         <tr>
@@ -1237,7 +1237,7 @@
                         <!-- Machinery Tab -->
                         <div id="machinery-tab" class="tab-content">
                             <div class="card">
-                                <div class="card-header">⚙️ Machinery Service Records</div>
+                                <div class="card-header"><i class="fas fa-cog"></i> Machinery Service Records</div>
                                 <table class="table">
                                     <thead>
                                         <tr>
@@ -1302,7 +1302,7 @@
 
                     <!-- Pending Approvals -->
                     <div class="card cost-approval-card" data-approval-status="pending">
-                        <div class="card-header">💰 Pending Cost Approvals</div>
+                        <div class="card-header"><i class="fas fa-money-bill-wave"></i> Pending Cost Approvals</div>
                         <div class="request-item">
                             <div class="ticket-details">
                                 <strong>CA-001</strong>
@@ -1345,7 +1345,7 @@
 
                     <!-- Approved Requests -->
                     <div class="card cost-approval-card" data-approval-status="approved" style="display: none;">
-                        <div class="card-header">✅ Approved Requests</div>
+                        <div class="card-header"><i class="fas fa-check-circle"></i> Approved Requests</div>
                         <table class="table">
                             <thead>
                                 <tr>
@@ -1380,7 +1380,7 @@
 
                     <!-- Rejected Requests -->
                     <div class="card cost-approval-card" data-approval-status="rejected" style="display: none;">
-                        <div class="card-header">❌ Rejected Requests</div>
+                        <div class="card-header"><i class="fas fa-times-circle"></i> Rejected Requests</div>
                         <table class="table">
                             <thead>
                                 <tr>
@@ -1418,7 +1418,7 @@
                     <!-- Warranty Status -->
                     <div class="card">
                         <div class="card-header">
-                            🛡️ Warranty Status Monitor
+                            <i class="fas fa-shield-alt"></i> Warranty Status Monitor
                             <div class="filter-controls">
                                 <button class="filter-btn active" onclick="filterWarranty('all')">All</button>
                                 <button class="filter-btn" onclick="filterWarranty('active')">Active</button>
@@ -1473,7 +1473,7 @@
                     <!-- Service Schedule -->
                     <div class="card">
                         <div class="card-header">
-                            📅 Insurance & Service Schedule
+                            <i class="fas fa-calendar-alt"></i> Insurance & Service Schedule
                             <div style="display: flex; gap: 10px;">
                                 <div class="filter-controls">
                                     <button class="filter-btn active" onclick="filterService('all')">All</button>
@@ -1541,7 +1541,7 @@
 
                     <!-- Under Review Reports -->
                     <div class="card service-report-card" data-report-status="under-review">
-                        <div class="card-header">📋 Reports Under Review</div>
+                        <div class="card-header"><i class="fas fa-clipboard-list"></i> Reports Under Review</div>
                         <div class="request-item">
                             <div class="ticket-details">
                                 <strong>SR-002</strong>
@@ -1584,7 +1584,7 @@
 
                     <!-- Reviewed Reports -->
                     <div class="card service-report-card" data-report-status="reviewed" style="display: none;">
-                        <div class="card-header">✅ Reviewed Reports</div>
+                        <div class="card-header"><i class="fas fa-check-circle"></i> Reviewed Reports</div>
                         <table class="table">
                             <thead>
                                 <tr>
@@ -1622,7 +1622,7 @@
 
                     <!-- Statistics -->
                     <div class="card">
-                        <div class="card-header">📊 Report Statistics</div>
+                        <div class="card-header"><i class="fas fa-chart-bar"></i> Report Statistics</div>
                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
                             <div class="stats-card stats-pending">
                                 <div class="stats-number">3</div>
@@ -1657,9 +1657,9 @@
 
                     <!-- Critical Alerts -->
                     <div class="card" data-notification-category="critical">
-                        <div class="card-header">🚨 Critical Alerts</div>
+                        <div class="card-header"><i class="fas fa-exclamation-circle"></i> Critical Alerts</div>
                         <div class="notification-item danger">
-                            <span class="notification-icon">⏰</span>
+                            <span class="notification-icon"><i class="fas fa-clock"></i></span>
                             <div>
                                 <strong>Warranty Expiring:</strong> Vehicle #089 brake system warranty expires in 2 days
                                 <div style="margin-top: 5px;">
@@ -1668,7 +1668,7 @@
                             </div>
                         </div>
                         <div class="notification-item danger">
-                            <span class="notification-icon">📋</span>
+                            <span class="notification-icon"><i class="fas fa-clipboard-list"></i></span>
                             <div>
                                 <strong>Overdue Service:</strong> Vehicle #089 routine check is 1 day overdue
                                 <div style="margin-top: 5px;">
@@ -1680,21 +1680,21 @@
 
                     <!-- Warranty Notifications -->
                     <div class="card" data-notification-category="warranty">
-                        <div class="card-header">🛡️ Warranty Notifications</div>
+                        <div class="card-header"><i class="fas fa-shield-alt"></i> Warranty Notifications</div>
                         <div class="notification-item warning">
-                            <span class="notification-icon">⏰</span>
+                            <span class="notification-icon"><i class="fas fa-clock"></i></span>
                             <div>
                                 <strong>Warranty Expiring:</strong> Vehicle #089 brake system warranty expires on Sep 30, 2025
                             </div>
                         </div>
                         <div class="notification-item danger">
-                            <span class="notification-icon">❌</span>
+                            <span class="notification-icon"><i class="fas fa-times-circle"></i></span>
                             <div>
                                 <strong>Warranty Expired:</strong> Machine #205 hydraulic pump warranty expired on Aug 10, 2025
                             </div>
                         </div>
                         <div class="notification-item info">
-                            <span class="notification-icon">✅</span>
+                            <span class="notification-icon"><i class="fas fa-check-circle"></i></span>
                             <div>
                                 <strong>Warranty Active:</strong> Vehicle #101 engine warranty valid until Dec 15, 2025
                             </div>
@@ -1703,9 +1703,9 @@
 
                     <!-- Cost Approval Notifications -->
                     <div class="card" data-notification-category="cost">
-                        <div class="card-header">💰 Cost Approval Notifications</div>
+                        <div class="card-header"><i class="fas fa-money-bill-wave"></i> Cost Approval Notifications</div>
                         <div class="notification-item warning">
-                            <span class="notification-icon">💰</span>
+                            <span class="notification-icon"><i class="fas fa-money-bill-wave"></i></span>
                             <div>
                                 <strong>High Cost Approval:</strong> Engine repair cost ₹45,000 awaiting approval (CA-001)
                                 <div style="margin-top: 5px;">
@@ -1715,7 +1715,7 @@
                             </div>
                         </div>
                         <div class="notification-item warning">
-                            <span class="notification-icon">💰</span>
+                            <span class="notification-icon"><i class="fas fa-money-bill-wave"></i></span>
                             <div>
                                 <strong>Cost Approval Pending:</strong> Hydraulic pump replacement ₹32,000 (CA-002)
                                 <div style="margin-top: 5px;">
@@ -1728,9 +1728,9 @@
 
                     <!-- Service Notifications -->
                     <div class="card" data-notification-category="service">
-                        <div class="card-header">🔧 Service Notifications</div>
+                        <div class="card-header"><i class="fas fa-wrench"></i> Service Notifications</div>
                         <div class="notification-item info">
-                            <span class="notification-icon">📋</span>
+                            <span class="notification-icon"><i class="fas fa-clipboard-list"></i></span>
                             <div>
                                 <strong>Service Report Submitted:</strong> Technical Officer uploaded report for Machine #203
                                 <div style="margin-top: 5px;">
@@ -1739,13 +1739,13 @@
                             </div>
                         </div>
                         <div class="notification-item success">
-                            <span class="notification-icon">✅</span>
+                            <span class="notification-icon"><i class="fas fa-check-circle"></i></span>
                             <div>
                                 <strong>Service Completed:</strong> Vehicle #089 brake system repair completed successfully
                             </div>
                         </div>
                         <div class="notification-item warning">
-                            <span class="notification-icon">📅</span>
+                            <span class="notification-icon"><i class="fas fa-calendar-alt"></i></span>
                             <div>
                                 <strong>Service Due:</strong> Vehicle #101 preventive maintenance due on Sep 28, 2025
                             </div>
@@ -1754,15 +1754,15 @@
 
                     <!-- Inventory Notifications -->
                     <div class="card" data-notification-category="inventory">
-                        <div class="card-header">📦 Inventory Notifications</div>
+                        <div class="card-header"><i class="fas fa-box"></i> Inventory Notifications</div>
                         <div class="notification-item warning">
-                            <span class="notification-icon">📦</span>
+                            <span class="notification-icon"><i class="fas fa-box"></i></span>
                             <div>
                                 <strong>Low Stock Alert:</strong> Brake pad stock running low (from Inventory Manager)
                             </div>
                         </div>
                         <div class="notification-item info">
-                            <span class="notification-icon">🔄</span>
+                            <span class="notification-icon"><i class="fas fa-sync"></i></span>
                             <div>
                                 <strong>Stock Update:</strong> Hydraulic oil restocked - 50 units added
                             </div>
@@ -1771,7 +1771,7 @@
 
                     <!-- Notification Summary -->
                     <div class="card">
-                        <div class="card-header">📊 Notification Summary</div>
+                        <div class="card-header"><i class="fas fa-chart-bar"></i> Notification Summary</div>
                         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
                             <div class="stats-card stats-urgent">
                                 <div class="stats-number">4</div>
@@ -1804,7 +1804,7 @@
             <h2 style="margin-bottom: 20px; color: var(--kelly-green);">Approve Cost Request</h2>
             <form id="approveCostForm">
                 <div class="form-section">
-                    <h5>✅ Approval Details</h5>
+                    <h5><i class="fas fa-check-circle"></i> Approval Details</h5>
                     <div class="form-group">
                         <label class="form-label">Request ID</label>
                         <input type="text" class="form-input" id="approveRequestId" readonly>
@@ -1830,7 +1830,7 @@
             <h2 style="margin-bottom: 20px; color: var(--danger);">Reject Cost Request</h2>
             <form id="rejectCostForm">
                 <div class="form-section">
-                    <h5>❌ Rejection Details</h5>
+                    <h5><i class="fas fa-times-circle"></i> Rejection Details</h5>
                     <div class="form-group">
                         <label class="form-label">Request ID</label>
                         <input type="text" class="form-input" id="rejectRequestId" readonly>
@@ -1922,7 +1922,7 @@
             <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Add Service Record</h2>
             <form id="addServiceForm">
                 <div class="form-section">
-                    <h5>📅 Service Schedule Information</h5>
+                    <h5><i class="fas fa-calendar-alt"></i> Service Schedule Information</h5>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Equipment ID</label>
@@ -2437,7 +2437,7 @@
             if (ticket) {
                 const content = `
                     <div class="form-section">
-                        <h5>🎫 Ticket Information</h5>
+                        <h5><i class="fas fa-ticket-alt"></i> Ticket Information</h5>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                             <div><strong>Ticket ID:</strong> ${ticket.id}</div>
                             <div><strong>Equipment:</strong> ${ticket.equipment}</div>
@@ -2476,7 +2476,7 @@
             if (warranty) {
                 const content = `
                     <div class="form-section">
-                        <h5>🛡️ Warranty Information</h5>
+                        <h5><i class="fas fa-shield-alt"></i> Warranty Information</h5>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                             <div><strong>Equipment:</strong> ${warranty.equipment}</div>
                             <div><strong>Component:</strong> ${warranty.component}</div>
@@ -2510,7 +2510,7 @@
             if (report) {
                 const content = `
                     <div class="form-section">
-                        <h5>📋 Service Report Information</h5>
+                        <h5><i class="fas fa-clipboard-list"></i> Service Report Information</h5>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                             <div><strong>Report ID:</strong> ${report.id}</div>
                             <div><strong>Equipment:</strong> ${report.equipment}</div>
@@ -2554,7 +2554,7 @@
             if (costData) {
                 const content = `
                     <div class="form-section">
-                        <h5>💰 Cost Request Information</h5>
+                        <h5><i class="fas fa-money-bill-wave"></i> Cost Request Information</h5>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                             <div><strong>Request ID:</strong> ${costData.id}</div>
                             <div><strong>Equipment:</strong> ${costData.equipment}</div>
@@ -2590,7 +2590,7 @@
             if (schedule) {
                 const content = `
                     <div class="form-section">
-                        <h5>📅 Service Schedule Information</h5>
+                        <h5><i class="fas fa-calendar-alt"></i> Service Schedule Information</h5>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                             <div><strong>Equipment:</strong> ${schedule.equipment}</div>
                             <div><strong>Service Type:</strong> ${schedule.serviceType}</div>
