@@ -24,14 +24,32 @@ class RouteBreakdownController {
         
         $sql = "SELECT rb.*, 
                 v.number_plate,
-                u.full_name as driver_name
+                u.full_name as driver_name,
+                ft.ticket_id as fault_ticket_number,
+                ft.status as ticket_status,
+                ft.id as fault_ticket_id
                 FROM vehicle_breakdown_inroute rb
                 LEFT JOIN vehicles v ON rb.vehicle_id = v.id
                 LEFT JOIN users u ON rb.driver_id = u.id
+                LEFT JOIN fault_tickets ft ON ft.breakdown_report_id = rb.route_breakdown_id AND ft.breakdown_type = 'route_breakdown'
                 ORDER BY rb.breakdown_datetime DESC";
         
         $stmt = $this->conn->query($sql);
         $breakdowns = $stmt->fetchAll();
+        
+        // Fetch assigned technicians for each breakdown that has a fault ticket
+        foreach ($breakdowns as &$breakdown) {
+            $breakdown['assigned_technicians'] = [];
+            if (!empty($breakdown['fault_ticket_id'])) {
+                $techSql = "SELECT u.full_name as technician_name, u.phone as technician_phone
+                           FROM fault_ticket_assignments fta
+                           JOIN users u ON fta.assigned_to = u.id
+                           WHERE fta.fault_ticket_id = ? AND fta.status = 'Active'";
+                $techStmt = $this->conn->prepare($techSql);
+                $techStmt->execute([$breakdown['fault_ticket_id']]);
+                $breakdown['assigned_technicians'] = $techStmt->fetchAll();
+            }
+        }
         
         Response::success(['breakdowns' => $breakdowns, 'count' => count($breakdowns)]);
     }
@@ -51,10 +69,16 @@ class RouteBreakdownController {
         
         $sql = "SELECT rb.*, 
                 v.number_plate, v.model_number as make, v.vehicle_name as model,
-                u.full_name as driver_name, u.phone as driver_phone
+                u.full_name as driver_name, u.phone as driver_phone,
+                ft.ticket_id as fault_ticket_number,
+                ft.status as ticket_status,
+                ft.id as fault_ticket_id,
+                ft.resolution_notes,
+                ft.resolved_at
                 FROM vehicle_breakdown_inroute rb
                 LEFT JOIN vehicles v ON rb.vehicle_id = v.id
                 LEFT JOIN users u ON rb.driver_id = u.id
+                LEFT JOIN fault_tickets ft ON ft.breakdown_report_id = rb.route_breakdown_id AND ft.breakdown_type = 'route_breakdown'
                 WHERE rb.id = ?";
         
         $stmt = $this->conn->prepare($sql);
@@ -63,6 +87,30 @@ class RouteBreakdownController {
         
         if (!$breakdown) {
             Response::error('Route breakdown not found', 404);
+        }
+        
+        // Fetch assigned technicians if fault ticket exists
+        $breakdown['assigned_technicians'] = [];
+        $breakdown['work_updates'] = [];
+        if (!empty($breakdown['fault_ticket_id'])) {
+            $techSql = "SELECT u.full_name as technician_name, u.phone as technician_phone
+                       FROM fault_ticket_assignments fta
+                       JOIN users u ON fta.assigned_to = u.id
+                       WHERE fta.fault_ticket_id = ? AND fta.status = 'Active'";
+            $techStmt = $this->conn->prepare($techSql);
+            $techStmt->execute([$breakdown['fault_ticket_id']]);
+            $breakdown['assigned_technicians'] = $techStmt->fetchAll();
+            
+            // Get work updates from technical officer
+            $workSql = "SELECT twu.*, 
+                               u.full_name as technician_name
+                        FROM ticket_work_updates twu
+                        LEFT JOIN users u ON twu.technical_officer_id = u.id
+                        WHERE twu.ticket_id = ?
+                        ORDER BY twu.created_at DESC";
+            $workStmt = $this->conn->prepare($workSql);
+            $workStmt->execute([$breakdown['fault_ticket_id']]);
+            $breakdown['work_updates'] = $workStmt->fetchAll();
         }
         
         Response::success(['breakdown' => $breakdown]);

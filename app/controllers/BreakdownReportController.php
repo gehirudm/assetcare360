@@ -44,16 +44,37 @@ class BreakdownReportController {
         
         $sql = "SELECT br.*, 
                 u.full_name as driver_name,
-                v.number_plate
+                v.number_plate,
+                ft.id as fault_ticket_id,
+                ft.ticket_id as fault_ticket_number,
+                ft.status as ticket_status,
+                ft.resolution_notes,
+                ft.resolved_at
                 FROM vehicle_breakdown br
                 LEFT JOIN users u ON br.driver_id = u.id
                 LEFT JOIN vehicles v ON br.vehicle_id = v.id
+                LEFT JOIN fault_tickets ft ON ft.breakdown_report_id = br.breakdown_id
                 $whereClause
                 ORDER BY br.breakdown_date DESC";
         
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
         $reports = $stmt->fetchAll();
+        
+        // Attach assigned technician info for each linked fault ticket
+        foreach ($reports as &$report) {
+            $report['assigned_technicians'] = [];
+            if (!empty($report['fault_ticket_id'])) {
+                $techSql = "SELECT u.full_name as technician_name, u.employee_id as technician_employee_id
+                            FROM fault_ticket_assignments fta
+                            LEFT JOIN users u ON fta.assigned_to = u.id
+                            WHERE fta.fault_ticket_id = ? AND fta.status = 'Active'";
+                $techStmt = $this->conn->prepare($techSql);
+                $techStmt->execute([$report['fault_ticket_id']]);
+                $report['assigned_technicians'] = $techStmt->fetchAll();
+            }
+        }
+        unset($report);
         
         Response::success(['reports' => $reports, 'count' => count($reports)]);
     }
@@ -73,10 +94,16 @@ class BreakdownReportController {
         
         $sql = "SELECT br.*, 
                 u.full_name as driver_name, u.employee_id as driver_employee_id,
-                v.number_plate
+                v.number_plate,
+                ft.id as fault_ticket_id,
+                ft.ticket_id as fault_ticket_number,
+                ft.status as ticket_status,
+                ft.resolution_notes,
+                ft.resolved_at
                 FROM vehicle_breakdown br
                 LEFT JOIN users u ON br.driver_id = u.id
                 LEFT JOIN vehicles v ON br.vehicle_id = v.id
+                LEFT JOIN fault_tickets ft ON ft.breakdown_report_id = br.breakdown_id
                 WHERE br.id = ?";
         
         $stmt = $this->conn->prepare($sql);
@@ -85,6 +112,31 @@ class BreakdownReportController {
         
         if (!$report) {
             Response::error('Report not found', 404);
+        }
+        
+        // Attach assigned technician info
+        $report['assigned_technicians'] = [];
+        $report['work_updates'] = [];
+        if (!empty($report['fault_ticket_id'])) {
+            $techSql = "SELECT u.full_name as technician_name, u.employee_id as technician_employee_id,
+                               u.phone as technician_phone
+                        FROM fault_ticket_assignments fta
+                        LEFT JOIN users u ON fta.assigned_to = u.id
+                        WHERE fta.fault_ticket_id = ? AND fta.status = 'Active'";
+            $techStmt = $this->conn->prepare($techSql);
+            $techStmt->execute([$report['fault_ticket_id']]);
+            $report['assigned_technicians'] = $techStmt->fetchAll();
+            
+            // Get work updates from technical officer
+            $workSql = "SELECT twu.*, 
+                               u.full_name as technician_name
+                        FROM ticket_work_updates twu
+                        LEFT JOIN users u ON twu.technical_officer_id = u.id
+                        WHERE twu.ticket_id = ?
+                        ORDER BY twu.created_at DESC";
+            $workStmt = $this->conn->prepare($workSql);
+            $workStmt->execute([$report['fault_ticket_id']]);
+            $report['work_updates'] = $workStmt->fetchAll();
         }
         
         Response::success(['report' => $report]);
@@ -98,29 +150,45 @@ class BreakdownReportController {
         RoleMiddleware::requireMinRole('Driver');
         
         $input = json_decode(file_get_contents('php://input'), true);
+        $currentUser = RoleMiddleware::getCurrentUser();
         
-        // Generate breakdown ID
-        $stmt = $this->conn->query("SELECT COUNT(*) FROM vehicle_breakdown");
-        $count = $stmt->fetchColumn() + 1;
-        $breakdownId = "VBD-" . str_pad($count, 3, '0', STR_PAD_LEFT);
-        
-        $sql = "INSERT INTO vehicle_breakdown 
-                (breakdown_id, vehicle_id, driver_id, breakdown_date, breakdown_type,
-                 severity, description, status) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')";
-        
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute([
-            $breakdownId,
-            $input['vehicle_id'],
-            RoleMiddleware::getCurrentUser()['id'],
-            $input['breakdown_date'] ?? date('Y-m-d'),
-            $input['breakdown_type'],
-            $input['severity'],
-            $input['description']
-        ]);
-        
-        Response::success(['breakdown_id' => $breakdownId], 'Breakdown report created successfully', 201);
+        try {
+            // Start transaction
+            $this->conn->beginTransaction();
+            
+            // Generate breakdown ID
+            $stmt = $this->conn->query("SELECT COUNT(*) FROM vehicle_breakdown");
+            $count = $stmt->fetchColumn() + 1;
+            $breakdownId = "VBD-" . str_pad($count, 3, '0', STR_PAD_LEFT);
+            
+            $sql = "INSERT INTO vehicle_breakdown 
+                    (breakdown_id, vehicle_id, driver_id, breakdown_date, breakdown_type,
+                     severity, description, status) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')";
+            
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([
+                $breakdownId,
+                $input['vehicle_id'],
+                $currentUser['id'],
+                $input['breakdown_date'] ?? date('Y-m-d'),
+                $input['breakdown_type'],
+                $input['severity'],
+                $input['description']
+            ]);
+            
+            // Commit transaction
+            $this->conn->commit();
+            
+            Response::success([
+                'breakdown_id' => $breakdownId
+            ], 'Breakdown report created successfully', 201);
+            
+        } catch (Exception $e) {
+            // Rollback on error
+            $this->conn->rollBack();
+            Response::error('Failed to create breakdown report: ' . $e->getMessage(), 500);
+        }
     }
     
     /**
