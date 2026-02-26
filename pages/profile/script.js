@@ -3,10 +3,10 @@ function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     toast.textContent = message;
     toast.className = `toast ${type}`;
-    
+
     // Show toast
     setTimeout(() => toast.classList.add('show'), 100);
-    
+
     // Hide after 3 seconds
     setTimeout(() => {
         toast.classList.remove('show');
@@ -64,11 +64,11 @@ function populateProfile(userData) {
     const nameParts = (userData.full_name || '').split(' ');
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
-    
+
     // Header user info
     const userAvatar = document.getElementById('userAvatar');
     const userName = document.getElementById('userName');
-    
+
     if (userAvatar) {
         userAvatar.textContent = firstName.charAt(0).toUpperCase();
     }
@@ -189,7 +189,7 @@ function openChangePasswordModal() {
     document.getElementById('currentPassword').value = '';
     document.getElementById('newPassword').value = '';
     document.getElementById('confirmPassword').value = '';
-    
+
     openModal('changePasswordModal');
 }
 
@@ -250,11 +250,11 @@ function goBackToDashboard() {
         window.location.href = '/auth/login.html';
         return;
     }
-    
+
     // Convert role to the format used in CONFIG.ROUTES.DASHBOARD
     const roleKey = userData.role.toUpperCase().replace(/ /g, '_');
     const dashboardPath = CONFIG.ROUTES.DASHBOARD[roleKey];
-    
+
     if (dashboardPath) {
         window.location.href = dashboardPath;
     } else {
@@ -264,19 +264,177 @@ function goBackToDashboard() {
     }
 }
 
+// =========================================
+// Passkey Management Functions
+// =========================================
+
+// Check if browser supports passkeys
+function checkPasskeySupport() {
+    const isSupported = Passkey.isSupported();
+    const notSupportedEl = document.getElementById('passkeyNotSupported');
+    const addBtn = document.getElementById('addPasskeyBtn');
+    const descriptionEl = document.getElementById('passkeyDescription');
+
+    if (!isSupported) {
+        if (notSupportedEl) notSupportedEl.style.display = 'flex';
+        if (addBtn) addBtn.style.display = 'none';
+        if (descriptionEl) descriptionEl.style.display = 'none';
+        return false;
+    }
+    return true;
+}
+
+// Load user's passkeys
+async function loadPasskeys() {
+    const passkeyList = document.getElementById('passkeyList');
+    const noPasskeys = document.getElementById('noPasskeys');
+
+    if (!Passkey.isSupported()) {
+        if (passkeyList) passkeyList.innerHTML = '';
+        return;
+    }
+
+    try {
+        const response = await API.get('/auth/passkey');
+
+        if (response.status === 'success') {
+            const passkeys = response.data || [];
+
+            if (passkeys.length === 0) {
+                if (passkeyList) passkeyList.innerHTML = '';
+                if (noPasskeys) noPasskeys.style.display = 'block';
+            } else {
+                if (noPasskeys) noPasskeys.style.display = 'none';
+                renderPasskeyList(passkeys);
+            }
+        } else {
+            throw new Error(response.message || 'Failed to load passkeys');
+        }
+    } catch (error) {
+        console.error('Error loading passkeys:', error);
+        if (passkeyList) {
+            passkeyList.innerHTML = '<p class="error-message">Failed to load passkeys</p>';
+        }
+    }
+}
+
+// Render passkey list
+function renderPasskeyList(passkeys) {
+    const passkeyList = document.getElementById('passkeyList');
+    if (!passkeyList) return;
+
+    passkeyList.innerHTML = passkeys.map(passkey => `
+        <div class="passkey-item" data-id="${passkey.id}">
+            <div class="passkey-icon">
+                <i class="fas fa-fingerprint"></i>
+            </div>
+            <div class="passkey-info">
+                <h4>${escapeHtml(passkey.name)}</h4>
+                <p>Created: ${Utils.formatDate(passkey.created_at)}${passkey.last_used_at ? ' • Last used: ' + Utils.formatDate(passkey.last_used_at) : ''}</p>
+            </div>
+            <button class="btn btn-icon btn-danger" onclick="deletePasskey(${passkey.id}, '${escapeHtml(passkey.name)}')" title="Delete passkey">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `).join('');
+}
+
+// Helper to escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Register a new passkey
+async function registerPasskey() {
+    if (!Passkey.isSupported()) {
+        showToast('Passkeys are not supported in this browser', 'error');
+        return;
+    }
+
+    const addBtn = document.getElementById('addPasskeyBtn');
+    if (addBtn) {
+        addBtn.disabled = true;
+        addBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+    }
+
+    try {
+        // Get registration options from server
+        const optionsResponse = await API.get('/auth/passkey/register-options');
+
+        if (optionsResponse.status !== 'success') {
+            throw new Error(optionsResponse.message || 'Failed to get registration options');
+        }
+
+        // Create credential using WebAuthn
+        const credential = await Passkey.register(optionsResponse.data);
+
+        // Get passkey name from user
+        const passkeyName = prompt('Enter a name for this passkey:', 'My Passkey') || 'My Passkey';
+
+        // Send credential to server
+        const registerResponse = await API.post('/auth/passkey/register', {
+            response: credential,
+            name: passkeyName
+        });
+
+        if (registerResponse.status === 'success') {
+            showToast('Passkey registered successfully!', 'success');
+            await loadPasskeys();
+        } else {
+            throw new Error(registerResponse.message || 'Failed to register passkey');
+        }
+
+    } catch (error) {
+        console.error('Passkey registration error:', error);
+        showToast(Passkey.getErrorMessage(error), 'error');
+    } finally {
+        if (addBtn) {
+            addBtn.disabled = false;
+            addBtn.innerHTML = '<i class="fas fa-plus"></i> Add Passkey';
+        }
+    }
+}
+
+// Delete a passkey
+async function deletePasskey(id, name) {
+    if (!confirm(`Are you sure you want to delete the passkey "${name}"? You won't be able to sign in with it anymore.`)) {
+        return;
+    }
+
+    try {
+        const response = await API.delete(`/auth/passkey/${id}`);
+
+        if (response.status === 'success') {
+            showToast('Passkey deleted successfully', 'success');
+            await loadPasskeys();
+        } else {
+            throw new Error(response.message || 'Failed to delete passkey');
+        }
+    } catch (error) {
+        console.error('Error deleting passkey:', error);
+        showToast(error.message || 'Failed to delete passkey', 'error');
+    }
+}
+
 // Initialize page on load
 document.addEventListener('DOMContentLoaded', async () => {
     // Check authentication first
     const user = await Auth.checkAuth();
-    
+
     if (!user) {
         window.location.href = '/auth/login.html';
         return;
     }
-    
+
     // Load full profile data
     await loadUserProfile();
-    
+
+    // Check passkey support and load passkeys
+    checkPasskeySupport();
+    loadPasskeys();
+
     // Add form submit handlers
     const editProfileForm = document.getElementById('editProfileForm');
     if (editProfileForm) {
@@ -285,7 +443,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             saveProfileChanges();
         });
     }
-    
+
     const changePasswordForm = document.getElementById('changePasswordForm');
     if (changePasswordForm) {
         changePasswordForm.addEventListener('submit', (e) => {
@@ -293,20 +451,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             changePassword();
         });
     }
-    
+
     // Add tab switching
     const tabs = document.querySelectorAll('.profile-tab');
     tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
+        tab.addEventListener('click', function () {
             const tabName = this.getAttribute('data-tab');
-            
+
             // Remove active class from all tabs and contents
             document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
+
             // Add active class to selected tab and content
             this.classList.add('active');
             document.getElementById(tabName).classList.add('active');
         });
     });
 });
+
