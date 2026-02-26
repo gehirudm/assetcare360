@@ -94,6 +94,14 @@ $router->get('/auth/validate', 'AuthController', 'validateToken');
 $router->post('/auth/forgot-password', 'AuthController', 'forgotPassword');
 $router->post('/auth/reset-password', 'AuthController', 'resetPassword');
 
+// Passkey authentication routes
+$router->get('/auth/passkey/register-options', 'AuthController', 'passkeyRegisterOptions');
+$router->post('/auth/passkey/register', 'AuthController', 'passkeyRegister');
+$router->post('/auth/passkey/authenticate-options', 'AuthController', 'passkeyAuthenticateOptions');
+$router->post('/auth/passkey/authenticate', 'AuthController', 'passkeyAuthenticate');
+$router->get('/auth/passkey', 'AuthController', 'listPasskeys');
+$router->delete('/auth/passkey/:id', 'AuthController', 'deletePasskey');
+
 // Technicians routes (Supervisor and Admin)
 $router->get('/technicians', 'UserController', 'getTechnicians');
 
@@ -259,18 +267,18 @@ $router->post('/spare-part-requests/:id/reject', 'SparePartRequestController', '
 // Dispatch the request
 try {
     $router->dispatch();
-    
+
     // Log the request after successful processing
     $user = RoleMiddleware::getCurrentUser();
     $requestLogger->log($user, http_response_code());
-    
+
 } catch (Exception $e) {
     // Log error
     error_log("Error: " . $e->getMessage());
-    
+
     // Log the request even if there's an error
     $user = RoleMiddleware::getCurrentUser();
     $requestLogger->log($user, 500);
-    
+
     Response::serverError('An unexpected error occurred');
 }
