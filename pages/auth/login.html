@@ -382,11 +382,11 @@
         .passkey-inline .passkey-login-btn {
             padding: 0.625rem 1rem;
             font-size: 0.9rem;
-            background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+            background: #1f2937;
         }
 
         .passkey-inline .passkey-login-btn:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #1e3a5f 100%);
+            background: #374151;
         }
     </style>
 </head>
@@ -639,7 +639,7 @@
             const passkeyBtn = document.querySelector('.passkey-login-btn');
             const alertMessage = document.getElementById('alertMessage');
 
-            // Get employee ID - prompt user
+            // Get employee ID
             const employeeId = document.getElementById('employeeId').value.trim() ||
                 prompt('Enter your Employee ID to sign in with passkey:');
 
@@ -647,6 +647,8 @@
                 showAlertPasskey('Please enter your Employee ID', 'error');
                 return;
             }
+
+            const originalHTML = passkeyBtn ? passkeyBtn.innerHTML : '';
 
             if (passkeyBtn) {
                 passkeyBtn.disabled = true;
@@ -695,12 +697,7 @@
             } finally {
                 if (passkeyBtn) {
                     passkeyBtn.disabled = false;
-                    passkeyBtn.innerHTML = `
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 1C8.14 1 5 4.14 5 8a7 7 0 0 0 4.87 6.66L8.14 23l3.86-3 3.86 3-1.73-8.34A7 7 0 0 0 19 8c0-3.86-3.14-7-7-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8z"/>
-                        </svg>
-                        Sign in with Passkey
-                    `;
+                    passkeyBtn.innerHTML = originalHTML;
                 }
             }
         }
