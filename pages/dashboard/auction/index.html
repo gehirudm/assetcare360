@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auction Officer Dashboard</title>
+
+    <!-- Config must load first -->
+    <script src="../../js/config.js"></script>
+
+    <!-- Icons -->
+    <script src="https://kit.fontawesome.com/a422e631ad.js" crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="header-title">Auction Officer Dashboard</h1>
+            <div class="header-user">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">AO</div>
+                    <span id="userName">Loading...</span>
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    <span><i class="fas fa-sign-out-alt"></i></span> Logout
+                </button>
+            </div>
+        </header>
+
+        <div class="main-wrapper">
+            <aside class="sidebar">
+                <h2>Auction Officer</h2>
+                <nav>
+                    <div class="nav-item active" data-section="dashboard">
+                        <span class="nav-icon"><i class="fas fa-chart-bar"></i></span>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="nav-item" data-section="active-auctions">
+                        <span class="nav-icon"><i class="fas fa-gavel"></i></span>
+                        <span>Active Auctions</span>
+                    </div>
+                    <div class="nav-item" data-section="assets">
+                        <span class="nav-icon"><i class="fas fa-truck"></i></span>
+                        <span>Assets for Auction</span>
+                    </div>
+                    <div class="nav-item" data-section="bidders">
+                        <span class="nav-icon"><i class="fas fa-users"></i></span>
+                        <span>Bidder Management</span>
+                    </div>
+                    <div class="nav-item" data-section="schedule">
+                        <span class="nav-icon"><i class="fas fa-calendar-alt"></i></span>
+                        <span>Auction Schedule</span>
+                    </div>
+                    <div class="nav-item" data-section="reports">
+                        <span class="nav-icon"><i class="fas fa-chart-line"></i></span>
+                        <span>Reports</span>
+                    </div>
+                </nav>
+            </aside>
+
+            <main class="main-content">
+                <!-- Dashboard Section -->
+                <section class="content-section active" id="dashboard">
+                    <div class="page-header">
+                        <h1 class="page-title">Dashboard</h1>
+                        <p class="page-subtitle">Auction Management Overview</p>
+                    </div>
+
+                    <div class="grid">
+                        <div class="summary-card">
+                            <div class="summary-title">Today's Activity</div>
+                            <div class="summary-content">
+                                • Active Auctions: 3<br>
+                                • Total Bids: 35<br>
+                                • Pending Bidders: 5<br>
+                                • Scheduled Auctions: 3
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-title">Auction Performance</div>
+                            <div class="summary-content">
+                                • Completed This Month: 12<br>
+                                • Success Rate: 92%<br>
+                                • Avg. Above Reserve: 15%<br>
+                                • Total Revenue: $285,000
+                            </div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-title">Pending Actions</div>
+                            <div class="summary-content">
+                                • Bidder Approvals: 5<br>
+                                • Assets Ready: 8<br>
+                                • Ending Soon: 1<br>
+                                • To Be Published: 3
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span>⚡ Quick Actions</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn btn-primary" onclick="navigateTo('active-auctions')"><i class="fas fa-gavel"></i> Create Auction</button>
+                            <button class="btn btn-primary" onclick="navigateTo('bidders')"><i class="fas fa-users"></i> Register Bidder</button>
+                            <button class="btn btn-primary" onclick="navigateTo('schedule')"><i class="fas fa-calendar-alt"></i> Schedule Auction</button>
+                            <button class="btn btn-success" onclick="navigateTo('reports')"><i class="fas fa-chart-bar"></i> View Reports</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-chart-line"></i> Recent Activities</span>
+                        </div>
+                        <div class="item-card">
+                            <div class="item-details">
+                                <strong>Auction Created</strong>
+                                <div class="item-meta">AUC-2024-010 | 2 hours ago</div>
+                                <div class="item-description">Truck LKC-7890 (2017) - Reserve: $15,000</div>
+                            </div>
+                            <span class="status-badge status-complete">Created</span>
+                        </div>
+                        <div class="item-card">
+                            <div class="item-details">
+                                <strong>Bidder Approved</strong>
+                                <div class="item-meta">BID-051 - K-Tech Imports | 4 hours ago</div>
+                                <div class="item-description">Company verification completed</div>
+                            </div>
+                            <span class="status-badge status-approved">Approved</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Active Auctions Section -->
+                <section class="content-section" id="active-auctions">
+                    <div class="page-header">
+                        <h1 class="page-title">Active Auctions</h1>
+                        <p class="page-subtitle">Monitor ongoing auctions and bidding activity</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="openModal('createAuctionModal')">Create New Auction</button>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterAuctions('all')">All Auctions</button>
+                        <button class="filter-btn" onclick="filterAuctions('active')">Active</button>
+                        <button class="filter-btn" onclick="filterAuctions('ending-soon')">Ending Soon</button>
+                        <button class="filter-btn" onclick="filterAuctions('starting-soon')">Starting Soon</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-gavel"></i> Active Auctions</span>
+                            <span class="status-badge status-active">3 active</span>
+                        </div>
+                        <div id="auctionsContainer">
+                            <div class="item-card" data-status="ending-soon">
+                                <div class="item-details">
+                                    <strong>AUC-2024-001</strong>
+                                    <div class="item-meta">Truck LX-A-9876 (2019) | 12 Bidders</div>
+                                    <div class="item-description">Current: $18,500 | Reserve: $18,000 | Time: 2h 15m</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-in-progress">Ending Soon</span>
+                                    <button class="btn btn-secondary btn-small" onclick="viewAuctionDetails('AUC-2024-001')"><i class="fas fa-eye"></i> View</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidders('AUC-2024-001')"><i class="fas fa-users"></i> Bidders</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="active">
+                                <div class="item-details">
+                                    <strong>AUC-2024-002</strong>
+                                    <div class="item-meta">Event F1-005 (2018) | 8 Bidders</div>
+                                    <div class="item-description">Current: $9,200 | Reserve: $8,000 | Time: 1d 5h</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-active">Active</span>
+                                    <button class="btn btn-secondary btn-small" onclick="viewAuctionDetails('AUC-2024-002')"><i class="fas fa-eye"></i> View</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidders('AUC-2024-002')"><i class="fas fa-users"></i> Bidders</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="starting-soon">
+                                <div class="item-details">
+                                    <strong>AUC-2024-003</strong>
+                                    <div class="item-meta">V2L LX-B-486 (2020) | 15 Registered</div>
+                                    <div class="item-description">Reserve: $12,000 | Starts in: 5h</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-pending">Starting Soon</span>
+                                    <button class="btn btn-secondary btn-small" onclick="viewAuctionDetails('AUC-2024-003')"><i class="fas fa-eye"></i> View</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidders('AUC-2024-003')"><i class="fas fa-users"></i> Bidders</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Assets Section -->
+                <section class="content-section" id="assets">
+                    <div class="page-header">
+                        <h1 class="page-title">Assets for Auction</h1>
+                        <p class="page-subtitle">Manage vehicles and machinery marked for disposal</p>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterAssets('all')">All Assets</button>
+                        <button class="filter-btn" onclick="filterAssets('good')">Good Condition</button>
+                        <button class="filter-btn" onclick="filterAssets('fair')">Fair Condition</button>
+                        <button class="filter-btn" onclick="filterAssets('vehicles')">Vehicles</button>
+                        <button class="filter-btn" onclick="filterAssets('equipment')">Equipment</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-truck"></i> Assets Ready for Auction</span>
+                            <span class="status-badge status-pending">8 available</span>
+                        </div>
+                        <div id="assetsContainer">
+                            <div class="item-card" data-status="fair" data-type="vehicles">
+                                <div class="item-details">
+                                    <strong>Truck LKC-7890</strong>
+                                    <div class="item-meta">2017 Mitsubishi Canter · 180,000 km</div>
+                                    <div class="item-description">High maintenance cost | Fair condition</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-pending">Fair</span>
+                                    <button class="btn btn-primary btn-small" onclick="viewAssetDetails('Truck LKC-7890')"><i class="fas fa-eye"></i> View</button>
+                                    <button class="btn btn-success btn-small" onclick="scheduleAssetAuction('Truck LKC-7890')"><i class="fas fa-calendar-alt"></i> Schedule</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="good" data-type="equipment">
+                                <div class="item-details">
+                                    <strong>Excavator EX-003</strong>
+                                    <div class="item-meta">2016 Caterpillar 315D · 8,500 h</div>
+                                    <div class="item-description">Fleet downsizing | Good condition</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-approved">Good</span>
+                                    <button class="btn btn-primary btn-small" onclick="viewAssetDetails('Excavator EX-003')"><i class="fas fa-eye"></i> View</button>
+                                    <button class="btn btn-success btn-small" onclick="scheduleAssetAuction('Excavator EX-003')"><i class="fas fa-calendar-alt"></i> Schedule</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="fair" data-type="equipment">
+                                <div class="item-details">
+                                    <strong>Generator GEN-002</strong>
+                                    <div class="item-meta">2015 Perkins 100kVA · 12,000 h</div>
+                                    <div class="item-description">Replacement purchased | Fair condition</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-pending">Fair</span>
+                                    <button class="btn btn-primary btn-small" onclick="viewAssetDetails('Generator GEN-002')"><i class="fas fa-eye"></i> View</button>
+                                    <button class="btn btn-success btn-small" onclick="scheduleAssetAuction('Generator GEN-002')"><i class="fas fa-calendar-alt"></i> Schedule</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Bidders Section -->
+                <section class="content-section" id="bidders">
+                    <div class="page-header">
+                        <h1 class="page-title">Bidder Management</h1>
+                        <p class="page-subtitle">Register and manage auction participants</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="openModal('registerBidderModal')">Register New Bidder</button>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterBidders('all')">All Bidders</button>
+                        <button class="filter-btn" onclick="filterBidders('pending')">Pending</button>
+                        <button class="filter-btn" onclick="filterBidders('verified')">Verified</button>
+                        <button class="filter-btn" onclick="filterBidders('company')">Companies</button>
+                        <button class="filter-btn" onclick="filterBidders('individual')">Individuals</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-users"></i> Registered Bidders</span>
+                            <span class="status-badge status-approved">47 total, 5 pending</span>
+                        </div>
+                        <div id="biddersContainer">
+                            <div class="item-card" data-status="pending" data-type="individual">
+                                <div class="item-details">
+                                    <strong>BID-045 - R. Fernando</strong>
+                                    <div class="item-meta">Individual | r.fernando@email.com</div>
+                                    <div class="item-description">Registered: Oct 18, 2025 | Documents submitted</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-pending">Pending</span>
+                                    <button class="btn btn-success btn-small" onclick="approveBidder('BID-045')">✓ Approve</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidderDetails('BID-045')"><i class="fas fa-eye"></i> View</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="verified" data-type="company">
+                                <div class="item-details">
+                                    <strong>BID-014 - Next Motors (Pvt)</strong>
+                                    <div class="item-meta">Company | info@nextmotors.com</div>
+                                    <div class="item-description">Active bidder | 15 successful bids</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-approved">Verified</span>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidderDetails('BID-014')"><i class="fas fa-eye"></i> View</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="verified" data-type="individual">
+                                <div class="item-details">
+                                    <strong>BID-032 - M. Jayasekara</strong>
+                                    <div class="item-meta">Individual | m.jayasekara@email.com</div>
+                                    <div class="item-description">Active bidder | 8 successful bids</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-approved">Verified</span>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidderDetails('BID-032')"><i class="fas fa-eye"></i> View</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="pending" data-type="company">
+                                <div class="item-details">
+                                    <strong>BID-050 - K-Tech Imports</strong>
+                                    <div class="item-meta">Company | accounts@ktech.com</div>
+                                    <div class="item-description">Registered: Oct 17, 2025 | Documents under review</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-pending">Pending</span>
+                                    <button class="btn btn-success btn-small" onclick="approveBidder('BID-050')">✓ Approve</button>
+                                    <button class="btn btn-secondary btn-small" onclick="viewBidderDetails('BID-050')"><i class="fas fa-eye"></i> View</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Schedule Section -->
+                <section class="content-section" id="schedule">
+                    <div class="page-header">
+                        <h1 class="page-title">Auction Schedule</h1>
+                        <p class="page-subtitle">Plan and manage auction timelines</p>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterSchedule('all')">All Scheduled</button>
+                        <button class="filter-btn" onclick="filterSchedule('scheduled')">Scheduled</button>
+                        <button class="filter-btn" onclick="filterSchedule('published')">Published</button>
+                        <button class="filter-btn" onclick="filterSchedule('this-week')">This Week</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-calendar-alt"></i> Upcoming Auctions</span>
+                            <span class="status-badge status-scheduled">3 scheduled</span>
+                        </div>
+                        <div id="scheduleContainer">
+                            <div class="item-card" data-status="scheduled" data-period="this-week">
+                                <div class="item-details">
+                                    <strong>AUC-2024-004 - Truck LKC-7890</strong>
+                                    <div class="item-meta">Publish: Sep 01 | Start: Sep 05, 10:00 | End: Sep 10, 15:00</div>
+                                    <div class="item-description">Reserve: $15,000 | 2017 Mitsubishi Canter</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-scheduled">Scheduled</span>
+                                    <button class="btn btn-secondary btn-small" onclick="editSchedule('AUC-2024-004')"><i class="fas fa-edit"></i> Edit</button>
+                                    <button class="btn btn-success btn-small" onclick="publishAuction('AUC-2024-004')"><i class="fas fa-bullhorn"></i> Publish</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="scheduled" data-period="this-week">
+                                <div class="item-details">
+                                    <strong>AUC-2024-005 - Excavator EX-003</strong>
+                                    <div class="item-meta">Publish: Sep 03 | Start: Sep 08, 09:00 | End: Sep 13, 12:00</div>
+                                    <div class="item-description">Reserve: $25,000 | 2016 Caterpillar 315D</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-scheduled">Scheduled</span>
+                                    <button class="btn btn-secondary btn-small" onclick="editSchedule('AUC-2024-005')"><i class="fas fa-edit"></i> Edit</button>
+                                    <button class="btn btn-success btn-small" onclick="publishAuction('AUC-2024-005')"><i class="fas fa-bullhorn"></i> Publish</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="scheduled" data-period="this-week">
+                                <div class="item-details">
+                                    <strong>AUC-2024-006 - Generator GEN-002</strong>
+                                    <div class="item-meta">Publish: Sep 05 | Start: Sep 10, 14:00 | End: Sep 15, 16:00</div>
+                                    <div class="item-description">Reserve: $8,000 | 2015 Perkins 100kVA</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-scheduled">Scheduled</span>
+                                    <button class="btn btn-secondary btn-small" onclick="editSchedule('AUC-2024-006')"><i class="fas fa-edit"></i> Edit</button>
+                                    <button class="btn btn-success btn-small" onclick="publishAuction('AUC-2024-006')"><i class="fas fa-bullhorn"></i> Publish</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Reports Section -->
+                <section class="content-section" id="reports">
+                    <div class="page-header">
+                        <h1 class="page-title">Auction Reports</h1>
+                        <p class="page-subtitle">Generate and analyze auction performance data</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-chart-line"></i> Report Filters</div>
+                        <form id="reportFilters">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Date Range</label>
+                                    <select class="form-select">
+                                        <option>Today</option>
+                                        <option>This Week</option>
+                                        <option>This Month</option>
+                                        <option>Custom</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select">
+                                        <option>All</option>
+                                        <option>Active</option>
+                                        <option>Ended</option>
+                                        <option>Scheduled</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                                <button type="button" class="btn btn-success" onclick="exportToCSV()">Export CSV</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="filter-controls">
+                        <button class="filter-btn active" onclick="filterReports('all')">All Reports</button>
+                        <button class="filter-btn" onclick="filterReports('active')">Active</button>
+                        <button class="filter-btn" onclick="filterReports('ended')">Ended</button>
+                        <button class="filter-btn" onclick="filterReports('scheduled')">Scheduled</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <span><i class="fas fa-chart-bar"></i> Auction Report Results</span>
+                            <span class="status-badge status-approved">3 results</span>
+                        </div>
+                        <div id="reportsContainer">
+                            <div class="item-card" data-status="active">
+                                <div class="item-details">
+                                    <strong>AUC-2024-001 - Truck LX-A-9876 (2019)</strong>
+                                    <div class="item-meta">12 Bidders | Start: $18,000 | Current: $18,500</div>
+                                    <div class="item-description">Above Reserve: 2.8% | Ends in: 2h 15m</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-in-progress">Ending Soon</span>
+                                    <button class="btn btn-secondary btn-small" onclick="viewReportDetails('AUC-2024-001')"><i class="fas fa-eye"></i> View</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="active">
+                                <div class="item-details">
+                                    <strong>AUC-2024-002 - Event F1-005 (2018)</strong>
+                                    <div class="item-meta">8 Bidders | Start: $8,000 | Current: $9,200</div>
+                                    <div class="item-description">Above Reserve: 15.0% | Ends in: 1d 5h</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-active">Active</span>
+                                    <button class="btn btn-secondary btn-small" onclick="viewReportDetails('AUC-2024-002')"><i class="fas fa-eye"></i> View</button>
+                                </div>
+                            </div>
+                            <div class="item-card" data-status="scheduled">
+                                <div class="item-details">
+                                    <strong>AUC-2024-003 - V2L LX-B-486 (2020)</strong>
+                                    <div class="item-meta">15 Registered | Reserve: $12,000</div>
+                                    <div class="item-description">Starts in: 5h</div>
+                                </div>
+                                <div class="item-actions">
+                                    <span class="status-badge status-pending">Starting Soon</span>
+                                    <button class="btn btn-secondary btn-small" onclick="viewReportDetails('AUC-2024-003')"><i class="fas fa-eye"></i> View</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="createAuctionModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('createAuctionModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Create New Auction</h2>
+            <form id="createAuctionForm">
+                <div class="form-section">
+                    <h5><i class="fas fa-id-card"></i> Basic Details</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Auction ID *</label>
+                            <input type="text" class="form-input" placeholder="AUC-2024-010" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Asset *</label>
+                            <input type="text" class="form-input" placeholder="Truck LKC-7890" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Reserve Price (USD) *</label>
+                            <input type="number" class="form-input" min="0" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Start Time *</label>
+                            <input type="datetime-local" class="form-input" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">End Time *</label>
+                            <input type="datetime-local" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Bid Increment (USD)</label>
+                            <input type="number" class="form-input" min="1" step="1" value="100">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h5><i class="fas fa-sticky-note"></i> Notes</h5>
+                    <textarea class="form-textarea" placeholder="Inspection notes, disclosures, etc."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Auction</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('createAuctionModal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="registerBidderModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('registerBidderModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Register Bidder</h2>
+            <form id="registerBidderForm">
+                <div class="form-section">
+                    <h5><i class="fas fa-user"></i> Bidder Information</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Full Name *</label>
+                            <input type="text" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-input" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Phone *</label>
+                            <input type="tel" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Type *</label>
+                            <select class="form-select" required>
+                                <option value="">Select Type</option>
+                                <option>Individual</option>
+                                <option>Company</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Company</label>
+                            <input type="text" class="form-input" placeholder="If applicable">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Verification Status *</label>
+                            <select class="form-select" required>
+                                <option value="">Select Status</option>
+                                <option>Pending</option>
+                                <option>Verified</option>
+                                <option>Rejected</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Register Bidder</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('registerBidderModal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="scheduleAuctionModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('scheduleAuctionModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Schedule Auction</h2>
+            <form id="scheduleAuctionForm">
+                <div class="form-section">
+                    <h5><i class="fas fa-calendar-alt"></i> Timing</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Auction ID *</label>
+                            <input type="text" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Publish On *</label>
+                            <input type="datetime-local" class="form-input" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Start Time *</label>
+                            <input type="datetime-local" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">End Time *</label>
+                            <input type="datetime-local" class="form-input" required>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Schedule</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('scheduleAuctionModal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/dashboard-init.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

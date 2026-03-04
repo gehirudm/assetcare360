@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Dashboard - AssetCare360</title>
+    
+    <!-- Config must be loaded first -->
+    <script src="../../js/config.js"></script>
+    
+    <!-- FontAwesome -->
+    <script src="https://kit.fontawesome.com/a422e631ad.js" crossorigin="anonymous"></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="brand-logo">
+                    <span class="brand-name">AssetCare<span class="brand-highlight">360</span></span>
+                </div>
+                <div class="header-divider"></div>
+                <h1 class="header-title">
+                    <i class="fas fa-steering-wheel"></i> Driver Dashboard
+                </h1>
+            </div>
+            <div class="header-user">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">D</div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">Loading...</div>
+                        <div class="user-meta">
+                            <span id="userEmployeeId"></span>
+                            <span class="separator">•</span>
+                            <span id="userRole"></span>
+                        </div>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="main-wrapper">
+            <aside class="sidebar">
+                <!-- <h2>Driver</h2> -->
+                <nav>
+                    <div class="nav-item active" data-section="dashboard">
+                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="nav-item" data-section="trip-log">
+                        <i class="nav-icon fas fa-route"></i>
+                        <span>Trip Log</span>
+                    </div>
+                    <div class="nav-item" data-section="vehicle-check">
+                        <i class="nav-icon fas fa-clipboard-check"></i>
+                        <span>Vehicle Check</span>
+                    </div>
+                    <div class="nav-item" data-section="breakdown">
+                        <i class="nav-icon fas fa-exclamation-triangle"></i>
+                        <span>Breakdown Report</span>
+                    </div>
+                    <div class="nav-item" data-section="fuel-mileage">
+                        <i class="nav-icon fas fa-gas-pump"></i>
+                        <span>Fuel & Mileage</span>
+                    </div>
+                    <div class="nav-item" data-section="transport-ticket">
+                        <i class="nav-icon fas fa-ticket-alt"></i>
+                        <span>Transport Ticket</span>
+                    </div>
+                    <div class="nav-item" data-section="garages">
+                        <i class="nav-icon fas fa-warehouse"></i>
+                        <span>Nearby Garages</span>
+                    </div>
+                </nav>
+            </aside>
+
+            <main class="main-content">
+                <!-- Dashboard Section -->
+                <section class="content-section active" id="dashboard">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-tachometer-alt"></i> Dashboard Overview</h2>
+                        <p class="page-subtitle">Welcome! Here's your daily summary</p>
+                    </div>
+
+                    <div class="grid">
+                        <div class="summary-card clickable" onclick="navigateTo('trip-log')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-route"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Today's Trips</div>
+                                    <div class="summary-number">3</div>
+                                    <div class="summary-description">trips scheduled today</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="summary-card clickable" onclick="navigateTo('vehicle-check')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-clipboard-check"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Weekly Checks</div>
+                                    <div class="summary-number">3</div>
+                                    <div class="summary-description">daily checks submitted</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="summary-card clickable" onclick="navigateTo('fuel-mileage')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-gas-pump"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Distance Today</div>
+                                    <div class="summary-number">220 KM</div>
+                                    <div class="summary-description">total distance covered</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+
+                        <div class="summary-card clickable" onclick="navigateTo('breakdown')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Breakdown Reports</div>
+                                    <div class="summary-number">1</div>
+                                    <div class="summary-description">active breakdown report</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activities Section -->
+                    <div class="recent-activities">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-chart-line"></i> Recent Activities
+                            </h3>
+                        </div>
+
+                        <div class="activities-list" id="activitiesList">
+                            <!-- Activity Item 1 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Daily Check Approved</div>
+                                    <div class="activity-meta">Vehicle: LKA-1234 | Check ID: CHK-001 | 2 hours ago</div>
+                                    <div class="activity-description">All safety checks passed successfully</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-approved">APPROVED</span>
+                                </div>
+                            </div>
+
+                            <!-- Activity Item 2 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Trip Completed</div>
+                                    <div class="activity-meta">Trip: TRP-001 | Galle → Colombo | 3 hours ago</div>
+                                    <div class="activity-description">Successfully completed 85km trip with cargo delivery</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-completed">COMPLETED</span>
+                                </div>
+                            </div>
+
+                            <!-- Activity Item 3 -->
+                            <div class="activity-item">
+                                <div class="activity-content">
+                                    <div class="activity-title">Service Due Alert</div>
+                                    <div class="activity-meta">Vehicle: LKA-1234 | Due in: 250 KM | 5 hours ago</div>
+                                    <div class="activity-description">Regular maintenance service required soon</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-badge status-pending">PENDING</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Trip Log Section -->
+                <section class="content-section" id="trip-log">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-route"></i> Trip Log</h2>
+                        <p class="page-subtitle">Record and track your trips with details</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+                        <button id="startNewTripBtn" class="btn btn-primary" onclick="openModal('startTripModal')">
+                            <i class="fas fa-plus"></i> Start New Trip
+                        </button>
+                        <button class="btn btn-secondary" onclick="refreshTrips()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                    <div id="activeTripWarning" style="display: none; padding: 10px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-bottom: 15px; color: #856404;">
+                        <i class="fas fa-info-circle"></i> You have an active trip. Please complete it before starting a new one.
+                    </div>
+
+                    <div class="filter-controls" id="tripFilters">
+                        <button class="filter-btn active" onclick="filterTripsByStatus('all')">All</button>
+                        <button class="filter-btn" onclick="filterTripsByStatus('ready')">Ready</button>
+                        <button class="filter-btn" onclick="filterTripsByStatus('in-progress')">In Progress</button>
+                        <button class="filter-btn" onclick="filterTripsByStatus('completed')">Completed</button>
+                    </div>
+
+                    <div id="tripsList">
+                        <!-- Trips loaded from database -->
+                    </div>
+                </section>
+
+                <!-- Vehicle Check Section -->
+                <section class="content-section" id="vehicle-check">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-clipboard-check"></i> Weekly Vehicle Check</h2>
+                        <p class="page-subtitle">Submit weekly vehicle inspection reports</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
+                        <button class="btn btn-primary" id="weeklyCheckBtn" onclick="openWeeklyCheckModal()">
+                            <i class="fas fa-clipboard-check"></i> Submit Weekly Vehicle Check
+                        </button>
+                        <span id="weeklyCheckStatus" style="font-size: 14px; color: #27ae60; display: none;">
+                            <i class="fas fa-check-circle"></i> This week's check submitted
+                        </span>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-clipboard-list"></i> My Weekly Check History
+                            <div class="filter-controls">
+                                <button class="filter-btn active" onclick="filterChecksByStatus('all')">All</button>
+                                <button class="filter-btn" onclick="filterChecksByStatus('approved')">Approved</button>
+                                <button class="filter-btn" onclick="filterChecksByStatus('rejected')">Rejected</button>
+                            </div>
+                        </div>
+                        <!-- Vehicle checks loaded from database -->
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-check-square"></i> Weekly Inspection Checklist Items</div>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                                <strong>✓</strong> Engine Oil Level
+                            </div>
+                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                                <strong>✓</strong> Brake System
+                            </div>
+                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                                <strong>✓</strong> All Lights & Indicators
+                            </div>
+                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                                <strong>✓</strong> Tire Pressure & Condition
+                            </div>
+                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                                <strong>✓</strong> Coolant Level
+                            </div>
+                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                                <strong>✓</strong> Wipers & Washers
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Breakdown Report Section -->
+                <section class="content-section" id="breakdown">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-exclamation-triangle"></i> Breakdown Report</h2>
+                        <p class="page-subtitle">Report vehicle issues and track repair status</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+                        <button class="btn btn-primary" onclick="openNewBreakdownModal()">
+                            Report Breakdown
+                        </button>
+                        <button class="btn btn-danger" onclick="openNewRouteBreakdownModal()">
+                            Report Breakdown in Route
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-exclamation-circle"></i> My Submitted Reports
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <div class="filter-controls">
+                                    <span style="font-weight: 600; margin-right: 10px;">Type:</span>
+                                    <button class="filter-btn active" onclick="filterBreakdownsByType('all')">All</button>
+                                    <button class="filter-btn" onclick="filterBreakdownsByType('breakdown')">Breakdown</button>
+                                    <button class="filter-btn" onclick="filterBreakdownsByType('in-route')">Breakdown in Route</button>
+                                </div>
+                                <div class="filter-controls">
+                                    <span style="font-weight: 600; margin-right: 10px;">Status:</span>
+                                    <button class="filter-btn active" onclick="filterBreakdownsByStatus('all')">All</button>
+                                    <button class="filter-btn" onclick="filterBreakdownsByStatus('in-progress')">In Progress</button>
+                                    <button class="filter-btn" onclick="filterBreakdownsByStatus('resolved')">Resolved</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Breakdown reports will be dynamically loaded here -->
+                    </div>
+                </section>
+
+                <!-- Fuel & Mileage Section -->
+                <section class="content-section" id="fuel-mileage">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-gas-pump"></i> Fuel & Mileage</h2>
+                        <p class="page-subtitle">Track fuel consumption and vehicle efficiency</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="openModal('fuelMileageModal')">
+                            Log Fuel & Mileage
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-gas-pump"></i> Recent Fuel Logs</div>
+                        <div class="inventory-item">
+                            <div class="item-details">
+                                <strong><i class="fas fa-gas-pump"></i> FL-001</strong>
+                                <div class="item-meta">
+                                    <i class="fas fa-calendar"></i> Aug 24, 2024 02:30 PM | 
+                                    <i class="fas fa-map-marker-alt"></i> IOC - Kandy Road
+                                </div>
+                                <div class="item-description">
+                                    <i class="fas fa-fill-drip"></i> 45 L | 
+                                    <i class="fas fa-dollar-sign"></i> Rs. 12,500 | 
+                                    <i class="fas fa-tachometer-alt"></i> 45,100 km | 
+                                    Efficiency: 8.3 km/L
+                                </div>
+                            </div>
+                            <div class="item-actions">
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-primary" onclick="viewFuelDetails('FL-001')">
+                                        <i class="fas fa-eye"></i> VIEW
+                                    </button>
+                                    <div class="dropdown-container">
+                                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'fuel-FL-001')">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu" id="dropdown-fuel-FL-001">
+                                            <button class="dropdown-item" onclick="editFuelLog('FL-001')">
+                                                <i class="fas fa-edit"></i> Edit Log
+                                            </button>
+                                            <button class="dropdown-item" onclick="printFuelLog('FL-001')">
+                                                <i class="fas fa-print"></i> Print Receipt
+                                            </button>
+                                            <button class="dropdown-item danger" onclick="deleteFuelLog('FL-001')">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="inventory-item">
+                            <div class="item-details">
+                                <strong><i class="fas fa-gas-pump"></i> FL-002</strong>
+                                <div class="item-meta">
+                                    <i class="fas fa-calendar"></i> Aug 20, 2024 09:15 AM | 
+                                    <i class="fas fa-map-marker-alt"></i> CPC - Colombo
+                                </div>
+                                <div class="item-description">
+                                    <i class="fas fa-fill-drip"></i> 50 L | 
+                                    <i class="fas fa-dollar-sign"></i> Rs. 13,800 | 
+                                    <i class="fas fa-tachometer-alt"></i> 44,800 km | 
+                                    Efficiency: 8.0 km/L
+                                </div>
+                            </div>
+                            <div class="item-actions">
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-primary" onclick="viewFuelDetails('FL-002')">
+                                        <i class="fas fa-eye"></i> VIEW
+                                    </button>
+                                    <div class="dropdown-container">
+                                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'fuel-FL-002')">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu" id="dropdown-fuel-FL-002">
+                                            <button class="dropdown-item" onclick="editFuelLog('FL-002')">
+                                                <i class="fas fa-edit"></i> Edit Log
+                                            </button>
+                                            <button class="dropdown-item" onclick="printFuelLog('FL-002')">
+                                                <i class="fas fa-print"></i> Print Receipt
+                                            </button>
+                                            <button class="dropdown-item danger" onclick="deleteFuelLog('FL-002')">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"> Fuel History</div>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Station</th>
+                                    <th>Volume (L)</th>
+                                    <th>Cost (Rs.)</th>
+                                    <th>Odometer</th>
+                                    <th>Efficiency</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Aug 24, 2024</td>
+                                    <td>IOC - Kandy Rd</td>
+                                    <td>45</td>
+                                    <td>12,500</td>
+                                    <td>45,100 km</td>
+                                    <td>8.3 km/L</td>
+                                </tr>
+                                <tr>
+                                    <td>Aug 20, 2024</td>
+                                    <td>CPC - Colombo</td>
+                                    <td>50</td>
+                                    <td>13,800</td>
+                                    <td>44,800 km</td>
+                                    <td>8.0 km/L</td>
+                                </tr>
+                                <tr>
+                                    <td>Aug 16, 2024</td>
+                                    <td>IOC - Galle</td>
+                                    <td>48</td>
+                                    <td>13,200</td>
+                                    <td>44,400 km</td>
+                                    <td>8.1 km/L</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Transport Ticket Section -->
+                <section class="content-section" id="transport-ticket">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-ticket-alt"></i> Transport Ticket</h2>
+                        <p class="page-subtitle">Create and manage cargo transport documentation</p>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="openModal('transportTicketModal')">
+                            Create Transport Ticket
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-ticket-alt"></i> My Transport Tickets</div>
+                        <div class="inventory-item">
+                            <div class="item-details">
+                                <strong><i class="fas fa-ticket-alt"></i> TT-001</strong>
+                                <div class="item-meta">
+                                    <i class="fas fa-route"></i> Colombo → Kandy | 
+                                    <i class="fas fa-calendar"></i> Aug 25, 2024
+                                </div>
+                                <div class="item-description">
+                                    <span class="status-text status-completed">COMPLETED</span> | 
+                                    <i class="fas fa-box"></i> Spare parts crates (350 kg) | 
+                                    Trip: TRP-001
+                                </div>
+                            </div>
+                            <div class="item-actions">
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-primary" onclick="viewTicketDetails('TT-001')">
+                                        <i class="fas fa-eye"></i> VIEW
+                                    </button>
+                                    <div class="dropdown-container">
+                                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'ticket-TT-001')">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu" id="dropdown-ticket-TT-001">
+                                            <button class="dropdown-item" onclick="printTicket('TT-001')">
+                                                <i class="fas fa-print"></i> Print Ticket
+                                            </button>
+                                            <button class="dropdown-item" onclick="exportTicket('TT-001')">
+                                                <i class="fas fa-download"></i> Export
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="inventory-item">
+                            <div class="item-details">
+                                <strong><i class="fas fa-ticket-alt"></i> TT-002</strong>
+                                <div class="item-meta">
+                                    <i class="fas fa-route"></i> Kandy → Galle | 
+                                    <i class="fas fa-calendar"></i> Aug 25, 2024
+                                </div>
+                                <div class="item-description">
+                                    <span class="status-text" style="color: #f39c12;">IN TRANSIT</span> | 
+                                    <i class="fas fa-box"></i> Machinery components (500 kg) | 
+                                    Trip: TRP-002
+                                </div>
+                            </div>
+                            <div class="item-actions">
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-primary" onclick="viewTicketDetails('TT-002')">
+                                        <i class="fas fa-eye"></i> VIEW
+                                    </button>
+                                    <div class="dropdown-container">
+                                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'ticket-TT-002')">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <div class="dropdown-menu" id="dropdown-ticket-TT-002">
+                                            <button class="dropdown-item" onclick="updateDeliveryStatus('TT-002')">
+                                                <i class="fas fa-check"></i> Update Status
+                                            </button>
+                                            <button class="dropdown-item" onclick="printTicket('TT-002')">
+                                                <i class="fas fa-print"></i> Print Ticket
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Nearby Garages Section -->
+                <section class="content-section" id="garages">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-warehouse"></i> Nearby Company Garages</h2>
+                        <p class="page-subtitle">Find registered service centers for emergency support</p>
+                    </div>
+
+                    <div class="grid">
+                        <div class="card">
+                            <div class="card-header"><i class="fas fa-store"></i> AutoCare Service Center</div>
+                            <div style="margin-bottom: 10px;">
+                                <div style="margin-bottom: 5px;"><strong>Address:</strong> 123 Galle Road, Colombo 03</div>
+                                <div style="margin-bottom: 5px;"><strong>Distance:</strong> 2.5 km from your location</div>
+                                <div style="margin-bottom: 5px;"><strong>Contact:</strong> +94 11 234 5678</div>
+                                <div style="margin-bottom: 5px;"><strong>Services:</strong> General repairs, Oil change, Tire service</div>
+                                <div style="margin-bottom: 5px;"><strong>Hours:</strong> 24/7 Emergency Service</div>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-primary btn-small" onclick="getDirections('AutoCare')">Get Directions</button>
+                                <button class="btn btn-secondary btn-small" onclick="callGarage('+94112345678')">Call</button>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header"><i class="fas fa-wrench"></i> Reliable Motors</div>
+                            <div style="margin-bottom: 10px;">
+                                <div style="margin-bottom: 5px;"><strong>Address:</strong> 456 Kandy Road, Kadawatha</div>
+                                <div style="margin-bottom: 5px;"><strong>Distance:</strong> 8.2 km from your location</div>
+                                <div style="margin-bottom: 5px;"><strong>Contact:</strong> +94 11 345 6789</div>
+                                <div style="margin-bottom: 5px;"><strong>Services:</strong> Engine repairs, Electrical work, AC service</div>
+                                <div style="margin-bottom: 5px;"><strong>Hours:</strong> Mon-Sat: 8AM-6PM</div>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-primary btn-small" onclick="getDirections('Reliable')">Get Directions</button>
+                                <button class="btn btn-secondary btn-small" onclick="callGarage('+94113456789')">Call</button>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header"><i class="fas fa-tools"></i> Quick Fix Auto</div>
+                            <div style="margin-bottom: 10px;">
+                                <div style="margin-bottom: 5px;"><strong>Address:</strong> 789 High Level Road, Nugegoda</div>
+                                <div style="margin-bottom: 5px;"><strong>Distance:</strong> 12.1 km from your location</div>
+                                <div style="margin-bottom: 5px;"><strong>Contact:</strong> +94 11 456 7890</div>
+                                <div style="margin-bottom: 5px;"><strong>Services:</strong> Tire & Battery, Brake service, Quick repairs</div>
+                                <div style="margin-bottom: 5px;"><strong>Hours:</strong> Mon-Sun: 7AM-9PM</div>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="btn btn-primary btn-small" onclick="getDirections('QuickFix')">Get Directions</button>
+                                <button class="btn btn-secondary btn-small" onclick="callGarage('+94114567890')">Call</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><i class="fas fa-map-marker-alt"></i> All Registered Garages</div>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Garage Name</th>
+                                    <th>Location</th>
+                                    <th>Distance</th>
+                                    <th>Contact</th>
+                                    <th>Specialization</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>AutoCare Service Center</td>
+                                    <td>Galle Road, Colombo 03</td>
+                                    <td>2.5 km</td>
+                                    <td>+94 11 234 5678</td>
+                                    <td>General Repairs</td>
+                                    <td>
+                                        <button class="btn btn-primary btn-small">Directions</button>
+                                        <button class="btn btn-secondary btn-small">Call</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Reliable Motors</td>
+                                    <td>Kandy Road, Kadawatha</td>
+                                    <td>8.2 km</td>
+                                    <td>+94 11 345 6789</td>
+                                    <td>Engine & Electrical</td>
+                                    <td>
+                                        <button class="btn btn-primary btn-small">Directions</button>
+                                        <button class="btn btn-secondary btn-small">Call</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Quick Fix Auto</td>
+                                    <td>High Level Road, Nugegoda</td>
+                                    <td>12.1 km</td>
+                                    <td>+94 11 456 7890</td>
+                                    <td>Tire & Battery</td>
+                                    <td>
+                                        <button class="btn btn-primary btn-small">Directions</button>
+                                        <button class="btn btn-secondary btn-small">Call</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">ℹ️ Emergency Support</div>
+                        <p style="color: var(--muted); margin-bottom: 15px;">
+                            For emergency breakdowns, contact the nearest registered garage or call the company hotline: <strong style="color: var(--danger);">+94 11 999 0000</strong>
+                        </p>
+                        <div style="background: #fee; border: 1px solid #fca5a5; border-radius: 8px; padding: 15px;">
+                            <strong style="color: var(--danger);">Important:</strong> Always report breakdowns through the system and wait for supervisor approval before proceeding with repairs at external garages.
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Start Trip Modal -->
+    <div id="startTripModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-route"></i> Start New Trip</h2>
+                <button class="btn-close" onclick="closeModal('startTripModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="startTripForm">
+                <div class="form-section">
+                    <h5><i class="fas fa-compass"></i> Trip Information</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Origin *</label>
+                            <input type="text" class="form-input" id="tripOrigin" placeholder="Enter origin location" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Destination *</label>
+                            <input type="text" class="form-input" id="tripDestination" placeholder="Enter destination" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Vehicle Registration *</label>
+                            <input type="text" class="form-input" id="tripVehicle" value="LKA-1234" readonly required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Current Odometer Reading *</label>
+                            <input type="number" class="form-input" id="tripOdometer" min="0" placeholder="Enter current odometer" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cargo Description</label>
+                        <textarea class="form-textarea" id="tripCargo" placeholder="Describe the cargo being transported..."></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Trip</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- End Trip Modal -->
+    <div id="endTripModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-flag-checkered"></i> End Trip</h2>
+                <button class="btn-close" onclick="closeModal('endTripModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="endTripForm">
+                <input type="hidden" id="endTripId">
+                <div class="form-section">
+                    <h5><i class="fas fa-flag-checkered"></i> Trip Completion</h5>
+                    <div class="form-group">
+                        <label class="form-label">Final Odometer Reading *</label>
+                        <input type="number" class="form-input" id="endTripOdometer" min="0" placeholder="Enter final odometer reading" required>
+                        <small class="form-text">This will update the trip's odometer reading</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Completion Notes</label>
+                        <textarea class="form-textarea" id="endTripNotes" placeholder="Any notes about the trip completion (delays, issues, etc.)..."></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success">Complete Trip</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- View Trip Details Modal -->
+    <div id="viewTripModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> Trip Details</h2>
+                <button class="btn-close" onclick="closeModal('viewTripModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="tripDetailsContent">
+                <!-- Trip details will be dynamically loaded here -->
+            </div>
+            <button class="btn btn-secondary" onclick="closeModal('viewTripModal')">
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+    </div>
+    
+    <!-- Edit Trip Modal -->
+    <div id="editTripModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> Edit Trip</h2>
+                <button class="btn-close" onclick="closeModal('editTripModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="editTripForm">
+                <input type="hidden" id="editTripId">
+                <div class="form-section">
+                    <h5><i class="fas fa-compass"></i> Trip Information</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Origin *</label>
+                            <input type="text" class="form-input" id="editTripOrigin" placeholder="Enter origin location" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Destination *</label>
+                            <input type="text" class="form-input" id="editTripDestination" placeholder="Enter destination" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Vehicle Registration *</label>
+                            <input type="text" class="form-input" value="LKA-1234" readonly required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Current Odometer Reading *</label>
+                            <input type="number" class="form-input" id="editTripOdometer" min="0" placeholder="Enter current odometer" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cargo Description</label>
+                        <textarea class="form-textarea" id="editTripCargo" placeholder="Describe the cargo being transported..."></textarea>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="confirmCancelTrip(document.getElementById('editTripId').value)" style="flex: 1;">
+                        <i class="fas fa-ban"></i> Cancel Trip
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Weekly Check Modal -->
+    <div id="dailyCheckModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-clipboard-check"></i> Submit Weekly Vehicle Check</h2>
+                <button class="btn-close" onclick="closeModal('dailyCheckModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="dailyCheckForm">
+                <div class="form-section">
+                    <h5><i class="fas fa-truck"></i> Vehicle & Inspection Details</h5>
+                    <div style="margin-bottom: 15px; padding: 12px; background: #e3f2fd; border-left: 4px solid #2196F3; border-radius: 4px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-car" style="color: #2196F3;"></i>
+                            <span style="font-weight: 600;">Your Assigned Vehicle:</span>
+                            <span style="color: #1976D2; font-weight: 700;">LKA-1234</span>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Current Odometer Reading (km) *</label>
+                            <input type="number" class="form-input" id="weeklyCheckOdometer" min="0" placeholder="Enter current odometer reading" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Week Ending Date *</label>
+                            <input type="date" class="form-input" id="weekEndingDate" required>
+                            <small class="form-text" style="color: #888; font-size: 12px;">Select the Sunday ending the inspection week</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-check-square"></i> Weekly Inspection Checklist</h5>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" name="engineOil" required style="width: 18px; height: 18px;">
+                                <span>Engine Oil Level</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" name="brakes" required style="width: 18px; height: 18px;">
+                                <span>Brake System</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" name="lights" required style="width: 18px; height: 18px;">
+                                <span>All Lights</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" name="tires" required style="width: 18px; height: 18px;">
+                                <span>Tire Pressure</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" name="coolant" required style="width: 18px; height: 18px;">
+                                <span>Coolant Level</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" name="wipers" required style="width: 18px; height: 18px;">
+                                <span>Wipers & Washers</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-sticky-note"></i> Additional Notes</h5>
+                    <textarea class="form-textarea" placeholder="Optional notes or observations about vehicle condition..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Submit Weekly Check</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Breakdown Modal -->
+    <div id="breakdownModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> Report Vehicle Breakdown</h2>
+                <button class="btn-close" onclick="closeModal('breakdownModal')">&times;</button>
+            </div>
+            <form id="breakdownForm">
+                <div class="form-section">
+                    <h5><i class="fas fa-exclamation-circle"></i> Incident Details</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Vehicle Registration *</label>
+                            <input type="text" id="breakdownVehicle" class="form-input" value="LKA-1234" readonly required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Urgency Level *</label>
+                            <select id="breakdownSeverity" class="form-select" required>
+                                <option value="">Select Urgency</option>
+                                <option value="low">Low - Minor issue</option>
+                                <option value="medium">Medium - Affects operation</option>
+                                <option value="high">High - Safety concern</option>
+                                <option value="critical">Critical - Immediate stop</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Problem Category *</label>
+                        <select id="breakdownType" class="form-select" required>
+                            <option value="">Select Category</option>
+                            <option value="engine">Engine System</option>
+                            <option value="transmission">Transmission</option>
+                            <option value="brakes">Brake System</option>
+                            <option value="electrical">Electrical System</option>
+                            <option value="cooling">Cooling System</option>
+                            <option value="tires">Tire/Wheel Issue</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-file-alt"></i> Problem Description</h5>
+                    <textarea id="breakdownDescription" class="form-textarea" placeholder="Describe the problem in detail: symptoms, dashboard lights, unusual noises, smells, or behaviors..." required></textarea>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-camera"></i> Photo Documentation</h5>
+                    <div class="photo-upload" onclick="document.getElementById('breakdownPhotos').click()">
+                        <div style="font-size: 2rem; margin-bottom: 10px;"><i class="fas fa-camera"></i></div>
+                        <div style="font-weight: 600; margin-bottom: 5px;">Click to upload photos</div>
+                        <div style="color: var(--muted); font-size: 14px;">Upload photos of the issue (max 5 files)</div>
+                        <input type="file" id="breakdownPhotos" multiple accept="image/*" style="display: none;" onchange="handlePhotoUpload(this, 'breakdownPhotoList')">
+                    </div>
+                    <div id="breakdownPhotoList" style="margin-top: 10px;"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Submit Breakdown Report</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Breakdown in Route Modal -->
+    <div id="breakdownInRouteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-road"></i> Report Breakdown in Route</h2>
+                <button class="btn-close" onclick="closeModal('breakdownInRouteModal')">&times;</button>
+            </div>
+            <form id="breakdownInRouteForm">
+                <div class="form-section">
+                    <h5><i class="fas fa-exclamation-circle"></i> Incident Details</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Vehicle Registration *</label>
+                            <input type="text" id="routeBreakdownVehicle" class="form-input" value="LKA-1234" readonly required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Urgency Level *</label>
+                            <select id="routeBreakdownSeverity" class="form-select" required>
+                                <option value="">Select Urgency</option>
+                                <option value="low">Low - Minor issue</option>
+                                <option value="medium">Medium - Affects operation</option>
+                                <option value="high">High - Safety concern</option>
+                                <option value="critical">Critical - Immediate stop</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Current Location *</label>
+                            <input type="text" id="routeBreakdownLocation" class="form-input" placeholder="Enter current location on route" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Incident Time *</label>
+                            <input type="datetime-local" id="routeBreakdownDatetime" class="form-input" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Problem Category *</label>
+                        <select id="routeBreakdownType" class="form-select" required>
+                            <option value="">Select Category</option>
+                            <option value="engine">Engine System</option>
+                            <option value="transmission">Transmission</option>
+                            <option value="brakes">Brake System</option>
+                            <option value="electrical">Electrical System</option>
+                            <option value="cooling">Cooling System</option>
+                            <option value="tires">Tire/Wheel Issue</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-file-alt"></i> Problem Description</h5>
+                    <textarea id="routeBreakdownDescription" class="form-textarea" placeholder="Describe the problem in detail: symptoms, dashboard lights, unusual noises, smells, or behaviors..." required></textarea>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-camera"></i> Photo Documentation</h5>
+                    <div class="photo-upload" onclick="document.getElementById('breakdownInRoutePhotos').click()">
+                        <div style="font-size: 2rem; margin-bottom: 10px;"><i class="fas fa-camera"></i></div>
+                        <div style="font-weight: 600; margin-bottom: 5px;">Click to upload photos</div>
+                        <div style="color: var(--muted); font-size: 14px;">Upload photos of the issue (max 5 files)</div>
+                        <input type="file" id="breakdownInRoutePhotos" multiple accept="image/*" style="display: none;" onchange="handlePhotoUpload(this, 'breakdownInRoutePhotoList')">
+                    </div>
+                    <div id="breakdownInRoutePhotoList" style="margin-top: 10px;"></div>
+                </div>
+
+                <button type="submit" class="btn btn-danger">Submit Breakdown in Route Report</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Technician Tracking Modal -->
+    <div id="technicianTrackingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-cog"></i> Assigned Technician</h2>
+                <button class="btn-close" onclick="closeModal('technicianTrackingModal')">&times;</button>
+            </div>
+            
+            <div class="form-section">
+                <h5><i class="fas fa-clipboard-list"></i> Breakdown Details</h5>
+                <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Breakdown ID</div>
+                            <div style="font-weight: 600;" id="tech-breakdown-id">BR-001</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Vehicle</div>
+                            <div style="font-weight: 600;" id="tech-vehicle">LKA-1234</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Issue</div>
+                            <div style="font-weight: 600;" id="tech-issue">Engine overheating</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Status</div>
+                            <div><span class="status-badge status-in-progress">In Progress</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h5><i class="fas fa-user-cog"></i> Technician Information</h5>
+                <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                        <div style="width: 60px; height: 60px; border-radius: 50%; background: var(--tang-blue); display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 600;">
+                            KP
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-size: 18px; font-weight: 600; margin-bottom: 5px;">Kamal Perera</div>
+                            <div style="color: var(--muted); font-size: 14px;">Senior Technical Officer</div>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;"><i class="fas fa-phone"></i> Contact</div>
+                            <div style="font-weight: 600;">+94 77 123 4567</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;"><i class="fas fa-envelope"></i> Email</div>
+                            <div style="font-weight: 600;">kamal.p@company.lk</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;"><i class="fas fa-id-badge"></i> Employee ID</div>
+                            <div style="font-weight: 600;">TECH-045</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;"><i class="fas fa-clock"></i> Assigned Time</div>
+                            <div style="font-weight: 600;">Aug 22, 03:30 PM</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h5><i class="fas fa-tasks"></i> Work Progress</h5>
+                <div style="background: var(--light-bg); padding: 15px; border-radius: 8px;">
+                    <div style="margin-bottom: 15px;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <span style="color: var(--success);">✓</span>
+                            <span>Initial inspection completed</span>
+                            <span style="margin-left: auto; color: var(--muted); font-size: 12px;">03:35 PM</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <span style="color: var(--success);">✓</span>
+                            <span>Parts ordered from inventory</span>
+                            <span style="margin-left: auto; color: var(--muted); font-size: 12px;">03:45 PM</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                            <span style="color: var(--tang-blue);">⏳</span>
+                            <span>Repair in progress - Radiator replacement</span>
+                            <span style="margin-left: auto; color: var(--muted); font-size: 12px;">04:00 PM</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; padding: 10px; background: white; border-radius: 6px;">
+                        <div style="font-weight: 600; margin-bottom: 5px;">Estimated Completion</div>
+                        <div style="color: var(--tang-blue); font-size: 18px; font-weight: 600;">Aug 22, 06:00 PM</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" onclick="alert('Calling technician...')"><i class="fas fa-phone"></i> Call Technician</button>
+                <button class="btn btn-secondary" onclick="closeModal('technicianTrackingModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nearby Garages Modal -->
+    <div id="nearbyGaragesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-store"></i> Nearby Garages</h2>
+                <button class="btn-close" onclick="closeModal('nearbyGaragesModal')">&times;</button>
+            </div>
+            
+            <div class="form-section">
+                <h5><i class="fas fa-map-marker-alt"></i> Your Current Location: Matara Road</h5>
+                <p style="color: var(--muted); margin-bottom: 20px;">Showing authorized garages within 10km radius</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <!-- Garage 1 -->
+                    <div style="border: 2px solid var(--border); border-radius: 8px; padding: 15px; background: var(--light-bg);">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                            <div>
+                                <div style="font-size: 16px; font-weight: 600; margin-bottom: 5px;">Quick Fix Auto Service</div>
+                                <div style="color: var(--muted); font-size: 14px;">Specialized in Emergency Repairs</div>
+                            </div>
+                            <div style="background: var(--success); color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                                Open 24/7
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-map-marker-alt"></i> Distance</div>
+                                <div style="font-weight: 600;">2.3 km away</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-star"></i> Rating</div>
+                                <div style="font-weight: 600;">4.8/5 (234 reviews)</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-phone"></i> Contact</div>
+                                <div style="font-weight: 600;">+94 41 222 3456</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-clock"></i> ETA</div>
+                                <div style="font-weight: 600;">5 mins drive</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-primary btn-small" onclick="alert('Calling garage...')"><i class="fas fa-phone"></i> Call</button>
+                            <button class="btn btn-secondary btn-small" onclick="alert('Getting directions...')"><i class="fas fa-map"></i> Directions</button>
+                        </div>
+                    </div>
+
+                    <!-- Garage 2 -->
+                    <div style="border: 2px solid var(--border); border-radius: 8px; padding: 15px; background: white;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                            <div>
+                                <div style="font-size: 16px; font-weight: 600; margin-bottom: 5px;">City Motors Workshop</div>
+                                <div style="color: var(--muted); font-size: 14px;">Full Service & Repairs</div>
+                            </div>
+                            <div style="background: var(--warning); color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                                Open
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-map-marker-alt"></i> Distance</div>
+                                <div style="font-weight: 600;">4.7 km away</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-star"></i> Rating</div>
+                                <div style="font-weight: 600;">4.6/5 (189 reviews)</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-phone"></i> Contact</div>
+                                <div style="font-weight: 600;">+94 41 234 5678</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-clock"></i> ETA</div>
+                                <div style="font-weight: 600;">10 mins drive</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-primary btn-small" onclick="alert('Calling garage...')"><i class="fas fa-phone"></i> Call</button>
+                            <button class="btn btn-secondary btn-small" onclick="alert('Getting directions...')"><i class="fas fa-map"></i> Directions</button>
+                        </div>
+                    </div>
+
+                    <!-- Garage 3 -->
+                    <div style="border: 2px solid var(--border); border-radius: 8px; padding: 15px; background: white;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                            <div>
+                                <div style="font-size: 16px; font-weight: 600; margin-bottom: 5px;">Roadside Rescue Center</div>
+                                <div style="color: var(--muted); font-size: 14px;">Towing & Emergency Service</div>
+                            </div>
+                            <div style="background: var(--success); color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                                Open 24/7
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-map-marker-alt"></i> Distance</div>
+                                <div style="font-weight: 600;">6.1 km away</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-star"></i> Rating</div>
+                                <div style="font-weight: 600;">4.5/5 (156 reviews)</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-phone"></i> Contact</div>
+                                <div style="font-weight: 600;">+94 41 345 6789</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--muted); font-size: 12px;"><i class="fas fa-clock"></i> ETA</div>
+                                <div style="font-weight: 600;">12 mins drive</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-primary btn-small" onclick="alert('Calling garage...')"><i class="fas fa-phone"></i> Call</button>
+                            <button class="btn btn-secondary btn-small" onclick="alert('Getting directions...')"><i class="fas fa-map"></i> Directions</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-secondary" onclick="closeModal('nearbyGaragesModal')" style="margin-top: 20px;">Close</button>
+        </div>
+    </div>
+
+    <!-- Complete Breakdown Modal -->
+    <div id="completeBreakdownModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-tools"></i> Complete Breakdown Repair</h2>
+                <button class="btn-close" onclick="closeModal('completeBreakdownModal')">&times;</button>
+            </div>
+            <form id="completeBreakdownForm">
+                <input type="hidden" id="completeBreakdownId">
+                <div class="form-section">
+                    <h5><i class="fas fa-money-bill-wave"></i> Repair Budget Information</h5>
+                    <div class="form-group">
+                        <label class="form-label">Breakdown ID</label>
+                        <input type="text" class="form-input" id="breakdownIdDisplay" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Repair Budget (LKR) *</label>
+                        <input type="number" class="form-input" id="repairBudget" placeholder="Enter repair cost" required min="0" step="0.01">
+                        <small style="color: var(--muted); font-size: 12px;">Enter the total cost of repairs and parts</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Garage/Service Center</label>
+                        <input type="text" class="form-input" id="garageName" placeholder="Name of garage or service center">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Completion Notes</label>
+                        <textarea class="form-textarea" id="completionNotes" rows="3" placeholder="Brief description of repairs completed..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Receipt/Invoice Number (Optional)</label>
+                        <input type="text" class="form-input" id="invoiceNumber" placeholder="Invoice or receipt number">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success"><i class="fas fa-check-circle"></i> Mark as Resolved</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('completeBreakdownModal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Fuel & Mileage Modal -->
+    <div id="fuelMileageModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-gas-pump"></i> Log Fuel & Mileage</h2>
+                <button class="btn-close" onclick="closeModal('fuelMileageModal')">&times;</button>
+            </div>
+            <form id="fuelMileageForm">
+                <div class="form-section">
+                    <h5><i class="fas fa-gas-pump"></i> Refuel Details</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Vehicle Registration *</label>
+                            <input type="text" class="form-input" value="LKA-1234" readonly required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Date & Time *</label>
+                            <input type="datetime-local" class="form-input" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Fuel Volume (Liters) *</label>
+                            <input type="number" class="form-input" min="0" step="0.01" placeholder="Enter volume" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Total Cost (Rs.) *</label>
+                            <input type="number" class="form-input" min="0" step="0.01" placeholder="Enter cost" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Current Odometer (km) *</label>
+                            <input type="number" class="form-input" min="0" placeholder="Current odometer reading" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fuel Station</label>
+                            <input type="text" class="form-input" placeholder="Station name and location">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fuel Type *</label>
+                        <select class="form-select" required>
+                            <option value="">Select Fuel Type</option>
+                            <option value="diesel">Diesel</option>
+                            <option value="petrol">Petrol</option>
+                            <option value="octane-92">Octane 92</option>
+                            <option value="octane-95">Octane 95</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Fuel Log</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Transport Ticket Modal -->
+    <div id="transportTicketModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-ticket-alt"></i> Create Transport Ticket</h2>
+                <button class="btn-close" onclick="closeModal('transportTicketModal')">&times;</button>
+            </div>
+            <form id="transportTicketForm">
+                <div class="form-section">
+                    <h5><i class="fas fa-compass"></i> Route & Schedule</h5>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Origin *</label>
+                            <input type="text" class="form-input" placeholder="Enter origin location" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Destination *</label>
+                            <input type="text" class="form-input" placeholder="Enter destination" required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Departure Time *</label>
+                            <input type="datetime-local" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Vehicle Registration *</label>
+                            <input type="text" class="form-input" value="LKA-1234" readonly required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-box"></i> Cargo Details</h5>
+                    <div class="form-group">
+                        <label class="form-label">Cargo Description *</label>
+                        <input type="text" class="form-input" placeholder="Describe the cargo" required>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Weight (kg)</label>
+                            <input type="number" class="form-input" min="0" step="0.1" placeholder="Total weight">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Number of Items</label>
+                            <input type="number" class="form-input" min="1" placeholder="Item count">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Recipient Name</label>
+                        <input type="text" class="form-input" placeholder="Name of person receiving cargo">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Recipient Contact</label>
+                        <input type="tel" class="form-input" placeholder="Phone number">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Special Handling Instructions</label>
+                        <textarea class="form-textarea" placeholder="Any special requirements, handling instructions, or notes..."></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Create Transport Ticket</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ticket Details Modal -->
+    <div id="ticketDetailsModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('ticketDetailsModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-ticket-alt"></i> Transport Ticket Details</h2>
+            
+            <div class="form-section">
+                <h5><i class="fas fa-clipboard-list"></i> Ticket Information</h5>
+                <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Ticket ID</div>
+                            <div style="font-weight: 600; font-size: 18px;" id="ticket-id">TT-001</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Created Date</div>
+                            <div style="font-weight: 600;" id="ticket-date">Aug 25, 2024</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Vehicle</div>
+                            <div style="font-weight: 600;" id="ticket-vehicle">LKA-1234</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Associated Trip</div>
+                            <div style="font-weight: 600;" id="ticket-trip">TRP-001</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h5><i class="fas fa-compass"></i> Route Information</h5>
+                <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Origin</div>
+                            <div style="font-weight: 600;" id="ticket-origin">Colombo</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Destination</div>
+                            <div style="font-weight: 600;" id="ticket-destination">Kandy</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Departure Time</div>
+                            <div style="font-weight: 600;" id="ticket-departure">Aug 25, 08:00 AM</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Estimated Distance</div>
+                            <div style="font-weight: 600;" id="ticket-distance">125 km</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h5><i class="fas fa-box"></i> Cargo Details</h5>
+                <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Cargo Description</div>
+                            <div style="font-weight: 600;" id="ticket-cargo">Spare parts crates</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Total Weight</div>
+                            <div style="font-weight: 600;" id="ticket-weight">350 kg</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Number of Items</div>
+                            <div style="font-weight: 600;" id="ticket-items">8 crates</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Cargo Type</div>
+                            <div style="font-weight: 600;" id="ticket-type">Industrial Parts</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Special Instructions</div>
+                        <div style="font-weight: 600; padding: 10px; background: white; border-radius: 6px;" id="ticket-instructions">
+                            Handle with care. Keep crates upright during transport. Fragile components inside.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h5><i class="fas fa-user"></i> Recipient Information</h5>
+                <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Recipient Name</div>
+                            <div style="font-weight: 600;" id="ticket-recipient-name">Mr. Sunil Fernando</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Contact Number</div>
+                            <div style="font-weight: 600;" id="ticket-recipient-contact">+94 81 234 5678</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Company/Organization</div>
+                            <div style="font-weight: 600;" id="ticket-recipient-company">Kandy Industrial Supplies</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Delivery Address</div>
+                            <div style="font-weight: 600;" id="ticket-address">No. 45, Peradeniya Road, Kandy</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h5><i class="fas fa-check-circle"></i> Delivery Status</h5>
+                <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Status</div>
+                            <div style="font-weight: 600;" id="ticket-delivery-status">Completed and verified</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Delivered Time</div>
+                            <div style="font-weight: 600;" id="ticket-delivery-time">Aug 25, 11:15 AM</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Received By</div>
+                            <div style="font-weight: 600;" id="ticket-received-by">Mr. Sunil Fernando</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--muted); font-size: 12px; margin-bottom: 5px;">Signature Status</div>
+                            <div style="font-weight: 600; color: var(--success);" id="ticket-signature">✓ Signed & Verified</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-primary" onclick="alert('Printing ticket...')"><i class="fas fa-print"></i> Print Ticket</button>
+                <button class="btn btn-secondary" onclick="closeModal('ticketDetailsModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trip Details Modal -->
+    <div id="tripDetailsModal" class="modal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('tripDetailsModal')">&times;</button>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-clipboard-list"></i> Trip Details</h2>
+            
+            <div class="form-section">
+                <h5><i class="fas fa-id-card"></i> Trip Information</h5>
+                <div style="display: grid; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Trip ID:</strong>
+                        <span id="detail-trip-id">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Status:</strong>
+                        <span id="detail-trip-status" class="status-badge">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h5><i class="fas fa-route"></i> Route Details</h5>
+                <div style="display: grid; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Route:</strong>
+                        <span id="detail-trip-route">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Distance:</strong>
+                        <span id="detail-trip-distance">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Duration:</strong>
+                        <span id="detail-trip-duration">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h5><i class="fas fa-clock"></i> Time Information</h5>
+                <div style="display: grid; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Date:</strong>
+                        <span id="detail-trip-date">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Start Time:</strong>
+                        <span id="detail-trip-start-time">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <strong>End Time:</strong>
+                        <span id="detail-trip-end-time">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h5><i class="fas fa-truck"></i> Vehicle Information</h5>
+                <div style="display: grid; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Vehicle:</strong>
+                        <span id="detail-trip-vehicle">LKA-1234</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Driver:</strong>
+                        <span id="detail-trip-driver">Current Driver</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-secondary" onclick="closeModal('tripDetailsModal')">Close</button>
+        </div>
+    </div>
+
+    <!-- Vehicle Check Details Modal -->
+    <div id="checkDetailsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-clipboard-check"></i> Weekly Vehicle Check Details</h2>
+                <button class="btn-close" onclick="closeModal('checkDetailsModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="form-section">
+                <h5><i class="fas fa-id-card"></i> Check Information</h5>
+                <div style="display: grid; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Check ID:</strong>
+                        <span id="detail-check-id">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Status:</strong>
+                        <span id="detail-check-status" class="status-badge" style="padding: 4px 12px; border-radius: 12px; font-size: 0.85em; color: white;">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Week:</strong>
+                        <span id="detail-check-submitted">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h5><i class="fas fa-truck"></i> Vehicle Information</h5>
+                <div style="display: grid; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Vehicle:</strong>
+                        <span id="detail-check-vehicle">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <strong>Odometer:</strong>
+                        <span id="detail-check-odometer">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h5><i class="fas fa-check-square"></i> Checklist Items</h5>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px; background: #e8f5e8; border-radius: 6px;">
+                        <i class="fas fa-check-circle" style="color: #27ae60;"></i> Engine Oil Level
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px; background: #e8f5e8; border-radius: 6px;">
+                        <i class="fas fa-check-circle" style="color: #27ae60;"></i> Brake System
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px; background: #e8f5e8; border-radius: 6px;">
+                        <i class="fas fa-check-circle" style="color: #27ae60;"></i> All Lights & Indicators
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px; background: #e8f5e8; border-radius: 6px;">
+                        <i class="fas fa-check-circle" style="color: #27ae60;"></i> Tire Pressure & Condition
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px; background: #e8f5e8; border-radius: 6px;">
+                        <i class="fas fa-check-circle" style="color: #27ae60;"></i> Coolant Level
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px; background: #e8f5e8; border-radius: 6px;">
+                        <i class="fas fa-check-circle" style="color: #27ae60;"></i> Wipers & Washers
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h5><i class="fas fa-sticky-note"></i> Additional Notes</h5>
+                <div style="padding: 15px; background: #f8f9fa; border-radius: 6px; min-height: 50px;">
+                    <p id="detail-check-notes" style="margin: 0; color: var(--text-700);">-</p>
+                </div>
+            </div>
+
+            <div class="form-section" id="detail-check-rejection-section" style="display: none;">
+                <h5><i class="fas fa-times-circle"></i> Rejection Reason</h5>
+                <div style="padding: 15px; background: #fee; border-radius: 6px; border: 1px solid #fcc;">
+                    <p id="detail-check-rejection" style="margin: 0; color: var(--danger);">-</p>
+                </div>
+            </div>
+
+            <button class="btn btn-secondary" onclick="closeModal('checkDetailsModal')">
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+    </div>
+
+    <!-- Breakdown Details Modal -->
+    <!-- Breakdown Details Modals are now created dynamically by viewBreakdownDetails() and viewRouteBreakdownDetails() -->
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        Action completed successfully!
+    </div>
+
+    <!-- External Scripts (config.js already loaded in head) -->
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/dashboard-init.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

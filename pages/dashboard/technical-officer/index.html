@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Technical Officer Dashboard - AssetCare360</title>
-    
+
     <!-- FontAwesome -->
     <script src="https://kit.fontawesome.com/a422e631ad.js" crossorigin="anonymous"></script>
-    
+
     <link rel="stylesheet" href="./style.css">
 </head>
+
 <body>
     <div class="container">
         <!-- Header -->
@@ -24,7 +26,10 @@
                 </h1>
             </div>
             <div class="header-user">
-                <div class="user-info" onclick="window.location.href='/profile/index.html'" style="cursor: pointer; transition: all 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'; this.style.borderRadius='8px'" onmouseout="this.style.backgroundColor='transparent'" title="View Profile">
+                <div class="user-info" onclick="window.location.href='/profile/index.html'"
+                    style="cursor: pointer; transition: all 0.2s;"
+                    onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'; this.style.borderRadius='8px'"
+                    onmouseout="this.style.backgroundColor='transparent'" title="View Profile">
                     <div class="user-avatar" id="userAvatar">T</div>
                     <div class="user-details">
                         <div class="user-name" id="userName">Loading...</div>
@@ -161,7 +166,8 @@
                                 <div class="activity-content">
                                     <div class="activity-title">Parts Request Approved</div>
                                     <div class="activity-meta">Request: REQ-001 | Brake pads x4 | 2 hours ago</div>
-                                    <div class="activity-description">Parts approved by Inventory Manager - Ready for pickup</div>
+                                    <div class="activity-description">Parts approved by Inventory Manager - Ready for
+                                        pickup</div>
                                 </div>
                                 <div class="activity-status">
                                     <span class="status-badge status-approved">APPROVED</span>
@@ -172,7 +178,8 @@
                             <div class="activity-item">
                                 <div class="activity-content">
                                     <div class="activity-title">New Ticket Assigned</div>
-                                    <div class="activity-meta">Ticket: TKT-004 | Assigned by: Supervisor Mike | 3 hours ago</div>
+                                    <div class="activity-meta">Ticket: TKT-004 | Assigned by: Supervisor Mike | 3 hours
+                                        ago</div>
                                     <div class="activity-description">Engine overheating - High priority repair</div>
                                 </div>
                                 <div class="activity-status">
@@ -185,7 +192,8 @@
                                 <div class="activity-content">
                                     <div class="activity-title">Repair Completed</div>
                                     <div class="activity-meta">Ticket: TKT-005 | Machine #150 | 5 hours ago</div>
-                                    <div class="activity-description">Gas cylinder valve replacement completed successfully</div>
+                                    <div class="activity-description">Gas cylinder valve replacement completed
+                                        successfully</div>
                                 </div>
                                 <div class="activity-status">
                                     <span class="status-badge status-completed">COMPLETED</span>
@@ -236,8 +244,10 @@
                     <div class="filter-controls" id="ticketFilterTabs">
                         <button class="filter-btn active" onclick="filterTicketsByStatus('all')">All Tickets</button>
                         <button class="filter-btn" onclick="filterTicketsByStatus('pending')">Pending</button>
-                        <button class="filter-btn" onclick="filterTicketsByStatus('waiting-for-spare-parts')">Waiting for Parts</button>
-                        <button class="filter-btn" onclick="filterTicketsByStatus('parts-approved')">Parts Approved</button>
+                        <button class="filter-btn" onclick="filterTicketsByStatus('waiting-for-spare-parts')">Waiting
+                            for Parts</button>
+                        <button class="filter-btn" onclick="filterTicketsByStatus('parts-approved')">Parts
+                            Approved</button>
                         <button class="filter-btn" onclick="filterTicketsByStatus('in-progress')">In Progress</button>
                         <button class="filter-btn" onclick="filterTicketsByStatus('completed')">Completed</button>
                     </div>
@@ -252,7 +262,8 @@
 
 
                         </div>
-                        <div id="noTicketsMessage" style="display: none; text-align: center; color: var(--muted); padding: 20px;">
+                        <div id="noTicketsMessage"
+                            style="display: none; text-align: center; color: var(--muted); padding: 20px;">
                             No tickets found for this filter
                         </div>
                     </div>
@@ -286,7 +297,8 @@
                         <div id="allPartsRequests" class="inventory-list">
                             <!-- Parts requests will be loaded dynamically -->
                         </div>
-                        <div id="noPartsMessage" style="display: none; text-align: center; color: var(--muted); padding: 20px;">
+                        <div id="noPartsMessage"
+                            style="display: none; text-align: center; color: var(--muted); padding: 20px;">
                             No parts requests found for this filter
                         </div>
                     </div>
@@ -314,7 +326,8 @@
                         <div id="allInventoryList" class="inventory-list">
                             <!-- Inventory items will be loaded dynamically -->
                         </div>
-                        <div id="noInventoryMessage" style="display: none; text-align: center; color: var(--muted); padding: 20px;">
+                        <div id="noInventoryMessage"
+                            style="display: none; text-align: center; color: var(--muted); padding: 20px;">
                             No inventory items found for this filter
                         </div>
                     </div>
@@ -348,7 +361,8 @@
                         <div id="allWarrantyClaims" class="inventory-list">
                             <!-- Warranty claims will be loaded dynamically -->
                         </div>
-                        <div id="noWarrantyMessage" style="display: none; text-align: center; color: var(--muted); padding: 20px;">
+                        <div id="noWarrantyMessage"
+                            style="display: none; text-align: center; color: var(--muted); padding: 20px;">
                             No warranty claims found for this filter
                         </div>
                     </div>
@@ -373,7 +387,8 @@
                             <div class="ticket-details">
                                 <strong>FB-001</strong>
                                 <div class="ticket-meta">Equipment: Vehicle #101 | Component: Engine System</div>
-                                <div class="ticket-issue">Post-repair assessment: Good performance, minor temperature variations</div>
+                                <div class="ticket-issue">Post-repair assessment: Good performance, minor temperature
+                                    variations</div>
                                 <div class="ticket-meta">Shared with: Supervisor & Maintenance Manager</div>
                             </div>
                             <div class="ticket-actions">
@@ -406,11 +421,13 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Asset ID / Registration *</label>
-                        <input type="text" class="form-input" id="assetId" placeholder="e.g., LKA-1234 or Machine #205" required>
+                        <input type="text" class="form-input" id="assetId" placeholder="e.g., LKA-1234 or Machine #205"
+                            required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Asset Name</label>
-                        <input type="text" class="form-input" id="assetName" placeholder="e.g., Toyota Hilux, Excavator">
+                        <input type="text" class="form-input" id="assetName"
+                            placeholder="e.g., Toyota Hilux, Excavator">
                     </div>
                 </div>
 
@@ -434,7 +451,8 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Fault Description *</label>
-                        <textarea class="form-textarea" id="faultDescription" placeholder="Describe the fault/issue in detail..." rows="4" required></textarea>
+                        <textarea class="form-textarea" id="faultDescription"
+                            placeholder="Describe the fault/issue in detail..." rows="4" required></textarea>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Reported By</label>
@@ -460,7 +478,7 @@
                             <option value="outsourced">Outsource to External Service</option>
                         </select>
                     </div>
-                    
+
                     <!-- Internal Repair Fields -->
                     <div id="internalRepairFields" style="display: none;">
                         <div class="form-group">
@@ -469,7 +487,8 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Required Parts (if known)</label>
-                            <textarea class="form-textarea" id="requiredParts" placeholder="List any parts that will be needed..." rows="3"></textarea>
+                            <textarea class="form-textarea" id="requiredParts"
+                                placeholder="List any parts that will be needed..." rows="3"></textarea>
                         </div>
                     </div>
 
@@ -477,7 +496,8 @@
                     <div id="outsourcedRepairFields" style="display: none;">
                         <div class="form-group">
                             <label class="form-label">Service Provider Name</label>
-                            <input type="text" class="form-input" id="serviceProvider" placeholder="Garage/Workshop name">
+                            <input type="text" class="form-input" id="serviceProvider"
+                                placeholder="Garage/Workshop name">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Service Provider Contact</label>
@@ -485,17 +505,20 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Service Provider Address</label>
-                            <textarea class="form-textarea" id="serviceAddress" placeholder="Complete address..." rows="2"></textarea>
+                            <textarea class="form-textarea" id="serviceAddress" placeholder="Complete address..."
+                                rows="2"></textarea>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Estimated Cost (LKR)</label>
-                            <input type="number" class="form-input" id="estimatedCost" placeholder="Estimated repair cost" step="100">
+                            <input type="number" class="form-input" id="estimatedCost"
+                                placeholder="Estimated repair cost" step="100">
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Additional Notes</label>
-                        <textarea class="form-textarea" id="additionalNotes" placeholder="Any additional information..." rows="3"></textarea>
+                        <textarea class="form-textarea" id="additionalNotes" placeholder="Any additional information..."
+                            rows="3"></textarea>
                     </div>
                 </div>
 
@@ -518,7 +541,8 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Initial Assessment</label>
-                        <textarea class="form-textarea" placeholder="Describe your initial assessment and planned approach..." required></textarea>
+                        <textarea class="form-textarea"
+                            placeholder="Describe your initial assessment and planned approach..." required></textarea>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Estimated Completion Time</label>
@@ -544,8 +568,10 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Parts Used (if any)</label>
-                        <div id="updatePartsUsedContainer" style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; max-height: 180px; overflow-y: auto; background: #fafafa;">
-                            <p style="color: #999; font-size: 0.9rem; margin: 0;" id="noPartsMessage">No spare parts were requested for this ticket.</p>
+                        <div id="updatePartsUsedContainer"
+                            style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; max-height: 180px; overflow-y: auto; background: #fafafa;">
+                            <p style="color: #999; font-size: 0.9rem; margin: 0;" id="noPartsMessage">No spare parts
+                                were requested for this ticket.</p>
                         </div>
                     </div>
                     <div class="form-group">
@@ -554,7 +580,8 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Description About the Machine Update</label>
-                        <textarea class="form-textarea" placeholder="Describe the machine condition and updates made..." required></textarea>
+                        <textarea class="form-textarea" placeholder="Describe the machine condition and updates made..."
+                            required></textarea>
                     </div>
                 </div>
                 <div style="display: flex; gap: 12px; margin-top: 10px;">
@@ -580,11 +607,13 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Work Summary</label>
-                        <textarea class="form-textarea" placeholder="Summarize all work completed..." required></textarea>
+                        <textarea class="form-textarea" placeholder="Summarize all work completed..."
+                            required></textarea>
                     </div>
                     <div class="form-group">
                         <label class="form-label">All Parts Used</label>
-                        <textarea class="form-textarea" placeholder="Complete list of parts used during repair..." required></textarea>
+                        <textarea class="form-textarea" placeholder="Complete list of parts used during repair..."
+                            required></textarea>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Total Time Spent</label>
@@ -601,7 +630,8 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Testing Results</label>
-                        <textarea class="form-textarea" placeholder="Describe testing performed and results..." required></textarea>
+                        <textarea class="form-textarea" placeholder="Describe testing performed and results..."
+                            required></textarea>
                     </div>
                 </div>
                 <button type="submit" class="btn btn-success">Mark Done & Send to Supervisor</button>
@@ -614,7 +644,8 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2><i class="fas fa-clipboard-list"></i> Request Spare Parts</h2>
-                <button class="btn-close" onclick="closeModal('requestPartsModal')"><i class="fas fa-times"></i></button>
+                <button class="btn-close" onclick="closeModal('requestPartsModal')"><i
+                        class="fas fa-times"></i></button>
             </div>
             <form id="requestPartsForm" style="padding: 20px 30px;">
                 <input type="hidden" id="requestingTicketId" value="">
@@ -623,17 +654,20 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Ticket ID</label>
-                            <input type="text" class="form-input" placeholder="Enter ticket ID (if related)" id="relatedTicketId" readonly style="background-color: #f0f0f0;">
+                            <input type="text" class="form-input" placeholder="Enter ticket ID (if related)"
+                                id="relatedTicketId" readonly style="background-color: #f0f0f0;">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Equipment</label>
-                            <input type="text" class="form-input" id="equipmentInput" placeholder="Enter equipment/machine ID" required>
+                            <input type="text" class="form-input" id="equipmentInput"
+                                placeholder="Enter equipment/machine ID" required>
                         </div>
                     </div>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Location</label>
-                            <input type="text" class="form-input" id="locationInput" placeholder="Location" readonly style="background-color: #f0f0f0;">
+                            <input type="text" class="form-input" id="locationInput" placeholder="Location" readonly
+                                style="background-color: #f0f0f0;">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Priority</label>
@@ -649,11 +683,13 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Reported By</label>
-                            <input type="text" class="form-input" id="reportedByInput" readonly style="background-color: #f0f0f0;">
+                            <input type="text" class="form-input" id="reportedByInput" readonly
+                                style="background-color: #f0f0f0;">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Reported Date</label>
-                            <input type="text" class="form-input" id="reportedDateInput" readonly style="background-color: #f0f0f0;">
+                            <input type="text" class="form-input" id="reportedDateInput" readonly
+                                style="background-color: #f0f0f0;">
                         </div>
                     </div>
                 </div>
@@ -662,7 +698,9 @@
                     <h5><i class="fas fa-exclamation-circle"></i> Original Issue Description</h5>
                     <div class="form-group">
                         <label class="form-label">Issue Details</label>
-                        <textarea id="originalIssueTextarea" class="form-textarea" placeholder="Original issue description from ticket" rows="4" readonly style="background-color: #f0f0f0;"></textarea>
+                        <textarea id="originalIssueTextarea" class="form-textarea"
+                            placeholder="Original issue description from ticket" rows="4" readonly
+                            style="background-color: #f0f0f0;"></textarea>
                     </div>
                 </div>
 
@@ -670,25 +708,32 @@
                     <h5><i class="fas fa-edit"></i> Additional Notes (Optional)</h5>
                     <div class="form-group">
                         <label class="form-label">Spare Parts Request Notes</label>
-                        <textarea id="additionalNotesTextarea" class="form-textarea" placeholder="Add any additional observations, diagnostics, or notes about the spare parts needed..." rows="3"></textarea>
-                        <small style="color: var(--muted); margin-top: 5px; display: block;">Add any extra information about why specific parts are needed or additional findings during inspection.</small>
+                        <textarea id="additionalNotesTextarea" class="form-textarea"
+                            placeholder="Add any additional observations, diagnostics, or notes about the spare parts needed..."
+                            rows="3"></textarea>
+                        <small style="color: var(--muted); margin-top: 5px; display: block;">Add any extra information
+                            about why specific parts are needed or additional findings during inspection.</small>
                     </div>
                 </div>
 
                 <div class="form-section">
                     <div class="form-group" style="margin-bottom: 15px;">
                         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                            <input type="checkbox" id="noSparePartsNeeded" onchange="toggleSparePartsSection(this.checked)" style="width: 18px; height: 18px;">
-                            <span style="font-weight: 500; color: var(--tang-blue);">No Spare Parts Needed for this Ticket</span>
+                            <input type="checkbox" id="noSparePartsNeeded"
+                                onchange="toggleSparePartsSection(this.checked)" style="width: 18px; height: 18px;">
+                            <span style="font-weight: 500; color: var(--tang-blue);">No Spare Parts Needed for this
+                                Ticket</span>
                         </label>
-                        <small style="color: var(--muted); display: block; margin-top: 5px; margin-left: 28px;">Check this if the repair can be done without any spare parts</small>
+                        <small style="color: var(--muted); display: block; margin-top: 5px; margin-left: 28px;">Check
+                            this if the repair can be done without any spare parts</small>
                     </div>
                 </div>
 
                 <div class="form-section" id="sparePartsSection">
                     <h5><i class="fas fa-wrench"></i> Spare Parts Required</h5>
                     <div id="sparePartsContainer">
-                        <div class="spare-part-item" style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
+                        <div class="spare-part-item"
+                            style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 10px;">
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label class="form-label">Part Name</label>
@@ -719,8 +764,10 @@
                 </div>
 
                 <div style="margin-top: 20px; display: flex; gap: 10px;">
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Submit & Start Work</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('requestPartsModal')"><i class="fas fa-times"></i> Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Submit & Start
+                        Work</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('requestPartsModal')"><i
+                            class="fas fa-times"></i> Cancel</button>
                 </div>
             </form>
         </div>
@@ -757,7 +804,8 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Defect Description</label>
-                        <textarea class="form-textarea" placeholder="Describe the defect or failure..." required></textarea>
+                        <textarea class="form-textarea" placeholder="Describe the defect or failure..."
+                            required></textarea>
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary">Submit Warranty Claim</button>
@@ -803,7 +851,8 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Detailed Feedback</label>
-                        <textarea class="form-textarea" placeholder="Provide detailed feedback about asset performance..." required></textarea>
+                        <textarea class="form-textarea"
+                            placeholder="Provide detailed feedback about asset performance..." required></textarea>
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary">Submit Feedback</button>
@@ -815,7 +864,8 @@
     <div id="viewDetailsModal" class="modal">
         <div class="modal-content" style="max-width: 800px;">
             <button class="close" onclick="closeModal('viewDetailsModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-ticket-alt"></i> Ticket Details</h2>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-ticket-alt"></i> Ticket Details
+            </h2>
             <div id="ticketDetailsContent">
                 <!-- Details will be populated by JavaScript -->
             </div>
@@ -826,7 +876,8 @@
     <div id="viewInventoryModal" class="modal">
         <div class="modal-content" style="max-width: 800px;">
             <button class="close" onclick="closeModal('viewInventoryModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-info-circle"></i> Asset Details</h2>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-info-circle"></i> Asset Details
+            </h2>
             <div id="inventoryDetailsContent">
                 <!-- Details will be populated by JavaScript -->
             </div>
@@ -837,7 +888,8 @@
     <div id="viewPartRequestModal" class="modal">
         <div class="modal-content" style="max-width: 700px;">
             <button class="close" onclick="closeModal('viewPartRequestModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-clipboard-list"></i> Spare Parts Request Details</h2>
+            <h2 style="margin-bottom: 20px; color: var(--tang-blue);"><i class="fas fa-clipboard-list"></i> Spare Parts
+                Request Details</h2>
             <div id="partRequestDetailsContent">
                 <!-- Details will be populated by JavaScript -->
             </div>
@@ -846,8 +898,8 @@
             </div>
         </div>
     </div>
-            </div>
-        </div>
+    </div>
+    </div>
     </div>
 
     <!-- Toast Notification -->
@@ -859,8 +911,10 @@
     <script src="../../js/config.js"></script>
     <script src="../../js/api.js"></script>
     <script src="../../js/auth.js"></script>
-    
+    <script src="../../js/dashboard-init.js"></script>
+
     <!-- Local Script - Depends on Auth -->
     <script src="./script.js"></script>
 </body>
+
 </html>
