@@ -219,6 +219,28 @@ class UserController {
             Response::error($result['message'], 400);
         }
     }
+
+    /**
+     * Get next employee ID by role
+     * GET /api/users/next-employee-id?role=...
+     */
+    public function nextEmployeeId() {
+        RoleMiddleware::requireRole('Admin');
+
+        $role = $_GET['role'] ?? null;
+
+        if (!$role) {
+            Response::error('Role is required', 400);
+        }
+
+        $result = $this->userService->getNextEmployeeIdForRole($role);
+
+        if ($result['success']) {
+            Response::success($result['data']);
+        } else {
+            Response::error($result['message'], 400);
+        }
+    }
     
     /**
      * Reset user password

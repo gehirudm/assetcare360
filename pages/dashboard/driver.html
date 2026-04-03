@@ -1622,7 +1622,8 @@
 
                     <div class="card">
                         <div class="card-header"><i class="fas fa-gas-pump"></i> Recent Fuel Logs</div>
-                        <div class="inventory-item">
+                        <div id="recentFuelLogsList">
+                        <div class="inventory-item" data-fuel-log-id="FL-001">
                             <div class="item-details">
                                 <strong><i class="fas fa-gas-pump"></i> FL-001</strong>
                                 <div class="item-meta">
@@ -1660,7 +1661,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="inventory-item">
+                        <div class="inventory-item" data-fuel-log-id="FL-002">
                             <div class="item-details">
                                 <strong><i class="fas fa-gas-pump"></i> FL-002</strong>
                                 <div class="item-meta">
@@ -1698,6 +1699,7 @@
                                 </div>
                             </div>
                         </div>
+                        </div>
                     </div>
 
                     <div class="card">
@@ -1713,8 +1715,8 @@
                                     <th>Efficiency</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
+                            <tbody id="fuelHistoryTableBody">
+                                <tr data-fuel-log-id="FL-001">
                                     <td>Aug 24, 2024</td>
                                     <td>IOC - Kandy Rd</td>
                                     <td>45</td>
@@ -1722,7 +1724,7 @@
                                     <td>45,100 km</td>
                                     <td>8.3 km/L</td>
                                 </tr>
-                                <tr>
+                                <tr data-fuel-log-id="FL-002">
                                     <td>Aug 20, 2024</td>
                                     <td>CPC - Colombo</td>
                                     <td>50</td>
@@ -1730,7 +1732,7 @@
                                     <td>44,800 km</td>
                                     <td>8.0 km/L</td>
                                 </tr>
-                                <tr>
+                                <tr data-fuel-log-id="FL-003">
                                     <td>Aug 16, 2024</td>
                                     <td>IOC - Galle</td>
                                     <td>48</td>
@@ -2579,36 +2581,40 @@
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Vehicle Registration *</label>
-                            <input type="text" class="form-input" value="LKA-1234" readonly required>
+                            <input type="text" class="form-input" id="fuelVehicleRegistration" value="LKA-1234" readonly required>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Date & Time *</label>
-                            <input type="datetime-local" class="form-input" required>
+                            <input type="datetime-local" class="form-input" id="fuelDateTime" required>
                         </div>
                     </div>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Fuel Volume (Liters) *</label>
-                            <input type="number" class="form-input" min="0" step="0.01" placeholder="Enter volume" required>
+                            <input type="number" class="form-input" id="fuelVolume" min="0" step="0.01" placeholder="Enter volume" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Total Cost (Rs.) *</label>
-                            <input type="number" class="form-input" min="0" step="0.01" placeholder="Enter cost" required>
+                            <input type="number" class="form-input" id="fuelTotalCost" min="0" step="0.01" placeholder="Enter cost" required>
                         </div>
                     </div>
                     <div class="form-grid">
                         <div class="form-group">
                             <label class="form-label">Current Odometer (km) *</label>
-                            <input type="number" class="form-input" min="0" placeholder="Current odometer reading" required>
+                            <input type="number" class="form-input" id="fuelOdometer" min="0" placeholder="Current odometer reading" required>
+                            <small class="form-text" id="fuelOdometerMinHint" style="color: #2563eb; font-size: 12px; margin-top: 6px; display: block;">
+                                Minimum allowed: based on latest trip odometer
+                            </small>
+                            <small class="form-text" id="fuelOdometerError" style="color: #dc3545; font-size: 12px; margin-top: 4px; display: none;"></small>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Fuel Station</label>
-                            <input type="text" class="form-input" placeholder="Station name and location">
+                            <input type="text" class="form-input" id="fuelStation" placeholder="Station name and location">
                         </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Fuel Type *</label>
-                        <select class="form-select" required>
+                        <select class="form-select" id="fuelType" required>
                             <option value="">Select Fuel Type</option>
                             <option value="diesel">Diesel</option>
                             <option value="petrol">Petrol</option>
@@ -3032,6 +3038,10 @@
             if (modal) {
                 modal.style.display = '';
                 modal.classList.add('active');
+
+                if (modalId === 'fuelMileageModal') {
+                    updateFuelOdometerHint();
+                }
                 
                 // Pre-populate data if provided
                 if (data && modalId === 'breakdownModal') {
@@ -3647,7 +3657,7 @@
 
         function viewFuelDetails(fuelId) {
             // Sample fuel log data
-            const fuelData = {
+            const defaultFuelData = {
                 'FL-001': {
                     id: 'FL-001',
                     date: 'Aug 25, 2024',
@@ -3690,6 +3700,11 @@
                     notes: 'Midway refuel. Better efficiency on highway routes.',
                     trip: 'TRP-002'
                 }
+            };
+
+            const fuelData = {
+                ...defaultFuelData,
+                ...(window.fuelLogsData || {})
             };
             
             const fuel = fuelData[fuelId];
@@ -5021,6 +5036,7 @@
 
         // Initialize trip data (will be loaded from API)
         window.allTripsData = {};
+        window.fuelLogsData = {};
 
         // Load trips from database
         async function loadTrips() {
@@ -5081,6 +5097,8 @@
             } catch (error) {
                 console.error('Error loading trips:', error);
                 showToast('Failed to load trips', 'error');
+            } finally {
+                updateFuelOdometerHint();
             }
         }
 
@@ -5172,6 +5190,286 @@
             `;
             
             tripsList.insertAdjacentHTML('beforeend', tripHTML);
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function getNextFuelLogId() {
+            const ids = Array.from(document.querySelectorAll('[data-fuel-log-id]'))
+                .map((el) => el.getAttribute('data-fuel-log-id'))
+                .filter((id) => /^FL-\d+$/i.test(id || ''))
+                .map((id) => parseInt(id.split('-')[1], 10))
+                .filter((num) => Number.isFinite(num));
+
+            const next = (ids.length ? Math.max(...ids) : 0) + 1;
+            return `FL-${String(next).padStart(3, '0')}`;
+        }
+
+        function formatFuelDateTime(rawDateTime) {
+            const date = new Date(rawDateTime);
+            if (Number.isNaN(date.getTime())) {
+                return {
+                    dateText: 'Invalid date',
+                    timeText: '--:--',
+                    dateTimeText: 'Invalid date'
+                };
+            }
+
+            const dateText = date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+            const timeText = date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            return {
+                dateText,
+                timeText,
+                dateTimeText: `${dateText} ${timeText}`
+            };
+        }
+
+        function addFuelLogToUi(fuelLog, addToTop = true) {
+            const recentFuelLogsList = document.getElementById('recentFuelLogsList');
+            const fuelHistoryTableBody = document.getElementById('fuelHistoryTableBody');
+
+            if (!recentFuelLogsList || !fuelHistoryTableBody) {
+                return;
+            }
+
+            const recentItemHtml = `
+                <div class="inventory-item" data-fuel-log-id="${fuelLog.id}">
+                    <div class="item-details">
+                        <strong><i class="fas fa-gas-pump"></i> ${fuelLog.id}</strong>
+                        <div class="item-meta">
+                            <i class="fas fa-calendar"></i> ${escapeHtml(fuelLog.dateTimeText)} | 
+                            <i class="fas fa-map-marker-alt"></i> ${escapeHtml(fuelLog.station)}
+                        </div>
+                        <div class="item-description">
+                            <i class="fas fa-fill-drip"></i> ${fuelLog.volume.toFixed(2)} L | 
+                            <i class="fas fa-dollar-sign"></i> Rs. ${fuelLog.cost.toLocaleString('en-US', { maximumFractionDigits: 2 })} | 
+                            <i class="fas fa-tachometer-alt"></i> ${fuelLog.odometer.toLocaleString('en-US')} km | 
+                            Efficiency: ${escapeHtml(fuelLog.efficiencyText)}
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <div class="action-buttons">
+                            <button class="btn btn-small btn-primary" onclick="viewFuelDetails('${fuelLog.id}')">
+                                <i class="fas fa-eye"></i> VIEW
+                            </button>
+                            <div class="dropdown-container">
+                                <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'fuel-${fuelLog.id}')">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <div class="dropdown-menu" id="dropdown-fuel-${fuelLog.id}">
+                                    <button class="dropdown-item" onclick="editFuelLog('${fuelLog.id}')">
+                                        <i class="fas fa-edit"></i> Edit Log
+                                    </button>
+                                    <button class="dropdown-item" onclick="printFuelLog('${fuelLog.id}')">
+                                        <i class="fas fa-print"></i> Print Receipt
+                                    </button>
+                                    <button class="dropdown-item danger" onclick="deleteFuelLog('${fuelLog.id}')">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const historyRowHtml = `
+                <tr data-fuel-log-id="${fuelLog.id}">
+                    <td>${escapeHtml(fuelLog.dateText)}</td>
+                    <td>${escapeHtml(fuelLog.station)}</td>
+                    <td>${fuelLog.volume.toFixed(2)}</td>
+                    <td>${fuelLog.cost.toLocaleString('en-US', { maximumFractionDigits: 2 })}</td>
+                    <td>${fuelLog.odometer.toLocaleString('en-US')} km</td>
+                    <td>${escapeHtml(fuelLog.efficiencyText)}</td>
+                </tr>
+            `;
+
+            if (addToTop) {
+                recentFuelLogsList.insertAdjacentHTML('afterbegin', recentItemHtml);
+                fuelHistoryTableBody.insertAdjacentHTML('afterbegin', historyRowHtml);
+            } else {
+                recentFuelLogsList.insertAdjacentHTML('beforeend', recentItemHtml);
+                fuelHistoryTableBody.insertAdjacentHTML('beforeend', historyRowHtml);
+            }
+        }
+
+        function mapApiFuelLogToUi(log) {
+            const date = new Date(log.log_datetime || log.created_at);
+            const formatted = formatFuelDateTime(date);
+
+            const volume = Number(log.fuel_volume || 0);
+            const cost = Number(log.total_cost || 0);
+            const odometer = Number(log.odometer_reading || 0);
+            const efficiencyValue = Number(log.fuel_efficiency);
+            const efficiencyText = Number.isFinite(efficiencyValue) && efficiencyValue > 0
+                ? `${efficiencyValue.toFixed(2)} km/L`
+                : 'N/A';
+
+            return {
+                id: log.fuel_log_id,
+                dateText: formatted.dateText,
+                timeText: formatted.timeText,
+                dateTimeText: formatted.dateTimeText,
+                station: log.station_name || 'Station not specified',
+                volume,
+                cost,
+                odometer,
+                efficiencyText,
+                raw: log
+            };
+        }
+
+        function setFuelLogDetailsData(log, uiFuelLog) {
+            const fuelType = log.fuel_type || 'N/A';
+            const volume = Number(log.fuel_volume || 0);
+            const cost = Number(log.total_cost || 0);
+            const odometer = Number(log.odometer_reading || 0);
+            const distance = Number(log.distance_since_last || 0);
+
+            window.fuelLogsData[log.fuel_log_id] = {
+                id: log.fuel_log_id,
+                date: uiFuelLog.dateText,
+                time: uiFuelLog.timeText,
+                vehicle: log.vehicle_registration || 'N/A',
+                station: log.station_name || 'Station not specified',
+                location: log.station_name || 'N/A',
+                fuelType: fuelType.charAt(0).toUpperCase() + fuelType.slice(1),
+                quantity: `${volume.toFixed(2)} liters`,
+                pricePerLiter: volume > 0 ? `LKR ${(cost / volume).toFixed(2)}` : 'N/A',
+                totalCost: `LKR ${cost.toLocaleString('en-US', { maximumFractionDigits: 2 })}`,
+                odometerBefore: distance > 0 ? `${(odometer - distance).toLocaleString('en-US')} km` : 'N/A',
+                odometerAfter: `${odometer.toLocaleString('en-US')} km`,
+                distanceCovered: distance > 0 ? `${distance.toLocaleString('en-US')} km` : 'N/A',
+                fuelEfficiency: uiFuelLog.efficiencyText,
+                paymentMethod: 'N/A',
+                receiptNumber: 'N/A',
+                attendant: 'N/A',
+                notes: '',
+                trip: 'N/A'
+            };
+        }
+
+        async function loadFuelLogs() {
+            try {
+                const recentFuelLogsList = document.getElementById('recentFuelLogsList');
+                const fuelHistoryTableBody = document.getElementById('fuelHistoryTableBody');
+
+                if (!recentFuelLogsList || !fuelHistoryTableBody) {
+                    return;
+                }
+
+                const response = await fetch(`${CONFIG.API_BASE_URL}/fuel-logs?vehicle_registration=LKA-1234&driver_id=1&limit=100`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load fuel logs');
+                }
+
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.message || 'Failed to load fuel logs');
+                }
+
+                recentFuelLogsList.innerHTML = '';
+                fuelHistoryTableBody.innerHTML = '';
+                window.fuelLogsData = {};
+
+                const logs = (result.data && result.data.fuel_logs) ? result.data.fuel_logs : [];
+
+                logs.forEach((log) => {
+                    const uiFuelLog = mapApiFuelLogToUi(log);
+                    addFuelLogToUi(uiFuelLog, false);
+                    setFuelLogDetailsData(log, uiFuelLog);
+                });
+            } catch (error) {
+                console.error('Error loading fuel logs:', error);
+                showToast('Failed to load fuel logs', 'error');
+            }
+        }
+
+        function getTripOdometerBaseline() {
+            if (!window.allTripsData) {
+                return null;
+            }
+
+            const values = Object.values(window.allTripsData)
+                .flatMap((trip) => {
+                    const points = [];
+                    const start = parseInt(trip.odometer, 10);
+                    const end = parseInt(trip.finalOdometer, 10);
+
+                    if (Number.isFinite(start)) {
+                        points.push(start);
+                    }
+                    if (Number.isFinite(end)) {
+                        points.push(end);
+                    }
+                    return points;
+                })
+                .filter((v) => Number.isFinite(v));
+
+            if (!values.length) {
+                return null;
+            }
+
+            return Math.max(...values);
+        }
+
+        function updateFuelOdometerHint() {
+            const hint = document.getElementById('fuelOdometerMinHint');
+            const odometerInput = document.getElementById('fuelOdometer');
+            if (!hint || !odometerInput) {
+                return;
+            }
+
+            const baseline = getTripOdometerBaseline();
+            if (baseline !== null) {
+                odometerInput.min = baseline;
+                hint.textContent = `Minimum allowed: ${baseline.toLocaleString('en-US')} km (from trip logs)`;
+            } else {
+                odometerInput.min = 0;
+                hint.textContent = 'Minimum allowed: based on latest trip odometer';
+            }
+        }
+
+        function setFuelOdometerError(message = '') {
+            const errorElement = document.getElementById('fuelOdometerError');
+            const odometerInput = document.getElementById('fuelOdometer');
+
+            if (!errorElement || !odometerInput) {
+                return;
+            }
+
+            if (message) {
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+                odometerInput.style.borderColor = '#dc3545';
+                odometerInput.style.boxShadow = '0 0 0 3px rgba(220, 53, 69, 0.12)';
+            } else {
+                errorElement.textContent = '';
+                errorElement.style.display = 'none';
+                odometerInput.style.borderColor = '';
+                odometerInput.style.boxShadow = '';
+            }
         }
 
         // Form submissions
@@ -5384,11 +5682,71 @@
             });
 
             // Fuel & Mileage Form
-            document.getElementById('fuelMileageForm').addEventListener('submit', function(e) {
+            document.getElementById('fuelMileageForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
-                showToast('Fuel and mileage data logged successfully!');
-                closeModal('fuelMileageModal');
-                this.reset();
+                setFuelOdometerError('');
+
+                const dateTime = document.getElementById('fuelDateTime').value;
+                const volume = parseFloat(document.getElementById('fuelVolume').value);
+                const cost = parseFloat(document.getElementById('fuelTotalCost').value);
+                const odometer = parseInt(document.getElementById('fuelOdometer').value, 10);
+                const stationInput = document.getElementById('fuelStation').value.trim();
+                const station = stationInput || 'Station not specified';
+                const fuelTypeSelect = document.getElementById('fuelType');
+                const fuelType = fuelTypeSelect.options[fuelTypeSelect.selectedIndex]?.text || 'N/A';
+                const vehicle = document.getElementById('fuelVehicleRegistration').value;
+
+                if (!dateTime || !Number.isFinite(volume) || volume <= 0 || !Number.isFinite(cost) || cost <= 0 || !Number.isFinite(odometer) || odometer < 0) {
+                    showToast('Please enter valid fuel log values', 'error');
+                    return;
+                }
+
+                const tripOdometerBaseline = getTripOdometerBaseline();
+                if (tripOdometerBaseline !== null && odometer < tripOdometerBaseline) {
+                    setFuelOdometerError(`Odometer reading cannot be less than ${tripOdometerBaseline.toLocaleString('en-US')} km (from trip log).`);
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${CONFIG.API_BASE_URL}/fuel-logs`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            vehicle_registration: vehicle,
+                            driver_id: 1,
+                            log_datetime: dateTime,
+                            fuel_volume: volume,
+                            total_cost: cost,
+                            odometer_reading: odometer,
+                            station_name: station,
+                            fuel_type: fuelType.toLowerCase()
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (!response.ok || !result.success || !result.data || !result.data.fuel_log) {
+                        throw new Error(result.message || 'Failed to save fuel log');
+                    }
+
+                    const savedLog = result.data.fuel_log;
+                    const uiFuelLog = mapApiFuelLogToUi(savedLog);
+                    addFuelLogToUi(uiFuelLog);
+                    setFuelLogDetailsData(savedLog, uiFuelLog);
+
+                    showToast(`Fuel and mileage data logged successfully (${savedLog.fuel_log_id})!`);
+                    closeModal('fuelMileageModal');
+                    this.reset();
+                } catch (error) {
+                    console.error('Error creating fuel log:', error);
+
+                    if ((error.message || '').toLowerCase().includes('odometer')) {
+                        setFuelOdometerError(error.message);
+                    } else {
+                        showToast(error.message || 'Failed to save fuel log', 'error');
+                    }
+                }
             });
 
             // Transport Ticket Form
@@ -6027,6 +6385,7 @@
             
             // Load data from database
             loadTrips();
+            loadFuelLogs();
             loadVehicleChecks();
             loadBreakdownReports();
             

@@ -259,15 +259,16 @@
 
                     <!-- Tab Filters -->
                     <div class="filter-controls" id="userFilterTabs">
-                        <button class="filter-btn active" onclick="filterUsersByRole('all')">All Users</button>
-                        <button class="filter-btn" onclick="filterUsersByRole('Admin')">Admin</button>
-                        <button class="filter-btn" onclick="filterUsersByRole('Maintenance Manager')">Maintenance Manager</button>
-                        <button class="filter-btn" onclick="filterUsersByRole('Inventory Manager')">Inventory Manager</button>
-                        <button class="filter-btn" onclick="filterUsersByRole('Technical Officer')">Technical Officer</button>
-                        <button class="filter-btn" onclick="filterUsersByRole('Supervisor')">Supervisor</button>
-                        <button class="filter-btn" onclick="filterUsersByRole('Machinary Operator')">Machinary Operator</button>
-                        <button class="filter-btn" onclick="filterUsersByRole('Driver')">Driver</button>
-                        <button class="filter-btn" onclick="filterUsersByRole('Auction Officer')">Auction Officer</button>
+                        <button class="filter-btn active" onclick="filterUsersByRole('all', event)">All Users</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Admin', event)">Admin</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Maintenance Manager', event)">Maintenance Manager</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Inventory Manager', event)">Inventory Manager</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Transportation Manager', event)">Transportation Manager</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Technical Officer', event)">Technical Officer</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Supervisor', event)">Supervisor</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Machinary Operator', event)">Machinary Operator</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Driver', event)">Driver</button>
+                        <button class="filter-btn" onclick="filterUsersByRole('Auction Officer', event)">Auction Officer</button>
                     </div>
 
                     <!-- Search and Filter -->
@@ -778,13 +779,14 @@
 
                     <!-- Tab Filters -->
                     <div class="filter-controls" id="activityFilterTabs">
-                        <button class="filter-btn active" onclick="filterActiveUsersByRole('all')">All Users</button>
-                        <button class="filter-btn" onclick="filterActiveUsersByRole('Admin')">Admin</button>
-                        <button class="filter-btn" onclick="filterActiveUsersByRole('Supervisor')">Supervisor</button>
-                        <button class="filter-btn" onclick="filterActiveUsersByRole('Inventory Manager')">Inventory Manager</button>
-                        <button class="filter-btn" onclick="filterActiveUsersByRole('Technical Officer')">Technical Officer</button>
-                        <button class="filter-btn" onclick="filterActiveUsersByRole('Driver')">Driver</button>
-                        <button class="filter-btn" onclick="filterActiveUsersByRole('Machinary Operator')">Machinary Operator</button>
+                        <button class="filter-btn active" onclick="filterActiveUsersByRole('all', event)">All Users</button>
+                        <button class="filter-btn" onclick="filterActiveUsersByRole('Admin', event)">Admin</button>
+                        <button class="filter-btn" onclick="filterActiveUsersByRole('Supervisor', event)">Supervisor</button>
+                        <button class="filter-btn" onclick="filterActiveUsersByRole('Inventory Manager', event)">Inventory Manager</button>
+                        <button class="filter-btn" onclick="filterActiveUsersByRole('Transportation Manager', event)">Transportation Manager</button>
+                        <button class="filter-btn" onclick="filterActiveUsersByRole('Technical Officer', event)">Technical Officer</button>
+                        <button class="filter-btn" onclick="filterActiveUsersByRole('Driver', event)">Driver</button>
+                        <button class="filter-btn" onclick="filterActiveUsersByRole('Machinary Operator', event)">Machinary Operator</button>
                     </div>
 
                     <!-- Currently Logged In Users -->
@@ -805,38 +807,8 @@
                                 </tr>
                             </thead>
                             <tbody id="activeUsersList">
-                                <tr data-role="Supervisor">
-                                    <td>John Smith (EMP-001)</td>
-                                    <td><span class="status-text status-supervisor">Supervisor</span></td>
-                                    <td>Today 9:30 AM (2h 15m)</td>
-                                    <td>192.168.1.45</td>
-                                    <td>Viewing Breakdown Tickets</td>
-                                    <td>
-                                        <button class="btn btn-secondary btn-small" onclick="viewUserSession('EMP-001')">View Session</button>
-                                        <button class="btn btn-danger btn-small" onclick="forceLogout('EMP-001')">Force Logout</button>
-                                    </td>
-                                </tr>
-                                <tr data-role="Inventory Manager">
-                                    <td>Sarah Johnson (EMP-002)</td>
-                                    <td><span class="status-text status-manager">Inventory Manager</span></td>
-                                    <td>Today 8:15 AM (3h 30m)</td>
-                                    <td>192.168.1.52</td>
-                                    <td>Managing Inventory</td>
-                                    <td>
-                                        <button class="btn btn-secondary btn-small" onclick="viewUserSession('EMP-002')">View Session</button>
-                                        <button class="btn btn-danger btn-small" onclick="forceLogout('EMP-002')">Force Logout</button>
-                                    </td>
-                                </tr>
-                                <tr data-role="Driver">
-                                    <td>David Martinez (EMP-007)</td>
-                                    <td><span class="status-text status-driver">Driver</span></td>
-                                    <td>Today 10:00 AM (1h 45m)</td>
-                                    <td>192.168.1.89</td>
-                                    <td>Viewing Dashboard</td>
-                                    <td>
-                                        <button class="btn btn-secondary btn-small" onclick="viewUserSession('EMP-007')">View Session</button>
-                                        <button class="btn btn-danger btn-small" onclick="forceLogout('EMP-007')">Force Logout</button>
-                                    </td>
+                                <tr>
+                                    <td colspan="6" style="text-align:center; color: var(--muted); padding: 20px;">Loading activity...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -847,15 +819,15 @@
                         <div class="card-header"><i class="fas fa-chart-bar"></i> Activity Summary (Last 24 Hours)</div>
                         <div class="grid">
                             <div class="stat-card">
-                                <div class="stat-number" style="color: var(--kelly-green);">38</div>
+                                <div class="stat-number" style="color: var(--kelly-green);" id="activityUniqueLogins">0</div>
                                 <div class="stat-label">Unique Logins</div>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-number" style="color: var(--royal-blue);">256</div>
+                                <div class="stat-number" style="color: var(--royal-blue);" id="activityTotalActions">0</div>
                                 <div class="stat-label">Total Actions</div>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-number" style="color: var(--danger);">3</div>
+                                <div class="stat-number" style="color: var(--danger);" id="activityFailedLogins">0</div>
                                 <div class="stat-label">Failed Login Attempts</div>
                             </div>
                         </div>
@@ -873,81 +845,16 @@
                             </select>
                         </div>
 
-                        <div class="user-item">
-                            <div class="user-details">
-                                <strong>John Smith (EMP-001)</strong>
-                                <div class="user-meta">Role: Supervisor | Total Sessions Today: 1</div>
-                                <div class="user-meta" style="margin-top: 5px;">
-                                    <strong>Activity Timeline:</strong><br>
-                                    • 9:30 AM - Logged in from 192.168.1.45<br>
-                                    • 9:45 AM - Approved breakdown ticket TKT-156<br>
-                                    • 10:15 AM - Viewed maintenance reports<br>
-                                    • 11:20 AM - Updated petty cash request
-                                </div>
-                            </div>
-                            <div class="user-actions">
-                                <button class="btn btn-secondary btn-small" onclick="viewFullActivityLog('EMP-001')">Full Log</button>
-                                <button class="btn btn-primary btn-small" onclick="generateActivityReport('EMP-001')">Generate Report</button>
-                            </div>
-                        </div>
-
-                        <div class="user-item">
-                            <div class="user-details">
-                                <strong>Sarah Johnson (EMP-002)</strong>
-                                <div class="user-meta">Role: Inventory Manager | Total Sessions Today: 1</div>
-                                <div class="user-meta" style="margin-top: 5px;">
-                                    <strong>Activity Timeline:</strong><br>
-                                    • 8:15 AM - Logged in from 192.168.1.52<br>
-                                    • 8:30 AM - Approved parts order REQ-089<br>
-                                    • 9:00 AM - Added new spare part to catalog<br>
-                                    • 10:45 AM - Generated inventory usage report
-                                </div>
-                            </div>
-                            <div class="user-actions">
-                                <button class="btn btn-secondary btn-small" onclick="viewFullActivityLog('EMP-002')">Full Log</button>
-                                <button class="btn btn-primary btn-small" onclick="generateActivityReport('EMP-002')">Generate Report</button>
-                            </div>
-                        </div>
-
-                        <div class="user-item">
-                            <div class="user-details">
-                                <strong>Michael Chen (EMP-003)</strong>
-                                <div class="user-meta">Role: Technical Officer | Total Sessions Today: 0</div>
-                                <div class="user-meta" style="margin-top: 5px;">
-                                    <strong>Last Activity:</strong><br>
-                                    • Yesterday 5:45 PM - Logged out<br>
-                                    • Yesterday 5:30 PM - Submitted breakdown ticket TKT-178<br>
-                                    • Yesterday 3:15 PM - Requested parts for repair
-                                </div>
-                            </div>
-                            <div class="user-actions">
-                                <button class="btn btn-secondary btn-small" onclick="viewFullActivityLog('EMP-003')">Full Log</button>
-                                <button class="btn btn-primary btn-small" onclick="generateActivityReport('EMP-003')">Generate Report</button>
-                            </div>
+                        <div id="activityDetailsList">
+                            <p style="text-align: center; color: var(--muted); padding: 20px;">Loading detailed activity...</p>
                         </div>
                     </div>
 
                     <!-- Inactivity Report -->
                     <div class="card">
                         <div class="card-header"><i class="fas fa-exclamation-triangle"></i> User Inactivity Report</div>
-                        <div class="notification-item warning">
-                            <span class="notification-icon"><i class="fas fa-clock"></i></span>
-                            <div>
-                                <strong>No Recent Activity:</strong> Robert Williams (EMP-004) - Last login: 8 days ago
-                                <div style="margin-top: 5px;">
-                                    <button class="btn btn-secondary btn-small" onclick="viewUserDetails('EMP-004')">View User</button>
-                                    <button class="btn btn-warning btn-small" onclick="sendInactivityReminder('EMP-004')">Send Reminder</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="notification-item info">
-                            <span class="notification-icon">ℹ️</span>
-                            <div>
-                                <strong>Minimal Activity:</strong> Lisa Anderson (EMP-009) - Only 2 logins in last 14 days
-                                <div style="margin-top: 5px;">
-                                    <button class="btn btn-secondary btn-small" onclick="viewUserDetails('EMP-009')">View User</button>
-                                </div>
-                            </div>
+                        <div id="inactivityReportList">
+                            <p style="text-align: center; color: var(--muted); padding: 20px;">Loading inactivity report...</p>
                         </div>
                     </div>
                 </section>
@@ -969,6 +876,25 @@
             </div>
             <form id="createUserForm">
                 <div class="form-section">
+                    <h5><i class="fas fa-building"></i> Work Information</h5>
+                    <div class="form-group">
+                        <label class="form-label">Role *</label>
+                        <select class="form-select" name="role" id="createUserRole" required>
+                            <option value="">Select Role</option>
+                            <option value="Admin">Admin</option>
+                            <option value="Maintenance Manager">Maintenance Manager</option>
+                            <option value="Inventory Manager">Inventory Manager</option>
+                            <option value="Transportation Manager">Transportation Manager</option>
+                            <option value="Technical Officer">Technical Officer</option>
+                            <option value="Supervisor">Supervisor</option>
+                            <option value="Machinary Operator">Machinary Operator</option>
+                            <option value="Driver">Driver</option>
+                            <option value="Auction Officer">Auction Officer</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
                     <h5><i class="fas fa-user"></i> Personal Information</h5>
                     <div class="form-grid">
                         <div class="form-group">
@@ -977,7 +903,8 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Employee ID *</label>
-                            <input type="text" class="form-input" name="employee_id" placeholder="e.g., EMP-020" required>
+                            <input type="text" class="form-input" name="employee_id" id="createEmployeeId" placeholder="Select role to generate employee ID" required readonly>
+                            <small style="color: var(--muted);">Employee ID is auto-generated based on selected role.</small>
                         </div>
                     </div>
                     <div class="form-grid">
@@ -989,24 +916,6 @@
                             <label class="form-label">Phone Number</label>
                             <input type="tel" class="form-input" name="phone_number" placeholder="+94 XX XXX XXXX">
                         </div>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h5><i class="fas fa-building"></i> Work Information</h5>
-                    <div class="form-group">
-                        <label class="form-label">Role *</label>
-                        <select class="form-select" name="role" required>
-                            <option value="">Select Role</option>
-                            <option value="Admin">Admin</option>
-                            <option value="Maintenance Manager">Maintenance Manager</option>
-                            <option value="Inventory Manager">Inventory Manager</option>
-                            <option value="Technical Officer">Technical Officer</option>
-                            <option value="Supervisor">Supervisor</option>
-                            <option value="Machinary Operator">Machinary Operator</option>
-                            <option value="Driver">Driver</option>
-                            <option value="Auction Officer">Auction Officer</option>
-                        </select>
                     </div>
                 </div>
 

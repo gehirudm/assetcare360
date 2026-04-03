@@ -71,7 +71,7 @@ class LogService {
         
         // Time period filtering
         if (!empty($filters['period'])) {
-            $timeCondition = $this->getTimePeriodCondition($filters['period']);
+            $timeCondition = $this->getTimePeriodCondition($filters['period'], 'l.created_at');
             if ($timeCondition) {
                 $sql .= " AND " . $timeCondition;
             }
@@ -292,19 +292,19 @@ class LogService {
     /**
      * Get time period SQL condition
      */
-    private function getTimePeriodCondition($period) {
+    private function getTimePeriodCondition($period, $column = 'created_at') {
         switch ($period) {
             case 'today':
-                return "DATE(created_at) = CURDATE()";
+                return "DATE({$column}) = CURDATE()";
             
             case 'week':
-                return "created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+                return "{$column} >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
             
             case 'month':
-                return "created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+                return "{$column} >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
             
             case 'year':
-                return "created_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
+                return "{$column} >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
             
             case 'all':
             default:

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transportation Manager Dashboard - AssetCare360</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./style.css">
+
+    <script src="../../js/config.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/dashboard-init.js"></script>
+</head>
+<body>
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading"></div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div class="header-left">
+                <div class="brand-name">AssetCare<span class="brand-highlight">360</span></div>
+                <div class="header-divider"></div>
+                <h1 class="header-title"><i class="fas fa-truck-moving"></i> Transportation Manager Dashboard</h1>
+            </div>
+            <div class="header-user">
+                <div class="user-info" onclick="window.location.href='/profile/index.html'" style="cursor: pointer;">
+                    <div class="user-avatar" id="userAvatar">TM</div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">Loading...</div>
+                        <div class="user-meta">
+                            <span id="userEmployeeId"></span>
+                            <span>•</span>
+                            <span id="userRole"></span>
+                        </div>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </header>
+
+        <div class="main-wrapper">
+            <aside class="sidebar">
+                <nav>
+                    <div class="nav-item active" data-section="dashboard">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="nav-item" data-section="trip-logs">
+                        <i class="fas fa-route"></i>
+                        <span>Trip Logs</span>
+                    </div>
+                    <div class="nav-item" data-section="fuel-logs">
+                        <i class="fas fa-gas-pump"></i>
+                        <span>Fuel Logs</span>
+                    </div>
+                </nav>
+            </aside>
+
+            <main class="main-content">
+                <section class="content-section active" id="dashboard">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-chart-line"></i> Dashboard Overview</h2>
+                        <p class="page-subtitle">Monitor transportation operations updated by drivers</p>
+                    </div>
+
+                    <div class="grid">
+                        <div class="summary-card clickable" onclick="navigateTo('trip-logs')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon"><i class="fas fa-route"></i></div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Total Trips</div>
+                                    <div class="summary-number" id="summary-total-trips">0</div>
+                                    <div class="summary-description">driver-submitted transport journeys</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow"><i class="fas fa-chevron-right"></i></div>
+                        </div>
+                        <div class="summary-card clickable" onclick="navigateTo('trip-logs')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon"><i class="fas fa-hourglass-half"></i></div>
+                                <div class="summary-details">
+                                    <div class="summary-title">In Progress Trips</div>
+                                    <div class="summary-number" id="summary-in-progress">0</div>
+                                    <div class="summary-description">currently active transportation tasks</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow"><i class="fas fa-chevron-right"></i></div>
+                        </div>
+                        <div class="summary-card clickable" onclick="navigateTo('trip-logs')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon"><i class="fas fa-check-circle"></i></div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Completed Trips</div>
+                                    <div class="summary-number" id="summary-completed">0</div>
+                                    <div class="summary-description">fully finished trips by drivers</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow"><i class="fas fa-chevron-right"></i></div>
+                        </div>
+                        <div class="summary-card clickable" onclick="navigateTo('fuel-logs')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon"><i class="fas fa-gas-pump"></i></div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Fuel Logs</div>
+                                    <div class="summary-number" id="summary-fuel-logs">0</div>
+                                    <div class="summary-description">fuel updates and cost records</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow"><i class="fas fa-chevron-right"></i></div>
+                        </div>
+                    </div>
+
+                    <div class="recent-activities">
+                        <div class="section-header">
+                            <h3 class="section-title"><i class="fas fa-clock"></i> Recent Transportation Activities</h3>
+                        </div>
+                        <div class="activities-list" id="transportActivitiesList"></div>
+                    </div>
+
+                    <div class="dashboard-boxes">
+                        <div class="dashboard-box">
+                            <div class="dashboard-box-header">
+                                <h3><i class="fas fa-route"></i> Recent Trip Logs</h3>
+                                <button class="btn btn-primary btn-small" type="button" onclick="navigateTo('trip-logs')">View All</button>
+                            </div>
+                            <div class="dashboard-box-body" id="dashboardTripBox"></div>
+                        </div>
+
+                        <div class="dashboard-box">
+                            <div class="dashboard-box-header">
+                                <h3><i class="fas fa-gas-pump"></i> Recent Fuel Logs</h3>
+                                <button class="btn btn-primary btn-small" type="button" onclick="navigateTo('fuel-logs')">View All</button>
+                            </div>
+                            <div class="dashboard-box-body" id="dashboardFuelBox"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="content-section" id="trip-logs">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-route"></i> Driver Trip Logs</h2>
+                        <p class="page-subtitle">All trip logs submitted by drivers</p>
+                    </div>
+
+                    <div class="search-bar">
+                        <input type="text" id="tripSearchInput" class="search-input" placeholder="Search by trip ID, route, or vehicle...">
+                    </div>
+
+                    <div class="filter-controls" id="tripFilters">
+                        <button class="filter-btn active" onclick="setTripFilter('all', event)">All</button>
+                        <button class="filter-btn" onclick="setTripFilter('in progress', event)">In Progress</button>
+                        <button class="filter-btn" onclick="setTripFilter('completed', event)">Completed</button>
+                        <button class="filter-btn" onclick="setTripFilter('cancelled', event)">Cancelled</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">Trip Logs</div>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Trip ID</th>
+                                    <th>Route</th>
+                                    <th>Vehicle</th>
+                                    <th>Status</th>
+                                    <th>Start Odometer</th>
+                                    <th>Final Odometer</th>
+                                    <th>Last Updated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tripLogsBody"></tbody>
+                        </table>
+                        <div class="empty-message" id="tripLogsEmpty" style="display: none;">No trip logs found.</div>
+                    </div>
+                </section>
+
+                <section class="content-section" id="fuel-logs">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-gas-pump"></i> Driver Fuel Logs</h2>
+                        <p class="page-subtitle">All fuel logs submitted by drivers</p>
+                    </div>
+
+                    <div class="search-bar">
+                        <input type="text" id="fuelSearchInput" class="search-input" placeholder="Search by fuel log ID, vehicle, station, or fuel type...">
+                    </div>
+
+                    <div class="filter-controls" id="fuelFilters">
+                        <button class="filter-btn active" onclick="setFuelFilter('all', event)">All</button>
+                        <button class="filter-btn" onclick="setFuelFilter('petrol', event)">Petrol</button>
+                        <button class="filter-btn" onclick="setFuelFilter('diesel', event)">Diesel</button>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">Fuel Logs</div>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Fuel Log ID</th>
+                                    <th>Vehicle</th>
+                                    <th>Date Time</th>
+                                    <th>Station</th>
+                                    <th>Fuel Type</th>
+                                    <th>Volume (L)</th>
+                                    <th>Total Cost</th>
+                                    <th>Odometer</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fuelLogsBody"></tbody>
+                        </table>
+                        <div class="empty-message" id="fuelLogsEmpty" style="display: none;">No fuel logs found.</div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <div id="detailsModal" class="modal" style="display: none;">
+        <div class="modal-content modal-content-large">
+            <div class="modal-header">
+                <h2 class="modal-title" id="detailModalTitle"><i class="fas fa-info-circle"></i> Details</h2>
+                <button class="btn-close" type="button" onclick="closeDetailModal()" aria-label="Close details">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="details-modal-content" id="detailModalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeDetailModal()"><i class="fas fa-times"></i> Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="./script.js"></script>
+</body>
+</html>

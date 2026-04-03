@@ -8,6 +8,20 @@ require_once __DIR__ . '/BaseModel.php';
  */
 class User extends BaseModel {
     protected $table = 'users';
+
+    private const EMPLOYEE_ID_PREFIX = 'LITRO';
+
+    private const ROLE_EMPLOYEE_CODE_MAP = [
+        'Admin' => 'ADMIN',
+        'Maintenance Manager' => 'MAINTMGR',
+        'Inventory Manager' => 'INVMGR',
+        'Transportation Manager' => 'TRANSPORT',
+        'Technical Officer' => 'TECHOFFICER',
+        'Supervisor' => 'SUPERVISOR',
+        'Machinary Operator' => 'MACHOPER',
+        'Driver' => 'DRIVER',
+        'Auction Officer' => 'AUCTION'
+    ];
     
     /**
      * Define table schema
@@ -18,7 +32,7 @@ class User extends BaseModel {
             'employee_id' => 'VARCHAR(100) UNIQUE NOT NULL',
             'password' => 'VARCHAR(255) NOT NULL',
             'full_name' => 'VARCHAR(255) NOT NULL',
-            'role' => "ENUM('Admin', 'Maintenance Manager', 'Inventory Manager', 'Technical Officer', 'Supervisor', 'Machinary Operator', 'Driver', 'Auction Officer') NOT NULL",
+            'role' => "ENUM('Admin', 'Maintenance Manager', 'Inventory Manager', 'Transportation Manager', 'Technical Officer', 'Supervisor', 'Machinary Operator', 'Driver', 'Auction Officer') NOT NULL",
             'department' => 'VARCHAR(100) NULL',
             'email' => 'VARCHAR(255) NULL',
             'phone' => 'VARCHAR(20) NULL',
@@ -385,5 +399,36 @@ class User extends BaseModel {
         
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([$userId]);
+    }
+
+    /**
+     * Get next employee ID for a role using format: LITRO-{ROLECODE}-XXX
+     */
+    public function getNextEmployeeIdByRole($role) {
+        if (!isset(self::ROLE_EMPLOYEE_CODE_MAP[$role])) {
+            return null;
+        }
+
+        $roleCode = self::ROLE_EMPLOYEE_CODE_MAP[$role];
+        $prefix = self::EMPLOYEE_ID_PREFIX . '-' . $roleCode . '-';
+
+        $sql = "SELECT employee_id FROM `{$this->table}` WHERE employee_id LIKE ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$prefix . '%']);
+        $rows = $stmt->fetchAll();
+
+        $maxSequence = 0;
+        foreach ($rows as $row) {
+            $employeeId = $row['employee_id'] ?? '';
+            if (preg_match('/^(?:' . preg_quote($prefix, '/') . ')(\d+)$/', $employeeId, $matches)) {
+                $sequence = (int) $matches[1];
+                if ($sequence > $maxSequence) {
+                    $maxSequence = $sequence;
+                }
+            }
+        }
+
+        $nextSequence = $maxSequence + 1;
+        return $prefix . str_pad((string) $nextSequence, 3, '0', STR_PAD_LEFT);
     }
 }

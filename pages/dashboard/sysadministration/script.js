@@ -27,6 +27,19 @@ class UserManagement {
         const createUserForm = document.getElementById('createUserForm');
         if (createUserForm) {
             createUserForm.addEventListener('submit', (e) => this.handleCreateUser(e));
+
+            const roleSelect = createUserForm.querySelector('[name="role"]');
+            if (roleSelect) {
+                roleSelect.addEventListener('change', (e) => this.handleRoleChangeForCreateForm(e.target.value));
+            }
+
+            createUserForm.addEventListener('reset', () => {
+                const employeeIdInput = createUserForm.querySelector('[name="employee_id"]');
+                if (employeeIdInput) {
+                    employeeIdInput.value = '';
+                    employeeIdInput.placeholder = 'Select role to generate employee ID';
+                }
+            });
         }
 
         // Search and Filter
@@ -159,6 +172,16 @@ class UserManagement {
             force_password_change: true // Correct field name
         };
 
+        if (!userData.role) {
+            Utils.showToast('Please select a role first', 'error');
+            return;
+        }
+
+        if (!userData.employee_id) {
+            Utils.showToast('Employee ID could not be generated. Please re-select the role.', 'error');
+            return;
+        }
+
         try {
             const response = await API.post('/users', userData);
             
@@ -182,6 +205,45 @@ class UserManagement {
         } catch (error) {
             console.error('Error creating user:', error);
             Utils.showToast('Error creating user. Please try again.', 'error');
+        }
+    }
+
+    async handleRoleChangeForCreateForm(role) {
+        const createUserForm = document.getElementById('createUserForm');
+        if (!createUserForm) {
+            return;
+        }
+
+        const employeeIdInput = createUserForm.querySelector('[name="employee_id"]');
+        if (!employeeIdInput) {
+            return;
+        }
+
+        if (!role) {
+            employeeIdInput.value = '';
+            employeeIdInput.placeholder = 'Select role to generate employee ID';
+            return;
+        }
+
+        employeeIdInput.value = '';
+        employeeIdInput.placeholder = 'Generating employee ID...';
+
+        try {
+            const response = await API.get(`/users/next-employee-id?role=${encodeURIComponent(role)}`);
+
+            if (response.status === 'success' && response.data && response.data.next_employee_id) {
+                employeeIdInput.value = response.data.next_employee_id;
+                employeeIdInput.placeholder = 'Employee ID generated';
+            } else {
+                employeeIdInput.value = '';
+                employeeIdInput.placeholder = 'Could not generate employee ID';
+                Utils.showToast(response.message || 'Failed to generate employee ID', 'error');
+            }
+        } catch (error) {
+            console.error('Error generating employee ID:', error);
+            employeeIdInput.value = '';
+            employeeIdInput.placeholder = 'Could not generate employee ID';
+            Utils.showToast('Error generating employee ID. Please try again.', 'error');
         }
     }
 
@@ -313,9 +375,13 @@ class UserManagement {
                             <select class="form-select" name="role" required>
                                 <option value="Admin">Admin</option>
                                 <option value="Supervisor">Supervisor</option>
+                                <option value="Maintenance Manager">Maintenance Manager</option>
                                 <option value="Inventory Manager">Inventory Manager</option>
+                                <option value="Transportation Manager">Transportation Manager</option>
+                                <option value="Technical Officer">Technical Officer</option>
                                 <option value="Machinary Operator">Machinary Operator</option>
                                 <option value="Driver">Driver</option>
+                                <option value="Auction Officer">Auction Officer</option>
                             </select>
                         </div>
                         
@@ -602,7 +668,7 @@ function closeDropdown(dropdownId) {
 // Global variable to track current role filter
 let currentRoleFilter = 'all';
 
-function filterUsersByRole(role) {
+function filterUsersByRole(role, evt) {
     const users = document.querySelectorAll('#userList .user-item');
     const noUsersMessage = document.getElementById('noUsersMessage');
     const userCount = document.getElementById('userCount');
@@ -617,7 +683,10 @@ function filterUsersByRole(role) {
     filterButtons.forEach(btn => {
         btn.classList.remove('active');
     });
-    event.target.classList.add('active');
+    const clickEvent = evt || window.event;
+    if (clickEvent && clickEvent.target) {
+        clickEvent.target.classList.add('active');
+    }
 
     // Filter users
     users.forEach(user => {
@@ -735,173 +804,456 @@ document.addEventListener('DOMContentLoaded', function() {
 // ==================== SYSTEM LOGS FILTERING ====================
 
 let currentLogTypeFilter = 'all';
+let systemLogsData = [];
 
-function filterLogsByType(type) {
-    const logs = document.querySelectorAll('#logsList .log-entry');
+function initializeSystemLogs() {
+    const activeSection = document.querySelector('.content-section.active');
+    if (activeSection && activeSection.id === 'system-logs') {
+        loadSystemLogs();
+    }
+
+    const systemLogsNav = document.querySelector('.nav-item[data-section="system-logs"]');
+    if (systemLogsNav) {
+        systemLogsNav.addEventListener('click', () => {
+            loadSystemLogs();
+        });
+    }
+}
+
+async function loadSystemLogs() {
+    const activeSection = document.querySelector('.content-section.active');
+    const isSystemLogsActive = activeSection && activeSection.id === 'system-logs';
+
+    const logsListDiv = document.getElementById('logsList');
+    if (logsListDiv && isSystemLogsActive) {
+        logsListDiv.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Loading system logs...</p>';
+    }
+
+    const period = document.getElementById('logDateFilter')?.value || 'today';
+
+    try {
+        const response = await API.get(`/logs?period=${encodeURIComponent(period)}&limit=200`);
+
+        if (response.status === 'success' && response.data && Array.isArray(response.data.logs)) {
+            systemLogsData = response.data.logs;
+            renderSystemLogs();
+        } else {
+            systemLogsData = [];
+            renderSystemLogs();
+            if (isSystemLogsActive) {
+                Utils.showToast(response.message || 'Failed to load system logs', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('Error loading system logs:', error);
+        systemLogsData = [];
+        renderSystemLogs();
+        if (isSystemLogsActive) {
+            Utils.showToast('Error loading system logs. Please try again.', 'error');
+        }
+    }
+}
+
+function inferLogType(log) {
+    const action = String(log.action || '').toLowerCase();
+    const category = String(log.category || '').toLowerCase();
+    const responseCode = Number(log.response_code || 0);
+
+    if (responseCode >= 400) {
+        return 'error';
+    }
+    if (action.includes('login') || category.includes('authentication')) {
+        return 'login';
+    }
+    if (action.includes('permission') || action.includes('role')) {
+        return 'permission';
+    }
+    if (category.includes('user management') || action.includes('user')) {
+        return 'user';
+    }
+    if (category.includes('system administration') || category.includes('system configuration') || action.includes('config') || action.includes('configuration')) {
+        return 'config';
+    }
+
+    return 'all';
+}
+
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function formatLogTimestamp(value) {
+    if (!value) {
+        return 'N/A';
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+
+    return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function renderSystemLogs() {
+    const logsListDiv = document.getElementById('logsList');
     const noLogsMessage = document.getElementById('noLogsMessage');
     const logCount = document.getElementById('logCount');
-    const logsListDiv = document.getElementById('logsList');
-    const filterButtons = document.querySelectorAll('#logFilterTabs .filter-btn');
-    let visibleCount = 0;
+    const searchValue = (document.getElementById('logSearch')?.value || '').toLowerCase();
 
-    // Update current filter
+    if (!logsListDiv || !noLogsMessage || !logCount) {
+        return;
+    }
+
+    const visibleLogs = systemLogsData.filter((log) => {
+        const logType = inferLogType(log);
+        const matchesType = currentLogTypeFilter === 'all' || logType === currentLogTypeFilter;
+
+        const searchableText = `${log.action || ''} ${log.category || ''} ${log.endpoint || ''} ${log.employee_id || ''} ${log.user_name || ''}`.toLowerCase();
+        const matchesSearch = !searchValue || searchableText.includes(searchValue);
+
+        return matchesType && matchesSearch;
+    });
+
+    if (!visibleLogs.length) {
+        logsListDiv.style.display = 'none';
+        noLogsMessage.style.display = 'block';
+        logCount.textContent = '0 logs';
+        return;
+    }
+
+    logsListDiv.style.display = 'block';
+    noLogsMessage.style.display = 'none';
+
+    logsListDiv.innerHTML = visibleLogs.map((log) => {
+        const type = inferLogType(log);
+        const responseCode = Number(log.response_code || 0);
+        const severityClass = responseCode >= 500 ? 'error' : (responseCode >= 400 ? 'warning' : '');
+        const isLoginEvent = type === 'login' || String(log.endpoint || '').includes('/auth/login');
+        const loginStatus = responseCode >= 400 ? 'Failed' : 'Success';
+        const userLabel = log.user_name
+            ? `${escapeHtml(log.user_name)}${log.employee_id ? ` (${escapeHtml(log.employee_id)})` : ''}`
+            : (log.employee_id ? escapeHtml(log.employee_id) : 'System');
+
+        let requestBodyEmployeeId = '';
+        if (log.request_body) {
+            try {
+                const body = JSON.parse(log.request_body);
+                requestBodyEmployeeId = body.employee_id || '';
+            } catch (e) {
+                requestBodyEmployeeId = '';
+            }
+        }
+
+        const loginActor = userLabel !== 'System' ? userLabel : (requestBodyEmployeeId ? escapeHtml(requestBodyEmployeeId) : 'Unknown User');
+
+        return `
+            <div class="log-entry ${severityClass}" data-type="${escapeHtml(type)}" data-module="${escapeHtml(log.category || 'General')}">
+                <div class="log-timestamp">${escapeHtml(formatLogTimestamp(log.created_at))}</div>
+                <div><strong>Event:</strong> ${escapeHtml(log.action || 'API Request')}</div>
+                <div><strong>User:</strong> ${isLoginEvent ? loginActor : userLabel}</div>
+                ${isLoginEvent ? `<div><strong>Login Status:</strong> ${escapeHtml(loginStatus)}</div>` : ''}
+                <div><strong>Details:</strong> ${escapeHtml((log.method || 'GET') + ' ' + (log.endpoint || 'N/A') + (log.response_code ? ` [${log.response_code}]` : ''))}</div>
+                <div><strong>IP Address:</strong> ${escapeHtml(log.ip_address || 'N/A')}</div>
+                <div><strong>Response Code:</strong> ${escapeHtml(log.response_code || 'N/A')}</div>
+                <div><strong>Module:</strong> ${escapeHtml(log.category || 'General')}</div>
+            </div>
+        `;
+    }).join('');
+
+    logCount.textContent = `${visibleLogs.length} log${visibleLogs.length !== 1 ? 's' : ''}`;
+}
+
+function filterLogsByType(type) {
     currentLogTypeFilter = type;
 
-    // Update active button styling
+    const filterButtons = document.querySelectorAll('#logFilterTabs .filter-btn');
     filterButtons.forEach(btn => {
         btn.classList.remove('active');
     });
-    event.target.classList.add('active');
 
-    // Filter logs
-    logs.forEach(log => {
-        const logType = log.getAttribute('data-type');
-        const searchValue = document.getElementById('logSearch')?.value.toLowerCase() || '';
-
-        // Check type filter
-        let typeMatch = (type === 'all' || logType === type);
-
-        // Check search filter
-        let searchMatch = true;
-        if (searchValue) {
-            const logText = log.textContent.toLowerCase();
-            searchMatch = logText.includes(searchValue);
-        }
-
-        // Show/hide based on filters
-        if (typeMatch && searchMatch) {
-            log.style.display = '';
-            visibleCount++;
-        } else {
-            log.style.display = 'none';
+    filterButtons.forEach(btn => {
+        if ((btn.getAttribute('onclick') || '').includes(`filterLogsByType('${type}')`)) {
+            btn.classList.add('active');
         }
     });
 
-    // Show/hide no logs message
-    if (visibleCount === 0) {
-        logsListDiv.style.display = 'none';
-        noLogsMessage.style.display = 'block';
-    } else {
-        logsListDiv.style.display = 'block';
-        noLogsMessage.style.display = 'none';
-    }
-
-    // Update log count
-    if (logCount) {
-        logCount.textContent = `${visibleCount} log${visibleCount !== 1 ? 's' : ''}`;
-    }
+    renderSystemLogs();
 }
 
 // Search logs (works with current tab filter)
 function searchLogs() {
-    applyLogFilters();
+    renderSystemLogs();
 }
 
 // Apply all log filters together
 function applyLogFilters() {
-    const logs = document.querySelectorAll('#logsList .log-entry');
-    const noLogsMessage = document.getElementById('noLogsMessage');
-    const logCount = document.getElementById('logCount');
-    const logsListDiv = document.getElementById('logsList');
-    let visibleCount = 0;
-
-    const searchValue = document.getElementById('logSearch')?.value.toLowerCase() || '';
-
-    logs.forEach(log => {
-        const logType = log.getAttribute('data-type');
-
-        // Check type filter (use current tab)
-        let typeMatch = (currentLogTypeFilter === 'all' || logType === currentLogTypeFilter);
-
-        // Check search filter
-        let searchMatch = true;
-        if (searchValue) {
-            const logText = log.textContent.toLowerCase();
-            searchMatch = logText.includes(searchValue);
-        }
-
-        // Show/hide based on filters
-        if (typeMatch && searchMatch) {
-            log.style.display = '';
-            visibleCount++;
-        } else {
-            log.style.display = 'none';
-        }
-    });
-
-    // Show/hide no logs message
-    if (visibleCount === 0) {
-        logsListDiv.style.display = 'none';
-        noLogsMessage.style.display = 'block';
-    } else {
-        logsListDiv.style.display = 'block';
-        noLogsMessage.style.display = 'none';
-    }
-
-    // Update log count
-    if (logCount) {
-        logCount.textContent = `${visibleCount} log${visibleCount !== 1 ? 's' : ''}`;
-    }
+    loadSystemLogs();
 }
 
-// Update log count after initial load
-setTimeout(() => {
-    const logs = document.querySelectorAll('#logsList .log-entry');
-    const logCount = document.getElementById('logCount');
-    if (logCount && logs.length > 0) {
-        logCount.textContent = `${logs.length} log${logs.length !== 1 ? 's' : ''}`;
-    }
-}, 1000);
+document.addEventListener('DOMContentLoaded', function() {
+    initializeSystemLogs();
+});
 
 // ==================== ACTIVITY TRACKING FILTERING ====================
 
 let currentActivityRoleFilter = 'all';
+let activityUsersData = [];
+let activityLogsByEmployee = {};
 
-function filterActiveUsersByRole(role) {
-    const users = document.querySelectorAll('#activeUsersList tr');
-    const activeUserCount = document.getElementById('activeUserCount');
-    const filterButtons = document.querySelectorAll('#activityFilterTabs .filter-btn');
-    let visibleCount = 0;
+function initializeActivityTracking() {
+    const activityNav = document.querySelector('.nav-item[data-section="activity-tracking"]');
+    if (activityNav) {
+        activityNav.addEventListener('click', () => {
+            loadUserActivityTracking();
+        });
+    }
 
-    // Update current filter
-    currentActivityRoleFilter = role;
+    const searchInput = document.getElementById('activityUserSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', () => renderActivityTracking());
+    }
 
-    // Update active button styling
-    filterButtons.forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
-
-    // Filter active users
-    users.forEach(user => {
-        const userRole = user.getAttribute('data-role');
-
-        // Check role filter
-        let roleMatch = (role === 'all' || userRole === role);
-
-        // Show/hide based on filter
-        if (roleMatch) {
-            user.style.display = '';
-            visibleCount++;
-        } else {
-            user.style.display = 'none';
-        }
-    });
-
-    // Update active user count
-    if (activeUserCount) {
-        activeUserCount.textContent = `${visibleCount} active`;
+    const dateFilter = document.getElementById('activityDateFilter');
+    if (dateFilter) {
+        dateFilter.addEventListener('change', () => loadUserActivityTracking());
     }
 }
 
-// Update active user count after initial load
-setTimeout(() => {
-    const users = document.querySelectorAll('#activeUsersList tr');
-    const activeUserCount = document.getElementById('activeUserCount');
-    if (activeUserCount && users.length > 0) {
-        activeUserCount.textContent = `${users.length} active`;
+async function loadUserActivityTracking() {
+    const period = document.getElementById('activityDateFilter')?.value || 'today';
+
+    try {
+        const [usersRes, logsRes] = await Promise.all([
+            API.get('/users?limit=200'),
+            API.get(`/logs?period=${encodeURIComponent(period)}&limit=1000`)
+        ]);
+
+        const users = (usersRes.status === 'success' && usersRes.data && Array.isArray(usersRes.data.users)) ? usersRes.data.users : [];
+        const logs = (logsRes.status === 'success' && logsRes.data && Array.isArray(logsRes.data.logs)) ? logsRes.data.logs : [];
+
+        const usersByEmployeeId = {};
+        users.forEach((u) => {
+            if (u.employee_id) {
+                usersByEmployeeId[u.employee_id] = u;
+            }
+        });
+
+        activityLogsByEmployee = {};
+        logs.forEach((log) => {
+            const employeeId = log.employee_id || 'UNKNOWN';
+            if (!activityLogsByEmployee[employeeId]) {
+                activityLogsByEmployee[employeeId] = [];
+            }
+            activityLogsByEmployee[employeeId].push(log);
+        });
+
+        activityUsersData = Object.entries(activityLogsByEmployee).map(([employeeId, userLogs]) => {
+            userLogs.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+
+            const latest = userLogs[0] || {};
+            const linkedUser = usersByEmployeeId[employeeId] || {};
+            const role = latest.user_role || linkedUser.role || 'Unknown';
+            const fullName = latest.user_name || linkedUser.full_name || 'Unknown User';
+
+            const loginAttempts = userLogs.filter((l) => String(l.endpoint || '').includes('/auth/login'));
+            const successfulLogins = loginAttempts.filter((l) => Number(l.response_code || 0) < 400).length;
+            const failedLogins = loginAttempts.filter((l) => Number(l.response_code || 0) >= 400).length;
+
+            return {
+                employee_id: employeeId,
+                full_name: fullName,
+                role,
+                request_count: userLogs.length,
+                successful_logins: successfulLogins,
+                failed_logins: failedLogins,
+                last_activity_at: latest.created_at || null,
+                last_ip: latest.ip_address || 'N/A',
+                last_action: latest.action || 'N/A',
+                logs: userLogs
+            };
+        }).sort((a, b) => new Date(b.last_activity_at || 0).getTime() - new Date(a.last_activity_at || 0).getTime());
+
+        renderActivityTracking();
+    } catch (error) {
+        console.error('Failed to load activity tracking:', error);
+        activityUsersData = [];
+        activityLogsByEmployee = {};
+        renderActivityTracking();
+        Utils.showToast('Failed to load user activity data', 'error');
     }
-}, 1000);
+}
+
+function isUserActive(lastActivityAt) {
+    if (!lastActivityAt) {
+        return false;
+    }
+    const last = new Date(lastActivityAt).getTime();
+    if (Number.isNaN(last)) {
+        return false;
+    }
+    return (Date.now() - last) <= (30 * 60 * 1000);
+}
+
+function formatRelativeDuration(lastActivityAt) {
+    if (!lastActivityAt) {
+        return 'N/A';
+    }
+    const diffMs = Date.now() - new Date(lastActivityAt).getTime();
+    if (diffMs < 0 || Number.isNaN(diffMs)) {
+        return formatLogTimestamp(lastActivityAt);
+    }
+
+    const mins = Math.floor(diffMs / (1000 * 60));
+    if (mins < 60) {
+        return `${mins}m ago`;
+    }
+    const hours = Math.floor(mins / 60);
+    const remMins = mins % 60;
+    return `${hours}h ${remMins}m ago`;
+}
+
+function filterActiveUsersByRole(role, evt) {
+    const filterButtons = document.querySelectorAll('#activityFilterTabs .filter-btn');
+    currentActivityRoleFilter = role;
+
+    filterButtons.forEach(btn => {
+        btn.classList.remove('active');
+    });
+    const clickEvent = evt || window.event;
+    if (clickEvent && clickEvent.target) {
+        clickEvent.target.classList.add('active');
+    }
+
+    renderActivityTracking();
+}
+
+function getFilteredActivityUsers() {
+    const searchValue = (document.getElementById('activityUserSearch')?.value || '').toLowerCase();
+
+    return activityUsersData.filter((user) => {
+        const roleMatch = currentActivityRoleFilter === 'all' || user.role === currentActivityRoleFilter;
+        const searchSpace = `${user.full_name} ${user.employee_id} ${user.role}`.toLowerCase();
+        const searchMatch = !searchValue || searchSpace.includes(searchValue);
+        return roleMatch && searchMatch;
+    });
+}
+
+function renderActivityTracking() {
+    const activeUsersList = document.getElementById('activeUsersList');
+    const activeUserCount = document.getElementById('activeUserCount');
+    const detailsList = document.getElementById('activityDetailsList');
+    const inactivityList = document.getElementById('inactivityReportList');
+    const uniqueLoginsEl = document.getElementById('activityUniqueLogins');
+    const totalActionsEl = document.getElementById('activityTotalActions');
+    const failedLoginsEl = document.getElementById('activityFailedLogins');
+
+    const filteredUsers = getFilteredActivityUsers();
+
+    if (uniqueLoginsEl) {
+        uniqueLoginsEl.textContent = String(activityUsersData.filter((u) => u.successful_logins > 0).length);
+    }
+    if (totalActionsEl) {
+        totalActionsEl.textContent = String(activityUsersData.reduce((sum, u) => sum + (u.request_count || 0), 0));
+    }
+    if (failedLoginsEl) {
+        failedLoginsEl.textContent = String(activityUsersData.reduce((sum, u) => sum + (u.failed_logins || 0), 0));
+    }
+
+    if (activeUsersList) {
+        if (!filteredUsers.length) {
+            activeUsersList.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--muted); padding: 20px;">No activity records found.</td></tr>';
+        } else {
+            activeUsersList.innerHTML = filteredUsers.map((user) => {
+                const active = isUserActive(user.last_activity_at);
+                const statusLabel = active ? 'Active Now' : 'Recently Active';
+                const statusClass = active ? 'status-active' : 'status-pending';
+
+                return `
+                    <tr data-role="${escapeHtml(user.role)}">
+                        <td>${escapeHtml(user.full_name)} (${escapeHtml(user.employee_id)})</td>
+                        <td><span class="status-text status-normal">${escapeHtml(user.role)}</span></td>
+                        <td>${escapeHtml(formatLogTimestamp(user.last_activity_at))} (${escapeHtml(formatRelativeDuration(user.last_activity_at))})</td>
+                        <td>${escapeHtml(user.last_ip)}</td>
+                        <td>${escapeHtml(user.last_action)} <span class="status-text ${statusClass}">${statusLabel}</span></td>
+                        <td>
+                            <button class="btn btn-secondary btn-small" onclick="viewUserSession('${escapeHtml(user.employee_id)}')">View Session</button>
+                            <button class="btn btn-primary btn-small" onclick="generateActivityReport('${escapeHtml(user.employee_id)}')">Generate Report</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    }
+
+    if (activeUserCount) {
+        const activeCount = filteredUsers.filter((user) => isUserActive(user.last_activity_at)).length;
+        activeUserCount.textContent = `${activeCount} active`;
+    }
+
+    if (detailsList) {
+        if (!filteredUsers.length) {
+            detailsList.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 20px;">No detailed activity available.</p>';
+        } else {
+            detailsList.innerHTML = filteredUsers.slice(0, 8).map((user) => {
+                const topLogs = (user.logs || []).slice(0, 4)
+                    .map((log) => `• ${escapeHtml(formatLogTimestamp(log.created_at))} - ${escapeHtml(log.action || 'Action')} (${escapeHtml(log.endpoint || 'N/A')})`)
+                    .join('<br>');
+
+                return `
+                    <div class="user-item">
+                        <div class="user-details">
+                            <strong>${escapeHtml(user.full_name)} (${escapeHtml(user.employee_id)})</strong>
+                            <div class="user-meta">Role: ${escapeHtml(user.role)} | Total Actions: ${escapeHtml(user.request_count)}</div>
+                            <div class="user-meta" style="margin-top: 5px;">
+                                <strong>Activity Timeline:</strong><br>${topLogs || 'No recent actions'}
+                            </div>
+                        </div>
+                        <div class="user-actions">
+                            <button class="btn btn-secondary btn-small" onclick="viewFullActivityLog('${escapeHtml(user.employee_id)}')">Full Log</button>
+                            <button class="btn btn-primary btn-small" onclick="generateActivityReport('${escapeHtml(user.employee_id)}')">Generate Report</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+
+    if (inactivityList) {
+        const inactiveUsers = filteredUsers.filter((user) => !isUserActive(user.last_activity_at)).slice(0, 5);
+        if (!inactiveUsers.length) {
+            inactivityList.innerHTML = '<div class="notification-item success"><span class="notification-icon"><i class="fas fa-check-circle"></i></span><div><strong>No Inactivity Alerts:</strong> All filtered users are active recently.</div></div>';
+        } else {
+            inactivityList.innerHTML = inactiveUsers.map((user) => `
+                <div class="notification-item warning">
+                    <span class="notification-icon"><i class="fas fa-clock"></i></span>
+                    <div>
+                        <strong>Low Activity:</strong> ${escapeHtml(user.full_name)} (${escapeHtml(user.employee_id)}) - Last action ${escapeHtml(formatRelativeDuration(user.last_activity_at))}
+                        <div style="margin-top: 5px;">
+                            <button class="btn btn-secondary btn-small" onclick="viewFullActivityLog('${escapeHtml(user.employee_id)}')">View Activity</button>
+                            <button class="btn btn-warning btn-small" onclick="sendInactivityReminder('${escapeHtml(user.employee_id)}')">Send Reminder</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeActivityTracking();
+});
 
 // ==================== EXPORT LOGS FUNCTIONALITY ====================
 
@@ -1064,7 +1416,7 @@ function editPermission(module) {
         <form id="editPermissionForm">
             <div class="form-section">
                 <h5>Select Roles with Access</h5>
-                ${['Admin', 'Maintenance Manager', 'Inventory Manager', 'Technical Officer', 'Supervisor', 'Machinary Operator', 'Driver', 'Auction Officer'].map(role => `
+                ${['Admin', 'Maintenance Manager', 'Inventory Manager', 'Transportation Manager', 'Technical Officer', 'Supervisor', 'Machinary Operator', 'Driver', 'Auction Officer'].map(role => `
                     <div class="form-check">
                         <input type="checkbox" id="perm-${role.toLowerCase().replace(/\s+/g, '-')}" ${['Admin', 'Supervisor'].includes(role) ? 'checked' : ''}>
                         <label for="perm-${role.toLowerCase().replace(/\s+/g, '-')}">${role}</label>
@@ -1686,39 +2038,61 @@ function testTemplate(templateId) {
 // ==================== USER ACTIVITY TRACKING ====================
 
 function viewUserSession(employeeId) {
-    console.log(`Viewing user session for: ${employeeId}`);
-    
+    const user = getUserActivityById(employeeId);
+    const userLogs = user ? (user.logs || []).slice(0, 10) : [];
+
     const modal = document.getElementById('detailsModal');
     const title = document.getElementById('detailsTitle');
     const content = document.getElementById('detailsContent');
-    
+
     title.textContent = `Active Session Details: ${employeeId}`;
-    
+
+    if (!user) {
+        content.innerHTML = `
+            <div class="form-section">
+                <p style="color: var(--danger);">No activity data found for ${escapeHtml(employeeId)}.</p>
+            </div>
+            <div style="text-align: right; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')">Close</button>
+            </div>
+        `;
+
+        modal.classList.add('active'); modal.style.display = 'flex';
+        setTimeout(() => { modal.style.opacity = '1'; }, 10);
+        return;
+    }
+
+    const sessionRows = userLogs.map((log) => `
+        <tr>
+            <td>${escapeHtml(formatLogTimestamp(log.created_at))}</td>
+            <td>${escapeHtml(log.action || 'Action')}</td>
+            <td>${escapeHtml(log.category || 'General')}</td>
+        </tr>
+    `).join('');
+
     content.innerHTML = `
         <div class="form-section">
             <h5>User Information</h5>
             <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-top: 10px;">
-                <strong>Employee ID:</strong> ${employeeId}<br>
-                <strong>Name:</strong> John Smith<br>
-                <strong>Role:</strong> <span class="status-text status-supervisor">Supervisor</span><br>
-                <strong>Email:</strong> john.smith@company.com
+                <strong>Employee ID:</strong> ${escapeHtml(user.employee_id)}<br>
+                <strong>Name:</strong> ${escapeHtml(user.full_name)}<br>
+                <strong>Role:</strong> <span class="status-text status-normal">${escapeHtml(user.role)}</span>
             </div>
         </div>
 
         <div class="form-section">
             <h5>Session Details</h5>
             <div style="background: var(--light-bg); padding: 15px; border-radius: 8px; margin-top: 10px;">
-                <strong>Login Time:</strong> Today 9:30 AM<br>
-                <strong>Session Duration:</strong> 2h 15m<br>
-                <strong>IP Address:</strong> 192.168.1.45<br>
-                <strong>Device:</strong> Windows 10, Chrome 118<br>
-                <strong>Current Page:</strong> Breakdown Tickets Dashboard<br>
-                <strong>Last Activity:</strong> 2 minutes ago
+                <strong>Last Activity:</strong> ${escapeHtml(formatLogTimestamp(user.last_activity_at))} (${escapeHtml(formatRelativeDuration(user.last_activity_at))})<br>
+                <strong>IP Address:</strong> ${escapeHtml(user.last_ip)}<br>
+                <strong>Total Requests:</strong> ${escapeHtml(user.request_count)}<br>
+                <strong>Successful Logins:</strong> ${escapeHtml(user.successful_logins)}<br>
+                <strong>Failed Logins:</strong> ${escapeHtml(user.failed_logins)}
             </div>
         </div>
 
         <div class="form-section">
-            <h5>Session Activity</h5>
+            <h5>Recent Activity</h5>
             <table class="table" style="margin-top: 10px;">
                 <thead>
                     <tr>
@@ -1728,36 +2102,7 @@ function viewUserSession(employeeId) {
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>11:43 AM</td>
-                        <td>Viewed ticket details</td>
-                        <td>Breakdown Management</td>
-                    </tr>
-                    <tr>
-                        <td>11:35 AM</td>
-                        <td>Approved parts request</td>
-                        <td>Inventory</td>
-                    </tr>
-                    <tr>
-                        <td>11:20 AM</td>
-                        <td>Updated petty cash request</td>
-                        <td>Finance</td>
-                    </tr>
-                    <tr>
-                        <td>10:15 AM</td>
-                        <td>Viewed maintenance reports</td>
-                        <td>Reports</td>
-                    </tr>
-                    <tr>
-                        <td>9:45 AM</td>
-                        <td>Approved breakdown ticket</td>
-                        <td>Breakdown Management</td>
-                    </tr>
-                    <tr>
-                        <td>9:30 AM</td>
-                        <td>Logged in</td>
-                        <td>Authentication</td>
-                    </tr>
+                    ${sessionRows || '<tr><td colspan="3" style="text-align:center; color: var(--muted);">No recent activity</td></tr>'}
                 </tbody>
             </table>
         </div>
@@ -1789,33 +2134,46 @@ function forceLogout(employeeId) {
 }
 
 function viewFullActivityLog(employeeId) {
-    console.log(`Viewing full activity log for: ${employeeId}`);
-    
+    const user = getUserActivityById(employeeId);
+    const userLogs = user ? (user.logs || []) : [];
+
     const modal = document.getElementById('detailsModal');
     const title = document.getElementById('detailsTitle');
     const content = document.getElementById('detailsContent');
-    
+
     title.textContent = `Complete Activity Log: ${employeeId}`;
-    
+
+    if (!user) {
+        content.innerHTML = `
+            <div class="form-section">
+                <p style="color: var(--danger);">No activity data found for ${escapeHtml(employeeId)}.</p>
+            </div>
+            <div style="text-align: right; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')">Close</button>
+            </div>
+        `;
+
+        modal.classList.add('active'); modal.style.display = 'flex';
+        setTimeout(() => { modal.style.opacity = '1'; }, 10);
+        return;
+    }
+
+    const fullRows = userLogs.map((log) => `
+        <tr>
+            <td>${escapeHtml(formatLogTimestamp(log.created_at))}</td>
+            <td>${escapeHtml(log.action || 'Action')}</td>
+            <td>${escapeHtml(log.category || 'General')}</td>
+            <td>${escapeHtml(log.endpoint || 'N/A')} (${escapeHtml(log.method || 'GET')})</td>
+        </tr>
+    `).join('');
+
     content.innerHTML = `
         <div class="form-section">
             <h5>User Activity History</h5>
             <div style="margin-bottom: 15px;">
-                <strong>Employee:</strong> John Smith (${employeeId})<br>
-                <strong>Role:</strong> Supervisor<br>
-                <strong>Period:</strong> Last 7 Days
-            </div>
-
-            <div class="search-bar" style="margin-bottom: 15px;">
-                <input type="text" class="search-input" placeholder="Search activities...">
-                <select class="filter-select">
-                    <option value="all">All Actions</option>
-                    <option value="login">Login Events</option>
-                    <option value="approval">Approvals</option>
-                    <option value="create">Create Actions</option>
-                    <option value="update">Update Actions</option>
-                    <option value="delete">Delete Actions</option>
-                </select>
+                <strong>Employee:</strong> ${escapeHtml(user.full_name)} (${escapeHtml(user.employee_id)})<br>
+                <strong>Role:</strong> ${escapeHtml(user.role)}<br>
+                <strong>Total Actions:</strong> ${escapeHtml(user.request_count)}
             </div>
 
             <div style="max-height: 400px; overflow-y: auto;">
@@ -1829,82 +2187,23 @@ function viewFullActivityLog(employeeId) {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>Oct 18, 11:43 AM</td>
-                            <td>Viewed Details</td>
-                            <td>Breakdown Management</td>
-                            <td>Ticket MBD-156</td>
-                        </tr>
-                        <tr>
-                            <td>Oct 18, 11:35 AM</td>
-                            <td>Approved Request</td>
-                            <td>Inventory</td>
-                            <td>Parts request PR-089</td>
-                        </tr>
-                        <tr>
-                            <td>Oct 18, 11:20 AM</td>
-                            <td>Updated Record</td>
-                            <td>Finance</td>
-                            <td>Petty cash PC-045</td>
-                        </tr>
-                        <tr>
-                            <td>Oct 18, 10:15 AM</td>
-                            <td>Generated Report</td>
-                            <td>Reports</td>
-                            <td>Maintenance summary</td>
-                        </tr>
-                        <tr>
-                            <td>Oct 18, 9:45 AM</td>
-                            <td>Approved Ticket</td>
-                            <td>Breakdown Management</td>
-                            <td>Ticket MBD-155</td>
-                        </tr>
-                        <tr>
-                            <td>Oct 18, 9:30 AM</td>
-                            <td>Login</td>
-                            <td>Authentication</td>
-                            <td>IP: 192.168.1.45</td>
-                        </tr>
-                        <tr>
-                            <td>Oct 17, 5:45 PM</td>
-                            <td>Logout</td>
-                            <td>Authentication</td>
-                            <td>Session ended</td>
-                        </tr>
-                        <tr>
-                            <td>Oct 17, 3:20 PM</td>
-                            <td>Created User</td>
-                            <td>User Management</td>
-                            <td>New user EMP-015</td>
-                        </tr>
-                        <tr>
-                            <td>Oct 17, 2:15 PM</td>
-                            <td>Updated Settings</td>
-                            <td>System Config</td>
-                            <td>Service interval SI-003</td>
-                        </tr>
-                        <tr>
-                            <td>Oct 17, 1:30 PM</td>
-                            <td>Approved Request</td>
-                            <td>Finance</td>
-                            <td>Petty cash PC-044</td>
-                        </tr>
+                        ${fullRows || '<tr><td colspan="4" style="text-align:center; color: var(--muted);">No activity records available</td></tr>'}
                     </tbody>
                 </table>
             </div>
 
             <div style="margin-top: 15px; padding: 15px; background: var(--light-bg); border-radius: 8px;">
-                <strong>Activity Summary (Last 7 Days):</strong><br>
-                Total Sessions: 12<br>
-                Total Actions: 156<br>
-                Average Session Duration: 3h 45m<br>
-                Most Active Module: Breakdown Management (45 actions)
+                <strong>Activity Summary:</strong><br>
+                Total Actions: ${escapeHtml(user.request_count)}<br>
+                Successful Logins: ${escapeHtml(user.successful_logins)}<br>
+                Failed Logins: ${escapeHtml(user.failed_logins)}<br>
+                Last Activity: ${escapeHtml(formatRelativeDuration(user.last_activity_at))}
             </div>
         </div>
 
         <div style="text-align: right; margin-top: 20px;">
             <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')">Close</button>
-            <button type="button" class="btn btn-primary" onclick="exportUserActivity('${employeeId}')">Export to CSV</button>
+            <button type="button" class="btn btn-primary" onclick="exportUserActivity('${escapeHtml(employeeId)}')">Export to CSV</button>
         </div>
     `;
     
@@ -1913,10 +2212,84 @@ function viewFullActivityLog(employeeId) {
 }
 
 function exportUserActivity(employeeId) {
-    console.log(`Exporting activity for: ${employeeId}`);
-    if (typeof Utils !== 'undefined' && Utils.showToast) {
-        Utils.showToast(`Activity log exported for ${employeeId}!`, 'success');
-    } else {
-        alert(`Activity log exported for ${employeeId}!`);
+    const user = getUserActivityById(employeeId);
+    if (!user) {
+        if (typeof Utils !== 'undefined' && Utils.showToast) {
+            Utils.showToast('No activity data available to export', 'warning');
+        }
+        return;
     }
+
+    const rows = (user.logs || []).map((log) => ({
+        timestamp: formatLogTimestamp(log.created_at),
+        action: log.action || 'Action',
+        category: log.category || 'General',
+        endpoint: log.endpoint || 'N/A',
+        method: log.method || 'GET',
+        ip: log.ip_address || 'N/A',
+        response_code: log.response_code || 'N/A'
+    }));
+
+    const headers = ['Timestamp', 'Action', 'Category', 'Endpoint', 'Method', 'IP Address', 'Response Code'];
+    const csvLines = [headers.join(',')];
+
+    rows.forEach((row) => {
+        const values = [
+            row.timestamp,
+            row.action,
+            row.category,
+            row.endpoint,
+            row.method,
+            row.ip,
+            String(row.response_code)
+        ].map((value) => {
+            const normalized = String(value).replace(/\"/g, '""');
+            return /[",\n]/.test(normalized) ? `"${normalized}"` : normalized;
+        });
+
+        csvLines.push(values.join(','));
+    });
+
+    const csvContent = csvLines.join('\n');
+    const datePart = new Date().toISOString().split('T')[0];
+    const filename = `activity_${employeeId}_${datePart}.csv`;
+    downloadCsv(csvContent, filename);
+    if (typeof Utils !== 'undefined' && Utils.showToast) {
+        Utils.showToast(`Activity exported for ${employeeId}`, 'success');
+    }
+}
+
+function generateActivityReport(employeeId) {
+    exportUserActivity(employeeId);
+}
+
+function sendInactivityReminder(employeeId) {
+    const user = getUserActivityById(employeeId);
+    if (!user) {
+        if (typeof Utils !== 'undefined' && Utils.showToast) {
+            Utils.showToast('Unable to send reminder. User not found.', 'error');
+        }
+        return;
+    }
+
+    const message = `Reminder simulated for ${user.full_name} (${employeeId}) due to inactivity.`;
+    if (typeof Utils !== 'undefined' && Utils.showToast) {
+        Utils.showToast(message, 'info');
+    }
+}
+
+function getUserActivityById(employeeId) {
+    return activityUsersData.find((user) => user.employee_id === employeeId) || null;
+}
+
+function downloadCsv(content, filename) {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
 }

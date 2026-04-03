@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maintenance Manager Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --royal-blue: hsla(219, 89%, 53%, 1);
@@ -55,9 +56,32 @@
             align-items: center;
         }
 
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .brand-name {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.025em;
+        }
+
+        .brand-highlight {
+            color: #4fe200;
+        }
+
+        .header-divider {
+            width: 2px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
         .header-title {
-            font-size: 1.8rem;
-            font-weight: 700;
+            font-size: 1.4rem;
+            font-weight: 600;
             margin: 0;
         }
 
@@ -72,6 +96,24 @@
             align-items: center;
             gap: 10px;
             font-weight: 500;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: white;
+        }
+
+        .user-meta {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.85);
+            display: flex;
+            gap: 6px;
         }
 
         .user-avatar {
@@ -123,16 +165,6 @@
             border-right: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .sidebar h2 {
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #fff;
-            border-bottom: 2px solid rgba(255,255,255,0.2);
-            padding-bottom: 15px;
-        }
-
         .nav-item {
             display: flex;
             align-items: center;
@@ -146,14 +178,14 @@
 
         .nav-item:hover {
             background: rgba(255, 255, 255, 0.1);
-            border-left-color: #4e73df;
+            border-left-color: #fff;
             color: #fff;
-            transform: translateX(5px);
+            transform: none;
         }
 
         .nav-item.active {
             background: rgba(255, 255, 255, 0.15);
-            border-left-color: #4e73df;
+            border-left-color: #fff;
             font-weight: 600;
         }
 
@@ -352,8 +384,8 @@
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            text-transform: none;
+            letter-spacing: 0;
             text-decoration: none;
             display: inline-block;
             text-align: center;
@@ -695,6 +727,217 @@
             color: var(--royal-blue);
         }
 
+        .status-text {
+            display: inline-block;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .status-text.status-pending {
+            background: none;
+            color: #d97706;
+        }
+
+        .status-text.status-approved {
+            background: none;
+            color: var(--ok);
+        }
+
+        .status-text.status-critical {
+            background: none;
+            color: var(--danger);
+        }
+
+        .status-text.status-completed {
+            background: none;
+            color: var(--ok);
+        }
+
+        .status-text.status-normal {
+            background: none;
+            color: #6b7280;
+        }
+
+        /* Inventory-style dashboard cards */
+        .summary-card {
+            background: linear-gradient(135deg, var(--royal-blue), var(--tang-blue));
+            color: white;
+            padding: 28px 32px;
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            min-height: 180px;
+        }
+
+        .summary-card.clickable {
+            cursor: pointer;
+        }
+
+        .summary-card.clickable::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .summary-card.clickable:hover::before {
+            opacity: 1;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.25);
+        }
+
+        .summary-card-content {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            flex: 1;
+        }
+
+        .summary-icon {
+            width: 75px;
+            height: 75px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-details {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .summary-title {
+            font-size: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            opacity: 0.9;
+        }
+
+        .summary-number {
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-description {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            line-height: 1.5;
+            max-width: 280px;
+        }
+
+        .summary-arrow {
+            font-size: 1.8rem;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+            margin-left: 20px;
+        }
+
+        .summary-card.clickable:hover .summary-arrow {
+            opacity: 1;
+            transform: translateX(5px);
+        }
+
+        .recent-activities {
+            background: var(--card);
+            border-radius: 18px;
+            padding: 0;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-top: 30px;
+        }
+
+        .section-header {
+            background: linear-gradient(135deg, #f7f9fb 0%, #eef1f4 100%);
+            padding: 20px 30px;
+            border-bottom: 2px solid var(--stone-200);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: var(--royal-blue);
+            margin: 0;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .activities-list {
+            padding: 0;
+        }
+
+        .activity-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 25px 30px;
+            border-bottom: 1px solid var(--stone-200);
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-item:hover {
+            background: #fafcff;
+            transform: translateX(5px);
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-900);
+            margin-bottom: 8px;
+        }
+
+        .activity-meta {
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .activity-description {
+            font-size: 0.95rem;
+            color: var(--text-700);
+            line-height: 1.5;
+        }
+
+        .activity-status {
+            margin-left: 20px;
+            flex-shrink: 0;
+        }
+
         /* Tabs */
         .tab-container {
             margin-bottom: 20px;
@@ -735,9 +978,18 @@
             .header {
                 padding: 10px 15px;
             }
+
+            .header-left {
+                gap: 10px;
+            }
+
+            .brand-name,
+            .header-divider {
+                display: none;
+            }
             
             .header-title {
-                font-size: 1.4rem;
+                font-size: 1.05rem;
             }
             
             .user-info {
@@ -780,16 +1032,30 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="./inventory-manager/style.css">
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <h1 class="header-title">Maintenance Manager Dashboard</h1>
+            <div class="header-left">
+                <div class="brand-logo">
+                    <span class="brand-name">AssetCare<span class="brand-highlight">360</span></span>
+                </div>
+                <div class="header-divider"></div>
+                <h1 class="header-title"><i class="fas fa-tools"></i> Maintenance Manager Dashboard</h1>
+            </div>
             <div class="header-user">
-                <div class="user-info">
+                <div class="user-info" onclick="window.location.href='/profile/index.html'" style="cursor: pointer; transition: all 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'; this.style.borderRadius='8px'" onmouseout="this.style.backgroundColor='transparent'" title="View Profile">
                     <div class="user-avatar">MM</div>
-                    <span>Maintenance Manager</span>
+                    <div class="user-details">
+                        <div class="user-name">Maintenance Manager</div>
+                        <div class="user-meta">
+                            <span>LITRO-MAINTMGR</span>
+                            <span class="separator">•</span>
+                            <span>Maintenance Manager</span>
+                        </div>
+                    </div>
                 </div>
                 <button class="logout-btn" onclick="logout()">
                     <span><i class="fas fa-sign-out-alt"></i></span>
@@ -800,7 +1066,6 @@
 
         <div class="main-wrapper">
             <aside class="sidebar">
-                <h2>Maintenance Manager</h2>
                 <nav>
                     <div class="nav-item active" data-section="dashboard">
                         <span class="nav-icon"><i class="fas fa-chart-bar"></i></span>
@@ -837,137 +1102,128 @@
                 <!-- Dashboard Section -->
                 <section class="content-section active" id="dashboard">
                     <div class="page-header">
-                        <h1 class="page-title">Dashboard</h1>
-                        <p class="page-subtitle">Maintenance Manager Overview</p>
+                        <h2 class="page-title"><i class="fas fa-chart-line"></i> Dashboard Overview</h2>
+                        <p class="page-subtitle">Welcome! Here's your maintenance management summary</p>
                     </div>
 
-                    <!-- Key Metrics -->
                     <div class="grid">
-                        <div class="stats-card stats-urgent">
-                            <div class="stats-number">5</div>
-                            <div class="stats-label">Pending Cost Approvals</div>
-                        </div>
-                        <div class="stats-card stats-pending">
-                            <div class="stats-number">23</div>
-                            <div class="stats-label">Active Fault Tickets</div>
-                        </div>
-                        <div class="stats-card stats-active">
-                            <div class="stats-number">3</div>
-                            <div class="stats-label">Reports Under Review</div>
-                        </div>
-                    </div>
-
-                    <!-- Summary Cards -->
-                    <div class="grid">
-                        <!-- Recent Fault Tickets -->
-                        <div class="card">
-                            <div class="card-header"><i class="fas fa-ticket-alt"></i> Recent Fault Tickets</div>
-                            <div class="ticket-item" onclick="navigateToSection('fault-tickets')">
-                                <div class="ticket-details">
-                                    <strong>TKT-001</strong>
-                                    <div class="ticket-meta">Vehicle #101 | Reporter: John Driver</div>
-                                    <div class="ticket-issue">Engine overheating</div>
+                        <div class="summary-card clickable" onclick="navigateToSection('cost-approvals')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-money-check-alt"></i>
                                 </div>
-                                <div class="ticket-actions">
-                                    <span class="status-badge status-in-progress">In Progress</span>
+                                <div class="summary-details">
+                                    <div class="summary-title">Pending Cost Approvals</div>
+                                    <div class="summary-number">5</div>
+                                    <div class="summary-description">requests awaiting manager decision</div>
                                 </div>
                             </div>
-                            <div class="ticket-item" onclick="navigateToSection('fault-tickets')">
-                                <div class="ticket-details">
-                                    <strong>TKT-002</strong>
-                                    <div class="ticket-meta">Machine #205 | Reporter: Mike Operator</div>
-                                    <div class="ticket-issue">Hydraulic leak</div>
-                                </div>
-                                <div class="ticket-actions">
-                                    <span class="status-badge status-pending">Pending</span>
-                                </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
                             </div>
-                            <button class="btn btn-secondary btn-small" onclick="navigateToSection('fault-tickets')" style="width: 100%; margin-top: 10px;">View All Tickets</button>
                         </div>
 
-                        <!-- Pending Cost Approvals -->
-                        <div class="card">
-                            <div class="card-header"><i class="fas fa-money-bill-wave"></i> Pending Cost Approvals</div>
-                            <div class="request-item" onclick="navigateToSection('cost-approvals')">
-                                <div class="ticket-details">
-                                    <strong>CA-001</strong>
-                                    <div class="ticket-meta">Engine overhaul - Vehicle #101</div>
-                                    <div class="ticket-meta">Amount: ₹45,000</div>
+                        <div class="summary-card clickable" onclick="navigateToSection('fault-tickets')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-ticket-alt"></i>
                                 </div>
-                                <div class="ticket-actions">
-                                    <span class="status-badge status-pending">Pending</span>
+                                <div class="summary-details">
+                                    <div class="summary-title">Active Fault Tickets</div>
+                                    <div class="summary-number">23</div>
+                                    <div class="summary-description">equipment issues currently in workflow</div>
                                 </div>
                             </div>
-                            <div class="request-item" onclick="navigateToSection('cost-approvals')">
-                                <div class="ticket-details">
-                                    <strong>CA-002</strong>
-                                    <div class="ticket-meta">Hydraulic pump - Machine #205</div>
-                                    <div class="ticket-meta">Amount: ₹32,000</div>
-                                </div>
-                                <div class="ticket-actions">
-                                    <span class="status-badge status-pending">Pending</span>
-                                </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
                             </div>
-                            <button class="btn btn-secondary btn-small" onclick="navigateToSection('cost-approvals')" style="width: 100%; margin-top: 10px;">Review All Approvals</button>
                         </div>
-                    </div>
 
-                    <!-- Critical Notifications -->
-                    <div class="card">
-                        <div class="card-header"><i class="fas fa-exclamation-circle"></i> Critical Notifications</div>
-                        <div class="notification-item danger">
-                            <span class="notification-icon"><i class="fas fa-clock"></i></span>
-                            <div>
-                                <strong>Warranty Expiring:</strong> 3 warranty claims expire this week
+                        <div class="summary-card clickable" onclick="navigateToSection('service-reports')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-clipboard-list"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Reports Under Review</div>
+                                    <div class="summary-number">3</div>
+                                    <div class="summary-description">technical reports waiting for approval</div>
+                                </div>
+                            </div>
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
                             </div>
                         </div>
-                        <div class="notification-item warning">
-                            <span class="notification-icon"><i class="fas fa-money-bill-wave"></i></span>
-                            <div>
-                                <strong>Cost Approval:</strong> Engine repair cost ₹45,000 pending approval
+
+                        <div class="summary-card clickable" onclick="navigateToSection('service-warranty')">
+                            <div class="summary-card-content">
+                                <div class="summary-icon">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <div class="summary-details">
+                                    <div class="summary-title">Warranty Alerts</div>
+                                    <div class="summary-number">3</div>
+                                    <div class="summary-description">warranty and service alerts this week</div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="notification-item info">
-                            <span class="notification-icon"><i class="fas fa-clipboard-list"></i></span>
-                            <div>
-                                <strong>Service Reports:</strong> 3 reports pending review
+                            <div class="summary-arrow">
+                                <i class="fas fa-chevron-right"></i>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Recent Activities -->
-                    <div class="card">
-                        <div class="card-header"><i class="fas fa-file-alt"></i> Recent Activities</div>
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Time</th>
-                                    <th>Activity</th>
-                                    <th>User</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>10:30 AM</td>
-                                    <td>Cost approval request - Engine repair</td>
-                                    <td>Supervisor John</td>
-                                    <td><span class="status-badge status-pending">Pending</span></td>
-                                </tr>
-                                <tr>
-                                    <td>09:15 AM</td>
-                                    <td>Service report uploaded - Vehicle #089</td>
-                                    <td>Technical Officer</td>
-                                    <td><span class="status-badge status-under-review">Under Review</span></td>
-                                </tr>
-                                <tr>
-                                    <td>08:45 AM</td>
-                                    <td>Fault ticket created - Machine #205</td>
-                                    <td>Operator Mike</td>
-                                    <td><span class="status-badge status-in-progress">Active</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="recent-activities">
+                        <div class="section-header">
+                            <h3 class="section-title">
+                                <i class="fas fa-chart-line"></i> Recent Activities
+                            </h3>
+                        </div>
+
+                        <div class="activities-list">
+                            <div class="activity-item" onclick="navigateToSection('cost-approvals')">
+                                <div class="activity-content">
+                                    <div class="activity-title">Cost Approval Request</div>
+                                    <div class="activity-meta">Request: CA-001 | Supervisor: John | 2 hours ago</div>
+                                    <div class="activity-description">Engine overhaul request for Vehicle #101 is awaiting approval.</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-text status-pending">PENDING</span>
+                                </div>
+                            </div>
+
+                            <div class="activity-item" onclick="navigateToSection('service-reports')">
+                                <div class="activity-content">
+                                    <div class="activity-title">Service Report Submitted</div>
+                                    <div class="activity-meta">Report: SR-004 | Technical Officer B | 4 hours ago</div>
+                                    <div class="activity-description">Vehicle #067 engine overhaul report submitted for manager review.</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-text status-normal">UNDER REVIEW</span>
+                                </div>
+                            </div>
+
+                            <div class="activity-item" onclick="navigateToSection('service-warranty')">
+                                <div class="activity-content">
+                                    <div class="activity-title">Warranty Expiry Alert</div>
+                                    <div class="activity-meta">Asset: Vehicle #089 Brake System | 6 hours ago</div>
+                                    <div class="activity-description">Warranty is expiring soon and action is required to avoid out-of-coverage repairs.</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-text status-critical">CRITICAL</span>
+                                </div>
+                            </div>
+
+                            <div class="activity-item" onclick="navigateToSection('fault-tickets')">
+                                <div class="activity-content">
+                                    <div class="activity-title">Fault Ticket Assigned</div>
+                                    <div class="activity-meta">Ticket: TKT-010 | Assigned to Technical Officer Anil | 7 hours ago</div>
+                                    <div class="activity-description">Electrical system fault for Machine #420 moved to active service stage.</div>
+                                </div>
+                                <div class="activity-status">
+                                    <span class="status-text status-completed">IN PROGRESS</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -980,170 +1236,16 @@
 
                     <!-- Filter Controls -->
                     <div class="filter-controls">
-                        <button class="filter-btn active" onclick="filterTickets('all')">All Tickets</button>
-                        <button class="filter-btn" onclick="filterTickets('pending')">Pending</button>
-                        <button class="filter-btn" onclick="filterTickets('in-progress')">In Progress</button>
-                        <button class="filter-btn" onclick="filterTickets('complete')">Completed</button>
+                        <button class="filter-btn active" onclick="filterTickets('all', event)">All Tickets</button>
+                        <button class="filter-btn" onclick="filterTickets('pending', event)">Pending</button>
+                        <button class="filter-btn" onclick="filterTickets('in-progress', event)">In Progress</button>
+                        <button class="filter-btn" onclick="filterTickets('complete', event)">Completed</button>
                     </div>
 
                     <div class="card">
                         <div class="card-header"><i class="fas fa-ticket-alt"></i> All Fault Tickets</div>
-                        
-                        <!-- Tickets from Drivers -->
-                        <div class="ticket-item" data-status="in-progress" onclick="viewTicketDetails('TKT-001')">
-                            <div class="ticket-details">
-                                <strong>TKT-001</strong>
-                                <div class="ticket-meta"><i class="fas fa-car"></i> Vehicle LKA-1234 | <i class="fas fa-user"></i> Reporter: Driver Kamal | <i class="fas fa-clipboard-list"></i> Via: Supervisor John</div>
-                                <div class="ticket-issue">Engine overheating - Temperature gauge showing red zone during highway drive</div>
-                                <div class="ticket-meta">Created: Aug 20, 2025 | Assigned: Technical Officer Nimal | Priority: High</div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-in-progress">In Progress</span>
-                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); viewTicketDetails('TKT-001')">View Details</button>
-                            </div>
-                        </div>
-
-                        <div class="ticket-item" data-status="pending" onclick="viewTicketDetails('TKT-002')">
-                            <div class="ticket-details">
-                                <strong>TKT-002</strong>
-                                <div class="ticket-meta"><i class="fas fa-industry"></i> Machine #205 | <i class="fas fa-user"></i> Reporter: Operator Mike | <i class="fas fa-clipboard-list"></i> Via: Supervisor Mike</div>
-                                <div class="ticket-issue">Hydraulic leak - Fluid pooling under main cylinder assembly</div>
-                                <div class="ticket-meta">Created: Aug 22, 2025 | Status: Awaiting assignment | Priority: Medium</div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-pending">Pending</span>
-                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); viewTicketDetails('TKT-002')">View Details</button>
-                            </div>
-                        </div>
-
-                        <div class="ticket-item" data-status="complete" onclick="viewTicketDetails('TKT-003')">
-                            <div class="ticket-details">
-                                <strong>TKT-003</strong>
-                                <div class="ticket-meta"><i class="fas fa-car"></i> Vehicle LKA-5678 | <i class="fas fa-user"></i> Reporter: Driver Sarah | <i class="fas fa-clipboard-list"></i> Via: Supervisor John</div>
-                                <div class="ticket-issue">Brake system malfunction - Reduced braking efficiency, grinding noise</div>
-                                <div class="ticket-meta">Completed: Aug 19, 2025 | Duration: 21 hours | Resolved by: Tech Officer Anil</div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-complete">Completed</span>
-                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); viewTicketDetails('TKT-003')">View Details</button>
-                            </div>
-                        </div>
-
-                        <div class="ticket-item" data-status="in-progress" onclick="viewTicketDetails('TKT-004')">
-                            <div class="ticket-details">
-                                <strong>TKT-004</strong>
-                                <div class="ticket-meta"><i class="fas fa-industry"></i> Machine #180 | <i class="fas fa-user"></i> Reporter: Operator Tom | <i class="fas fa-clipboard-list"></i> Via: Supervisor Mike</div>
-                                <div class="ticket-issue">Engine smoke - Black smoke from exhaust, power loss</div>
-                                <div class="ticket-meta">Created: Aug 23, 2025 | Assigned: Technical Officer Sunil | Priority: High</div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-in-progress">In Progress</span>
-                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); viewTicketDetails('TKT-004')">View Details</button>
-                            </div>
-                        </div>
-
-                        <div class="ticket-item" data-status="pending" onclick="viewTicketDetails('TKT-005')">
-                            <div class="ticket-details">
-                                <strong>TKT-005</strong>
-                                <div class="ticket-meta"><i class="fas fa-car"></i> Vehicle LKA-9012 | <i class="fas fa-user"></i> Reporter: Driver Nimal | <i class="fas fa-clipboard-list"></i> Via: Supervisor Lisa</div>
-                                <div class="ticket-issue">Steering wheel vibration - Excessive vibration at high speeds</div>
-                                <div class="ticket-meta">Created: Aug 24, 2025 | Status: Awaiting parts | Priority: Medium</div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-pending">Pending</span>
-                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); viewTicketDetails('TKT-005')">View Details</button>
-                            </div>
-                        </div>
-
-                        <div class="ticket-item" data-status="pending" onclick="viewTicketDetails('TKT-006')">
-                            <div class="ticket-details">
-                                <strong>TKT-006</strong>
-                                <div class="ticket-meta"><i class="fas fa-industry"></i> Machine #312 | <i class="fas fa-user"></i> Reporter: Operator Saman | <i class="fas fa-clipboard-list"></i> Via: Supervisor Mike</div>
-                                <div class="ticket-issue">Cooling system failure - Engine temperature rising, coolant leak detected</div>
-                                <div class="ticket-meta">Created: Aug 25, 2025 | Status: Awaiting assignment | Priority: High</div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-urgent">Pending</span>
-                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); viewTicketDetails('TKT-006')">View Details</button>
-                            </div>
-                        </div>
-
-                        <div class="ticket-item" data-status="in-progress" onclick="viewTicketDetails('TKT-007')">
-                            <div class="ticket-details">
-                                <strong>TKT-007</strong>
-                                <div class="ticket-meta"><i class="fas fa-car"></i> Vehicle LKA-3456 | <i class="fas fa-user"></i> Reporter: Driver Anil | <i class="fas fa-clipboard-list"></i> Via: Supervisor John</div>
-                                <div class="ticket-issue">Transmission slipping - Difficulty in gear shifting, delayed engagement</div>
-                                <div class="ticket-meta">Created: Aug 25, 2025 | Assigned: Technical Officer Nimal | Priority: Medium</div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-in-progress">In Progress</span>
-                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); viewTicketDetails('TKT-007')">View Details</button>
-                            </div>
-                        </div>
-
-                        <div class="ticket-item" data-status="complete" onclick="viewTicketDetails('TKT-008')">
-                            <div class="ticket-details">
-                                <strong>TKT-008</strong>
-                                <div class="ticket-meta"><i class="fas fa-industry"></i> Machine #150 | <i class="fas fa-user"></i> Reporter: Operator Damindu | <i class="fas fa-clipboard-list"></i> Via: Supervisor Mike</div>
-                                <div class="ticket-issue">Gas cylinder valve replacement - Pressure valve malfunction</div>
-                                <div class="ticket-meta">Completed: Aug 18, 2025 | Duration: 8 hours | Resolved by: Tech Officer Sunil</div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-complete">Completed</span>
-                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); viewTicketDetails('TKT-008')">View Details</button>
-                            </div>
-                        </div>
-
-                        <div class="ticket-item" data-status="pending" onclick="viewTicketDetails('TKT-009')">
-                            <div class="ticket-details">
-                                <strong>TKT-009</strong>
-                                <div class="ticket-meta"><i class="fas fa-car"></i> Vehicle LKA-7890 | <i class="fas fa-user"></i> Reporter: Driver Sunil | <i class="fas fa-clipboard-list"></i> Via: Supervisor Lisa</div>
-                                <div class="ticket-issue">Battery failure - Vehicle won't start, electrical system issues</div>
-                                <div class="ticket-meta">Created: Aug 26, 2025 | Status: Parts ordered | Priority: High</div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-pending">Pending</span>
-                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); viewTicketDetails('TKT-009')">View Details</button>
-                            </div>
-                        </div>
-
-                        <div class="ticket-item" data-status="in-progress" onclick="viewTicketDetails('TKT-010')">
-                            <div class="ticket-details">
-                                <strong>TKT-010</strong>
-                                <div class="ticket-meta"><i class="fas fa-industry"></i> Machine #420 | <i class="fas fa-user"></i> Reporter: Operator Pradeep | <i class="fas fa-clipboard-list"></i> Via: Supervisor Mike</div>
-                                <div class="ticket-issue">Electrical system fault - Control panel unresponsive, display errors</div>
-                                <div class="ticket-meta">Created: Aug 26, 2025 | Assigned: Technical Officer Anil | Priority: Medium</div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-in-progress">In Progress</span>
-                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); viewTicketDetails('TKT-010')">View Details</button>
-                            </div>
-                        </div>
-
-                        <div class="ticket-item" data-status="complete" onclick="viewTicketDetails('TKT-011')">
-                            <div class="ticket-details">
-                                <strong>TKT-011</strong>
-                                <div class="ticket-meta"><i class="fas fa-car"></i> Vehicle LKA-2345 | <i class="fas fa-user"></i> Reporter: Driver Chaminda | <i class="fas fa-clipboard-list"></i> Via: Supervisor John</div>
-                                <div class="ticket-issue">Air conditioning failure - No cooling, compressor noise</div>
-                                <div class="ticket-meta">Completed: Aug 21, 2025 | Duration: 5 hours | Resolved by: Tech Officer Nimal</div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-complete">Completed</span>
-                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); viewTicketDetails('TKT-011')">View Details</button>
-                            </div>
-                        </div>
-
-                        <div class="ticket-item" data-status="pending" onclick="viewTicketDetails('TKT-012')">
-                            <div class="ticket-details">
-                                <strong>TKT-012</strong>
-                                <div class="ticket-meta"><i class="fas fa-industry"></i> Machine #505 | <i class="fas fa-user"></i> Reporter: Operator Ruwan | <i class="fas fa-clipboard-list"></i> Via: Supervisor Mike</div>
-                                <div class="ticket-issue">Fuel system clogged - Engine sputtering, poor fuel efficiency</div>
-                                <div class="ticket-meta">Created: Aug 27, 2025 | Status: Awaiting assignment | Priority: Low</div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-pending">Pending</span>
-                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); viewTicketDetails('TKT-012')">View Details</button>
-                            </div>
+                        <div id="faultTicketsList">
+                            <div style="padding: 16px; color: var(--muted);">Loading fault tickets...</div>
                         </div>
                     </div>
 
@@ -2245,6 +2347,141 @@
             });
         }
 
+        let liveFaultTickets = [];
+        let currentFaultTicketFilter = 'all';
+
+        function getApiBaseUrl() {
+            const host = window.location.hostname;
+            const isLocal = ['localhost', '127.0.0.1', '0.0.0.0', '::1'].includes(host) || host.endsWith('.local');
+            return isLocal ? 'http://localhost:8000/api' : `${window.location.origin}/api`;
+        }
+
+        function escapeHtml(value) {
+            const div = document.createElement('div');
+            div.textContent = String(value ?? '');
+            return div.innerHTML;
+        }
+
+        function mapTicketStatusToFilter(status) {
+            const normalized = String(status || '').toLowerCase();
+            if (normalized === 'in progress') {
+                return 'in-progress';
+            }
+            if (normalized === 'resolved' || normalized === 'closed') {
+                return 'complete';
+            }
+            return 'pending';
+        }
+
+        function getStatusBadgeClass(filterStatus) {
+            if (filterStatus === 'in-progress') return 'status-in-progress';
+            if (filterStatus === 'complete') return 'status-complete';
+            return 'status-pending';
+        }
+
+        function getRoleIcon(role) {
+            const normalized = String(role || '').toLowerCase();
+            if (normalized.includes('driver')) {
+                return 'fa-car';
+            }
+            return 'fa-industry';
+        }
+
+        function formatTicketDate(timestamp) {
+            if (!timestamp) return 'N/A';
+            const d = new Date(timestamp);
+            if (Number.isNaN(d.getTime())) return 'N/A';
+            return d.toLocaleString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function getTicketAssignee(ticket) {
+            if (Array.isArray(ticket.assignments) && ticket.assignments.length > 0) {
+                return ticket.assignments[0].technician_name || ticket.assignments[0].technician_employee_id || 'Assigned';
+            }
+            return 'Unassigned';
+        }
+
+        async function loadFaultTickets() {
+            const listEl = document.getElementById('faultTicketsList');
+            if (listEl) {
+                listEl.innerHTML = '<div style="padding:16px; color: var(--muted);">Loading fault tickets from drivers and machinary operators...</div>';
+            }
+
+            try {
+                const token = localStorage.getItem('auth_token');
+                const response = await fetch(`${getApiBaseUrl()}/fault-tickets`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { Authorization: `Bearer ${token}` } : {})
+                    }
+                });
+
+                const payload = await response.json();
+                const tickets = (payload?.status === 'success' && Array.isArray(payload?.data?.tickets))
+                    ? payload.data.tickets
+                    : [];
+
+                liveFaultTickets = tickets.filter((ticket) => {
+                    const role = String(ticket.reporter_role || '').toLowerCase();
+                    return role === 'driver' || role === 'machinary operator' || role === 'machinery operator';
+                });
+
+                renderFaultTickets();
+            } catch (error) {
+                console.error('Failed to load fault tickets:', error);
+                if (listEl) {
+                    listEl.innerHTML = '<div style="padding:16px; color: var(--danger);">Failed to load fault tickets.</div>';
+                }
+            }
+        }
+
+        function renderFaultTickets() {
+            const listEl = document.getElementById('faultTicketsList');
+            if (!listEl) return;
+
+            const filtered = liveFaultTickets.filter((ticket) => {
+                const mapped = mapTicketStatusToFilter(ticket.status);
+                return currentFaultTicketFilter === 'all' || mapped === currentFaultTicketFilter;
+            });
+
+            if (!filtered.length) {
+                listEl.innerHTML = '<div style="padding:16px; color: var(--muted);">No fault tickets found for drivers or machinary operators.</div>';
+                return;
+            }
+
+            listEl.innerHTML = filtered.map((ticket) => {
+                const mappedStatus = mapTicketStatusToFilter(ticket.status);
+                const badgeClass = getStatusBadgeClass(mappedStatus);
+                const reporterRole = ticket.reporter_role || 'Reporter';
+                const reporterName = ticket.reported_by_name || ticket.reporter_employee_id || 'Unknown';
+                const equipment = ticket.machine_name
+                    ? `${ticket.machine_name}${ticket.machine_model_number ? ` (${ticket.machine_model_number})` : ''}`
+                    : (ticket.breakdown_type ? String(ticket.breakdown_type).replace(/_/g, ' ') : 'Equipment');
+
+                return `
+                    <div class="ticket-item" data-status="${mappedStatus}" onclick="viewTicketDetails('${escapeHtml(ticket.ticket_id)}')">
+                        <div class="ticket-details">
+                            <strong>${escapeHtml(ticket.ticket_id)}</strong>
+                            <div class="ticket-meta"><i class="fas ${getRoleIcon(reporterRole)}"></i> ${escapeHtml(equipment)} | <i class="fas fa-user"></i> Reporter: ${escapeHtml(reporterRole)} ${escapeHtml(reporterName)}</div>
+                            <div class="ticket-issue">${escapeHtml(ticket.description || 'No description')}</div>
+                            <div class="ticket-meta">Created: ${escapeHtml(formatTicketDate(ticket.created_at))} | Assigned: ${escapeHtml(getTicketAssignee(ticket))} | Priority: ${escapeHtml(ticket.priority || 'Medium')}</div>
+                        </div>
+                        <div class="ticket-actions">
+                            <span class="status-badge ${badgeClass}">${escapeHtml(ticket.status || 'Pending')}</span>
+                            <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); viewTicketDetails('${escapeHtml(ticket.ticket_id)}')">View Details</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         function getDateStatus(dueDateString) {
             const today = new Date();
             const dueDate = new Date(dueDateString);
@@ -2291,6 +2528,10 @@
                 
                 const sectionId = this.getAttribute('data-section');
                 document.getElementById(sectionId).classList.add('active');
+
+                if (sectionId === 'fault-tickets') {
+                    loadFaultTickets();
+                }
             });
         });
 
@@ -2304,18 +2545,15 @@
         }
 
         // Filter functionality
-        function filterTickets(status) {
+        function filterTickets(status, evt) {
             document.querySelectorAll('#fault-tickets .filter-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            const clickEvent = evt || window.event;
+            if (clickEvent && clickEvent.target) {
+                clickEvent.target.classList.add('active');
+            }
 
-            const tickets = document.querySelectorAll('.ticket-item');
-            tickets.forEach(ticket => {
-                if (status === 'all' || ticket.getAttribute('data-status') === status) {
-                    ticket.style.display = 'flex';
-                } else {
-                    ticket.style.display = 'none';
-                }
-            });
+            currentFaultTicketFilter = status;
+            renderFaultTickets();
         }
 
         function filterCostApprovals(status) {
@@ -2418,6 +2656,10 @@
             
             document.querySelector(`[data-section="${sectionId}"]`).classList.add('active');
             document.getElementById(sectionId).classList.add('active');
+
+            if (sectionId === 'fault-tickets') {
+                loadFaultTickets();
+            }
         }
 
         // Toast notification
@@ -2433,7 +2675,51 @@
 
         // Specific functionality
         function viewTicketDetails(ticketId) {
-            const ticket = ticketData[ticketId];
+            let ticket = liveFaultTickets.find((t) => t.ticket_id === ticketId);
+
+            if (ticket) {
+                const equipment = ticket.machine_name
+                    ? `${ticket.machine_name}${ticket.machine_model_number ? ` (${ticket.machine_model_number})` : ''}`
+                    : (ticket.breakdown_type ? String(ticket.breakdown_type).replace(/_/g, ' ') : 'Equipment');
+
+                const assignments = (Array.isArray(ticket.assignments) && ticket.assignments.length)
+                    ? ticket.assignments.map((a) => `${a.technician_name || a.technician_employee_id || 'Assigned'} (${a.assignment_status || 'assigned'})`).join(', ')
+                    : 'Unassigned';
+
+                const content = `
+                    <div class="form-section">
+                        <h5><i class="fas fa-ticket-alt"></i> Ticket Information</h5>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div><strong>Ticket ID:</strong> ${escapeHtml(ticket.ticket_id)}</div>
+                            <div><strong>Equipment:</strong> ${escapeHtml(equipment)}</div>
+                            <div><strong>Reporter:</strong> ${escapeHtml(ticket.reported_by_name || ticket.reporter_employee_id || 'Unknown')}</div>
+                            <div><strong>Reporter Role:</strong> ${escapeHtml(ticket.reporter_role || 'Unknown')}</div>
+                            <div><strong>Assigned To:</strong> ${escapeHtml(assignments)}</div>
+                            <div><strong>Priority:</strong> ${escapeHtml(ticket.priority || 'Medium')}</div>
+                            <div><strong>Status:</strong> <span class="status-badge ${getStatusBadgeClass(mapTicketStatusToFilter(ticket.status))}">${escapeHtml(ticket.status || 'Pending')}</span></div>
+                            <div><strong>Location:</strong> ${escapeHtml(ticket.location || 'N/A')}</div>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <strong>Issue Description:</strong><br>
+                            ${escapeHtml(ticket.description || 'No description')}
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <strong>Created At:</strong> ${escapeHtml(formatTicketDate(ticket.created_at))}<br>
+                            <strong>Updated At:</strong> ${escapeHtml(formatTicketDate(ticket.updated_at))}
+                        </div>
+                        <div>
+                            <strong>Resolution Notes:</strong><br>
+                            ${escapeHtml(ticket.resolution_notes || 'N/A')}
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('ticketDetailsContent').innerHTML = content;
+                openModal('ticketDetailsModal');
+                return;
+            }
+
+            ticket = ticketData[ticketId];
             if (ticket) {
                 const content = `
                     <div class="form-section">
@@ -2470,6 +2756,12 @@
                 openModal('ticketDetailsModal');
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (document.getElementById('fault-tickets')?.classList.contains('active')) {
+                loadFaultTickets();
+            }
+        });
 
         function viewWarrantyDetails(warrantyId) {
             const warranty = warrantyData[warrantyId];

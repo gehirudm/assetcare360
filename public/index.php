@@ -69,6 +69,7 @@ require_once __DIR__ . '/../app/controllers/TicketWorkUpdateController.php';
 require_once __DIR__ . '/../app/controllers/BudgetReportController.php';
 require_once __DIR__ . '/../app/controllers/FileController.php';
 require_once __DIR__ . '/../app/controllers/VehicleCheckController.php';
+require_once __DIR__ . '/../app/controllers/FuelLogController.php';
 require_once __DIR__ . '/../app/controllers/MachineWeeklyCheckController.php';
 require_once __DIR__ . '/../app/controllers/BreakdownReportController.php';
 require_once __DIR__ . '/../app/controllers/RouteBreakdownController.php';
@@ -107,6 +108,7 @@ $router->get('/technicians', 'UserController', 'getTechnicians');
 
 // User management routes (Admin only)
 $router->get('/users/stats', 'UserController', 'stats');
+$router->get('/users/next-employee-id', 'UserController', 'nextEmployeeId');
 $router->get('/users', 'UserController', 'index');
 $router->post('/users', 'UserController', 'create');
 $router->get('/users/:id', 'UserController', 'show');
@@ -163,6 +165,12 @@ $router->post('/vehicle-checks', 'VehicleCheckController', 'store');
 $router->get('/vehicle-checks/:id', 'VehicleCheckController', 'show');
 $router->put('/vehicle-checks/:id/approve', 'VehicleCheckController', 'approve');
 $router->put('/vehicle-checks/:id/reject', 'VehicleCheckController', 'reject');
+
+// Fuel log routes (Driver)
+$router->get('/fuel-logs/next-id', 'FuelLogController', 'nextId');
+$router->get('/fuel-logs', 'FuelLogController', 'index');
+$router->post('/fuel-logs', 'FuelLogController', 'store');
+$router->get('/fuel-logs/:id', 'FuelLogController', 'show');
 
 // Machine weekly check routes (Machinery Operator, Supervisor)
 $router->get('/machine-weekly-checks/next-id', 'MachineWeeklyCheckController', 'nextId');
