@@ -243,54 +243,6 @@ class UserService {
             'data' => $this->userModel->getUserStats()
         ];
     }
-
-    /**
-     * Get next employee ID for a given role
-     */
-    public function getNextEmployeeIdForRole($role) {
-        if (empty($role)) {
-            return [
-                'success' => false,
-                'message' => 'Role is required'
-            ];
-        }
-
-        $validRoles = [
-            'Admin',
-            'Maintenance Manager',
-            'Inventory Manager',
-            'Transportation Manager',
-            'Technical Officer',
-            'Supervisor',
-            'Machinary Operator',
-            'Driver',
-            'Auction Officer'
-        ];
-
-        if (!in_array($role, $validRoles, true)) {
-            return [
-                'success' => false,
-                'message' => 'Invalid role'
-            ];
-        }
-
-        $nextEmployeeId = $this->userModel->getNextEmployeeIdByRole($role);
-
-        if (!$nextEmployeeId) {
-            return [
-                'success' => false,
-                'message' => 'Could not generate employee ID'
-            ];
-        }
-
-        return [
-            'success' => true,
-            'data' => [
-                'role' => $role,
-                'next_employee_id' => $nextEmployeeId
-            ]
-        ];
-    }
     
     /**
      * Validate user data
@@ -316,7 +268,6 @@ class UserService {
                 'Admin',
                 'Maintenance Manager',
                 'Inventory Manager',
-                'Transportation Manager',
                 'Technical Officer',
                 'Supervisor',
                 'Machinary Operator',

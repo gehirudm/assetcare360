@@ -11,7 +11,6 @@ class RoleMiddleware {
         'Admin' => 8,
         'Maintenance Manager' => 7,
         'Inventory Manager' => 6,
-        'Transportation Manager' => 6,
         'Technical Officer' => 5,
         'Supervisor' => 4,
         'Auction Officer' => 3,
