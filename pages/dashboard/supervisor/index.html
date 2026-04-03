@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Supervisor Dashboard - AssetCare360</title>
-    
+
     <!-- FontAwesome -->
     <script src="https://kit.fontawesome.com/a422e631ad.js" crossorigin="anonymous"></script>
-    
+
     <!-- Styles -->
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="container">
         <!-- Header -->
@@ -25,7 +27,10 @@
                 </h1>
             </div>
             <div class="header-user">
-                <div class="user-info" onclick="window.location.href='/profile/index.html'" style="cursor: pointer; transition: all 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'; this.style.borderRadius='8px'" onmouseout="this.style.backgroundColor='transparent'" title="View Profile">
+                <div class="user-info" onclick="window.location.href='/profile/index.html'"
+                    style="cursor: pointer; transition: all 0.2s;"
+                    onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'; this.style.borderRadius='8px'"
+                    onmouseout="this.style.backgroundColor='transparent'" title="View Profile">
                     <div class="user-avatar" id="userAvatar">S</div>
                     <div class="user-details">
                         <div class="user-name" id="userName">Loading...</div>
@@ -72,9 +77,9 @@
                         <i class="nav-icon fas fa-truck"></i>
                         <span>Asset Status</span>
                     </div>
-                    <div class="nav-item" data-section="technician-assignments">
+                    <div class="nav-item" data-section="technicians">
                         <i class="nav-icon fas fa-user-cog"></i>
-                        <span>Technician Assignments</span>
+                        <span>Technicians</span>
                     </div>
                 </nav>
             </aside>
@@ -168,7 +173,8 @@
                                 <div class="activity-content">
                                     <div class="activity-title">Weekly Check Approved</div>
                                     <div class="activity-meta">Driver: John Doe | Vehicle: V-101 | 2 hours ago</div>
-                                    <div class="activity-description">All checks passed, vehicle cleared for operation</div>
+                                    <div class="activity-description">All checks passed, vehicle cleared for operation
+                                    </div>
                                 </div>
                                 <div class="activity-status">
                                     <span class="status-text status-approved">APPROVED</span>
@@ -179,7 +185,8 @@
                             <div class="activity-item">
                                 <div class="activity-content">
                                     <div class="activity-title">Ticket Assigned</div>
-                                    <div class="activity-meta">Ticket: TKT-045 | Assigned to: Tech Mike | 3 hours ago</div>
+                                    <div class="activity-meta">Ticket: TKT-045 | Assigned to: Tech Mike | 3 hours ago
+                                    </div>
                                     <div class="activity-description">Hydraulic system leak - High priority</div>
                                 </div>
                                 <div class="activity-status">
@@ -191,7 +198,8 @@
                             <div class="activity-item">
                                 <div class="activity-content">
                                     <div class="activity-title">Repair Completed</div>
-                                    <div class="activity-meta">Ticket: TKT-038 | Technician: Tech Sarah | 5 hours ago</div>
+                                    <div class="activity-meta">Ticket: TKT-038 | Technician: Tech Sarah | 5 hours ago
+                                    </div>
                                     <div class="activity-description">Brake system repair completed and verified</div>
                                 </div>
                                 <div class="activity-status">
@@ -217,9 +225,12 @@
                     </div>
 
                     <div class="filter-controls" id="reportSourceFilters">
-                        <button class="filter-btn active" onclick="filterReportsBySource('all')" data-filter-source="all">All Sources</button>
-                        <button class="filter-btn" onclick="filterReportsBySource('driver')" data-filter-source="driver">Driver Reports</button>
-                        <button class="filter-btn" onclick="filterReportsBySource('operator')" data-filter-source="operator">Operator Reports</button>
+                        <button class="filter-btn active" onclick="filterReportsBySource('all')"
+                            data-filter-source="all">All Sources</button>
+                        <button class="filter-btn" onclick="filterReportsBySource('driver')"
+                            data-filter-source="driver">Driver Reports</button>
+                        <button class="filter-btn" onclick="filterReportsBySource('operator')"
+                            data-filter-source="operator">Operator Reports</button>
                     </div>
 
                     <div class="card">
@@ -304,29 +315,35 @@
                                 <div class="item-details">
                                     <strong><i class="fas fa-wrench"></i> REP-001 - Engine Overhaul</strong>
                                     <div class="item-meta">
-                                        <i class="fas fa-truck"></i> Vehicle V-105 | 
+                                        <i class="fas fa-truck"></i> Vehicle V-105 |
                                         <i class="fas fa-user-cog"></i> Tech: Mike
                                     </div>
                                     <div class="item-meta">
-                                        <span class="status-text status-urgent">URGENT</span> | 
+                                        <span class="status-text status-urgent">URGENT</span> |
                                         <i class="fas fa-dollar-sign"></i> Est. Cost: $2,500
                                     </div>
                                 </div>
                                 <div class="item-actions">
                                     <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewRepairDetails('REP-001')"><i class="fas fa-eye"></i> VIEW</button>
+                                        <button class="btn btn-primary btn-small"
+                                            onclick="viewRepairDetails('REP-001')"><i class="fas fa-eye"></i>
+                                            VIEW</button>
                                         <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'repair-REP-001')">
+                                            <button class="btn btn-small btn-secondary dropdown-trigger"
+                                                onclick="toggleDropdown(event, 'repair-REP-001')">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="dropdown-menu" id="dropdown-repair-REP-001">
-                                                <button class="dropdown-item" onclick="greenLightRepair('REP-001'); closeAllDropdowns();">
+                                                <button class="dropdown-item"
+                                                    onclick="greenLightRepair('REP-001'); closeAllDropdowns();">
                                                     <i class="fas fa-check"></i> Approve
                                                 </button>
-                                                <button class="dropdown-item" onclick="rejectRepair('REP-001'); closeAllDropdowns();">
+                                                <button class="dropdown-item"
+                                                    onclick="rejectRepair('REP-001'); closeAllDropdowns();">
                                                     <i class="fas fa-times"></i> Reject
                                                 </button>
-                                                <button class="dropdown-item" onclick="markAsOutsourced('REP-001'); closeAllDropdowns();">
+                                                <button class="dropdown-item"
+                                                    onclick="markAsOutsourced('REP-001'); closeAllDropdowns();">
                                                     <i class="fas fa-building"></i> Outsource
                                                 </button>
                                             </div>
@@ -338,29 +355,35 @@
                                 <div class="item-details">
                                     <strong><i class="fas fa-wrench"></i> REP-002 - Transmission Repair</strong>
                                     <div class="item-meta">
-                                        <i class="fas fa-truck"></i> Vehicle V-108 | 
+                                        <i class="fas fa-truck"></i> Vehicle V-108 |
                                         <i class="fas fa-user-cog"></i> Tech: Sarah
                                     </div>
                                     <div class="item-meta">
-                                        <span class="status-text status-normal">NORMAL</span> | 
+                                        <span class="status-text status-normal">NORMAL</span> |
                                         <i class="fas fa-dollar-sign"></i> Est. Cost: $1,800
                                     </div>
                                 </div>
                                 <div class="item-actions">
                                     <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewRepairDetails('REP-002')"><i class="fas fa-eye"></i> VIEW</button>
+                                        <button class="btn btn-primary btn-small"
+                                            onclick="viewRepairDetails('REP-002')"><i class="fas fa-eye"></i>
+                                            VIEW</button>
                                         <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'repair-REP-002')">
+                                            <button class="btn btn-small btn-secondary dropdown-trigger"
+                                                onclick="toggleDropdown(event, 'repair-REP-002')">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="dropdown-menu" id="dropdown-repair-REP-002">
-                                                <button class="dropdown-item" onclick="greenLightRepair('REP-002'); closeAllDropdowns();">
+                                                <button class="dropdown-item"
+                                                    onclick="greenLightRepair('REP-002'); closeAllDropdowns();">
                                                     <i class="fas fa-check"></i> Approve
                                                 </button>
-                                                <button class="dropdown-item" onclick="rejectRepair('REP-002'); closeAllDropdowns();">
+                                                <button class="dropdown-item"
+                                                    onclick="rejectRepair('REP-002'); closeAllDropdowns();">
                                                     <i class="fas fa-times"></i> Reject
                                                 </button>
-                                                <button class="dropdown-item" onclick="markAsOutsourced('REP-002'); closeAllDropdowns();">
+                                                <button class="dropdown-item"
+                                                    onclick="markAsOutsourced('REP-002'); closeAllDropdowns();">
                                                     <i class="fas fa-building"></i> Outsource
                                                 </button>
                                             </div>
@@ -381,23 +404,27 @@
                                 <div class="item-details">
                                     <strong><i class="fas fa-tools"></i> REP-010 - Hydraulic System</strong>
                                     <div class="item-meta">
-                                        <i class="fas fa-cogs"></i> Machine M-205 | 
+                                        <i class="fas fa-cogs"></i> Machine M-205 |
                                         <i class="fas fa-user-cog"></i> Tech Mike
                                     </div>
                                     <div class="item-meta">
-                                        <span class="status-text status-in-progress">ON TRACK</span> | 
+                                        <span class="status-text status-in-progress">ON TRACK</span> |
                                         <i class="fas fa-calendar-check"></i> Expected: Oct 20, 2025
                                     </div>
                                 </div>
                                 <div class="item-actions">
                                     <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewRepairProgress('REP-010')"><i class="fas fa-eye"></i> VIEW</button>
+                                        <button class="btn btn-primary btn-small"
+                                            onclick="viewRepairProgress('REP-010')"><i class="fas fa-eye"></i>
+                                            VIEW</button>
                                         <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'ongoing-REP-010')">
+                                            <button class="btn btn-small btn-secondary dropdown-trigger"
+                                                onclick="toggleDropdown(event, 'ongoing-REP-010')">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="dropdown-menu" id="dropdown-ongoing-REP-010">
-                                                <button class="dropdown-item" onclick="updateRepairTimeline('REP-010'); closeAllDropdowns();">
+                                                <button class="dropdown-item"
+                                                    onclick="updateRepairTimeline('REP-010'); closeAllDropdowns();">
                                                     <i class="fas fa-calendar"></i> Update Timeline
                                                 </button>
                                             </div>
@@ -412,24 +439,28 @@
                     <div class="card">
                         <div class="card-header">
                             <span><i class="fas fa-building"></i> Outsourced Repairs</span>
-                            <button class="btn btn-secondary btn-small" onclick="viewAllOutsourced()"><i class="fas fa-eye"></i> View All</button>
+                            <button class="btn btn-secondary btn-small" onclick="viewAllOutsourced()"><i
+                                    class="fas fa-eye"></i> View All</button>
                         </div>
                         <div id="outsourcedRepairsList" class="inventory-list">
                             <div class="inventory-item">
                                 <div class="item-details">
-                                    <strong><i class="fas fa-building"></i> REP-008 - Electrical System Overhaul</strong>
+                                    <strong><i class="fas fa-building"></i> REP-008 - Electrical System
+                                        Overhaul</strong>
                                     <div class="item-meta">
-                                        <i class="fas fa-truck"></i> Vehicle V-115 | 
+                                        <i class="fas fa-truck"></i> Vehicle V-115 |
                                         <i class="fas fa-wrench"></i> AutoTech Solutions
                                     </div>
                                     <div class="item-meta">
-                                        <span class="status-text status-outsourced">OUTSOURCED</span> | 
+                                        <span class="status-text status-outsourced">OUTSOURCED</span> |
                                         <i class="fas fa-calendar-check"></i> Return: Oct 25, 2025
                                     </div>
                                 </div>
                                 <div class="item-actions">
                                     <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewRepairDetails('REP-008')"><i class="fas fa-eye"></i> VIEW</button>
+                                        <button class="btn btn-primary btn-small"
+                                            onclick="viewRepairDetails('REP-008')"><i class="fas fa-eye"></i>
+                                            VIEW</button>
                                     </div>
                                 </div>
                             </div>
@@ -441,13 +472,15 @@
                         <div class="card-header">
                             <span><i class="fas fa-sync-alt"></i> Component Information Updates</span>
                         </div>
-                        <p style="color: var(--muted); margin-bottom: 15px;">Update vehicle/machine component information based on technician or service center recommendations</p>
-                        <button class="btn btn-primary" onclick="updateComponentInfo()"><i class="fas fa-edit"></i> Update Component Info</button>
+                        <p style="color: var(--muted); margin-bottom: 15px;">Update vehicle/machine component
+                            information based on technician or service center recommendations</p>
+                        <button class="btn btn-primary" onclick="updateComponentInfo()"><i class="fas fa-edit"></i>
+                            Update Component Info</button>
                     </div>
                 </section>
 
                 <!-- Budget Approval Section -->
-                                <!-- Budget Approval Section -->
+                <!-- Budget Approval Section -->
                 <section class="content-section" id="budget-approval">
                     <div class="page-header">
                         <h2 class="page-title"><i class="fas fa-dollar-sign"></i> Budget Approval</h2>
@@ -469,31 +502,38 @@
                             <span class="status-text status-pending" id="budgetCountBadge">5 budgets</span>
                         </div>
                         <div id="pendingBudgetsTable" class="inventory-list">
-                            <div class="inventory-item" data-id="BUD-001" data-breakdown-id="BR-003" data-type="in-route" data-status="pending">
+                            <div class="inventory-item" data-id="BUD-001" data-breakdown-id="BR-003"
+                                data-type="in-route" data-status="pending">
                                 <div class="item-details">
-                                    <strong><i class="fas fa-file-invoice-dollar"></i> BUD-001 - Tire Replacement</strong>
+                                    <strong><i class="fas fa-file-invoice-dollar"></i> BUD-001 - Tire
+                                        Replacement</strong>
                                     <div class="item-meta">
-                                        <i class="fas fa-truck"></i> Vehicle LKA-1234 | 
-                                        <i class="fas fa-ticket-alt"></i> BR-003 | 
+                                        <i class="fas fa-truck"></i> Vehicle LKA-1234 |
+                                        <i class="fas fa-ticket-alt"></i> BR-003 |
                                         <i class="fas fa-user"></i> Driver Kamal
                                     </div>
                                     <div class="item-description">
-                                        <span class="status-text status-urgent">URGENT</span> | 
+                                        <span class="status-text status-urgent">URGENT</span> |
                                         <i class="fas fa-dollar-sign"></i> LKR 12,500
                                     </div>
                                 </div>
                                 <div class="item-actions">
                                     <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewBudgetDetails('BUD-001')"><i class="fas fa-eye"></i> VIEW</button>
+                                        <button class="btn btn-primary btn-small"
+                                            onclick="viewBudgetDetails('BUD-001')"><i class="fas fa-eye"></i>
+                                            VIEW</button>
                                         <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'budget-BUD-001')">
+                                            <button class="btn btn-small btn-secondary dropdown-trigger"
+                                                onclick="toggleDropdown(event, 'budget-BUD-001')">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="dropdown-menu" id="dropdown-budget-BUD-001">
-                                                <button class="dropdown-item" onclick="approveBudget('BUD-001'); closeAllDropdowns();">
+                                                <button class="dropdown-item"
+                                                    onclick="approveBudget('BUD-001'); closeAllDropdowns();">
                                                     <i class="fas fa-check"></i> Approve
                                                 </button>
-                                                <button class="dropdown-item danger" onclick="rejectBudget('BUD-001'); closeAllDropdowns();">
+                                                <button class="dropdown-item danger"
+                                                    onclick="rejectBudget('BUD-001'); closeAllDropdowns();">
                                                     <i class="fas fa-times"></i> Reject
                                                 </button>
                                             </div>
@@ -501,31 +541,38 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="inventory-item" data-id="BUD-002" data-breakdown-id="BR-005" data-type="in-route" data-status="pending">
+                            <div class="inventory-item" data-id="BUD-002" data-breakdown-id="BR-005"
+                                data-type="in-route" data-status="pending">
                                 <div class="item-details">
-                                    <strong><i class="fas fa-file-invoice-dollar"></i> BUD-002 - Battery Replacement</strong>
+                                    <strong><i class="fas fa-file-invoice-dollar"></i> BUD-002 - Battery
+                                        Replacement</strong>
                                     <div class="item-meta">
-                                        <i class="fas fa-truck"></i> Vehicle LKA-5678 | 
-                                        <i class="fas fa-ticket-alt"></i> BR-005 | 
+                                        <i class="fas fa-truck"></i> Vehicle LKA-5678 |
+                                        <i class="fas fa-ticket-alt"></i> BR-005 |
                                         <i class="fas fa-user"></i> Driver Saman
                                     </div>
                                     <div class="item-description">
-                                        <span class="status-text status-normal">NORMAL</span> | 
+                                        <span class="status-text status-normal">NORMAL</span> |
                                         <i class="fas fa-dollar-sign"></i> LKR 8,750
                                     </div>
                                 </div>
                                 <div class="item-actions">
                                     <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewBudgetDetails('BUD-002')"><i class="fas fa-eye"></i> VIEW</button>
+                                        <button class="btn btn-primary btn-small"
+                                            onclick="viewBudgetDetails('BUD-002')"><i class="fas fa-eye"></i>
+                                            VIEW</button>
                                         <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'budget-BUD-002')">
+                                            <button class="btn btn-small btn-secondary dropdown-trigger"
+                                                onclick="toggleDropdown(event, 'budget-BUD-002')">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="dropdown-menu" id="dropdown-budget-BUD-002">
-                                                <button class="dropdown-item" onclick="approveBudget('BUD-002'); closeAllDropdowns();">
+                                                <button class="dropdown-item"
+                                                    onclick="approveBudget('BUD-002'); closeAllDropdowns();">
                                                     <i class="fas fa-check"></i> Approve
                                                 </button>
-                                                <button class="dropdown-item danger" onclick="rejectBudget('BUD-002'); closeAllDropdowns();">
+                                                <button class="dropdown-item danger"
+                                                    onclick="rejectBudget('BUD-002'); closeAllDropdowns();">
                                                     <i class="fas fa-times"></i> Reject
                                                 </button>
                                             </div>
@@ -533,31 +580,38 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="inventory-item" data-id="BUD-003" data-breakdown-id="BR-007" data-type="in-route" data-status="pending">
+                            <div class="inventory-item" data-id="BUD-003" data-breakdown-id="BR-007"
+                                data-type="in-route" data-status="pending">
                                 <div class="item-details">
-                                    <strong><i class="fas fa-file-invoice-dollar"></i> BUD-003 - Brake System Repair</strong>
+                                    <strong><i class="fas fa-file-invoice-dollar"></i> BUD-003 - Brake System
+                                        Repair</strong>
                                     <div class="item-meta">
-                                        <i class="fas fa-truck"></i> Vehicle LKA-9012 | 
-                                        <i class="fas fa-ticket-alt"></i> BR-007 | 
+                                        <i class="fas fa-truck"></i> Vehicle LKA-9012 |
+                                        <i class="fas fa-ticket-alt"></i> BR-007 |
                                         <i class="fas fa-user"></i> Driver Nimal
                                     </div>
                                     <div class="item-description">
-                                        <span class="status-text status-urgent">URGENT</span> | 
+                                        <span class="status-text status-urgent">URGENT</span> |
                                         <i class="fas fa-dollar-sign"></i> LKR 15,200
                                     </div>
                                 </div>
                                 <div class="item-actions">
                                     <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewBudgetDetails('BUD-003')"><i class="fas fa-eye"></i> VIEW</button>
+                                        <button class="btn btn-primary btn-small"
+                                            onclick="viewBudgetDetails('BUD-003')"><i class="fas fa-eye"></i>
+                                            VIEW</button>
                                         <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'budget-BUD-003')">
+                                            <button class="btn btn-small btn-secondary dropdown-trigger"
+                                                onclick="toggleDropdown(event, 'budget-BUD-003')">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="dropdown-menu" id="dropdown-budget-BUD-003">
-                                                <button class="dropdown-item" onclick="approveBudget('BUD-003'); closeAllDropdowns();">
+                                                <button class="dropdown-item"
+                                                    onclick="approveBudget('BUD-003'); closeAllDropdowns();">
                                                     <i class="fas fa-check"></i> Approve
                                                 </button>
-                                                <button class="dropdown-item danger" onclick="rejectBudget('BUD-003'); closeAllDropdowns();">
+                                                <button class="dropdown-item danger"
+                                                    onclick="rejectBudget('BUD-003'); closeAllDropdowns();">
                                                     <i class="fas fa-times"></i> Reject
                                                 </button>
                                             </div>
@@ -565,31 +619,38 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="inventory-item" data-id="BUD-004" data-breakdown-id="BR-009" data-type="in-route" data-status="pending">
+                            <div class="inventory-item" data-id="BUD-004" data-breakdown-id="BR-009"
+                                data-type="in-route" data-status="pending">
                                 <div class="item-details">
-                                    <strong><i class="fas fa-file-invoice-dollar"></i> BUD-004 - Coolant System Leak</strong>
+                                    <strong><i class="fas fa-file-invoice-dollar"></i> BUD-004 - Coolant System
+                                        Leak</strong>
                                     <div class="item-meta">
-                                        <i class="fas fa-truck"></i> Vehicle LKA-3456 | 
-                                        <i class="fas fa-ticket-alt"></i> BR-009 | 
+                                        <i class="fas fa-truck"></i> Vehicle LKA-3456 |
+                                        <i class="fas fa-ticket-alt"></i> BR-009 |
                                         <i class="fas fa-user"></i> Driver Anil
                                     </div>
                                     <div class="item-description">
-                                        <span class="status-text status-normal">NORMAL</span> | 
+                                        <span class="status-text status-normal">NORMAL</span> |
                                         <i class="fas fa-dollar-sign"></i> LKR 6,500
                                     </div>
                                 </div>
                                 <div class="item-actions">
                                     <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewBudgetDetails('BUD-004')"><i class="fas fa-eye"></i> VIEW</button>
+                                        <button class="btn btn-primary btn-small"
+                                            onclick="viewBudgetDetails('BUD-004')"><i class="fas fa-eye"></i>
+                                            VIEW</button>
                                         <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'budget-BUD-004')">
+                                            <button class="btn btn-small btn-secondary dropdown-trigger"
+                                                onclick="toggleDropdown(event, 'budget-BUD-004')">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="dropdown-menu" id="dropdown-budget-BUD-004">
-                                                <button class="dropdown-item" onclick="approveBudget('BUD-004'); closeAllDropdowns();">
+                                                <button class="dropdown-item"
+                                                    onclick="approveBudget('BUD-004'); closeAllDropdowns();">
                                                     <i class="fas fa-check"></i> Approve
                                                 </button>
-                                                <button class="dropdown-item danger" onclick="rejectBudget('BUD-004'); closeAllDropdowns();">
+                                                <button class="dropdown-item danger"
+                                                    onclick="rejectBudget('BUD-004'); closeAllDropdowns();">
                                                     <i class="fas fa-times"></i> Reject
                                                 </button>
                                             </div>
@@ -597,31 +658,38 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="inventory-item" data-id="BUD-005" data-breakdown-id="BR-011" data-type="in-route" data-status="pending">
+                            <div class="inventory-item" data-id="BUD-005" data-breakdown-id="BR-011"
+                                data-type="in-route" data-status="pending">
                                 <div class="item-details">
-                                    <strong><i class="fas fa-file-invoice-dollar"></i> BUD-005 - Transmission Issue</strong>
+                                    <strong><i class="fas fa-file-invoice-dollar"></i> BUD-005 - Transmission
+                                        Issue</strong>
                                     <div class="item-meta">
-                                        <i class="fas fa-truck"></i> Vehicle LKA-7890 | 
-                                        <i class="fas fa-ticket-alt"></i> BR-011 | 
+                                        <i class="fas fa-truck"></i> Vehicle LKA-7890 |
+                                        <i class="fas fa-ticket-alt"></i> BR-011 |
                                         <i class="fas fa-user"></i> Driver Sunil
                                     </div>
                                     <div class="item-description">
-                                        <span class="status-text status-urgent">URGENT</span> | 
+                                        <span class="status-text status-urgent">URGENT</span> |
                                         <i class="fas fa-dollar-sign"></i> LKR 22,800
                                     </div>
                                 </div>
                                 <div class="item-actions">
                                     <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewBudgetDetails('BUD-005')"><i class="fas fa-eye"></i> VIEW</button>
+                                        <button class="btn btn-primary btn-small"
+                                            onclick="viewBudgetDetails('BUD-005')"><i class="fas fa-eye"></i>
+                                            VIEW</button>
                                         <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'budget-BUD-005')">
+                                            <button class="btn btn-small btn-secondary dropdown-trigger"
+                                                onclick="toggleDropdown(event, 'budget-BUD-005')">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="dropdown-menu" id="dropdown-budget-BUD-005">
-                                                <button class="dropdown-item" onclick="approveBudget('BUD-005'); closeAllDropdowns();">
+                                                <button class="dropdown-item"
+                                                    onclick="approveBudget('BUD-005'); closeAllDropdowns();">
                                                     <i class="fas fa-check"></i> Approve
                                                 </button>
-                                                <button class="dropdown-item danger" onclick="rejectBudget('BUD-005'); closeAllDropdowns();">
+                                                <button class="dropdown-item danger"
+                                                    onclick="rejectBudget('BUD-005'); closeAllDropdowns();">
                                                     <i class="fas fa-times"></i> Reject
                                                 </button>
                                             </div>
@@ -647,7 +715,7 @@
                 </section>
 
                 <!-- Asset Status Section -->
-                                <!-- Asset Status Section -->
+                <!-- Asset Status Section -->
                 <section class="content-section" id="asset-status">
                     <div class="page-header">
                         <h2 class="page-title"><i class="fas fa-clipboard-check"></i> Asset Status Overview</h2>
@@ -661,8 +729,8 @@
                             <div style="padding: 15px 0;">
                                 <div style="font-size: 2em; font-weight: bold; color: var(--royal-blue);">12</div>
                                 <div style="margin-top: 10px;">
-                                    <span style="color: var(--ok);">9 Operational</span> • 
-                                    <span style="color: var(--warn);">2 Maintenance</span> • 
+                                    <span style="color: var(--ok);">9 Operational</span> •
+                                    <span style="color: var(--warn);">2 Maintenance</span> •
                                     <span style="color: var(--danger);">1 Repair</span>
                                 </div>
                             </div>
@@ -672,8 +740,8 @@
                             <div style="padding: 15px 0;">
                                 <div style="font-size: 2em; font-weight: bold; color: var(--tang-blue);">8</div>
                                 <div style="margin-top: 10px;">
-                                    <span style="color: var(--ok);">6 Operational</span> • 
-                                    <span style="color: var(--warn);">1 Maintenance</span> • 
+                                    <span style="color: var(--ok);">6 Operational</span> •
+                                    <span style="color: var(--warn);">1 Maintenance</span> •
                                     <span style="color: var(--danger);">1 Repair</span>
                                 </div>
                             </div>
@@ -716,7 +784,7 @@
                                 <div class="item-details">
                                     <strong><i class="fas fa-truck"></i> VEH-001 - Toyota Hiace LKA-1234</strong>
                                     <div class="item-meta">
-                                        <i class="fas fa-map-marker-alt"></i> Depot A | 
+                                        <i class="fas fa-map-marker-alt"></i> Depot A |
                                         <i class="fas fa-clipboard-check"></i> Vehicle
                                     </div>
                                     <div class="item-meta">
@@ -725,13 +793,17 @@
                                 </div>
                                 <div class="item-actions">
                                     <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewAssetDetails('VEH-001')"><i class="fas fa-eye"></i> VIEW</button>
+                                        <button class="btn btn-primary btn-small"
+                                            onclick="viewAssetDetails('VEH-001')"><i class="fas fa-eye"></i>
+                                            VIEW</button>
                                         <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'asset-VEH-001')">
+                                            <button class="btn btn-small btn-secondary dropdown-trigger"
+                                                onclick="toggleDropdown(event, 'asset-VEH-001')">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="dropdown-menu" id="dropdown-asset-VEH-001">
-                                                <button class="dropdown-item" onclick="updateAssetStatus('VEH-001'); closeAllDropdowns();">
+                                                <button class="dropdown-item"
+                                                    onclick="updateAssetStatus('VEH-001'); closeAllDropdowns();">
                                                     <i class="fas fa-edit"></i> Update Status
                                                 </button>
                                             </div>
@@ -743,7 +815,7 @@
                                 <div class="item-details">
                                     <strong><i class="fas fa-truck"></i> VEH-002 - Isuzu NPR LKA-5678</strong>
                                     <div class="item-meta">
-                                        <i class="fas fa-map-marker-alt"></i> Workshop | 
+                                        <i class="fas fa-map-marker-alt"></i> Workshop |
                                         <i class="fas fa-clipboard-check"></i> Vehicle
                                     </div>
                                     <div class="item-meta">
@@ -752,13 +824,17 @@
                                 </div>
                                 <div class="item-actions">
                                     <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewAssetDetails('VEH-002')"><i class="fas fa-eye"></i> VIEW</button>
+                                        <button class="btn btn-primary btn-small"
+                                            onclick="viewAssetDetails('VEH-002')"><i class="fas fa-eye"></i>
+                                            VIEW</button>
                                         <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'asset-VEH-002')">
+                                            <button class="btn btn-small btn-secondary dropdown-trigger"
+                                                onclick="toggleDropdown(event, 'asset-VEH-002')">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="dropdown-menu" id="dropdown-asset-VEH-002">
-                                                <button class="dropdown-item" onclick="updateAssetStatus('VEH-002'); closeAllDropdowns();">
+                                                <button class="dropdown-item"
+                                                    onclick="updateAssetStatus('VEH-002'); closeAllDropdowns();">
                                                     <i class="fas fa-edit"></i> Update Status
                                                 </button>
                                             </div>
@@ -770,7 +846,7 @@
                                 <div class="item-details">
                                     <strong><i class="fas fa-truck"></i> VEH-003 - Mitsubishi Canter LKA-9012</strong>
                                     <div class="item-meta">
-                                        <i class="fas fa-map-marker-alt"></i> Workshop | 
+                                        <i class="fas fa-map-marker-alt"></i> Workshop |
                                         <i class="fas fa-clipboard-check"></i> Vehicle
                                     </div>
                                     <div class="item-meta">
@@ -779,13 +855,17 @@
                                 </div>
                                 <div class="item-actions">
                                     <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewAssetDetails('VEH-003')"><i class="fas fa-eye"></i> VIEW</button>
+                                        <button class="btn btn-primary btn-small"
+                                            onclick="viewAssetDetails('VEH-003')"><i class="fas fa-eye"></i>
+                                            VIEW</button>
                                         <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'asset-VEH-003')">
+                                            <button class="btn btn-small btn-secondary dropdown-trigger"
+                                                onclick="toggleDropdown(event, 'asset-VEH-003')">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="dropdown-menu" id="dropdown-asset-VEH-003">
-                                                <button class="dropdown-item" onclick="updateAssetStatus('VEH-003'); closeAllDropdowns();">
+                                                <button class="dropdown-item"
+                                                    onclick="updateAssetStatus('VEH-003'); closeAllDropdowns();">
                                                     <i class="fas fa-edit"></i> Update Status
                                                 </button>
                                             </div>
@@ -797,7 +877,7 @@
                                 <div class="item-details">
                                     <strong><i class="fas fa-cogs"></i> MAC-001 - CAT Excavator 320D</strong>
                                     <div class="item-meta">
-                                        <i class="fas fa-map-marker-alt"></i> Site B | 
+                                        <i class="fas fa-map-marker-alt"></i> Site B |
                                         <i class="fas fa-clipboard-check"></i> Machine
                                     </div>
                                     <div class="item-meta">
@@ -806,13 +886,17 @@
                                 </div>
                                 <div class="item-actions">
                                     <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewAssetDetails('MAC-001')"><i class="fas fa-eye"></i> VIEW</button>
+                                        <button class="btn btn-primary btn-small"
+                                            onclick="viewAssetDetails('MAC-001')"><i class="fas fa-eye"></i>
+                                            VIEW</button>
                                         <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'asset-MAC-001')">
+                                            <button class="btn btn-small btn-secondary dropdown-trigger"
+                                                onclick="toggleDropdown(event, 'asset-MAC-001')">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="dropdown-menu" id="dropdown-asset-MAC-001">
-                                                <button class="dropdown-item" onclick="updateAssetStatus('MAC-001'); closeAllDropdowns();">
+                                                <button class="dropdown-item"
+                                                    onclick="updateAssetStatus('MAC-001'); closeAllDropdowns();">
                                                     <i class="fas fa-edit"></i> Update Status
                                                 </button>
                                             </div>
@@ -824,7 +908,7 @@
                                 <div class="item-details">
                                     <strong><i class="fas fa-cogs"></i> MAC-002 - JCB Backhoe 3CX</strong>
                                     <div class="item-meta">
-                                        <i class="fas fa-map-marker-alt"></i> Site C | 
+                                        <i class="fas fa-map-marker-alt"></i> Site C |
                                         <i class="fas fa-clipboard-check"></i> Machine
                                     </div>
                                     <div class="item-meta">
@@ -833,13 +917,17 @@
                                 </div>
                                 <div class="item-actions">
                                     <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewAssetDetails('MAC-002')"><i class="fas fa-eye"></i> VIEW</button>
+                                        <button class="btn btn-primary btn-small"
+                                            onclick="viewAssetDetails('MAC-002')"><i class="fas fa-eye"></i>
+                                            VIEW</button>
                                         <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'asset-MAC-002')">
+                                            <button class="btn btn-small btn-secondary dropdown-trigger"
+                                                onclick="toggleDropdown(event, 'asset-MAC-002')">
                                                 <i class="fas fa-ellipsis-v"></i>
                                             </button>
                                             <div class="dropdown-menu" id="dropdown-asset-MAC-002">
-                                                <button class="dropdown-item" onclick="updateAssetStatus('MAC-002'); closeAllDropdowns();">
+                                                <button class="dropdown-item"
+                                                    onclick="updateAssetStatus('MAC-002'); closeAllDropdowns();">
                                                     <i class="fas fa-edit"></i> Update Status
                                                 </button>
                                             </div>
@@ -851,218 +939,22 @@
                     </div>
                 </section>
 
-                <!-- Technician Assignments Section -->
-                <section class="content-section" id="technician-assignments">
+                <!-- Technicians Section -->
+                <section class="content-section" id="technicians">
                     <div class="page-header">
-                        <h2 class="page-title"><i class="fas fa-user-cog"></i> Technician Assignments</h2>
-                        <p class="page-subtitle">Manage technician workload and assignments</p>
-                    </div>
-
-                    <!-- Technician Overview Cards -->
-                    <div class="grid">
-                        <div class="card">
-                            <div class="card-header"><i class="fas fa-users"></i> Total Technicians</div>
-                            <div style="padding: 15px 0;">
-                                <div style="font-size: 2em; font-weight: bold; color: var(--royal-blue);">6</div>
-                                <div style="margin-top: 10px;">
-                                    <span style="color: var(--ok);">5 Available</span> • 
-                                    <span style="color: var(--warn);">1 Busy</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card">
-                            <div class="card-header"><i class="fas fa-tasks"></i> Active Assignments</div>
-                            <div style="padding: 15px 0;">
-                                <div style="font-size: 2em; font-weight: bold; color: var(--tang-blue);">8</div>
-                                <div style="margin-top: 10px;">
-                                    <span>Ongoing repairs</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card">
-                            <div class="card-header"><i class="fas fa-clock"></i> Avg. Completion Time</div>
-                            <div style="padding: 15px 0;">
-                                <div style="font-size: 2em; font-weight: bold; color: var(--kelly-green);">2.5</div>
-                                <div style="margin-top: 10px;">
-                                    <span>Days per repair</span>
-                                </div>
-                            </div>
-                        </div>
+                        <h2 class="page-title"><i class="fas fa-user-cog"></i> Technicians</h2>
+                        <p class="page-subtitle">View technical officers, their assigned tickets, and current ticket status</p>
                     </div>
 
                     <!-- Technician Workload -->
                     <div class="card">
                         <div class="card-header">
-                            <span><i class="fas fa-clipboard-list"></i> Technician Workload</span>
+                            <span><i class="fas fa-clipboard-list"></i> Technicians</span>
                         </div>
                         <div id="technicianAssignmentsTable" class="inventory-list">
-                            <div class="inventory-item">
-                                <div class="item-details">
-                                    <strong><i class="fas fa-user-cog"></i> Ranjith Silva</strong>
-                                    <div class="item-meta">
-                                        <i class="fas fa-wrench"></i> Engine Specialist | 
-                                        <i class="fas fa-tasks"></i> 2 Current Assignments
-                                    </div>
-                                    <div class="item-meta">
-                                        <span class="status-text status-normal">AVAILABLE</span>
-                                    </div>
-                                </div>
-                                <div class="item-actions">
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewTechnicianDetails('TECH-001')"><i class="fas fa-eye"></i> VIEW</button>
-                                        <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'tech-TECH-001')">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div class="dropdown-menu" id="dropdown-tech-TECH-001">
-                                                <button class="dropdown-item" onclick="assignNewTicket('TECH-001'); closeAllDropdowns();">
-                                                    <i class="fas fa-plus"></i> Assign Ticket
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="inventory-item">
-                                <div class="item-details">
-                                    <strong><i class="fas fa-user-cog"></i> Pradeep Fernando</strong>
-                                    <div class="item-meta">
-                                        <i class="fas fa-wrench"></i> Transmission Expert | 
-                                        <i class="fas fa-tasks"></i> 3 Current Assignments
-                                    </div>
-                                    <div class="item-meta">
-                                        <span class="status-text status-warn">BUSY</span>
-                                    </div>
-                                </div>
-                                <div class="item-actions">
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewTechnicianDetails('TECH-002')"><i class="fas fa-eye"></i> VIEW</button>
-                                        <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'tech-TECH-002')">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div class="dropdown-menu" id="dropdown-tech-TECH-002">
-                                                <button class="dropdown-item" onclick="assignNewTicket('TECH-002'); closeAllDropdowns();">
-                                                    <i class="fas fa-plus"></i> Assign Ticket
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="inventory-item">
-                                <div class="item-details">
-                                    <strong><i class="fas fa-user-cog"></i> Mahesh Perera</strong>
-                                    <div class="item-meta">
-                                        <i class="fas fa-wrench"></i> Electrical Systems | 
-                                        <i class="fas fa-tasks"></i> 1 Current Assignment
-                                    </div>
-                                    <div class="item-meta">
-                                        <span class="status-text status-normal">AVAILABLE</span>
-                                    </div>
-                                </div>
-                                <div class="item-actions">
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewTechnicianDetails('TECH-003')"><i class="fas fa-eye"></i> VIEW</button>
-                                        <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'tech-TECH-003')">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div class="dropdown-menu" id="dropdown-tech-TECH-003">
-                                                <button class="dropdown-item" onclick="assignNewTicket('TECH-003'); closeAllDropdowns();">
-                                                    <i class="fas fa-plus"></i> Assign Ticket
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="inventory-item">
-                                <div class="item-details">
-                                    <strong><i class="fas fa-user-cog"></i> Chaminda Rathnayake</strong>
-                                    <div class="item-meta">
-                                        <i class="fas fa-wrench"></i> Brake Systems | 
-                                        <i class="fas fa-tasks"></i> 1 Current Assignment
-                                    </div>
-                                    <div class="item-meta">
-                                        <span class="status-text status-normal">AVAILABLE</span>
-                                    </div>
-                                </div>
-                                <div class="item-actions">
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewTechnicianDetails('TECH-004')"><i class="fas fa-eye"></i> VIEW</button>
-                                        <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'tech-TECH-004')">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div class="dropdown-menu" id="dropdown-tech-TECH-004">
-                                                <button class="dropdown-item" onclick="assignNewTicket('TECH-004'); closeAllDropdowns();">
-                                                    <i class="fas fa-plus"></i> Assign Ticket
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="inventory-item">
-                                <div class="item-details">
-                                    <strong><i class="fas fa-user-cog"></i> Kasun Dissanayake</strong>
-                                    <div class="item-meta">
-                                        <i class="fas fa-wrench"></i> Heavy Machinery | 
-                                        <i class="fas fa-tasks"></i> 1 Current Assignment
-                                    </div>
-                                    <div class="item-meta">
-                                        <span class="status-text status-normal">AVAILABLE</span>
-                                    </div>
-                                </div>
-                                <div class="item-actions">
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewTechnicianDetails('TECH-005')"><i class="fas fa-eye"></i> VIEW</button>
-                                        <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'tech-TECH-005')">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div class="dropdown-menu" id="dropdown-tech-TECH-005">
-                                                <button class="dropdown-item" onclick="assignNewTicket('TECH-005'); closeAllDropdowns();">
-                                                    <i class="fas fa-plus"></i> Assign Ticket
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="inventory-item">
-                                <div class="item-details">
-                                    <strong><i class="fas fa-user-cog"></i> Tharindu Jayasinghe</strong>
-                                    <div class="item-meta">
-                                        <i class="fas fa-wrench"></i> General Maintenance | 
-                                        <i class="fas fa-tasks"></i> 0 Current Assignments
-                                    </div>
-                                    <div class="item-meta">
-                                        <span class="status-text status-normal">AVAILABLE</span>
-                                    </div>
-                                </div>
-                                <div class="item-actions">
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewTechnicianDetails('TECH-006')"><i class="fas fa-eye"></i> VIEW</button>
-                                        <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'tech-TECH-006')">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div class="dropdown-menu" id="dropdown-tech-TECH-006">
-                                                <button class="dropdown-item" onclick="assignNewTicket('TECH-006'); closeAllDropdowns();">
-                                                    <i class="fas fa-plus"></i> Assign Ticket
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <p style="text-align: center; color: var(--muted); padding: 18px;">
+                                <i class="fas fa-spinner fa-spin"></i> Loading technicians...
+                            </p>
                         </div>
                     </div>
                 </section>
@@ -1087,25 +979,28 @@
                     <h3 class="form-section-title">
                         <i class="fas fa-info-circle"></i> Ticket Information
                     </h3>
-                    
+
                     <div class="form-group">
                         <label for="breakdownReportId">Breakdown Report</label>
-                        <select id="breakdownReportId" name="breakdown_report_id" required onchange="populateTicketFromReport()">
+                        <select id="breakdownReportId" name="breakdown_report_id" required
+                            onchange="populateTicketFromReport()">
                             <option value="">Select Breakdown Report</option>
                             <!-- Reports will be loaded dynamically -->
                         </select>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="issueTitle">Issue Title</label>
-                        <input type="text" id="issueTitle" name="issue_title" placeholder="Brief description of issue" required>
+                        <input type="text" id="issueTitle" name="issue_title" placeholder="Brief description of issue"
+                            required>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="issueDescription">Issue Description</label>
-                        <textarea id="issueDescription" name="issue_description" rows="4" placeholder="Detailed description of the fault..." required></textarea>
+                        <textarea id="issueDescription" name="issue_description" rows="4"
+                            placeholder="Detailed description of the fault..." required></textarea>
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="priority">Priority</label>
@@ -1118,7 +1013,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="form-section">
                     <h3 class="form-section-title">
                         <i class="fas fa-camera"></i> Photo Documentation (Optional)
@@ -1128,12 +1023,13 @@
                             <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: var(--royal-blue);"></i>
                             <p><strong>Click to upload photos</strong></p>
                             <p style="font-size: 0.85rem; color: var(--muted);">Maximum 5 images (JPEG, PNG, WebP)</p>
-                            <input type="file" id="ticketPhotos" name="photos[]" accept="image/jpeg,image/png,image/webp" multiple style="display: none;">
+                            <input type="file" id="ticketPhotos" name="photos[]"
+                                accept="image/jpeg,image/png,image/webp" multiple style="display: none;">
                         </div>
                         <div id="createTicketPhotoPreview" class="photo-preview-container"></div>
                     </div>
                 </div>
-                
+
                 <div class="modal-actions">
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-ticket-alt"></i> CREATE TICKET
@@ -1160,24 +1056,28 @@
                     <h3 class="form-section-title">
                         <i class="fas fa-info-circle"></i> Ticket Information
                     </h3>
-                    
+
                     <div class="form-group">
                         <label>Ticket ID</label>
                         <div id="assignTicketId" class="readonly-field">TKT-050</div>
                     </div>
-                    
+
                     <div class="form-group">
-                        <label>Select Technician(s) <span style="color: var(--muted); font-weight: 400;">(Select one or more)</span></label>
+                        <label>Select Technician(s) <span style="color: var(--muted); font-weight: 400;">(Select one or
+                                more)</span></label>
+                        <small class="assignment-hint">Technicians are sorted by lowest current workload. Expertise and active ticket counts are shown to help pick the most free and qualified officer.</small>
                         <div id="techniciansList" class="checkbox-list">
                             <!-- Technicians will be loaded dynamically -->
                         </div>
                         <!-- Warning message for no technicians selected -->
-                        <div id="noTechnicianWarning" style="display: none; margin-top: 10px; padding: 12px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; color: #856404;">
+                        <div id="noTechnicianWarning"
+                            style="display: none; margin-top: 10px; padding: 12px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; color: #856404;">
                             <i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>
-                            <strong>Warning:</strong> No technicians selected. This will move the ticket back to <strong>Unassigned</strong> status.
+                            <strong>Warning:</strong> No technicians selected. This will move the ticket back to
+                            <strong>Unassigned</strong> status.
                         </div>
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="assignPriority">Priority Level</label>
@@ -1188,19 +1088,20 @@
                                 <option value="critical">Critical</option>
                             </select>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="expectedCompletion">Expected Completion Date</label>
                             <input type="date" id="expectedCompletion" name="expected_completion" required>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="assignmentNotes">Assignment Notes</label>
-                        <textarea id="assignmentNotes" name="notes" rows="4" placeholder="Add any special instructions..."></textarea>
+                        <textarea id="assignmentNotes" name="notes" rows="4"
+                            placeholder="Add any special instructions..."></textarea>
                     </div>
                 </div>
-                
+
                 <div class="modal-actions">
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-user-check"></i> ASSIGN TICKET
@@ -1256,18 +1157,17 @@
                 <button class="btn-close" onclick="closeRejectionReasonModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <p style="margin-bottom: 15px; color: #64748b;">Please provide a reason for rejecting this report. The submitter will be notified.</p>
+                <p style="margin-bottom: 15px; color: #64748b;">Please provide a reason for rejecting this report. The
+                    submitter will be notified.</p>
                 <div class="form-group">
-                    <label for="rejectionReasonText" style="display: block; margin-bottom: 8px; font-weight: 500; color: #334155;">
+                    <label for="rejectionReasonText"
+                        style="display: block; margin-bottom: 8px; font-weight: 500; color: #334155;">
                         Rejection Reason <span style="color: #ef4444;">*</span>
                     </label>
-                    <textarea 
-                        id="rejectionReasonText" 
-                        rows="4" 
-                        placeholder="Enter reason for rejection..."
-                        style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; min-height: 100px;"
-                    ></textarea>
-                    <small id="rejectionReasonError" style="color: #ef4444; display: none; margin-top: 5px;">Rejection reason is required</small>
+                    <textarea id="rejectionReasonText" rows="4" placeholder="Enter reason for rejection..."
+                        style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; min-height: 100px;"></textarea>
+                    <small id="rejectionReasonError" style="color: #ef4444; display: none; margin-top: 5px;">Rejection
+                        reason is required</small>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1285,6 +1185,8 @@
     <script src="../../js/config.js?v=4"></script>
     <script src="../../js/api.js?v=4"></script>
     <script src="../../js/auth.js?v=4"></script>
-    <script src="script.js?v=5"></script>
+    <script src="../../js/dashboard-init.js"></script>
+    <script src="script.js?v=6"></script>
 </body>
+
 </html>

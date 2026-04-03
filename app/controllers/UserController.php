@@ -265,17 +265,11 @@ class UserController {
     public function getTechnicians() {
         // Allow supervisors and admins to view technicians
         RoleMiddleware::requireRole(['Supervisor', 'Admin']);
-        
-        // Get only active Technical Officers
-        $filters = [
-            'role' => 'Technical Officer',
-            'is_active' => 1
-        ];
-        
-        $result = $this->userService->getAllUsers($filters, null, 1, 100);
+
+        $result = $this->userService->getTechniciansWithWorkload();
         
         if ($result['success']) {
-            Response::success(['users' => $result['data']['users']]);
+            Response::success($result['data']);
         } else {
             Response::error($result['message'], 400);
         }

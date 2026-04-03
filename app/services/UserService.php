@@ -17,8 +17,10 @@ class UserService {
      * Create a new user
      */
     public function createUser($data, $sendWelcomeEmail = false) {
+        $this->normalizeTechnicalExpertiseData($data, $data['role'] ?? null, true);
+
         // Validation
-        $errors = $this->validateUserData($data);
+        $errors = $this->validateUserData($data, null, $data['role'] ?? null);
         if (!empty($errors)) {
             return [
                 'success' => false,
@@ -95,9 +97,12 @@ class UserService {
                 'message' => 'User not found'
             ];
         }
+
+        $effectiveRole = $data['role'] ?? $user['role'];
+        $this->normalizeTechnicalExpertiseData($data, $effectiveRole, false);
         
         // Validation
-        $errors = $this->validateUserData($data, $userId);
+        $errors = $this->validateUserData($data, $userId, $effectiveRole);
         if (!empty($errors)) {
             return [
                 'success' => false,
@@ -243,11 +248,32 @@ class UserService {
             'data' => $this->userModel->getUserStats()
         ];
     }
+
+    /**
+     * Get active technical officers with workload information
+     */
+    public function getTechniciansWithWorkload() {
+        try {
+            $technicians = $this->userModel->getTechnicalOfficersWithWorkload(true);
+
+            return [
+                'success' => true,
+                'data' => [
+                    'users' => $technicians
+                ]
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Failed to load technicians: ' . $e->getMessage()
+            ];
+        }
+    }
     
     /**
      * Validate user data
      */
-    private function validateUserData($data, $userId = null) {
+    private function validateUserData($data, $userId = null, $effectiveRole = null) {
         $errors = [];
         
         // Employee ID is required for new users
@@ -262,7 +288,9 @@ class UserService {
         
         // Role is required
         if (empty($data['role'])) {
-            $errors['role'] = 'Role is required';
+            if (!$userId) {
+                $errors['role'] = 'Role is required';
+            }
         } else {
             $validRoles = [
                 'Admin',
@@ -278,6 +306,26 @@ class UserService {
                 $errors['role'] = 'Invalid role';
             }
         }
+
+        $resolvedRole = $effectiveRole ?? ($data['role'] ?? null);
+
+        if ($resolvedRole === 'Technical Officer') {
+            if (array_key_exists('technical_expertise', $data)) {
+                $expertise = trim((string)$data['technical_expertise']);
+                if ($expertise === '') {
+                    $errors['technical_expertise'] = 'Technical expertise is required for Technical Officer role';
+                } elseif (strlen($expertise) > 100) {
+                    $errors['technical_expertise'] = 'Technical expertise must be 100 characters or less';
+                }
+            } elseif (!$userId) {
+                $errors['technical_expertise'] = 'Technical expertise is required for Technical Officer role';
+            }
+        } elseif (array_key_exists('technical_expertise', $data) && $data['technical_expertise'] !== null) {
+            $expertise = trim((string)$data['technical_expertise']);
+            if ($expertise !== '' && strlen($expertise) > 100) {
+                $errors['technical_expertise'] = 'Technical expertise must be 100 characters or less';
+            }
+        }
         
         // Email validation (if provided)
         if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
@@ -290,5 +338,34 @@ class UserService {
         }
         
         return $errors;
+    }
+
+    /**
+     * Normalize technical expertise values before validation/persistence
+     */
+    private function normalizeTechnicalExpertiseData(&$data, $effectiveRole = null, $isCreate = false) {
+        if ($effectiveRole === 'Technical Officer') {
+            if (array_key_exists('technical_expertise', $data)) {
+                $expertise = trim((string)$data['technical_expertise']);
+                $data['technical_expertise'] = $expertise !== '' ? $expertise : 'General';
+                return;
+            }
+
+            if ($isCreate || (isset($data['role']) && $data['role'] === 'Technical Officer')) {
+                $data['technical_expertise'] = 'General';
+            }
+
+            return;
+        }
+
+        if (isset($data['role']) && $data['role'] !== 'Technical Officer') {
+            $data['technical_expertise'] = null;
+            return;
+        }
+
+        if (array_key_exists('technical_expertise', $data)) {
+            $expertise = trim((string)$data['technical_expertise']);
+            $data['technical_expertise'] = $expertise !== '' ? $expertise : null;
+        }
     }
 }

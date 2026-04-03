@@ -36,11 +36,11 @@ function getStatusClass(status) {
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        hour: '2-digit', 
-        minute: '2-digit' 
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
     });
 }
 
@@ -60,7 +60,7 @@ function getUpdateText(status) {
     return updateMap[status] || 'No updates';
 }
 
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', async function () {
     try {
         // Check authentication and authorization using DashboardInit
         // Note: 'Machinary Operator' matches the database ENUM (contains typo)
@@ -69,14 +69,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             onSuccess: async (user) => {
                 // Store current user
                 currentUser = user;
-                
+
                 // Update specific user info elements for this dashboard
                 const userNameElement = document.getElementById('userName');
-                
+
                 if (userNameElement) {
                     userNameElement.textContent = user.full_name || user.name || 'Machine Operator';
                 }
-                
+
                 // Load initial data
                 loadDashboardData();
                 loadAssignedMachines();
@@ -84,13 +84,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 loadConditionUpdates();
                 loadTickets();
                 loadNotifications();
-                
+
                 // Refresh weekly check reports every 30 seconds to see status updates
                 setInterval(() => {
                     loadConditionUpdates();
                     loadDashboardData();
                 }, 30000); // 30 seconds
-                
+
                 // Setup event listeners
                 setupNavigation();
                 setupFormHandlers();
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 function setupNavigation() {
     document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', function() {
+        item.addEventListener('click', function () {
             document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
             document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
             this.classList.add('active');
@@ -135,10 +135,10 @@ async function loadDashboardData() {
     try {
         // Fetch weekly check summary
         const response = await API.get('/machine-weekly-checks?status=pending');
-        
+
         if (response.status === 'success' && response.data) {
             const pendingCount = response.data.count || 0;
-            
+
             // Update summary card
             const summaryCard = document.querySelector('.summary-card[onclick="navigateTo(\'condition-updates\')"] .summary-number');
             if (summaryCard) {
@@ -204,31 +204,31 @@ function loadAssignedMachines() {
 
 async function loadFaultReports() {
     const container = document.getElementById('faultsContainer');
-    
+
     try {
         // Show loading state
         container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--stone-400);">Loading machine breakdown reports...</div>';
-        
+
         // Fetch machine breakdown reports from API
         const response = await API.get('/machine-breakdowns');
-        
+
         if (response.status === 'success' && response.data && response.data.reports) {
             // Show all machine breakdown reports
             const faults = response.data.reports;
-            
+
             if (faults.length === 0) {
                 container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--stone-400);">No fault reports found. Submit a new fault report to get started.</div>';
                 return;
             }
-            
+
             container.innerHTML = faults.map(fault => {
                 const statusInfo = getStatusInfo(fault.status);
                 const imageCount = fault.images ? fault.images.length : 0;
                 const isPending = fault.status === 'Pending';
-                
+
                 // Status color matching driver style
                 let statusColor;
-                switch(fault.status) {
+                switch (fault.status) {
                     case 'Resolved':
                         statusColor = '#10b981';
                         break;
@@ -246,22 +246,22 @@ async function loadFaultReports() {
                         statusColor = '#f39c12';
                         break;
                 }
-                
+
                 // Severity color
-                const severityColor = fault.severity === 'Critical' ? '#e74c3c' : 
-                                     fault.severity === 'High' ? '#e67e22' : 
-                                     fault.severity === 'Medium' ? '#f39c12' : '#27ae60';
-                
-                const severityIcon = fault.severity === 'Critical' ? 'fa-exclamation-circle' : 
-                                    fault.severity === 'High' ? 'fa-exclamation-triangle' : 'fa-info-circle';
-                
+                const severityColor = fault.severity === 'Critical' ? '#e74c3c' :
+                    fault.severity === 'High' ? '#e67e22' :
+                        fault.severity === 'Medium' ? '#f39c12' : '#27ae60';
+
+                const severityIcon = fault.severity === 'Critical' ? 'fa-exclamation-circle' :
+                    fault.severity === 'High' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+
                 // Format date
                 const dateStr = formatDate(fault.breakdown_date);
-                
+
                 // Description
                 const description = fault.description || '';
                 const additionalInfo = description.substring(0, 80) + (description.length > 80 ? '...' : '');
-                
+
                 // Build technician info if assigned (only show when not Pending)
                 let technicianInfo = '';
                 if (fault.status !== 'Pending' && fault.assignments && fault.assignments.length > 0) {
@@ -270,7 +270,7 @@ async function loadFaultReports() {
                         <i class="fas fa-user-cog"></i> Assigned to: ${techNames}
                     </div>`;
                 }
-                
+
                 // Resolved by info
                 let resolvedByInfo = '';
                 if (fault.status === 'Resolved' && fault.assignments && fault.assignments.length > 0) {
@@ -278,7 +278,7 @@ async function loadFaultReports() {
                         <i class="fas fa-user-check"></i> Resolved by: ${fault.assignments.map(a => a.technician_name).join(', ')}
                     </div>`;
                 }
-                
+
                 return `
                     <div class="inventory-item" data-status="${fault.status.toLowerCase().replace(' ', '-')}">
                         <div class="item-details">
@@ -287,9 +287,9 @@ async function loadFaultReports() {
                                 <i class="fas fa-clock"></i> ${dateStr}
                             </div>
                             <div class="item-description">
-                                ${fault.status === 'Resolved' 
-                                    ? '<span style="background: #10b981; color: white; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;"><i class="fas fa-check-circle"></i> FINISHED</span>'
-                                    : '<span style="color: ' + statusColor + '; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">' + fault.status.toUpperCase() + '</span>'} | 
+                                ${fault.status === 'Resolved'
+                        ? '<span style="background: #10b981; color: white; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;"><i class="fas fa-check-circle"></i> FINISHED</span>'
+                        : '<span style="color: ' + statusColor + '; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">' + fault.status.toUpperCase() + '</span>'} | 
                                 <span style="color: ${severityColor}; font-weight: 500;">${(fault.severity || 'Medium').toUpperCase()}</span> | 
                                 <span style="color: #555; font-weight: 500;">${fault.breakdown_type || 'General Fault'}</span>
                                 <br>
@@ -336,23 +336,23 @@ async function loadFaultReports() {
 
 async function loadConditionUpdates() {
     const container = document.getElementById('updatesContainer');
-    
+
     try {
         // Show loading state
         container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--stone-400);">Loading weekly check reports...</div>';
-        
+
         // Fetch machine weekly checks from API
         const response = await API.get('/machine-weekly-checks');
-        
+
         if (response.status === 'success' && response.data && response.data.checks) {
             const checks = response.data.checks;
             machineWeeklyChecksMap.clear();
-            
+
             if (checks.length === 0) {
                 container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--stone-400);">No weekly check reports found</div>';
                 return;
             }
-            
+
             container.innerHTML = checks.map(check => {
                 machineWeeklyChecksMap.set(check.check_id, check);
                 // Format date
@@ -362,7 +362,7 @@ async function loadConditionUpdates() {
                     hour: '2-digit',
                     minute: '2-digit'
                 }) : 'N/A';
-                
+
                 // Determine status info
                 let statusLabel = 'Pending';
                 let statusClass = 'status-pending';
@@ -373,12 +373,12 @@ async function loadConditionUpdates() {
                     statusLabel = 'Rejected';
                     statusClass = 'status-rejected';
                 }
-                
+
                 // Format condition
-                const conditionLabel = check.overall_condition ? 
-                    check.overall_condition.charAt(0).toUpperCase() + check.overall_condition.slice(1) : 
+                const conditionLabel = check.overall_condition ?
+                    check.overall_condition.charAt(0).toUpperCase() + check.overall_condition.slice(1) :
                     'N/A';
-                
+
                 return `
                     <div class="inventory-item" data-status="${check.status}">
                         <div class="item-details">
@@ -413,18 +413,18 @@ async function loadConditionUpdates() {
 
 async function loadTickets() {
     const container = document.getElementById('ticketsContainer');
-    
+
     try {
         // Show loading state
         container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--stone-400);">Loading breakdown reports...</div>';
-        
+
         // Fetch machine breakdown reports from API
         const response = await API.get('/machine-breakdowns');
-        
+
         console.log('=== DEBUG: Machinery Operator Machine Breakdowns ===');
         console.log('Current user:', currentUser);
         console.log('API Response:', response);
-        
+
         if (response.status === 'success' && response.data && response.data.reports) {
             // Filter to only show breakdowns reported by the current user
             const breakdowns = response.data.reports.filter(bd => {
@@ -432,20 +432,20 @@ async function loadTickets() {
                 console.log(`Breakdown ${bd.breakdown_id}: operator_id=${bd.operator_id} vs currentUser.id=${currentUser?.id}, operator_name="${bd.operator_name}" vs "${currentUser?.full_name}" => ${matches ? 'MATCH' : 'NO MATCH'}`);
                 return matches;
             });
-            
+
             console.log('Filtered breakdowns for current operator:', breakdowns.length);
-            
+
             if (breakdowns.length === 0) {
                 container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--stone-400);">No breakdown reports found</div>';
                 return;
             }
-            
+
             container.innerHTML = breakdowns.map(breakdown => {
                 // Determine the actual status to display (use ticket status if available, otherwise breakdown status)
                 const actualStatus = breakdown.ticket_status || breakdown.status;
                 const statusInfo = getStatusInfo(actualStatus);
                 const updateText = getUpdateText(actualStatus);
-                
+
                 return `
                     <div class="inventory-item" data-status="${actualStatus.toLowerCase().replace(' ', '-')}">
                         <div class="item-details">
@@ -458,9 +458,9 @@ async function loadTickets() {
                                 ${breakdown.description || 'No description'}
                             </div>
                             <div class="item-meta" style="margin-top: 8px;">
-                                ${(actualStatus === 'Resolved' || actualStatus === 'Closed') 
-                                    ? '<span style="background: #10b981; color: white; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;"><i class="fas fa-check-circle"></i> FINISHED</span>'
-                                    : '<span class="status-text ' + statusInfo.class + '">' + statusInfo.label + '</span>'} | 
+                                ${(actualStatus === 'Resolved' || actualStatus === 'Closed')
+                        ? '<span style="background: #10b981; color: white; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;"><i class="fas fa-check-circle"></i> FINISHED</span>'
+                        : '<span class="status-text ' + statusInfo.class + '">' + statusInfo.label + '</span>'} | 
                                 <span class="status-text status-${breakdown.severity?.toLowerCase() || 'medium'}">${breakdown.severity?.toUpperCase() || 'MEDIUM'}</span> | 
                                 <i class="fas fa-calendar"></i> ${formatDate(breakdown.breakdown_date)}
                             </div>
@@ -491,20 +491,20 @@ async function viewMachineBreakdownDetails(id) {
     try {
         // Fetch breakdown details from API
         const response = await API.get(`/machine-breakdowns/${id}`);
-        
+
         if (response.status === 'success' && response.data) {
             const breakdown = response.data;
-            
+
             // Remove any existing modal
             const existingModal = document.getElementById('machineBreakdownModal');
             if (existingModal) existingModal.remove();
-            
+
             // Build work updates HTML - only show for finished/resolved tickets
             // Check both breakdown status and ticket_status (from fault_tickets)
             let workUpdatesHtml = '';
             const isFinished = breakdown.status === 'Resolved' || breakdown.status === 'Finished' || breakdown.status === 'Completed' ||
-                               breakdown.ticket_status === 'Resolved' || breakdown.ticket_status === 'Finished' || breakdown.ticket_status === 'Completed';
-            
+                breakdown.ticket_status === 'Resolved' || breakdown.ticket_status === 'Finished' || breakdown.ticket_status === 'Completed';
+
             if (isFinished && breakdown.work_updates && breakdown.work_updates.length > 0) {
                 workUpdatesHtml = `
                     <div class="form-section">
@@ -543,7 +543,7 @@ async function viewMachineBreakdownDetails(id) {
                     </div>
                 `;
             }
-            
+
             // Build assignments HTML
             let assignmentsHtml = '';
             if (breakdown.assignments && breakdown.assignments.length > 0) {
@@ -556,7 +556,7 @@ async function viewMachineBreakdownDetails(id) {
                     </div>
                 `;
             }
-            
+
             // Create modal
             const modal = document.createElement('div');
             modal.className = 'modal';
@@ -607,15 +607,15 @@ async function viewMachineBreakdownDetails(id) {
                     </button>
                 </div>
             `;
-            
+
             // Add modal to page and show it
             document.body.appendChild(modal);
-            
+
             // Show modal with animation
             requestAnimationFrame(() => {
                 modal.classList.add('active');
             });
-            
+
         } else {
             showToast('Failed to load breakdown details', 'error');
         }
@@ -629,11 +629,11 @@ function createDetailsModal(title, content) {
     // Remove any existing details modal first
     const existingModals = document.querySelectorAll('[id^="detailsModal_"]');
     existingModals.forEach(m => m.remove());
-    
+
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.id = 'detailsModal_' + Date.now();
-    
+
     modal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
@@ -648,18 +648,18 @@ function createDetailsModal(title, content) {
             <button class="btn btn-secondary" onclick="closeModal('${modal.id}')"><i class="fas fa-times"></i> Close</button>
         </div>
     `;
-    
+
     // Add to body
     document.body.appendChild(modal);
-    
+
     // Force reflow before adding active class for animation
     modal.offsetHeight;
-    
+
     // Add active class to show modal
     setTimeout(() => {
         modal.classList.add('active');
     }, 10);
-    
+
     return modal;
 }
 
@@ -733,7 +733,7 @@ async function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.add('active');
-        
+
         // Load machines when opening report fault modal
         if (modalId === 'reportFaultModal') {
             // Clear any previous errors
@@ -742,7 +742,7 @@ async function openModal(modalId) {
                 errorDiv.style.display = 'none';
                 errorDiv.innerHTML = '';
             }
-            
+
             // Load machines dropdown
             await loadMachinesForFaultReport();
         }
@@ -753,23 +753,23 @@ async function loadMachinesForFaultReport() {
     try {
         const machineSelect = document.getElementById('faultMachine');
         if (!machineSelect) return;
-        
+
         // Show loading state
         machineSelect.innerHTML = '<option value="">Loading machines...</option>';
         machineSelect.disabled = true;
-        
+
         // Fetch machines from API
         const response = await API.get('/machines');
-        
+
         if (response.status === 'success' && response.data) {
             const machines = response.data.machines || [];
-            
+
             // Populate dropdown
             machineSelect.innerHTML = '<option value="">Select Machine</option>';
-            
+
             // Filter only active machines
             const activeMachines = machines.filter(m => m.status === 'Active');
-            
+
             if (activeMachines.length === 0) {
                 machineSelect.innerHTML = '<option value="">No active machines available</option>';
             } else {
@@ -784,7 +784,7 @@ async function loadMachinesForFaultReport() {
             machineSelect.innerHTML = '<option value="">Error loading machines</option>';
             console.error('Failed to load machines:', response.message);
         }
-        
+
         machineSelect.disabled = false;
     } catch (error) {
         console.error('Error loading machines:', error);
@@ -802,7 +802,7 @@ function closeModal(modalId) {
     if (modal) {
         modal.classList.remove('active');
         document.body.style.overflow = '';
-        
+
         // Clear errors when closing report fault modal
         if (modalId === 'reportFaultModal') {
             const errorDiv = document.getElementById('faultFormErrors');
@@ -811,7 +811,7 @@ function closeModal(modalId) {
                 errorDiv.innerHTML = '';
             }
         }
-        
+
         // Remove dynamically created modals
         if (modalId.startsWith('detailsModal_') || modalId === 'machineBreakdownModal') {
             setTimeout(() => modal.remove(), 300);
@@ -823,7 +823,7 @@ function createDetailsModal(title, content) {
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.id = 'detailsModal_' + Date.now();
-    
+
     modal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
@@ -838,19 +838,19 @@ function createDetailsModal(title, content) {
             <button class="btn btn-secondary" onclick="closeModal('${modal.id}')"><i class="fas fa-times"></i> Close</button>
         </div>
     `;
-    
+
     return modal;
 }
 
 // Close modal on outside click
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     if (e.target.classList.contains('modal')) {
         e.target.classList.remove('active');
     }
 });
 
 // Close modal with Escape key
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
         const activeModal = document.querySelector('.modal.active');
         if (activeModal) {
@@ -865,7 +865,7 @@ function setupFormHandlers() {
     // Fault Report Form
     const faultForm = document.getElementById('reportFaultForm');
     if (faultForm) {
-        faultForm.addEventListener('submit', function(e) {
+        faultForm.addEventListener('submit', function (e) {
             e.preventDefault();
             handleFaultSubmission();
         });
@@ -880,7 +880,7 @@ function setupFormHandlers() {
     // Weekly Check Report Form
     const updateForm = document.getElementById('conditionUpdateForm');
     if (updateForm) {
-        updateForm.addEventListener('submit', function(e) {
+        updateForm.addEventListener('submit', function (e) {
             e.preventDefault();
             handleConditionUpdateSubmission();
         });
@@ -889,7 +889,7 @@ function setupFormHandlers() {
     // Edit Fault Form
     const editFaultForm = document.getElementById('editFaultForm');
     if (editFaultForm) {
-        editFaultForm.addEventListener('submit', function(e) {
+        editFaultForm.addEventListener('submit', function (e) {
             e.preventDefault();
             handleEditFaultSubmission();
         });
@@ -900,7 +900,7 @@ function setupFormHandlers() {
     if (editPhotoInput) {
         editPhotoInput.addEventListener('change', handleEditPhotoSelection);
     }
-    
+
     // Populate machine dropdown when modal opens
     const conditionModal = document.getElementById('conditionUpdateModal');
     if (conditionModal) {
@@ -921,32 +921,32 @@ function setupFormHandlers() {
 async function populateMachineDropdown() {
     const select = document.getElementById('updateMachine');
     if (!select) return;
-    
+
     try {
         // Fetch machines from the inventory API
         const response = await API.get('/machines');
-        
+
         if (response && response.status === 'success' && response.data && response.data.machines) {
             const machines = response.data.machines;
-            
+
             // Keep the default option and add machines
             select.innerHTML = '<option value="">Select Machine</option>';
-            
+
             // Filter only active machines
             const activeMachines = machines.filter(m => m.status === 'Active');
-            
+
             if (activeMachines.length === 0) {
                 select.innerHTML = '<option value="">No active machines available</option>';
                 return;
             }
-            
+
             activeMachines.forEach(machine => {
                 const option = document.createElement('option');
                 option.value = machine.id; // Use database ID as value
-                
+
                 // Display format: Machine ID - Machine Name
                 const displayText = `${machine.machine_id || `ID-${machine.id}`} - ${machine.machine_name || 'Unnamed'}`;
-                
+
                 option.textContent = displayText;
                 option.dataset.machineId = machine.machine_id; // Store machine_id for reference
                 select.appendChild(option);
@@ -970,14 +970,14 @@ let selectedPhotos = [];
 
 function handlePhotoSelection(event) {
     const files = Array.from(event.target.files);
-    
+
     // Validate file count
     if (selectedPhotos.length + files.length > 5) {
         showToast('Maximum 5 photos allowed', 'error');
         event.target.value = '';
         return;
     }
-    
+
     // Validate file types and sizes
     const validFiles = [];
     for (const file of files) {
@@ -986,22 +986,22 @@ function handlePhotoSelection(event) {
             showToast(`Invalid file type: ${file.name}. Only JPEG, PNG, and WebP are allowed.`, 'error');
             continue;
         }
-        
+
         // Check file size (5MB limit)
         if (file.size > 5 * 1024 * 1024) {
             showToast(`File too large: ${file.name}. Maximum size is 5MB.`, 'error');
             continue;
         }
-        
+
         validFiles.push(file);
     }
-    
+
     // Add valid files to selected photos
     selectedPhotos.push(...validFiles);
-    
+
     // Update preview
     updatePhotoPreview();
-    
+
     // Clear input
     event.target.value = '';
 }
@@ -1009,10 +1009,10 @@ function handlePhotoSelection(event) {
 function updatePhotoPreview() {
     const container = document.getElementById('photoPreviewContainer');
     container.innerHTML = '';
-    
+
     selectedPhotos.forEach((file, index) => {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             const previewItem = document.createElement('div');
             previewItem.className = 'photo-preview-item';
             previewItem.innerHTML = `
@@ -1040,17 +1040,17 @@ async function handleFaultSubmission() {
         const errorDiv = document.getElementById('faultFormErrors');
         errorDiv.style.display = 'none';
         errorDiv.innerHTML = '';
-        
+
         const machineId = document.getElementById('faultMachine').value;
         const description = document.getElementById('faultDescription').value;
         const priority = document.getElementById('faultPriority').value;
-        
+
         // Show loading state
         const submitBtn = document.querySelector('#reportFaultForm button[type="submit"]');
         const originalText = submitBtn.innerHTML;
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-        
+
         // Step 1: Create machine breakdown report
         const breakdownData = {
             machine_id: parseInt(machineId),
@@ -1061,14 +1061,14 @@ async function handleFaultSubmission() {
             description: description,
             status: 'Pending'
         };
-        
+
         console.log('Creating machine breakdown:', breakdownData);
         const response = await API.post('/machine-breakdowns', breakdownData);
-        
+
         if (response.status === 'success' && response.data) {
             const breakdownId = response.data.breakdown_id;
             console.log('Machine breakdown created:', breakdownId);
-            
+
             // Step 2: Create fault ticket linked to the breakdown for supervisor assignment
             const ticketFormData = new FormData();
             ticketFormData.append('machine_id', machineId);
@@ -1076,26 +1076,26 @@ async function handleFaultSubmission() {
             ticketFormData.append('priority', priority);
             ticketFormData.append('breakdown_report_id', breakdownId);
             ticketFormData.append('breakdown_type', 'machine_breakdown');
-            
+
             // Append photos
             selectedPhotos.forEach((photo, index) => {
                 ticketFormData.append('photos[]', photo);
             });
-            
+
             console.log('Creating fault ticket for breakdown:', breakdownId);
             const ticketResponse = await API.postFormData('/fault-tickets', ticketFormData);
-            
+
             if (ticketResponse.status === 'success') {
                 showToast('Machine breakdown reported successfully! Supervisor will review and assign a technician.', 'success');
             } else {
                 showToast('Breakdown created but ticket creation failed. Supervisor can still assign this breakdown.', 'warning');
             }
-            
+
             closeModal('reportFaultModal');
             document.getElementById('reportFaultForm').reset();
             selectedPhotos = [];
             updatePhotoPreview();
-            
+
             // Reload fault reports
             setTimeout(() => {
                 loadFaultReports();
@@ -1105,25 +1105,25 @@ async function handleFaultSubmission() {
             if (response.errors) {
                 // Extract actual error messages from nested structure
                 const errors = response.errors.errors || response.errors;
-                
+
                 // Display errors in error div
                 const errorDiv = document.getElementById('faultFormErrors');
                 errorDiv.style.display = 'block';
                 errorDiv.innerHTML = '';
-                
+
                 // Create error list
                 const errorList = document.createElement('ul');
                 errorList.style.margin = '0';
                 errorList.style.paddingLeft = '20px';
-                
+
                 Object.keys(errors).forEach(field => {
                     const li = document.createElement('li');
                     li.textContent = errors[field];
                     errorList.appendChild(li);
                 });
-                
+
                 errorDiv.appendChild(errorList);
-                
+
                 // Scroll to top of modal to show errors
                 const modal = document.querySelector('#reportFaultModal .modal-content');
                 if (modal) {
@@ -1133,15 +1133,15 @@ async function handleFaultSubmission() {
                 showToast(response.message || 'Failed to submit fault report', 'error');
             }
         }
-        
+
         // Restore button
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
-        
+
     } catch (error) {
         console.error('Error submitting fault report:', error);
         showToast(error.message || 'Failed to submit fault report', 'error');
-        
+
         // Restore button
         const submitBtn = document.querySelector('#reportFaultForm button[type="submit"]');
         submitBtn.disabled = false;
@@ -1157,19 +1157,19 @@ async function handleConditionUpdateSubmission() {
         const hydraulic = document.getElementById('updateHydraulic').value;
         const observations = document.getElementById('updateObservations').value;
         const recommendations = document.getElementById('updateRecommendations').value;
-        
+
         if (!machineId || !condition || !engine || !hydraulic || !observations) {
             showToast('Please fill in all required fields', 'error');
             return;
         }
-        
+
         // Calculate week dates (ending today)
         const today = new Date();
         const weekEndDate = today.toISOString().split('T')[0];
         const weekStartDate = new Date(today);
         weekStartDate.setDate(weekStartDate.getDate() - 6);
         const weekStart = weekStartDate.toISOString().split('T')[0];
-        
+
         // Prepare data for API
         const checkData = {
             machine_id: parseInt(machineId),
@@ -1186,21 +1186,21 @@ async function handleConditionUpdateSubmission() {
             cooling_system: 1, // Default to working
             filters: 1, // Default to working
             notes: observations,
-            issues_found: engine !== 'Normal operation' || hydraulic !== 'Normal operation' ? 
-                `Engine: ${engine}, Hydraulic: ${hydraulic}. ${recommendations}` : 
+            issues_found: engine !== 'Normal operation' || hydraulic !== 'Normal operation' ?
+                `Engine: ${engine}, Hydraulic: ${hydraulic}. ${recommendations}` :
                 recommendations || null
         };
-        
+
         console.log('Submitting weekly check report:', checkData);
-        
+
         // Submit to API
         const response = await API.post('/machine-weekly-checks', checkData);
-        
+
         if (response && response.status === 'success') {
             showToast('Weekly check report submitted successfully! Supervisor will review.', 'success');
             closeModal('conditionUpdateModal');
             document.getElementById('conditionUpdateForm').reset();
-            
+
             // Reload weekly check reports
             setTimeout(() => {
                 loadConditionUpdates();
@@ -1223,14 +1223,14 @@ let imagesToDelete = [];
 function handleEditPhotoSelection(event) {
     const files = Array.from(event.target.files);
     const existingImageCount = document.querySelectorAll('#existingImages .image-preview').length;
-    
+
     // Validate total file count (existing + new)
     if (existingImageCount + editSelectedPhotos.length + files.length > 5) {
         showToast('Maximum 5 photos allowed in total', 'error');
         event.target.value = '';
         return;
     }
-    
+
     // Validate file types and sizes
     const validFiles = [];
     for (const file of files) {
@@ -1238,15 +1238,15 @@ function handleEditPhotoSelection(event) {
             showToast(`Invalid file type: ${file.name}. Only JPEG, PNG, and WebP are allowed.`, 'error');
             continue;
         }
-        
+
         if (file.size > 5 * 1024 * 1024) {
             showToast(`File too large: ${file.name}. Maximum size is 5MB.`, 'error');
             continue;
         }
-        
+
         validFiles.push(file);
     }
-    
+
     editSelectedPhotos.push(...validFiles);
     updateEditPhotoPreview();
     event.target.value = '';
@@ -1255,10 +1255,10 @@ function handleEditPhotoSelection(event) {
 function updateEditPhotoPreview() {
     const container = document.getElementById('editPhotoPreviews');
     container.innerHTML = '';
-    
+
     editSelectedPhotos.forEach((file, index) => {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             const previewItem = document.createElement('div');
             previewItem.className = 'photo-preview-item';
             previewItem.innerHTML = `
@@ -1296,39 +1296,39 @@ function removeExistingImage(imageId, buttonElement) {
 async function handleEditFaultSubmission() {
     try {
         const ticketId = document.getElementById('editTicketId').value;
-        
+
         // Create FormData for multipart/form-data
         const formData = new FormData();
         formData.append('description', document.getElementById('editDescription').value);
         formData.append('priority', document.getElementById('editPrioritySelect').value);
-        
+
         // Append new photos
         editSelectedPhotos.forEach((photo) => {
             formData.append('photos[]', photo);
         });
-        
+
         // Append images to delete
         imagesToDelete.forEach((imageId) => {
             formData.append('delete_images[]', imageId);
         });
-        
+
         // Show loading state
         const submitBtn = document.querySelector('#editFaultForm button[type="submit"]');
         const originalText = submitBtn.innerHTML;
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
-        
+
         // Submit to API
         const response = await API.putFormData(`/fault-tickets/${ticketId}`, formData);
-        
+
         if (response.status === 'success') {
             showToast('Fault ticket updated successfully!', 'success');
             closeModal('editFaultModal');
-            
+
             // Reset edit form state
             editSelectedPhotos = [];
             imagesToDelete = [];
-            
+
             // Reload fault reports and tickets
             setTimeout(() => {
                 loadFaultReports();
@@ -1337,15 +1337,15 @@ async function handleEditFaultSubmission() {
         } else {
             showToast(response.message || 'Failed to update fault ticket', 'error');
         }
-        
+
         // Restore button
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
-        
+
     } catch (error) {
         console.error('Error updating fault ticket:', error);
         showToast('Failed to update fault ticket. Please try again.', 'error');
-        
+
         // Restore button
         const submitBtn = document.querySelector('#editFaultForm button[type="submit"]');
         submitBtn.disabled = false;
@@ -1371,13 +1371,13 @@ function filterItems(containerId, status, label, buttonElement) {
     // Support both .item-card and .inventory-item classes
     const container = document.getElementById(containerId);
     if (!container) return;
-    
+
     const cards = container.querySelectorAll('.item-card, .inventory-item');
     let count = 0;
-    
+
     cards.forEach(card => {
         const cardStatus = card.getAttribute('data-status');
-        
+
         // Show all if 'all' is selected, otherwise match status
         if (status === 'all' || cardStatus === status) {
             card.style.display = 'flex';
@@ -1386,14 +1386,14 @@ function filterItems(containerId, status, label, buttonElement) {
             card.style.display = 'none';
         }
     });
-    
+
     // Update active button
     if (buttonElement) {
         const filterButtons = buttonElement.parentElement.querySelectorAll('.filter-btn');
         filterButtons.forEach(btn => btn.classList.remove('active'));
         buttonElement.classList.add('active');
     }
-    
+
     showToast(`Showing ${count} ${label}`, 'success');
 }
 
@@ -1402,7 +1402,7 @@ function filterItems(containerId, status, label, buttonElement) {
 function toggleDropdown(event, dropdownId) {
     event.stopPropagation();
     const menu = document.getElementById(`dropdown-${dropdownId}`);
-    
+
     // Close all other menus
     document.querySelectorAll('.dropdown-menu').forEach(m => {
         if (m.id !== `dropdown-${dropdownId}`) {
@@ -1410,7 +1410,7 @@ function toggleDropdown(event, dropdownId) {
             m.style.display = 'none';
         }
     });
-    
+
     // Toggle current menu
     if (menu) {
         const isVisible = menu.classList.contains('active') || menu.style.display === 'block';
@@ -1427,14 +1427,14 @@ function toggleDropdown(event, dropdownId) {
 function toggleTicketMenu(ticketId, event) {
     event.stopPropagation();
     const menu = document.getElementById(`ticket-menu-${ticketId}`);
-    
+
     // Close all other menus
     document.querySelectorAll('.dropdown-menu').forEach(m => {
         if (m.id !== `ticket-menu-${ticketId}`) {
             m.style.display = 'none';
         }
     });
-    
+
     // Toggle current menu
     menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
 }
@@ -1445,7 +1445,7 @@ function closeTicketMenu(ticketId) {
 }
 
 // Close dropdowns when clicking outside
-document.addEventListener('click', function() {
+document.addEventListener('click', function () {
     document.querySelectorAll('.dropdown-menu').forEach(menu => {
         menu.style.display = 'none';
     });
@@ -1457,35 +1457,35 @@ async function editFaultTicket(ticketId) {
     try {
         // Fetch ticket details
         const response = await API.get(`/fault-tickets/${ticketId}`);
-        
+
         if (response.status !== 'success') {
             showToast('Failed to load ticket details', 'error');
             return;
         }
-        
+
         const ticket = response.data;
-        
+
         // Check if ticket is still pending
         if (ticket.status !== 'Open') {
             showToast('Only pending tickets can be edited', 'error');
             return;
         }
-        
+
         // Populate edit form
         document.getElementById('editTicketId').value = ticket.id;
-        
+
         // Display machine name (can't be changed)
         const editMachineSelect = document.getElementById('editMachineSelect');
         editMachineSelect.innerHTML = `<option value="${ticket.machine_id}" selected>${ticket.machine_name || 'Unknown Machine'}</option>`;
         editMachineSelect.disabled = true;
-        
+
         document.getElementById('editPrioritySelect').value = ticket.priority;
         document.getElementById('editDescription').value = ticket.description;
-        
+
         // Display existing images
         const existingImagesContainer = document.getElementById('existingImages');
         existingImagesContainer.innerHTML = '';
-        
+
         if (ticket.images && ticket.images.length > 0) {
             ticket.images.forEach(img => {
                 const imgDiv = document.createElement('div');
@@ -1500,14 +1500,14 @@ async function editFaultTicket(ticketId) {
                 existingImagesContainer.appendChild(imgDiv);
             });
         }
-        
+
         // Clear new photos
         document.getElementById('editPhotos').value = '';
         document.getElementById('editPhotoPreviews').innerHTML = '';
-        
+
         // Open modal
         openModal('editFaultModal');
-        
+
     } catch (error) {
         console.error('Error loading ticket for edit:', error);
         showToast('Failed to load ticket details', 'error');
@@ -1517,14 +1517,14 @@ async function editFaultTicket(ticketId) {
 async function deleteFaultTicket(ticketId) {
     // Close the dropdown menu first
     closeTicketMenu(ticketId);
-    
+
     createConfirmationDialog(
         'Delete Fault Ticket',
         'Are you sure you want to delete this fault ticket? This action cannot be undone and all associated images will be permanently removed.',
         async () => {
             try {
                 const response = await API.delete(`/fault-tickets/${ticketId}`);
-                
+
                 if (response.status === 'success') {
                     showToast('Fault ticket deleted successfully', 'success');
                     // Reload tickets
@@ -1637,10 +1637,10 @@ async function viewFaultDetails(id) {
             </div>
         `;
         document.body.appendChild(loadingModal);
-        
+
         // Fetch fault ticket details
         const response = await API.get(`/fault-tickets/${id}`);
-        
+
         // Remove loading modal
         const loading = document.getElementById('loadingModal');
         if (loading) loading.remove();
@@ -1715,7 +1715,7 @@ async function viewFaultDetails(id) {
                 </div>
             `;
         }
-        
+
         const modal = createDetailsModal(`Fault Report ${fault.ticket_id || ('MBD-' + String(fault.id).padStart(3, '0'))}`, `
             <div class="form-section">
                 <h5><i class="fas fa-info-circle"></i> Fault Information</h5>
@@ -1725,9 +1725,9 @@ async function viewFaultDetails(id) {
                 <p><strong>Submitted:</strong> ${formatDate(fault.created_at)}</p>
                 <p><strong>Priority:</strong> <span class="priority-badge priority-${fault.priority?.toLowerCase()}">${fault.priority || 'Medium'}</span></p>
                 <p><strong>Reported By:</strong> ${fault.reported_by_name || 'N/A'}</p>
-                <p><strong>Current Status:</strong> ${(fault.status === 'Resolved' || fault.status === 'Closed') 
-                    ? '<span style=\"background: #10b981; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;\"><i class=\"fas fa-check-circle\"></i> FINISHED</span>'
-                    : '<span class=\"status-text ' + statusInfo.class + '\">' + statusInfo.text + '</span>'}</p>
+                <p><strong>Current Status:</strong> ${(fault.status === 'Resolved' || fault.status === 'Closed')
+                ? '<span style=\"background: #10b981; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;\"><i class=\"fas fa-check-circle\"></i> FINISHED</span>'
+                : '<span class=\"status-text ' + statusInfo.class + '\">' + statusInfo.text + '</span>'}</p>
             </div>
             
             <div class="form-section">
@@ -1751,14 +1751,14 @@ async function viewFaultDetails(id) {
                 ${fault.updated_at !== fault.created_at ? `<p><strong>Updated On:</strong> ${formatDate(fault.updated_at)}</p>` : ''}
             </div>
         `);
-        
+
         document.body.appendChild(modal);
         modal.classList.add('active');
     } catch (error) {
         // Remove loading modal if exists
         const loading = document.getElementById('loadingModal');
         if (loading) loading.remove();
-        
+
         console.error('Error loading fault details:', error);
         showToast('Failed to load fault details. Please try again.', 'error');
     }
@@ -1768,18 +1768,18 @@ async function viewUpdateDetails(checkId) {
     try {
         // Use cached data if available, otherwise fetch from API
         let check = machineWeeklyChecksMap.get(checkId);
-        
+
         if (!check) {
             const response = await API.get(`/machine-weekly-checks?id=${checkId}`);
-            
+
             if (!response || response.status !== 'success' || !response.data || !response.data.check) {
                 showToast('Failed to load weekly check report details', 'error');
                 return;
             }
-            
+
             check = response.data.check;
         }
-        
+
         // Format dates
         const submittedDate = check.submitted_date ? new Date(check.submitted_date).toLocaleString('en-US', {
             month: 'short',
@@ -1788,19 +1788,19 @@ async function viewUpdateDetails(checkId) {
             hour: '2-digit',
             minute: '2-digit'
         }) : 'N/A';
-        
+
         const weekStart = check.week_start_date ? new Date(check.week_start_date).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric'
         }) : 'N/A';
-        
+
         const weekEnd = check.week_end_date ? new Date(check.week_end_date).toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric'
         }) : 'N/A';
-        
+
         const reviewedDate = check.reviewed_date ? new Date(check.reviewed_date).toLocaleString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -1808,12 +1808,12 @@ async function viewUpdateDetails(checkId) {
             hour: '2-digit',
             minute: '2-digit'
         }) : null;
-        
+
         // Format condition
-        const condition = check.overall_condition ? 
-            check.overall_condition.charAt(0).toUpperCase() + check.overall_condition.slice(1) : 
+        const condition = check.overall_condition ?
+            check.overall_condition.charAt(0).toUpperCase() + check.overall_condition.slice(1) :
             'N/A';
-        
+
         // Determine status info
         let statusLabel = 'Pending Review';
         let statusClass = 'status-pending';
@@ -1824,7 +1824,7 @@ async function viewUpdateDetails(checkId) {
             statusLabel = 'Rejected';
             statusClass = 'status-rejected';
         }
-        
+
         // Format system statuses
         const engineStatus = check.engine_status === 1 || check.engine_status === true ? 'Normal operation' : 'Issues observed';
         const hydraulicStatus = check.hydraulics === 1 || check.hydraulics === true ? 'Normal operation' : 'Issues observed';
@@ -1834,7 +1834,7 @@ async function viewUpdateDetails(checkId) {
         const lubricationStatus = check.lubrication === 1 || check.lubrication === true ? 'Normal operation' : 'Issues observed';
         const coolingStatus = check.cooling_system === 1 || check.cooling_system === true ? 'Normal operation' : 'Issues observed';
         const filtersStatus = check.filters === 1 || check.filters === true ? 'Normal operation' : 'Issues observed';
-        
+
         const modal = createDetailsModal(`Weekly Check Report - ${checkId}`, `
             <div class="form-section">
                 <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
@@ -1887,16 +1887,16 @@ async function viewUpdateDetails(checkId) {
             </div>
             ` : ''}
         `);
-        
+
         document.body.appendChild(modal);
         document.body.style.overflow = 'hidden';
         modal.style.display = 'flex';
-        
+
         // Add active class with slight delay to ensure transition works
         setTimeout(() => {
             modal.classList.add('active');
         }, 10);
-        
+
     } catch (error) {
         console.error('Error viewing weekly check report:', error);
         showToast('Error loading report details', 'error');
@@ -1927,7 +1927,7 @@ function viewTicketTimeline(id) {
 
     const timeline = timelines[id] || [];
     let timelineHtml = '';
-    
+
     timeline.forEach((entry, index) => {
         const isLast = index === timeline.length - 1;
         timelineHtml += `
@@ -1980,75 +1980,8 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-// ==================== LOGOUT ====================
-
-function logout() {
-    createConfirmationDialog(
-        'Confirm Logout',
-        'Are you sure you want to logout? Any unsaved changes will be lost.',
-        () => {
-            Auth.logout();
-        },
-        'warning'
-    );
-}
-
-// ==================== CONFIRMATION DIALOG ====================
-
-function createConfirmationDialog(title, message, onConfirm, type = 'danger') {
-    const modal = document.createElement('div');
-    modal.className = 'modal confirmation-modal';
-    modal.id = 'confirmationModal';
-    
-    modal.innerHTML = `
-        <div class="modal-content confirmation-content">
-            <div class="confirmation-header ${type}">
-                <i class="fas fa-${type === 'danger' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-circle' : 'question-circle'}"></i>
-                <h4>${title}</h4>
-            </div>
-            <div class="confirmation-body">
-                <p>${message}</p>
-            </div>
-            <div class="confirmation-actions">
-                <button class="btn btn-secondary" onclick="closeConfirmation()">
-                    <i class="fas fa-times"></i> Cancel
-                </button>
-                <button class="btn btn-${type}" onclick="confirmAction()">
-                    <i class="fas fa-check"></i> Confirm
-                </button>
-            </div>
-        </div>
-    `;
-    
-    // Close on outside click
-    modal.onclick = (e) => {
-        if (e.target === modal) {
-            closeConfirmation();
-        }
-    };
-    
-    // Store the confirmation action
-    window.pendingConfirmAction = onConfirm;
-    
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('active'), 10);
-}
-
-function closeConfirmation() {
-    const modal = document.getElementById('confirmationModal');
-    if (modal) {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-    }
-    window.pendingConfirmAction = null;
-}
-
-async function confirmAction() {
-    if (window.pendingConfirmAction) {
-        await window.pendingConfirmAction();
-        closeConfirmation();
-    }
-}
+// logout(), createConfirmationDialog(), closeConfirmation(), confirmAction()
+// are now provided by shared dashboard-init.js
 
 // ==================== MOBILE MENU ====================
 
@@ -2076,7 +2009,7 @@ function setupMobileMenu() {
 }
 
 // Handle window resize for mobile menu
-window.addEventListener('resize', function() {
+window.addEventListener('resize', function () {
     const existingBtn = document.querySelector('button[style*="position: fixed"]');
     if (window.innerWidth > 768 && existingBtn) {
         existingBtn.remove();

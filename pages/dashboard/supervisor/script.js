@@ -4,38 +4,38 @@
 (async function initializeDashboard() {
     // Require supervisor role
     const authorized = await Auth.requireRole('Supervisor');
-    
+
     if (!authorized) {
         return; // Auth.requireRole will handle redirection
     }
-    
+
     // Load user data
     const user = await Auth.checkAuth();
     if (user) {
         // Update user name
         const fullName = user.full_name || user.name || 'Supervisor';
         document.getElementById('userName').textContent = fullName;
-        
+
         // Update user avatar with first letter of name
         const avatar = document.getElementById('userAvatar');
         avatar.textContent = fullName.charAt(0).toUpperCase();
-        
+
         // Update employee ID
         const employeeIdElement = document.getElementById('userEmployeeId');
         if (employeeIdElement && user.employee_id) {
             employeeIdElement.textContent = `ID: ${user.employee_id}`;
         }
-        
+
         // Update role
         const roleElement = document.getElementById('userRole');
         if (roleElement && user.role) {
             roleElement.textContent = user.role;
         }
     }
-    
+
     // Load initial data
     loadDashboardData();
-    
+
     // Refresh weekly check reports every 30 seconds to keep status updated
     setInterval(() => {
         const currentSection = document.querySelector('.content-section.active')?.id;
@@ -43,7 +43,7 @@
             loadDailyCheckReports();
         }
     }, 30000); // 30 seconds
-    
+
     // Set up photo upload handler
     const photoInput = document.getElementById('ticketPhotos');
     if (photoInput) {
@@ -54,15 +54,15 @@
 // ==================== NAVIGATION ====================
 
 document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', function() {
+    item.addEventListener('click', function () {
         document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
         document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-        
+
         this.classList.add('active');
-        
+
         const sectionId = this.getAttribute('data-section');
         document.getElementById(sectionId).classList.add('active');
-        
+
         // Load section-specific data
         loadSectionData(sectionId);
     });
@@ -71,17 +71,17 @@ document.querySelectorAll('.nav-item').forEach(item => {
 function navigateTo(sectionId) {
     document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
     document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-    
+
     const navItem = document.querySelector(`[data-section="${sectionId}"]`);
     if (navItem) {
         navItem.classList.add('active');
     }
-    
+
     const section = document.getElementById(sectionId);
     if (section) {
         section.classList.add('active');
     }
-    
+
     loadSectionData(sectionId);
 }
 
@@ -93,7 +93,7 @@ function loadDashboardData() {
 }
 
 function loadSectionData(sectionId) {
-    switch(sectionId) {
+    switch (sectionId) {
         case 'dashboard':
             // Dashboard already shows static summary
             break;
@@ -115,6 +115,7 @@ function loadSectionData(sectionId) {
         case 'asset-status':
             loadAssetStatus();
             break;
+        case 'technicians':
         case 'technician-assignments':
             loadTechnicians();
             break;
@@ -140,17 +141,17 @@ function updateDashboardSummary(pendingCount) {
 async function loadDailyCheckReports() {
     const tbody = document.getElementById('reportsTableBody');
     tbody.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Loading reports...</p>';
-    
+
     try {
         // Fetch both driver vehicle checks and machinery operator checks
         const [vehicleChecksResponse, machineChecksResponse] = await Promise.all([
             API.get('/vehicle-checks'),
             API.get('/machine-weekly-checks')
         ]);
-        
+
         const reports = [];
         weeklyCheckReportsMap.clear();
-        
+
         // Process vehicle checks (driver reports)
         if (vehicleChecksResponse.success && vehicleChecksResponse.data) {
             const vehicleChecks = Array.isArray(vehicleChecksResponse.data) ? vehicleChecksResponse.data : [];
@@ -170,7 +171,7 @@ async function loadDailyCheckReports() {
                 weeklyCheckReportsMap.set(reportObj.id, reportObj);
             });
         }
-        
+
         // Process machine weekly checks (machinery operator reports)
         if (machineChecksResponse.status === 'success' && machineChecksResponse.data && machineChecksResponse.data.checks) {
             machineChecksResponse.data.checks.forEach(check => {
@@ -189,19 +190,19 @@ async function loadDailyCheckReports() {
                 weeklyCheckReportsMap.set(reportObj.id, reportObj);
             });
         }
-        
+
         // Sort by date (newest first)
         reports.sort((a, b) => {
             const dateA = a.rawData.submitted_date ? new Date(a.rawData.submitted_date) : new Date(0);
             const dateB = b.rawData.submitted_date ? new Date(b.rawData.submitted_date) : new Date(0);
             return dateB - dateA;
         });
-        
+
         if (reports.length === 0) {
             tbody.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 40px;">No weekly check reports found</p>';
             return;
         }
-        
+
         tbody.innerHTML = reports.map(report => `
             <div class="inventory-item" data-id="${report.id}" data-type="${report.type}" data-status="${report.status.toLowerCase()}">
                 <div class="item-details">
@@ -239,11 +240,11 @@ async function loadDailyCheckReports() {
                 </div>
             </div>
         `).join('');
-        
+
         // Update summary count
         const pendingCount = reports.filter(r => r.status.toLowerCase() === 'pending').length;
         updateDashboardSummary(pendingCount);
-        
+
     } catch (error) {
         console.error('Error loading weekly check reports:', error);
         tbody.innerHTML = '<p style="text-align: center; color: #e74c3c; padding: 40px;">Error loading reports. Please try again.</p>';
@@ -253,17 +254,17 @@ async function loadDailyCheckReports() {
 function filterReportsByStatus(status) {
     const buttons = document.querySelectorAll('#reportStatusFilters .filter-btn');
     buttons.forEach(b => b.classList.remove('active'));
-    
+
     // Find and activate the clicked button
     const clickedButton = Array.from(buttons).find(btn => {
         const onclickAttr = btn.getAttribute('onclick');
         return onclickAttr && onclickAttr.includes(`'${status}'`);
     });
-    
+
     if (clickedButton) {
         clickedButton.classList.add('active');
     }
-    
+
     currentReportStatusFilter = status;
     applyReportFilters();
 }
@@ -271,14 +272,14 @@ function filterReportsByStatus(status) {
 function applyReportFilters() {
     const items = document.querySelectorAll('#reportsTableBody .inventory-item');
     let visibleCount = 0;
-    
+
     items.forEach(item => {
         const itemStatus = item.getAttribute('data-status');
         const itemType = item.getAttribute('data-type');
-        
+
         const matchesStatus = currentReportStatusFilter === 'all' || itemStatus === currentReportStatusFilter.toLowerCase();
         const matchesSource = currentReportSourceFilter === 'all' || itemType === currentReportSourceFilter;
-        
+
         if (matchesStatus && matchesSource) {
             item.style.display = '';
             visibleCount++;
@@ -286,7 +287,7 @@ function applyReportFilters() {
             item.style.display = 'none';
         }
     });
-    
+
     showToast(`Showing ${visibleCount} reports`, 'info');
 }
 
@@ -297,9 +298,9 @@ async function viewReport(reportId, reportTypeHint) {
         const reportType = reportTypeHint || cachedReport?.type;
         const isVehicleCheck = reportId.startsWith('VCHK-') || reportId.startsWith('CHK-') || reportType === 'driver';
         const isMachineCheck = reportId.startsWith('MCHK-') || reportType === 'operator';
-        
+
         let checkData;
-        
+
         if (isVehicleCheck) {
             // Fetch vehicle check from API
             const response = await API.get(`/vehicle-checks?id=${reportId}`);
@@ -311,7 +312,7 @@ async function viewReport(reportId, reportTypeHint) {
             }
             checkData = response.data;
             console.log('Vehicle check data:', checkData);
-            
+
             // Format dates
             const submittedDate = checkData.submitted_date ? new Date(checkData.submitted_date).toLocaleString('en-US', {
                 month: 'short',
@@ -320,19 +321,19 @@ async function viewReport(reportId, reportTypeHint) {
                 hour: '2-digit',
                 minute: '2-digit'
             }) : 'N/A';
-            
+
             const weekStart = checkData.week_start_date ? new Date(checkData.week_start_date).toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric'
             }) : 'N/A';
-            
+
             const weekEnd = checkData.week_end_date ? new Date(checkData.week_end_date).toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric'
             }) : 'N/A';
-            
+
             const reviewedDate = checkData.reviewed_date ? new Date(checkData.reviewed_date).toLocaleString('en-US', {
                 month: 'short',
                 day: 'numeric',
@@ -340,7 +341,7 @@ async function viewReport(reportId, reportTypeHint) {
                 hour: '2-digit',
                 minute: '2-digit'
             }) : null;
-            
+
             // Format status
             let statusLabel = 'Pending Review';
             let statusClass = 'status-pending';
@@ -351,12 +352,12 @@ async function viewReport(reportId, reportTypeHint) {
                 statusLabel = 'Rejected';
                 statusClass = 'status-rejected';
             }
-            
+
             // Format condition
-            const condition = checkData.overall_condition ? 
-                checkData.overall_condition.charAt(0).toUpperCase() + checkData.overall_condition.slice(1) : 
+            const condition = checkData.overall_condition ?
+                checkData.overall_condition.charAt(0).toUpperCase() + checkData.overall_condition.slice(1) :
                 'N/A';
-            
+
             // Format only the system checks that drivers actually submit in their form
             const engineOilStatus = checkData.engine_oil === 1 || checkData.engine_oil === true ? '✓ Checked' : '✗ Issues';
             const brakesStatus = checkData.brakes === 1 || checkData.brakes === true ? '✓ Checked' : '✗ Issues';
@@ -364,7 +365,7 @@ async function viewReport(reportId, reportTypeHint) {
             const tiresStatus = checkData.tires === 1 || checkData.tires === true ? '✓ Checked' : '✗ Issues';
             const coolantStatus = checkData.coolant === 1 || checkData.coolant === true ? '✓ Checked' : '✗ Issues';
             const wipersStatus = checkData.wipers === 1 || checkData.wipers === true ? '✓ Checked' : '✗ Issues';
-            
+
             const content = `
                 <div class="form-section">
                     <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
@@ -418,15 +419,15 @@ async function viewReport(reportId, reportTypeHint) {
                 </div>
                 ` : ''}
             `;
-            
+
             document.getElementById('reportDetailsModalTitle').innerHTML = '<i class="fas fa-car"></i> Vehicle Weekly Check Report';
             document.getElementById('reportDetailsModalContent').innerHTML = content;
-            
+
             // Update modal footer with action buttons for pending reports
             updateModalFooter(reportId, checkData.status);
-            
+
             openReportDetailsModal();
-            
+
         } else if (isMachineCheck) {
             // Fetch machine check from API
             const response = await API.get(`/machine-weekly-checks?id=${reportId}`);
@@ -436,7 +437,7 @@ async function viewReport(reportId, reportTypeHint) {
                 return;
             }
             checkData = response.data.check;
-            
+
             // Format dates
             const submittedDate = checkData.submitted_date ? new Date(checkData.submitted_date).toLocaleString('en-US', {
                 month: 'short',
@@ -445,19 +446,19 @@ async function viewReport(reportId, reportTypeHint) {
                 hour: '2-digit',
                 minute: '2-digit'
             }) : 'N/A';
-            
+
             const weekStart = checkData.week_start_date ? new Date(checkData.week_start_date).toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric'
             }) : 'N/A';
-            
+
             const weekEnd = checkData.week_end_date ? new Date(checkData.week_end_date).toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric'
             }) : 'N/A';
-            
+
             const reviewedDate = checkData.reviewed_date ? new Date(checkData.reviewed_date).toLocaleString('en-US', {
                 month: 'short',
                 day: 'numeric',
@@ -465,7 +466,7 @@ async function viewReport(reportId, reportTypeHint) {
                 hour: '2-digit',
                 minute: '2-digit'
             }) : null;
-            
+
             // Format status
             let statusLabel = 'Pending Review';
             let statusClass = 'status-pending';
@@ -476,12 +477,12 @@ async function viewReport(reportId, reportTypeHint) {
                 statusLabel = 'Rejected';
                 statusClass = 'status-rejected';
             }
-            
+
             // Format condition
-            const condition = checkData.overall_condition ? 
-                checkData.overall_condition.charAt(0).toUpperCase() + checkData.overall_condition.slice(1) : 
+            const condition = checkData.overall_condition ?
+                checkData.overall_condition.charAt(0).toUpperCase() + checkData.overall_condition.slice(1) :
                 'N/A';
-            
+
             // Format system statuses
             const engineStatus = checkData.engine_status === 1 || checkData.engine_status === true ? '✓ Normal' : '✗ Issues';
             const hydraulicStatus = checkData.hydraulics === 1 || checkData.hydraulics === true ? '✓ Normal' : '✗ Issues';
@@ -491,7 +492,7 @@ async function viewReport(reportId, reportTypeHint) {
             const lubricationStatus = checkData.lubrication === 1 || checkData.lubrication === true ? '✓ Normal' : '✗ Issues';
             const coolingStatus = checkData.cooling_system === 1 || checkData.cooling_system === true ? '✓ Normal' : '✗ Issues';
             const filtersStatus = checkData.filters === 1 || checkData.filters === true ? '✓ Normal' : '✗ Issues';
-            
+
             const content = `
                 <div class="form-section">
                     <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
@@ -550,29 +551,29 @@ async function viewReport(reportId, reportTypeHint) {
                 </div>
                 ` : ''}
             `;
-            
+
             const modalTitle = document.getElementById('reportDetailsModalTitle');
             const modalContent = document.getElementById('reportDetailsModalContent');
-            
+
             if (!modalTitle || !modalContent) {
                 console.error('Modal elements not found in DOM');
                 showToast('Error: Modal elements not found', 'error');
                 return;
             }
-            
+
             modalTitle.innerHTML = '<i class="fas fa-cogs"></i> Machine Weekly Check Report';
             modalContent.innerHTML = content;
-            
+
             // Update modal footer with action buttons for pending reports
             updateModalFooter(reportId, checkData.status);
-            
+
             openReportDetailsModal();
-            
+
         } else {
             console.error('Invalid report type. ID:', reportId, 'Type:', reportType);
             showToast('Invalid report ID format', 'error');
         }
-        
+
     } catch (error) {
         console.error('Error viewing report:', error);
         showToast('Error loading report details', 'error');
@@ -584,26 +585,26 @@ async function approveReport(reportId) {
     // Determine if it's a vehicle check (VCHK-) or machine check (MCHK-)
     const isVehicleCheck = reportId.startsWith('VCHK-') || reportId.startsWith('CHK-');
     const isMachineCheck = reportId.startsWith('MCHK-');
-    
+
     if (!isVehicleCheck && !isMachineCheck) {
         showToast('Invalid report ID format', 'error');
         return;
     }
-    
+
     createConfirmationDialog(
         'Approve Report',
         `Are you sure you want to approve report ${reportId}?`,
         async () => {
             // Show loading state
             showToast('Processing approval...', 'info');
-            
+
             try {
                 // Get current user ID (supervisor) from localStorage for faster access
                 const currentUser = Auth.getCurrentUser();
                 const reviewerId = currentUser?.id || 1;
-                
+
                 console.log('Sending approve request for:', reportId, 'by reviewer:', reviewerId);
-                
+
                 let response;
                 if (isVehicleCheck) {
                     // Approve vehicle check
@@ -618,12 +619,12 @@ async function approveReport(reportId) {
                         notes: 'Approved by supervisor'
                     });
                 }
-                
+
                 console.log('Approve response:', response);
-                
+
                 // Check for success - handle both response formats (success: true or status: 'success')
                 const isSuccess = response && (response.success === true || response.status === 'success');
-                
+
                 if (isSuccess) {
                     showToast(`Report ${reportId} approved successfully!`, 'success');
                     // Close the modal if open
@@ -650,12 +651,12 @@ async function rejectReport(reportId) {
     // Determine if it's a vehicle check (VCHK-) or machine check (MCHK-)
     const isVehicleCheck = reportId.startsWith('VCHK-') || reportId.startsWith('CHK-');
     const isMachineCheck = reportId.startsWith('MCHK-');
-    
+
     if (!isVehicleCheck && !isMachineCheck) {
         showToast('Invalid report ID format', 'error');
         return;
     }
-    
+
     // Store report ID and show rejection reason modal
     pendingRejectionReportId = reportId;
     document.getElementById('rejectionReasonText').value = '';
@@ -671,13 +672,13 @@ function openRejectionReasonModal() {
         showToast('Error: Modal not found', 'error');
         return;
     }
-    
+
     modal.style.display = 'flex';
     modal.style.opacity = '0';
     document.body.style.overflow = 'hidden';
-    
+
     void modal.offsetHeight;
-    
+
     requestAnimationFrame(() => {
         modal.style.opacity = '1';
         // Focus on textarea
@@ -704,30 +705,30 @@ function closeRejectionReasonModal() {
 async function submitRejection() {
     const reason = document.getElementById('rejectionReasonText').value.trim();
     const errorElement = document.getElementById('rejectionReasonError');
-    
+
     // Validate reason
     if (!reason) {
         errorElement.style.display = 'block';
         document.getElementById('rejectionReasonText').style.borderColor = '#ef4444';
         return;
     }
-    
+
     errorElement.style.display = 'none';
     document.getElementById('rejectionReasonText').style.borderColor = '#cbd5e1';
-    
+
     const reportId = pendingRejectionReportId;
     if (!reportId) {
         showToast('Invalid report ID', 'error');
         return;
     }
-    
+
     // Determine check type
     const isVehicleCheck = reportId.startsWith('VCHK-') || reportId.startsWith('CHK-');
     const isMachineCheck = reportId.startsWith('MCHK-');
-    
+
     // Close rejection modal
     closeRejectionReasonModal();
-    
+
     // Show confirmation dialog
     createConfirmationDialog(
         'Reject Report',
@@ -735,14 +736,14 @@ async function submitRejection() {
         async () => {
             // Show loading state
             showToast('Processing rejection...', 'info');
-            
+
             try {
                 // Get current user ID (supervisor) from localStorage for faster access
                 const currentUser = Auth.getCurrentUser();
                 const reviewerId = currentUser?.id || 1;
-                
+
                 console.log('Sending reject request for:', reportId, 'by reviewer:', reviewerId);
-                
+
                 let response;
                 if (isVehicleCheck) {
                     // Reject vehicle check
@@ -759,12 +760,12 @@ async function submitRejection() {
                         notes: 'Rejected by supervisor'
                     });
                 }
-                
+
                 console.log('Reject response:', response);
-                
+
                 // Check for success - handle both response formats (success: true or status: 'success')
                 const isSuccess = response && (response.success === true || response.status === 'success');
-                
+
                 if (isSuccess) {
                     showToast(`Report ${reportId} rejected`, 'warning');
                     // Close the modal if open
@@ -795,15 +796,15 @@ async function loadFaultTickets() {
         // Load unassigned tickets
         const unassignedList = document.getElementById('unassignedTicketsList');
         unassignedList.innerHTML = '<p style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
-        
+
         // Load active tickets
         const activeList = document.getElementById('activeTicketsList');
         if (activeList) {
             activeList.innerHTML = '<p style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading tickets...</p>';
         }
-        
+
         const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
-        
+
         // Fetch fault tickets + breakdown reports + route breakdowns + machine breakdowns in parallel
         console.log('Fetching fault tickets and breakdown reports...');
         const [ticketResponse, breakdownResponse, routeResponse, machineResponse] = await Promise.all([
@@ -818,12 +819,12 @@ async function loadFaultTickets() {
                 headers: { 'Authorization': `Bearer ${token}` }
             }).then(r => r.json()).catch(() => null)
         ]);
-        
+
         console.log('Fault tickets response:', ticketResponse);
         console.log('Breakdown reports response:', breakdownResponse);
         console.log('Route breakdowns response:', routeResponse);
         console.log('Machine breakdowns response:', machineResponse);
-        
+
         if (ticketResponse.status === 'success' && ticketResponse.data) {
             // Handle nested data structure: {data: {tickets: []}}
             allTickets = ticketResponse.data.tickets || ticketResponse.data || [];
@@ -832,10 +833,10 @@ async function loadFaultTickets() {
             console.error('Invalid ticket response:', ticketResponse);
             allTickets = [];
         }
-        
+
         // Process breakdown reports into unassigned items
         allBreakdownItems = [];
-        
+
         // Collect all fault ticket breakdown_report_ids to avoid duplicates
         // The fault_tickets table has breakdown_report_id and breakdown_type fields
         const linkedBreakdownIds = new Set();
@@ -844,29 +845,29 @@ async function loadFaultTickets() {
                 linkedBreakdownIds.add(String(t.breakdown_report_id));
             }
         });
-        
+
         console.log('=== DEBUG: Linked Breakdown IDs ===');
         console.log('linkedBreakdownIds:', Array.from(linkedBreakdownIds));
-        
+
         // Process vehicle breakdown reports
         if (breakdownResponse && breakdownResponse.status === 'success' && breakdownResponse.data && breakdownResponse.data.reports) {
             console.log('=== DEBUG: Processing vehicle breakdowns ===');
             console.log('Total breakdown reports received:', breakdownResponse.data.reports.length);
-            
+
             breakdownResponse.data.reports.forEach(report => {
                 console.log(`Checking breakdown: id=${report.id}, breakdown_id=${report.breakdown_id}, has_fault_ticket=${!!report.fault_ticket_id}`);
-                
+
                 // Skip if already linked to a fault ticket
                 const isLinkedById = linkedBreakdownIds.has(String(report.breakdown_id));
                 const isLinkedByNumericId = linkedBreakdownIds.has(String(report.id));
                 console.log(`  - linkedByBreakdownId (${report.breakdown_id}): ${isLinkedById}`);
                 console.log(`  - linkedByNumericId (${report.id}): ${isLinkedByNumericId}`);
-                
+
                 if (isLinkedById || isLinkedByNumericId) {
                     console.log(`  -> SKIPPED (already linked)`);
                     return;
                 }
-                
+
                 console.log(`  -> ADDED to unassigned list`);
                 allBreakdownItems.push({
                     id: report.id,
@@ -886,13 +887,13 @@ async function loadFaultTickets() {
             });
             console.log('Loaded vehicle breakdowns:', breakdownResponse.data.reports.length);
         }
-        
+
         // Process route breakdown reports
         if (routeResponse && routeResponse.status === 'success' && routeResponse.data && routeResponse.data.breakdowns) {
             routeResponse.data.breakdowns.forEach(breakdown => {
                 // Skip if already linked to a fault ticket
                 if (linkedBreakdownIds.has(String(breakdown.route_breakdown_id)) || linkedBreakdownIds.has(String(breakdown.id))) return;
-                
+
                 allBreakdownItems.push({
                     id: breakdown.id,
                     breakdown_id: breakdown.route_breakdown_id,
@@ -912,13 +913,13 @@ async function loadFaultTickets() {
             });
             console.log('Loaded route breakdowns:', routeResponse.data.breakdowns.length);
         }
-        
+
         // Process machine breakdown reports (from machinery operators)
         // These should appear as fault tickets directly in the supervisor view
         if (machineResponse && machineResponse.status === 'success' && machineResponse.data && machineResponse.data.reports) {
             console.log('=== DEBUG: Processing machine breakdowns into fault tickets ===');
             console.log('Total machine breakdown reports received:', machineResponse.data.reports.length);
-            
+
             machineResponse.data.reports.forEach(report => {
                 // Skip if already linked to a fault ticket (it's already in allTickets)
                 const isLinked = linkedBreakdownIds.has(String(report.breakdown_id)) || linkedBreakdownIds.has(String(report.id));
@@ -926,11 +927,11 @@ async function loadFaultTickets() {
                     console.log(`  Machine breakdown ${report.breakdown_id} -> SKIPPED (already has a fault ticket)`);
                     return;
                 }
-                
+
                 // Map severity to priority
                 const severityMap = { 'critical': 'Critical', 'high': 'High', 'medium': 'Medium', 'low': 'Low' };
                 const priority = severityMap[(report.severity || 'medium').toLowerCase()] || 'Medium';
-                
+
                 console.log(`  Machine breakdown ${report.breakdown_id} -> ADDED to fault tickets list`);
                 // Add directly to allTickets as a ticket-like object so it appears in the fault tickets view
                 allTickets.push({
@@ -956,12 +957,12 @@ async function loadFaultTickets() {
             });
             console.log('Machine breakdowns added to fault tickets:', machineResponse.data.reports.length);
         }
-        
+
         console.log('Total breakdown items for unassigned list:', allBreakdownItems.length);
-        
+
         // Apply current filters
         displayFilteredTickets();
-        
+
     } catch (error) {
         console.error('Error loading fault tickets:', error);
         document.getElementById('unassignedTicketsList').innerHTML = '<p style="text-align: center; color: var(--danger);">Error loading tickets</p>';
@@ -976,7 +977,7 @@ async function loadFaultTickets() {
 function displayFilteredTickets() {
     const unassignedList = document.getElementById('unassignedTicketsList');
     const tbody = document.getElementById('activeTicketsBody');
-    
+
     // Filter tickets based on current filters
     let filteredTickets = allTickets.filter(ticket => {
         // Status filter
@@ -984,7 +985,7 @@ function displayFilteredTickets() {
         if (currentTicketStatusFilter !== 'all') {
             const ticketStatus = (ticket.status || '').toLowerCase().replace(' ', '-');
             const hasAssignments = ticket.assignments && ticket.assignments.length > 0;
-            
+
             if (currentTicketStatusFilter === 'unassigned') {
                 matchesStatus = !hasAssignments;
             } else if (currentTicketStatusFilter === 'assigned') {
@@ -995,36 +996,36 @@ function displayFilteredTickets() {
                 matchesStatus = ticketStatus === 'completed' || ticketStatus === 'resolved' || ticketStatus === 'closed';
             }
         }
-        
+
         // Source filter
         let matchesSource = true;
         if (currentTicketSourceFilter !== 'all') {
             const reporterRole = (ticket.reporter_role || ticket.reported_by_role || '').toLowerCase();
             matchesSource = reporterRole.includes(currentTicketSourceFilter.toLowerCase());
         }
-        
+
         return matchesStatus && matchesSource;
     });
-    
+
     // Separate into unassigned, assigned (active), and resolved
     const unassignedTickets = filteredTickets.filter(t => !t.assignments || t.assignments.length === 0);
     const assignedTickets = filteredTickets.filter(t => t.assignments && t.assignments.length > 0 && t.status !== 'Resolved' && t.status !== 'Closed');
     const resolvedTickets = filteredTickets.filter(t => t.assignments && t.assignments.length > 0 && (t.status === 'Resolved' || t.status === 'Closed'));
-    
+
     // Filter breakdown reports based on source filter
     let filteredBreakdowns = allBreakdownItems.filter(b => {
         // Only show in unassigned filter or all filter
         if (currentTicketStatusFilter !== 'all' && currentTicketStatusFilter !== 'unassigned') return false;
-        
+
         // Source filter - breakdowns are always from drivers
         if (currentTicketSourceFilter !== 'all' && currentTicketSourceFilter !== 'driver') return false;
-        
+
         return true;
     });
-    
+
     // Build unassigned HTML: combine unassigned tickets + breakdown reports
     let unassignedHTML = '';
-    
+
     // Render breakdown reports first (driver + machinery operator breakdown reports)
     if (filteredBreakdowns.length > 0) {
         unassignedHTML += filteredBreakdowns.map(report => {
@@ -1041,7 +1042,7 @@ function displayFilteredTickets() {
             const reporterName = isMachine ? (report.operator_name || 'Unknown Operator') : (report.driver_name || 'Unknown');
             const assetIcon = isMachine ? 'fas fa-cogs' : 'fas fa-wrench';
             const sourceLabel = isMachine ? 'Machine' : (isRoute ? 'Route' : 'Vehicle');
-            
+
             return `
                 <div class="inventory-item">
                     <div class="item-details">
@@ -1078,7 +1079,7 @@ function displayFilteredTickets() {
             `;
         }).join('');
     }
-    
+
     // Render unassigned fault tickets
     if (unassignedTickets.length > 0) {
         unassignedHTML += unassignedTickets.map(ticket => {
@@ -1089,28 +1090,28 @@ function displayFilteredTickets() {
             const createdDate = new Date(ticket.created_at);
             const formattedDate = createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             const formattedTime = createdDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-            
+
             const priority = (ticket.priority || 'Medium').toLowerCase();
             const shortDesc = description.split('\n')[0] || description;
-            
+
             // For machine breakdown tickets, display the breakdown_report_id (e.g., MBD-005)
             // For regular fault tickets, display the ticket_id
-            const displayTicketId = (ticket.breakdown_type === 'machine_breakdown' && ticket.breakdown_report_id) 
-                ? ticket.breakdown_report_id 
+            const displayTicketId = (ticket.breakdown_type === 'machine_breakdown' && ticket.breakdown_report_id)
+                ? ticket.breakdown_report_id
                 : (ticket.ticket_id || ('MBD-' + String(ticket.id).padStart(3, '0')));
-            
+
             // For machine breakdowns, use assignBreakdownTicket which creates the fault ticket first
-            const viewAction = isMachineBreakdown 
-                ? `viewMachineBreakdownInSupervisor(${ticket.id})` 
+            const viewAction = isMachineBreakdown
+                ? `viewMachineBreakdownInSupervisor(${ticket.id})`
                 : `viewTicketDetails(${ticket.id})`;
-            const assignAction = isMachineBreakdown 
-                ? `assignBreakdownTicket('machine_breakdown', ${ticket.id}); closeAllDropdowns();` 
+            const assignAction = isMachineBreakdown
+                ? `assignBreakdownTicket('machine_breakdown', ${ticket.id}); closeAllDropdowns();`
                 : `assignTicket(${ticket.id}); closeAllDropdowns();`;
-            const sourceTag = isMachineBreakdown 
-                ? `<span style="font-size: 10px; background: #7c3aed; color: white; padding: 1px 6px; border-radius: 4px; margin-left: 6px;">Machine</span>` 
+            const sourceTag = isMachineBreakdown
+                ? `<span style="font-size: 10px; background: #7c3aed; color: white; padding: 1px 6px; border-radius: 4px; margin-left: 6px;">Machine</span>`
                 : '';
             const assetIcon = isMachineBreakdown ? 'fas fa-cogs' : 'fas fa-wrench';
-            
+
             return `
                 <div class="inventory-item">
                     <div class="item-details">
@@ -1154,14 +1155,14 @@ function displayFilteredTickets() {
             `;
         }).join('');
     }
-    
+
     // Display combined unassigned content
     if (unassignedHTML) {
         unassignedList.innerHTML = unassignedHTML;
     } else {
         unassignedList.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 20px;">No unassigned tickets or breakdown reports match the current filters</p>';
     }
-    
+
     // Display assigned tickets
     const activeList = document.getElementById('activeTicketsList');
     if (assignedTickets.length > 0) {
@@ -1169,20 +1170,20 @@ function displayFilteredTickets() {
             const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
             const description = ticket.description || 'No description';
             const shortDesc = description.split('\n')[0];
-            
+
             const assignedTo = ticket.assignments && ticket.assignments.length > 0
                 ? ticket.assignments.map(a => a.technician_name).join(', ')
                 : 'Unassigned';
-            
+
             const priority = (ticket.priority || 'Medium').toLowerCase();
             const status = (ticket.status || 'open').toLowerCase().replace(' ', '-');
-            
+
             // For machine breakdown tickets, display the breakdown_report_id (e.g., MBD-005)
             // For regular fault tickets, display the ticket_id
-            const displayTicketId = (ticket.breakdown_type === 'machine_breakdown' && ticket.breakdown_report_id) 
-                ? ticket.breakdown_report_id 
+            const displayTicketId = (ticket.breakdown_type === 'machine_breakdown' && ticket.breakdown_report_id)
+                ? ticket.breakdown_report_id
                 : (ticket.ticket_id || ('MBD-' + String(ticket.id).padStart(3, '0')));
-            
+
             return `
                 <div class="inventory-item">
                     <div class="item-details">
@@ -1232,7 +1233,7 @@ function displayFilteredTickets() {
     } else {
         activeList.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 20px;">No assigned tickets match the current filters</p>';
     }
-    
+
     // Display resolved/completed tickets
     const resolvedList = document.getElementById('resolvedTicketsList');
     if (resolvedList) {
@@ -1241,19 +1242,19 @@ function displayFilteredTickets() {
                 const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
                 const description = ticket.description || 'No description';
                 const shortDesc = description.split('\n')[0];
-                
+
                 const assignedTo = ticket.assignments && ticket.assignments.length > 0
                     ? ticket.assignments.map(a => a.technician_name).join(', ')
                     : 'Unassigned';
-                
+
                 const priority = (ticket.priority || 'Medium').toLowerCase();
-                
+
                 // For machine breakdown tickets, display the breakdown_report_id (e.g., MBD-005)
                 // For regular fault tickets, display the ticket_id
-                const displayTicketId = (ticket.breakdown_type === 'machine_breakdown' && ticket.breakdown_report_id) 
-                    ? ticket.breakdown_report_id 
+                const displayTicketId = (ticket.breakdown_type === 'machine_breakdown' && ticket.breakdown_report_id)
+                    ? ticket.breakdown_report_id
                     : (ticket.ticket_id || ('MBD-' + String(ticket.id).padStart(3, '0')));
-                
+
                 return `
                     <div class="inventory-item" style="border-left: 4px solid #10b981;">
                         <div class="item-details">
@@ -1287,28 +1288,28 @@ function displayFilteredTickets() {
 
 function filterTicketsByStatus(status) {
     currentTicketStatusFilter = status;
-    
+
     // Update active button - only in the same parent container
     const parentContainer = event.target.parentElement;
     parentContainer.querySelectorAll('button').forEach(btn => {
         btn.classList.remove('active');
     });
     event.target.classList.add('active');
-    
+
     displayFilteredTickets();
     showToast(`Showing ${status === 'all' ? 'all' : status} tickets`);
 }
 
 function filterTicketsBySource(source) {
     currentTicketSourceFilter = source;
-    
+
     // Update active button - only in the same parent container
     const parentContainer = event.target.parentElement;
     parentContainer.querySelectorAll('button').forEach(btn => {
         btn.classList.remove('active');
     });
     event.target.classList.add('active');
-    
+
     displayFilteredTickets();
     showToast(`Showing ${source === 'all' ? 'all sources' : source + ' tickets'}`);
 }
@@ -1316,16 +1317,16 @@ function filterTicketsBySource(source) {
 async function createNewTicket() {
     // Load breakdown reports for dropdown
     await loadBreakdownReportsForTicket();
-    
+
     // Show modal
     const modal = document.getElementById('createTicketModal');
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
-    
+
     // Reset form
     const form = document.getElementById('createTicketForm');
     form.reset();
-    
+
     // Clear photos
     createTicketPhotos = [];
     updateCreateTicketPhotoPreview();
@@ -1335,20 +1336,20 @@ async function createNewTicket() {
 async function loadBreakdownReportsForTicket() {
     const select = document.getElementById('breakdownReportId');
     if (!select) return;
-    
+
     // Clear existing options except the first one
     select.innerHTML = '<option value="">Loading reports...</option>';
-    
+
     try {
         const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
-        
+
         // Fetch breakdown reports if not already loaded
         if (allDriverReports.length === 0 && allOperatorReports.length === 0) {
             // Load driver breakdown reports (vehicle breakdowns + route breakdowns)
             const vehicleResponse = await fetch(`${CONFIG.API_BASE_URL}/breakdown-reports`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            
+
             const routeResponse = await fetch(`${CONFIG.API_BASE_URL}/route-breakdowns`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -1418,21 +1419,21 @@ async function loadBreakdownReportsForTicket() {
                 }
             }
         }
-        
+
         // Clear and reset the dropdown
         select.innerHTML = '<option value="">Select Breakdown Report</option>';
-        
+
         // Get all reports
         const allReports = [...allDriverReports, ...allOperatorReports];
-        
+
         if (allReports.length === 0) {
             select.innerHTML += '<option value="" disabled>No breakdown reports available</option>';
             return;
         }
-        
+
         // Sort by date (most recent first)
         allReports.sort((a, b) => new Date(b.date) - new Date(a.date));
-        
+
         // Add reports to dropdown
         allReports.forEach(report => {
             const option = document.createElement('option');
@@ -1443,7 +1444,7 @@ async function loadBreakdownReportsForTicket() {
             option.textContent = `${source} ${report.report_type} #${report.report_id} - ${assetName}${status} (${new Date(report.date).toLocaleDateString()})`;
             select.appendChild(option);
         });
-        
+
     } catch (error) {
         console.error('Error loading breakdown reports:', error);
         select.innerHTML = '<option value="">Error loading reports</option>';
@@ -1455,14 +1456,14 @@ async function loadBreakdownReportsForTicket() {
 function populateTicketFromReport() {
     const select = document.getElementById('breakdownReportId');
     const reportId = select.value;
-    
+
     if (!reportId) {
         // Clear form if no report selected
         document.getElementById('issueTitle').value = '';
         document.getElementById('issueDescription').value = '';
         return;
     }
-    
+
     // Convert to number if numeric to match map key
     const reportIdKey = isNaN(reportId) ? reportId : parseInt(reportId);
     const report = allReportsMap.get(reportIdKey);
@@ -1470,24 +1471,24 @@ function populateTicketFromReport() {
         console.log('Report not found for ID:', reportId, 'Map keys:', Array.from(allReportsMap.keys()));
         return;
     }
-    
+
     // Populate issue title
     const titleField = document.getElementById('issueTitle');
     const assetName = report.vehicle_registration_no || report.machine_name || 'Asset';
     titleField.value = `${report.report_type} - ${assetName}`;
-    
+
     // Populate issue description
     const descField = document.getElementById('issueDescription');
     let description = report.description || report.issue_description || report.fault_description || '';
-    
+
     // Add additional context
     if (report.location) description += `\n\nLocation: ${report.location}`;
     if (report.severity) description += `\nSeverity: ${report.severity}`;
     if (report.fault_type) description += `\nFault Type: ${report.fault_type}`;
     if (report.reported_by) description += `\nReported By: ${report.reported_by}`;
-    
+
     descField.value = description.trim();
-    
+
     // Set priority based on report severity
     const priorityField = document.getElementById('priority');
     if (report.severity) {
@@ -1508,17 +1509,17 @@ function populateTicketFromReport() {
 function handleCreateTicketPhotoUpload(event) {
     const files = Array.from(event.target.files);
     const maxFiles = 5;
-    
+
     // Check if adding these files would exceed the limit
     if (createTicketPhotos.length + files.length > maxFiles) {
         showToast(`Maximum ${maxFiles} photos allowed`, 'error');
         return;
     }
-    
+
     // Add files to the array
     createTicketPhotos.push(...files);
     updateCreateTicketPhotoPreview();
-    
+
     // Reset the file input so the same file can be selected again if needed
     event.target.value = '';
 }
@@ -1526,11 +1527,11 @@ function handleCreateTicketPhotoUpload(event) {
 function updateCreateTicketPhotoPreview() {
     const container = document.getElementById('createTicketPhotoPreview');
     container.innerHTML = '';
-    
+
     if (createTicketPhotos.length === 0) {
         return;
     }
-    
+
     createTicketPhotos.forEach((file, index) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -1559,13 +1560,13 @@ async function loadMachinesForTicket() {
     try {
         const response = await API.get('/machines');
         const select = document.getElementById('assetId');
-        
+
         if (response.status === 'success' && response.data) {
             const machines = response.data.machines || response.data || [];
-            const options = machines.map(machine => 
+            const options = machines.map(machine =>
                 `<option value="${machine.id}">${machine.model_number || machine.machine_name || machine.id}</option>`
             ).join('');
-            
+
             select.innerHTML = '<option value="">Select Machine/Asset</option>' + options;
         }
     } catch (error) {
@@ -1589,34 +1590,34 @@ let createTicketPhotos = [];
 
 async function handleCreateTicket(event) {
     event.preventDefault();
-    
+
     const form = event.target;
-    
+
     // Create FormData for multipart/form-data submission
     const formData = new FormData();
-    
+
     // Get form values
     const breakdownReportId = document.getElementById('breakdownReportId').value;
     const issueTitle = document.getElementById('issueTitle').value;
     const issueDescription = document.getElementById('issueDescription').value;
     const priority = document.getElementById('priority').value;
-    
+
     if (!breakdownReportId) {
         showToast('Please select a breakdown report', 'error');
         return;
     }
-    
+
     // Get the selected report to extract machine/vehicle info
     // Convert to number if it's a numeric string to match the map key
     const reportIdKey = isNaN(breakdownReportId) ? breakdownReportId : parseInt(breakdownReportId);
     const selectedReport = allReportsMap.get(reportIdKey);
-    
+
     // Combine title and description
     const description = `${issueTitle}\n\n${issueDescription}`;
-    
+
     // Capitalize first letter of priority to match backend format
     const capitalizedPriority = priority.charAt(0).toUpperCase() + priority.slice(1);
-    
+
     // Append data to FormData
     if (selectedReport) {
         // If it's a driver report with vehicle, use vehicle_id
@@ -1635,12 +1636,12 @@ async function handleCreateTicket(event) {
     formData.append('breakdown_report_id', breakdownReportId);
     formData.append('description', description);
     formData.append('priority', capitalizedPriority);
-    
+
     // Append photos if any
     createTicketPhotos.forEach((photo) => {
         formData.append('photos[]', photo);
     });
-    
+
     // Log form data for debugging
     console.log('Creating ticket with data:', {
         breakdownReportId,
@@ -1650,12 +1651,12 @@ async function handleCreateTicket(event) {
         selectedReport,
         formDataEntries: Array.from(formData.entries())
     });
-    
+
     try {
         const response = await API.postFormData('/fault-tickets', formData);
-        
+
         console.log('Create ticket response:', response);
-        
+
         if (response.status === 'success') {
             showToast('Fault ticket created successfully', 'success');
             closeCreateTicketModal();
@@ -1688,36 +1689,36 @@ async function loadTicketForAssignment(ticketId, isEdit = false) {
         // Load ticket details
         const ticketResponse = await API.get(`/fault-tickets/${ticketId}`);
         const ticket = ticketResponse.data;
-        
+
         // If editing, check if ticket status is "Assigned"
         if (isEdit && ticket.status && ticket.status.toLowerCase() !== 'assigned') {
             showToast('Only tickets with "Assigned" status can be edited', 'error');
             return;
         }
-        
+
         // Update modal title based on mode
         const modalTitle = document.querySelector('#assignTicketModal .modal-header h2');
         if (modalTitle) {
-            modalTitle.innerHTML = isEdit 
+            modalTitle.innerHTML = isEdit
                 ? '<i class="fas fa-edit"></i> Edit Ticket Assignment'
                 : '<i class="fas fa-user-plus"></i> Assign Ticket to Technician(s)';
         }
-        
+
         // Set ticket ID in modal (it's a div, not an input)
         const ticketIdElement = document.getElementById('assignTicketId');
         if (ticketIdElement) {
             ticketIdElement.textContent = ticket.ticket_id || ('MBD-' + String(ticketId).padStart(3, '0'));
         }
-        
+
         // Set current priority if exists
         const prioritySelect = document.getElementById('assignPriority');
         if (ticket.priority && prioritySelect) {
             prioritySelect.value = ticket.priority.toLowerCase();
         }
-        
+
         // Load technicians with workload
         await loadTechniciansWithWorkload();
-        
+
         // If editing, pre-select currently assigned technicians
         if (isEdit && ticket.assignments && ticket.assignments.length > 0) {
             const assignedTechnicianIds = ticket.assignments.map(a => a.assigned_to);
@@ -1727,7 +1728,7 @@ async function loadTicketForAssignment(ticketId, isEdit = false) {
                     checkbox.checked = true;
                 }
             });
-            
+
             // Pre-fill expected completion date and notes if available
             if (ticket.assignments[0].expected_completion_date) {
                 const dateInput = document.getElementById('expectedCompletion');
@@ -1735,7 +1736,7 @@ async function loadTicketForAssignment(ticketId, isEdit = false) {
                     dateInput.value = ticket.assignments[0].expected_completion_date;
                 }
             }
-            
+
             if (ticket.assignments[0].notes) {
                 const notesInput = document.getElementById('assignmentNotes');
                 if (notesInput) {
@@ -1743,14 +1744,14 @@ async function loadTicketForAssignment(ticketId, isEdit = false) {
                 }
             }
         }
-        
+
         // Store ticket ID and edit mode for submission
         const assignForm = document.getElementById('assignTicketForm');
         if (assignForm) {
             assignForm.dataset.ticketId = ticketId;
             assignForm.dataset.isEdit = isEdit ? 'true' : 'false';
         }
-        
+
         // Show modal
         const assignModal = document.getElementById('assignTicketModal');
         if (assignModal) {
@@ -1769,30 +1770,16 @@ async function loadTicketForAssignment(ticketId, isEdit = false) {
 
 async function loadTechniciansWithWorkload() {
     try {
-        // Get all technicians using the new endpoint
-        const techResponse = await API.get('/technicians');
-        const technicians = techResponse.data?.users || techResponse.data || [];
-        
-        // Get all tickets to count workload
-        const ticketResponse = await API.get('/fault-tickets');
-        const tickets = ticketResponse.data?.tickets || ticketResponse.data || [];
-        
-        // Count active tickets per technician
-        const workloadMap = {};
-        tickets.forEach(ticket => {
-            if (ticket.assigned_to && ticket.status !== 'completed' && ticket.status !== 'closed') {
-                workloadMap[ticket.assigned_to] = (workloadMap[ticket.assigned_to] || 0) + 1;
-            }
-        });
-        
+        const technicians = await fetchTechniciansWithWorkload();
+
         // Populate checkbox list
         const checkboxList = document.getElementById('techniciansList');
-        
+
         if (!checkboxList) {
             console.error('techniciansList element not found!');
             return;
         }
-        
+
         // Check if there are any technicians available
         if (technicians.length === 0) {
             checkboxList.innerHTML = `
@@ -1804,23 +1791,26 @@ async function loadTechniciansWithWorkload() {
             `;
             return;
         }
-        
+
         checkboxList.innerHTML = technicians.map(tech => {
-            const activeTickets = workloadMap[tech.id] || 0;
-            const workloadText = activeTickets > 0 
-                ? `(${activeTickets} assigned ticket${activeTickets > 1 ? 's' : ''})`
-                : '(Available)';
-            const workloadClass = activeTickets > 0 ? 'busy' : 'available';
-            
+            const activeTickets = tech.active_ticket_count;
+            const workloadClass = activeTickets === 0 ? 'available' : (activeTickets <= 2 ? 'busy' : 'heavy');
+            const workloadText = `${activeTickets} active ticket${activeTickets === 1 ? '' : 's'}`;
+            const name = tech.full_name || tech.username || `Technician #${tech.id}`;
+            const expertise = tech.technical_expertise || 'General';
+
             return `
                 <label class="checkbox-item">
                     <input type="checkbox" name="technicians" value="${tech.id}" onchange="updateTechnicianWarning()">
-                    <span>${tech.full_name || tech.username}</span>
+                    <span class="technician-details">
+                        <span class="technician-name">${name}</span>
+                        <span class="technician-expertise"><i class="fas fa-wrench"></i> ${expertise}</span>
+                    </span>
                     <span class="technician-workload ${workloadClass}">${workloadText}</span>
                 </label>
             `;
         }).join('');
-        
+
         // Initial warning check
         updateTechnicianWarning();
     } catch (error) {
@@ -1833,14 +1823,14 @@ function updateTechnicianWarning() {
     const form = document.getElementById('assignTicketForm');
     const isEdit = form?.dataset.isEdit === 'true';
     const warningDiv = document.getElementById('noTechnicianWarning');
-    
+
     if (!warningDiv || !isEdit) {
         if (warningDiv) warningDiv.style.display = 'none';
         return;
     }
-    
+
     const selectedTechnicians = document.querySelectorAll('input[name="technicians"]:checked');
-    
+
     if (selectedTechnicians.length === 0) {
         warningDiv.style.display = 'block';
     } else {
@@ -1848,17 +1838,222 @@ function updateTechnicianWarning() {
     }
 }
 
+let technicianOverviewData = [];
+let technicianOverviewAssignments = new Map();
+let technicianTicketDataAvailable = false;
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function formatDateTime(value, includeTime = true) {
+    if (!value) {
+        return 'N/A';
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return 'N/A';
+    }
+
+    return includeTime ? parsed.toLocaleString() : parsed.toLocaleDateString();
+}
+
+function getTechnicianWorkloadStatus(workloadCount) {
+    if (workloadCount === 0) {
+        return { className: 'status-completed', label: 'AVAILABLE' };
+    }
+
+    if (workloadCount <= 2) {
+        return { className: 'status-warn', label: 'BUSY' };
+    }
+
+    return { className: 'status-critical', label: 'HEAVY LOAD' };
+}
+
+function getTicketStatusClass(status) {
+    const normalizedStatus = String(status || '').toLowerCase().trim();
+
+    switch (normalizedStatus) {
+        case 'assigned':
+            return 'status-assigned';
+        case 'in progress':
+            return 'status-in-progress';
+        case 'resolved':
+        case 'closed':
+            return 'status-completed';
+        case 'waiting for budget approval':
+        case 'waiting for spare parts':
+        case 'parts approved':
+            return 'status-warn';
+        case 'open':
+        default:
+            return 'status-normal';
+    }
+}
+
+function getPriorityStatusClass(priority) {
+    const normalizedPriority = String(priority || '').toLowerCase().trim();
+
+    switch (normalizedPriority) {
+        case 'critical':
+            return 'status-critical';
+        case 'high':
+            return 'status-urgent';
+        case 'medium':
+            return 'status-warn';
+        case 'low':
+        default:
+            return 'status-normal';
+    }
+}
+
+function getTechnicianWorkloadCount(technician, assignmentMap) {
+    const mappedAssignments = assignmentMap.get(Number(technician.id)) || [];
+    const mappedCount = mappedAssignments.length;
+    const backendCount = Number(technician.active_ticket_count || 0);
+    return Math.max(mappedCount, backendCount);
+}
+
+function summarizeTechnicianTicketStates(assignedTickets) {
+    if (!assignedTickets || assignedTickets.length === 0) {
+        return 'No active tickets';
+    }
+
+    const groupedStatuses = assignedTickets.reduce((accumulator, ticket) => {
+        const status = ticket.status || 'Open';
+        accumulator[status] = (accumulator[status] || 0) + 1;
+        return accumulator;
+    }, {});
+
+    return Object.entries(groupedStatuses)
+        .map(([status, count]) => `${status}: ${count}`)
+        .join(' | ');
+}
+
+function buildTechnicianAssignmentMap(tickets) {
+    const assignmentMap = new Map();
+
+    (tickets || []).forEach(ticket => {
+        const ticketStatus = String(ticket.status || '').toLowerCase();
+        if (ticketStatus === 'resolved' || ticketStatus === 'closed') {
+            return;
+        }
+
+        const assignments = Array.isArray(ticket.assignments) ? ticket.assignments : [];
+        assignments.forEach(assignment => {
+            if (assignment.status && assignment.status !== 'Active') {
+                return;
+            }
+
+            const technicianId = Number(assignment.assigned_to);
+            if (!technicianId) {
+                return;
+            }
+
+            if (!assignmentMap.has(technicianId)) {
+                assignmentMap.set(technicianId, []);
+            }
+
+            assignmentMap.get(technicianId).push({
+                id: Number(ticket.id),
+                ticket_id: ticket.ticket_id || `TKT-${String(ticket.id || '').padStart(3, '0')}`,
+                status: ticket.status || 'Open',
+                priority: ticket.priority || 'Medium',
+                description: ticket.description || 'No description provided',
+                machine_name: ticket.machine_name || ticket.machine_model_number || (ticket.machine_id ? `Machine #${ticket.machine_id}` : 'N/A'),
+                location: ticket.location || 'N/A',
+                expected_completion_date: assignment.expected_completion_date || null,
+                assigned_at: assignment.assigned_at || ticket.updated_at || ticket.created_at || null
+            });
+        });
+    });
+
+    assignmentMap.forEach((assignedTickets) => {
+        assignedTickets.sort((first, second) => {
+            const firstDate = new Date(first.assigned_at || 0).getTime();
+            const secondDate = new Date(second.assigned_at || 0).getTime();
+            return secondDate - firstDate;
+        });
+    });
+
+    return assignmentMap;
+}
+
+function updateTechnicianSummaryCards(technicians, assignmentMap) {
+    const totalElement = document.getElementById('technicianTotalCount');
+    const availableElement = document.getElementById('technicianAvailableCount');
+    const busyElement = document.getElementById('technicianBusyCount');
+    const activeAssignmentsElement = document.getElementById('technicianActiveAssignmentsCount');
+    const heavyLoadElement = document.getElementById('technicianHeavyLoadCount');
+
+    const workloadCounts = (technicians || []).map(technician => getTechnicianWorkloadCount(technician, assignmentMap));
+    const totalTechnicians = workloadCounts.length;
+    const availableCount = workloadCounts.filter(count => count === 0).length;
+    const busyCount = workloadCounts.filter(count => count > 0 && count <= 2).length;
+    const heavyCount = workloadCounts.filter(count => count > 2).length;
+    const activeAssignments = workloadCounts.reduce((total, count) => total + count, 0);
+
+    if (totalElement) {
+        totalElement.textContent = String(totalTechnicians);
+    }
+    if (availableElement) {
+        availableElement.textContent = `${availableCount} Available`;
+    }
+    if (busyElement) {
+        busyElement.textContent = `${busyCount} Busy`;
+    }
+    if (activeAssignmentsElement) {
+        activeAssignmentsElement.textContent = String(activeAssignments);
+    }
+    if (heavyLoadElement) {
+        heavyLoadElement.textContent = String(heavyCount);
+    }
+}
+
+async function fetchTechniciansWithWorkload() {
+    const techResponse = await API.get('/technicians');
+
+    if (techResponse && techResponse.status && techResponse.status !== 'success') {
+        throw new Error(techResponse.message || 'Failed to load technicians');
+    }
+
+    const technicians = techResponse?.data?.users || techResponse?.data || [];
+
+    if (!Array.isArray(technicians)) {
+        return [];
+    }
+
+    return technicians
+        .map(tech => ({
+            ...tech,
+            technical_expertise: (tech.technical_expertise || 'General').trim() || 'General',
+            active_ticket_count: Number(tech.active_ticket_count || 0)
+        }))
+        .sort((first, second) => {
+            if (first.active_ticket_count !== second.active_ticket_count) {
+                return first.active_ticket_count - second.active_ticket_count;
+            }
+            return (first.full_name || '').localeCompare(second.full_name || '');
+        });
+}
+
 async function handleAssignTicket(event) {
     event.preventDefault();
-    
+
     const form = event.target;
     const ticketId = form.dataset.ticketId;
     const isEdit = form.dataset.isEdit === 'true';
-    
+
     // Get selected technicians
     const selectedTechnicians = Array.from(form.querySelectorAll('input[name="technicians"]:checked'))
         .map(cb => parseInt(cb.value));
-    
+
     // Check if no technicians selected
     if (selectedTechnicians.length === 0) {
         if (!isEdit) {
@@ -1869,33 +2064,33 @@ async function handleAssignTicket(event) {
         // For edit mode with no technicians selected, proceed to unassign all
         // (visual warning is already shown in the modal)
     }
-    
+
     const formData = new FormData(form);
-    
+
     // Capitalize first letter of priority to match backend format
     const priority = formData.get('priority');
     const capitalizedPriority = priority.charAt(0).toUpperCase() + priority.slice(1);
-    
+
     const assignmentData = {
         technician_ids: selectedTechnicians, // Now supports multiple technicians (can be empty array for unassignment)
         priority: capitalizedPriority,
         expected_completion_date: formData.get('expected_completion'),
         notes: formData.get('notes')
     };
-    
+
     try {
         // Use the new assignment endpoint
         await API.post(`/fault-tickets/${ticketId}/assign`, assignmentData);
-        
+
         // Close modal and show success
         closeAssignTicketModal();
-        
+
         if (selectedTechnicians.length === 0) {
             showToast('All technicians unassigned. Ticket moved to Unassigned.', 'success');
         } else {
             showToast('Ticket assigned successfully', 'success');
         }
-        
+
         // Reload tickets and reports to reflect status changes
         loadFaultTickets();
         loadAllReports(); // Reload reports to show updated status
@@ -1914,15 +2109,15 @@ function closeAssignTicketModal() {
             document.body.style.overflow = '';
         }, 300); // Wait for opacity transition
     }
-    
+
     // Reset form
     const form = document.getElementById('assignTicketForm');
     form.reset();
-    
+
     // Uncheck all technician checkboxes
     const checkboxes = form.querySelectorAll('input[name="technicians"]');
     checkboxes.forEach(cb => cb.checked = false);
-    
+
     // Hide warning message
     const warningDiv = document.getElementById('noTechnicianWarning');
     if (warningDiv) {
@@ -1934,12 +2129,12 @@ async function viewTicketDetails(ticketId) {
     try {
         const response = await API.get(`/fault-tickets/${ticketId}`);
         const ticket = response.data;
-        
+
         // Format the ticket details
         const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
         const createdDate = new Date(ticket.created_at).toLocaleString();
         const updatedDate = ticket.updated_at ? new Date(ticket.updated_at).toLocaleString() : 'N/A';
-        
+
         // Build images section if images exist
         let imagesHTML = '';
         if (ticket.images && ticket.images.length > 0) {
@@ -1963,14 +2158,14 @@ async function viewTicketDetails(ticketId) {
                 </div>
             `;
         }
-        
+
         const detailsHTML = `
             <div class="form-section">
                 <h5><i class="fas fa-info-circle"></i> Ticket Information</h5>
                 <p><strong>Ticket ID:</strong> ${ticket.ticket_id || ('MBD-' + String(ticket.id).padStart(3, '0'))}</p>
-                <p><strong>Status:</strong> ${(ticket.status === 'Resolved' || ticket.status === 'Closed') 
-                    ? '<span style=\"background: #10b981; color: white; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;\"><i class=\"fas fa-check-circle\"></i> FINISHED</span>'
-                    : '<span class=\"status-text status-' + (ticket.status || 'open').toLowerCase().replace(' ', '-') + '\">' + (ticket.status || 'OPEN').toUpperCase().replace('_', ' ') + '</span>'}</p>
+                <p><strong>Status:</strong> ${(ticket.status === 'Resolved' || ticket.status === 'Closed')
+                ? '<span style=\"background: #10b981; color: white; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;\"><i class=\"fas fa-check-circle\"></i> FINISHED</span>'
+                : '<span class=\"status-text status-' + (ticket.status || 'open').toLowerCase().replace(' ', '-') + '\">' + (ticket.status || 'OPEN').toUpperCase().replace('_', ' ') + '</span>'}</p>
                 <p><strong>Priority:</strong> <span class="status-text status-${ticket.priority ? ticket.priority.toLowerCase() : 'normal'}">${(ticket.priority || 'NORMAL').toUpperCase()}</span></p>
                 <p><strong>Machine:</strong> ${assetName}</p>
                 ${ticket.location ? `<p><strong>Location:</strong> ${ticket.location}</p>` : ''}
@@ -1986,9 +2181,9 @@ async function viewTicketDetails(ticketId) {
             <div class="form-section">
                 <h5><i class="fas fa-user-cog"></i> Assignment Details</h5>
                 <p><strong>Reported By:</strong> ${ticket.reported_by_name || ticket.reporter_full_name || 'N/A'}</p>
-                <p><strong>Assigned To:</strong> ${ticket.assignments && ticket.assignments.length > 0 
-                    ? ticket.assignments.map(a => a.technician_name).join(', ') 
-                    : 'Unassigned'}</p>
+                <p><strong>Assigned To:</strong> ${ticket.assignments && ticket.assignments.length > 0
+                ? ticket.assignments.map(a => a.technician_name).join(', ')
+                : 'Unassigned'}</p>
                 <p><strong>Created:</strong> ${createdDate}</p>
                 <p><strong>Last Updated:</strong> ${updatedDate}</p>
                 ${ticket.assignments && ticket.assignments.length > 0 && ticket.assignments[0].expected_completion_date ? `
@@ -2035,10 +2230,10 @@ async function viewTicketDetails(ticketId) {
             </div>
             ` : ''}
         `;
-        
+
         // Populate modal
         document.getElementById('viewTicketContent').innerHTML = detailsHTML;
-        
+
         // Show modal
         const viewModal = document.getElementById('viewTicketModal');
         viewModal.style.display = 'flex';
@@ -2071,25 +2266,25 @@ async function viewBreakdownDetails(type, id) {
     try {
         const endpoint = type === 'route_breakdown' ? `/route-breakdowns/${id}` : `/breakdown-reports/${id}`;
         const response = await API.get(endpoint);
-        
+
         let report;
         if (type === 'route_breakdown') {
             report = response.data.breakdown || response.data;
         } else {
             report = response.data.report || response.data;
         }
-        
+
         if (!report) {
             showToast('Breakdown report not found', 'error');
             return;
         }
-        
+
         const isRoute = type === 'route_breakdown';
         const typeLabel = isRoute ? 'Route Breakdown' : 'Vehicle Breakdown';
         const typeBadgeColor = isRoute ? '#e67e22' : '#e74c3c';
         const reportId = isRoute ? (report.route_breakdown_id || `RBD-${report.id}`) : (report.breakdown_id || `VBD-${report.id}`);
         const createdDate = new Date(isRoute ? (report.breakdown_datetime || report.created_at) : (report.breakdown_date || report.created_at));
-        
+
         const detailsHTML = `
             <div class="form-section">
                 <h5><i class="fas ${isRoute ? 'fa-road' : 'fa-car-crash'}"></i> Breakdown Information</h5>
@@ -2127,10 +2322,10 @@ async function viewBreakdownDetails(type, id) {
                 </button>
             </div>
         `;
-        
+
         // Populate and show modal (reuse view ticket modal)
         document.getElementById('viewTicketContent').innerHTML = detailsHTML;
-        
+
         const viewModal = document.getElementById('viewTicketModal');
         viewModal.style.display = 'flex';
         viewModal.style.opacity = '0';
@@ -2138,7 +2333,7 @@ async function viewBreakdownDetails(type, id) {
         setTimeout(() => {
             viewModal.style.opacity = '1';
         }, 10);
-        
+
     } catch (error) {
         console.error('Error loading breakdown details:', error);
         showToast('Failed to load breakdown report details', 'error');
@@ -2152,12 +2347,12 @@ function viewMachineBreakdownInSupervisor(breakdownId) {
         showToast('Machine breakdown not found', 'error');
         return;
     }
-    
+
     const report = ticket.original_report || ticket;
     const createdDate = new Date(report.breakdown_date || ticket.created_at).toLocaleString();
     const machineName = report.machine_model || report.machine_name || ticket.machine_name || 'N/A';
     const operatorName = report.operator_name || ticket.reporter_full_name || 'N/A';
-    
+
     const detailsHTML = `
         <div class="form-section">
             <h5><i class="fas fa-info-circle"></i> Machine Breakdown Information</h5>
@@ -2178,7 +2373,7 @@ function viewMachineBreakdownInSupervisor(breakdownId) {
             <p><span style="background: #7c3aed; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px;">Machinery Operator Fault Report</span></p>
         </div>
     `;
-    
+
     const viewTitle = document.querySelector('#viewTicketModal .modal-header h2');
     if (viewTitle) {
         viewTitle.innerHTML = `<i class="fas fa-cogs"></i> Machine Breakdown Details`;
@@ -2187,7 +2382,7 @@ function viewMachineBreakdownInSupervisor(breakdownId) {
     if (viewContent) {
         viewContent.innerHTML = detailsHTML;
     }
-    
+
     const viewModal = document.getElementById('viewTicketModal');
     viewModal.style.display = 'flex';
     viewModal.style.opacity = '0';
@@ -2218,19 +2413,19 @@ async function assignBreakdownTicket(type, id) {
             };
         }
     }
-    
+
     if (!report) {
         showToast('Breakdown report not found', 'error');
         return;
     }
-    
+
     try {
         showToast('Creating fault ticket from breakdown report...', 'info');
-        
+
         const isRoute = type === 'route_breakdown';
         const isMachine = type === 'machine_breakdown';
         const typeLabel = isMachine ? 'Machine Breakdown' : (isRoute ? 'Route Breakdown' : 'Vehicle Breakdown');
-        
+
         // Build description from breakdown data
         let description;
         if (isMachine) {
@@ -2238,11 +2433,11 @@ async function assignBreakdownTicket(type, id) {
         } else {
             description = `[${typeLabel}] Vehicle: ${report.number_plate} | Driver: ${report.driver_name}\nSeverity: ${report.severity} | Type: ${report.breakdown_type}\n${report.breakdown_location ? 'Location: ' + report.breakdown_location + '\n' : ''}Description: ${report.description}`;
         }
-        
+
         // Map severity to priority
         const severityMap = { 'critical': 'Critical', 'high': 'High', 'medium': 'Medium', 'low': 'Low' };
         const priority = severityMap[(report.severity || 'medium').toLowerCase()] || 'Medium';
-        
+
         // Create the ticket via API using FormData
         const formData = new FormData();
         if (isMachine && report.machine_id) {
@@ -2254,16 +2449,16 @@ async function assignBreakdownTicket(type, id) {
         formData.append('breakdown_type', type);
         formData.append('description', description);
         formData.append('priority', priority);
-        
+
         const response = await API.postFormData('/fault-tickets', formData);
-        
+
         if (response.status === 'success' && response.data && response.data.id) {
             const newTicketId = response.data.id;
             showToast('Fault ticket created! Now assign a technician.', 'success');
-            
+
             // Reload tickets so the new ticket appears in the system
             await loadFaultTickets();
-            
+
             // Open the assign modal for the newly created ticket
             assignTicket(newTicketId);
         } else {
@@ -2279,23 +2474,23 @@ async function assignBreakdownTicket(type, id) {
 async function createTicketFromBreakdown(type, id) {
     // Find the breakdown report from allBreakdownItems
     const report = allBreakdownItems.find(b => b.type === type && b.id === id);
-    
+
     if (!report) {
         showToast('Breakdown report not found', 'error');
         return;
     }
-    
+
     // Open the create ticket modal pre-filled with breakdown data
     await loadBreakdownReportsForTicket();
-    
+
     const modal = document.getElementById('createTicketModal');
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
-    
+
     // Reset and pre-fill form
     const form = document.getElementById('createTicketForm');
     form.reset();
-    
+
     // Pre-fill description
     const descField = document.getElementById('ticketDescription');
     if (descField) {
@@ -2308,14 +2503,14 @@ async function createTicketFromBreakdown(type, id) {
             descField.value = `[${typeLabel}] Vehicle: ${report.number_plate} | Driver: ${report.driver_name}\nSeverity: ${report.severity} | Type: ${report.breakdown_type}\n${report.breakdown_location ? 'Location: ' + report.breakdown_location + '\n' : ''}Description: ${report.description}`;
         }
     }
-    
+
     // Pre-fill priority based on severity
     const priorityField = document.getElementById('ticketPriority');
     if (priorityField) {
         const severityMap = { 'critical': 'Critical', 'high': 'High', 'medium': 'Medium', 'low': 'Low' };
         priorityField.value = severityMap[(report.severity || 'medium').toLowerCase()] || 'Medium';
     }
-    
+
     // Select the breakdown report in the dropdown if it exists
     const breakdownSelect = document.getElementById('breakdownReportId');
     if (breakdownSelect) {
@@ -2327,13 +2522,13 @@ async function createTicketFromBreakdown(type, id) {
             }
         }
     }
-    
+
     // Clear photos
     createTicketPhotos = [];
     if (typeof updateCreateTicketPhotoPreview === 'function') {
         updateCreateTicketPhotoPreview();
     }
-    
+
     showToast('Create a fault ticket from this breakdown report', 'info');
 }
 
@@ -2343,11 +2538,11 @@ async function loadRepairs() {
     const awaitingDiv = document.getElementById('repairsAwaitingApproval');
     const ongoingDiv = document.getElementById('ongoingRepairsList');
     const outsourcedDiv = document.getElementById('outsourcedRepairsList');
-    
+
     awaitingDiv.innerHTML = '<p style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
     ongoingDiv.innerHTML = '<p style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
     outsourcedDiv.innerHTML = '<p style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
-    
+
     // TODO: Replace with actual API calls
     setTimeout(() => {
         awaitingDiv.innerHTML = '<p style="text-align: center; color: var(--muted);">No repairs awaiting approval</p>';
@@ -2387,7 +2582,7 @@ function viewAllOutsourced() {
 async function loadBudgets() {
     const tbody = document.getElementById('budgetsTableBody');
     tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading budgets...</td></tr>';
-    
+
     // TODO: Replace with actual API call
     setTimeout(() => {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted);">No pending budgets</td></tr>';
@@ -2428,7 +2623,7 @@ function rejectBudget(budgetId) {
 async function loadAssetStatus() {
     const tbody = document.getElementById('assetStatusBody');
     tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading assets...</td></tr>';
-    
+
     // TODO: Replace with actual API call
     setTimeout(() => {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted);">No assets found</td></tr>';
@@ -2440,16 +2635,88 @@ function filterAssets(status) {
     // TODO: Implement filtering logic
 }
 
-// ==================== TECHNICIAN ASSIGNMENTS ====================
+// ==================== TECHNICIANS ====================
 
 async function loadTechnicians() {
-    const div = document.getElementById('techniciansList');
-    div.innerHTML = '<p style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading technicians...</p>';
-    
-    // TODO: Replace with actual API call
-    setTimeout(() => {
-        div.innerHTML = '<p style="text-align: center; color: var(--muted);">No technicians available</p>';
-    }, 500);
+    const table = document.getElementById('technicianAssignmentsTable');
+    if (!table) {
+        return;
+    }
+
+    table.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 18px;"><i class="fas fa-spinner fa-spin"></i> Loading technicians...</p>';
+
+    try {
+        const techniciansPromise = fetchTechniciansWithWorkload();
+        const ticketPromise = API.get('/fault-tickets').catch(() => null);
+
+        const [technicians, ticketResponse] = await Promise.all([techniciansPromise, ticketPromise]);
+
+        technicianOverviewData = technicians;
+
+        const ticketResponseIsValid = ticketResponse && (!ticketResponse.status || ticketResponse.status === 'success');
+        technicianTicketDataAvailable = Boolean(ticketResponseIsValid);
+
+        const tickets = ticketResponseIsValid ? (ticketResponse?.data?.tickets || ticketResponse?.data || []) : [];
+        const normalizedTickets = Array.isArray(tickets) ? tickets : [];
+        technicianOverviewAssignments = buildTechnicianAssignmentMap(normalizedTickets);
+
+        updateTechnicianSummaryCards(technicians, technicianOverviewAssignments);
+
+        if (technicians.length === 0) {
+            table.innerHTML = `
+                <div style="padding: 24px; text-align: center; color: var(--muted);">
+                    <i class="fas fa-user-slash" style="font-size: 24px; margin-bottom: 10px;"></i>
+                    <p>No active technicians found.</p>
+                </div>
+            `;
+            return;
+        }
+
+        table.innerHTML = technicians.map(technician => {
+            const assignedTickets = technicianOverviewAssignments.get(Number(technician.id)) || [];
+            const workloadCount = getTechnicianWorkloadCount(technician, technicianOverviewAssignments);
+            const workloadStatus = getTechnicianWorkloadStatus(workloadCount);
+            const statusSummary = technicianTicketDataAvailable
+                ? summarizeTechnicianTicketStates(assignedTickets)
+                : (workloadCount === 0 ? 'No active tickets' : 'Ticket details unavailable');
+
+            const technicianName = escapeHtml(technician.full_name || `Technician #${technician.id}`);
+            const expertise = escapeHtml(technician.technical_expertise || 'General');
+            const assignmentLabel = `${workloadCount} active assignment${workloadCount === 1 ? '' : 's'}`;
+
+            return `
+                <div class="inventory-item" data-id="${technician.id}">
+                    <div class="item-details">
+                        <strong><i class="fas fa-user-cog"></i> ${technicianName}</strong>
+                        <div class="item-meta">
+                            <i class="fas fa-wrench"></i> ${expertise} |
+                            <i class="fas fa-tasks"></i> ${assignmentLabel}
+                        </div>
+                        <div class="item-meta">
+                            <span class="status-text ${workloadStatus.className}">${workloadStatus.label}</span> |
+                            <i class="fas fa-ticket-alt"></i> ${escapeHtml(statusSummary)}
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <div class="action-buttons">
+                            <button class="btn btn-primary btn-small" onclick="viewTechnicianDetails(${Number(technician.id)})">
+                                <i class="fas fa-eye"></i> VIEW
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading technicians:', error);
+        technicianOverviewData = [];
+        technicianOverviewAssignments = new Map();
+        technicianTicketDataAvailable = false;
+        updateTechnicianSummaryCards([], new Map());
+
+        table.innerHTML = '<p style="text-align: center; color: var(--danger); padding: 18px;">Failed to load technicians. Please try again.</p>';
+        showToast('Failed to load technicians', 'error');
+    }
 }
 
 // ==================== TOAST NOTIFICATIONS ====================
@@ -2457,7 +2724,7 @@ async function loadTechnicians() {
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     toast.textContent = message;
-    
+
     toast.className = 'toast';
     if (type === 'error' || type === 'danger') {
         toast.classList.add('toast-error');
@@ -2468,79 +2735,18 @@ function showToast(message, type = 'success') {
     } else {
         toast.classList.add('toast-success');
     }
-    
+
     toast.style.display = 'block';
-    
+
     setTimeout(() => {
         toast.style.display = 'none';
     }, 3000);
 }
 
-// ==================== CONFIRMATION DIALOG ====================
+// logout(), createConfirmationDialog(), closeConfirmation(), confirmAction()
+// are now provided by shared dashboard-init.js
 
-function createConfirmationDialog(title, message, onConfirm, type = 'danger') {
-    const modal = document.createElement('div');
-    modal.className = 'modal confirmation-modal';
-    modal.id = 'confirmationModal';
-    
-    const iconMap = {
-        'danger': 'exclamation-triangle',
-        'warning': 'exclamation-circle',
-        'primary': 'question-circle',
-        'info': 'info-circle'
-    };
-    
-    modal.innerHTML = `
-        <div class="modal-content confirmation-content">
-            <div class="confirmation-header ${type}">
-                <i class="fas fa-${iconMap[type] || 'question-circle'}"></i>
-                <h4>${title}</h4>
-            </div>
-            <div class="confirmation-body">
-                <p>${message}</p>
-            </div>
-            <div class="confirmation-actions">
-                <button class="btn btn-secondary" onclick="closeConfirmation()">
-                    <i class="fas fa-times"></i> Cancel
-                </button>
-                <button class="btn btn-${type}" onclick="confirmAction()">
-                    <i class="fas fa-check"></i> Confirm
-                </button>
-            </div>
-        </div>
-    `;
-    
-    // Close on outside click
-    modal.onclick = (e) => {
-        if (e.target === modal) {
-            closeConfirmation();
-        }
-    };
-    
-    // Store the confirmation action
-    window.pendingConfirmAction = onConfirm;
-    
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('active'), 10);
-}
 
-function closeConfirmation() {
-    const modal = document.getElementById('confirmationModal');
-    if (modal) {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-    }
-    window.pendingConfirmAction = null;
-}
-
-async function confirmAction() {
-    if (window.pendingConfirmAction) {
-        await window.pendingConfirmAction();
-        closeConfirmation();
-    }
-}
-
-// ==================== DETAILS MODAL ====================
 
 function createDetailsModal(title, content) {
     // Remove any existing details modal
@@ -2548,11 +2754,11 @@ function createDetailsModal(title, content) {
     if (existingModal) {
         existingModal.remove();
     }
-    
+
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.id = 'detailsModal';
-    
+
     modal.innerHTML = `
         <div class="modal-content modal-content-large">
             <div class="modal-header">
@@ -2569,17 +2775,17 @@ function createDetailsModal(title, content) {
             </div>
         </div>
     `;
-    
+
     // Close on outside click
     modal.onclick = (e) => {
         if (e.target === modal) {
             closeDetailsModal();
         }
     };
-    
+
     document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
-    
+
     // Add active class with slight delay to ensure transition works
     setTimeout(() => {
         modal.classList.add('active');
@@ -2595,23 +2801,11 @@ function closeDetailsModal() {
     }
 }
 
-// ==================== LOGOUT ====================
-
-function logout() {
-    createConfirmationDialog(
-        'Confirm Logout',
-        'Are you sure you want to logout? Any unsaved changes will be lost.',
-        () => {
-            Auth.logout();
-        },
-        'warning'
-    );
-}
 
 // ==================== MODAL HANDLERS ====================
 
 // Close modal when clicking outside
-document.addEventListener('click', function(event) {
+document.addEventListener('click', function (event) {
     const modal = document.getElementById('createTicketModal');
     if (event.target === modal) {
         closeCreateTicketModal();
@@ -2619,7 +2813,7 @@ document.addEventListener('click', function(event) {
 });
 
 // Close modal on ESC key
-document.addEventListener('keydown', function(event) {
+document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') {
         const modal = document.getElementById('createTicketModal');
         if (modal && modal.classList.contains('active')) {
@@ -2646,12 +2840,12 @@ if (window.innerWidth <= 768) {
         border-radius: 5px;
         cursor: pointer;
     `;
-    
+
     menuBtn.onclick = () => {
         const sidebar = document.querySelector('.sidebar');
         sidebar.classList.toggle('open');
     };
-    
+
     document.body.appendChild(menuBtn);
 }
 
@@ -2663,9 +2857,9 @@ function viewRepairDetails(repairId) {
         'REP-001': { id: 'REP-001', title: 'Engine Overhaul', asset: 'Vehicle V-105', assetName: 'Toyota Hiace LKA-1234', ticket: 'MBD-050', technician: 'Mike Johnson', priority: 'Urgent', estimatedCost: '$2,500', estimatedTime: '2 days', description: 'Complete engine overhaul required due to excessive oil consumption and performance issues', parts: 'Engine gaskets, oil filters, air filters, spark plugs, engine oil', status: 'Pending Approval' },
         'REP-002': { id: 'REP-002', title: 'Transmission Repair', asset: 'Vehicle V-108', assetName: 'Isuzu NPR LKA-5678', ticket: 'MBD-051', technician: 'Sarah Williams', priority: 'Normal', estimatedCost: '$1,800', estimatedTime: '1.5 days', description: 'Transmission fluid leak detected along with gear shifting issues', parts: 'Transmission seals, gasket kit, transmission fluid', status: 'Pending Approval' }
     };
-    
+
     const repair = repairData[repairId] || repairData['REP-001'];
-    
+
     const content = `
         <div style="padding: 20px;">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
@@ -2717,7 +2911,7 @@ function viewRepairDetails(repairId) {
             </div>
         </div>
     `;
-    
+
     createDetailsModal('Repair Details', content);
 }
 
@@ -2761,9 +2955,9 @@ function viewRepairProgress(repairId) {
     const progressData = {
         'REP-010': { id: 'REP-010', title: 'Hydraulic System', asset: 'Machine M-205', assetName: 'CAT Excavator 320D', technician: 'Mike Johnson', startDate: 'Oct 18, 2025', expectedDate: 'Oct 20, 2025', status: 'On Track', progress: '60%', completedSteps: 'Initial diagnosis completed, Hydraulic pump removed, System flushed', remainingSteps: 'Install new pump, Test system, Final inspection', notes: 'Work is progressing well, no delays expected' }
     };
-    
+
     const progress = progressData[repairId] || progressData['REP-010'];
-    
+
     const content = `
         <div class="form-section">
             <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
@@ -2807,7 +3001,7 @@ function viewRepairProgress(repairId) {
             <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${progress.notes}</p>
         </div>
     `;
-    
+
     createDetailsModal('Repair Progress', content);
 }
 
@@ -2834,14 +3028,14 @@ function filterBudgetsByStatus(status) {
         b.classList.remove('active');
     });
     btn.classList.add('active');
-    
+
     const rows = document.querySelectorAll('#pendingBudgetsTable tr');
     let visibleCount = 0;
-    
+
     rows.forEach(row => {
         const rowStatus = row.getAttribute('data-status');
         if (!rowStatus) return;
-        
+
         if (status === 'all') {
             row.style.display = '';
             visibleCount++;
@@ -2852,13 +3046,13 @@ function filterBudgetsByStatus(status) {
             row.style.display = 'none';
         }
     });
-    
+
     // Update badge count
     const badge = document.getElementById('budgetCountBadge');
     if (badge) {
         badge.textContent = `${visibleCount} budget${visibleCount !== 1 ? 's' : ''}`;
     }
-    
+
     showToast(`Showing ${visibleCount} budget${visibleCount !== 1 ? 's' : ''}`, 'info');
 }
 
@@ -2868,9 +3062,9 @@ function viewBudgetDetails(budgetId) {
         'BUD-001': { id: 'BUD-001', breakdown: 'BR-003', asset: 'Vehicle LKA-1234', assetName: 'Toyota Hiace', description: 'Tire replacement - In-route breakdown', submittedBy: 'Driver Kamal', submittedDate: '2025-10-21', priority: 'Urgent', requestedAmount: 'LKR 12,500', breakdown: 'Tires (4x): LKR 10,000\nLabor: LKR 1,500\nAlignment: LKR 1,000', location: 'Colombo - Kandy Road (near Kadawatha)', reason: 'Front left tire burst during trip, inspection revealed all tires worn beyond safe limits' },
         'BUD-002': { id: 'BUD-002', breakdown: 'BR-005', asset: 'Vehicle LKA-5678', assetName: 'Isuzu NPR', description: 'Battery replacement', submittedBy: 'Driver Saman', submittedDate: '2025-10-21', priority: 'Normal', requestedAmount: 'LKR 8,750', breakdown: 'Battery: LKR 7,500\nLabor: LKR 1,000\nTerminal cleaning: LKR 250', location: 'Galle depot', reason: 'Battery completely dead, unable to start vehicle after overnight parking' }
     };
-    
+
     const budget = budgetData[budgetId] || budgetData['BUD-001'];
-    
+
     const content = `
         <div class="form-section">
             <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
@@ -2913,7 +3107,7 @@ function viewBudgetDetails(budgetId) {
             </div>
         </div>
     `;
-    
+
     createDetailsModal('Budget Approval Details', content);
 }
 
@@ -2926,7 +3120,7 @@ function approveBudget(budgetId) {
             if (row) {
                 // Update status
                 row.setAttribute('data-status', 'approved');
-                
+
                 // Update the actions column to show approved status
                 const actionsCell = row.querySelector('.budget-actions');
                 if (actionsCell) {
@@ -2935,7 +3129,7 @@ function approveBudget(budgetId) {
                         <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('${budgetId}')"><i class="fas fa-eye"></i> View</button>
                     `;
                 }
-                
+
                 // Hide the row if viewing only pending
                 const activeBtn = document.querySelector('#budget-approval .filter-controls .filter-btn.active');
                 if (activeBtn && activeBtn.textContent.toLowerCase().includes('pending')) {
@@ -2958,7 +3152,7 @@ function rejectBudget(budgetId) {
             if (row) {
                 // Update status
                 row.setAttribute('data-status', 'rejected');
-                
+
                 // Update the actions column to show rejected status
                 const actionsCell = row.querySelector('.budget-actions');
                 if (actionsCell) {
@@ -2967,7 +3161,7 @@ function rejectBudget(budgetId) {
                         <button class="btn btn-secondary btn-small" onclick="viewBudgetDetails('${budgetId}')"><i class="fas fa-eye"></i> View</button>
                     `;
                 }
-                
+
                 // Hide the row if viewing only pending
                 const activeBtn = document.querySelector('#budget-approval .filter-controls .filter-btn.active');
                 if (activeBtn && activeBtn.textContent.toLowerCase().includes('pending')) {
@@ -2986,13 +3180,13 @@ function updateBudgetCount() {
     if (activeBtn) {
         const rows = document.querySelectorAll('#pendingBudgetsTable tr');
         let visibleCount = 0;
-        
+
         rows.forEach(row => {
             if (row.style.display !== 'none') {
                 visibleCount++;
             }
         });
-        
+
         const badge = document.getElementById('budgetCountBadge');
         if (badge) {
             badge.textContent = `${visibleCount} budget${visibleCount !== 1 ? 's' : ''}`;
@@ -3008,14 +3202,14 @@ function filterAssets(status) {
         b.classList.remove('active');
     });
     btn.classList.add('active');
-    
+
     const rows = document.querySelectorAll('#assetStatusTable tr');
     let visibleCount = 0;
-    
+
     rows.forEach(row => {
         const rowStatus = row.getAttribute('data-status');
         if (!rowStatus) return;
-        
+
         if (status === 'all') {
             row.style.display = '';
             visibleCount++;
@@ -3026,7 +3220,7 @@ function filterAssets(status) {
             row.style.display = 'none';
         }
     });
-    
+
     showToast(`Showing ${visibleCount} asset${visibleCount !== 1 ? 's' : ''}`, 'info');
 }
 
@@ -3039,9 +3233,9 @@ function viewAssetDetails(assetId) {
         'MAC-001': { id: 'MAC-001', name: 'CAT Excavator 320D', type: 'Machine', category: 'Heavy Equipment', location: 'Site B', status: 'Operational', lastService: '2024-01-18', nextService: '2024-04-18', hours: '1,250 hrs', assignedTo: 'Operator Jane Smith', fuelType: 'Diesel', year: '2021', condition: 'Excellent' },
         'MAC-002': { id: 'MAC-002', name: 'JCB Backhoe 3CX', type: 'Machine', category: 'Heavy Equipment', location: 'Site C', status: 'Operational', lastService: '2024-01-12', nextService: '2024-04-12', hours: '890 hrs', assignedTo: 'Operator Mike Johnson', fuelType: 'Diesel', year: '2022', condition: 'Excellent' }
     };
-    
+
     const asset = assetData[assetId] || assetData['VEH-001'];
-    
+
     const content = `
         <div class="form-section">
             <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
@@ -3075,7 +3269,7 @@ function viewAssetDetails(assetId) {
             <p><strong>Next Service:</strong> <i class="fas fa-calendar-alt"></i> ${asset.nextService}</p>
         </div>
     `;
-    
+
     createDetailsModal('Asset Details', content);
 }
 
@@ -3084,71 +3278,131 @@ function updateAssetStatus(assetId) {
     // TODO: Implement status update modal
 }
 
-// ==================== TECHNICIAN ASSIGNMENTS FUNCTIONS ====================
+// ==================== TECHNICIAN FUNCTIONS ====================
 
-function viewTechnicianDetails(techId) {
-    // Sample data - replace with actual API call
-    const techData = {
-        'TECH-001': { id: 'TECH-001', name: 'Ranjith Silva', specialization: 'Engine Specialist', currentAssignments: 2, status: 'Available', completedThisWeek: 3, completedThisMonth: 12, experience: '8 years', phone: '+94 77 123 4567', email: 'ranjith.silva@assetcare360.com', activeTickets: 'MBD-050 (Engine Overhaul), MBD-048 (Oil Change)', certifications: 'ASE Master Technician, Diesel Engine Specialist' }
-    };
-    
-    const tech = techData[techId] || techData['TECH-001'];
-    
+async function viewTechnicianDetails(techId) {
+    const technicianId = Number(techId);
+
+    if (!technicianId) {
+        showToast('Invalid technician ID', 'error');
+        return;
+    }
+
+    let technician = technicianOverviewData.find(item => Number(item.id) === technicianId);
+
+    if (!technician) {
+        await loadTechnicians();
+        technician = technicianOverviewData.find(item => Number(item.id) === technicianId);
+    }
+
+    if (!technician) {
+        showToast('Technician details not found', 'error');
+        return;
+    }
+
+    const assignedTickets = technicianOverviewAssignments.get(technicianId) || [];
+    const workloadCount = getTechnicianWorkloadCount(technician, technicianOverviewAssignments);
+    const workloadStatus = getTechnicianWorkloadStatus(workloadCount);
+    const ticketStatesSummary = technicianTicketDataAvailable
+        ? summarizeTechnicianTicketStates(assignedTickets)
+        : (workloadCount === 0 ? 'No active tickets' : 'Ticket details unavailable');
+
+    let assignedTicketHtml = '';
+
+    if (!technicianTicketDataAvailable && workloadCount > 0) {
+        assignedTicketHtml = `
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px; color: var(--muted);">
+                Ticket details are temporarily unavailable. Workload count is still shown above.
+            </p>
+        `;
+    } else if (assignedTickets.length === 0) {
+        assignedTicketHtml = `
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px; color: var(--muted);">
+                No active assignments for this technician.
+            </p>
+        `;
+    } else {
+        assignedTicketHtml = assignedTickets.map(ticket => {
+            const ticketId = escapeHtml(ticket.ticket_id || `TKT-${String(ticket.id || '').padStart(3, '0')}`);
+            const ticketStatus = escapeHtml((ticket.status || 'Open').toUpperCase());
+            const priority = escapeHtml((ticket.priority || 'Medium').toUpperCase());
+            const priorityClass = getPriorityStatusClass(ticket.priority);
+            const statusClass = getTicketStatusClass(ticket.status);
+            const machineName = escapeHtml(ticket.machine_name || 'N/A');
+            const location = escapeHtml(ticket.location || 'N/A');
+            const description = escapeHtml(ticket.description || 'No description provided');
+            const expectedCompletion = formatDateTime(ticket.expected_completion_date, false);
+            const assignedAt = formatDateTime(ticket.assigned_at);
+
+            const ticketAction = Number.isFinite(Number(ticket.id))
+                ? `<button class="btn btn-secondary btn-small" onclick="closeDetailsModal(); viewTicketDetails(${Number(ticket.id)})"><i class="fas fa-eye"></i> View Ticket</button>`
+                : '';
+
+            return `
+                <div style="margin-top: 10px; padding: 12px; border: 1px solid var(--stone-200); border-radius: 8px; background: #fff;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px;">
+                        <strong><i class="fas fa-ticket-alt"></i> ${ticketId}</strong>
+                        <span class="status-text ${statusClass}">${ticketStatus}</span>
+                    </div>
+                    <p><strong>Priority:</strong> <span class="status-text ${priorityClass}">${priority}</span></p>
+                    <p><strong>Machine:</strong> ${machineName}</p>
+                    <p><strong>Location:</strong> ${location}</p>
+                    <p><strong>Expected Completion:</strong> ${expectedCompletion}</p>
+                    <p><strong>Assigned At:</strong> ${assignedAt}</p>
+                    <p><strong>Description:</strong> ${description}</p>
+                    <div style="margin-top: 10px;">
+                        ${ticketAction}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    const technicianName = escapeHtml(technician.full_name || `Technician #${technician.id}`);
+    const expertise = escapeHtml(technician.technical_expertise || 'General');
+    const employeeId = escapeHtml(technician.employee_id || 'N/A');
+    const department = escapeHtml(technician.department || 'N/A');
+    const email = escapeHtml(technician.email || 'N/A');
+    const phone = escapeHtml(technician.phone || 'N/A');
+
     const content = `
         <div class="form-section">
             <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
-            <p><strong>Technician ID:</strong> <span style="color: var(--royal-blue);">${tech.id}</span></p>
-            <p><strong>Name:</strong> ${tech.name}</p>
-            <p><strong>Status:</strong> <span class="status-text status-normal">${tech.status.toUpperCase()}</span></p>
+            <p><strong>Technician ID:</strong> <span style="color: var(--royal-blue);">${employeeId}</span></p>
+            <p><strong>Name:</strong> ${technicianName}</p>
+            <p><strong>Availability:</strong> <span class="status-text ${workloadStatus.className}">${workloadStatus.label}</span></p>
         </div>
 
         <div class="form-section">
             <h5><i class="fas fa-user-cog"></i> Professional Details</h5>
-            <p><strong>Specialization:</strong> <i class="fas fa-wrench"></i> ${tech.specialization}</p>
-            <p><strong>Experience:</strong> ${tech.experience}</p>
+            <p><strong>Technical Expertise:</strong> <i class="fas fa-wrench"></i> ${expertise}</p>
+            <p><strong>Department:</strong> ${department}</p>
         </div>
 
         <div class="form-section">
             <h5><i class="fas fa-address-book"></i> Contact Information</h5>
-            <p><strong>Phone:</strong> <i class="fas fa-phone"></i> ${tech.phone}</p>
-            <p><strong>Email:</strong> <i class="fas fa-envelope"></i> ${tech.email}</p>
+            <p><strong>Phone:</strong> <i class="fas fa-phone"></i> ${phone}</p>
+            <p><strong>Email:</strong> <i class="fas fa-envelope"></i> ${email}</p>
         </div>
 
         <div class="form-section">
-            <h5><i class="fas fa-certificate"></i> Certifications</h5>
-            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${tech.certifications}</p>
-        </div>
-
-        <div class="form-section">
-            <h5><i class="fas fa-chart-bar"></i> Workload Statistics</h5>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-                <div style="text-align: center; padding: 15px; background: var(--background); border-radius: 8px;">
-                    <div style="font-size: 2em; font-weight: bold; color: var(--tang-blue);">${tech.currentAssignments}</div>
-                    <div style="margin-top: 5px; color: var(--muted);">Current Assignments</div>
-                </div>
-                <div style="text-align: center; padding: 15px; background: var(--background); border-radius: 8px;">
-                    <div style="font-size: 2em; font-weight: bold; color: var(--kelly-green);">${tech.completedThisWeek}</div>
-                    <div style="margin-top: 5px; color: var(--muted);">Completed This Week</div>
-                </div>
-                <div style="text-align: center; padding: 15px; background: var(--background); border-radius: 8px;">
-                    <div style="font-size: 2em; font-weight: bold; color: var(--royal-blue);">${tech.completedThisMonth}</div>
-                    <div style="margin-top: 5px; color: var(--muted);">Completed This Month</div>
-                </div>
-            </div>
+            <h5><i class="fas fa-chart-bar"></i> Current Workload</h5>
+            <p><strong>Active Assignments:</strong> ${workloadCount}</p>
+            <p><strong>Ticket State Summary:</strong> ${escapeHtml(ticketStatesSummary)}</p>
         </div>
 
         <div class="form-section">
             <h5><i class="fas fa-tasks"></i> Assigned Tickets</h5>
-            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${tech.activeTickets}</p>
+            ${assignedTicketHtml}
         </div>
     `;
-    
+
     createDetailsModal('Technician Details', content);
 }
 
 function assignNewTicket(techId) {
-    showToast(`Assigning new ticket to technician ${techId}`, 'info');
-    // TODO: Implement ticket assignment modal
+    navigateTo('fault-tickets');
+    showToast('Select a fault ticket and use Assign to choose technician(s)', 'info');
 }
 
 // ==================== MODAL BACKDROP HANDLERS ====================
@@ -3175,7 +3429,7 @@ document.addEventListener('keydown', (event) => {
         const createModal = document.getElementById('createTicketModal');
         const assignModal = document.getElementById('assignTicketModal');
         const viewModal = document.getElementById('viewTicketModal');
-        
+
         if (createModal && (createModal.classList.contains('active') || window.getComputedStyle(createModal).display === 'flex')) {
             closeCreateTicketModal();
         } else if (assignModal && window.getComputedStyle(assignModal).display === 'flex') {
@@ -3191,14 +3445,14 @@ function toggleDropdown(event, dropdownId) {
     event.stopPropagation();
     const dropdown = document.getElementById(`dropdown-${dropdownId}`);
     const allDropdowns = document.querySelectorAll('.dropdown-menu');
-    
+
     // Close all other dropdowns
     allDropdowns.forEach(d => {
         if (d !== dropdown) {
             d.classList.remove('show');
         }
     });
-    
+
     // Toggle current dropdown
     dropdown.classList.toggle('show');
 }
@@ -3210,7 +3464,7 @@ function closeAllDropdowns() {
 }
 
 // Close dropdowns when clicking outside
-document.addEventListener('click', function(event) {
+document.addEventListener('click', function (event) {
     if (!event.target.closest('.dropdown-container')) {
         closeAllDropdowns();
     }
@@ -3256,12 +3510,12 @@ let weeklyCheckReportsMap = new Map(); // Store weekly check reports by ID for q
 async function loadAllReports() {
     try {
         const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
-        
+
         // Load driver breakdown reports (vehicle breakdowns + route breakdowns)
         const vehicleResponse = await fetch(`${CONFIG.API_BASE_URL}/breakdown-reports`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        
+
         const routeResponse = await fetch(`${CONFIG.API_BASE_URL}/route-breakdowns`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -3364,20 +3618,20 @@ function displayAllReports() {
     filteredReports.forEach(report => {
         // Store report in map for easy access
         allReportsMap.set(report.report_id, report);
-        
+
         const card = document.createElement('div');
         card.className = 'inventory-item';
         card.setAttribute('data-id', report.report_id);
         card.setAttribute('data-type', report.source);
         card.setAttribute('data-status', (report.status || 'pending').toLowerCase());
-        
+
         const isDriver = report.source === 'driver';
         const icon = isDriver ? 'fa-car' : 'fa-wrench';
         // Use number_plate from API for driver reports, machine_name for operator reports
         const assetName = report.number_plate || report.vehicle_registration_no || report.machine_name || 'N/A';
         const submittedBy = report.driver_name || report.reported_by_name || report.reported_by || 'N/A';
         const statusClass = (report.status || 'pending').toLowerCase().replace(' ', '-');
-        
+
         card.innerHTML = `
             <div class="item-details">
                 <strong><i class="fas ${icon}"></i> ${report.report_type} #${report.report_id} - ${assetName}</strong>
@@ -3402,7 +3656,7 @@ function displayAllReports() {
                 </div>
             </div>
         `;
-        
+
         container.appendChild(card);
     });
 }
@@ -3450,7 +3704,7 @@ function displayDriverReports() {
         card.className = 'inventory-item';
         card.style.cursor = 'pointer';
         card.onclick = () => viewReportDetails(report);
-        
+
         card.innerHTML = `
             <div class="inventory-item-header">
                 <div class="inventory-item-title">
@@ -3488,7 +3742,7 @@ function displayDriverReports() {
                 ${report.description || report.issue_description || 'No description'}
             </div>
         `;
-        
+
         container.appendChild(card);
     });
 }
@@ -3527,7 +3781,7 @@ function displayOperatorReports() {
         card.className = 'inventory-item';
         card.style.cursor = 'pointer';
         card.onclick = () => viewReportDetails(report);
-        
+
         card.innerHTML = `
             <div class="inventory-item-header">
                 <div class="inventory-item-title">
@@ -3568,7 +3822,7 @@ function displayOperatorReports() {
                 ${report.description || report.fault_description || 'No description'}
             </div>
         `;
-        
+
         container.appendChild(card);
     });
 }
@@ -3582,11 +3836,11 @@ function updateReportStatistics() {
 
     if (totalDriverCount) totalDriverCount.textContent = allDriverReports.length;
     if (totalOperatorCount) totalOperatorCount.textContent = allOperatorReports.length;
-    
+
     const pendingReports = [...allDriverReports, ...allOperatorReports].filter(r => r.status === 'pending');
     if (pendingCount) pendingCount.textContent = pendingReports.length;
-    
-    const criticalReports = [...allDriverReports, ...allOperatorReports].filter(r => 
+
+    const criticalReports = [...allDriverReports, ...allOperatorReports].filter(r =>
         r.priority === 'high' || r.priority === 'critical' || r.severity === 'critical'
     );
     if (criticalCount) criticalCount.textContent = criticalReports.length;
@@ -3601,7 +3855,7 @@ function filterReportsBySource(source) {
             btn.classList.add('active');
         }
     });
-    
+
     // Also update filter buttons without data-filter-source (for weekly check reports section)
     const weeklyCheckButtons = document.querySelectorAll('#reportSourceFilters .filter-btn');
     weeklyCheckButtons.forEach(btn => {
@@ -3610,18 +3864,18 @@ function filterReportsBySource(source) {
             btn.classList.add('active');
         }
     });
-    
+
     currentReportSourceFilter = source;
-    
+
     // If we're on the "All Reports" section, use displayAllReports
     const allReportsContainer = document.getElementById('allReportsList');
     const weeklyCheckContainer = document.getElementById('reportsTableBody');
-    
+
     // Check which section is currently visible or has content
     if (allReportsContainer && allReportsContainer.closest('#reports')) {
         displayAllReports();
     }
-    
+
     // If weekly check reports section exists, also apply filters there
     if (weeklyCheckContainer && weeklyCheckContainer.closest('#daily-check-reports')) {
         applyReportFilters();
@@ -3637,7 +3891,7 @@ function filterReportsByReportStatus(status) {
             btn.classList.add('active');
         }
     });
-    
+
     currentReportStatusFilter = status;
     displayAllReports();
 }
@@ -3645,7 +3899,7 @@ function filterReportsByReportStatus(status) {
 // View report details
 function viewReportDetails(reportIdOrObj) {
     let report;
-    
+
     // Check if we received a report object or an ID
     if (typeof reportIdOrObj === 'object' && reportIdOrObj !== null) {
         report = reportIdOrObj;
@@ -3653,24 +3907,24 @@ function viewReportDetails(reportIdOrObj) {
         // Try both string and number keys
         report = allReportsMap.get(reportIdOrObj) || allReportsMap.get(parseInt(reportIdOrObj));
     }
-    
+
     if (!report) {
         console.log('Report not found for ID:', reportIdOrObj, 'Map keys:', Array.from(allReportsMap.keys()));
         showToast('Report not found', 'error');
         return;
     }
-    
+
     console.log('Full report data:', report); // Debug log
-    
+
     const isDriver = report.source === 'driver';
     const isRouteBreakdown = report.report_type === 'Route Breakdown';
     const isFaultTicket = report.report_type === 'Fault Ticket';
     const statusClass = (report.status || 'pending').toLowerCase().replace(/\s+/g, '-');
     const icon = isDriver ? 'fa-car' : 'fa-wrench';
-    
+
     // Get vehicle/number plate (API returns 'number_plate')
     const vehicleNumber = report.number_plate || report.vehicle_registration_no || 'N/A';
-    
+
     const content = `
         <div class="form-section">
             <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
@@ -3762,7 +4016,7 @@ function viewReportDetails(reportIdOrObj) {
         </div>
         ` : ''}
     `;
-    
+
     document.getElementById('reportDetailsModalTitle').innerHTML = `<i class="fas ${icon}"></i> ${report.report_type} Details`;
     document.getElementById('reportDetailsModalContent').innerHTML = content;
     openReportDetailsModal();
@@ -3776,15 +4030,15 @@ function openReportDetailsModal() {
         showToast('Error: Modal not found', 'error');
         return;
     }
-    
+
     // Reset and show modal
     modal.style.display = 'flex';
     modal.style.opacity = '0';
     document.body.style.overflow = 'hidden';
-    
+
     // Force reflow to ensure CSS transition works properly
     void modal.offsetHeight;
-    
+
     // Fade in with transition
     requestAnimationFrame(() => {
         modal.style.opacity = '1';
@@ -3807,10 +4061,10 @@ function closeReportDetailsModal() {
 function updateModalFooter(reportId, status) {
     const modalFooter = document.querySelector('#reportDetailsModal .modal-footer');
     if (!modalFooter) return;
-    
+
     // Clear existing buttons
     modalFooter.innerHTML = '';
-    
+
     if (status === 'pending') {
         // Add Approve and Reject buttons for pending reports
         modalFooter.innerHTML = `

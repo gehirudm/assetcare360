@@ -25,11 +25,12 @@ const CONFIG = {
         FORGOT_PASSWORD: '/auth/forgot-password.html',
         DASHBOARD: {
             ADMIN: '/dashboard/sysadministration/index.html',
-            MAINTENANCE_MANAGER: '/dashboard/maintenance.html',
+            MAINTENANCE_MANAGER: '/dashboard/maintenance/index.html',
             INVENTORY_MANAGER: '/dashboard/inventory-manager/index.html',
             TECHNICAL_OFFICER: '/dashboard/technical-officer/index.html',
             SUPERVISOR: '/dashboard/supervisor/index.html',
-            DRIVER: '/dashboard/driver.html',
+            DRIVER: '/dashboard/driver/index.html',
+            AUCTION_OFFICER: '/dashboard/auction/index.html',
             MACHINARY_OPERATOR: '/dashboard/machinery-operator/index.html'  // Matches DB typo: 'Machinary Operator'
             // MACHINARY_OPERATOR: '/dashboard/machop.html'  // Matches DB typo: 'Machinary Operator'
         }

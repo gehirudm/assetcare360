@@ -1,6 +1,6 @@
 // ==================== AUTHENTICATION & INITIALIZATION ====================
 
-document.addEventListener('DOMContentLoaded', async function() {
+document.addEventListener('DOMContentLoaded', async function () {
     try {
         // Check authentication and authorization using DashboardInit
         const user = await DashboardInit.init(['Inventory Manager', 'Admin'], {
@@ -8,13 +8,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             onSuccess: async (user) => {
                 // Store current user
                 currentUser = user;
-                
+
                 // Update specific user info elements for this dashboard
                 const userNameElement = document.getElementById('userName');
                 const userRoleElement = document.getElementById('userRole');
                 const userEmployeeIdElement = document.getElementById('userEmployeeId');
                 const userAvatarElement = document.getElementById('userAvatar');
-                
+
                 if (userNameElement) {
                     userNameElement.textContent = user.full_name || 'Inventory Manager';
                 }
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (userAvatarElement && user.full_name) {
                     userAvatarElement.textContent = user.full_name.charAt(0).toUpperCase();
                 }
-                
+
                 // Initialize the application
                 await initializeApp();
             }
@@ -83,21 +83,21 @@ const VEHICLE_TYPES = {
 async function initializeApp() {
     try {
         showLoading(true);
-        
+
         // Load current user info
         await loadCurrentUser();
-        
+
         // Initialize navigation
         initializeNavigation();
-        
+
         // Load dashboard data
         await loadDashboardData().catch(err => {
             console.warn('Dashboard data loading failed:', err);
         });
-        
+
         // Initialize search handlers
         initializeSearchHandlers();
-        
+
         // Load initial data for active section
         const activeSection = document.querySelector('.content-section.active')?.id;
         if (activeSection) {
@@ -105,7 +105,7 @@ async function initializeApp() {
                 console.warn('Section data loading failed:', err);
             });
         }
-        
+
         showLoading(false);
     } catch (error) {
         console.error('Failed to initialize app:', error);
@@ -120,13 +120,13 @@ async function loadCurrentUser() {
         // Backend returns {status: 'success', message: '...', data: {...}}
         if (response.status === 'success' && response.data) {
             currentUser = response.data;
-            
+
             // Check if user needs to change password
             if (currentUser.force_password_change) {
                 window.location.href = '../../auth/change-password.html';
                 return;
             }
-            
+
             updateUserInfo();
         }
     } catch (error) {
@@ -137,19 +137,19 @@ async function loadCurrentUser() {
 
 function updateUserInfo() {
     if (!currentUser) return;
-    
+
     const userAvatar = document.getElementById('userAvatar');
     const userName = document.getElementById('userName');
     const userRole = document.getElementById('userRole');
-    
+
     if (userAvatar) {
         userAvatar.textContent = currentUser.full_name.split(' ').map(n => n[0]).join('').toUpperCase();
     }
-    
+
     if (userName) {
         userName.textContent = currentUser.full_name;
     }
-    
+
     if (userRole) {
         userRole.textContent = currentUser.role;
     }
@@ -159,7 +159,7 @@ function showLoading(show) {
     const overlay = document.getElementById('loadingOverlay');
     if (overlay) {
         overlay.classList.toggle('active', show);
-        
+
         // Safeguard: ensure loading is hidden after 10 seconds max
         if (show) {
             setTimeout(() => {
@@ -178,37 +178,37 @@ function initializeNavigation() {
     console.log('Initializing navigation...');
     const navItems = document.querySelectorAll('.nav-item');
     console.log(`Found ${navItems.length} nav items`);
-    
+
     navItems.forEach(item => {
-        item.addEventListener('click', async function(e) {
+        item.addEventListener('click', async function (e) {
             e.preventDefault();
             e.stopPropagation();
-            
+
             console.log('Nav item clicked:', this.getAttribute('data-section'));
-            
+
             // Remove active class from all nav items and sections
             document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
             document.querySelectorAll('.content-section').forEach(section => {
                 section.classList.remove('active');
                 console.log(`Hiding section: ${section.id}`);
             });
-            
+
             // Add active class to clicked nav item
             this.classList.add('active');
-            
+
             // Show corresponding section
             const sectionId = this.getAttribute('data-section');
             const targetSection = document.getElementById(sectionId);
-            
+
             console.log(`Attempting to show section: ${sectionId}`, targetSection);
-            
+
             if (targetSection) {
                 targetSection.classList.add('active');
                 console.log(`Section ${sectionId} is now active`);
-                
+
                 // Scroll to top of content
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-                
+
                 // Load section data (don't await to avoid blocking UI)
                 loadSectionData(sectionId).catch(err => {
                     console.error('Error loading section data:', err);
@@ -218,7 +218,7 @@ function initializeNavigation() {
             }
         });
     });
-    
+
     console.log('Navigation initialized successfully');
 }
 
@@ -227,19 +227,19 @@ function navigateTo(sectionId) {
     // Remove active class from all nav items and sections
     document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
     document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-    
+
     // Find and activate the nav item
     const navItem = document.querySelector(`[data-section="${sectionId}"]`);
     if (navItem) {
         navItem.classList.add('active');
     }
-    
+
     // Show the section
     const section = document.getElementById(sectionId);
     if (section) {
         section.classList.add('active');
     }
-    
+
     // Load section data
     loadSectionData(sectionId);
 }
@@ -248,7 +248,7 @@ async function loadSectionData(sectionId) {
     try {
         // Don't show loading overlay for section switches - it blocks navigation
         // showLoading(true);
-        
+
         switch (sectionId) {
             case 'dashboard':
                 await loadDashboardData();
@@ -277,7 +277,7 @@ async function loadSectionData(sectionId) {
                 // Load notifications if implemented
                 break;
         }
-        
+
         // showLoading(false);
     } catch (error) {
         console.error(`Failed to load ${sectionId} data:`, error);
@@ -301,7 +301,7 @@ async function loadDashboardData() {
         const machinesCount = machinesResponse.data?.machines?.length || 0;
         const vehiclesCount = vehiclesResponse.data?.vehicles?.length || 0;
         const products = productsResponse.data?.products || [];
-        
+
         // Calculate stock statistics
         const totalParts = products.length;
         const lowStockParts = products.filter(p => {
@@ -309,27 +309,27 @@ async function loadDashboardData() {
             return qty > 0 && qty <= 10;
         }).length;
         const outOfStockParts = products.filter(p => parseInt(p.quantity) === 0).length;
-        
+
         // Update dashboard cards
         const totalPartsEl = document.getElementById('totalPartsCount');
         const lowStockEl = document.getElementById('lowStockCount');
         const outOfStockEl = document.getElementById('outOfStockCount');
         const totalAssetsEl = document.getElementById('totalAssetsCount');
-        
+
         if (totalPartsEl) totalPartsEl.textContent = totalParts;
         if (lowStockEl) lowStockEl.textContent = lowStockParts;
         if (outOfStockEl) outOfStockEl.textContent = outOfStockParts;
         if (totalAssetsEl) totalAssetsEl.textContent = machinesCount + vehiclesCount;
-        
+
         // Update old elements if they exist (for backwards compatibility)
         const totalMachinesEl = document.getElementById('totalMachines');
         const totalVehiclesEl = document.getElementById('totalVehicles');
         if (totalMachinesEl) totalMachinesEl.textContent = machinesCount;
         if (totalVehiclesEl) totalVehiclesEl.textContent = vehiclesCount;
-        
+
         // Update recent activity
         updateRecentActivity();
-        
+
     } catch (error) {
         console.error('Failed to load dashboard data:', error);
     }
@@ -338,36 +338,36 @@ async function loadDashboardData() {
 function updateUrgentItems(machinesDue, vehiclesDue) {
     const urgentItems = document.getElementById('urgentItems');
     if (!urgentItems) return;
-    
+
     let urgentText = '';
-    
+
     if (machinesDue.length > 0) {
         urgentText += `${machinesDue.length} machine${machinesDue.length > 1 ? 's' : ''} due for service<br>`;
     }
-    
+
     if (vehiclesDue.length > 0) {
         urgentText += `${vehiclesDue.length} vehicle${vehiclesDue.length > 1 ? 's' : ''} due for service<br>`;
     }
-    
+
     if (!urgentText) {
         urgentText = 'No urgent items requiring attention';
     }
-    
+
     urgentItems.innerHTML = urgentText;
 }
 
 function updateRecentActivity() {
     const recentActivity = document.getElementById('recentActivity');
     if (!recentActivity) return;
-    
+
     // This would typically come from an API endpoint
     const activities = [
         'Machine M001 serviced successfully',
-        'New vehicle V005 added to fleet', 
+        'New vehicle V005 added to fleet',
         'Spare part order approved',
         'Maintenance scheduled for next week'
     ];
-    
+
     recentActivity.innerHTML = activities.map(activity => `• ${activity}`).join('<br>');
 }
 
@@ -389,7 +389,7 @@ async function loadMachines() {
 function displayMachines(machineList) {
     const machinesList = document.getElementById('machinesList');
     if (!machinesList) return;
-    
+
     if (machineList.length === 0) {
         machinesList.innerHTML = `
             <div class="card">
@@ -401,7 +401,7 @@ function displayMachines(machineList) {
         `;
         return;
     }
-    
+
     machinesList.innerHTML = machineList.map(machine => `
         <div class="inventory-item" data-id="${machine.id}" data-status="${machine.status}">
             <div class="item-details">
@@ -461,11 +461,11 @@ function getStatusClass(status) {
 
 function filterMachines(status) {
     currentMachineFilter = status;
-    
+
     // Update filter buttons
     document.querySelectorAll('#machineFilters .filter-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
-    
+
     // Apply filter
     const searchValue = document.getElementById('machineSearch').value.toLowerCase();
     applyMachineFilters(searchValue);
@@ -473,16 +473,16 @@ function filterMachines(status) {
 
 function applyMachineFilters(searchValue = '') {
     const filteredMachines = machines.filter(machine => {
-        const matchesSearch = !searchValue || 
+        const matchesSearch = !searchValue ||
             machine.machine_name.toLowerCase().includes(searchValue) ||
             machine.model_number.toLowerCase().includes(searchValue) ||
             machine.location.toLowerCase().includes(searchValue);
-        
+
         const matchesStatus = currentMachineFilter === 'all' || machine.status === currentMachineFilter;
-        
+
         return matchesSearch && matchesStatus;
     });
-    
+
     displayMachines(filteredMachines);
 }
 
@@ -504,7 +504,7 @@ async function openAddMachineModal() {
     } catch (error) {
         console.error('Failed to fetch next machine ID:', error);
     }
-    
+
     const modal = createMachineModal(null, nextMachineId);
     document.body.appendChild(modal);
     modal.classList.add('active');
@@ -515,7 +515,7 @@ function createMachineModal(machine = null, nextMachineId = 'MCH-001') {
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.id = isEdit ? 'editMachineModal' : 'addMachineModal';
-    
+
     modal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
@@ -629,14 +629,14 @@ function createMachineModal(machine = null, nextMachineId = 'MCH-001') {
                         <label class="form-label">Select Components</label>
                         <div class="components-grid" id="componentsGrid">
                             ${machine?.machine_name && MACHINE_TYPES[machine.machine_name] ? MACHINE_TYPES[machine.machine_name].map(component => {
-                                const isChecked = machine?.components?.includes(component) ? 'checked' : '';
-                                return `
+        const isChecked = machine?.components?.includes(component) ? 'checked' : '';
+        return `
                                     <label class="component-checkbox">
                                         <input type="checkbox" name="machineComponent" value="${component}" ${isChecked}>
                                         <span>${component}</span>
                                     </label>
                                 `;
-                            }).join('') : '<p style="color: var(--muted); padding: 1rem;">Please select a machine type to see available components</p>'}
+    }).join('') : '<p style="color: var(--muted); padding: 1rem;">Please select a machine type to see available components</p>'}
                         </div>
                     </div>
                 </div>
@@ -662,13 +662,13 @@ function createMachineModal(machine = null, nextMachineId = 'MCH-001') {
     setTimeout(() => {
         const form = modal.querySelector('form');
         form.addEventListener('submit', isEdit ? handleEditMachine : handleAddMachine);
-        
+
         // Fetch next machine ID for add form
         if (!isEdit) {
             fetchAndDisplayNextMachineId(modal);
         }
     }, 100);
-    
+
     return modal;
 }
 
@@ -676,14 +676,14 @@ function createMachineModal(machine = null, nextMachineId = 'MCH-001') {
 function updateMachineComponents() {
     const machineType = document.getElementById('machineName')?.value;
     const componentsGrid = document.getElementById('componentsGrid');
-    
+
     if (!componentsGrid) return;
-    
+
     if (!machineType || !MACHINE_TYPES[machineType]) {
         componentsGrid.innerHTML = '<p style="color: var(--muted); padding: 1rem;">Please select a machine type to see available components</p>';
         return;
     }
-    
+
     const components = MACHINE_TYPES[machineType];
     componentsGrid.innerHTML = components.map(component => `
         <label class="component-checkbox">
@@ -697,14 +697,14 @@ function updateMachineComponents() {
 function updateVehicleComponents() {
     const vehicleType = document.getElementById('vehicleName')?.value;
     const componentsGrid = document.getElementById('vehicleComponentsGrid');
-    
+
     if (!componentsGrid) return;
-    
+
     if (!vehicleType || !VEHICLE_TYPES[vehicleType]) {
         componentsGrid.innerHTML = '<p style="color: var(--muted); padding: 1rem;">Please select a vehicle type to see available components</p>';
         return;
     }
-    
+
     const components = VEHICLE_TYPES[vehicleType];
     componentsGrid.innerHTML = components.map(component => `
         <label class="component-checkbox">
@@ -716,24 +716,24 @@ function updateVehicleComponents() {
 
 async function handleAddMachine(e) {
     e.preventDefault();
-    
+
     try {
         const formData = getMachineFormData();
-        
+
         // Validate last service date is not in the future
         if (formData.last_service_date) {
             const lastServiceDate = new Date(formData.last_service_date);
             const today = new Date();
             today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
-            
+
             if (lastServiceDate > today) {
                 Utils.showToast('Last service date cannot be in the future', 'error');
                 return;
             }
         }
-        
+
         const response = await API.post('/machines', formData);
-        
+
         if (response.status === 'success') {
             Utils.showToast('Machine added successfully!', 'success');
             closeModal('addMachineModal');
@@ -741,7 +741,7 @@ async function handleAddMachine(e) {
         } else if (response.status === 'error') {
             // Display error message from backend
             Utils.showToast(response.message || 'Failed to add machine', 'error');
-            
+
             // If there are validation errors, display them on the form
             if (response.errors) {
                 const form = document.getElementById('addMachineForm');
@@ -756,25 +756,25 @@ async function handleAddMachine(e) {
 
 async function handleEditMachine(e) {
     e.preventDefault();
-    
+
     try {
         const machineId = document.getElementById('machineId').value;
         const formData = getMachineFormData();
-        
+
         // Validate last service date is not in the future
         if (formData.last_service_date) {
             const lastServiceDate = new Date(formData.last_service_date);
             const today = new Date();
             today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
-            
+
             if (lastServiceDate > today) {
                 Utils.showToast('Last service date cannot be in the future', 'error');
                 return;
             }
         }
-        
+
         const response = await API.put(`/machines/${machineId}`, formData);
-        
+
         if (response.status === 'success') {
             Utils.showToast('Machine updated successfully!', 'success');
             closeModal('editMachineModal');
@@ -782,7 +782,7 @@ async function handleEditMachine(e) {
         } else if (response.status === 'error') {
             // Display error message from backend
             Utils.showToast(response.message || 'Failed to update machine', 'error');
-            
+
             // If there are validation errors, display them on the form
             if (response.errors) {
                 const form = document.getElementById('editMachineForm');
@@ -798,7 +798,7 @@ async function handleEditMachine(e) {
 function getMachineFormData() {
     const selectedComponents = Array.from(document.querySelectorAll('input[name="machineComponent"]:checked'))
         .map(cb => cb.value);
-    
+
     return {
         machine_name: document.getElementById('machineName').value,
         model_number: document.getElementById('modelNumber').value,
@@ -821,7 +821,7 @@ async function editMachine(id) {
         Utils.showToast('Machine not found', 'error');
         return;
     }
-    
+
     const modal = createMachineModal(machine);
     document.body.appendChild(modal);
     modal.classList.add('active');
@@ -833,14 +833,14 @@ async function deleteMachine(id) {
         Utils.showToast('Machine not found', 'error');
         return;
     }
-    
+
     if (!confirm(`Are you sure you want to delete machine "${machine.machine_name}"? This action cannot be undone.`)) {
         return;
     }
-    
+
     try {
         const response = await API.delete(`/machines/${id}`);
-        
+
         if (response.status === 'success') {
             Utils.showToast('Machine deleted successfully!', 'success');
             await loadMachines();
@@ -857,7 +857,7 @@ function viewMachineDetails(id) {
         Utils.showToast('Machine not found', 'error');
         return;
     }
-    
+
     const modal = createDetailsModal('Machine Details', `
         <div class="form-section">
             <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
@@ -895,7 +895,7 @@ function viewMachineDetails(id) {
             </div>
         ` : ''}
     `);
-    
+
     document.body.appendChild(modal);
     modal.classList.add('active');
 }
@@ -918,7 +918,7 @@ async function loadVehicles() {
 function displayVehicles(vehicleList) {
     const vehiclesList = document.getElementById('vehiclesList');
     if (!vehiclesList) return;
-    
+
     if (vehicleList.length === 0) {
         vehiclesList.innerHTML = `
             <div class="card">
@@ -930,7 +930,7 @@ function displayVehicles(vehicleList) {
         `;
         return;
     }
-    
+
     vehiclesList.innerHTML = vehicleList.map(vehicle => `
         <div class="inventory-item" data-id="${vehicle.id}" data-status="${vehicle.status}">
             <div class="item-details">
@@ -982,11 +982,11 @@ function displayVehicles(vehicleList) {
 
 function filterVehicles(status) {
     currentVehicleFilter = status;
-    
+
     // Update filter buttons
     document.querySelectorAll('#vehicleFilters .filter-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
-    
+
     // Apply filter
     const searchValue = document.getElementById('vehicleSearch').value.toLowerCase();
     applyVehicleFilters(searchValue);
@@ -994,17 +994,17 @@ function filterVehicles(status) {
 
 function applyVehicleFilters(searchValue = '') {
     const filteredVehicles = vehicles.filter(vehicle => {
-        const matchesSearch = !searchValue || 
+        const matchesSearch = !searchValue ||
             vehicle.vehicle_name.toLowerCase().includes(searchValue) ||
             vehicle.number_plate.toLowerCase().includes(searchValue) ||
             vehicle.vehicle_type.toLowerCase().includes(searchValue) ||
             vehicle.chassis_number.toLowerCase().includes(searchValue);
-        
+
         const matchesStatus = currentVehicleFilter === 'all' || vehicle.status === currentVehicleFilter;
-        
+
         return matchesSearch && matchesStatus;
     });
-    
+
     displayVehicles(filteredVehicles);
 }
 
@@ -1026,7 +1026,7 @@ async function openAddVehicleModal() {
     } catch (error) {
         console.error('Failed to fetch next vehicle ID:', error);
     }
-    
+
     const modal = createVehicleModal(null, nextVehicleId);
     document.body.appendChild(modal);
     modal.classList.add('active');
@@ -1037,7 +1037,7 @@ function createVehicleModal(vehicle = null, nextVehicleId = 'VEH-001') {
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.id = isEdit ? 'editVehicleModal' : 'addVehicleModal';
-    
+
     modal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
@@ -1085,9 +1085,9 @@ function createVehicleModal(vehicle = null, nextVehicleId = 'VEH-001') {
                         <div class="form-group">
                             <label class="form-label">Fuel Type *</label>
                             <select class="form-select" id="fuelType" required>
-                                ${CONFIG.FUEL_TYPES.map(type => 
-                                    `<option value="${type}" ${vehicle?.fuel_type === type ? 'selected' : ''}>${type}</option>`
-                                ).join('')}
+                                ${CONFIG.FUEL_TYPES.map(type =>
+        `<option value="${type}" ${vehicle?.fuel_type === type ? 'selected' : ''}>${type}</option>`
+    ).join('')}
                             </select>
                         </div>
                     </div>
@@ -1185,14 +1185,14 @@ function createVehicleModal(vehicle = null, nextVehicleId = 'VEH-001') {
                         <label class="form-label">Select Components</label>
                         <div class="components-grid" id="vehicleComponentsGrid">
                             ${vehicle?.vehicle_name && VEHICLE_TYPES[vehicle.vehicle_name] ? VEHICLE_TYPES[vehicle.vehicle_name].map(component => {
-                                const isChecked = vehicle?.components?.includes(component) ? 'checked' : '';
-                                return `
+        const isChecked = vehicle?.components?.includes(component) ? 'checked' : '';
+        return `
                                     <label class="component-checkbox">
                                         <input type="checkbox" name="vehicleComponent" value="${component}" ${isChecked}>
                                         <span>${component}</span>
                                     </label>
                                 `;
-                            }).join('') : '<p style="color: var(--muted); padding: 1rem;">Please select a vehicle type to see available components</p>'}
+    }).join('') : '<p style="color: var(--muted); padding: 1rem;">Please select a vehicle type to see available components</p>'}
                         </div>
                     </div>
                 </div>
@@ -1218,7 +1218,7 @@ function createVehicleModal(vehicle = null, nextVehicleId = 'VEH-001') {
     setTimeout(() => {
         const form = modal.querySelector('form');
         form.addEventListener('submit', isEdit ? handleEditVehicle : handleAddVehicle);
-        
+
         // Initialize service interval visibility
         if (modal.querySelector('#serviceIntervalType')) {
             toggleServiceIntervals();
@@ -1232,7 +1232,7 @@ function toggleServiceIntervals() {
     const serviceType = document.getElementById('serviceIntervalType').value;
     const timeGroup = document.getElementById('timeIntervalGroup');
     const mileageGroup = document.getElementById('mileageIntervalGroup');
-    
+
     if (serviceType === 'Time-Based') {
         timeGroup.style.display = 'block';
         mileageGroup.style.display = 'none';
@@ -1253,24 +1253,24 @@ function toggleServiceIntervals() {
 
 async function handleAddVehicle(e) {
     e.preventDefault();
-    
+
     try {
         const formData = getVehicleFormData();
-        
+
         // Validate last service date is not in the future
         if (formData.last_service_date) {
             const lastServiceDate = new Date(formData.last_service_date);
             const today = new Date();
             today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
-            
+
             if (lastServiceDate > today) {
                 Utils.showToast('Last service date cannot be in the future', 'error');
                 return;
             }
         }
-        
+
         const response = await API.post('/vehicles', formData);
-        
+
         if (response.status === 'success') {
             Utils.showToast('Vehicle added successfully!', 'success');
             closeModal('addVehicleModal');
@@ -1278,7 +1278,7 @@ async function handleAddVehicle(e) {
         } else if (response.status === 'error') {
             // Display error message from backend
             Utils.showToast(response.message || 'Failed to add vehicle', 'error');
-            
+
             // If there are validation errors, display them on the form
             if (response.errors) {
                 const form = document.getElementById('addVehicleForm');
@@ -1293,25 +1293,25 @@ async function handleAddVehicle(e) {
 
 async function handleEditVehicle(e) {
     e.preventDefault();
-    
+
     try {
         const vehicleId = document.getElementById('vehicleId').value;
         const formData = getVehicleFormData();
-        
+
         // Validate last service date is not in the future
         if (formData.last_service_date) {
             const lastServiceDate = new Date(formData.last_service_date);
             const today = new Date();
             today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
-            
+
             if (lastServiceDate > today) {
                 Utils.showToast('Last service date cannot be in the future', 'error');
                 return;
             }
         }
-        
+
         const response = await API.put(`/vehicles/${vehicleId}`, formData);
-        
+
         if (response.status === 'success') {
             Utils.showToast('Vehicle updated successfully!', 'success');
             closeModal('editVehicleModal');
@@ -1319,7 +1319,7 @@ async function handleEditVehicle(e) {
         } else if (response.status === 'error') {
             // Display error message from backend
             Utils.showToast(response.message || 'Failed to update vehicle', 'error');
-            
+
             // If there are validation errors, display them on the form
             if (response.errors) {
                 const form = document.getElementById('editVehicleForm');
@@ -1334,7 +1334,7 @@ async function handleEditVehicle(e) {
 
 function getVehicleFormData() {
     const serviceType = document.getElementById('serviceIntervalType').value;
-    
+
     const formData = {
         vehicle_name: document.getElementById('vehicleName').value,
         model_number: document.getElementById('vehicleModel').value,
@@ -1353,23 +1353,23 @@ function getVehicleFormData() {
         last_service_mileage: document.getElementById('lastServiceMileage').value ? parseInt(document.getElementById('lastServiceMileage').value) : null,
         notes: document.getElementById('vehicleNotes').value
     };
-    
+
     // Add service intervals based on type
     if (serviceType === 'Time-Based' || serviceType === 'Both') {
         formData.service_interval_days = parseInt(document.getElementById('vehicleServiceIntervalDays').value);
     }
-    
+
     if (serviceType === 'Mileage-Based' || serviceType === 'Both') {
         formData.service_interval_km = parseInt(document.getElementById('vehicleServiceIntervalKm').value);
     }
-    
+
     // Get selected components
     const selectedComponents = [];
     document.querySelectorAll('input[name="vehicleComponent"]:checked').forEach(checkbox => {
         selectedComponents.push(checkbox.value);
     });
     formData.components = selectedComponents;
-    
+
     return formData;
 }
 
@@ -1379,7 +1379,7 @@ async function editVehicle(id) {
         Utils.showToast('Vehicle not found', 'error');
         return;
     }
-    
+
     const modal = createVehicleModal(vehicle);
     document.body.appendChild(modal);
     modal.classList.add('active');
@@ -1391,14 +1391,14 @@ async function deleteVehicle(id) {
         Utils.showToast('Vehicle not found', 'error');
         return;
     }
-    
+
     if (!confirm(`Are you sure you want to delete vehicle "${vehicle.vehicle_name}" (${vehicle.number_plate})? This action cannot be undone.`)) {
         return;
     }
-    
+
     try {
         const response = await API.delete(`/vehicles/${id}`);
-        
+
         if (response.status === 'success') {
             Utils.showToast('Vehicle deleted successfully!', 'success');
             await loadVehicles();
@@ -1415,7 +1415,7 @@ function viewVehicleDetails(id) {
         Utils.showToast('Vehicle not found', 'error');
         return;
     }
-    
+
     const modal = createDetailsModal('Vehicle Details', `
         <div class="form-section">
             <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
@@ -1460,7 +1460,7 @@ function viewVehicleDetails(id) {
             </div>
         ` : ''}
     `);
-    
+
     document.body.appendChild(modal);
     modal.classList.add('active');
 }
@@ -1471,7 +1471,7 @@ function updateVehicleMileage(id) {
         Utils.showToast('Vehicle not found', 'error');
         return;
     }
-    
+
     const modal = createMileageUpdateModal(vehicle);
     document.body.appendChild(modal);
     modal.classList.add('active');
@@ -1481,7 +1481,7 @@ function createMileageUpdateModal(vehicle) {
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.id = 'updateMileageModal';
-    
+
     modal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
@@ -1519,17 +1519,17 @@ function createMileageUpdateModal(vehicle) {
             </form>
         </div>
     `;
-    
+
     return modal;
 }
 
 async function handleMileageUpdate(e, vehicleId) {
     e.preventDefault();
-    
+
     try {
         const mileage = parseInt(document.getElementById('newMileage').value);
         const response = await API.patch(`/vehicles/${vehicleId}/mileage`, { mileage });
-        
+
         if (response.status === 'success') {
             Utils.showToast('Mileage updated successfully!', 'success');
             closeModal('updateMileageModal');
@@ -1546,13 +1546,13 @@ async function handleMileageUpdate(e, vehicleId) {
 function initializeSearchHandlers() {
     const machineSearch = document.getElementById('machineSearch');
     const vehicleSearch = document.getElementById('vehicleSearch');
-    
+
     if (machineSearch) {
         machineSearch.addEventListener('input', (e) => {
             applyMachineFilters(e.target.value.toLowerCase());
         });
     }
-    
+
     if (vehicleSearch) {
         vehicleSearch.addEventListener('input', (e) => {
             applyVehicleFilters(e.target.value.toLowerCase());
@@ -1566,7 +1566,7 @@ function createDetailsModal(title, content) {
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.id = 'detailsModal_' + Date.now();
-    
+
     modal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
@@ -1581,7 +1581,7 @@ function createDetailsModal(title, content) {
             <button class="btn btn-secondary" onclick="closeModal('${modal.id}')"><i class="fas fa-times"></i> Close</button>
         </div>
     `;
-    
+
     return modal;
 }
 
@@ -1609,25 +1609,17 @@ function closeModal(modalId) {
     }
 }
 
-function logout() {
-    createConfirmationDialog(
-        'Confirm Logout',
-        'Are you sure you want to logout? Any unsaved changes will be lost.',
-        () => {
-            Auth.logout();
-        },
-        'warning'
-    );
-}
+// logout(), createConfirmationDialog(), closeConfirmation(), confirmAction()
+// are now provided by shared dashboard-init.js
 
-// ==================== DROPDOWN MENU FUNCTIONS ====================
+
 
 function toggleDropdown(event, dropdownId) {
     event.stopPropagation();
-    
+
     // Close all other dropdowns first
     closeAllDropdowns();
-    
+
     // Toggle the clicked dropdown
     const dropdown = document.getElementById(`dropdown-${dropdownId}`);
     if (dropdown) {
@@ -1648,55 +1640,6 @@ document.addEventListener('click', (event) => {
     }
 });
 
-// ==================== CONFIRMATION DIALOG FUNCTIONS ====================
-
-function createConfirmationDialog(title, message, onConfirm, type = 'danger') {
-    const modal = document.createElement('div');
-    modal.className = 'modal confirmation-modal';
-    modal.id = 'confirmationModal';
-    
-    modal.innerHTML = `
-        <div class="modal-content confirmation-content">
-            <div class="confirmation-header ${type}">
-                <i class="fas fa-${type === 'danger' ? 'exclamation-triangle' : 'question-circle'}"></i>
-                <h4>${title}</h4>
-            </div>
-            <div class="confirmation-body">
-                <p>${message}</p>
-            </div>
-            <div class="confirmation-actions">
-                <button class="btn btn-secondary" onclick="closeConfirmation()">
-                    <i class="fas fa-times"></i> Cancel
-                </button>
-                <button class="btn btn-${type}" onclick="confirmAction()">
-                    <i class="fas fa-check"></i> Confirm
-                </button>
-            </div>
-        </div>
-    `;
-    
-    // Store the confirmation action
-    window.pendingConfirmAction = onConfirm;
-    
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('active'), 10);
-}
-
-function closeConfirmation() {
-    const modal = document.getElementById('confirmationModal');
-    if (modal) {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-    }
-    window.pendingConfirmAction = null;
-}
-
-async function confirmAction() {
-    if (window.pendingConfirmAction) {
-        await window.pendingConfirmAction();
-        closeConfirmation();
-    }
-}
 
 // ==================== DELETE CONFIRMATION ====================
 
@@ -1720,10 +1663,10 @@ function confirmDelete(id, type, name) {
 
 function markForAuction(id, type) {
     closeAllDropdowns();
-    const itemName = type === 'machine' 
-        ? machines.find(m => m.id === id)?.machine_name 
+    const itemName = type === 'machine'
+        ? machines.find(m => m.id === id)?.machine_name
         : vehicles.find(v => v.id === id)?.vehicle_name;
-    
+
     createConfirmationDialog(
         'Mark for Auction',
         `Are you sure you want to mark <strong>${itemName}</strong> for auction?<br><br>This will change the status to "For Auction".`,
@@ -1736,10 +1679,10 @@ function markForAuction(id, type) {
 
 async function removeFromAuction(id, type) {
     closeAllDropdowns();
-    const itemName = type === 'machine' 
-        ? machines.find(m => m.id === id)?.machine_name 
+    const itemName = type === 'machine'
+        ? machines.find(m => m.id === id)?.machine_name
         : vehicles.find(v => v.id === id)?.vehicle_name;
-    
+
     createConfirmationDialog(
         'Remove from Auction',
         `Do you want to remove <strong>${itemName}</strong> from auction?<br><br>The status will be changed to "Active".`,
@@ -1754,7 +1697,7 @@ async function updateItemStatus(id, type, status) {
     try {
         const endpoint = type === 'machine' ? `/machines/${id}` : `/vehicles/${id}`;
         const response = await API.put(endpoint, { status });
-        
+
         if (response.status === 'success') {
             Utils.showToast(`Status updated to "${status}" successfully!`, 'success');
             if (type === 'machine') {
@@ -1820,9 +1763,9 @@ const SPARE_PART_NAMES = {
 function updateSparepartNameOptions() {
     const category = document.getElementById('partCategory').value;
     const sparepartNameSelect = document.getElementById('sparepartName');
-    
+
     sparepartNameSelect.innerHTML = '<option value="">Select Sparepart Name</option>';
-    
+
     if (category && SPARE_PART_NAMES[category]) {
         SPARE_PART_NAMES[category].forEach(sparepartName => {
             const option = document.createElement('option');
@@ -1838,9 +1781,9 @@ function updateEditSparepartNameOptions() {
     const category = document.getElementById('editPartCategory').value;
     const sparepartNameSelect = document.getElementById('editSparepartName');
     const currentValue = sparepartNameSelect.value;
-    
+
     sparepartNameSelect.innerHTML = '<option value="">Select Sparepart Name</option>';
-    
+
     if (category && SPARE_PART_NAMES[category]) {
         SPARE_PART_NAMES[category].forEach(sparepartName => {
             const option = document.createElement('option');
@@ -1859,7 +1802,7 @@ function updateCompatibilityOptions() {
     const category = document.getElementById('partCategory').value;
     const container = document.getElementById('compatibilityCheckboxes');
     const label = document.getElementById('compatibilityLabel');
-    
+
     if (category === 'vehicles') {
         label.textContent = 'Compatible Vehicles';
         const vehicleTypesList = Object.keys(VEHICLE_TYPES);
@@ -1887,7 +1830,7 @@ function updateEditCompatibilityOptions() {
     const category = document.getElementById('editPartCategory').value;
     const container = document.getElementById('editCompatibilityCheckboxes');
     const label = document.getElementById('editCompatibilityLabel');
-    
+
     if (category === 'vehicles') {
         label.textContent = 'Compatible Vehicles';
         const vehicleTypesList = Object.keys(VEHICLE_TYPES);
@@ -1917,7 +1860,7 @@ async function loadSpareParts() {
     try {
         showLoading(true);
         const response = await API.get('/products');
-        
+
         if (response.status === 'success' && response.data && response.data.products) {
             const products = response.data.products;
             displaySpareParts(products);
@@ -1938,18 +1881,18 @@ async function loadSpareParts() {
 function displaySpareParts(products) {
     const catalogItems = document.getElementById('catalogItems');
     catalogItems.innerHTML = '';
-    
+
     if (products.length === 0) {
         catalogItems.innerHTML = '<div class="no-data"><i class="fas fa-box-open"></i><p>No spare parts in catalog</p></div>';
         return;
     }
-    
+
     products.forEach(product => {
         const quantity = parseInt(product.quantity) || 0;
         const stockStatus = quantity > 10 ? 'in-stock' : (quantity > 0 ? 'low-stock' : 'out-of-stock');
         const stockBadge = quantity > 10 ? 'status-in-stock' : (quantity > 0 ? 'status-low-stock' : 'status-out-of-stock');
         const stockText = quantity > 10 ? 'In Stock' : (quantity > 0 ? 'Low Stock' : 'Out of Stock');
-        
+
         const newItem = document.createElement('div');
         newItem.className = 'inventory-item';
         newItem.setAttribute('data-status', stockStatus);
@@ -1989,7 +1932,7 @@ function displaySpareParts(products) {
                 </div>
             </div>
         `;
-        
+
         catalogItems.appendChild(newItem);
     });
 }
@@ -2013,20 +1956,20 @@ async function openAddPartModal() {
     }
 }
 
-document.getElementById('addPartForm').addEventListener('submit', async function(e) {
+document.getElementById('addPartForm').addEventListener('submit', async function (e) {
     e.preventDefault();
-    
+
     const sparepartId = document.getElementById('sparepartIdDisplay').value;
     const sparepartName = document.getElementById('sparepartName').value;
     const category = document.getElementById('partCategory').value;
     const location = document.getElementById('partLocation').value;
-    
+
     // Get compatible machines and vehicles
     const compatibleMachines = Array.from(document.querySelectorAll('input[name="compatibleMachines"]:checked'))
         .map(cb => cb.value);
     const compatibleVehicles = Array.from(document.querySelectorAll('input[name="compatibleVehicles"]:checked'))
         .map(cb => cb.value);
-    
+
     // Save spare part to database (without warranty, quantity, and supplier fields - managed via additions)
     await saveSparePart({
         sparepart_id: sparepartId,
@@ -2045,7 +1988,7 @@ async function saveSparePart(data) {
         console.log('Saving spare part:', data);
         const response = await API.post('/products', data);
         console.log('API response:', response);
-        
+
         if (response.status === 'success') {
             Utils.showToast(`${data.name} added to catalog successfully!`, 'success');
             closeModal('addPartModal');
@@ -2069,7 +2012,7 @@ function addPartToCatalog(partName, productId, category, quantity, location, sup
     const stockStatus = quantity > 10 ? 'in-stock' : (quantity > 0 ? 'low-stock' : 'out-of-stock');
     const stockBadge = quantity > 10 ? 'status-in-stock' : (quantity > 0 ? 'status-low-stock' : 'status-out-of-stock');
     const stockText = quantity > 10 ? 'In Stock' : (quantity > 0 ? 'Low Stock' : 'Out of Stock');
-    
+
     const newItem = document.createElement('div');
     newItem.className = 'inventory-item';
     newItem.setAttribute('data-status', stockStatus);
@@ -2109,9 +2052,9 @@ function addPartToCatalog(partName, productId, category, quantity, location, sup
             </div>
         </div>
     `;
-    
+
     catalogItems.appendChild(newItem);
-    
+
     const items = document.querySelectorAll('#catalogItems .inventory-item');
     updateCatalogCount(items.length);
 }
@@ -2120,29 +2063,29 @@ function addPartToCatalog(partName, productId, category, quantity, location, sup
 async function viewPartDetails(partId) {
     try {
         showLoading(true);
-        
+
         // Fetch part details from database
         const response = await API.get(`/products/${partId}`);
-        
+
         if (response.status !== 'success' || !response.data) {
             Utils.showToast('Failed to load spare part details', 'error');
             return;
         }
-        
+
         const part = response.data;
-        
+
         // Parse JSON fields
         const compatibleMachines = part.compatible_machines ? JSON.parse(part.compatible_machines) : [];
         const compatibleVehicles = part.compatible_vehicles ? JSON.parse(part.compatible_vehicles) : [];
-        
+
         // Determine stock status
         const quantity = parseInt(part.quantity) || 0;
         const stockStatus = quantity > 10 ? 'In Stock' : (quantity > 0 ? 'Low Stock' : 'Out of Stock');
         const stockBadge = quantity > 10 ? 'status-in-stock' : (quantity > 0 ? 'status-low-stock' : 'status-out-of-stock');
-        
+
         // Format category
         const categoryDisplay = part.category === 'vehicles' ? 'Vehicle Parts' : 'Machine Parts';
-        
+
         const modal = createDetailsModal('Spare Part Details', `
             <div class="form-section">
                 <h5><i class="fas fa-box"></i> Part Information</h5>
@@ -2164,17 +2107,17 @@ async function viewPartDetails(partId) {
             <div class="form-section">
                 <h5><i class="fas fa-cog"></i> Compatible Machines</h5>
                 <div class="components-list">
-                    ${compatibleMachines.length > 0 
-                        ? compatibleMachines.map(machine => `<span class="component-badge">${machine}</span>`).join('') 
-                        : '<span class="text-muted">No compatible machines specified</span>'}
+                    ${compatibleMachines.length > 0
+                ? compatibleMachines.map(machine => `<span class="component-badge">${machine}</span>`).join('')
+                : '<span class="text-muted">No compatible machines specified</span>'}
                 </div>
             </div>
             <div class="form-section">
                 <h5><i class="fas fa-truck"></i> Compatible Vehicles</h5>
                 <div class="components-list">
-                    ${compatibleVehicles.length > 0 
-                        ? compatibleVehicles.map(vehicle => `<span class="component-badge">${vehicle}</span>`).join('') 
-                        : '<span class="text-muted">No compatible vehicles specified</span>'}
+                    ${compatibleVehicles.length > 0
+                ? compatibleVehicles.map(vehicle => `<span class="component-badge">${vehicle}</span>`).join('')
+                : '<span class="text-muted">No compatible vehicles specified</span>'}
                 </div>
             </div>
             <div class="form-section">
@@ -2183,10 +2126,10 @@ async function viewPartDetails(partId) {
                 <p><strong>Last Updated:</strong> ${new Date(part.updated_at).toLocaleString()}</p>
             </div>
         `);
-        
+
         document.body.appendChild(modal);
         modal.classList.add('active');
-        
+
     } catch (error) {
         console.error('Error loading part details:', error);
         Utils.showToast('Error loading spare part details', 'error');
@@ -2199,40 +2142,40 @@ async function viewPartDetails(partId) {
 async function editPart(partId) {
     try {
         showLoading(true);
-        
+
         // Fetch spare part data from database
         const response = await API.get(`/products/${partId}`);
-        
+
         if (response.status !== 'success' || !response.data) {
             Utils.showToast('Failed to load spare part details', 'error');
             return;
         }
-        
+
         const part = response.data;
-        
+
         // Parse JSON fields
         const compatibleMachines = part.compatible_machines ? JSON.parse(part.compatible_machines) : [];
         const compatibleVehicles = part.compatible_vehicles ? JSON.parse(part.compatible_vehicles) : [];
-        
+
         // Set basic information
         document.getElementById('editPartId').value = part.id;
         document.getElementById('editSparepartId').value = part.sparepart_id;
-        
+
         // Set category first to populate dropdown options
         document.getElementById('editPartCategory').value = part.category;
         updateEditSparepartNameOptions();
         updateEditCompatibilityOptions();
-        
+
         // Set sparepart name
         document.getElementById('editSparepartName').value = part.name;
         document.getElementById('editPartQuantity').value = part.quantity;
         document.getElementById('editPartLocation').value = part.location;
-        
+
         // Set supplier details
         document.getElementById('editPartSupplier').value = part.supplier || '';
         document.getElementById('editPartSupplierContact').value = part.supplier_contact || '';
         document.getElementById('editPartSupplierAddress').value = part.supplier_address || '';
-        
+
         // Set compatibility checkboxes
         if (part.category === 'machines') {
             compatibleMachines.forEach(machine => {
@@ -2245,7 +2188,7 @@ async function editPart(partId) {
                 if (checkbox) checkbox.checked = true;
             });
         }
-        
+
         openModal('editPartModal');
     } catch (error) {
         console.error('Error loading spare part for edit:', error);
@@ -2255,9 +2198,9 @@ async function editPart(partId) {
     }
 }
 
-document.getElementById('editPartForm').addEventListener('submit', async function(e) {
+document.getElementById('editPartForm').addEventListener('submit', async function (e) {
     e.preventDefault();
-    
+
     const partId = document.getElementById('editPartId').value;
     const sparepartName = document.getElementById('editSparepartName').value;
     const quantity = document.getElementById('editPartQuantity').value;
@@ -2266,13 +2209,13 @@ document.getElementById('editPartForm').addEventListener('submit', async functio
     const supplier = document.getElementById('editPartSupplier').value || '';
     const supplierContact = document.getElementById('editPartSupplierContact').value || '';
     const supplierAddress = document.getElementById('editPartSupplierAddress').value || '';
-    
+
     // Get compatible machines and vehicles
     const compatibleMachines = Array.from(document.querySelectorAll('input[name="editCompatibleMachines"]:checked'))
         .map(cb => cb.value);
     const compatibleVehicles = Array.from(document.querySelectorAll('input[name="editCompatibleVehicles"]:checked'))
         .map(cb => cb.value);
-    
+
     // Update spare part in database
     try {
         showLoading(true);
@@ -2287,7 +2230,7 @@ document.getElementById('editPartForm').addEventListener('submit', async functio
             compatible_machines: JSON.stringify(compatibleMachines),
             compatible_vehicles: JSON.stringify(compatibleVehicles)
         });
-        
+
         if (response.status === 'success') {
             Utils.showToast(`${sparepartName} updated successfully!`, 'success');
             closeModal('editPartModal');
@@ -2309,12 +2252,12 @@ document.getElementById('editPartForm').addEventListener('submit', async functio
 async function deletePart(partId) {
     const deleteMessage = document.getElementById('deleteMessage');
     deleteMessage.textContent = `Are you sure you want to delete part ${partId}? This action cannot be undone.`;
-    
+
     const confirmBtn = document.getElementById('confirmDeleteBtn');
-    confirmBtn.onclick = async function() {
+    confirmBtn.onclick = async function () {
         try {
             showLoading(true);
-            
+
             // Find the sparepart from sparepart_id
             const partElement = document.querySelector(`#catalogItems [data-id="${partId}"]`);
             if (!partElement) {
@@ -2322,10 +2265,10 @@ async function deletePart(partId) {
                 closeModal('deleteModal');
                 return;
             }
-            
+
             // Delete from database
             const response = await API.delete(`/products/${partId}`);
-            
+
             if (response.status === 'success') {
                 Utils.showToast(`Part ${partId} deleted successfully!`, 'success');
                 closeModal('deleteModal');
@@ -2341,7 +2284,7 @@ async function deletePart(partId) {
             showLoading(false);
         }
     };
-    
+
     openModal('deleteModal');
 }
 
@@ -2364,16 +2307,16 @@ function applyCatalogFilters() {
     const searchValue = document.getElementById('catalogSearch').value.toLowerCase();
     const items = document.querySelectorAll('#catalogItems .inventory-item');
     let visibleCount = 0;
-    
+
     items.forEach(item => {
         const itemText = item.textContent.toLowerCase();
         const itemStatus = item.getAttribute('data-status');
         const itemCategory = item.getAttribute('data-category');
-        
+
         const matchesSearch = searchValue === '' || itemText.includes(searchValue);
         const matchesStock = currentStockFilter === 'all' || itemStatus === currentStockFilter;
         const matchesCategory = currentCategoryFilter === 'all' || itemCategory === currentCategoryFilter;
-        
+
         if (matchesSearch && matchesStock && matchesCategory) {
             item.style.display = 'flex';
             visibleCount++;
@@ -2381,7 +2324,7 @@ function applyCatalogFilters() {
             item.style.display = 'none';
         }
     });
-    
+
     updateCatalogCount(visibleCount);
 }
 
@@ -2393,7 +2336,7 @@ function updateCatalogCount(count) {
 }
 
 // Initialize search handler for catalog
-document.getElementById('catalogSearch')?.addEventListener('input', function() {
+document.getElementById('catalogSearch')?.addEventListener('input', function () {
     applyCatalogFilters();
 });
 
@@ -2407,20 +2350,20 @@ function reorderPart(partId) {
     };
 
     const part = partData[partId] || { name: `Part ${partId}`, currentStock: '0 units' };
-    
+
     document.getElementById('reorderSparepartName').value = part.name;
     document.getElementById('reorderCurrentStock').value = part.currentStock;
-    
+
     openModal('reorderModal');
 }
 
-document.getElementById('reorderForm').addEventListener('submit', function(e) {
+document.getElementById('reorderForm').addEventListener('submit', function (e) {
     e.preventDefault();
-    
+
     const sparepartName = document.getElementById('reorderSparepartName').value;
     const quantity = document.getElementById('reorderQuantity').value;
     const priority = document.getElementById('reorderPriority').value;
-    
+
     Utils.showToast(`Reorder request submitted for ${quantity} units of ${sparepartName} (Priority: ${priority}). Supplier will be contacted.`, 'success');
     closeModal('reorderModal');
     this.reset();
@@ -2542,17 +2485,17 @@ function displayOrders(orderList) {
 
     container.innerHTML = orderList.map(order => {
         const statusClass = order.status === 'Approved' ? 'status-approved' :
-                            order.status === 'Rejected' ? 'status-rejected' :
-                            order.status === 'Issued' ? 'status-resolved' : 'status-pending';
+            order.status === 'Rejected' ? 'status-rejected' :
+                order.status === 'Issued' ? 'status-resolved' : 'status-pending';
 
         const priorityClass = (order.priority || '').toLowerCase() === 'critical' ? 'status-critical' :
-                             (order.priority || '').toLowerCase() === 'high' ? 'status-low-stock' : 'status-pending';
+            (order.priority || '').toLowerCase() === 'high' ? 'status-low-stock' : 'status-pending';
 
         const dateStr = new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
         const ticketType = (order.ticket_id_formatted || '').startsWith('VBD') ? 'Vehicle Breakdown' :
-                          (order.ticket_id_formatted || '').startsWith('MBD') ? 'Machine Breakdown' :
-                          (order.ticket_id_formatted || '').startsWith('RBD') ? 'Routine Breakdown' : 'Fault Ticket';
+            (order.ticket_id_formatted || '').startsWith('MBD') ? 'Machine Breakdown' :
+                (order.ticket_id_formatted || '').startsWith('RBD') ? 'Routine Breakdown' : 'Fault Ticket';
 
         const partsCount = (order.items || []).reduce((sum, i) => sum + i.quantity, 0);
         const partsLabel = `${(order.items || []).length} part${(order.items || []).length !== 1 ? 's' : ''} (${partsCount} units)`;
@@ -2611,13 +2554,13 @@ function displayOrders(orderList) {
  */
 function approveOrder(orderId) {
     console.log('approveOrder called with orderId:', orderId);
-    
+
     // Close any open details modals first
     document.querySelectorAll('.modal[id^="detailsModal_"]').forEach(m => {
         m.classList.remove('active');
         setTimeout(() => m.remove(), 300);
     });
-    
+
     const order = allSparePartRequests.find(r => r.id == orderId);
     if (!order) {
         console.error('Order not found in allSparePartRequests for id:', orderId);
@@ -2667,13 +2610,13 @@ function approveOrder(orderId) {
  */
 function rejectOrder(orderId) {
     console.log('rejectOrder called with orderId:', orderId);
-    
+
     // Close any open details modals first
     document.querySelectorAll('.modal[id^="detailsModal_"]').forEach(m => {
         m.classList.remove('active');
         setTimeout(() => m.remove(), 300);
     });
-    
+
     const order = allSparePartRequests.find(r => r.id == orderId);
     if (!order) {
         console.error('Order not found in allSparePartRequests for id:', orderId);
@@ -2801,16 +2744,16 @@ function viewOrderDetails(orderId) {
     }
 
     const statusClass = order.status === 'Approved' ? 'status-approved' :
-                        order.status === 'Rejected' ? 'status-rejected' :
-                        order.status === 'Issued' ? 'status-resolved' : 'status-pending';
+        order.status === 'Rejected' ? 'status-rejected' :
+            order.status === 'Issued' ? 'status-resolved' : 'status-pending';
     const priorityClass = (order.priority || '').toLowerCase() === 'critical' ? 'status-critical' :
-                         (order.priority || '').toLowerCase() === 'high' ? 'status-low-stock' : 'status-pending';
+        (order.priority || '').toLowerCase() === 'high' ? 'status-low-stock' : 'status-pending';
     const dateStr = new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     const reviewDate = order.reviewed_at ? new Date(order.reviewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
 
     const ticketType = (order.ticket_id_formatted || '').startsWith('VBD') ? 'Vehicle Breakdown' :
-                      (order.ticket_id_formatted || '').startsWith('MBD') ? 'Machine Breakdown' :
-                      (order.ticket_id_formatted || '').startsWith('RBD') ? 'Routine Breakdown' : 'Fault Ticket';
+        (order.ticket_id_formatted || '').startsWith('MBD') ? 'Machine Breakdown' :
+            (order.ticket_id_formatted || '').startsWith('RBD') ? 'Routine Breakdown' : 'Fault Ticket';
 
     const partsHTML = order.items && order.items.length > 0
         ? `<table style="width: 100%; border-collapse: collapse; margin-top: 8px;">
@@ -2944,12 +2887,12 @@ function filterUsageByType(filterValue) {
     // Update active button
     document.querySelectorAll('#usageFilters .filter-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
-    
+
     const rows = document.querySelectorAll('#usageTableBody tr');
-    
+
     rows.forEach(row => {
         const rowType = row.getAttribute('data-type');
-        
+
         if (filterValue === 'all') {
             row.style.display = '';
         } else if (rowType === filterValue) {
@@ -2966,22 +2909,22 @@ function filterUsageByType(filterValue) {
 async function loadUsageTracking() {
     const tbody = document.getElementById('usageTableBody');
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:#6b7280;"><i class="fas fa-spinner fa-spin"></i> Loading spareparts...</td></tr>';
-    
+
     try {
         // Fetch products first
         const productsResponse = await API.get('/products');
-        
+
         if (productsResponse.status !== 'success' || !productsResponse.data || !productsResponse.data.products) {
             throw new Error(productsResponse.message || 'Failed to load spareparts');
         }
-        
+
         const products = productsResponse.data.products;
-        
+
         if (products.length === 0) {
             tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:#6b7280;"><i class="fas fa-box-open"></i> No spareparts found</td></tr>';
             return;
         }
-        
+
         // Fetch usage data (don't fail if this errors)
         const issuedQtyMap = {};
         try {
@@ -2997,9 +2940,9 @@ async function loadUsageTracking() {
             console.warn('Could not load usage data:', usageError);
             // Continue anyway, issued quantities will just show as 0
         }
-        
+
         tbody.innerHTML = '';
-        
+
         products.forEach(part => {
             const qty = parseInt(part.quantity) || 0;
             let stockBadge, stockText;
@@ -3013,19 +2956,19 @@ async function loadUsageTracking() {
                 stockBadge = 'status-in-stock';
                 stockText = `<span style="color:#10b981; font-weight:600;">${qty} units</span>`;
             }
-            
+
             // Get issued quantity
             const issuedQty = issuedQtyMap[part.sparepart_id] || 0;
-            const issuedText = issuedQty > 0 
+            const issuedText = issuedQty > 0
                 ? `<span style="color:#6366f1; font-weight:600;">${issuedQty} units</span>`
                 : '<span style="color:#9ca3af;">0 units</span>';
-            
-            const lastIssue = part.last_issue_date 
-                ? new Date(part.last_issue_date).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' })
+
+            const lastIssue = part.last_issue_date
+                ? new Date(part.last_issue_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                 : '<span style="color:#9ca3af;">Not issued yet</span>';
-            
+
             const category = (part.category || 'Unknown').charAt(0).toUpperCase() + (part.category || 'Unknown').slice(1);
-            
+
             const row = document.createElement('tr');
             row.setAttribute('data-sparepart-id', part.sparepart_id);
             row.setAttribute('data-name', (part.name || '').toLowerCase());
@@ -3037,7 +2980,7 @@ async function loadUsageTracking() {
                 <td>${issuedText}</td>
                 <td>${lastIssue}</td>
                 <td>
-                    <button class="btn btn-primary btn-small" onclick="openIssueModal('${part.id}', '${part.sparepart_id}', '${(part.name || '').replace(/'/g, "\\'") }', ${qty})" ${qty === 0 ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>
+                    <button class="btn btn-primary btn-small" onclick="openIssueModal('${part.id}', '${part.sparepart_id}', '${(part.name || '').replace(/'/g, "\\'")}', ${qty})" ${qty === 0 ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>
                         <i class="fas fa-share-square"></i> Update
                     </button>
                 </td>
@@ -3068,44 +3011,44 @@ function openIssueModal(dbId, sparepartId, sparepartName, availableQty) {
     document.getElementById('issueSparepartId').value = sparepartId;
     document.getElementById('issueSparepartName').value = sparepartName;
     document.getElementById('issueAvailableQty').value = availableQty + ' units';
-    
+
     // Auto-set current date
     const today = new Date();
-    const formattedDate = today.toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' });
+    const formattedDate = today.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     document.getElementById('issueDate').value = formattedDate;
-    
+
     // Reset quantity field
     const qtyInput = document.getElementById('issueQuantity');
     qtyInput.value = '';
     qtyInput.max = availableQty;
     qtyInput.placeholder = `Max: ${availableQty}`;
-    
+
     openModal('issueModal');
 }
 
 // Handle issue form submission
-document.getElementById('issueForm')?.addEventListener('submit', async function(e) {
+document.getElementById('issueForm')?.addEventListener('submit', async function (e) {
     e.preventDefault();
-    
+
     const dbId = document.getElementById('issuePartDbId').value;
     const sparepartId = document.getElementById('issuePartId').value;
     const sparepartName = document.getElementById('issueSparepartName').value;
     const availableQty = parseInt(document.getElementById('issueAvailableQty').value);
     const quantityIssued = parseInt(document.getElementById('issueQuantity').value);
-    
+
     if (!quantityIssued || quantityIssued < 1) {
         Utils.showToast('Please enter a valid quantity (at least 1)', 'error');
         return;
     }
-    
+
     if (quantityIssued > availableQty) {
         Utils.showToast(`Cannot issue ${quantityIssued} units. Only ${availableQty} available.`, 'error');
         return;
     }
-    
+
     try {
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        
+
         // Create usage record - this will automatically reduce the catalog quantity
         const usageResponse = await API.post('/usage', {
             sparepart_id: sparepartId,
@@ -3114,19 +3057,19 @@ document.getElementById('issueForm')?.addEventListener('submit', async function(
             issue_date: today,
             notes: document.getElementById('issueNotes')?.value || `Issued ${quantityIssued} unit(s) from inventory`
         });
-        
+
         if (usageResponse.status !== 'success') {
             throw new Error(usageResponse.message || 'Failed to issue sparepart');
         }
-        
+
         closeModal('issueModal');
-        
+
         const newQuantity = usageResponse.data?.new_quantity ?? (availableQty - quantityIssued);
         Utils.showToast(`Successfully issued ${quantityIssued} unit(s) of ${sparepartName}. Remaining: ${newQuantity}`, 'success');
-        
+
         // Reload the usage tracking table to reflect changes
         await loadUsageTracking();
-        
+
     } catch (error) {
         console.error('Error issuing sparepart:', error);
         Utils.showToast('Error issuing sparepart: ' + error.message, 'error');
@@ -3136,7 +3079,7 @@ document.getElementById('issueForm')?.addEventListener('submit', async function(
 function viewUsageDetails(machineId, sparepartId, issueDate, notes) {
     const title = document.getElementById('detailsTitle');
     const content = document.getElementById('detailsContent');
-    
+
     title.innerHTML = `<i class="fas fa-chart-line"></i> Sparepart Issuance Details`;
     content.innerHTML = `
         <div class="form-section">
@@ -3147,7 +3090,7 @@ function viewUsageDetails(machineId, sparepartId, issueDate, notes) {
             ${notes ? `<div style="margin-bottom: 10px;"><strong>Notes:</strong> ${notes}</div>` : ''}
         </div>
     `;
-    
+
     openModal('detailsModal');
 }
 
@@ -3158,9 +3101,9 @@ function editUsageRecord(machineId) {
 function deleteUsageRecord(machineId) {
     const deleteMessage = document.getElementById('deleteMessage');
     deleteMessage.textContent = `Delete usage record for ${machineId}? This will remove this entry from the usage history.`;
-    
+
     const confirmBtn = document.getElementById('confirmDeleteBtn');
-    confirmBtn.onclick = function() {
+    confirmBtn.onclick = function () {
         const row = document.querySelector(`#usageTableBody tr[data-id="${machineId}"]`);
         if (row) {
             row.remove();
@@ -3168,7 +3111,7 @@ function deleteUsageRecord(machineId) {
         }
         closeModal('deleteModal');
     };
-    
+
     openModal('deleteModal');
 }
 
@@ -3177,12 +3120,12 @@ function generateMachineReport(machineId) {
     openModal('reportModal');
 }
 
-document.getElementById('reportForm')?.addEventListener('submit', function(e) {
+document.getElementById('reportForm')?.addEventListener('submit', function (e) {
     e.preventDefault();
-    
+
     const machineId = document.getElementById('reportMachineId').value;
     const reportType = document.getElementById('reportType').value;
-    
+
     Utils.showToast(`${reportType} generated for ${machineId}. Report will be shared with Maintenance Manager.`);
     closeModal('reportModal');
     this.reset();
@@ -3229,7 +3172,7 @@ async function loadSparepartsForAddition() {
         if (response.status === 'success' && response.data && response.data.products) {
             const datalist = document.getElementById('sparepartsList');
             datalist.innerHTML = '';
-            
+
             response.data.products.forEach(part => {
                 const option = document.createElement('option');
                 option.value = part.sparepart_id;
@@ -3243,9 +3186,9 @@ async function loadSparepartsForAddition() {
 }
 
 // Handle sparepart selection - auto-fill details
-document.getElementById('addStockSparepartId')?.addEventListener('input', async function() {
+document.getElementById('addStockSparepartId')?.addEventListener('input', async function () {
     const sparepartId = this.value.trim();
-    
+
     if (sparepartId.length >= 3) {
         try {
             const response = await API.get(`/products/${sparepartId}`);
@@ -3253,7 +3196,7 @@ document.getElementById('addStockSparepartId')?.addEventListener('input', async 
                 const part = response.data;
                 document.getElementById('addStockSparepartName').value = part.name || '';
                 document.getElementById('addStockCurrentQty').value = `${part.quantity || 0} units`;
-                
+
                 // Pre-fill supplier if available
                 if (part.supplier) {
                     document.getElementById('addStockSupplier').value = part.supplier;
@@ -3268,9 +3211,9 @@ document.getElementById('addStockSparepartId')?.addEventListener('input', async 
 });
 
 // Handle add stock form submission
-document.getElementById('addStockForm')?.addEventListener('submit', async function(e) {
+document.getElementById('addStockForm')?.addEventListener('submit', async function (e) {
     e.preventDefault();
-    
+
     const sparepartId = document.getElementById('addStockSparepartIdDisplay').value;
     const sparepartName = document.getElementById('addStockSparepartName').value;
     const category = document.getElementById('addStockCategory').value;
@@ -3279,18 +3222,18 @@ document.getElementById('addStockForm')?.addEventListener('submit', async functi
     const supplier = document.getElementById('addStockSupplier').value || '';
     const supplierContact = document.getElementById('addStockSupplierContact')?.value || '';
     const supplierAddress = document.getElementById('addStockSupplierAddress')?.value || '';
-    
+
     // Get warranty details
     const warrantyPeriod = document.getElementById('addStockWarrantyPeriod')?.value || '';
     const warrantyStart = document.getElementById('addStockWarrantyStart')?.value || '';
     const warrantyTerms = document.getElementById('addStockWarrantyTerms')?.value || '';
-    
+
     // Get compatible machines and vehicles
     const compatibleMachines = Array.from(document.querySelectorAll('input[name="addStockCompatibleMachines"]:checked'))
         .map(cb => cb.value);
     const compatibleVehicles = Array.from(document.querySelectorAll('input[name="addStockCompatibleVehicles"]:checked'))
         .map(cb => cb.value);
-    
+
     // Check if we're in edit mode
     if (window.editingAdditionId) {
         // Update existing addition record
@@ -3335,46 +3278,46 @@ async function updateAdditionRecord(data) {
     try {
         showLoading(true);
         console.log('Updating addition record:', data);
-        
+
         // Get the original addition to compare quantities
         const originalAddition = window.additionsData?.find(a => a.id == data.id);
-        
+
         // Update the addition record
         const response = await API.put(`/additions/${data.id}`, data);
-        
+
         if (response.status === 'success') {
             // If quantity changed, update the sparepart quantity
             if (originalAddition && originalAddition.quantity_added !== data.quantity_added) {
                 const quantityDifference = data.quantity_added - originalAddition.quantity_added;
-                
+
                 // Get current sparepart to calculate new quantity
                 const sparepartResponse = await API.get(`/products/${data.sparepart_id}`);
                 if (sparepartResponse.status === 'success' && sparepartResponse.data) {
                     const currentQuantity = parseInt(sparepartResponse.data.quantity) || 0;
                     const newQuantity = currentQuantity + quantityDifference;
-                    
+
                     // Update sparepart quantity
                     await API.put(`/products/${data.sparepart_id}`, {
                         quantity: newQuantity
                     });
                 }
             }
-            
+
             Utils.showToast('Addition record updated successfully!', 'success');
             closeModal('addStockModal');
-            
+
             // Reset form and modal state
             const form = document.getElementById('addStockForm');
             if (form) form.reset();
-            
+
             // Reset modal title and button
             const modalTitle = document.querySelector('#addStockModal .modal-header h2');
             const submitBtn = document.querySelector('#addStockModal button[type="submit"]');
             if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-plus-circle"></i> Add New Spare Part';
             if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-check"></i> Add to Catalog';
-            
+
             window.editingAdditionId = null;
-            
+
             // Reload recent additions and spare parts
             await Promise.all([loadRecentAdditions(), loadSpareParts()]);
         } else {
@@ -3393,20 +3336,20 @@ async function saveSparePartFromAddStock(data) {
     try {
         showLoading(true);
         console.log('Saving spare part from Add Stock:', data);
-        
+
         // Check if sparepart already exists
         const checkResponse = await API.get('/products');
         let existingPart = null;
-        
+
         if (checkResponse.status === 'success' && checkResponse.data && checkResponse.data.products) {
-            existingPart = checkResponse.data.products.find(p => 
+            existingPart = checkResponse.data.products.find(p =>
                 p.sparepart_id === data.sparepart_id && p.is_active === 1
             );
         }
-        
+
         let response;
         let isNewPart = false;
-        
+
         if (existingPart) {
             // Update existing sparepart - add to quantity
             const newQuantity = parseInt(existingPart.quantity) + parseInt(data.quantity);
@@ -3414,7 +3357,7 @@ async function saveSparePartFromAddStock(data) {
                 quantity: newQuantity,
                 location: data.location || existingPart.location
             });
-            
+
             if (response.status === 'success') {
                 // Record the addition in sparepart_additions table
                 await API.post('/additions', {
@@ -3437,14 +3380,14 @@ async function saveSparePartFromAddStock(data) {
                     reference: `Stock Addition - ${data.sparepart_id}`,
                     notes: `Added ${data.quantity} units from ${data.supplier || 'unknown supplier'}`
                 });
-                
+
                 Utils.showToast(`Added ${data.quantity} units to ${data.sparepart_id} from ${data.supplier || 'supplier'}. New total: ${newQuantity} units`, 'success');
             }
         } else {
             // Create new sparepart
             response = await API.post('/products', data);
             isNewPart = true;
-            
+
             if (response.status === 'success') {
                 // Record the addition in sparepart_additions table
                 await API.post('/additions', {
@@ -3467,15 +3410,15 @@ async function saveSparePartFromAddStock(data) {
                     reference: 'Initial Stock',
                     notes: `New sparepart added from ${data.supplier || 'catalog'}`
                 });
-                
+
                 Utils.showToast(`${data.name} added to catalog successfully!`, 'success');
             }
         }
-        
+
         if (response.status === 'success') {
             closeModal('addStockModal');
             document.getElementById('addStockForm').reset();
-            
+
             // Reload spare parts and recent additions
             await loadSpareParts();
             loadRecentAdditions();
@@ -3495,9 +3438,9 @@ async function saveSparePartFromAddStock(data) {
 function updateAddStockSparepartNameOptions() {
     const category = document.getElementById('addStockCategory').value;
     const sparepartNameSelect = document.getElementById('addStockSparepartName');
-    
+
     sparepartNameSelect.innerHTML = '<option value="">Select Sparepart Name</option>';
-    
+
     if (category && SPARE_PART_NAMES[category]) {
         SPARE_PART_NAMES[category].forEach(sparepartName => {
             const option = document.createElement('option');
@@ -3509,25 +3452,25 @@ function updateAddStockSparepartNameOptions() {
 }
 
 // Auto-fetch sparepart ID when name is selected
-document.getElementById('addStockSparepartName')?.addEventListener('change', async function() {
+document.getElementById('addStockSparepartName')?.addEventListener('change', async function () {
     const category = document.getElementById('addStockCategory').value;
     const sparepartName = this.value;
     const sparepartIdDisplay = document.getElementById('addStockSparepartIdDisplay');
-    
+
     if (!category || !sparepartName) {
         return;
     }
-    
+
     try {
         // Search for existing sparepart with this name and category
         const response = await API.get('/products');
         if (response.status === 'success' && response.data && response.data.products) {
-            const existingPart = response.data.products.find(p => 
-                p.name === sparepartName && 
-                p.category === category && 
+            const existingPart = response.data.products.find(p =>
+                p.name === sparepartName &&
+                p.category === category &&
                 p.is_active === 1
             );
-            
+
             if (existingPart) {
                 // Found existing sparepart - use its ID
                 sparepartIdDisplay.value = existingPart.sparepart_id;
@@ -3555,7 +3498,7 @@ function updateAddStockCompatibilityOptions() {
     const category = document.getElementById('addStockCategory').value;
     const container = document.getElementById('addStockCompatibilityCheckboxes');
     const label = document.getElementById('addStockCompatibilityLabel');
-    
+
     if (category === 'vehicles') {
         label.textContent = 'Compatible Vehicles';
         const vehicleTypesList = Object.keys(VEHICLE_TYPES);
@@ -3582,34 +3525,34 @@ function updateAddStockCompatibilityOptions() {
 async function loadRecentAdditions() {
     const container = document.getElementById('recentAdditionsItems');
     container.innerHTML = '<div style="text-align:center; padding:40px; color:#6b7280;"><i class="fas fa-spinner fa-spin" style="font-size:2em; margin-bottom:10px;"></i><p>Loading recent additions...</p></div>';
-    
+
     try {
         const response = await API.get('/additions?per_page=50');
-        
+
         if (response.status === 'success' && response.data && response.data.additions) {
             const additions = response.data.additions;
-            
+
             // Update count
             const countEl = document.getElementById('additionsCount');
             if (countEl) countEl.textContent = `${additions.length} items`;
-            
+
             if (additions.length === 0) {
                 container.innerHTML = '<div class="no-data"><i class="fas fa-box-open"></i><p>No stock additions yet</p></div>';
                 return;
             }
-            
+
             container.innerHTML = '';
-            
+
             additions.forEach(addition => {
-                const date = new Date(addition.received_date).toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'short', 
-                    day: 'numeric' 
+                const date = new Date(addition.received_date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
                 });
-                
-                const categoryLabel = addition.category ? 
+
+                const categoryLabel = addition.category ?
                     (addition.category.charAt(0).toUpperCase() + addition.category.slice(1) + ' Parts') : 'Unknown';
-                
+
                 const item = document.createElement('div');
                 item.className = 'inventory-item';
                 item.setAttribute('data-id', addition.id);
@@ -3654,7 +3597,7 @@ async function loadRecentAdditions() {
                 `;
                 container.appendChild(item);
             });
-            
+
             // Store additions data for detail view
             window.additionsData = additions;
         } else {
@@ -3671,23 +3614,23 @@ function filterAdditions() {
     const searchText = (document.getElementById('additionSearch')?.value || '').toLowerCase();
     const items = document.querySelectorAll('#recentAdditionsItems .inventory-item');
     let visibleCount = 0;
-    
+
     items.forEach(item => {
         const name = item.getAttribute('data-name') || '';
         const supplier = item.getAttribute('data-supplier') || '';
         const sparepartId = item.getAttribute('data-sparepart-id') || '';
         const isVisible = !searchText || name.includes(searchText) || supplier.includes(searchText) || sparepartId.includes(searchText);
-        
+
         // Also check current category filter
         const activeCatBtn = document.querySelector('#additionCategoryFilter .filter-btn.active');
         const activeCategory = activeCatBtn ? activeCatBtn.textContent.trim().toLowerCase() : 'all categories';
         const itemCategory = item.getAttribute('data-category') || '';
         const categoryMatch = activeCategory === 'all categories' || itemCategory === activeCategory;
-        
+
         item.style.display = (isVisible && categoryMatch) ? '' : 'none';
         if (isVisible && categoryMatch) visibleCount++;
     });
-    
+
     const countEl = document.getElementById('additionsCount');
     if (countEl) countEl.textContent = `${visibleCount} items`;
 }
@@ -3699,25 +3642,25 @@ function filterAdditionsByCategory(category) {
         btn.classList.remove('active');
     });
     event.target.classList.add('active');
-    
+
     const items = document.querySelectorAll('#recentAdditionsItems .inventory-item');
     const searchText = (document.getElementById('additionSearch')?.value || '').toLowerCase();
     let visibleCount = 0;
-    
+
     items.forEach(item => {
         const itemCategory = item.getAttribute('data-category') || '';
         const categoryMatch = category === 'all' || itemCategory === category;
-        
+
         // Also apply search filter
         const name = item.getAttribute('data-name') || '';
         const supplier = item.getAttribute('data-supplier') || '';
         const sparepartId = item.getAttribute('data-sparepart-id') || '';
         const searchMatch = !searchText || name.includes(searchText) || supplier.includes(searchText) || sparepartId.includes(searchText);
-        
+
         item.style.display = (categoryMatch && searchMatch) ? '' : 'none';
         if (categoryMatch && searchMatch) visibleCount++;
     });
-    
+
     const countEl = document.getElementById('additionsCount');
     if (countEl) countEl.textContent = `${visibleCount} items`;
 }
@@ -3729,13 +3672,13 @@ function viewAdditionDetails(additionId) {
         Utils.showToast('Addition details not found', 'error');
         return;
     }
-    
-    const date = new Date(addition.received_date).toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+
+    const date = new Date(addition.received_date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
     });
-    
+
     // Format warranty information
     let warrantyDisplay = 'N/A';
     if (addition.warranty_period) {
@@ -3748,7 +3691,7 @@ function viewAdditionDetails(additionId) {
             warrantyDisplay = `${warrantyMonths} months (Valid until ${endDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})`;
         }
     }
-    
+
     // Format compatible machines/vehicles
     let compatibleMachines = [];
     let compatibleVehicles = [];
@@ -3762,10 +3705,10 @@ function viewAdditionDetails(additionId) {
     } catch (e) {
         console.error('Error parsing compatibility data:', e);
     }
-    
+
     // Format category display
     const categoryDisplay = addition.category === 'vehicles' ? 'Vehicle Parts' : 'Machine Parts';
-    
+
     // Create modal using the same pattern as viewPartDetails
     const modal = createDetailsModal('Stock Addition Details', `
         <div class="form-section">
@@ -3797,17 +3740,17 @@ function viewAdditionDetails(additionId) {
         <div class="form-section">
             <h5><i class="fas fa-cog"></i> Compatible Machines</h5>
             <div class="components-list">
-                ${compatibleMachines.length > 0 
-                    ? compatibleMachines.map(machine => `<span class="component-badge">${machine}</span>`).join('') 
-                    : '<span class="text-muted">No compatible machines specified</span>'}
+                ${compatibleMachines.length > 0
+            ? compatibleMachines.map(machine => `<span class="component-badge">${machine}</span>`).join('')
+            : '<span class="text-muted">No compatible machines specified</span>'}
             </div>
         </div>
         <div class="form-section">
             <h5><i class="fas fa-truck"></i> Compatible Vehicles</h5>
             <div class="components-list">
-                ${compatibleVehicles.length > 0 
-                    ? compatibleVehicles.map(vehicle => `<span class="component-badge">${vehicle}</span>`).join('') 
-                    : '<span class="text-muted">No compatible vehicles specified</span>'}
+                ${compatibleVehicles.length > 0
+            ? compatibleVehicles.map(vehicle => `<span class="component-badge">${vehicle}</span>`).join('')
+            : '<span class="text-muted">No compatible vehicles specified</span>'}
             </div>
         </div>
         ${addition.notes ? `
@@ -3822,7 +3765,7 @@ function viewAdditionDetails(additionId) {
             <p><strong>Created:</strong> ${new Date(addition.created_at).toLocaleString()}</p>
         </div>
     `);
-    
+
     document.body.appendChild(modal);
     modal.classList.add('active');
 }
@@ -3830,18 +3773,18 @@ function viewAdditionDetails(additionId) {
 // Edit addition - open modal with pre-filled data
 async function editAddition(additionId) {
     console.log('editAddition called with ID:', additionId);
-    
+
     const addition = window.additionsData?.find(a => a.id == additionId);
     if (!addition) {
         Utils.showToast('Addition details not found', 'error');
         return;
     }
-    
+
     console.log('Found addition:', addition);
-    
+
     // Store the addition ID for updating
     window.editingAdditionId = additionId;
-    
+
     // Open the add stock modal and populate with existing data
     try {
         // Populate form fields - use safe element access
@@ -3849,18 +3792,18 @@ async function editAddition(additionId) {
             const el = document.getElementById(id);
             if (el) el.value = value || '';
         };
-        
+
         setFieldValue('addStockSparepartIdDisplay', addition.sparepart_id);
         setFieldValue('addStockCategory', addition.category);
-        
+
         // Update sparepart name options for the category
         await updateAddStockSparepartNameOptions();
-        
+
         // Set the sparepart name after options are loaded
         setTimeout(() => {
             setFieldValue('addStockSparepartName', addition.sparepart_name);
         }, 100);
-        
+
         // Other fields
         setFieldValue('addStockQuantity', addition.quantity_added);
         setFieldValue('addStockLocation', addition.location);
@@ -3870,54 +3813,54 @@ async function editAddition(additionId) {
         setFieldValue('addStockWarrantyPeriod', addition.warranty_period);
         setFieldValue('addStockWarrantyStart', addition.warranty_start);
         setFieldValue('addStockWarrantyTerms', addition.warranty_terms);
-        
+
         // Update compatibility options and set checkboxes
         updateAddStockCompatibilityOptions();
-        
+
         // Set compatible machines/vehicles checkboxes after a short delay to ensure they're loaded
         setTimeout(() => {
             if (addition.compatible_machines) {
                 try {
                     // Handle if it's already an array or a JSON string
-                    const machines = typeof addition.compatible_machines === 'string' 
-                        ? JSON.parse(addition.compatible_machines) 
+                    const machines = typeof addition.compatible_machines === 'string'
+                        ? JSON.parse(addition.compatible_machines)
                         : addition.compatible_machines;
-                    
+
                     if (Array.isArray(machines)) {
                         machines.forEach(machineId => {
                             const checkbox = document.querySelector(`#addStockCompatibilityCheckboxes input[value="${machineId}"]`);
                             if (checkbox) checkbox.checked = true;
                         });
                     }
-                } catch (e) { 
-                    console.error('Error parsing machines:', e, addition.compatible_machines); 
+                } catch (e) {
+                    console.error('Error parsing machines:', e, addition.compatible_machines);
                 }
             }
             if (addition.compatible_vehicles) {
                 try {
                     // Handle if it's already an array or a JSON string
-                    const vehicles = typeof addition.compatible_vehicles === 'string' 
-                        ? JSON.parse(addition.compatible_vehicles) 
+                    const vehicles = typeof addition.compatible_vehicles === 'string'
+                        ? JSON.parse(addition.compatible_vehicles)
                         : addition.compatible_vehicles;
-                    
+
                     if (Array.isArray(vehicles)) {
                         vehicles.forEach(vehicleId => {
                             const checkbox = document.querySelector(`#addStockCompatibilityCheckboxes input[value="${vehicleId}"]`);
                             if (checkbox) checkbox.checked = true;
                         });
                     }
-                } catch (e) { 
-                    console.error('Error parsing vehicles:', e, addition.compatible_vehicles); 
+                } catch (e) {
+                    console.error('Error parsing vehicles:', e, addition.compatible_vehicles);
                 }
             }
         }, 300);
-        
+
         // Change modal title and button for edit mode
         const modalTitle = document.querySelector('#addStockModal .modal-header h2');
         const submitBtn = document.querySelector('#addStockModal button[type="submit"]');
         if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-edit"></i> Edit Stock Addition';
         if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Update Addition';
-        
+
         openModal('addStockModal');
         console.log('Modal opened for editing');
     } catch (error) {
@@ -3933,17 +3876,17 @@ async function deleteAddition(additionId) {
         Utils.showToast('Addition not found', 'error');
         return;
     }
-    
+
     const confirmDelete = await Utils.confirm(
         `Are you sure you want to delete this stock addition?`,
         `This will remove the record for ${addition.quantity_added} units of "${addition.sparepart_name}" added on ${new Date(addition.received_date).toLocaleDateString()}.`
     );
-    
+
     if (!confirmDelete) return;
-    
+
     try {
         const response = await API.delete(`/additions/${additionId}`);
-        
+
         if (response.status === 'success') {
             Utils.showToast('Stock addition deleted successfully', 'success');
             await loadRecentAdditions();
@@ -3961,25 +3904,25 @@ async function openAddStockModal() {
     try {
         // Clear any editing state
         window.editingAdditionId = null;
-        
+
         // Reset modal title and button to add mode
         const modalTitle = document.querySelector('#addStockModal .modal-header h2');
         const submitBtn = document.querySelector('#addStockModal button[type="submit"]');
         if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-plus-circle"></i> Add New Spare Part';
         if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-check"></i> Add to Catalog';
-        
+
         // Reset form fields
         const form = document.getElementById('addStockForm');
         if (form) form.reset();
-        
+
         // Clear compatibility checkboxes
         const compatibilityContainer = document.getElementById('addStockCompatibility');
         if (compatibilityContainer) compatibilityContainer.innerHTML = '';
-        
+
         // Reset category dropdown
         document.getElementById('addStockCategory').value = '';
         document.getElementById('addStockSparepartName').innerHTML = '<option value="">Select category first</option>';
-        
+
         // Fetch next sparepart ID from backend
         const response = await API.get('/products/next-id');
         if (response.status === 'success' && response.data && response.data.next_id) {
@@ -3998,14 +3941,14 @@ async function openAddStockModal() {
 }
 
 // Close modal when clicking outside or pressing Escape
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     if (e.target.classList.contains('modal')) {
         e.target.classList.remove('active');
         document.body.style.overflow = '';
     }
 });
 
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
         const activeModals = document.querySelectorAll('.modal.active');
         activeModals.forEach(modal => modal.classList.remove('active'));

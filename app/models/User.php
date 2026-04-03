@@ -19,6 +19,7 @@ class User extends BaseModel {
             'password' => 'VARCHAR(255) NOT NULL',
             'full_name' => 'VARCHAR(255) NOT NULL',
             'role' => "ENUM('Admin', 'Maintenance Manager', 'Inventory Manager', 'Technical Officer', 'Supervisor', 'Machinary Operator', 'Driver', 'Auction Officer') NOT NULL",
+            'technical_expertise' => 'VARCHAR(100) NULL',
             'department' => 'VARCHAR(100) NULL',
             'email' => 'VARCHAR(255) NULL',
             'phone' => 'VARCHAR(20) NULL',
@@ -38,6 +39,7 @@ class User extends BaseModel {
     protected function getIndexes() {
         return [
             'idx_role' => 'role',
+            'idx_technical_expertise' => 'technical_expertise',
             'idx_active' => 'is_active',
             'idx_department' => 'department'
         ];
@@ -289,6 +291,70 @@ class User extends BaseModel {
             unset($user['password']);
             return $user;
         }, $users);
+    }
+
+    /**
+     * Get technical officers with active workload counts
+     */
+    public function getTechnicalOfficersWithWorkload($activeOnly = true) {
+        try {
+            $sql = "SELECT u.id,
+                           u.employee_id,
+                           u.full_name,
+                           u.role,
+                           u.technical_expertise,
+                           u.department,
+                           u.email,
+                           u.phone,
+                           u.is_active,
+                           u.last_login,
+                           u.created_at,
+                           u.updated_at,
+                           COALESCE(workload.active_ticket_count, 0) AS active_ticket_count
+                    FROM `{$this->table}` u
+                    LEFT JOIN (
+                        SELECT fta.assigned_to,
+                               COUNT(DISTINCT fta.fault_ticket_id) AS active_ticket_count
+                        FROM fault_ticket_assignments fta
+                        INNER JOIN fault_tickets ft ON ft.id = fta.fault_ticket_id
+                        WHERE fta.status = 'Active'
+                          AND ft.status NOT IN ('Resolved', 'Closed')
+                        GROUP BY fta.assigned_to
+                    ) workload ON workload.assigned_to = u.id
+                    WHERE u.role = 'Technical Officer'";
+
+            $params = [];
+            if ($activeOnly) {
+                $sql .= " AND u.is_active = ?";
+                $params[] = 1;
+            }
+
+            $sql .= " ORDER BY active_ticket_count ASC, u.full_name ASC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $users = $stmt->fetchAll();
+
+            return array_map(function($user) {
+                $expertise = trim((string)($user['technical_expertise'] ?? ''));
+                $user['technical_expertise'] = $expertise !== '' ? $expertise : 'General';
+                return $user;
+            }, $users);
+        } catch (\Exception $e) {
+            $filters = ['role' => 'Technical Officer'];
+            if ($activeOnly) {
+                $filters['is_active'] = 1;
+            }
+
+            $users = $this->getAllUsers($filters, null, 'full_name ASC');
+
+            return array_map(function($user) {
+                $expertise = trim((string)($user['technical_expertise'] ?? ''));
+                $user['technical_expertise'] = $expertise !== '' ? $expertise : 'General';
+                $user['active_ticket_count'] = 0;
+                return $user;
+            }, $users);
+        }
     }
     
     /**
