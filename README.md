@@ -47,6 +47,7 @@ assetcare-backend-new/
 │   ├── index.php            # Entry point
 │   └── .htaccess            # URL rewriting
 ├── scripts/
+│   ├── migrate.php          # Migration manager (status/baseline/migrate)
 │   └── seed.php             # Database seeder
 ├── logs/                    # Log files (created automatically)
 └── .htaccess                # Root URL rewriting
@@ -107,13 +108,25 @@ The easiest way to set up the project is using the automated setup script:
    - ✅ Seed test users
    - ✅ Test the database connection
 
-3. **Start the development server**
+3. **Run pending migrations**
+   ```bash
+   php scripts/migrate.php status
+   php scripts/migrate.php migrate
+   ```
+
+   For existing databases that already have historical changes applied manually, baseline old migrations first, then run new ones:
+   ```bash
+   php scripts/migrate.php baseline --until=41
+   php scripts/migrate.php migrate
+   ```
+
+4. **Start the development server**
    ```bash
    cd public
    php -S localhost:8000
    ```
 
-4. **Access the API**
+5. **Access the API**
    
    Open your browser or API client to: `http://localhost:8000/api`
 
@@ -131,17 +144,23 @@ If you prefer to set up manually:
    php scripts/seed.php
    ```
 
-3. **Create logs directory**
+3. **Run migrations**
+   ```bash
+   php scripts/migrate.php status
+   php scripts/migrate.php migrate
+   ```
+
+4. **Create logs directory**
    ```bash
    mkdir -p logs
    chmod 755 logs
    ```
 
-4. **Configure your web server**
+5. **Configure your web server**
    
    Point your document root to the `public` folder or ensure `.htaccess` is working.
 
-5. **Start your server**
+6. **Start your server**
    
    For local development with PHP built-in server:
    ```bash

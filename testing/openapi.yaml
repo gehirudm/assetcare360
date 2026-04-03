@@ -490,6 +490,38 @@ paths:
                     example: "Invalid or expired reset token"
 
   # ==================== USER MANAGEMENT ====================
+  /technicians:
+    get:
+      tags:
+        - Users
+      summary: List technical officers for ticket assignment
+      description: |
+        Retrieve active Technical Officers with their expertise and current active ticket workload.
+        Used by Supervisors when assigning fault tickets.
+        **Requires Supervisor or Admin role.**
+      responses:
+        '200':
+          description: Technical officers retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TechnicianWithWorkload'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /users:
     get:
       tags:
@@ -504,7 +536,7 @@ paths:
           description: Filter by user role
           schema:
             type: string
-            enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator]
+            enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
         - name: status
           in: query
           description: Filter by active status
@@ -592,8 +624,13 @@ paths:
                   minLength: 2
                 role:
                   type: string
-                  enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator]
+                  enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
                   example: "Inventory Manager"
+                technical_expertise:
+                  type: string
+                  nullable: true
+                  example: "General"
+                  description: Required for Technical Officer role. Use "General" for all-rounders.
                 department:
                   type: string
                   example: "Inventory"
@@ -701,7 +738,12 @@ paths:
                   minLength: 2
                 role:
                   type: string
-                  enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator]
+                  enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
+                technical_expertise:
+                  type: string
+                  nullable: true
+                  example: "Engine Specialist"
+                  description: Applicable when role is Technical Officer. Use "General" for all-rounders.
                 department:
                   type: string
                   example: "Operations"
@@ -1518,8 +1560,13 @@ components:
           example: "Admin User"
         role:
           type: string
-          enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator]
+          enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
           example: "Admin"
+        technical_expertise:
+          type: string
+          nullable: true
+          example: "General"
+          description: Expertise/specialization for Technical Officers. Non-technical roles return null.
         department:
           type: string
           nullable: true
@@ -1552,6 +1599,21 @@ components:
           type: string
           format: date-time
           example: "2025-10-20T10:30:00Z"
+
+    TechnicianWithWorkload:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            technical_expertise:
+              type: string
+              example: "General"
+              description: Technical officer specialization used for assignment matching.
+            active_ticket_count:
+              type: integer
+              minimum: 0
+              example: 2
+              description: Number of currently active fault tickets assigned to the technician.
 
     Log:
       type: object

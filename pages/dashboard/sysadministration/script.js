@@ -44,6 +44,39 @@ class UserManagement {
         if (statusFilter) {
             statusFilter.addEventListener('change', () => this.filterUsers());
         }
+
+        const createRoleSelect = createUserForm?.querySelector('[name="role"]');
+        if (createRoleSelect) {
+            createRoleSelect.addEventListener('change', () => this.toggleTechnicalExpertiseField('createUserForm', 'createTechnicalExpertiseGroup'));
+            this.toggleTechnicalExpertiseField('createUserForm', 'createTechnicalExpertiseGroup');
+        }
+    }
+
+    toggleTechnicalExpertiseField(formId, groupId) {
+        const form = document.getElementById(formId);
+        const expertiseGroup = document.getElementById(groupId);
+
+        if (!form || !expertiseGroup) {
+            return;
+        }
+
+        const roleSelect = form.querySelector('[name="role"]');
+        const expertiseSelect = form.querySelector('[name="technical_expertise"]');
+        const isTechnicalOfficer = roleSelect?.value === 'Technical Officer';
+
+        expertiseGroup.style.display = isTechnicalOfficer ? 'block' : 'none';
+
+        if (expertiseSelect) {
+            if (isTechnicalOfficer) {
+                expertiseSelect.setAttribute('required', 'required');
+                if (!expertiseSelect.value) {
+                    expertiseSelect.value = 'General';
+                }
+            } else {
+                expertiseSelect.removeAttribute('required');
+                expertiseSelect.value = 'General';
+            }
+        }
     }
 
     async loadUsers(filters = {}) {
@@ -99,6 +132,7 @@ class UserManagement {
                     <div class="item-meta">
                         <i class="fas fa-id-badge"></i> ${user.employee_id} | 
                         <i class="fas fa-user-tag"></i> ${user.role}
+                        ${user.role === 'Technical Officer' ? `| <i class="fas fa-wrench"></i> ${user.technical_expertise || 'General'}` : ''}
                     </div>
                     <div class="item-description">
                         <span class="status-text ${user.is_active ? 'status-active' : 'status-inactive'}">${user.is_active ? 'Active' : 'Inactive'}</span> | 
@@ -155,6 +189,9 @@ class UserManagement {
             email: formData.get('email'),
             phone: formData.get('phone_number'), // Form uses phone_number, backend expects phone
             role: formData.get('role'),
+            technical_expertise: formData.get('role') === 'Technical Officer'
+                ? (formData.get('technical_expertise') || 'General')
+                : null,
             password: formData.get('password'), // Temporary password
             force_password_change: true // Correct field name
         };
@@ -169,6 +206,7 @@ class UserManagement {
                 Utils.showToast(`User ${userData.full_name} created successfully! Temporary password: ${tempPassword}`, 'success');
                 closeModal('createUserModal');
                 form.reset();
+                this.toggleTechnicalExpertiseField('createUserForm', 'createTechnicalExpertiseGroup');
                 this.loadUsers(); // Reload user list
             } else {
                 // Show validation errors if present
@@ -211,6 +249,7 @@ class UserManagement {
                             <h5>Work Information</h5>
                             <div class="form-grid">
                                 <div><strong>Role:</strong> ${user.role}</div>
+                                <div><strong>Technical Expertise:</strong> ${user.role === 'Technical Officer' ? (user.technical_expertise || 'General') : 'N/A'}</div>
                                 <div><strong>Status:</strong> <span class="status-text ${user.is_active ? 'status-active' : 'status-inactive'}">
                                     ${user.is_active ? 'Active' : 'Inactive'}
                                 </span></div>
@@ -262,6 +301,13 @@ class UserManagement {
                     form.querySelector('[name="email"]').value = user.email;
                     form.querySelector('[name="phone_number"]').value = user.phone || '';
                     form.querySelector('[name="role"]').value = user.role;
+
+                    const expertiseField = form.querySelector('[name="technical_expertise"]');
+                    if (expertiseField) {
+                        expertiseField.value = user.technical_expertise || 'General';
+                    }
+
+                    this.toggleTechnicalExpertiseField('editUserForm', 'editTechnicalExpertiseGroup');
                     
                     openModal('editUserModal');
                 }
@@ -312,10 +358,27 @@ class UserManagement {
                             <label class="form-label">Role</label>
                             <select class="form-select" name="role" required>
                                 <option value="Admin">Admin</option>
+                                <option value="Maintenance Manager">Maintenance Manager</option>
+                                <option value="Technical Officer">Technical Officer</option>
                                 <option value="Supervisor">Supervisor</option>
                                 <option value="Inventory Manager">Inventory Manager</option>
                                 <option value="Machinary Operator">Machinary Operator</option>
                                 <option value="Driver">Driver</option>
+                                <option value="Auction Officer">Auction Officer</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="editTechnicalExpertiseGroup" style="display: none;">
+                            <label class="form-label">Technical Expertise</label>
+                            <select class="form-select" name="technical_expertise">
+                                <option value="General">General (All-Rounder)</option>
+                                <option value="Engine Specialist">Engine Specialist</option>
+                                <option value="Transmission Expert">Transmission Expert</option>
+                                <option value="Electrical Systems">Electrical Systems</option>
+                                <option value="Brake Systems">Brake Systems</option>
+                                <option value="Hydraulic Systems">Hydraulic Systems</option>
+                                <option value="Heavy Machinery">Heavy Machinery</option>
+                                <option value="General Maintenance">General Maintenance</option>
                             </select>
                         </div>
                         
@@ -339,6 +402,11 @@ class UserManagement {
         // Add form submit handler
         const form = modal.querySelector('#editUserForm');
         form.addEventListener('submit', (e) => this.handleUpdateUser(e));
+
+        const roleSelect = form.querySelector('[name="role"]');
+        if (roleSelect) {
+            roleSelect.addEventListener('change', () => this.toggleTechnicalExpertiseField('editUserForm', 'editTechnicalExpertiseGroup'));
+        }
         
         return modal;
     }
@@ -358,7 +426,10 @@ class UserManagement {
             employee_id: formData.get('employee_id'),
             email: formData.get('email'),
             phone: formData.get('phone_number'), // Form uses phone_number, backend expects phone
-            role: formData.get('role')
+            role: formData.get('role'),
+            technical_expertise: formData.get('role') === 'Technical Officer'
+                ? (formData.get('technical_expertise') || 'General')
+                : null
         };
 
         try {

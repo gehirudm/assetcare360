@@ -84,6 +84,11 @@ class EndpointRegistry {
             'category' => 'User Management',
             'description' => 'Retrieve user statistics and aggregations'
         ],
+        'GET:/api/technicians' => [
+            'action' => 'List Technicians',
+            'category' => 'User Management',
+            'description' => 'Retrieve active technical officers with workload information'
+        ],
         
         // System Logs Endpoints
         'GET:/api/logs' => [

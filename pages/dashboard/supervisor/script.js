@@ -115,6 +115,7 @@ function loadSectionData(sectionId) {
         case 'asset-status':
             loadAssetStatus();
             break;
+        case 'technicians':
         case 'technician-assignments':
             loadTechnicians();
             break;
@@ -1769,21 +1770,7 @@ async function loadTicketForAssignment(ticketId, isEdit = false) {
 
 async function loadTechniciansWithWorkload() {
     try {
-        // Get all technicians using the new endpoint
-        const techResponse = await API.get('/technicians');
-        const technicians = techResponse.data?.users || techResponse.data || [];
-
-        // Get all tickets to count workload
-        const ticketResponse = await API.get('/fault-tickets');
-        const tickets = ticketResponse.data?.tickets || ticketResponse.data || [];
-
-        // Count active tickets per technician
-        const workloadMap = {};
-        tickets.forEach(ticket => {
-            if (ticket.assigned_to && ticket.status !== 'completed' && ticket.status !== 'closed') {
-                workloadMap[ticket.assigned_to] = (workloadMap[ticket.assigned_to] || 0) + 1;
-            }
-        });
+        const technicians = await fetchTechniciansWithWorkload();
 
         // Populate checkbox list
         const checkboxList = document.getElementById('techniciansList');
@@ -1806,16 +1793,19 @@ async function loadTechniciansWithWorkload() {
         }
 
         checkboxList.innerHTML = technicians.map(tech => {
-            const activeTickets = workloadMap[tech.id] || 0;
-            const workloadText = activeTickets > 0
-                ? `(${activeTickets} assigned ticket${activeTickets > 1 ? 's' : ''})`
-                : '(Available)';
-            const workloadClass = activeTickets > 0 ? 'busy' : 'available';
+            const activeTickets = tech.active_ticket_count;
+            const workloadClass = activeTickets === 0 ? 'available' : (activeTickets <= 2 ? 'busy' : 'heavy');
+            const workloadText = `${activeTickets} active ticket${activeTickets === 1 ? '' : 's'}`;
+            const name = tech.full_name || tech.username || `Technician #${tech.id}`;
+            const expertise = tech.technical_expertise || 'General';
 
             return `
                 <label class="checkbox-item">
                     <input type="checkbox" name="technicians" value="${tech.id}" onchange="updateTechnicianWarning()">
-                    <span>${tech.full_name || tech.username}</span>
+                    <span class="technician-details">
+                        <span class="technician-name">${name}</span>
+                        <span class="technician-expertise"><i class="fas fa-wrench"></i> ${expertise}</span>
+                    </span>
                     <span class="technician-workload ${workloadClass}">${workloadText}</span>
                 </label>
             `;
@@ -1846,6 +1836,211 @@ function updateTechnicianWarning() {
     } else {
         warningDiv.style.display = 'none';
     }
+}
+
+let technicianOverviewData = [];
+let technicianOverviewAssignments = new Map();
+let technicianTicketDataAvailable = false;
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function formatDateTime(value, includeTime = true) {
+    if (!value) {
+        return 'N/A';
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+        return 'N/A';
+    }
+
+    return includeTime ? parsed.toLocaleString() : parsed.toLocaleDateString();
+}
+
+function getTechnicianWorkloadStatus(workloadCount) {
+    if (workloadCount === 0) {
+        return { className: 'status-completed', label: 'AVAILABLE' };
+    }
+
+    if (workloadCount <= 2) {
+        return { className: 'status-warn', label: 'BUSY' };
+    }
+
+    return { className: 'status-critical', label: 'HEAVY LOAD' };
+}
+
+function getTicketStatusClass(status) {
+    const normalizedStatus = String(status || '').toLowerCase().trim();
+
+    switch (normalizedStatus) {
+        case 'assigned':
+            return 'status-assigned';
+        case 'in progress':
+            return 'status-in-progress';
+        case 'resolved':
+        case 'closed':
+            return 'status-completed';
+        case 'waiting for budget approval':
+        case 'waiting for spare parts':
+        case 'parts approved':
+            return 'status-warn';
+        case 'open':
+        default:
+            return 'status-normal';
+    }
+}
+
+function getPriorityStatusClass(priority) {
+    const normalizedPriority = String(priority || '').toLowerCase().trim();
+
+    switch (normalizedPriority) {
+        case 'critical':
+            return 'status-critical';
+        case 'high':
+            return 'status-urgent';
+        case 'medium':
+            return 'status-warn';
+        case 'low':
+        default:
+            return 'status-normal';
+    }
+}
+
+function getTechnicianWorkloadCount(technician, assignmentMap) {
+    const mappedAssignments = assignmentMap.get(Number(technician.id)) || [];
+    const mappedCount = mappedAssignments.length;
+    const backendCount = Number(technician.active_ticket_count || 0);
+    return Math.max(mappedCount, backendCount);
+}
+
+function summarizeTechnicianTicketStates(assignedTickets) {
+    if (!assignedTickets || assignedTickets.length === 0) {
+        return 'No active tickets';
+    }
+
+    const groupedStatuses = assignedTickets.reduce((accumulator, ticket) => {
+        const status = ticket.status || 'Open';
+        accumulator[status] = (accumulator[status] || 0) + 1;
+        return accumulator;
+    }, {});
+
+    return Object.entries(groupedStatuses)
+        .map(([status, count]) => `${status}: ${count}`)
+        .join(' | ');
+}
+
+function buildTechnicianAssignmentMap(tickets) {
+    const assignmentMap = new Map();
+
+    (tickets || []).forEach(ticket => {
+        const ticketStatus = String(ticket.status || '').toLowerCase();
+        if (ticketStatus === 'resolved' || ticketStatus === 'closed') {
+            return;
+        }
+
+        const assignments = Array.isArray(ticket.assignments) ? ticket.assignments : [];
+        assignments.forEach(assignment => {
+            if (assignment.status && assignment.status !== 'Active') {
+                return;
+            }
+
+            const technicianId = Number(assignment.assigned_to);
+            if (!technicianId) {
+                return;
+            }
+
+            if (!assignmentMap.has(technicianId)) {
+                assignmentMap.set(technicianId, []);
+            }
+
+            assignmentMap.get(technicianId).push({
+                id: Number(ticket.id),
+                ticket_id: ticket.ticket_id || `TKT-${String(ticket.id || '').padStart(3, '0')}`,
+                status: ticket.status || 'Open',
+                priority: ticket.priority || 'Medium',
+                description: ticket.description || 'No description provided',
+                machine_name: ticket.machine_name || ticket.machine_model_number || (ticket.machine_id ? `Machine #${ticket.machine_id}` : 'N/A'),
+                location: ticket.location || 'N/A',
+                expected_completion_date: assignment.expected_completion_date || null,
+                assigned_at: assignment.assigned_at || ticket.updated_at || ticket.created_at || null
+            });
+        });
+    });
+
+    assignmentMap.forEach((assignedTickets) => {
+        assignedTickets.sort((first, second) => {
+            const firstDate = new Date(first.assigned_at || 0).getTime();
+            const secondDate = new Date(second.assigned_at || 0).getTime();
+            return secondDate - firstDate;
+        });
+    });
+
+    return assignmentMap;
+}
+
+function updateTechnicianSummaryCards(technicians, assignmentMap) {
+    const totalElement = document.getElementById('technicianTotalCount');
+    const availableElement = document.getElementById('technicianAvailableCount');
+    const busyElement = document.getElementById('technicianBusyCount');
+    const activeAssignmentsElement = document.getElementById('technicianActiveAssignmentsCount');
+    const heavyLoadElement = document.getElementById('technicianHeavyLoadCount');
+
+    const workloadCounts = (technicians || []).map(technician => getTechnicianWorkloadCount(technician, assignmentMap));
+    const totalTechnicians = workloadCounts.length;
+    const availableCount = workloadCounts.filter(count => count === 0).length;
+    const busyCount = workloadCounts.filter(count => count > 0 && count <= 2).length;
+    const heavyCount = workloadCounts.filter(count => count > 2).length;
+    const activeAssignments = workloadCounts.reduce((total, count) => total + count, 0);
+
+    if (totalElement) {
+        totalElement.textContent = String(totalTechnicians);
+    }
+    if (availableElement) {
+        availableElement.textContent = `${availableCount} Available`;
+    }
+    if (busyElement) {
+        busyElement.textContent = `${busyCount} Busy`;
+    }
+    if (activeAssignmentsElement) {
+        activeAssignmentsElement.textContent = String(activeAssignments);
+    }
+    if (heavyLoadElement) {
+        heavyLoadElement.textContent = String(heavyCount);
+    }
+}
+
+async function fetchTechniciansWithWorkload() {
+    const techResponse = await API.get('/technicians');
+
+    if (techResponse && techResponse.status && techResponse.status !== 'success') {
+        throw new Error(techResponse.message || 'Failed to load technicians');
+    }
+
+    const technicians = techResponse?.data?.users || techResponse?.data || [];
+
+    if (!Array.isArray(technicians)) {
+        return [];
+    }
+
+    return technicians
+        .map(tech => ({
+            ...tech,
+            technical_expertise: (tech.technical_expertise || 'General').trim() || 'General',
+            active_ticket_count: Number(tech.active_ticket_count || 0)
+        }))
+        .sort((first, second) => {
+            if (first.active_ticket_count !== second.active_ticket_count) {
+                return first.active_ticket_count - second.active_ticket_count;
+            }
+            return (first.full_name || '').localeCompare(second.full_name || '');
+        });
 }
 
 async function handleAssignTicket(event) {
@@ -2440,16 +2635,88 @@ function filterAssets(status) {
     // TODO: Implement filtering logic
 }
 
-// ==================== TECHNICIAN ASSIGNMENTS ====================
+// ==================== TECHNICIANS ====================
 
 async function loadTechnicians() {
-    const div = document.getElementById('techniciansList');
-    div.innerHTML = '<p style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading technicians...</p>';
+    const table = document.getElementById('technicianAssignmentsTable');
+    if (!table) {
+        return;
+    }
 
-    // TODO: Replace with actual API call
-    setTimeout(() => {
-        div.innerHTML = '<p style="text-align: center; color: var(--muted);">No technicians available</p>';
-    }, 500);
+    table.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 18px;"><i class="fas fa-spinner fa-spin"></i> Loading technicians...</p>';
+
+    try {
+        const techniciansPromise = fetchTechniciansWithWorkload();
+        const ticketPromise = API.get('/fault-tickets').catch(() => null);
+
+        const [technicians, ticketResponse] = await Promise.all([techniciansPromise, ticketPromise]);
+
+        technicianOverviewData = technicians;
+
+        const ticketResponseIsValid = ticketResponse && (!ticketResponse.status || ticketResponse.status === 'success');
+        technicianTicketDataAvailable = Boolean(ticketResponseIsValid);
+
+        const tickets = ticketResponseIsValid ? (ticketResponse?.data?.tickets || ticketResponse?.data || []) : [];
+        const normalizedTickets = Array.isArray(tickets) ? tickets : [];
+        technicianOverviewAssignments = buildTechnicianAssignmentMap(normalizedTickets);
+
+        updateTechnicianSummaryCards(technicians, technicianOverviewAssignments);
+
+        if (technicians.length === 0) {
+            table.innerHTML = `
+                <div style="padding: 24px; text-align: center; color: var(--muted);">
+                    <i class="fas fa-user-slash" style="font-size: 24px; margin-bottom: 10px;"></i>
+                    <p>No active technicians found.</p>
+                </div>
+            `;
+            return;
+        }
+
+        table.innerHTML = technicians.map(technician => {
+            const assignedTickets = technicianOverviewAssignments.get(Number(technician.id)) || [];
+            const workloadCount = getTechnicianWorkloadCount(technician, technicianOverviewAssignments);
+            const workloadStatus = getTechnicianWorkloadStatus(workloadCount);
+            const statusSummary = technicianTicketDataAvailable
+                ? summarizeTechnicianTicketStates(assignedTickets)
+                : (workloadCount === 0 ? 'No active tickets' : 'Ticket details unavailable');
+
+            const technicianName = escapeHtml(technician.full_name || `Technician #${technician.id}`);
+            const expertise = escapeHtml(technician.technical_expertise || 'General');
+            const assignmentLabel = `${workloadCount} active assignment${workloadCount === 1 ? '' : 's'}`;
+
+            return `
+                <div class="inventory-item" data-id="${technician.id}">
+                    <div class="item-details">
+                        <strong><i class="fas fa-user-cog"></i> ${technicianName}</strong>
+                        <div class="item-meta">
+                            <i class="fas fa-wrench"></i> ${expertise} |
+                            <i class="fas fa-tasks"></i> ${assignmentLabel}
+                        </div>
+                        <div class="item-meta">
+                            <span class="status-text ${workloadStatus.className}">${workloadStatus.label}</span> |
+                            <i class="fas fa-ticket-alt"></i> ${escapeHtml(statusSummary)}
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <div class="action-buttons">
+                            <button class="btn btn-primary btn-small" onclick="viewTechnicianDetails(${Number(technician.id)})">
+                                <i class="fas fa-eye"></i> VIEW
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading technicians:', error);
+        technicianOverviewData = [];
+        technicianOverviewAssignments = new Map();
+        technicianTicketDataAvailable = false;
+        updateTechnicianSummaryCards([], new Map());
+
+        table.innerHTML = '<p style="text-align: center; color: var(--danger); padding: 18px;">Failed to load technicians. Please try again.</p>';
+        showToast('Failed to load technicians', 'error');
+    }
 }
 
 // ==================== TOAST NOTIFICATIONS ====================
@@ -3011,62 +3278,122 @@ function updateAssetStatus(assetId) {
     // TODO: Implement status update modal
 }
 
-// ==================== TECHNICIAN ASSIGNMENTS FUNCTIONS ====================
+// ==================== TECHNICIAN FUNCTIONS ====================
 
-function viewTechnicianDetails(techId) {
-    // Sample data - replace with actual API call
-    const techData = {
-        'TECH-001': { id: 'TECH-001', name: 'Ranjith Silva', specialization: 'Engine Specialist', currentAssignments: 2, status: 'Available', completedThisWeek: 3, completedThisMonth: 12, experience: '8 years', phone: '+94 77 123 4567', email: 'ranjith.silva@assetcare360.com', activeTickets: 'MBD-050 (Engine Overhaul), MBD-048 (Oil Change)', certifications: 'ASE Master Technician, Diesel Engine Specialist' }
-    };
+async function viewTechnicianDetails(techId) {
+    const technicianId = Number(techId);
 
-    const tech = techData[techId] || techData['TECH-001'];
+    if (!technicianId) {
+        showToast('Invalid technician ID', 'error');
+        return;
+    }
+
+    let technician = technicianOverviewData.find(item => Number(item.id) === technicianId);
+
+    if (!technician) {
+        await loadTechnicians();
+        technician = technicianOverviewData.find(item => Number(item.id) === technicianId);
+    }
+
+    if (!technician) {
+        showToast('Technician details not found', 'error');
+        return;
+    }
+
+    const assignedTickets = technicianOverviewAssignments.get(technicianId) || [];
+    const workloadCount = getTechnicianWorkloadCount(technician, technicianOverviewAssignments);
+    const workloadStatus = getTechnicianWorkloadStatus(workloadCount);
+    const ticketStatesSummary = technicianTicketDataAvailable
+        ? summarizeTechnicianTicketStates(assignedTickets)
+        : (workloadCount === 0 ? 'No active tickets' : 'Ticket details unavailable');
+
+    let assignedTicketHtml = '';
+
+    if (!technicianTicketDataAvailable && workloadCount > 0) {
+        assignedTicketHtml = `
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px; color: var(--muted);">
+                Ticket details are temporarily unavailable. Workload count is still shown above.
+            </p>
+        `;
+    } else if (assignedTickets.length === 0) {
+        assignedTicketHtml = `
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px; color: var(--muted);">
+                No active assignments for this technician.
+            </p>
+        `;
+    } else {
+        assignedTicketHtml = assignedTickets.map(ticket => {
+            const ticketId = escapeHtml(ticket.ticket_id || `TKT-${String(ticket.id || '').padStart(3, '0')}`);
+            const ticketStatus = escapeHtml((ticket.status || 'Open').toUpperCase());
+            const priority = escapeHtml((ticket.priority || 'Medium').toUpperCase());
+            const priorityClass = getPriorityStatusClass(ticket.priority);
+            const statusClass = getTicketStatusClass(ticket.status);
+            const machineName = escapeHtml(ticket.machine_name || 'N/A');
+            const location = escapeHtml(ticket.location || 'N/A');
+            const description = escapeHtml(ticket.description || 'No description provided');
+            const expectedCompletion = formatDateTime(ticket.expected_completion_date, false);
+            const assignedAt = formatDateTime(ticket.assigned_at);
+
+            const ticketAction = Number.isFinite(Number(ticket.id))
+                ? `<button class="btn btn-secondary btn-small" onclick="closeDetailsModal(); viewTicketDetails(${Number(ticket.id)})"><i class="fas fa-eye"></i> View Ticket</button>`
+                : '';
+
+            return `
+                <div style="margin-top: 10px; padding: 12px; border: 1px solid var(--stone-200); border-radius: 8px; background: #fff;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px;">
+                        <strong><i class="fas fa-ticket-alt"></i> ${ticketId}</strong>
+                        <span class="status-text ${statusClass}">${ticketStatus}</span>
+                    </div>
+                    <p><strong>Priority:</strong> <span class="status-text ${priorityClass}">${priority}</span></p>
+                    <p><strong>Machine:</strong> ${machineName}</p>
+                    <p><strong>Location:</strong> ${location}</p>
+                    <p><strong>Expected Completion:</strong> ${expectedCompletion}</p>
+                    <p><strong>Assigned At:</strong> ${assignedAt}</p>
+                    <p><strong>Description:</strong> ${description}</p>
+                    <div style="margin-top: 10px;">
+                        ${ticketAction}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    const technicianName = escapeHtml(technician.full_name || `Technician #${technician.id}`);
+    const expertise = escapeHtml(technician.technical_expertise || 'General');
+    const employeeId = escapeHtml(technician.employee_id || 'N/A');
+    const department = escapeHtml(technician.department || 'N/A');
+    const email = escapeHtml(technician.email || 'N/A');
+    const phone = escapeHtml(technician.phone || 'N/A');
 
     const content = `
         <div class="form-section">
             <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
-            <p><strong>Technician ID:</strong> <span style="color: var(--royal-blue);">${tech.id}</span></p>
-            <p><strong>Name:</strong> ${tech.name}</p>
-            <p><strong>Status:</strong> <span class="status-text status-normal">${tech.status.toUpperCase()}</span></p>
+            <p><strong>Technician ID:</strong> <span style="color: var(--royal-blue);">${employeeId}</span></p>
+            <p><strong>Name:</strong> ${technicianName}</p>
+            <p><strong>Availability:</strong> <span class="status-text ${workloadStatus.className}">${workloadStatus.label}</span></p>
         </div>
 
         <div class="form-section">
             <h5><i class="fas fa-user-cog"></i> Professional Details</h5>
-            <p><strong>Specialization:</strong> <i class="fas fa-wrench"></i> ${tech.specialization}</p>
-            <p><strong>Experience:</strong> ${tech.experience}</p>
+            <p><strong>Technical Expertise:</strong> <i class="fas fa-wrench"></i> ${expertise}</p>
+            <p><strong>Department:</strong> ${department}</p>
         </div>
 
         <div class="form-section">
             <h5><i class="fas fa-address-book"></i> Contact Information</h5>
-            <p><strong>Phone:</strong> <i class="fas fa-phone"></i> ${tech.phone}</p>
-            <p><strong>Email:</strong> <i class="fas fa-envelope"></i> ${tech.email}</p>
+            <p><strong>Phone:</strong> <i class="fas fa-phone"></i> ${phone}</p>
+            <p><strong>Email:</strong> <i class="fas fa-envelope"></i> ${email}</p>
         </div>
 
         <div class="form-section">
-            <h5><i class="fas fa-certificate"></i> Certifications</h5>
-            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${tech.certifications}</p>
-        </div>
-
-        <div class="form-section">
-            <h5><i class="fas fa-chart-bar"></i> Workload Statistics</h5>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-                <div style="text-align: center; padding: 15px; background: var(--background); border-radius: 8px;">
-                    <div style="font-size: 2em; font-weight: bold; color: var(--tang-blue);">${tech.currentAssignments}</div>
-                    <div style="margin-top: 5px; color: var(--muted);">Current Assignments</div>
-                </div>
-                <div style="text-align: center; padding: 15px; background: var(--background); border-radius: 8px;">
-                    <div style="font-size: 2em; font-weight: bold; color: var(--kelly-green);">${tech.completedThisWeek}</div>
-                    <div style="margin-top: 5px; color: var(--muted);">Completed This Week</div>
-                </div>
-                <div style="text-align: center; padding: 15px; background: var(--background); border-radius: 8px;">
-                    <div style="font-size: 2em; font-weight: bold; color: var(--royal-blue);">${tech.completedThisMonth}</div>
-                    <div style="margin-top: 5px; color: var(--muted);">Completed This Month</div>
-                </div>
-            </div>
+            <h5><i class="fas fa-chart-bar"></i> Current Workload</h5>
+            <p><strong>Active Assignments:</strong> ${workloadCount}</p>
+            <p><strong>Ticket State Summary:</strong> ${escapeHtml(ticketStatesSummary)}</p>
         </div>
 
         <div class="form-section">
             <h5><i class="fas fa-tasks"></i> Assigned Tickets</h5>
-            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${tech.activeTickets}</p>
+            ${assignedTicketHtml}
         </div>
     `;
 
@@ -3074,8 +3401,8 @@ function viewTechnicianDetails(techId) {
 }
 
 function assignNewTicket(techId) {
-    showToast(`Assigning new ticket to technician ${techId}`, 'info');
-    // TODO: Implement ticket assignment modal
+    navigateTo('fault-tickets');
+    showToast('Select a fault ticket and use Assign to choose technician(s)', 'info');
 }
 
 // ==================== MODAL BACKDROP HANDLERS ====================

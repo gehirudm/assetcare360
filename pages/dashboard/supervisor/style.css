@@ -1608,7 +1608,8 @@ body {
 
 .checkbox-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    gap: 12px;
     padding: 12px;
     border-radius: 6px;
     transition: background 0.2s ease;
@@ -1626,37 +1627,58 @@ body {
 .checkbox-item input[type="checkbox"] {
     width: 20px;
     height: 20px;
-    margin-right: 12px;
+    margin-right: 0;
+    margin-top: 2px;
     cursor: pointer;
     flex-shrink: 0;
 }
 
-.checkbox-item label {
+.technician-details {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 4px;
     flex: 1;
-    cursor: pointer;
-    margin: 0;
+    min-width: 0;
+}
+
+.technician-name {
     font-weight: 600;
     color: var(--text-900);
 }
 
-.technician-info {
+.technician-expertise {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--muted);
 }
 
 .technician-workload {
     font-size: 0.85rem;
     color: var(--muted);
-    font-weight: 400;
+    font-weight: 600;
+    white-space: nowrap;
+    margin-left: auto;
 }
 
 .technician-workload.available {
     color: var(--kelly-green);
-    font-weight: 500;
+}
+
+.technician-workload.busy {
+    color: var(--warn);
+}
+
+.technician-workload.heavy {
+    color: var(--danger);
+}
+
+.assignment-hint {
+    display: block;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.8rem;
 }
 
 .modal-actions {

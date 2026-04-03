@@ -77,9 +77,9 @@
                         <i class="nav-icon fas fa-truck"></i>
                         <span>Asset Status</span>
                     </div>
-                    <div class="nav-item" data-section="technician-assignments">
+                    <div class="nav-item" data-section="technicians">
                         <i class="nav-icon fas fa-user-cog"></i>
-                        <span>Technician Assignments</span>
+                        <span>Technicians</span>
                     </div>
                 </nav>
             </aside>
@@ -939,242 +939,22 @@
                     </div>
                 </section>
 
-                <!-- Technician Assignments Section -->
-                <section class="content-section" id="technician-assignments">
+                <!-- Technicians Section -->
+                <section class="content-section" id="technicians">
                     <div class="page-header">
-                        <h2 class="page-title"><i class="fas fa-user-cog"></i> Technician Assignments</h2>
-                        <p class="page-subtitle">Manage technician workload and assignments</p>
-                    </div>
-
-                    <!-- Technician Overview Cards -->
-                    <div class="grid">
-                        <div class="card">
-                            <div class="card-header"><i class="fas fa-users"></i> Total Technicians</div>
-                            <div style="padding: 15px 0;">
-                                <div style="font-size: 2em; font-weight: bold; color: var(--royal-blue);">6</div>
-                                <div style="margin-top: 10px;">
-                                    <span style="color: var(--ok);">5 Available</span> •
-                                    <span style="color: var(--warn);">1 Busy</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card">
-                            <div class="card-header"><i class="fas fa-tasks"></i> Active Assignments</div>
-                            <div style="padding: 15px 0;">
-                                <div style="font-size: 2em; font-weight: bold; color: var(--tang-blue);">8</div>
-                                <div style="margin-top: 10px;">
-                                    <span>Ongoing repairs</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card">
-                            <div class="card-header"><i class="fas fa-clock"></i> Avg. Completion Time</div>
-                            <div style="padding: 15px 0;">
-                                <div style="font-size: 2em; font-weight: bold; color: var(--kelly-green);">2.5</div>
-                                <div style="margin-top: 10px;">
-                                    <span>Days per repair</span>
-                                </div>
-                            </div>
-                        </div>
+                        <h2 class="page-title"><i class="fas fa-user-cog"></i> Technicians</h2>
+                        <p class="page-subtitle">View technical officers, their assigned tickets, and current ticket status</p>
                     </div>
 
                     <!-- Technician Workload -->
                     <div class="card">
                         <div class="card-header">
-                            <span><i class="fas fa-clipboard-list"></i> Technician Workload</span>
+                            <span><i class="fas fa-clipboard-list"></i> Technicians</span>
                         </div>
                         <div id="technicianAssignmentsTable" class="inventory-list">
-                            <div class="inventory-item">
-                                <div class="item-details">
-                                    <strong><i class="fas fa-user-cog"></i> Ranjith Silva</strong>
-                                    <div class="item-meta">
-                                        <i class="fas fa-wrench"></i> Engine Specialist |
-                                        <i class="fas fa-tasks"></i> 2 Current Assignments
-                                    </div>
-                                    <div class="item-meta">
-                                        <span class="status-text status-normal">AVAILABLE</span>
-                                    </div>
-                                </div>
-                                <div class="item-actions">
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small"
-                                            onclick="viewTechnicianDetails('TECH-001')"><i class="fas fa-eye"></i>
-                                            VIEW</button>
-                                        <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger"
-                                                onclick="toggleDropdown(event, 'tech-TECH-001')">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div class="dropdown-menu" id="dropdown-tech-TECH-001">
-                                                <button class="dropdown-item"
-                                                    onclick="assignNewTicket('TECH-001'); closeAllDropdowns();">
-                                                    <i class="fas fa-plus"></i> Assign Ticket
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="inventory-item">
-                                <div class="item-details">
-                                    <strong><i class="fas fa-user-cog"></i> Pradeep Fernando</strong>
-                                    <div class="item-meta">
-                                        <i class="fas fa-wrench"></i> Transmission Expert |
-                                        <i class="fas fa-tasks"></i> 3 Current Assignments
-                                    </div>
-                                    <div class="item-meta">
-                                        <span class="status-text status-warn">BUSY</span>
-                                    </div>
-                                </div>
-                                <div class="item-actions">
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small"
-                                            onclick="viewTechnicianDetails('TECH-002')"><i class="fas fa-eye"></i>
-                                            VIEW</button>
-                                        <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger"
-                                                onclick="toggleDropdown(event, 'tech-TECH-002')">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div class="dropdown-menu" id="dropdown-tech-TECH-002">
-                                                <button class="dropdown-item"
-                                                    onclick="assignNewTicket('TECH-002'); closeAllDropdowns();">
-                                                    <i class="fas fa-plus"></i> Assign Ticket
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="inventory-item">
-                                <div class="item-details">
-                                    <strong><i class="fas fa-user-cog"></i> Mahesh Perera</strong>
-                                    <div class="item-meta">
-                                        <i class="fas fa-wrench"></i> Electrical Systems |
-                                        <i class="fas fa-tasks"></i> 1 Current Assignment
-                                    </div>
-                                    <div class="item-meta">
-                                        <span class="status-text status-normal">AVAILABLE</span>
-                                    </div>
-                                </div>
-                                <div class="item-actions">
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small"
-                                            onclick="viewTechnicianDetails('TECH-003')"><i class="fas fa-eye"></i>
-                                            VIEW</button>
-                                        <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger"
-                                                onclick="toggleDropdown(event, 'tech-TECH-003')">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div class="dropdown-menu" id="dropdown-tech-TECH-003">
-                                                <button class="dropdown-item"
-                                                    onclick="assignNewTicket('TECH-003'); closeAllDropdowns();">
-                                                    <i class="fas fa-plus"></i> Assign Ticket
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="inventory-item">
-                                <div class="item-details">
-                                    <strong><i class="fas fa-user-cog"></i> Chaminda Rathnayake</strong>
-                                    <div class="item-meta">
-                                        <i class="fas fa-wrench"></i> Brake Systems |
-                                        <i class="fas fa-tasks"></i> 1 Current Assignment
-                                    </div>
-                                    <div class="item-meta">
-                                        <span class="status-text status-normal">AVAILABLE</span>
-                                    </div>
-                                </div>
-                                <div class="item-actions">
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small"
-                                            onclick="viewTechnicianDetails('TECH-004')"><i class="fas fa-eye"></i>
-                                            VIEW</button>
-                                        <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger"
-                                                onclick="toggleDropdown(event, 'tech-TECH-004')">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div class="dropdown-menu" id="dropdown-tech-TECH-004">
-                                                <button class="dropdown-item"
-                                                    onclick="assignNewTicket('TECH-004'); closeAllDropdowns();">
-                                                    <i class="fas fa-plus"></i> Assign Ticket
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="inventory-item">
-                                <div class="item-details">
-                                    <strong><i class="fas fa-user-cog"></i> Kasun Dissanayake</strong>
-                                    <div class="item-meta">
-                                        <i class="fas fa-wrench"></i> Heavy Machinery |
-                                        <i class="fas fa-tasks"></i> 1 Current Assignment
-                                    </div>
-                                    <div class="item-meta">
-                                        <span class="status-text status-normal">AVAILABLE</span>
-                                    </div>
-                                </div>
-                                <div class="item-actions">
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small"
-                                            onclick="viewTechnicianDetails('TECH-005')"><i class="fas fa-eye"></i>
-                                            VIEW</button>
-                                        <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger"
-                                                onclick="toggleDropdown(event, 'tech-TECH-005')">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div class="dropdown-menu" id="dropdown-tech-TECH-005">
-                                                <button class="dropdown-item"
-                                                    onclick="assignNewTicket('TECH-005'); closeAllDropdowns();">
-                                                    <i class="fas fa-plus"></i> Assign Ticket
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="inventory-item">
-                                <div class="item-details">
-                                    <strong><i class="fas fa-user-cog"></i> Tharindu Jayasinghe</strong>
-                                    <div class="item-meta">
-                                        <i class="fas fa-wrench"></i> General Maintenance |
-                                        <i class="fas fa-tasks"></i> 0 Current Assignments
-                                    </div>
-                                    <div class="item-meta">
-                                        <span class="status-text status-normal">AVAILABLE</span>
-                                    </div>
-                                </div>
-                                <div class="item-actions">
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small"
-                                            onclick="viewTechnicianDetails('TECH-006')"><i class="fas fa-eye"></i>
-                                            VIEW</button>
-                                        <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger"
-                                                onclick="toggleDropdown(event, 'tech-TECH-006')">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div class="dropdown-menu" id="dropdown-tech-TECH-006">
-                                                <button class="dropdown-item"
-                                                    onclick="assignNewTicket('TECH-006'); closeAllDropdowns();">
-                                                    <i class="fas fa-plus"></i> Assign Ticket
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <p style="text-align: center; color: var(--muted); padding: 18px;">
+                                <i class="fas fa-spinner fa-spin"></i> Loading technicians...
+                            </p>
                         </div>
                     </div>
                 </section>
@@ -1285,6 +1065,7 @@
                     <div class="form-group">
                         <label>Select Technician(s) <span style="color: var(--muted); font-weight: 400;">(Select one or
                                 more)</span></label>
+                        <small class="assignment-hint">Technicians are sorted by lowest current workload. Expertise and active ticket counts are shown to help pick the most free and qualified officer.</small>
                         <div id="techniciansList" class="checkbox-list">
                             <!-- Technicians will be loaded dynamically -->
                         </div>
@@ -1405,7 +1186,7 @@
     <script src="../../js/api.js?v=4"></script>
     <script src="../../js/auth.js?v=4"></script>
     <script src="../../js/dashboard-init.js"></script>
-    <script src="script.js?v=5"></script>
+    <script src="script.js?v=6"></script>
 </body>
 
 </html>
