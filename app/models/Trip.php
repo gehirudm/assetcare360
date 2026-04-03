@@ -190,26 +190,4 @@ class Trip extends BaseModel {
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return $result['count'];
     }
-
-    public function getMaxRecordedOdometer($vehicleRegistration, $driverId = null) {
-        $query = "SELECT MAX(COALESCE(final_odometer, starting_odometer)) AS max_odometer
-                  FROM {$this->table}
-                  WHERE vehicle_registration = :vehicle_registration";
-        $params = [':vehicle_registration' => $vehicleRegistration];
-
-        if ($driverId !== null && $driverId !== '') {
-            $query .= " AND driver_id = :driver_id";
-            $params[':driver_id'] = $driverId;
-        }
-
-        $stmt = $this->db->prepare($query);
-        $stmt->execute($params);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$result || $result['max_odometer'] === null) {
-            return null;
-        }
-
-        return intval($result['max_odometer']);
-    }
 }
