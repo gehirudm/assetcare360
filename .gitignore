@@ -24,8 +24,6 @@ Thumbs.db
 *.bak
 *.cache
 
-.github/
-
 uploads/
 
 docs/
