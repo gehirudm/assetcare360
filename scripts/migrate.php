@@ -199,6 +199,36 @@ class MigrationManager {
         return $exitCode;
     }
 
+    public function rollback($steps = 1) {
+        $batches = $this->getLastBatches($steps);
+
+        if (empty($batches)) {
+            echo "Nothing to roll back.\n";
+            return;
+        }
+
+        foreach ($batches as $batch) {
+            $stmt = $this->db->prepare("SELECT migration_file FROM schema_migrations WHERE batch = ? ORDER BY migration_number DESC");
+            $stmt->execute([$batch]);
+            $files = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+            $del = $this->db->prepare("DELETE FROM schema_migrations WHERE batch = ?");
+            $del->execute([$batch]);
+
+            foreach ($files as $file) {
+                echo "Rolled back: {$file} (batch {$batch})\n";
+            }
+        }
+
+        echo "\nRolled back " . count($batches) . " batch(es). Run 'migrate' to re-apply.\n";
+    }
+
+    private function getLastBatches($count) {
+        $stmt = $this->db->prepare("SELECT DISTINCT batch FROM schema_migrations ORDER BY batch DESC LIMIT ?");
+        $stmt->execute([$count]);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
     private function recordMigration($migration, $batch) {
         $sql = "INSERT INTO schema_migrations (migration_number, migration_key, migration_file, checksum, batch)
                 VALUES (?, ?, ?, ?, ?)";
@@ -218,16 +248,19 @@ function printUsage() {
     echo "  php scripts/migrate.php status\n";
     echo "  php scripts/migrate.php baseline --until=<version>\n";
     echo "  php scripts/migrate.php migrate [--dry-run]\n";
+    echo "  php scripts/migrate.php rollback [--steps=<n>]\n";
     echo "\nExamples:\n";
     echo "  php scripts/migrate.php baseline --until=41\n";
     echo "  php scripts/migrate.php migrate\n";
+    echo "  php scripts/migrate.php rollback --steps=2\n";
 }
 
 function parseOptions($argv) {
     $command = $argv[1] ?? 'migrate';
     $options = [
         'until' => null,
-        'dry_run' => false
+        'dry_run' => false,
+        'steps' => 1
     ];
 
     foreach (array_slice($argv, 2) as $arg) {
@@ -235,6 +268,8 @@ function parseOptions($argv) {
             $options['until'] = (int)substr($arg, strlen('--until='));
         } elseif ($arg === '--dry-run') {
             $options['dry_run'] = true;
+        } elseif (strpos($arg, '--steps=') === 0) {
+            $options['steps'] = (int)substr($arg, strlen('--steps='));
         }
     }
 
@@ -266,6 +301,10 @@ try {
 
         case 'migrate':
             $manager->migrate($options['dry_run']);
+            break;
+
+        case 'rollback':
+            $manager->rollback($options['steps']);
             break;
 
         default:

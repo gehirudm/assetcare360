@@ -1,18 +1,52 @@
 <?php
 
 /**
+ * Load .env file if present
+ */
+(function () {
+    $envFile = __DIR__ . '/../.env';
+    if (!file_exists($envFile)) {
+        return;
+    }
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (str_starts_with(trim($line), '#') || !str_contains($line, '=')) {
+            continue;
+        }
+        [$key, $value] = explode('=', $line, 2);
+        $key   = trim($key);
+        $value = trim($value);
+        if (!array_key_exists($key, $_ENV) && !array_key_exists($key, $_SERVER)) {
+            putenv("{$key}={$value}");
+            $_ENV[$key]    = $value;
+            $_SERVER[$key] = $value;
+        }
+    }
+})();
+
+/**
+ * Helper — reads env var, falls back to default
+ */
+function env(string $key, $default = null) {
+    $value = getenv($key);
+    return $value !== false ? $value : $default;
+}
+
+/**
  * Database Configuration
  */
-define('DB_HOST', 'localhost:3306');
-define('DB_NAME', 'assetcare360');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_CHARSET', 'utf8mb4');
+define('DB_HOST',    env('DB_HOST', '127.0.0.1'));
+define('DB_PORT',    env('DB_PORT', '3306'));
+define('DB_NAME',    env('DB_NAME',    'assetcare360'));
+define('DB_USER',    env('DB_USER',    'root'));
+define('DB_PASS',    env('DB_PASS',    ''));
+define('DB_CHARSET', env('DB_CHARSET', 'utf8mb4'));
+define('DB_SSL_CA',  env('DB_SSL_CA',  ''));   // Path to CA cert; empty = no SSL
 
 /**
  * JWT Configuration
  */
-define('JWT_SECRET', 'your-secret-key-change-this-in-production');
+define('JWT_SECRET', env('JWT_SECRET', 'your-secret-key-change-this-in-production'));
 define('JWT_ALGORITHM', 'HS256');
 define('JWT_EXPIRATION', 3600 * 24); // 24 hours
 
@@ -21,7 +55,7 @@ define('JWT_EXPIRATION', 3600 * 24); // 24 hours
  */
 define('COOKIE_NAME', 'auth_token');
 define('COOKIE_HTTPONLY', true);
-define('COOKIE_SECURE', false); // Set to true in production with HTTPS
+define('COOKIE_SECURE', filter_var(env('COOKIE_SECURE', 'false'), FILTER_VALIDATE_BOOLEAN)); // Set to true in production with HTTPS
 define('COOKIE_SAMESITE', 'Lax'); // Lax, Strict, or None
 define('COOKIE_PATH', '/');
 define('COOKIE_DOMAIN', ''); // Leave empty for current domain

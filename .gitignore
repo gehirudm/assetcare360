@@ -10,7 +10,6 @@
 config/database.local.php
 
 # IDE
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -25,8 +24,14 @@ Thumbs.db
 *.bak
 *.cache
 
-.github/
-
 uploads/
 
 docs/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+
+.cert
+dev.env
