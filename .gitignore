@@ -34,3 +34,4 @@ docs/
 .beads-credential-key
 
 .cert
+dev.env

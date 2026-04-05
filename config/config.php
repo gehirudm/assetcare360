@@ -35,7 +35,7 @@ function env(string $key, $default = null) {
 /**
  * Database Configuration
  */
-define('DB_HOST',    env('DB_HOST', 'localhost'));
+define('DB_HOST',    env('DB_HOST', '127.0.0.1'));
 define('DB_PORT',    env('DB_PORT', '3306'));
 define('DB_NAME',    env('DB_NAME',    'assetcare360'));
 define('DB_USER',    env('DB_USER',    'root'));
