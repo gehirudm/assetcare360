@@ -10,7 +10,7 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/Database.php';
 
 function tableExists(PDO $db, string $table): bool {
-    $stmt = $db->prepare('SHOW TABLES LIKE ?');
+    $stmt = $db->prepare('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?');
     $stmt->execute([$table]);
     return (bool) $stmt->fetchColumn();
 }
