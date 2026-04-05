@@ -61,7 +61,13 @@ echo "==========================================\n\n";
 
 try {
     // Connect without database to create it
-    $dsn = "mysql:host=" . DB_HOST . ";charset=" . DB_CHARSET;
+    // Support both "host:port" in DB_HOST (legacy) and separate DB_PORT constant
+    $_setupHost = DB_HOST;
+    $_setupPort = defined('DB_PORT') ? DB_PORT : '3306';
+    if (strpos($_setupHost, ':') !== false) {
+        [$_setupHost, $_setupPort] = explode(':', $_setupHost, 2);
+    }
+    $dsn = "mysql:host={$_setupHost};port={$_setupPort};charset=" . DB_CHARSET;
     $pdo = new PDO($dsn, DB_USER, DB_PASS, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
