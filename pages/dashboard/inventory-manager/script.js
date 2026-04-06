@@ -305,10 +305,10 @@ async function loadDashboardData() {
         // Calculate stock statistics
         const totalParts = products.length;
         const lowStockParts = products.filter(p => {
-            const qty = parseInt(p.quantity) || 0;
+            const qty = parseInt(p.quantity, 10) || 0;
             return qty > 0 && qty <= 10;
         }).length;
-        const outOfStockParts = products.filter(p => parseInt(p.quantity) === 0).length;
+        const outOfStockParts = products.filter(p => parseInt(p.quantity, 10) === 0).length;
 
         // Update dashboard cards
         const totalPartsEl = document.getElementById('totalPartsCount');
@@ -806,7 +806,7 @@ function getMachineFormData() {
         status: document.getElementById('status').value,
         supplier_name: document.getElementById('supplierName').value,
         supplier_contact: document.getElementById('supplierContact').value,
-        service_interval_days: parseInt(document.getElementById('serviceInterval').value),
+        service_interval_days: parseInt(document.getElementById('serviceInterval').value, 10),
         last_service_date: document.getElementById('lastServiceDate').value || null,
         warranty_expiry: document.getElementById('warrantyExpiry').value || null,
         warranty_provider: document.getElementById('warrantyProvider').value,
@@ -1342,7 +1342,7 @@ function getVehicleFormData() {
         chassis_number: document.getElementById('chassisNumber').value,
         vehicle_type: document.getElementById('vehicleName').value,
         fuel_type: document.getElementById('fuelType').value,
-        current_mileage: parseInt(document.getElementById('currentMileage').value) || 0,
+        current_mileage: parseInt(document.getElementById('currentMileage').value, 10) || 0,
         status: document.getElementById('vehicleStatus').value,
         supplier_name: document.getElementById('vehicleSupplierName').value,
         supplier_contact: document.getElementById('vehicleSupplierContact').value,
@@ -1350,17 +1350,17 @@ function getVehicleFormData() {
         warranty_expiry: document.getElementById('vehicleWarrantyExpiry').value || null,
         warranty_provider: document.getElementById('vehicleWarrantyProvider').value,
         last_service_date: document.getElementById('vehicleLastServiceDate').value || null,
-        last_service_mileage: document.getElementById('lastServiceMileage').value ? parseInt(document.getElementById('lastServiceMileage').value) : null,
+        last_service_mileage: document.getElementById('lastServiceMileage').value ? parseInt(document.getElementById('lastServiceMileage').value, 10) : null,
         notes: document.getElementById('vehicleNotes').value
     };
 
     // Add service intervals based on type
     if (serviceType === 'Time-Based' || serviceType === 'Both') {
-        formData.service_interval_days = parseInt(document.getElementById('vehicleServiceIntervalDays').value);
+        formData.service_interval_days = parseInt(document.getElementById('vehicleServiceIntervalDays').value, 10);
     }
 
     if (serviceType === 'Mileage-Based' || serviceType === 'Both') {
-        formData.service_interval_km = parseInt(document.getElementById('vehicleServiceIntervalKm').value);
+        formData.service_interval_km = parseInt(document.getElementById('vehicleServiceIntervalKm').value, 10);
     }
 
     // Get selected components
@@ -1527,7 +1527,7 @@ async function handleMileageUpdate(e, vehicleId) {
     e.preventDefault();
 
     try {
-        const mileage = parseInt(document.getElementById('newMileage').value);
+        const mileage = parseInt(document.getElementById('newMileage').value, 10);
         const response = await API.patch(`/vehicles/${vehicleId}/mileage`, { mileage });
 
         if (response.status === 'success') {
@@ -1888,7 +1888,7 @@ function displaySpareParts(products) {
     }
 
     products.forEach(product => {
-        const quantity = parseInt(product.quantity) || 0;
+        const quantity = parseInt(product.quantity, 10) || 0;
         const stockStatus = quantity > 10 ? 'in-stock' : (quantity > 0 ? 'low-stock' : 'out-of-stock');
         const stockBadge = quantity > 10 ? 'status-in-stock' : (quantity > 0 ? 'status-low-stock' : 'status-out-of-stock');
         const stockText = quantity > 10 ? 'In Stock' : (quantity > 0 ? 'Low Stock' : 'Out of Stock');
@@ -2079,7 +2079,7 @@ async function viewPartDetails(partId) {
         const compatibleVehicles = part.compatible_vehicles ? JSON.parse(part.compatible_vehicles) : [];
 
         // Determine stock status
-        const quantity = parseInt(part.quantity) || 0;
+        const quantity = parseInt(part.quantity, 10) || 0;
         const stockStatus = quantity > 10 ? 'In Stock' : (quantity > 0 ? 'Low Stock' : 'Out of Stock');
         const stockBadge = quantity > 10 ? 'status-in-stock' : (quantity > 0 ? 'status-low-stock' : 'status-out-of-stock');
 
@@ -2222,7 +2222,7 @@ document.getElementById('editPartForm').addEventListener('submit', async functio
         const response = await API.put(`/products/${partId}`, {
             name: sparepartName,
             category: category,
-            quantity: parseInt(quantity),
+            quantity: parseInt(quantity, 10),
             location: location,
             supplier: supplier,
             supplier_contact: supplierContact,
@@ -2515,6 +2515,17 @@ function displayOrders(orderList) {
                         <i class="fas fa-times"></i> REJECT
                     </button>
                 </div>`;
+        } else if (order.status === 'Rejected') {
+            // Rejected orders stay actionable — IM can re-approve once stock is replenished
+            actionButtons = `
+                <div class="action-buttons">
+                    <button class="btn btn-small btn-primary" onclick="event.stopPropagation(); viewOrderDetails(${order.id})">
+                        <i class="fas fa-eye"></i> VIEW
+                    </button>
+                    <button class="btn btn-small" style="background: #10b981; color: white;" onclick="event.stopPropagation(); approveOrder(${order.id})" title="Re-approve once stock is available">
+                        <i class="fas fa-check"></i> RE-APPROVE
+                    </button>
+                </div>`;
         } else {
             actionButtons = `
                 <div class="action-buttons">
@@ -2550,9 +2561,9 @@ function displayOrders(orderList) {
 }
 
 /**
- * Approve order - shows modal then calls API
+ * Approve order - pre-checks stock then shows confirmation modal
  */
-function approveOrder(orderId) {
+async function approveOrder(orderId) {
     console.log('approveOrder called with orderId:', orderId);
 
     // Close any open details modals first
@@ -2568,8 +2579,6 @@ function approveOrder(orderId) {
         return;
     }
 
-    const partsText = (order.items || []).map(i => `${i.part_name} (×${i.quantity})`).join(', ');
-
     const title = document.getElementById('orderActionTitle');
     const content = document.getElementById('orderActionContent');
 
@@ -2579,24 +2588,115 @@ function approveOrder(orderId) {
         return;
     }
 
+    // Show loading state while fetching stock info
     title.innerHTML = '<i class="fas fa-check-circle" style="color: #10b981;"></i> Approve Spare Parts Request';
+    content.innerHTML = `<div style="text-align:center;padding:30px;color:var(--muted);">
+        <i class="fas fa-spinner fa-spin" style="font-size:2rem;"></i>
+        <p style="margin-top:12px;">Checking stock availability…</p>
+    </div>`;
+    openModal('orderActionModal');
+
+    // Fetch stock check
+    let stockCheck = null;
+    try {
+        const res = await API.get(`/spare-part-requests/${orderId}/check-stock`);
+        if (res.status === 'success') stockCheck = res.data;
+    } catch (e) {
+        console.warn('Could not perform stock check:', e);
+    }
+
+    // Build the stock availability table
+    let stockTableHTML = '';
+    let hasInsufficientStock = false;
+
+    if (stockCheck && stockCheck.items && stockCheck.items.length > 0) {
+        hasInsufficientStock = !stockCheck.can_approve;
+
+        const rows = stockCheck.items.map(item => {
+            if (!item.matched) {
+                return `<tr style="background:#fef2f2;">
+                    <td>${item.part_name}</td>
+                    <td style="text-align:center;">${item.requested}</td>
+                    <td style="text-align:center;color:#991b1b;font-weight:600;">0</td>
+                    <td style="text-align:center;"><span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:0.8rem;"><i class="fas fa-times-circle"></i> Not in Inventory</span></td>
+                </tr>`;
+            }
+            const sufficient = item.sufficient;
+            const rowColor = sufficient ? '' : 'background:#fef2f2;';
+            const badge = sufficient
+                ? `<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:12px;font-size:0.8rem;"><i class="fas fa-check"></i> OK</span>`
+                : `<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:12px;font-size:0.8rem;"><i class="fas fa-exclamation-triangle"></i> Insufficient</span>`;
+            return `<tr style="${rowColor}">
+                <td>${item.part_name}</td>
+                <td style="text-align:center;">${item.requested}</td>
+                <td style="text-align:center;font-weight:600;color:${sufficient ? '#065f46' : '#991b1b'};">${item.available}</td>
+                <td style="text-align:center;">${badge}</td>
+            </tr>`;
+        }).join('');
+
+        const warningBanner = hasInsufficientStock ? `
+            <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin:10px 0;display:flex;align-items:flex-start;gap:10px;">
+                <i class="fas fa-exclamation-triangle" style="color:#dc2626;margin-top:2px;flex-shrink:0;"></i>
+                <div>
+                    <strong style="color:#dc2626;">Insufficient Stock</strong>
+                    <p style="margin:4px 0 0;color:#7f1d1d;font-size:0.9rem;">
+                        Some items do not have enough stock. Approval is blocked until stock levels are replenished.
+                    </p>
+                </div>
+            </div>` : `
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin:10px 0;display:flex;align-items:center;gap:8px;">
+                <i class="fas fa-check-circle" style="color:#10b981;"></i>
+                <span style="color:#065f46;font-size:0.9rem;">All items have sufficient stock. Ready to approve.</span>
+            </div>`;
+
+        stockTableHTML = `
+            ${warningBanner}
+            <div style="margin:12px 0;">
+                <strong style="font-size:0.9rem;color:var(--muted);">Stock Availability</strong>
+                <div style="overflow-x:auto;margin-top:8px;">
+                    <table style="width:100%;border-collapse:collapse;font-size:0.9rem;">
+                        <thead>
+                            <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+                                <th style="text-align:left;padding:8px 10px;">Part</th>
+                                <th style="text-align:center;padding:8px 10px;">Requested</th>
+                                <th style="text-align:center;padding:8px 10px;">Available</th>
+                                <th style="text-align:center;padding:8px 10px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </div>`;
+    } else {
+        // Could not load stock info — still allow approval
+        stockTableHTML = `
+            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px;margin:10px 0;font-size:0.9rem;">
+                <i class="fas fa-info-circle" style="color:#d97706;"></i>
+                Could not retrieve stock information. You may still approve, but inventory levels will not be automatically deducted.
+            </div>`;
+    }
+
+    const approveBtn = hasInsufficientStock
+        ? `<button type="button" class="btn btn-secondary" disabled title="Resolve stock shortage first"><i class="fas fa-ban"></i> Cannot Approve</button>`
+        : `<button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Confirm Approval</button>`;
+
     content.innerHTML = `
         <form onsubmit="event.preventDefault(); confirmApproval(${orderId});">
             <div class="form-section">
-                <p>Are you sure you want to approve request <strong>${order.request_id}</strong>?</p>
-                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; margin: 10px 0;">
+                <p>Reviewing spare parts request <strong>${order.request_id}</strong>:</p>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin: 8px 0;">
                     <p style="margin: 4px 0;"><strong>Ticket:</strong> ${order.ticket_id_formatted || '-'}</p>
                     <p style="margin: 4px 0;"><strong>Equipment:</strong> ${order.equipment_name || '-'}</p>
-                    <p style="margin: 4px 0;"><strong>Parts:</strong> ${partsText || '-'}</p>
                     <p style="margin: 4px 0;"><strong>Requested By:</strong> ${order.requested_by_name || '-'}</p>
                 </div>
-                <div class="form-group">
+                ${stockTableHTML}
+                <div class="form-group" style="margin-top:12px;">
                     <label class="form-label">Approval Notes (Optional)</label>
                     <textarea class="form-textarea" id="approvalNotes" placeholder="Add any notes for this approval..."></textarea>
                 </div>
             </div>
             <div style="display: flex; gap: 10px;">
-                <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Confirm Approval</button>
+                ${approveBtn}
                 <button type="button" class="btn btn-secondary" onclick="closeModal('orderActionModal')"><i class="fas fa-times"></i> Cancel</button>
             </div>
         </form>
@@ -2686,9 +2786,14 @@ async function confirmApproval(orderId) {
         console.log('Approve API response:', response);
 
         if (response.status === 'success') {
-            Utils.showToast('Spare parts request approved! Fault ticket updated to Parts Approved.', 'success');
+            Utils.showToast('Spare parts request approved! Inventory quantities updated.', 'success');
             closeModal('orderActionModal');
             await loadSparePartOrders();
+        } else if (response.code === 'insufficient_stock') {
+            // Stock check failed server-side (race condition) – refresh the modal
+            Utils.showToast('Cannot approve: ' + (response.message || 'Insufficient stock'), 'error');
+            closeModal('orderActionModal');
+            approveOrder(orderId); // re-open with fresh stock data
         } else {
             Utils.showToast('Failed to approve: ' + (response.message || 'Unknown error'), 'error');
         }
@@ -2773,7 +2878,7 @@ function viewOrderDetails(orderId) {
            </table>`
         : '<p style="color: #9ca3af;">No parts listed</p>';
 
-    // Build action buttons for pending orders in the details modal
+    // Build action buttons for pending/rejected orders in the details modal
     let modalActions = '';
     if (order.status === 'Pending') {
         modalActions = `
@@ -2783,6 +2888,13 @@ function viewOrderDetails(orderId) {
             </button>
             <button class="btn btn-danger" onclick="rejectOrder(${order.id})">
                 <i class="fas fa-times"></i> Reject Request
+            </button>
+        </div>`;
+    } else if (order.status === 'Rejected') {
+        modalActions = `
+        <div style="display: flex; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+            <button class="btn btn-success" onclick="approveOrder(${order.id})" title="Re-approve once stock is available">
+                <i class="fas fa-check"></i> Re-Approve Request
             </button>
         </div>`;
     }
@@ -2819,11 +2931,11 @@ function viewOrderDetails(orderId) {
             ${partsHTML}
         </div>
         ${order.status !== 'Pending' ? `
-        <div class="form-section">
-            <h5><i class="fas fa-user-check"></i> Review Details</h5>
+        <div class="form-section" style="background: ${order.status === 'Rejected' ? '#fef2f2' : '#f0fdf4'}; border: 1px solid ${order.status === 'Rejected' ? '#fecaca' : '#bbf7d0'}; border-radius: 8px; padding: 14px;">
+            <h5 style="color: ${order.status === 'Rejected' ? '#dc2626' : '#15803d'};"><i class="fas fa-${order.status === 'Rejected' ? 'times-circle' : 'check-circle'}"></i> Review Details</h5>
             <p><strong>Reviewed By:</strong> ${order.reviewed_by_name || '-'}</p>
             <p><strong>Review Date:</strong> ${reviewDate}</p>
-            ${order.review_notes ? `<p><strong>Notes:</strong> ${order.review_notes}</p>` : ''}
+            ${order.review_notes ? `<p><strong>${order.status === 'Rejected' ? 'Rejection Reason' : 'Notes'}:</strong> ${order.review_notes}</p>` : ''}
         </div>` : ''}
         ${modalActions}
     `);
@@ -2908,7 +3020,7 @@ function filterUsageByType(filterValue) {
 // Load all spareparts into the usage tracking table
 async function loadUsageTracking() {
     const tbody = document.getElementById('usageTableBody');
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:#6b7280;"><i class="fas fa-spinner fa-spin"></i> Loading spareparts...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px; color:#6b7280;"><i class="fas fa-spinner fa-spin"></i> Loading spareparts...</td></tr>';
 
     try {
         // Fetch products first
@@ -2921,30 +3033,26 @@ async function loadUsageTracking() {
         const products = productsResponse.data.products;
 
         if (products.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:#6b7280;"><i class="fas fa-box-open"></i> No spareparts found</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px; color:#6b7280;"><i class="fas fa-box-open"></i> No spareparts found</td></tr>';
             return;
         }
 
-        // Fetch usage data (don't fail if this errors)
+        // Fetch issued quantity totals per sparepart (full aggregate, no pagination)
         const issuedQtyMap = {};
         try {
-            const usageResponse = await API.get('/usage');
-            if (usageResponse.status === 'success' && usageResponse.data && usageResponse.data.usage) {
-                usageResponse.data.usage.forEach(record => {
-                    const sparepartId = record.sparepart_id;
-                    const qty = parseInt(record.quantity_issued) || 0;
-                    issuedQtyMap[sparepartId] = (issuedQtyMap[sparepartId] || 0) + qty;
-                });
+            const totalsResponse = await API.get('/usage/totals');
+            if (totalsResponse.status === 'success' && totalsResponse.data && totalsResponse.data.totals) {
+                Object.assign(issuedQtyMap, totalsResponse.data.totals);
             }
         } catch (usageError) {
-            console.warn('Could not load usage data:', usageError);
+            console.warn('Could not load usage totals:', usageError);
             // Continue anyway, issued quantities will just show as 0
         }
 
         tbody.innerHTML = '';
 
         products.forEach(part => {
-            const qty = parseInt(part.quantity) || 0;
+            const qty = parseInt(part.quantity, 10) || 0;
             let stockBadge, stockText;
             if (qty === 0) {
                 stockBadge = 'status-out-of-stock';
@@ -2963,6 +3071,10 @@ async function loadUsageTracking() {
                 ? `<span style="color:#6366f1; font-weight:600;">${issuedQty} units</span>`
                 : '<span style="color:#9ca3af;">0 units</span>';
 
+            // Total (original) quantity = available + issued
+            const totalQty = qty + issuedQty;
+            const totalText = `<span style="color:#374151; font-weight:600;">${totalQty} units</span>`;
+
             const lastIssue = part.last_issue_date
                 ? new Date(part.last_issue_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                 : '<span style="color:#9ca3af;">Not issued yet</span>';
@@ -2976,6 +3088,7 @@ async function loadUsageTracking() {
                 <td><strong>${part.sparepart_id}</strong></td>
                 <td>${part.name}</td>
                 <td>${category}</td>
+                <td>${totalText}</td>
                 <td>${stockText}</td>
                 <td>${issuedText}</td>
                 <td>${lastIssue}</td>
@@ -2989,7 +3102,7 @@ async function loadUsageTracking() {
         });
     } catch (error) {
         console.error('Error loading usage tracking:', error);
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:#dc2626;"><i class="fas fa-exclamation-triangle"></i> Failed to load spareparts: ${error.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:30px; color:#dc2626;"><i class="fas fa-exclamation-triangle"></i> Failed to load spareparts: ${error.message}</td></tr>`;
     }
 }
 
@@ -3033,8 +3146,8 @@ document.getElementById('issueForm')?.addEventListener('submit', async function 
     const dbId = document.getElementById('issuePartDbId').value;
     const sparepartId = document.getElementById('issuePartId').value;
     const sparepartName = document.getElementById('issueSparepartName').value;
-    const availableQty = parseInt(document.getElementById('issueAvailableQty').value);
-    const quantityIssued = parseInt(document.getElementById('issueQuantity').value);
+    const availableQty = parseInt(document.getElementById('issueAvailableQty').value, 10);
+    const quantityIssued = parseInt(document.getElementById('issueQuantity').value, 10);
 
     if (!quantityIssued || quantityIssued < 1) {
         Utils.showToast('Please enter a valid quantity (at least 1)', 'error');
@@ -3242,7 +3355,7 @@ document.getElementById('addStockForm')?.addEventListener('submit', async functi
             sparepart_id: sparepartId,
             sparepart_name: sparepartName,
             category: category,
-            quantity_added: parseInt(quantity),
+            quantity_added: parseInt(quantity, 10),
             location: location,
             supplier: supplier,
             supplier_contact: supplierContact,
@@ -3259,7 +3372,7 @@ document.getElementById('addStockForm')?.addEventListener('submit', async functi
             sparepart_id: sparepartId,
             name: sparepartName,
             category: category,
-            quantity: parseInt(quantity),
+            quantity: parseInt(quantity, 10),
             location: location,
             supplier: supplier,
             supplier_contact: supplierContact,
@@ -3293,7 +3406,7 @@ async function updateAdditionRecord(data) {
                 // Get current sparepart to calculate new quantity
                 const sparepartResponse = await API.get(`/products/${data.sparepart_id}`);
                 if (sparepartResponse.status === 'success' && sparepartResponse.data) {
-                    const currentQuantity = parseInt(sparepartResponse.data.quantity) || 0;
+                    const currentQuantity = parseInt(sparepartResponse.data.quantity, 10) || 0;
                     const newQuantity = currentQuantity + quantityDifference;
 
                     // Update sparepart quantity
@@ -3352,7 +3465,7 @@ async function saveSparePartFromAddStock(data) {
 
         if (existingPart) {
             // Update existing sparepart - add to quantity
-            const newQuantity = parseInt(existingPart.quantity) + parseInt(data.quantity);
+            const newQuantity = parseInt(existingPart.quantity, 10) + parseInt(data.quantity, 10);
             response = await API.put(`/products/${data.sparepart_id}`, {
                 quantity: newQuantity,
                 location: data.location || existingPart.location
@@ -3366,7 +3479,7 @@ async function saveSparePartFromAddStock(data) {
                     category: data.category,
                     location: data.location || existingPart.location,
                     quantity_added: data.quantity,
-                    previous_stock: parseInt(existingPart.quantity),
+                    previous_stock: parseInt(existingPart.quantity, 10),
                     new_stock: newQuantity,
                     received_date: new Date().toISOString().split('T')[0],
                     supplier: data.supplier || null,
@@ -3422,6 +3535,9 @@ async function saveSparePartFromAddStock(data) {
             // Reload spare parts and recent additions
             await loadSpareParts();
             loadRecentAdditions();
+
+            // Check if any previously rejected orders contain this sparepart and can now be re-approved
+            await promptReapprovalForRejectedOrders(data.sparepart_id, data.name || data.sparepart_id);
         } else {
             console.error('Failed to save spare part:', response);
             Utils.showToast(`Failed to save spare part: ${response.message}`, 'error');
@@ -3431,6 +3547,91 @@ async function saveSparePartFromAddStock(data) {
         Utils.showToast('Error saving spare part: ' + error.message, 'error');
     } finally {
         showLoading(false);
+    }
+}
+
+/**
+ * After a stock addition, check if any previously-rejected spare part requests
+ * contain the added sparepart. If so, show an actionable prompt so the IM can
+ * re-approve those orders without navigating away.
+ */
+async function promptReapprovalForRejectedOrders(sparepartId, sparepartName) {
+    try {
+        const response = await API.get(`/spare-part-requests/rejected-by-sparepart?sparepart_id=${encodeURIComponent(sparepartId)}`);
+        if (response.status !== 'success' || !response.data || response.data.length === 0) return;
+
+        const orders = response.data;
+
+        // Build the modal content
+        const orderRows = orders.map(o => {
+            const partsText = (o.items || []).map(i => `${i.part_name} ×${i.quantity}`).join(', ');
+            const rejectedOn = o.reviewed_at ? new Date(o.reviewed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+            return `
+            <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; background: #fafafa;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 700; color: var(--tang-blue);">${o.request_id}</div>
+                        <div style="font-size: 0.85rem; color: #6b7280; margin-top: 2px;">
+                            <i class="fas fa-ticket-alt"></i> ${o.fault_ticket_code || '-'} &nbsp;|&nbsp;
+                            <i class="fas fa-user"></i> ${o.requested_by_name || '-'}
+                        </div>
+                        <div style="font-size: 0.85rem; color: #374151; margin-top: 4px;"><i class="fas fa-box"></i> ${partsText}</div>
+                        ${o.review_notes ? `<div style="font-size: 0.8rem; color: #9b1c1c; margin-top: 4px;"><i class="fas fa-times-circle"></i> Rejection reason: ${o.review_notes}</div>` : ''}
+                        <div style="font-size: 0.78rem; color: #9ca3af; margin-top: 2px;">Rejected on ${rejectedOn}</div>
+                    </div>
+                    <button class="btn btn-small" style="background: #10b981; color: white; white-space: nowrap;"
+                        onclick="handleReapproveFromPrompt(${o.id}, this)">
+                        <i class="fas fa-check"></i> Re-Approve
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
+
+        const modal = createDetailsModal(
+            `<i class="fas fa-boxes" style="color: #10b981;"></i> Stock Added — ${orders.length} Rejected Order${orders.length > 1 ? 's' : ''} Can Now Be Re-Approved`,
+            `<p style="color: #374151; margin-bottom: 14px;">
+                Stock for <strong>${sparepartName}</strong> has been added. The following previously-rejected orders contain this part and may now have sufficient stock to be approved:
+            </p>
+            <div id="reapproveOrdersList">${orderRows}</div>
+            <p style="font-size: 0.8rem; color: #9ca3af; margin-top: 10px;">
+                <i class="fas fa-info-circle"></i> A stock check is performed before each re-approval. Orders will only be approved if all items have sufficient stock.
+            </p>`
+        );
+        modal.id = 'reapprovePromptModal';
+        document.body.appendChild(modal);
+        modal.classList.add('active');
+
+        // Reload the orders list in background so allSparePartRequests is up-to-date for approveOrder()
+        loadSparePartOrders();
+    } catch (err) {
+        // Non-critical — don't surface this error to the user
+        console.warn('Could not check for rejected orders after stock addition:', err);
+    }
+}
+
+/**
+ * Called when the IM clicks Re-Approve from the stock-addition prompt.
+ * Removes the row on success so the modal shrinks naturally.
+ */
+async function handleReapproveFromPrompt(orderId, btnEl) {
+    btnEl.disabled = true;
+    btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    try {
+        // Make sure allSparePartRequests is populated so approveOrder() can find the order
+        if (!allSparePartRequests.find(r => r.id == orderId)) {
+            await loadSparePartOrders();
+        }
+
+        // Close the prompt modal first, then open the stock-check approval flow
+        const promptModal = document.getElementById('reapprovePromptModal');
+        if (promptModal) { promptModal.classList.remove('active'); setTimeout(() => promptModal.remove(), 300); }
+
+        approveOrder(orderId);
+    } catch (err) {
+        btnEl.disabled = false;
+        btnEl.innerHTML = '<i class="fas fa-check"></i> Re-Approve';
+        Utils.showToast('Error: ' + err.message, 'error');
     }
 }
 
@@ -3687,7 +3888,7 @@ function viewAdditionDetails(additionId) {
         if (addition.warranty_start) {
             const startDate = new Date(addition.warranty_start);
             const endDate = new Date(startDate);
-            endDate.setMonth(endDate.getMonth() + parseInt(warrantyMonths));
+            endDate.setMonth(endDate.getMonth() + parseInt(warrantyMonths, 10));
             warrantyDisplay = `${warrantyMonths} months (Valid until ${endDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})`;
         }
     }
