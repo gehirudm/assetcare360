@@ -2911,6 +2911,274 @@ components:
                       report:
                         $ref: '#/components/schemas/BudgetReport'
 
+  /spare-part-requests:
+    get:
+      tags:
+        - Spare Part Requests
+      summary: List spare part requests
+      description: Returns all spare part requests. Filterable by status, requested_by, fault_ticket_id.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [Pending, Approved, Rejected, Issued]
+        - in: query
+          name: requested_by
+          schema:
+            type: integer
+        - in: query
+          name: fault_ticket_id
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of spare part requests
+    post:
+      tags:
+        - Spare Part Requests
+      summary: Create a spare part request
+      description: Technical Officer submits a spare part request linked to a fault ticket.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fault_ticket_id, items]
+              properties:
+                fault_ticket_id:
+                  type: integer
+                ticket_id_formatted:
+                  type: string
+                equipment_name:
+                  type: string
+                location:
+                  type: string
+                priority:
+                  type: string
+                  enum: [Low, Medium, High, Critical]
+                  default: Medium
+                additional_notes:
+                  type: string
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [part_name, quantity]
+                    properties:
+                      part_code:
+                        type: string
+                      sparepart_db_id:
+                        type: integer
+                        description: Numeric PK from the spareparts inventory table
+                      part_name:
+                        type: string
+                      quantity:
+                        type: integer
+                        minimum: 1
+      responses:
+        '201':
+          description: Request created
+        '400':
+          description: Validation error
+
+  /spare-part-requests/stats:
+    get:
+      tags:
+        - Spare Part Requests
+      summary: Get request counts by status
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Counts by status
+
+  /spare-part-requests/{id}:
+    get:
+      tags:
+        - Spare Part Requests
+      summary: Get a single spare part request with items
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Spare part request with items
+        '404':
+          description: Not found
+
+  /spare-part-requests/{id}/stock-check:
+    get:
+      tags:
+        - Spare Part Requests
+      summary: Check stock availability for a spare part request
+      description: |
+        Returns per-item stock availability for a given spare part request.
+        Used by the Inventory Manager before approving to verify sufficient stock.
+        Items without an inventory link (legacy requests) are flagged with has_inventory_link=false.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Stock check result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  all_sufficient:
+                    type: boolean
+                    description: True if every linked item has sufficient stock
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        part_name:
+                          type: string
+                        part_code:
+                          type: string
+                        requested_qty:
+                          type: integer
+                        available_qty:
+                          type: integer
+                          nullable: true
+                        is_sufficient:
+                          type: boolean
+                        has_inventory_link:
+                          type: boolean
+        '404':
+          description: Request not found
+
+  /spare-part-requests/{id}/approve:
+    post:
+      tags:
+        - Spare Part Requests
+      summary: Approve a spare part request
+      description: |
+        Inventory Manager approves the request. Validates that all linked items have
+        sufficient stock. On success, deducts stock from the spareparts inventory,
+        logs a sparepart_usage row per item, and updates the fault ticket to "Parts Approved".
+        Returns HTTP 422 with error="insufficient_stock" if stock is insufficient.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Request approved, stock deducted
+        '400':
+          description: Request not in Pending status
+        '422':
+          description: Insufficient stock for one or more items
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  error:
+                    type: string
+                    example: insufficient_stock
+                  message:
+                    type: string
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        part_name:
+                          type: string
+                        requested:
+                          type: integer
+                        available:
+                          type: integer
+
+  /spare-part-requests/{id}/reject:
+    post:
+      tags:
+        - Spare Part Requests
+      summary: Reject a spare part request
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Request rejected
+        '400':
+          description: Request not in Pending status
+
+  /spare-part-requests/ticket/{id}:
+    get:
+      tags:
+        - Spare Part Requests
+      summary: Get spare part requests for a fault ticket
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of spare part requests for the ticket
+
 components:
   schemas:
     Machine:

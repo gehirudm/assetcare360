@@ -1465,7 +1465,7 @@ function populateTicketFromReport() {
     }
 
     // Convert to number if numeric to match map key
-    const reportIdKey = isNaN(reportId) ? reportId : parseInt(reportId);
+    const reportIdKey = isNaN(reportId) ? reportId : parseInt(reportId, 10);
     const report = allReportsMap.get(reportIdKey);
     if (!report) {
         console.log('Report not found for ID:', reportId, 'Map keys:', Array.from(allReportsMap.keys()));
@@ -1609,7 +1609,7 @@ async function handleCreateTicket(event) {
 
     // Get the selected report to extract machine/vehicle info
     // Convert to number if it's a numeric string to match the map key
-    const reportIdKey = isNaN(breakdownReportId) ? breakdownReportId : parseInt(breakdownReportId);
+    const reportIdKey = isNaN(breakdownReportId) ? breakdownReportId : parseInt(breakdownReportId, 10);
     const selectedReport = allReportsMap.get(reportIdKey);
 
     // Combine title and description
@@ -2052,7 +2052,7 @@ async function handleAssignTicket(event) {
 
     // Get selected technicians
     const selectedTechnicians = Array.from(form.querySelectorAll('input[name="technicians"]:checked'))
-        .map(cb => parseInt(cb.value));
+        .map(cb => parseInt(cb.value, 10));
 
     // Check if no technicians selected
     if (selectedTechnicians.length === 0) {
@@ -3905,7 +3905,7 @@ function viewReportDetails(reportIdOrObj) {
         report = reportIdOrObj;
     } else {
         // Try both string and number keys
-        report = allReportsMap.get(reportIdOrObj) || allReportsMap.get(parseInt(reportIdOrObj));
+        report = allReportsMap.get(reportIdOrObj) || allReportsMap.get(parseInt(reportIdOrObj, 10));
     }
 
     if (!report) {
