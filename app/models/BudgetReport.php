@@ -17,6 +17,7 @@ class BudgetReport extends BaseModel {
             'quotation' => 'TEXT NOT NULL COMMENT "Detailed quotation/breakdown of costs"',
             'justification' => 'TEXT NOT NULL COMMENT "Justification for the budget request"',
             'total_amount' => 'DECIMAL(10,2) NOT NULL COMMENT "Total amount from quotation"',
+            'approval_level' => "ENUM('supervisor', 'maintenance_manager') NOT NULL DEFAULT 'supervisor' COMMENT 'Determines who can approve: supervisor (within petty cash) or maintenance_manager (exceeds petty cash)'",
             'status' => "ENUM('pending', 'approved', 'rejected', 'revised') DEFAULT 'pending'",
             'reviewed_by' => 'INT DEFAULT NULL COMMENT "Supervisor who reviewed the report"',
             'review_notes' => 'TEXT DEFAULT NULL',
@@ -51,8 +52,8 @@ class BudgetReport extends BaseModel {
      */
     public function create($data) {
         $query = "INSERT INTO {$this->table} 
-                  (fault_ticket_id, submitted_by, quotation, justification, total_amount) 
-                  VALUES (:fault_ticket_id, :submitted_by, :quotation, :justification, :total_amount)";
+                  (fault_ticket_id, submitted_by, quotation, justification, total_amount, approval_level) 
+                  VALUES (:fault_ticket_id, :submitted_by, :quotation, :justification, :total_amount, :approval_level)";
         
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':fault_ticket_id', $data['fault_ticket_id']);
@@ -60,6 +61,8 @@ class BudgetReport extends BaseModel {
         $stmt->bindParam(':quotation', $data['quotation']);
         $stmt->bindParam(':justification', $data['justification']);
         $stmt->bindParam(':total_amount', $data['total_amount']);
+        $approvalLevel = $data['approval_level'] ?? 'supervisor';
+        $stmt->bindParam(':approval_level', $approvalLevel);
         
         if ($stmt->execute()) {
             return $this->db->lastInsertId();
@@ -175,20 +178,29 @@ class BudgetReport extends BaseModel {
     /**
      * Get all pending budget reports (for supervisors)
      */
-    public function getPendingReports() {
+    public function getPendingReports($approvalLevel = null) {
         $query = "SELECT br.*, 
+                         ft.ticket_id as ticket_display_id,
                          ft.id as ticket_id,
                          ft.description as ticket_description,
+                         ft.priority as ticket_priority,
                          u.full_name as submitted_by_name,
                          u.employee_id as submitted_by_employee_id
                   FROM {$this->table} br
                   JOIN fault_tickets ft ON br.fault_ticket_id = ft.id
                   JOIN users u ON br.submitted_by = u.id
-                  WHERE br.status = 'pending'
-                  ORDER BY br.created_at DESC";
+                  WHERE br.status = 'pending'";
+        
+        $params = [];
+        if ($approvalLevel !== null) {
+            $query .= " AND br.approval_level = :approval_level";
+            $params[':approval_level'] = $approvalLevel;
+        }
+        
+        $query .= " ORDER BY br.created_at DESC";
         
         $stmt = $this->db->prepare($query);
-        $stmt->execute();
+        $stmt->execute($params);
         
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

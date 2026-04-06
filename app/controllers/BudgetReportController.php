@@ -2,15 +2,18 @@
 
 require_once __DIR__ . '/../models/BudgetReport.php';
 require_once __DIR__ . '/../models/FaultTicket.php';
+require_once __DIR__ . '/../models/SystemSetting.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 
 class BudgetReportController {
     private $budgetReportModel;
     private $faultTicketModel;
+    private $settingModel;
     
     public function __construct() {
         $this->budgetReportModel = new BudgetReport();
         $this->faultTicketModel = new FaultTicket();
+        $this->settingModel = new SystemSetting();
     }
     
     /**
@@ -65,34 +68,39 @@ class BudgetReportController {
                 return;
             }
             
-            // Check if ticket is in Open or Assigned status (before In Progress)
-            $allowedStatuses = ['Open', 'Assigned'];
+            // Check if ticket is in a pre-work status (budget can be submitted/resubmitted)
+            $allowedStatuses = ['Open', 'Assigned', 'Waiting for Budget Approval'];
             if (!in_array($ticket['status'], $allowedStatuses)) {
                 http_response_code(400);
                 echo json_encode([
                     'status' => 'error',
-                    'message' => 'Budget reports can only be submitted for tickets in "Open" or "Assigned" status. Current status: ' . $ticket['status']
+                    'message' => 'Budget reports can only be submitted before work has started. Current status: ' . $ticket['status']
                 ]);
                 return;
             }
             
-            // Validate total amount is numeric
-            if (!is_numeric($data['total_amount']) || $data['total_amount'] < 0) {
+            // Validate total amount is numeric and greater than zero
+            if (!is_numeric($data['total_amount']) || $data['total_amount'] <= 0) {
                 http_response_code(400);
                 echo json_encode([
                     'status' => 'error',
-                    'message' => 'Invalid total amount'
+                    'message' => 'Total amount must be greater than zero'
                 ]);
                 return;
             }
             
             // Create budget report
+            $pettyCashLimit = $this->settingModel->getSetting('petty_cash_limit', 50000.00);
+            $totalAmount = (float) $data['total_amount'];
+            $approvalLevel = $totalAmount <= $pettyCashLimit ? 'supervisor' : 'maintenance_manager';
+            
             $reportData = [
                 'fault_ticket_id' => $data['fault_ticket_id'],
                 'submitted_by' => $user['id'],
                 'quotation' => trim($data['quotation']),
                 'justification' => trim($data['justification']),
-                'total_amount' => number_format($data['total_amount'], 2, '.', '')
+                'total_amount' => number_format($data['total_amount'], 2, '.', ''),
+                'approval_level' => $approvalLevel
             ];
             
             $reportId = $this->budgetReportModel->create($reportData);
@@ -105,12 +113,18 @@ class BudgetReportController {
                 
                 $report = $this->budgetReportModel->findById($reportId);
                 
+                $approvalMessage = $approvalLevel === 'maintenance_manager' 
+                    ? 'Budget report created. Amount exceeds petty cash limit — requires Maintenance Manager approval.' 
+                    : 'Budget report created. Awaiting Supervisor approval.';
+                
                 http_response_code(201);
                 echo json_encode([
                     'status' => 'success',
-                    'message' => 'Budget report created successfully',
+                    'message' => $approvalMessage,
                     'data' => [
-                        'report' => $report
+                        'report' => $report,
+                        'approval_level' => $approvalLevel,
+                        'petty_cash_limit' => $pettyCashLimit
                     ]
                 ]);
             } else {
@@ -317,11 +331,11 @@ class BudgetReportController {
             
             // Validate total amount if provided
             if (isset($data['total_amount'])) {
-                if (!is_numeric($data['total_amount']) || $data['total_amount'] < 0) {
+                if (!is_numeric($data['total_amount']) || $data['total_amount'] <= 0) {
                     http_response_code(400);
                     echo json_encode([
                         'status' => 'error',
-                        'message' => 'Invalid total amount'
+                        'message' => 'Total amount must be greater than zero'
                     ]);
                     return;
                 }
@@ -384,12 +398,13 @@ class BudgetReportController {
                 return;
             }
             
-            // Only supervisors can review
-            if ($user['role'] !== 'Supervisor' && $user['role'] !== 'Admin') {
+            // Only supervisors and maintenance managers can review
+            $allowedReviewRoles = ['Supervisor', 'Maintenance Manager', 'Admin'];
+            if (!in_array($user['role'], $allowedReviewRoles)) {
                 http_response_code(403);
                 echo json_encode([
                     'status' => 'error',
-                    'message' => 'Only supervisors can review budget reports'
+                    'message' => 'Only supervisors and maintenance managers can review budget reports'
                 ]);
                 return;
             }
@@ -401,6 +416,17 @@ class BudgetReportController {
                 echo json_encode([
                     'status' => 'error',
                     'message' => 'Budget report not found'
+                ]);
+                return;
+            }
+            
+            // Enforce approval level: maintenance_manager reports need Maintenance Manager or Admin
+            $approvalLevel = $existingReport['approval_level'] ?? 'supervisor';
+            if ($approvalLevel === 'maintenance_manager' && $user['role'] === 'Supervisor') {
+                http_response_code(403);
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => 'This budget exceeds the petty cash limit and requires Maintenance Manager approval'
                 ]);
                 return;
             }
@@ -429,6 +455,20 @@ class BudgetReportController {
             );
             
             if ($success) {
+                // Update fault ticket status based on review outcome
+                if ($data['status'] === 'approved') {
+                    // Budget approved — move ticket back to Assigned so work can proceed
+                    $this->faultTicketModel->update($existingReport['fault_ticket_id'], [
+                        'status' => 'Assigned'
+                    ]);
+                } elseif ($data['status'] === 'rejected') {
+                    // Budget rejected — move ticket back to Assigned for resubmission
+                    $this->faultTicketModel->update($existingReport['fault_ticket_id'], [
+                        'status' => 'Assigned'
+                    ]);
+                }
+                // 'revised' status keeps ticket in Waiting for Budget Approval
+                
                 $report = $this->budgetReportModel->findById($id);
                 
                 echo json_encode([
@@ -592,17 +632,29 @@ class BudgetReportController {
                 return;
             }
             
-            // Only supervisors can view all pending reports
-            if ($user['role'] !== 'Supervisor' && $user['role'] !== 'Admin') {
+            // Supervisors, Maintenance Managers, and Admins can view pending reports
+            $allowedRoles = ['Supervisor', 'Maintenance Manager', 'Admin'];
+            if (!in_array($user['role'], $allowedRoles)) {
                 http_response_code(403);
                 echo json_encode([
                     'status' => 'error',
-                    'message' => 'Only supervisors can view all pending reports'
+                    'message' => 'Only supervisors and maintenance managers can view pending reports'
                 ]);
                 return;
             }
             
-            $reports = $this->budgetReportModel->getPendingReports();
+            // Filter by approval level based on role
+            // Supervisors see only supervisor-level reports
+            // Maintenance Managers see only maintenance_manager-level reports
+            // Admins see all
+            $approvalLevel = null;
+            if ($user['role'] === 'Supervisor') {
+                $approvalLevel = 'supervisor';
+            } elseif ($user['role'] === 'Maintenance Manager') {
+                $approvalLevel = 'maintenance_manager';
+            }
+            
+            $reports = $this->budgetReportModel->getPendingReports($approvalLevel);
             
             echo json_encode([
                 'status' => 'success',
