@@ -1053,7 +1053,7 @@ async function handleFaultSubmission() {
 
         // Step 1: Create machine breakdown report
         const breakdownData = {
-            machine_id: parseInt(machineId),
+            machine_id: parseInt(machineId, 10),
             operator_id: currentUser?.id,
             breakdown_date: new Date().toISOString(),
             breakdown_type: 'General Fault',
@@ -1172,7 +1172,7 @@ async function handleConditionUpdateSubmission() {
 
         // Prepare data for API
         const checkData = {
-            machine_id: parseInt(machineId),
+            machine_id: parseInt(machineId, 10),
             operator_id: currentUser?.id || null,
             week_start_date: weekStart,
             week_end_date: weekEndDate,

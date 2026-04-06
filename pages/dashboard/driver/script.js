@@ -2336,7 +2336,7 @@ function initializeForms() {
                 body: JSON.stringify({
                     vehicle_registration: 'LKA-1234',
                     driver_id: 1, // This should come from session
-                    odometer_reading: parseInt(odometer),
+                    odometer_reading: parseInt(odometer, 10),
                     week_end_date: weekEndingDate,
                     engine_oil: true,
                     brakes: true,
@@ -2411,7 +2411,7 @@ function initializeForms() {
 
         // Validate odometer reading
         const tripData = window.allTripsData?.[tripId];
-        if (tripData && parseInt(finalOdometer) <= parseInt(tripData.odometer)) {
+        if (tripData && parseInt(finalOdometer, 10) <= parseInt(tripData.odometer, 10)) {
             alert('Final odometer reading must be greater than starting odometer!');
             return;
         }
@@ -2464,7 +2464,7 @@ function initializeForms() {
                 // Re-enable Start New Trip button now that trip is completed
                 updateStartTripButton();
 
-                const distance = parseInt(finalOdometer) - parseInt(tripData?.odometer || 0);
+                const distance = parseInt(finalOdometer, 10) - parseInt(tripData?.odometer || 0, 10);
                 showToast(`Trip ${tripId} completed! Distance traveled: ${distance} km`);
                 closeModal('endTripModal');
                 this.reset();
@@ -2577,7 +2577,7 @@ function endTrip(tripId) {
     // Get current odometer from trip data
     const tripData = window.allTripsData?.[tripId];
     if (tripData && tripData.odometer) {
-        document.getElementById('endTripOdometer').min = parseInt(tripData.odometer);
+        document.getElementById('endTripOdometer').min = parseInt(tripData.odometer, 10);
         document.getElementById('endTripOdometer').placeholder = `Must be greater than ${tripData.odometer} km`;
     }
 
@@ -2594,7 +2594,7 @@ function viewTripDetails(tripId) {
 
     // Calculate distance if trip is completed
     const distanceTraveled = tripData.finalOdometer ?
-        parseInt(tripData.finalOdometer) - parseInt(tripData.odometer) : null;
+        parseInt(tripData.finalOdometer, 10) - parseInt(tripData.odometer, 10) : null;
 
     // Build trip details HTML with card-based layout matching vehicle check details
     const statusColor = getStatusColor(tripData.status);
