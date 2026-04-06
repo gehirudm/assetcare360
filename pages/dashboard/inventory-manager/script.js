@@ -170,6 +170,36 @@ document.addEventListener('inventory-orders-approvals:count-change', (e) => {
     console.log(`Orders pending count: ${count}`);
 });
 
+// Machines component event bridge
+document.addEventListener('inventory-machines:add', () => {
+    openAddMachineModal();
+});
+document.addEventListener('inventory-machines:view', (e) => {
+    viewMachineDetails(e.detail.machineId);
+});
+document.addEventListener('inventory-machines:edit', (e) => {
+    editMachine(e.detail.machineId);
+});
+document.addEventListener('inventory-machines:more', (e) => {
+    // Handle more actions (delete, auction, etc.)
+    console.log('More actions for machine:', e.detail.machineId);
+});
+
+// Vehicles component event bridge
+document.addEventListener('inventory-vehicles:add', () => {
+    openAddVehicleModal();
+});
+document.addEventListener('inventory-vehicles:view', (e) => {
+    viewVehicleDetails(e.detail.vehicleId);
+});
+document.addEventListener('inventory-vehicles:edit', (e) => {
+    editVehicle(e.detail.vehicleId);
+});
+document.addEventListener('inventory-vehicles:more', (e) => {
+    // Handle more actions (delete, auction, etc.)
+    console.log('More actions for vehicle:', e.detail.vehicleId);
+});
+
 function bindDashboardOverviewModel() {
     const dashboardModel = document.querySelector('inventory-dashboard-overview-model');
     if (!dashboardModel || dashboardModel._inventoryDashboardOverviewBound) {
@@ -296,6 +326,20 @@ async function refreshOrdersApprovalsModel() {
     }
 }
 
+function refreshMachinesModel() {
+    const machinesModel = document.querySelector('inventory-machines-model');
+    if (machinesModel && typeof machinesModel.refresh === 'function') {
+        machinesModel.refresh();
+    }
+}
+
+function refreshVehiclesModel() {
+    const vehiclesModel = document.querySelector('inventory-vehicles-model');
+    if (vehiclesModel && typeof vehiclesModel.refresh === 'function') {
+        vehiclesModel.refresh();
+    }
+}
+
 async function loadSectionData(sectionId) {
     try {
         // Don't show loading overlay for section switches - it blocks navigation
@@ -306,10 +350,10 @@ async function loadSectionData(sectionId) {
                 await refreshDashboardOverviewModel();
                 break;
             case 'machines':
-                await loadMachines();
+                refreshMachinesModel();
                 break;
             case 'vehicles':
-                await loadVehicles();
+                refreshVehiclesModel();
                 break;
             case 'catalog':
                 // Load spare parts from database
@@ -340,123 +384,6 @@ async function loadSectionData(sectionId) {
 
 // ==================== MACHINES MANAGEMENT ====================
 
-async function loadMachines() {
-    try {
-        const response = await API.get('/machines');
-        machines = response.data?.machines || [];
-        displayMachines(machines);
-    } catch (error) {
-        console.error('Failed to load machines:', error);
-        Utils.showToast('Failed to load machines', 'error');
-        machines = [];
-        displayMachines([]);
-    }
-}
-
-function displayMachines(machineList) {
-    const machinesList = document.getElementById('machinesList');
-    if (!machinesList) return;
-
-    if (machineList.length === 0) {
-        machinesList.innerHTML = `
-            <div class="card">
-                <p style="text-align: center; color: var(--muted); padding: 40px;">
-                    <i class="fas fa-cogs" style="font-size: 3rem; display: block; margin-bottom: 15px;"></i>
-                    No machines found. <a href="#" onclick="openAddMachineModal()" style="color: var(--royal-blue);">Add your first machine</a>
-                </p>
-            </div>
-        `;
-        return;
-    }
-
-    machinesList.innerHTML = machineList.map(machine => `
-        <div class="inventory-item" data-id="${machine.id}" data-status="${machine.status}">
-            <div class="item-details">
-                <strong><i class="fas fa-cog"></i> ${machine.machine_name}</strong>
-                <div class="item-meta">
-                    <i class="fas fa-hashtag"></i> ${machine.model_number} | 
-                    <i class="fas fa-barcode"></i> ${machine.machine_id}
-                </div>
-                <div class="item-description">
-                    <span class="status-text ${getStatusClass(machine.status)}">${machine.status}</span> | 
-                    <i class="fas fa-map-marker-alt"></i> ${machine.location}
-                </div>
-            </div>
-            <div class="item-actions">
-                <div class="action-buttons">
-                    <button class="btn btn-small btn-primary" onclick="viewMachineDetails(${machine.id})">
-                        <i class="fas fa-eye"></i> VIEW
-                    </button>
-                    <button class="btn btn-small btn-secondary" onclick="editMachine(${machine.id})">
-                        <i class="fas fa-edit"></i> EDIT
-                    </button>
-                    <div class="dropdown-container">
-                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'machine-${machine.id}')">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
-                        <div class="dropdown-menu" id="dropdown-machine-${machine.id}">
-                            ${machine.status === 'For Auction' ? `
-                                <button class="dropdown-item" onclick="removeFromAuction(${machine.id}, 'machine')">
-                                    <i class="fas fa-undo"></i> Remove from Auction
-                                </button>
-                            ` : `
-                                <button class="dropdown-item" onclick="markForAuction(${machine.id}, 'machine')">
-                                    <i class="fas fa-gavel"></i> Mark for Auction
-                                </button>
-                            `}
-                            <button class="dropdown-item danger" onclick="confirmDelete(${machine.id}, 'machine', '${machine.machine_name}')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
-
-function getStatusClass(status) {
-    switch (status) {
-        case 'Active': return 'status-in-stock';
-        case 'Under Maintenance': return 'status-low-stock';
-        case 'Inactive': return 'status-out-of-stock';
-        case 'Decommissioned': return 'status-rejected';
-        case 'For Auction': return 'status-auction';
-        default: return 'status-normal';
-    }
-}
-
-function filterMachines(status) {
-    currentMachineFilter = status;
-
-    // Update filter buttons
-    document.querySelectorAll('#machineFilters .filter-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-
-    // Apply filter
-    const searchValue = document.getElementById('machineSearch').value.toLowerCase();
-    applyMachineFilters(searchValue);
-}
-
-function applyMachineFilters(searchValue = '') {
-    const filteredMachines = machines.filter(machine => {
-        const matchesSearch = !searchValue ||
-            machine.machine_name.toLowerCase().includes(searchValue) ||
-            machine.model_number.toLowerCase().includes(searchValue) ||
-            machine.location.toLowerCase().includes(searchValue);
-
-        const matchesStatus = currentMachineFilter === 'all' || machine.status === currentMachineFilter;
-
-        return matchesSearch && matchesStatus;
-    });
-
-    displayMachines(filteredMachines);
-}
-
-async function refreshMachines() {
-    Utils.showToast('Refreshing machines...', 'info');
-    await loadMachines();
-}
 
 // ==================== MACHINE CRUD OPERATIONS ====================
 
@@ -868,117 +795,6 @@ function viewMachineDetails(id) {
 }
 
 // ==================== VEHICLES MANAGEMENT ====================
-
-async function loadVehicles() {
-    try {
-        const response = await API.get('/vehicles');
-        vehicles = response.data?.vehicles || [];
-        displayVehicles(vehicles);
-    } catch (error) {
-        console.error('Failed to load vehicles:', error);
-        Utils.showToast('Failed to load vehicles', 'error');
-        vehicles = [];
-        displayVehicles([]);
-    }
-}
-
-function displayVehicles(vehicleList) {
-    const vehiclesList = document.getElementById('vehiclesList');
-    if (!vehiclesList) return;
-
-    if (vehicleList.length === 0) {
-        vehiclesList.innerHTML = `
-            <div class="card">
-                <p style="text-align: center; color: var(--muted); padding: 40px;">
-                    <i class="fas fa-truck" style="font-size: 3rem; display: block; margin-bottom: 15px;"></i>
-                    No vehicles found. <a href="#" onclick="openAddVehicleModal()" style="color: var(--royal-blue);">Add your first vehicle</a>
-                </p>
-            </div>
-        `;
-        return;
-    }
-
-    vehiclesList.innerHTML = vehicleList.map(vehicle => `
-        <div class="inventory-item" data-id="${vehicle.id}" data-status="${vehicle.status}">
-            <div class="item-details">
-                <strong><i class="fas fa-truck"></i> ${vehicle.vehicle_name}</strong>
-                <div class="item-meta">
-                    <i class="fas fa-id-card"></i> ${vehicle.number_plate} | 
-                    <i class="fas fa-car"></i> ${vehicle.vehicle_type}
-                </div>
-                <div class="item-description">
-                    <span class="status-text ${getStatusClass(vehicle.status)}">${vehicle.status}</span> | 
-                    <i class="fas fa-tachometer-alt"></i> ${vehicle.current_mileage} km
-                </div>
-            </div>
-            <div class="item-actions">
-                <div class="action-buttons">
-                    <button class="btn btn-small btn-primary" onclick="viewVehicleDetails(${vehicle.id})">
-                        <i class="fas fa-eye"></i> VIEW
-                    </button>
-                    <button class="btn btn-small btn-secondary" onclick="editVehicle(${vehicle.id})">
-                        <i class="fas fa-edit"></i> EDIT
-                    </button>
-                    <div class="dropdown-container">
-                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'vehicle-${vehicle.id}')">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
-                        <div class="dropdown-menu" id="dropdown-vehicle-${vehicle.id}">
-                            <button class="dropdown-item" onclick="updateVehicleMileage(${vehicle.id}); closeAllDropdowns();">
-                                <i class="fas fa-tachometer-alt"></i> Update Mileage
-                            </button>
-                            ${vehicle.status === 'For Auction' ? `
-                                <button class="dropdown-item" onclick="removeFromAuction(${vehicle.id}, 'vehicle')">
-                                    <i class="fas fa-undo"></i> Remove from Auction
-                                </button>
-                            ` : `
-                                <button class="dropdown-item" onclick="markForAuction(${vehicle.id}, 'vehicle')">
-                                    <i class="fas fa-gavel"></i> Mark for Auction
-                                </button>
-                            `}
-                            <button class="dropdown-item danger" onclick="confirmDelete(${vehicle.id}, 'vehicle', '${vehicle.vehicle_name}')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
-
-function filterVehicles(status) {
-    currentVehicleFilter = status;
-
-    // Update filter buttons
-    document.querySelectorAll('#vehicleFilters .filter-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-
-    // Apply filter
-    const searchValue = document.getElementById('vehicleSearch').value.toLowerCase();
-    applyVehicleFilters(searchValue);
-}
-
-function applyVehicleFilters(searchValue = '') {
-    const filteredVehicles = vehicles.filter(vehicle => {
-        const matchesSearch = !searchValue ||
-            vehicle.vehicle_name.toLowerCase().includes(searchValue) ||
-            vehicle.number_plate.toLowerCase().includes(searchValue) ||
-            vehicle.vehicle_type.toLowerCase().includes(searchValue) ||
-            vehicle.chassis_number.toLowerCase().includes(searchValue);
-
-        const matchesStatus = currentVehicleFilter === 'all' || vehicle.status === currentVehicleFilter;
-
-        return matchesSearch && matchesStatus;
-    });
-
-    displayVehicles(filteredVehicles);
-}
-
-async function refreshVehicles() {
-    Utils.showToast('Refreshing vehicles...', 'info');
-    await loadVehicles();
-}
 
 // ==================== VEHICLE CRUD OPERATIONS ====================
 

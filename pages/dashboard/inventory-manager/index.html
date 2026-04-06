@@ -58,60 +58,12 @@
 
                 <!-- Machines Section -->
                 <section class="content-section" id="machines">
-                    <div class="page-header">
-                        <h2 class="page-title"><i class="fas fa-cogs"></i> Machine Management</h2>
-                        <p class="page-subtitle">Manage industrial machines and equipment</p>
-                    </div>
-
-                    <div class="search-bar">
-                        <input type="text" id="machineSearch" class="search-input" placeholder="Search machines...">
-                        <button class="btn btn-primary" onclick="openAddMachineModal()">
-                            <i class="fas fa-plus"></i> Add New Machine
-                        </button>
-                        <button class="btn btn-secondary" onclick="refreshMachines()">
-                            <i class="fas fa-sync"></i> Refresh
-                        </button>
-                    </div>
-
-                    <div class="filter-controls" id="machineFilters">
-                        <button class="filter-btn active" onclick="filterMachines('all')">All</button>
-                        <button class="filter-btn" onclick="filterMachines('Active')">Active</button>
-                        <button class="filter-btn" onclick="filterMachines('Under Maintenance')">Under Maintenance</button>
-                        <button class="filter-btn" onclick="filterMachines('Inactive')">Inactive</button>
-                    </div>
-
-                    <div id="machinesList">
-                        <!-- Machines will be loaded here -->
-                    </div>
+                    <inventory-machines-model></inventory-machines-model>
                 </section>
 
                 <!-- Vehicles Section -->
                 <section class="content-section" id="vehicles">
-                    <div class="page-header">
-                        <h2 class="page-title"><i class="fas fa-truck"></i> Vehicle Management</h2>
-                        <p class="page-subtitle">Manage company vehicles and fleet</p>
-                    </div>
-
-                    <div class="search-bar">
-                        <input type="text" id="vehicleSearch" class="search-input" placeholder="Search vehicles...">
-                        <button class="btn btn-primary" onclick="openAddVehicleModal()">
-                            <i class="fas fa-plus"></i> Add New Vehicle
-                        </button>
-                        <button class="btn btn-secondary" onclick="refreshVehicles()">
-                            <i class="fas fa-sync"></i> Refresh
-                        </button>
-                    </div>
-
-                    <div class="filter-controls" id="vehicleFilters">
-                        <button class="filter-btn active" onclick="filterVehicles('all')">All</button>
-                        <button class="filter-btn" onclick="filterVehicles('Active')">Active</button>
-                        <button class="filter-btn" onclick="filterVehicles('Under Maintenance')">Under Maintenance</button>
-                        <button class="filter-btn" onclick="filterVehicles('Inactive')">Inactive</button>
-                    </div>
-
-                    <div id="vehiclesList">
-                        <!-- Vehicles will be loaded here -->
-                    </div>
+                    <inventory-vehicles-model></inventory-vehicles-model>
                 </section>
 
                 <!-- Spare Parts Catalog -->
@@ -766,6 +718,8 @@
     <script src="./components/usage-tracking-model/script.js"></script>
     <script src="./components/notifications-model/script.js"></script>
     <script src="./components/orders-approvals-model/script.js"></script>
+    <script src="./components/machines-model/script.js"></script>
+    <script src="./components/vehicles-model/script.js"></script>
     <script src="script.js?v=1.7.0"></script>
 </body>
 </html>

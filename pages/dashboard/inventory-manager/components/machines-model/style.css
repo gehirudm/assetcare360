@@ -1,0 +1,14 @@
+/**
+ * Machines Model Component Styles
+ */
+
+inventory-machines-model {
+    display: block;
+}
+
+/* Component-specific overrides */
+inventory-machines-model .inventory-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+}
