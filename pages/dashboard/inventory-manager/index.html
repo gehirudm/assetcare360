@@ -23,6 +23,13 @@
     <script src="../../components/styles/icons.js"></script>
     <script src="../../components/shared/confirm-dialog.js"></script>
     <script src="../../js/dashboard-init.js"></script>
+    
+    <!-- Dashboard-scoped components -->
+    <script src="./components/notifications-model/script.js"></script>
+    <script src="./components/dashboard-overview-model/script.js"></script>
+    <script src="./components/usage-tracking-model/script.js"></script>
+    <script src="./components/orders-approvals-model/script.js"></script>
+
 </head>
 <body>
     <!-- Loading Overlay -->
@@ -46,123 +53,7 @@
         ]'>
                 <!-- Dashboard Section -->
                 <section class="content-section active" id="dashboard">
-                    <div class="page-header">
-                        <h2 class="page-title"><i class="fas fa-chart-line"></i> Dashboard Overview</h2>
-                        <p class="page-subtitle">Welcome! Here's your inventory management summary</p>
-                    </div>
-
-                    <div class="grid">
-                        <div class="summary-card clickable" onclick="navigateTo('catalog')">
-                            <div class="summary-card-content">
-                                <div class="summary-icon">
-                                    <i class="fas fa-boxes"></i>
-                                </div>
-                                <div class="summary-details">
-                                    <div class="summary-title">Spare Parts</div>
-                                    <div class="summary-number" id="totalPartsCount">0</div>
-                                    <div class="summary-description">total parts in catalog</div>
-                                </div>
-                            </div>
-                            <div class="summary-arrow">
-                                <i class="fas fa-chevron-right"></i>
-                            </div>
-                        </div>
-
-                        <div class="summary-card clickable" onclick="navigateTo('catalog')">
-                            <div class="summary-card-content">
-                                <div class="summary-icon">
-                                    <i class="fas fa-exclamation-circle"></i>
-                                </div>
-                                <div class="summary-details">
-                                    <div class="summary-title">Out of Stock</div>
-                                    <div class="summary-number" id="outOfStockCount">0</div>
-                                    <div class="summary-description">items need restocking</div>
-                                </div>
-                            </div>
-                            <div class="summary-arrow">
-                                <i class="fas fa-chevron-right"></i>
-                            </div>
-                        </div>
-
-                        <div class="summary-card clickable" onclick="navigateTo('notifications')">
-                            <div class="summary-card-content">
-                                <div class="summary-icon">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                </div>
-                                <div class="summary-details">
-                                    <div class="summary-title">Low Stock Alerts</div>
-                                    <div class="summary-number" id="lowStockCount">0</div>
-                                    <div class="summary-description">items below threshold</div>
-                                </div>
-                            </div>
-                            <div class="summary-arrow">
-                                <i class="fas fa-chevron-right"></i>
-                            </div>
-                        </div>
-
-                        <div class="summary-card clickable" onclick="navigateTo('machines')">
-                            <div class="summary-card-content">
-                                <div class="summary-icon">
-                                    <i class="fas fa-cogs"></i>
-                                </div>
-                                <div class="summary-details">
-                                    <div class="summary-title">Total Assets</div>
-                                    <div class="summary-number" id="totalAssetsCount">0</div>
-                                    <div class="summary-description">vehicles & machines managed</div>
-                                </div>
-                            </div>
-                            <div class="summary-arrow">
-                                <i class="fas fa-chevron-right"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Recent Activities Section -->
-                    <div class="recent-activities">
-                        <div class="section-header">
-                            <h3 class="section-title">
-                                <i class="fas fa-chart-line"></i> Recent Activities
-                            </h3>
-                        </div>
-
-                        <div class="activities-list" id="activitiesList">
-                            <!-- Activity Item 1 -->
-                            <div class="activity-item">
-                                <div class="activity-content">
-                                    <div class="activity-title">Order Approved</div>
-                                    <div class="activity-meta">Request: REQ-004 | Approved by: Malika Nishantha | 2 hours ago</div>
-                                    <div class="activity-description">Brake pads for TKT-003 - 4 units dispatched</div>
-                                </div>
-                                <div class="activity-status">
-                                    <span class="status-text status-approved">APPROVED</span>
-                                </div>
-                            </div>
-
-                            <!-- Activity Item 2 -->
-                            <div class="activity-item">
-                                <div class="activity-content">
-                                    <div class="activity-title">Low Stock Alert</div>
-                                    <div class="activity-meta">Part: Hydraulic Hoses (HYD-HOSE-25) | 3 hours ago</div>
-                                    <div class="activity-description">Hydraulic hoses below minimum threshold - Reorder recommended</div>
-                                </div>
-                                <div class="activity-status">
-                                    <span class="status-text status-critical">CRITICAL</span>
-                                </div>
-                            </div>
-
-                            <!-- Activity Item 3 -->
-                            <div class="activity-item">
-                                <div class="activity-content">
-                                    <div class="activity-title">New Inventory Added</div>
-                                    <div class="activity-meta">Part: Engine Filters | Added by: System | 5 hours ago</div>
-                                    <div class="activity-description">50 units of engine filters added to catalog</div>
-                                </div>
-                                <div class="activity-status">
-                                    <span class="status-text status-completed">COMPLETED</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <inventory-dashboard-overview-model></inventory-dashboard-overview-model>
                 </section>
 
                 <!-- Machines Section -->
@@ -355,55 +246,7 @@
 
                 <!-- Orders & Approvals -->
                 <section class="content-section" id="orders-approvals">
-                    <div class="page-header">
-                        <h2 class="page-title"><i class="fas fa-clipboard-check"></i> Orders & Approvals</h2>
-                        <p class="page-subtitle">Manage spare part requests from Technical Officers</p>
-                    </div>
-
-                    <!-- Stats Cards -->
-                    <div class="stats-bar" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
-                        <div class="card" style="padding: 15px; text-align: center;">
-                            <div style="font-size: 1.8rem; font-weight: 700; color: var(--tang-blue);" id="ordersTotalCount">0</div>
-                            <div style="font-size: 0.85rem; color: #6b7280;">Total Requests</div>
-                        </div>
-                        <div class="card" style="padding: 15px; text-align: center;">
-                            <div style="font-size: 1.8rem; font-weight: 700; color: #f59e0b;" id="ordersPendingCount">0</div>
-                            <div style="font-size: 0.85rem; color: #6b7280;">Pending</div>
-                        </div>
-                        <div class="card" style="padding: 15px; text-align: center;">
-                            <div style="font-size: 1.8rem; font-weight: 700; color: #10b981;" id="ordersApprovedCount">0</div>
-                            <div style="font-size: 0.85rem; color: #6b7280;">Approved</div>
-                        </div>
-                        <div class="card" style="padding: 15px; text-align: center;">
-                            <div style="font-size: 1.8rem; font-weight: 700; color: #ef4444;" id="ordersRejectedCount">0</div>
-                            <div style="font-size: 0.85rem; color: #6b7280;">Rejected</div>
-                        </div>
-                    </div>
-
-                    <!-- Search Bar -->
-                    <div class="search-bar">
-                        <input type="text" id="orderSearch" class="search-input" placeholder="Search by request ID, ticket, equipment, or parts..." oninput="filterSparePartOrders()">
-                        <button class="btn btn-secondary" onclick="loadSparePartOrders()">
-                            <i class="fas fa-sync"></i> Refresh
-                        </button>
-                    </div>
-
-                    <!-- Filter Tabs -->
-                    <div class="filter-controls" id="orderFilterTabs">
-                        <button class="filter-btn active" onclick="filterOrdersByStatus('all')">All Orders</button>
-                        <button class="filter-btn" onclick="filterOrdersByStatus('Pending')">Pending</button>
-                        <button class="filter-btn" onclick="filterOrdersByStatus('Approved')">Approved</button>
-                        <button class="filter-btn" onclick="filterOrdersByStatus('Issued')">Issued</button>
-                        <button class="filter-btn" onclick="filterOrdersByStatus('Rejected')">Rejected</button>
-                    </div>
-
-                    <!-- Orders List (vehicle-list style) -->
-                    <div id="ordersList">
-                        <div style="text-align: center; padding: 40px; color: #6b7280;">
-                            <i class="fas fa-spinner fa-spin" style="font-size: 2em; margin-bottom: 10px;"></i>
-                            <p>Loading spare part requests...</p>
-                        </div>
-                    </div>
+                    <inventory-orders-approvals-model></inventory-orders-approvals-model>
                 </section>
 
                 <!-- Sparepart Addition Section -->
@@ -446,113 +289,12 @@
 
                 <!-- Usage Tracking -->
                 <section class="content-section" id="usage-tracking">
-                    <div class="page-header">
-                        <h1 class="page-title">Usage Tracking</h1>
-                        <p class="page-subtitle">Track sparepart issuance - select a sparepart and click Update to issue</p>
-                    </div>
-
-                    <div class="search-bar">
-                        <input type="text" id="usageSearch" class="search-input" placeholder="Search by sparepart ID or name..." oninput="filterUsageTable()">
-                    </div>
-
-                    <!-- Available Spareparts List -->
-                    <div class="card">
-                        <div class="card-header">
-                            <span><i class="fas fa-boxes"></i> Available Spareparts</span>
-                        </div>
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Sparepart ID</th>
-                                    <th>Sparepart Name</th>
-                                    <th>Category</th>
-                                    <th>Available Qty</th>
-                                    <th>Issued Qty</th>
-                                    <th>Last Issue Date</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="usageTableBody">
-                                <tr>
-                                    <td colspan="7" style="text-align: center; padding: 30px; color: #6b7280;">
-                                        <i class="fas fa-spinner fa-spin"></i> Loading spareparts...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <inventory-usage-tracking-model></inventory-usage-tracking-model>
                 </section>
 
                 <!-- Notifications -->
                 <section class="content-section" id="notifications">
-                    <div class="page-header">
-                        <h1 class="page-title">Notifications</h1>
-                        <p class="page-subtitle">Manage low stock alerts and pending orders</p>
-                    </div>
-
-                    <!-- Low Stock Alerts -->
-                    <div class="card">
-                        <div class="card-header">
-                            <span><i class="fas fa-exclamation-triangle"></i> Low Stock Alerts</span>
-                            <button class="btn btn-secondary btn-small" onclick="configureAlerts()"><i class="fas fa-cog"></i> Configure</button>
-                        </div>
-                        <div id="lowStockAlerts">
-                            <div class="notification-item danger" data-id="low-stock-1">
-                                <span class="notification-icon"><i class="fas fa-exclamation-triangle"></i></span>
-                                <div style="flex: 1;">
-                                    <strong>Low Stock Alert:</strong> Hydraulic hoses (HYD-HOSE-25) - Only 3 units remaining
-                                    <div style="margin-top: 5px;">
-                                        <button class="btn btn-primary btn-small" onclick="reorderPart('HYD-HOSE-25')"><i class="fas fa-sync"></i> Reorder</button>
-                                        <button class="btn btn-secondary btn-small" onclick="viewPartDetails('HYD-HOSE-25')"><i class="fas fa-eye"></i> View</button>
-                                        <button class="btn btn-danger btn-small" onclick="dismissNotification('low-stock-1')"><i class="fas fa-times"></i> Dismiss</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="notification-item warning" data-id="low-stock-2">
-                                <span class="notification-icon"><i class="fas fa-clock"></i></span>
-                                <div style="flex: 1;">
-                                    <strong>Low Stock Alert:</strong> Engine oil (EO-15W40) - Only 2 units remaining
-                                    <div style="margin-top: 5px;">
-                                        <button class="btn btn-primary btn-small" onclick="reorderPart('EO-15W40')"><i class="fas fa-sync"></i> Reorder</button>
-                                        <button class="btn btn-secondary btn-small" onclick="viewPartDetails('EO-15W40')"><i class="fas fa-eye"></i> View</button>
-                                        <button class="btn btn-danger btn-small" onclick="dismissNotification('low-stock-2')"><i class="fas fa-times"></i> Dismiss</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Pending Order Notifications -->
-                    <div class="card">
-                        <div class="card-header">
-                            <span><i class="fas fa-clipboard-list"></i> Pending Orders</span>
-                            <button class="btn btn-success btn-small" onclick="approveAllOrders()"><i class="fas fa-check-double"></i> Approve All</button>
-                        </div>
-                        <div id="pendingNotifications">
-                            <div class="notification-item info" data-id="pending-notif-1">
-                                <span class="notification-icon"><i class="fas fa-clipboard-list"></i></span>
-                                <div style="flex: 1;">
-                                    <strong>New Approval Required:</strong> REQ-003 - Hydraulic pump for critical breakdown
-                                    <div style="margin-top: 5px;">
-                                        <button class="btn btn-success btn-small" onclick="quickApprove('REQ-003')"><i class="fas fa-check"></i> Quick Approve</button>
-                                        <button class="btn btn-secondary btn-small" onclick="viewRequest('REQ-003')"><i class="fas fa-eye"></i> Review</button>
-                                        <button class="btn btn-danger btn-small" onclick="quickReject('REQ-003')"><i class="fas fa-times"></i> Reject</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="notification-item info" data-id="pending-notif-2">
-                                <span class="notification-icon"><i class="fas fa-clipboard-list"></i></span>
-                                <div style="flex: 1;">
-                                    <strong>Pending Approval:</strong> REQ-001 - Brake pads requested
-                                    <div style="margin-top: 5px;">
-                                        <button class="btn btn-success btn-small" onclick="quickApprove('REQ-001')"><i class="fas fa-check"></i> Quick Approve</button>
-                                        <button class="btn btn-secondary btn-small" onclick="viewRequest('REQ-001')"><i class="fas fa-eye"></i> Review</button>
-                                        <button class="btn btn-danger btn-small" onclick="quickReject('REQ-001')"><i class="fas fa-times"></i> Reject</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <inventory-notifications-model></inventory-notifications-model>
                 </section>
     </ac-layout>
 
@@ -789,17 +531,6 @@
         </div>
     </div>
 
-    <!-- Order Action Modal -->
-    <div id="orderActionModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 id="orderActionTitle"></h4>
-                <button class="btn-close" onclick="closeModal('orderActionModal')">&times;</button>
-            </div>
-            <div id="orderActionContent"></div>
-        </div>
-    </div>
-
     <!-- Add Usage Entry Modal -->
     <!-- Issue Sparepart Modal -->
     <div id="issueModal" class="modal">
@@ -1031,6 +762,10 @@
     <confirm-dialog></confirm-dialog>
 
     <!-- Load JavaScript -->
+    <script src="./components/dashboard-overview-model/script.js"></script>
+    <script src="./components/usage-tracking-model/script.js"></script>
+    <script src="./components/notifications-model/script.js"></script>
+    <script src="./components/orders-approvals-model/script.js"></script>
     <script src="script.js?v=1.7.0"></script>
 </body>
 </html>

@@ -65,13 +65,20 @@ async function initializeApp() {
         // Load current user info
         await loadCurrentUser();
 
-        // Load dashboard data
-        await loadDashboardData().catch(err => {
-            console.warn('Dashboard data loading failed:', err);
-        });
-
         // Initialize search handlers
         initializeSearchHandlers();
+
+        // Wire section component events and initialize overview metrics
+        bindDashboardOverviewModel();
+        await refreshDashboardOverviewModel().catch(err => {
+            console.warn('Initial dashboard overview refresh failed:', err);
+        });
+
+        // Wire section component events and initialize notification badge state
+        bindNotificationsModel();
+        await refreshNotificationsModel().catch(err => {
+            console.warn('Initial notifications refresh failed:', err);
+        });
 
         // Load initial data for active section
         const activeSection = document.querySelector('.content-section.active')?.id;
@@ -156,6 +163,139 @@ document.querySelector('ac-layout')
         });
     });
 
+// Orders & Approvals component event bridge
+document.addEventListener('inventory-orders-approvals:count-change', (e) => {
+    const count = e.detail.count;
+    // Update sidebar badge if needed (currently no badge for orders-approvals)
+    console.log(`Orders pending count: ${count}`);
+});
+
+function bindDashboardOverviewModel() {
+    const dashboardModel = document.querySelector('inventory-dashboard-overview-model');
+    if (!dashboardModel || dashboardModel._inventoryDashboardOverviewBound) {
+        return;
+    }
+
+    dashboardModel._inventoryDashboardOverviewBound = true;
+
+    dashboardModel.addEventListener('inventory-dashboard-overview:navigate', event => {
+        const section = event.detail?.section;
+        if (!section) return;
+
+        const layout = document.querySelector('ac-layout');
+        if (layout && typeof layout.navigateTo === 'function') {
+            layout.navigateTo(section);
+        }
+    });
+}
+
+async function refreshDashboardOverviewModel() {
+    const dashboardModel = document.querySelector('inventory-dashboard-overview-model');
+    if (!dashboardModel || typeof dashboardModel.refresh !== 'function') {
+        return;
+    }
+
+    await dashboardModel.refresh();
+}
+
+function bindNotificationsModel() {
+    const notificationsModel = document.querySelector('inventory-notifications-model');
+    if (!notificationsModel || notificationsModel._inventoryNotificationsBound) {
+        return;
+    }
+
+    notificationsModel._inventoryNotificationsBound = true;
+
+    notificationsModel.addEventListener('inventory-notifications:reorder', event => {
+        const sparepartId = event.detail?.sparepartId;
+        if (!sparepartId) return;
+        reorderPart(sparepartId);
+    });
+
+    notificationsModel.addEventListener('inventory-notifications:view-part', event => {
+        const sparepartId = event.detail?.sparepartId;
+        if (!sparepartId) return;
+        viewPartDetails(sparepartId);
+    });
+
+    notificationsModel.addEventListener('inventory-notifications:view-order', async event => {
+        try {
+            const orderId = event.detail?.orderId;
+            if (!orderId) return;
+
+            // Navigate to orders-approvals section
+            const layout = document.querySelector('ac-layout');
+            if (layout && typeof layout.navigateTo === 'function') {
+                layout.navigateTo('orders-approvals');
+                
+                // Wait a moment for the component to load, then trigger view
+                setTimeout(() => {
+                    const ordersModel = document.querySelector('inventory-orders-approvals-model');
+                    if (ordersModel && typeof ordersModel.viewOrderDetails === 'function') {
+                        ordersModel.viewOrderDetails(orderId);
+                    }
+                }, 100);
+            }
+        } catch (error) {
+            console.error('Failed to open order from notifications:', error);
+            Utils.showToast('Unable to open request details right now.', 'error');
+        }
+    });
+
+    notificationsModel.addEventListener('inventory-notifications:order-updated', async () => {
+        try {
+            await Promise.all([
+                refreshOrdersApprovalsModel(),
+                refreshDashboardOverviewModel()
+            ]);
+        } catch (error) {
+            console.error('Failed to sync orders after notification action:', error);
+        }
+    });
+
+    notificationsModel.addEventListener('inventory-notifications:count-change', event => {
+        const count = Number(event.detail?.count) || 0;
+        const sidebar = document.querySelector('ac-layout ac-sidebar');
+        if (sidebar && typeof sidebar.setNotifBadge === 'function') {
+            sidebar.setNotifBadge(count);
+        }
+    });
+}
+
+async function refreshNotificationsModel() {
+    const notificationsModel = document.querySelector('inventory-notifications-model');
+    if (!notificationsModel || typeof notificationsModel.refresh !== 'function') {
+        return;
+    }
+
+    await notificationsModel.refresh();
+}
+
+async function refreshUsageTrackingModel() {
+    const usageModel = document.querySelector('inventory-usage-tracking-model');
+    if (!usageModel || typeof usageModel.refresh !== 'function') {
+        return;
+    }
+
+    await usageModel.refresh();
+}
+
+async function refreshOrdersApprovalsModel() {
+    const ordersModel = document.querySelector('inventory-orders-approvals-model');
+    if (!ordersModel) {
+        return;
+    }
+
+    // Set current user if not already set
+    if (currentUser && typeof ordersModel.setCurrentUser === 'function') {
+        ordersModel.setCurrentUser(currentUser);
+    }
+
+    if (typeof ordersModel.refresh === 'function') {
+        await ordersModel.refresh();
+    }
+}
+
 async function loadSectionData(sectionId) {
     try {
         // Don't show loading overlay for section switches - it blocks navigation
@@ -163,7 +303,7 @@ async function loadSectionData(sectionId) {
 
         switch (sectionId) {
             case 'dashboard':
-                await loadDashboardData();
+                await refreshDashboardOverviewModel();
                 break;
             case 'machines':
                 await loadMachines();
@@ -180,13 +320,13 @@ async function loadSectionData(sectionId) {
                 await loadRecentAdditions();
                 break;
             case 'orders-approvals':
-                await loadSparePartOrders();
+                refreshOrdersApprovalsModel();
                 break;
             case 'usage-tracking':
-                await loadUsageTracking();
+                await refreshUsageTrackingModel();
                 break;
             case 'notifications':
-                // Load notifications if implemented
+                await refreshNotificationsModel();
                 break;
         }
 
@@ -196,91 +336,6 @@ async function loadSectionData(sectionId) {
         Utils.showToast(`Failed to load ${sectionId} data`, 'error');
         // showLoading(false);
     }
-}
-
-// ==================== DASHBOARD DATA ====================
-
-async function loadDashboardData() {
-    try {
-        // Load all data in parallel
-        const [machinesResponse, vehiclesResponse, productsResponse] = await Promise.all([
-            API.get('/machines'),
-            API.get('/vehicles'),
-            API.get('/products')
-        ]);
-
-        // Get counts
-        const machinesCount = machinesResponse.data?.machines?.length || 0;
-        const vehiclesCount = vehiclesResponse.data?.vehicles?.length || 0;
-        const products = productsResponse.data?.products || [];
-
-        // Calculate stock statistics
-        const totalParts = products.length;
-        const lowStockParts = products.filter(p => {
-            const qty = parseInt(p.quantity) || 0;
-            return qty > 0 && qty <= 10;
-        }).length;
-        const outOfStockParts = products.filter(p => parseInt(p.quantity) === 0).length;
-
-        // Update dashboard cards
-        const totalPartsEl = document.getElementById('totalPartsCount');
-        const lowStockEl = document.getElementById('lowStockCount');
-        const outOfStockEl = document.getElementById('outOfStockCount');
-        const totalAssetsEl = document.getElementById('totalAssetsCount');
-
-        if (totalPartsEl) totalPartsEl.textContent = totalParts;
-        if (lowStockEl) lowStockEl.textContent = lowStockParts;
-        if (outOfStockEl) outOfStockEl.textContent = outOfStockParts;
-        if (totalAssetsEl) totalAssetsEl.textContent = machinesCount + vehiclesCount;
-
-        // Update old elements if they exist (for backwards compatibility)
-        const totalMachinesEl = document.getElementById('totalMachines');
-        const totalVehiclesEl = document.getElementById('totalVehicles');
-        if (totalMachinesEl) totalMachinesEl.textContent = machinesCount;
-        if (totalVehiclesEl) totalVehiclesEl.textContent = vehiclesCount;
-
-        // Update recent activity
-        updateRecentActivity();
-
-    } catch (error) {
-        console.error('Failed to load dashboard data:', error);
-    }
-}
-
-function updateUrgentItems(machinesDue, vehiclesDue) {
-    const urgentItems = document.getElementById('urgentItems');
-    if (!urgentItems) return;
-
-    let urgentText = '';
-
-    if (machinesDue.length > 0) {
-        urgentText += `${machinesDue.length} machine${machinesDue.length > 1 ? 's' : ''} due for service<br>`;
-    }
-
-    if (vehiclesDue.length > 0) {
-        urgentText += `${vehiclesDue.length} vehicle${vehiclesDue.length > 1 ? 's' : ''} due for service<br>`;
-    }
-
-    if (!urgentText) {
-        urgentText = 'No urgent items requiring attention';
-    }
-
-    urgentItems.innerHTML = urgentText;
-}
-
-function updateRecentActivity() {
-    const recentActivity = document.getElementById('recentActivity');
-    if (!recentActivity) return;
-
-    // This would typically come from an API endpoint
-    const activities = [
-        'Machine M001 serviced successfully',
-        'New vehicle V005 added to fleet',
-        'Spare part order approved',
-        'Maintenance scheduled for next week'
-    ];
-
-    recentActivity.innerHTML = activities.map(activity => `• ${activity}`).join('<br>');
 }
 
 // ==================== MACHINES MANAGEMENT ====================
@@ -2280,800 +2335,6 @@ document.getElementById('reorderForm').addEventListener('submit', function (e) {
     closeModal('reorderModal');
     this.reset();
 });
-
-// ==================== ORDER MANAGEMENT FUNCTIONS ====================
-
-// Store all loaded spare part requests
-let allSparePartRequests = [];
-let currentOrderFilter = 'all';
-
-/**
- * Load spare part requests from API
- */
-async function loadSparePartOrders() {
-    try {
-        const response = await API.get('/spare-part-requests');
-        if (response.status === 'success') {
-            allSparePartRequests = response.data || [];
-            updateOrderStats(allSparePartRequests);
-            applyOrderFilters();
-        } else {
-            console.error('Failed to load spare part requests:', response);
-            Utils.showToast('Failed to load spare part requests', 'error');
-            displayOrders([]);
-        }
-    } catch (error) {
-        console.error('Error loading spare part orders:', error);
-        Utils.showToast('Failed to load spare part requests', 'error');
-        displayOrders([]);
-    }
-}
-
-/**
- * Update stats cards
- */
-function updateOrderStats(requests) {
-    const pending = requests.filter(r => r.status === 'Pending').length;
-    const approved = requests.filter(r => r.status === 'Approved').length;
-    const rejected = requests.filter(r => r.status === 'Rejected').length;
-
-    const el = id => document.getElementById(id);
-    if (el('ordersTotalCount')) el('ordersTotalCount').textContent = requests.length;
-    if (el('ordersPendingCount')) el('ordersPendingCount').textContent = pending;
-    if (el('ordersApprovedCount')) el('ordersApprovedCount').textContent = approved;
-    if (el('ordersRejectedCount')) el('ordersRejectedCount').textContent = rejected;
-}
-
-/**
- * Filter by status tab
- */
-function filterOrdersByStatus(status) {
-    currentOrderFilter = status;
-
-    // Update active button
-    document.querySelectorAll('#orderFilterTabs .filter-btn').forEach(btn => {
-        btn.classList.remove('active');
-        const btnStatus = btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
-        if (btnStatus === status) btn.classList.add('active');
-    });
-
-    applyOrderFilters();
-}
-
-/**
- * Filter by search text
- */
-function filterSparePartOrders() {
-    applyOrderFilters();
-}
-
-/**
- * Apply both status filter and search filter, then render
- */
-function applyOrderFilters() {
-    const searchValue = (document.getElementById('orderSearch')?.value || '').toLowerCase();
-
-    const filtered = allSparePartRequests.filter(order => {
-        // Status filter
-        const matchesStatus = currentOrderFilter === 'all' || order.status === currentOrderFilter;
-
-        // Search filter
-        const matchesSearch = !searchValue ||
-            (order.request_id || '').toLowerCase().includes(searchValue) ||
-            (order.ticket_id_formatted || '').toLowerCase().includes(searchValue) ||
-            (order.fault_ticket_code || '').toLowerCase().includes(searchValue) ||
-            (order.equipment_name || '').toLowerCase().includes(searchValue) ||
-            (order.location || '').toLowerCase().includes(searchValue) ||
-            (order.requested_by_name || '').toLowerCase().includes(searchValue) ||
-            (order.additional_notes || '').toLowerCase().includes(searchValue) ||
-            (order.items || []).some(i =>
-                (i.part_name || '').toLowerCase().includes(searchValue) ||
-                (i.part_code || '').toLowerCase().includes(searchValue)
-            );
-
-        return matchesStatus && matchesSearch;
-    });
-
-    displayOrders(filtered);
-}
-
-/**
- * Render orders as vehicle-list style cards
- */
-function displayOrders(orderList) {
-    const container = document.getElementById('ordersList');
-    if (!container) return;
-
-    if (orderList.length === 0) {
-        container.innerHTML = `
-            <div class="card">
-                <p style="text-align: center; color: var(--muted); padding: 40px;">
-                    <i class="fas fa-clipboard-check" style="font-size: 3rem; display: block; margin-bottom: 15px;"></i>
-                    No spare part requests found.
-                </p>
-            </div>`;
-        return;
-    }
-
-    container.innerHTML = orderList.map(order => {
-        const statusClass = order.status === 'Approved' ? 'status-approved' :
-            order.status === 'Rejected' ? 'status-rejected' :
-                order.status === 'Issued' ? 'status-resolved' : 'status-pending';
-
-        const priorityClass = (order.priority || '').toLowerCase() === 'critical' ? 'status-critical' :
-            (order.priority || '').toLowerCase() === 'high' ? 'status-low-stock' : 'status-pending';
-
-        const dateStr = new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-        const ticketType = (order.ticket_id_formatted || '').startsWith('VBD') ? 'Vehicle Breakdown' :
-            (order.ticket_id_formatted || '').startsWith('MBD') ? 'Machine Breakdown' :
-                (order.ticket_id_formatted || '').startsWith('RBD') ? 'Routine Breakdown' : 'Fault Ticket';
-
-        const partsCount = (order.items || []).reduce((sum, i) => sum + i.quantity, 0);
-        const partsLabel = `${(order.items || []).length} part${(order.items || []).length !== 1 ? 's' : ''} (${partsCount} units)`;
-
-        // Build action buttons based on status
-        let actionButtons = '';
-        if (order.status === 'Pending') {
-            actionButtons = `
-                <div class="action-buttons">
-                    <button class="btn btn-small btn-primary" onclick="event.stopPropagation(); viewOrderDetails(${order.id})">
-                        <i class="fas fa-eye"></i> VIEW
-                    </button>
-                    <button class="btn btn-small" style="background: #10b981; color: white;" onclick="event.stopPropagation(); approveOrder(${order.id})">
-                        <i class="fas fa-check"></i> APPROVE
-                    </button>
-                    <button class="btn btn-small" style="background: #ef4444; color: white;" onclick="event.stopPropagation(); rejectOrder(${order.id})">
-                        <i class="fas fa-times"></i> REJECT
-                    </button>
-                </div>`;
-        } else {
-            actionButtons = `
-                <div class="action-buttons">
-                    <button class="btn btn-small btn-primary" onclick="event.stopPropagation(); viewOrderDetails(${order.id})">
-                        <i class="fas fa-eye"></i> VIEW
-                    </button>
-                </div>`;
-        }
-
-        return `
-        <div class="inventory-item" data-id="${order.id}" data-status="${order.status}" onclick="viewOrderDetails(${order.id})" style="cursor: pointer;">
-            <div class="item-details" style="flex: 1;">
-                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;">
-                    <strong style="display: inline; margin-bottom: 0;"><i class="fas fa-file-alt" style="color: var(--tang-blue);"></i> ${order.request_id}</strong>
-                    <span class="status-text ${statusClass}">${order.status}</span>
-                    <span class="status-text ${priorityClass}">${order.priority}</span>
-                </div>
-                <div class="item-meta">
-                    <i class="fas fa-ticket-alt" style="color: var(--tang-blue);"></i> <strong>${order.ticket_id_formatted || '-'}</strong> — ${ticketType} |
-                    <i class="fas fa-cog"></i> ${order.equipment_name || '-'}
-                </div>
-                <div class="item-description">
-                    <i class="fas fa-box" style="color: #6b7280;"></i> ${partsLabel} |
-                    <i class="fas fa-user"></i> ${order.requested_by_name || '-'} |
-                    <i class="fas fa-calendar"></i> ${dateStr}
-                </div>
-            </div>
-            <div class="item-actions" onclick="event.stopPropagation();">
-                ${actionButtons}
-            </div>
-        </div>`;
-    }).join('');
-}
-
-/**
- * Approve order - shows modal then calls API
- */
-function approveOrder(orderId) {
-    console.log('approveOrder called with orderId:', orderId);
-
-    // Close any open details modals first
-    document.querySelectorAll('.modal[id^="detailsModal_"]').forEach(m => {
-        m.classList.remove('active');
-        setTimeout(() => m.remove(), 300);
-    });
-
-    const order = allSparePartRequests.find(r => r.id == orderId);
-    if (!order) {
-        console.error('Order not found in allSparePartRequests for id:', orderId);
-        Utils.showToast('Order not found. Please refresh and try again.', 'error');
-        return;
-    }
-
-    const partsText = (order.items || []).map(i => `${i.part_name} (×${i.quantity})`).join(', ');
-
-    const title = document.getElementById('orderActionTitle');
-    const content = document.getElementById('orderActionContent');
-
-    if (!title || !content) {
-        console.error('orderActionTitle or orderActionContent element not found');
-        Utils.showToast('Modal elements not found. Please refresh the page.', 'error');
-        return;
-    }
-
-    title.innerHTML = '<i class="fas fa-check-circle" style="color: #10b981;"></i> Approve Spare Parts Request';
-    content.innerHTML = `
-        <form onsubmit="event.preventDefault(); confirmApproval(${orderId});">
-            <div class="form-section">
-                <p>Are you sure you want to approve request <strong>${order.request_id}</strong>?</p>
-                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; margin: 10px 0;">
-                    <p style="margin: 4px 0;"><strong>Ticket:</strong> ${order.ticket_id_formatted || '-'}</p>
-                    <p style="margin: 4px 0;"><strong>Equipment:</strong> ${order.equipment_name || '-'}</p>
-                    <p style="margin: 4px 0;"><strong>Parts:</strong> ${partsText || '-'}</p>
-                    <p style="margin: 4px 0;"><strong>Requested By:</strong> ${order.requested_by_name || '-'}</p>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Approval Notes (Optional)</label>
-                    <textarea class="form-textarea" id="approvalNotes" placeholder="Add any notes for this approval..."></textarea>
-                </div>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Confirm Approval</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal('orderActionModal')"><i class="fas fa-times"></i> Cancel</button>
-            </div>
-        </form>
-    `;
-
-    openModal('orderActionModal');
-}
-
-/**
- * Reject order - shows modal then calls API
- */
-function rejectOrder(orderId) {
-    console.log('rejectOrder called with orderId:', orderId);
-
-    // Close any open details modals first
-    document.querySelectorAll('.modal[id^="detailsModal_"]').forEach(m => {
-        m.classList.remove('active');
-        setTimeout(() => m.remove(), 300);
-    });
-
-    const order = allSparePartRequests.find(r => r.id == orderId);
-    if (!order) {
-        console.error('Order not found in allSparePartRequests for id:', orderId);
-        Utils.showToast('Order not found. Please refresh and try again.', 'error');
-        return;
-    }
-
-    const partsText = (order.items || []).map(i => `${i.part_name} (×${i.quantity})`).join(', ');
-
-    const title = document.getElementById('orderActionTitle');
-    const content = document.getElementById('orderActionContent');
-
-    if (!title || !content) {
-        console.error('orderActionTitle or orderActionContent element not found');
-        Utils.showToast('Modal elements not found. Please refresh the page.', 'error');
-        return;
-    }
-
-    title.innerHTML = '<i class="fas fa-times-circle" style="color: #ef4444;"></i> Reject Spare Parts Request';
-    content.innerHTML = `
-        <form onsubmit="event.preventDefault(); confirmRejection(${orderId});">
-            <div class="form-section">
-                <p>Please provide a reason for rejecting request <strong>${order.request_id}</strong>:</p>
-                <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; margin: 10px 0;">
-                    <p style="margin: 4px 0;"><strong>Ticket:</strong> ${order.ticket_id_formatted || '-'}</p>
-                    <p style="margin: 4px 0;"><strong>Equipment:</strong> ${order.equipment_name || '-'}</p>
-                    <p style="margin: 4px 0;"><strong>Parts:</strong> ${partsText || '-'}</p>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Rejection Reason</label>
-                    <select class="form-select" id="rejectionReason" required>
-                        <option value="">Select Reason</option>
-                        <option value="Out of Stock">Item Out of Stock</option>
-                        <option value="Insufficient Justification">Insufficient Justification</option>
-                        <option value="Budget Constraints">Budget Constraints</option>
-                        <option value="Alternative Available">Alternative Part Available</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Additional Comments</label>
-                    <textarea class="form-textarea" id="rejectionComments" placeholder="Provide detailed reason for rejection..." required></textarea>
-                </div>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <button type="submit" class="btn btn-danger"><i class="fas fa-times"></i> Confirm Rejection</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal('orderActionModal')">Cancel</button>
-            </div>
-        </form>
-    `;
-
-    openModal('orderActionModal');
-}
-
-/**
- * Confirm approval - calls API
- */
-async function confirmApproval(orderId) {
-    console.log('confirmApproval called with orderId:', orderId, 'currentUser:', currentUser);
-    try {
-        const notes = document.getElementById('approvalNotes')?.value || '';
-        const response = await API.post(`/spare-part-requests/${orderId}/approve`, {
-            reviewed_by: currentUser?.id,
-            notes: notes
-        });
-
-        console.log('Approve API response:', response);
-
-        if (response.status === 'success') {
-            Utils.showToast('Spare parts request approved! Fault ticket updated to Parts Approved.', 'success');
-            closeModal('orderActionModal');
-            await loadSparePartOrders();
-        } else {
-            Utils.showToast('Failed to approve: ' + (response.message || 'Unknown error'), 'error');
-        }
-    } catch (error) {
-        console.error('Error approving order:', error);
-        Utils.showToast('Failed to approve request: ' + error.message, 'error');
-    }
-}
-
-/**
- * Confirm rejection - calls API
- */
-async function confirmRejection(orderId) {
-    console.log('confirmRejection called with orderId:', orderId, 'currentUser:', currentUser);
-    try {
-        const reason = document.getElementById('rejectionReason')?.value || '';
-        const comments = document.getElementById('rejectionComments')?.value || '';
-        const notes = reason + (comments ? ': ' + comments : '');
-
-        if (!reason) {
-            Utils.showToast('Please select a rejection reason', 'error');
-            return;
-        }
-
-        const response = await API.post(`/spare-part-requests/${orderId}/reject`, {
-            reviewed_by: currentUser?.id,
-            notes: notes
-        });
-
-        console.log('Reject API response:', response);
-
-        if (response.status === 'success') {
-            Utils.showToast('Spare parts request rejected.', 'info');
-            closeModal('orderActionModal');
-            await loadSparePartOrders();
-        } else {
-            Utils.showToast('Failed to reject: ' + (response.message || 'Unknown error'), 'error');
-        }
-    } catch (error) {
-        console.error('Error rejecting order:', error);
-        Utils.showToast('Failed to reject request: ' + error.message, 'error');
-    }
-}
-
-/**
- * View order details - full modal with ticket summary + parts table
- */
-function viewOrderDetails(orderId) {
-    const order = allSparePartRequests.find(r => r.id == orderId);
-    if (!order) {
-        Utils.showToast('Order not found', 'error');
-        return;
-    }
-
-    const statusClass = order.status === 'Approved' ? 'status-approved' :
-        order.status === 'Rejected' ? 'status-rejected' :
-            order.status === 'Issued' ? 'status-resolved' : 'status-pending';
-    const priorityClass = (order.priority || '').toLowerCase() === 'critical' ? 'status-critical' :
-        (order.priority || '').toLowerCase() === 'high' ? 'status-low-stock' : 'status-pending';
-    const dateStr = new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    const reviewDate = order.reviewed_at ? new Date(order.reviewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
-
-    const ticketType = (order.ticket_id_formatted || '').startsWith('VBD') ? 'Vehicle Breakdown' :
-        (order.ticket_id_formatted || '').startsWith('MBD') ? 'Machine Breakdown' :
-            (order.ticket_id_formatted || '').startsWith('RBD') ? 'Routine Breakdown' : 'Fault Ticket';
-
-    const partsHTML = order.items && order.items.length > 0
-        ? `<table style="width: 100%; border-collapse: collapse; margin-top: 8px;">
-            <thead><tr style="background: #f3f4f6;">
-                <th style="padding: 8px; text-align: left; border-bottom: 2px solid #e5e7eb;">Part Code</th>
-                <th style="padding: 8px; text-align: left; border-bottom: 2px solid #e5e7eb;">Part Name</th>
-                <th style="padding: 8px; text-align: center; border-bottom: 2px solid #e5e7eb;">Qty</th>
-            </tr></thead>
-            <tbody>
-                ${order.items.map(item => `
-                    <tr>
-                        <td style="padding: 8px; border-bottom: 1px solid #f3f4f6; font-weight: 600;">${item.part_code || '-'}</td>
-                        <td style="padding: 8px; border-bottom: 1px solid #f3f4f6;">${item.part_name}</td>
-                        <td style="padding: 8px; text-align: center; border-bottom: 1px solid #f3f4f6; font-weight: 700;">${item.quantity}</td>
-                    </tr>`).join('')}
-            </tbody>
-           </table>`
-        : '<p style="color: #9ca3af;">No parts listed</p>';
-
-    // Build action buttons for pending orders in the details modal
-    let modalActions = '';
-    if (order.status === 'Pending') {
-        modalActions = `
-        <div style="display: flex; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
-            <button class="btn btn-success" onclick="approveOrder(${order.id})">
-                <i class="fas fa-check"></i> Approve Request
-            </button>
-            <button class="btn btn-danger" onclick="rejectOrder(${order.id})">
-                <i class="fas fa-times"></i> Reject Request
-            </button>
-        </div>`;
-    }
-
-    const modal = createDetailsModal(`Spare Parts Request — ${order.request_id}`, `
-        <div class="form-section">
-            <h5><i class="fas fa-info-circle"></i> Request Information</h5>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                <p><strong>Request ID:</strong> ${order.request_id}</p>
-                <p><strong>Status:</strong> <span class="status-text ${statusClass}">${order.status}</span></p>
-                <p><strong>Priority:</strong> <span class="status-text ${priorityClass}">${order.priority}</span></p>
-                <p><strong>Requested By:</strong> ${order.requested_by_name || '-'}</p>
-                <p><strong>Request Date:</strong> ${dateStr}</p>
-                <p><strong>Location:</strong> ${order.location || '-'}</p>
-            </div>
-        </div>
-        <div class="form-section" style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 14px;">
-            <h5><i class="fas fa-ticket-alt" style="color: var(--tang-blue);"></i> Linked Ticket Summary</h5>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                <p><strong>Ticket ID:</strong> <span style="color: var(--tang-blue); font-weight: 700;">${order.ticket_id_formatted || '-'}</span></p>
-                <p><strong>Type:</strong> ${ticketType}</p>
-                <p><strong>Equipment:</strong> ${order.equipment_name || '-'}</p>
-                <p><strong>Ticket Status:</strong> <span class="status-text ${order.ticket_status?.toLowerCase().includes('approved') ? 'status-approved' : 'status-pending'}">${order.ticket_status || '-'}</span></p>
-            </div>
-            ${order.ticket_description ? `<p style="margin-top: 8px;"><strong>Description:</strong> ${order.ticket_description}</p>` : ''}
-        </div>
-        ${order.additional_notes ? `
-        <div class="form-section">
-            <h5><i class="fas fa-sticky-note"></i> Additional Notes</h5>
-            <p>${order.additional_notes}</p>
-        </div>` : ''}
-        <div class="form-section">
-            <h5><i class="fas fa-box"></i> Spare Parts Requested (${(order.items || []).length} items)</h5>
-            ${partsHTML}
-        </div>
-        ${order.status !== 'Pending' ? `
-        <div class="form-section">
-            <h5><i class="fas fa-user-check"></i> Review Details</h5>
-            <p><strong>Reviewed By:</strong> ${order.reviewed_by_name || '-'}</p>
-            <p><strong>Review Date:</strong> ${reviewDate}</p>
-            ${order.review_notes ? `<p><strong>Notes:</strong> ${order.review_notes}</p>` : ''}
-        </div>` : ''}
-        ${modalActions}
-    `);
-
-    document.body.appendChild(modal);
-    modal.classList.add('active');
-}
-
-function printOrderDetails(orderId) {
-    Utils.showToast(`Printing order ${orderId}...`, 'info');
-}
-
-function reconsiderOrder(orderId) {
-    Utils.showToast(`Order ${orderId} moved back to pending for reconsideration`, 'info');
-}
-
-function viewAllApprovedOrders() {
-    filterOrdersByStatus('Approved');
-}
-
-function viewAllRejectedOrders() {
-    filterOrdersByStatus('Rejected');
-}
-
-function approveAllOrders() {
-    const pendingRequests = allSparePartRequests.filter(r => r.status === 'Pending');
-    if (pendingRequests.length === 0) {
-        Utils.showToast('No pending orders to approve', 'info');
-        return;
-    }
-
-    createConfirmationDialog(
-        'Approve All Orders',
-        `Are you sure you want to approve all ${pendingRequests.length} pending orders?`,
-        async () => {
-            try {
-                for (const req of pendingRequests) {
-                    await API.post(`/spare-part-requests/${req.id}/approve`, {
-                        reviewed_by: currentUser?.id,
-                        notes: 'Bulk approval'
-                    });
-                }
-                Utils.showToast('All pending orders approved!', 'success');
-                await loadSparePartOrders();
-            } catch (error) {
-                console.error('Error in bulk approval:', error);
-                Utils.showToast('Some approvals failed', 'error');
-                await loadSparePartOrders();
-            }
-        },
-        'success'
-    );
-}
-
-// ==================== PLACEHOLDER FUNCTIONS ====================
-
-// ==================== USAGE TRACKING ====================
-
-// Filter usage tracking table by type
-function filterUsageByType(filterValue) {
-    // Update active button
-    document.querySelectorAll('#usageFilters .filter-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-
-    const rows = document.querySelectorAll('#usageTableBody tr');
-
-    rows.forEach(row => {
-        const rowType = row.getAttribute('data-type');
-
-        if (filterValue === 'all') {
-            row.style.display = '';
-        } else if (rowType === filterValue) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
-    });
-}
-
-// ==================== USAGE TRACKING - SPAREPART ISSUANCE ====================
-
-// Load all spareparts into the usage tracking table
-async function loadUsageTracking() {
-    const tbody = document.getElementById('usageTableBody');
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:#6b7280;"><i class="fas fa-spinner fa-spin"></i> Loading spareparts...</td></tr>';
-
-    try {
-        // Fetch products first
-        const productsResponse = await API.get('/products');
-
-        if (productsResponse.status !== 'success' || !productsResponse.data || !productsResponse.data.products) {
-            throw new Error(productsResponse.message || 'Failed to load spareparts');
-        }
-
-        const products = productsResponse.data.products;
-
-        if (products.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:#6b7280;"><i class="fas fa-box-open"></i> No spareparts found</td></tr>';
-            return;
-        }
-
-        // Fetch usage data (don't fail if this errors)
-        const issuedQtyMap = {};
-        try {
-            const usageResponse = await API.get('/usage');
-            if (usageResponse.status === 'success' && usageResponse.data && usageResponse.data.usage) {
-                usageResponse.data.usage.forEach(record => {
-                    const sparepartId = record.sparepart_id;
-                    const qty = parseInt(record.quantity_issued) || 0;
-                    issuedQtyMap[sparepartId] = (issuedQtyMap[sparepartId] || 0) + qty;
-                });
-            }
-        } catch (usageError) {
-            console.warn('Could not load usage data:', usageError);
-            // Continue anyway, issued quantities will just show as 0
-        }
-
-        tbody.innerHTML = '';
-
-        products.forEach(part => {
-            const qty = parseInt(part.quantity) || 0;
-            let stockBadge, stockText;
-            if (qty === 0) {
-                stockBadge = 'status-out-of-stock';
-                stockText = `<span style="color:#dc2626; font-weight:600;">0 units</span>`;
-            } else if (qty <= 10) {
-                stockBadge = 'status-low-stock';
-                stockText = `<span style="color:#f59e0b; font-weight:600;">${qty} units</span>`;
-            } else {
-                stockBadge = 'status-in-stock';
-                stockText = `<span style="color:#10b981; font-weight:600;">${qty} units</span>`;
-            }
-
-            // Get issued quantity
-            const issuedQty = issuedQtyMap[part.sparepart_id] || 0;
-            const issuedText = issuedQty > 0
-                ? `<span style="color:#6366f1; font-weight:600;">${issuedQty} units</span>`
-                : '<span style="color:#9ca3af;">0 units</span>';
-
-            const lastIssue = part.last_issue_date
-                ? new Date(part.last_issue_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-                : '<span style="color:#9ca3af;">Not issued yet</span>';
-
-            const category = (part.category || 'Unknown').charAt(0).toUpperCase() + (part.category || 'Unknown').slice(1);
-
-            const row = document.createElement('tr');
-            row.setAttribute('data-sparepart-id', part.sparepart_id);
-            row.setAttribute('data-name', (part.name || '').toLowerCase());
-            row.innerHTML = `
-                <td><strong>${part.sparepart_id}</strong></td>
-                <td>${part.name}</td>
-                <td>${category}</td>
-                <td>${stockText}</td>
-                <td>${issuedText}</td>
-                <td>${lastIssue}</td>
-                <td>
-                    <button class="btn btn-primary btn-small" onclick="openIssueModal('${part.id}', '${part.sparepart_id}', '${(part.name || '').replace(/'/g, "\\'")}', ${qty})" ${qty === 0 ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>
-                        <i class="fas fa-share-square"></i> Update
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
-    } catch (error) {
-        console.error('Error loading usage tracking:', error);
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:#dc2626;"><i class="fas fa-exclamation-triangle"></i> Failed to load spareparts: ${error.message}</td></tr>`;
-    }
-}
-
-// Filter usage tracking table by search
-function filterUsageTable() {
-    const query = (document.getElementById('usageSearch')?.value || '').toLowerCase();
-    const rows = document.querySelectorAll('#usageTableBody tr');
-    rows.forEach(row => {
-        const sid = (row.getAttribute('data-sparepart-id') || '').toLowerCase();
-        const name = (row.getAttribute('data-name') || '').toLowerCase();
-        row.style.display = (sid.includes(query) || name.includes(query)) ? '' : 'none';
-    });
-}
-
-// Open the Issue modal for a specific sparepart
-function openIssueModal(dbId, sparepartId, sparepartName, availableQty) {
-    document.getElementById('issuePartDbId').value = dbId;
-    document.getElementById('issuePartId').value = sparepartId;
-    document.getElementById('issueSparepartId').value = sparepartId;
-    document.getElementById('issueSparepartName').value = sparepartName;
-    document.getElementById('issueAvailableQty').value = availableQty + ' units';
-
-    // Auto-set current date
-    const today = new Date();
-    const formattedDate = today.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    document.getElementById('issueDate').value = formattedDate;
-
-    // Reset quantity field
-    const qtyInput = document.getElementById('issueQuantity');
-    qtyInput.value = '';
-    qtyInput.max = availableQty;
-    qtyInput.placeholder = `Max: ${availableQty}`;
-
-    openModal('issueModal');
-}
-
-// Handle issue form submission
-document.getElementById('issueForm')?.addEventListener('submit', async function (e) {
-    e.preventDefault();
-
-    const dbId = document.getElementById('issuePartDbId').value;
-    const sparepartId = document.getElementById('issuePartId').value;
-    const sparepartName = document.getElementById('issueSparepartName').value;
-    const availableQty = parseInt(document.getElementById('issueAvailableQty').value);
-    const quantityIssued = parseInt(document.getElementById('issueQuantity').value);
-
-    if (!quantityIssued || quantityIssued < 1) {
-        Utils.showToast('Please enter a valid quantity (at least 1)', 'error');
-        return;
-    }
-
-    if (quantityIssued > availableQty) {
-        Utils.showToast(`Cannot issue ${quantityIssued} units. Only ${availableQty} available.`, 'error');
-        return;
-    }
-
-    try {
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-
-        // Create usage record - this will automatically reduce the catalog quantity
-        const usageResponse = await API.post('/usage', {
-            sparepart_id: sparepartId,
-            sparepart_name: sparepartName,
-            quantity_issued: quantityIssued,
-            issue_date: today,
-            notes: document.getElementById('issueNotes')?.value || `Issued ${quantityIssued} unit(s) from inventory`
-        });
-
-        if (usageResponse.status !== 'success') {
-            throw new Error(usageResponse.message || 'Failed to issue sparepart');
-        }
-
-        closeModal('issueModal');
-
-        const newQuantity = usageResponse.data?.new_quantity ?? (availableQty - quantityIssued);
-        Utils.showToast(`Successfully issued ${quantityIssued} unit(s) of ${sparepartName}. Remaining: ${newQuantity}`, 'success');
-
-        // Reload the usage tracking table to reflect changes
-        await loadUsageTracking();
-
-    } catch (error) {
-        console.error('Error issuing sparepart:', error);
-        Utils.showToast('Error issuing sparepart: ' + error.message, 'error');
-    }
-});
-
-function viewUsageDetails(machineId, sparepartId, issueDate, notes) {
-    const title = document.getElementById('detailsTitle');
-    const content = document.getElementById('detailsContent');
-
-    title.innerHTML = `<i class="fas fa-chart-line"></i> Sparepart Issuance Details`;
-    content.innerHTML = `
-        <div class="form-section">
-            <h5><i class="fas fa-info-circle"></i> Issuance Information</h5>
-            <div style="margin-bottom: 10px;"><strong>Machine/Vehicle ID:</strong> ${machineId}</div>
-            <div style="margin-bottom: 10px;"><strong>Sparepart ID:</strong> ${sparepartId}</div>
-            <div style="margin-bottom: 10px;"><strong>Issue Date:</strong> ${issueDate}</div>
-            ${notes ? `<div style="margin-bottom: 10px;"><strong>Notes:</strong> ${notes}</div>` : ''}
-        </div>
-    `;
-
-    openModal('detailsModal');
-}
-
-function editUsageRecord(machineId) {
-    Utils.showToast(`Editing usage record for ${machineId}...`, 'info');
-}
-
-function deleteUsageRecord(machineId) {
-    const deleteMessage = document.getElementById('deleteMessage');
-    deleteMessage.textContent = `Delete usage record for ${machineId}? This will remove this entry from the usage history.`;
-
-    const confirmBtn = document.getElementById('confirmDeleteBtn');
-    confirmBtn.onclick = function () {
-        const row = document.querySelector(`#usageTableBody tr[data-id="${machineId}"]`);
-        if (row) {
-            row.remove();
-            Utils.showToast(`Usage record for ${machineId} deleted successfully!`);
-        }
-        closeModal('deleteModal');
-    };
-
-    openModal('deleteModal');
-}
-
-function generateMachineReport(machineId) {
-    document.getElementById('reportMachineId').value = machineId;
-    openModal('reportModal');
-}
-
-document.getElementById('reportForm')?.addEventListener('submit', function (e) {
-    e.preventDefault();
-
-    const machineId = document.getElementById('reportMachineId').value;
-    const reportType = document.getElementById('reportType').value;
-
-    Utils.showToast(`${reportType} generated for ${machineId}. Report will be shared with Maintenance Manager.`);
-    closeModal('reportModal');
-    this.reset();
-});
-
-// ==================== NOTIFICATIONS ====================
-
-function dismissNotification(notificationId) {
-    const notification = document.querySelector(`[data-id="${notificationId}"]`);
-    if (notification) {
-        notification.remove();
-        Utils.showToast('Notification dismissed');
-    }
-}
-
-function quickApprove(orderId) {
-    confirmApproval(orderId);
-}
-
-function quickReject(orderId) {
-    if (confirm(`Quickly reject order ${orderId}? Default rejection reason will be used.`)) {
-        confirmRejection(orderId);
-    }
-}
-
-function viewRequest(orderId) {
-    viewOrderDetails(orderId);
-}
-
-function configureAlerts() {
-    Utils.showToast('Opening alert configuration settings...', 'info');
-}
-
-function viewAllActivities() {
-    Utils.showToast('Loading all activities...', 'info');
-}
 
 // ==================== SPAREPART ADDITION ====================
 

@@ -1,0 +1,44 @@
+/**
+ * Orders & Approvals Model Component Styles
+ */
+
+/* Component inherits most styles from parent dashboard */
+/* These rules are component-specific overrides/additions */
+
+inventory-orders-approvals-model {
+    display: block;
+}
+
+/* Ensure modal overlay z-index is high enough */
+inventory-orders-approvals-model .modal {
+    z-index: 1000;
+}
+
+inventory-orders-approvals-model .modal.active {
+    display: flex;
+}
+
+/* Form section spacing inside modals */
+inventory-orders-approvals-model .form-section h5 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+inventory-orders-approvals-model .form-section h5 i {
+    color: var(--tang-blue);
+}
+
+/* Order item hover state */
+inventory-orders-approvals-model .inventory-item {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+inventory-orders-approvals-model .inventory-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
