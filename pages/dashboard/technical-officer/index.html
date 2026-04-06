@@ -75,6 +75,11 @@
                         <i class="nav-icon fas fa-comments"></i>
                         <span>Asset Feedback</span>
                     </div>
+                    <div class="nav-item" data-section="notifications">
+                        <i class="nav-icon fas fa-bell"></i>
+                        <span>Notifications</span>
+                        <span class="nav-badge" id="notifBadge" style="display:none;">0</span>
+                    </div>
                 </nav>
             </aside>
 
@@ -152,79 +157,6 @@
                         </div>
                     </div>
 
-                    <!-- Recent Activities Section -->
-                    <div class="recent-activities">
-                        <div class="section-header">
-                            <h3 class="section-title">
-                                <i class="fas fa-history"></i> Recent Activities
-                            </h3>
-                        </div>
-
-                        <div class="activities-list" id="activitiesList">
-                            <!-- Activity Item 1 -->
-                            <div class="activity-item">
-                                <div class="activity-content">
-                                    <div class="activity-title">Parts Request Approved</div>
-                                    <div class="activity-meta">Request: REQ-001 | Brake pads x4 | 2 hours ago</div>
-                                    <div class="activity-description">Parts approved by Inventory Manager - Ready for
-                                        pickup</div>
-                                </div>
-                                <div class="activity-status">
-                                    <span class="status-badge status-approved">APPROVED</span>
-                                </div>
-                            </div>
-
-                            <!-- Activity Item 2 -->
-                            <div class="activity-item">
-                                <div class="activity-content">
-                                    <div class="activity-title">New Ticket Assigned</div>
-                                    <div class="activity-meta">Ticket: TKT-004 | Assigned by: Supervisor Mike | 3 hours
-                                        ago</div>
-                                    <div class="activity-description">Engine overheating - High priority repair</div>
-                                </div>
-                                <div class="activity-status">
-                                    <span class="status-badge status-assigned">ASSIGNED</span>
-                                </div>
-                            </div>
-
-                            <!-- Activity Item 3 -->
-                            <div class="activity-item">
-                                <div class="activity-content">
-                                    <div class="activity-title">Repair Completed</div>
-                                    <div class="activity-meta">Ticket: TKT-005 | Machine #150 | 5 hours ago</div>
-                                    <div class="activity-description">Gas cylinder valve replacement completed
-                                        successfully</div>
-                                </div>
-                                <div class="activity-status">
-                                    <span class="status-badge status-completed">COMPLETED</span>
-                                </div>
-                            </div>
-
-                            <!-- Activity Item 4 -->
-                            <div class="activity-item">
-                                <div class="activity-content">
-                                    <div class="activity-title">Work Progress Updated</div>
-                                    <div class="activity-meta">Ticket: TKT-001 | Vehicle #101 | 7 hours ago</div>
-                                    <div class="activity-description">Installing new radiator - 60% complete</div>
-                                </div>
-                                <div class="activity-status">
-                                    <span class="status-badge status-in-progress">IN PROGRESS</span>
-                                </div>
-                            </div>
-
-                            <!-- Activity Item 5 -->
-                            <div class="activity-item">
-                                <div class="activity-content">
-                                    <div class="activity-title">Parts Request Submitted</div>
-                                    <div class="activity-meta">Request: REQ-002 | Oil filters x2 | Yesterday</div>
-                                    <div class="activity-description">Awaiting approval from Supervisor</div>
-                                </div>
-                                <div class="activity-status">
-                                    <span class="status-badge status-pending">PENDING</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </section>
 
                 <!-- Fault & Repair Tickets -->
@@ -364,6 +296,20 @@
                         <div id="noWarrantyMessage"
                             style="display: none; text-align: center; color: var(--muted); padding: 20px;">
                             No warranty claims found for this filter
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Notifications -->
+                <section class="content-section" id="notifications">
+                    <div class="page-header">
+                        <h2 class="page-title"><i class="fas fa-bell"></i> Notifications</h2>
+                        <p class="page-subtitle">Tickets and updates that require your attention</p>
+                    </div>
+                    <div id="notificationsList">
+                        <div class="notif-empty" id="notifEmpty" style="display:none;">
+                            <i class="fas fa-check-circle"></i>
+                            <p>You're all caught up! No pending notifications.</p>
                         </div>
                     </div>
                 </section>

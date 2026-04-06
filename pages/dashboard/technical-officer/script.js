@@ -11,26 +11,41 @@ let requestedPartsMap = {};
 // Track the current ticket being updated in the update work modal
 let currentUpdateTicketId = null;
 
-// Navigation functionality
+// Navigation functionality — uses ?section= query param so the URL reflects the current view
+// and external pages (e.g. fault-ticket-detail) can deep-link back to a specific section.
 function navigateTo(sectionId) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('section', sectionId);
+    history.pushState({ section: sectionId }, '', url.toString());
+    activateSection(sectionId);
+}
+
+function activateSection(sectionId) {
     document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
     document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
 
     const targetNav = document.querySelector(`.nav-item[data-section="${sectionId}"]`);
-    if (targetNav) {
-        targetNav.classList.add('active');
-    }
+    if (targetNav) targetNav.classList.add('active');
 
     const targetSection = document.getElementById(sectionId);
-    if (targetSection) {
-        targetSection.classList.add('active');
-    }
+    if (targetSection) targetSection.classList.add('active');
 }
+
+// Restore section from query param on load / browser back-forward
+function restoreSectionFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const section = params.get('section') || 'dashboard';
+    activateSection(section);
+}
+
+window.addEventListener('popstate', (e) => {
+    const section = (e.state && e.state.section) || 'dashboard';
+    activateSection(section);
+});
 
 document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', function () {
-        const sectionId = this.getAttribute('data-section');
-        navigateTo(sectionId);
+        navigateTo(this.getAttribute('data-section'));
     });
 });
 
@@ -161,6 +176,113 @@ function filterTicketsByStatus(status) {
     ticketCount.textContent = `${visibleCount} ticket${visibleCount !== 1 ? 's' : ''}`;
 }
 
+// ==================== NOTIFICATIONS ====================
+
+/**
+ * Derives actionable notifications from fault tickets assigned to the current user.
+ * Updates the sidebar badge and renders the notifications list.
+ */
+async function loadNotifications() {
+    const list = document.getElementById('notificationsList');
+    const empty = document.getElementById('notifEmpty');
+    const badge = document.getElementById('notifBadge');
+
+    if (!list) return;
+
+    try {
+        const response = await API.get('/fault-tickets');
+        if (response.status !== 'success') throw new Error(response.message || 'Failed');
+
+        const tickets = (response.data && (response.data.tickets || response.data)) || [];
+
+        // Only tickets assigned to the current user
+        const myTickets = tickets.filter(t =>
+            t.assignments && Array.isArray(t.assignments) &&
+            t.assignments.some(a => a.assigned_to == currentUser.id)
+        );
+
+        const notifications = [];
+
+        myTickets.forEach(t => {
+            const s = (t.status || '').toLowerCase();
+            const id = t.ticket_id || t.id;
+            const asset = t.machine_name || t.vehicle_name || t.asset_name || 'Asset';
+
+            if (s === 'assigned') {
+                notifications.push({
+                    type: 'info',
+                    icon: 'fa-ticket-alt',
+                    title: `New ticket assigned — ${id}`,
+                    desc: `${t.issue || t.description || 'No description'} · ${asset}`,
+                    action: { label: 'View Ticket', section: 'tickets' }
+                });
+            } else if (s === 'parts approved') {
+                notifications.push({
+                    type: 'success',
+                    icon: 'fa-boxes',
+                    title: `Spare parts approved — ${id}`,
+                    desc: `Parts for ${asset} have been approved. You can begin work.`,
+                    action: { label: 'View Ticket', section: 'tickets' }
+                });
+            } else if (s === 'waiting for budget approval') {
+                notifications.push({
+                    type: 'warning',
+                    icon: 'fa-file-invoice-dollar',
+                    title: `Budget pending approval — ${id}`,
+                    desc: `Budget report for ${asset} is awaiting supervisor review.`,
+                    action: null
+                });
+            } else if (s === 'waiting for spare parts') {
+                notifications.push({
+                    type: 'warning',
+                    icon: 'fa-tools',
+                    title: `Waiting for spare parts — ${id}`,
+                    desc: `Parts request for ${asset} is pending fulfillment.`,
+                    action: null
+                });
+            }
+        });
+
+        // Update badge — only show count of items that need action (not passive waits)
+        const actionableCount = notifications.filter(n => n.action !== null).length;
+        if (actionableCount > 0) {
+            badge.textContent = actionableCount;
+            badge.style.display = 'inline-flex';
+        } else {
+            badge.style.display = 'none';
+        }
+
+        // Render list
+        // Remove old notification cards (keep the empty state element)
+        list.querySelectorAll('.notif-card').forEach(el => el.remove());
+
+        if (notifications.length === 0) {
+            empty.style.display = 'block';
+        } else {
+            empty.style.display = 'none';
+            notifications.forEach(n => {
+                const card = document.createElement('div');
+                card.className = `notif-card notif-${n.type}`;
+                card.innerHTML = `
+                    <div class="notif-icon"><i class="fas ${n.icon}"></i></div>
+                    <div class="notif-body">
+                        <div class="notif-title">${n.title}</div>
+                        <div class="notif-desc">${n.desc}</div>
+                        ${n.action ? `<div class="notif-action"><button class="btn btn-small btn-primary" onclick="navigateTo('${n.action.section}')">${n.action.label}</button></div>` : ''}
+                    </div>`;
+                list.appendChild(card);
+            });
+        }
+    } catch (err) {
+        console.error('loadNotifications error:', err);
+        list.querySelectorAll('.notif-card').forEach(el => el.remove());
+        const errEl = document.createElement('div');
+        errEl.className = 'notif-card notif-danger';
+        errEl.innerHTML = `<div class="notif-icon"><i class="fas fa-exclamation-circle"></i></div><div class="notif-body"><div class="notif-title">Failed to load notifications</div><div class="notif-desc">Please refresh the page and try again.</div></div>`;
+        list.appendChild(errEl);
+    }
+}
+
 // Load tickets from backend
 async function loadTickets() {
     const ticketsList = document.getElementById('allTicketsList');
@@ -265,11 +387,8 @@ function renderTickets(tickets) {
         if (status === 'pending') {
             // Pending → Request Spare Parts
             actionButtons = `
-                <button class="btn btn-mini" onclick="requestSparePartsForTicket(${ticket.id})" style="background: var(--tang-blue); color: white;">
+                <button class="btn btn-mini" onclick="event.stopPropagation(); requestSparePartsForTicket(${ticket.id})" style="background: var(--tang-blue); color: white;">
                     <i class="fas fa-tools"></i> Request Spare Parts
-                </button>
-                <button class="btn btn-primary btn-mini" onclick="viewTicket(${ticket.id})">
-                    <i class="fas fa-eye"></i> VIEW
                 </button>
             `;
         } else if (status === 'waiting-for-spare-parts') {
@@ -278,50 +397,32 @@ function renderTickets(tickets) {
                 <span class="btn btn-mini" style="background: #f59e0b; color: #000; cursor: default;">
                     <i class="fas fa-hourglass-half"></i> Awaiting Approval
                 </span>
-                <button class="btn btn-primary btn-mini" onclick="viewTicket(${ticket.id})">
-                    <i class="fas fa-eye"></i> VIEW
-                </button>
             `;
         } else if (status === 'parts-approved') {
             // Parts Approved → START button
             actionButtons = `
-                <button class="btn btn-mini" onclick="startTicketWork(${ticket.id})" style="background: var(--kelly-green); color: white;">
+                <button class="btn btn-mini" onclick="event.stopPropagation(); startTicketWork(${ticket.id})" style="background: var(--kelly-green); color: white;">
                     <i class="fas fa-play"></i> START
-                </button>
-                <button class="btn btn-primary btn-mini" onclick="viewTicket(${ticket.id})">
-                    <i class="fas fa-eye"></i> VIEW
                 </button>
             `;
         } else if (status === 'in-progress') {
             // In Progress → UPDATE button
             actionButtons = `
-                <button class="btn btn-warning btn-mini" onclick="updateWork(${ticket.id})">
+                <button class="btn btn-warning btn-mini" onclick="event.stopPropagation(); updateWork(${ticket.id})">
                     <i class="fas fa-edit"></i> UPDATE
-                </button>
-                <button class="btn btn-primary btn-mini" onclick="viewTicket(${ticket.id})">
-                    <i class="fas fa-eye"></i> VIEW
                 </button>
             `;
         } else if (status === 'resolved' || status === 'completed' || status === 'closed') {
-            // Resolved/Completed/Closed → show done badge + VIEW
+            // Resolved/Completed/Closed → show done badge
             actionButtons = `
                 <span class="btn btn-mini" style="background: #10b981; color: white; cursor: default;">
                     <i class="fas fa-check-circle"></i> Done
                 </span>
-                <button class="btn btn-primary btn-mini" onclick="viewTicket(${ticket.id})">
-                    <i class="fas fa-eye"></i> VIEW
-                </button>
-            `;
-        } else {
-            actionButtons = `
-                <button class="btn btn-primary btn-mini" onclick="viewTicket(${ticket.id})">
-                    <i class="fas fa-eye"></i> VIEW
-                </button>
             `;
         }
 
         return `
-            <div class="ticket-item" data-status="${status}">
+            <div class="ticket-item" data-status="${status}" onclick="viewTicket(${ticket.id})" style="cursor:pointer;">
                 <div class="ticket-details">
                     <strong>${ticketIdFormatted}</strong>
                     <div class="ticket-meta">
@@ -382,185 +483,18 @@ function updateDashboardCounts(tickets) {
     if (dashCompleteCount) dashCompleteCount.textContent = completedToday;
 }
 
-// View ticket details
-async function viewTicket(ticketId) {
-    const ticket = allTickets.find(t => t.id === ticketId);
-    if (!ticket) {
-        showToast('Ticket not found', 'error');
-        return;
-    }
-
-    const ticketIdFormatted = getDisplayTicketId(ticket);
-    const status = (ticket.status || 'Open').toLowerCase().replace(/\s+/g, '-');
-    const statusDisplay = (ticket.status || 'Open').toUpperCase();
-    const priority = (ticket.priority || 'Medium').toLowerCase();
-    const priorityDisplay = (ticket.priority || 'Medium').toUpperCase();
-    const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
-    const reporterName = ticket.reported_by_name || ticket.reporter_full_name || 'Unknown';
-    const description = ticket.description || 'No description';
-    const createdDate = new Date(ticket.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const updatedDate = ticket.updated_at ? new Date(ticket.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
-
-    const assignment = ticket.assignments && ticket.assignments.length > 0 ? ticket.assignments[0] : null;
-    const assignedBy = assignment ? (assignment.assigned_by_name || 'Supervisor') : 'N/A';
-    const assignedDate = assignment ? new Date(assignment.assigned_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
-
-    // Fetch spare part requests for this ticket to get approval/rejection notes
-    let sparePartsSection = '';
-    try {
-        const sparePartsResponse = await API.get(`/spare-part-requests/ticket/${ticketId}`);
-        if (sparePartsResponse.status === 'success' && sparePartsResponse.data && sparePartsResponse.data.length > 0) {
-            const requests = sparePartsResponse.data;
-            sparePartsSection = requests.map(request => {
-                const statusClass = request.status === 'Approved' ? 'success' : request.status === 'Rejected' ? 'danger' : 'warning';
-                const statusIcon = request.status === 'Approved' ? 'check-circle' : request.status === 'Rejected' ? 'times-circle' : 'clock';
-                const reviewedDate = request.reviewed_at ? new Date(request.reviewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
-
-                return `
-                    <div class="form-section" style="background-color: ${request.status === 'Approved' ? '#f0fdf4' : request.status === 'Rejected' ? '#fef2f2' : '#fefce8'}; border-left: 4px solid ${request.status === 'Approved' ? '#10b981' : request.status === 'Rejected' ? '#ef4444' : '#f59e0b'}; padding: 12px; margin-bottom: 10px;">
-                        <h5><i class="fas fa-${statusIcon}" style="color: ${request.status === 'Approved' ? '#10b981' : request.status === 'Rejected' ? '#ef4444' : '#f59e0b'};"></i> Spare Parts Request - <span class="status-text status-${statusClass}">${request.status.toUpperCase()}</span></h5>
-                        ${request.review_notes ? `
-                            <p><strong>${request.status === 'Approved' ? 'Approval' : 'Rejection'} Notes:</strong></p>
-                            <p style="background: white; padding: 10px; border-radius: 6px; margin-top: 8px; font-style: italic; color: #374151;">${request.review_notes}</p>
-                        ` : ''}
-                        ${request.reviewed_by_name ? `<p style="margin-top: 8px;"><strong>Reviewed By:</strong> ${request.reviewed_by_name} (Inventory Manager)</p>` : ''}
-                        ${request.reviewed_at ? `<p><strong>Review Date:</strong> ${reviewedDate}</p>` : ''}
-                    </div>
-                `;
-            }).join('');
-        }
-    } catch (error) {
-        console.error('Error fetching spare parts info:', error);
-    }
-
-    const modal = createDetailsModal('Ticket Details', `
-        <div class="form-section">
-            <h5><i class="fas fa-ticket-alt"></i> Ticket Information</h5>
-            <p><strong>Ticket ID:</strong> ${ticketIdFormatted}</p>
-            <p><strong>Priority:</strong> <span class="status-text status-${priority}">${priorityDisplay}</span></p>
-            <p><strong>Status:</strong> <span class="status-text status-${status}">${statusDisplay}</span></p>
-            <p><strong>Created Date:</strong> ${createdDate}</p>
-            <p><strong>Last Updated:</strong> ${updatedDate}</p>
-        </div>
-        <div class="form-section">
-            <h5><i class="fas fa-cogs"></i> Equipment & Issue Details</h5>
-            <p><strong>Equipment/Asset:</strong> ${assetName}</p>
-            <p><strong>Machine ID:</strong> ${ticket.machine_id || 'N/A'}</p>
-            <p><strong>Reported By:</strong> ${reporterName}</p>
-            <p><strong>Issue Description:</strong> ${description}</p>
-        </div>
-        <div class="form-section">
-            <h5><i class="fas fa-user-tag"></i> Assignment Details</h5>
-            <p><strong>Assigned By:</strong> ${assignedBy}</p>
-            <p><strong>Assigned Date:</strong> ${assignedDate}</p>
-            ${assignment && assignment.notes ? `<p><strong>Assignment Notes:</strong> ${assignment.notes}</p>` : ''}
-        </div>
-        ${sparePartsSection}
-        ${ticket.resolution_notes || ticket.work_done ? `
-            <div class="form-section">
-                <h5><i class="fas fa-check-circle"></i> Work Progress / Resolution</h5>
-                <p>${ticket.resolution_notes || ticket.work_done}</p>
-            </div>
-        ` : ''}
-    `);
-
-    document.body.appendChild(modal);
-    modal.classList.add('active');
+// View ticket details — navigate to the dedicated detail page
+function viewTicket(ticketId) {
+    window.location.href = `fault-ticket-detail/?id=${ticketId}`;
 }
 
-// Process ticket (start work)
-function processTicket(ticketId) {
-    openModal('processTicketModal', ticketId);
-}
-
-// Request spare parts for a ticket - opens the request parts form
+// Request spare parts for a ticket — now handled in the detail page;
+// this stub is kept for backward compatibility with action buttons in the list.
 function requestSparePartsForTicket(ticketId) {
-    const ticket = allTickets.find(t => t.id === ticketId);
-    if (!ticket) {
-        showToast('Ticket not found', 'error');
-        return;
-    }
-
-    const ticketIdFormatted = getDisplayTicketId(ticket);
-    const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
-    const priority = ticket.priority || 'Medium';
-    const description = ticket.description || 'No description provided';
-    const location = ticket.location || 'Not specified';
-    const reporterName = ticket.reported_by_name || ticket.reporter_full_name || 'Unknown';
-    const createdDate = ticket.created_at ? new Date(ticket.created_at).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    }) : 'Unknown';
-
-    // Pre-fill the request parts form with ticket data
-    document.getElementById('relatedTicketId').value = ticketIdFormatted;
-    document.getElementById('requestingTicketId').value = ticketId;
-
-    // Pre-fill equipment field
-    const equipmentInput = document.getElementById('equipmentInput');
-    if (equipmentInput) {
-        equipmentInput.value = assetName;
-        equipmentInput.readOnly = true;
-        equipmentInput.style.backgroundColor = '#f0f0f0';
-    }
-
-    // Pre-fill location field
-    const locationInput = document.getElementById('locationInput');
-    if (locationInput) {
-        locationInput.value = location;
-    }
-
-    // Pre-fill priority
-    const prioritySelect = document.getElementById('prioritySelect');
-    if (prioritySelect) {
-        prioritySelect.value = priority.toLowerCase();
-    }
-
-    // Pre-fill reported by field
-    const reportedByInput = document.getElementById('reportedByInput');
-    if (reportedByInput) {
-        reportedByInput.value = reporterName;
-    }
-
-    // Pre-fill reported date field
-    const reportedDateInput = document.getElementById('reportedDateInput');
-    if (reportedDateInput) {
-        reportedDateInput.value = createdDate;
-    }
-
-    // Pre-fill original issue description
-    const originalIssueTextarea = document.getElementById('originalIssueTextarea');
-    if (originalIssueTextarea) {
-        originalIssueTextarea.value = description;
-    }
-
-    // Clear additional notes
-    const additionalNotesTextarea = document.getElementById('additionalNotesTextarea');
-    if (additionalNotesTextarea) {
-        additionalNotesTextarea.value = '';
-    }
-
-    // Reset "No Spare Parts Needed" checkbox
-    const noPartsCheckbox = document.getElementById('noSparePartsNeeded');
-    if (noPartsCheckbox) {
-        noPartsCheckbox.checked = false;
-        toggleSparePartsSection(false);
-    }
-
-    // Open request parts modal
-    openModal('requestPartsModal');
+    window.location.href = `fault-ticket-detail/?id=${ticketId}`;
 }
 
-// Toggle spare parts section visibility
-function toggleSparePartsSection(hide) {
-    const sparePartsSection = document.getElementById('sparePartsSection');
-    if (sparePartsSection) {
-        sparePartsSection.style.display = hide ? 'none' : 'block';
-    }
-}
+
 
 // Update work progress
 async function updateWork(ticketId) {
@@ -1697,6 +1631,7 @@ function toggleSidebar() {
             console.log('Loading tickets and inventory...');
             await loadTickets();
             await loadInventory();
+            await loadNotifications();
             console.log('Tickets and inventory loaded');
         } else {
             console.error('No user data received');
@@ -1749,4 +1684,7 @@ document.addEventListener('DOMContentLoaded', function () {
         menuBtn.onclick = toggleSidebar;
         document.body.appendChild(menuBtn);
     }
+
+    // Restore the active section from ?section= query param (or default to 'dashboard')
+    restoreSectionFromUrl();
 });
