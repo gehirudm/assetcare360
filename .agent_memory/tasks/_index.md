@@ -1,7 +1,7 @@
 # Tasks Index
 
 ## In Progress
-- [TASK008] Inventory Manager dashboard componentization — Notifications + Dashboard Overview + Usage Tracking extracted; continuing with remaining sections
+- [TASK008] Inventory Manager dashboard componentization — 4 of 8 sections extracted (dashboard, notifications, usage-tracking, orders-approvals); remaining: machines, vehicles, catalog, sparepart-addition
 
 ## Pending
 - [TASK004] Dashboard web-components refactor program — Coordinate scope, sequencing, and completion criteria across all dashboards
