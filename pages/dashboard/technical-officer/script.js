@@ -25,6 +25,11 @@ function navigateTo(sectionId) {
     if (targetSection) {
         targetSection.classList.add('active');
     }
+
+    // Reload spare part requests whenever the section becomes visible
+    if (sectionId === 'spare-parts') {
+        loadPartsRequests();
+    }
 }
 
 document.querySelectorAll('.nav-item').forEach(item => {
@@ -710,6 +715,108 @@ function filterPartsByStatus(status) {
 
     // Update parts count
     partsCount.textContent = `${visibleCount} request${visibleCount !== 1 ? 's' : ''}`;
+}
+
+// Load spare part requests from backend for the current user
+async function loadPartsRequests() {
+    const requestsList = document.getElementById('allPartsRequests');
+    const partsCount = document.getElementById('partsCount');
+
+    requestsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-spinner fa-spin" style="font-size: 2rem;"></i><p style="margin-top: 15px;">Loading requests...</p></div>';
+
+    try {
+        const params = currentUser ? `?requested_by=${currentUser.id}` : '';
+        const response = await API.get(`/spare-part-requests${params}`);
+
+        if (response.status === 'success') {
+            const requests = response.data || [];
+            renderPartsRequests(requests);
+            partsCount.textContent = `${requests.length} request${requests.length !== 1 ? 's' : ''}`;
+
+            // Update dashboard summary card
+            const pendingCount = requests.filter(r => r.status === 'Pending').length;
+            const dashPartsEl = document.getElementById('dashPartsCount');
+            if (dashPartsEl) dashPartsEl.textContent = pendingCount;
+        } else {
+            throw new Error(response.message || 'Failed to load requests');
+        }
+    } catch (error) {
+        console.error('Error loading parts requests:', error);
+        requestsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 15px;"></i><p>Error loading requests. Please try again.</p></div>';
+    }
+}
+
+// Render spare part requests into the list
+function renderPartsRequests(requests) {
+    const requestsList = document.getElementById('allPartsRequests');
+    const noPartsMessage = document.getElementById('noPartsMessage');
+
+    if (!requests || requests.length === 0) {
+        requestsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px;"></i><p>No spare part requests found</p></div>';
+        noPartsMessage.style.display = 'none';
+        return;
+    }
+
+    noPartsMessage.style.display = 'none';
+
+    requestsList.innerHTML = requests.map(req => {
+        const statusLower = (req.status || 'pending').toLowerCase();
+        const statusClass = statusLower === 'approved' ? 'status-complete' :
+                            statusLower === 'rejected' ? 'status-urgent' :
+                            statusLower === 'issued'   ? 'status-info' : 'status-pending';
+        const statusDisplay = req.status || 'Pending';
+
+        const ticketRef = req.ticket_id_formatted || req.fault_ticket_code || `#${req.fault_ticket_id}`;
+        const equipment = req.equipment_name || 'N/A';
+        const priority = req.priority || 'Medium';
+        const createdDate = req.created_at ? new Date(req.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
+
+        const items = Array.isArray(req.items) ? req.items : [];
+        const itemsSummary = items.length > 0
+            ? items.map(i => `${i.part_name} × ${i.quantity}`).join(', ')
+            : 'No items listed';
+
+        let reviewInfo = '';
+        if (statusLower === 'rejected' && (req.reviewed_by_name || req.review_notes)) {
+            const rejectedOn = req.reviewed_at ? ' on ' + new Date(req.reviewed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+            const rejectedBy = req.reviewed_by_name ? ` by ${req.reviewed_by_name}${rejectedOn}` : rejectedOn;
+            reviewInfo = `
+            <div style="margin-top: 8px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 10px 12px;">
+                <div style="font-weight: 600; color: #dc2626; margin-bottom: 4px;"><i class="fas fa-times-circle"></i> Rejected${rejectedBy}</div>
+                ${req.review_notes ? `<div style="color: #7f1d1d; font-size: 0.9rem;"><strong>Reason:</strong> ${req.review_notes}</div>` : ''}
+            </div>`;
+        } else if (statusLower === 'approved' && req.reviewed_by_name) {
+            const approvedOn = req.reviewed_at ? ' on ' + new Date(req.reviewed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+            reviewInfo = `
+            <div class="ticket-meta" style="margin-top: 4px;">
+                <i class="fas fa-user-check"></i> Approved by: ${req.reviewed_by_name}${approvedOn}
+                ${req.review_notes ? ' — ' + req.review_notes : ''}
+            </div>`;
+        }
+
+        return `
+            <div class="request-item" data-status="${statusLower}" style="border-left: 4px solid ${statusLower === 'approved' ? 'var(--kelly-green)' : statusLower === 'rejected' ? 'var(--danger)' : '#fbbf24'};">
+                <div class="ticket-details">
+                    <strong>${req.request_id}</strong>
+                    <div class="ticket-meta">
+                        <i class="fas fa-ticket-alt"></i> Ticket: ${ticketRef} &nbsp;|&nbsp;
+                        <i class="fas fa-tools"></i> Equipment: ${equipment} &nbsp;|&nbsp;
+                        <i class="fas fa-exclamation-circle"></i> Priority: ${priority}
+                    </div>
+                    <div class="ticket-issue" style="margin-top: 6px;">
+                        <i class="fas fa-box"></i> Parts: ${itemsSummary}
+                    </div>
+                    <div class="ticket-meta" style="margin-top: 4px;">
+                        <i class="fas fa-calendar-alt"></i> Requested: ${createdDate}
+                    </div>
+                    ${reviewInfo}
+                </div>
+                <div class="ticket-actions">
+                    <span class="status-badge ${statusClass}">${statusDisplay}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 // Toggle outsourced fields based on repair type selection
@@ -1445,7 +1552,7 @@ function initializeForms() {
                     sparePartItems.push({
                         part_code: select.value,
                         part_name: selectedOption.text || select.value,
-                        quantity: qtyInput ? parseInt(qtyInput.value) || 1 : 1
+                        quantity: qtyInput ? parseInt(qtyInput.value, 10) || 1 : 1
                     });
                 }
             });
@@ -1471,7 +1578,7 @@ function initializeForms() {
                     const additionalNotes = document.getElementById('additionalNotesTextarea')?.value || '';
 
                     const requestPayload = {
-                        fault_ticket_id: parseInt(ticketId),
+                        fault_ticket_id: parseInt(ticketId, 10),
                         ticket_id_formatted: ticketIdFormatted,
                         equipment_name: equipmentName,
                         location: locationVal,
@@ -1518,6 +1625,9 @@ function initializeForms() {
         }
 
         closeModal('requestPartsModal');
+
+        // Reload parts requests to show the newly submitted request
+        loadPartsRequests();
 
         // Reset form and unlock fields for next use
         this.reset();
@@ -1693,11 +1803,12 @@ function toggleSidebar() {
                 roleElement.textContent = user.role;
             }
 
-            // Load tickets and inventory after user data is loaded
-            console.log('Loading tickets and inventory...');
+            // Load tickets, inventory, and spare part requests after user data is loaded
+            console.log('Loading tickets, inventory, and spare part requests...');
             await loadTickets();
             await loadInventory();
-            console.log('Tickets and inventory loaded');
+            await loadPartsRequests();
+            console.log('Tickets, inventory, and spare part requests loaded');
         } else {
             console.error('No user data received');
         }
