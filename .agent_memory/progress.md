@@ -22,6 +22,13 @@
   - Full dashboard shell (header + sidebar) on detail page
   - Step-by-step ticket flow visualisation (7 steps)
   - Breadcrumb sub-header with icon back-button
+- ✅ Shared modal/form components (`ac-modal`, `ac-input-group`, `ac-form-control`)
+  - TO "Create New Repair Ticket" modal refactored to component-based structure
+  - Component styles encapsulated in shadow DOM (constructable stylesheets), not page stylesheet
+- ✅ Technical Officer first model extraction to dashboard component structure
+  - Added `components/create-fault-ticket-model/script.js` + `style.css`
+  - Removed create-ticket modal-specific logic from monolithic TO script
+  - Parent/child communication now event-driven (`create-fault-ticket-created`)
 - ✅ 47 database migrations applied
 
 ## What's Left / Known Issues

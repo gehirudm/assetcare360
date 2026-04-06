@@ -28,6 +28,21 @@ Budget step correctness — ensuring fault tickets cannot progress to work-in-pr
 - Bumped `.main-content` padding to `40px 30px 30px 36px`
 - Documented full TO dashboard stylesheet into `.agent_memory/dashboard-styling-guide.md` for reuse across other role dashboards
 
+### Shared modal + form componentization (latest session)
+- Added shared components: `ac-modal`, `ac-input-group`, `ac-form-control`
+- Refactored TO **Create New Repair Ticket** modal to use those shared components
+- Moved component styling into component internals using shadow DOM + Constructable Stylesheets (no dashboard CSS dependency)
+- Kept existing JS integration (`document.getElementById(...).value`, required toggles) compatible via `control-id` host mapping in `<ac-form-control>`
+- Updated `web-components.instructions.md` with Rule 10 and component table entries for modal/form components
+
+### Incremental TO model extraction (latest session)
+- Extracted first dashboard-scoped component: `pages/dashboard/technical-officer/components/create-fault-ticket-model/`
+	- `script.js` defines `<create-fault-ticket-model>` with shadow DOM, local state, event handling, and style.css loading
+	- `style.css` encapsulates button, modal, and form styling for this model section
+- Replaced in-page create-ticket trigger/modal HTML with `<create-fault-ticket-model>` tag in `technical-officer/index.html`
+- Removed create-ticket form/toggle logic from monolithic `technical-officer/script.js`
+- Added parent orchestration listener (`bindCreateFaultTicketModel`) using custom event `create-fault-ticket-created`
+
 ## Next Steps
 - Run pending migration `047_create_system_settings_and_budget_approval.php`
 - Update `testing/openapi.yaml` with any API changes from budget fixes

@@ -53,7 +53,11 @@ document.querySelectorAll('.nav-item').forEach(item => {
 function openModal(modalId, ticketId = '') {
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.classList.add('active');
+        if (typeof modal.open === 'function') {
+            modal.open();
+        } else {
+            modal.classList.add('active');
+        }
 
         if (ticketId) {
             if (modalId === 'processTicketModal') {
@@ -72,7 +76,11 @@ function openModal(modalId, ticketId = '') {
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.classList.remove('active');
+        if (typeof modal.close === 'function') {
+            modal.close();
+        } else {
+            modal.classList.remove('active');
+        }
         // Remove dynamically created modals from DOM after transition
         if (modalId.startsWith('detailsModal_')) {
             setTimeout(() => modal.remove(), 300);
@@ -643,89 +651,25 @@ function filterPartsByStatus(status) {
     partsCount.textContent = `${visibleCount} request${visibleCount !== 1 ? 's' : ''}`;
 }
 
-// Toggle outsourced fields based on repair type selection
-function toggleOutsourcedFields() {
-    const repairType = document.getElementById('repairType').value;
-    const internalFields = document.getElementById('internalRepairFields');
-    const outsourcedFields = document.getElementById('outsourcedRepairFields');
+// Bind create-fault-ticket-model child events to parent-level dashboard orchestration.
+function bindCreateFaultTicketModel() {
+    const model = document.querySelector('create-fault-ticket-model');
+    if (!model || model.dataset.bound === 'true') return;
 
-    if (repairType === 'internal') {
-        internalFields.style.display = 'block';
-        outsourcedFields.style.display = 'none';
-        // Remove required from outsourced fields
-        document.getElementById('serviceProvider').removeAttribute('required');
-    } else if (repairType === 'outsourced') {
-        internalFields.style.display = 'none';
-        outsourcedFields.style.display = 'block';
-        // Add required to service provider
-        document.getElementById('serviceProvider').setAttribute('required', 'required');
-    } else {
-        internalFields.style.display = 'none';
-        outsourcedFields.style.display = 'none';
-    }
+    model.dataset.bound = 'true';
+    model.addEventListener('create-fault-ticket-created', (event) => {
+        const ticketData = event.detail?.ticketData;
+        const successMessage = event.detail?.successMessage;
+
+        if (ticketData) {
+            addTicketToList(ticketData);
+        }
+
+        if (successMessage) {
+            showToast(successMessage);
+        }
+    });
 }
-
-// Create Repair Ticket Form Submission
-document.getElementById('createRepairTicketForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-
-    const assetType = document.getElementById('assetType').value;
-    const assetId = document.getElementById('assetId').value;
-    const assetName = document.getElementById('assetName').value;
-    const faultCategory = document.getElementById('faultCategory').value;
-    const faultDescription = document.getElementById('faultDescription').value;
-    const reportedBy = document.getElementById('reportedBy').value;
-    const priority = document.getElementById('repairPriority').value;
-    const repairType = document.getElementById('repairType').value;
-
-    // Generate new ticket ID
-    const ticketId = 'MBD-' + String(Math.floor(Math.random() * 900) + 100);
-
-    // Create ticket object
-    const ticketData = {
-        ticketId: ticketId,
-        assetType: assetType,
-        assetId: assetId,
-        assetName: assetName,
-        faultCategory: faultCategory,
-        faultDescription: faultDescription,
-        reportedBy: reportedBy,
-        priority: priority,
-        repairType: repairType,
-        createdBy: 'Technical Officer',
-        status: 'pending-supervisor-approval',
-        createdDate: new Date().toISOString()
-    };
-
-    // Add type-specific details
-    if (repairType === 'internal') {
-        ticketData.estimatedCompletion = document.getElementById('estimatedCompletion').value;
-        ticketData.requiredParts = document.getElementById('requiredParts').value;
-    } else if (repairType === 'outsourced') {
-        ticketData.serviceProvider = document.getElementById('serviceProvider').value;
-        ticketData.serviceContact = document.getElementById('serviceContact').value;
-        ticketData.serviceAddress = document.getElementById('serviceAddress').value;
-        ticketData.estimatedCost = document.getElementById('estimatedCost').value;
-    }
-
-    ticketData.additionalNotes = document.getElementById('additionalNotes').value;
-
-    // In a real application, this would send data to the server
-    console.log('New Repair Ticket Created:', ticketData);
-
-    // Show success message
-    const repairTypeText = repairType === 'internal' ? 'Internal Repair (To be resolved by you)' : 'Outsourced Repair';
-    showToast(`Repair Ticket ${ticketId} created successfully!\nType: ${repairTypeText}\nAsset: ${assetId}\nSent to supervisor for approval and management.`);
-
-    // Close modal and reset form
-    closeModal('createRepairTicketModal');
-    this.reset();
-    document.getElementById('internalRepairFields').style.display = 'none';
-    document.getElementById('outsourcedRepairFields').style.display = 'none';
-
-    // Optionally add the ticket to the list (for demonstration)
-    addTicketToList(ticketData);
-});
 
 // Add newly created ticket to the list
 function addTicketToList(ticketData) {
@@ -1558,7 +1502,11 @@ function filterInventoryByType(type) {
 // Close modal when clicking outside
 document.addEventListener('click', function (e) {
     if (e.target.classList.contains('modal')) {
-        e.target.classList.remove('active');
+        if (typeof e.target.close === 'function') {
+            e.target.close();
+        } else {
+            e.target.classList.remove('active');
+        }
     }
 });
 
@@ -1567,7 +1515,11 @@ document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
         const activeModal = document.querySelector('.modal.active');
         if (activeModal) {
-            activeModal.classList.remove('active');
+            if (typeof activeModal.close === 'function') {
+                activeModal.close();
+            } else {
+                activeModal.classList.remove('active');
+            }
         }
     }
 });
@@ -1641,6 +1593,7 @@ function toggleSidebar() {
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', function () {
     initializeForms();
+    bindCreateFaultTicketModel();
 
     // Set today's date as default for date inputs
     const today = new Date().toISOString().split('T')[0];

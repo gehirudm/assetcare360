@@ -270,7 +270,7 @@ document.querySelector('to-shell-sidebar').setNotifBadge(count);
 
 ## Rule 7 — Load component scripts before dependent page scripts
 
-Load order in HTML: **config → api → auth → style modules → components → dashboard-init → script.js**
+Load order in HTML: **config → api → auth → light-DOM components → style modules → shadow-DOM components → dashboard-init → script.js**
 
 Style modules (from `pages/components/styles/`) must come before any shadow-DOM component that adopts them.
 
@@ -282,6 +282,9 @@ Style modules (from `pages/components/styles/`) must come before any shadow-DOM 
 <script src="../../components/shared/ac-header.js"></script>
 <script src="../../components/shared/ac-sidebar.js"></script>
 <script src="../../components/shared/ac-layout.js"></script>
+<script src="../../components/shared/ac-modal.js"></script>
+<script src="../../components/shared/ac-input-group.js"></script>
+<script src="../../components/shared/ac-form-control.js"></script>
 <!-- Style modules BEFORE shadow-DOM components -->
 <script src="../../components/styles/buttons.js"></script>
 <script src="../../components/styles/icons.js"></script>
@@ -383,6 +386,50 @@ document.querySelector('ac-layout ac-sidebar').setNotifBadge(count);
 
 ---
 
+## Rule 10 — Use shared modal + form controls for dashboard forms
+
+When building or refactoring dashboard forms in modals, use the shared form component set instead of repeating raw modal/input boilerplate:
+
+- `<ac-modal>` — modal shell (`id`, close button, title/icon)
+- `<ac-input-group>` — standard label + form-group spacing + optional helper text
+- `<ac-form-control>` — renders native `input`/`select`/`textarea` from attributes
+
+### Requirements
+
+- Keep real control IDs stable using `control-id="..."` so existing JS (`document.getElementById(...)`) continues to work.
+- Use `options='[...]'` JSON for select lists.
+- Style these components using shadow DOM + Constructable Stylesheets.
+- For `<ac-form-control>`, keep the native input/select/textarea as a light-DOM child (slotted) so browser form validation/reset still works, while visual styling stays inside the component stylesheet.
+
+### Example
+
+```html
+<ac-modal id="createRepairTicketModal" title="Create New Repair Ticket" icon="fa-plus-circle">
+    <form id="createRepairTicketForm">
+        <ac-input-group label="Asset Type" required>
+            <ac-form-control
+                control="select"
+                control-id="assetType"
+                required
+                placeholder="Select Asset Type"
+                options='[{ "value": "vehicle", "label": "Vehicle" }, { "value": "machine", "label": "Machine" }]'>
+            </ac-form-control>
+        </ac-input-group>
+
+        <ac-input-group label="Fault Description" required>
+            <ac-form-control
+                control="textarea"
+                control-id="faultDescription"
+                rows="4"
+                required
+                placeholder="Describe the issue..."></ac-form-control>
+        </ac-input-group>
+    </form>
+</ac-modal>
+```
+
+---
+
 ## Existing components & style modules
 
 ### Style modules (`pages/components/styles/`)
@@ -399,6 +446,9 @@ document.querySelector('ac-layout ac-sidebar').setNotifBadge(count);
 | `shared/ac-header.js` | `<ac-header>` | light | shared | Unified dashboard header with profile dropdown |
 | `shared/ac-sidebar.js` | `<ac-sidebar>` | light | shared | Unified dashboard sidebar nav |
 | `shared/ac-layout.js` | `<ac-layout>` | light | shared | Composes header + sidebar + main, handles section switching |
+| `shared/ac-modal.js` | `<ac-modal>` | **shadow** | shared | Reusable dashboard modal shell with encapsulated overlay/content styling |
+| `shared/ac-input-group.js` | `<ac-input-group>` | **shadow** | shared | Standard form-group wrapper with encapsulated label/help styling |
+| `shared/ac-form-control.js` | `<ac-form-control>` | **shadow** | shared | Attribute-driven control renderer; native form control remains slotted for form semantics |
 | `shared/confirm-dialog.js` | `<confirm-dialog>` | **shadow** | shared | Confirmation/alert modal |
 | `technical-officer/to-shell-header.js` | `<to-shell-header>` | light | technical-officer | TO-specific header (kept until migrated to `<ac-header>`) |
 | `technical-officer/to-shell-sidebar.js` | `<to-shell-sidebar>` | light | technical-officer | TO-specific sidebar (kept until migrated to `<ac-layout>`) |

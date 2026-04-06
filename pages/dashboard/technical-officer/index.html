@@ -104,11 +104,7 @@
                         <p class="page-subtitle">Manage tickets assigned by supervisors</p>
                     </div>
 
-                    <div style="margin-bottom: 20px;">
-                        <button class="btn btn-primary" onclick="openModal('createRepairTicketModal')">
-                            <i class="fas fa-plus"></i> Create New Repair Ticket
-                        </button>
-                    </div>
+                    <create-fault-ticket-model></create-fault-ticket-model>
 
                     <!-- Tab Filters -->
                     <div class="filter-controls" id="ticketFilterTabs">
@@ -287,130 +283,6 @@
     </div>
 
     <!-- Modals -->
-    <!-- Create Repair Ticket Modal -->
-    <div id="createRepairTicketModal" class="modal">
-        <div class="modal-content">
-            <button class="close" onclick="closeModal('createRepairTicketModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Create New Repair Ticket</h2>
-            <form id="createRepairTicketForm">
-                <div class="form-section">
-                    <h5><i class="fas fa-car"></i> Asset Information</h5>
-                    <div class="form-group">
-                        <label class="form-label">Asset Type *</label>
-                        <select class="form-input" id="assetType" required>
-                            <option value="">Select Asset Type</option>
-                            <option value="vehicle">Vehicle</option>
-                            <option value="machine">Machine</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Asset ID / Registration *</label>
-                        <input type="text" class="form-input" id="assetId" placeholder="e.g., LKA-1234 or Machine #205"
-                            required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Asset Name</label>
-                        <input type="text" class="form-input" id="assetName"
-                            placeholder="e.g., Toyota Hilux, Excavator">
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h5><i class="fas fa-wrench"></i> Fault Details</h5>
-                    <div class="form-group">
-                        <label class="form-label">Fault Category *</label>
-                        <select class="form-input" id="faultCategory" required>
-                            <option value="">Select Category</option>
-                            <option value="engine">Engine/Motor</option>
-                            <option value="transmission">Transmission</option>
-                            <option value="electrical">Electrical System</option>
-                            <option value="hydraulic">Hydraulic System</option>
-                            <option value="brake">Brake System</option>
-                            <option value="cooling">Cooling System</option>
-                            <option value="fuel">Fuel System</option>
-                            <option value="suspension">Suspension</option>
-                            <option value="body">Body/Structure</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Fault Description *</label>
-                        <textarea class="form-textarea" id="faultDescription"
-                            placeholder="Describe the fault/issue in detail..." rows="4" required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Reported By</label>
-                        <input type="text" class="form-input" id="reportedBy" placeholder="Driver/Operator name">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Priority *</label>
-                        <select class="form-input" id="repairPriority" required>
-                            <option value="high">High - Urgent</option>
-                            <option value="medium" selected>Medium - Normal</option>
-                            <option value="low">Low - Non-urgent</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h5><i class="fas fa-cog"></i> Repair Management</h5>
-                    <div class="form-group">
-                        <label class="form-label">Repair Type *</label>
-                        <select class="form-input" id="repairType" required onchange="toggleOutsourcedFields()">
-                            <option value="">Select Repair Type</option>
-                            <option value="internal">Resolve by Me (Internal Repair)</option>
-                            <option value="outsourced">Outsource to External Service</option>
-                        </select>
-                    </div>
-
-                    <!-- Internal Repair Fields -->
-                    <div id="internalRepairFields" style="display: none;">
-                        <div class="form-group">
-                            <label class="form-label">Estimated Completion Time</label>
-                            <input type="datetime-local" class="form-input" id="estimatedCompletion">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Required Parts (if known)</label>
-                            <textarea class="form-textarea" id="requiredParts"
-                                placeholder="List any parts that will be needed..." rows="3"></textarea>
-                        </div>
-                    </div>
-
-                    <!-- Outsourced Repair Fields -->
-                    <div id="outsourcedRepairFields" style="display: none;">
-                        <div class="form-group">
-                            <label class="form-label">Service Provider Name</label>
-                            <input type="text" class="form-input" id="serviceProvider"
-                                placeholder="Garage/Workshop name">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Service Provider Contact</label>
-                            <input type="text" class="form-input" id="serviceContact" placeholder="Contact number">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Service Provider Address</label>
-                            <textarea class="form-textarea" id="serviceAddress" placeholder="Complete address..."
-                                rows="2"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Estimated Cost (LKR)</label>
-                            <input type="number" class="form-input" id="estimatedCost"
-                                placeholder="Estimated repair cost" step="100">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Additional Notes</label>
-                        <textarea class="form-textarea" id="additionalNotes" placeholder="Any additional information..."
-                            rows="3"></textarea>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary">Create Ticket & Send to Supervisor</button>
-            </form>
-        </div>
-    </div>
-
     <!-- Process Ticket Modal -->
     <div id="processTicketModal" class="modal">
         <div class="modal-content">
@@ -800,6 +672,7 @@
     <script src="../../js/auth.js"></script>
     <script src="../../components/technical-officer/to-shell-header.js"></script>
     <script src="../../components/technical-officer/to-shell-sidebar.js"></script>
+    <script src="./components/create-fault-ticket-model/script.js"></script>
     <script src="../../components/styles/buttons.js"></script>
     <script src="../../components/styles/icons.js"></script>
     <script src="../../components/shared/confirm-dialog.js"></script>
