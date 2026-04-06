@@ -14,79 +14,19 @@
 </head>
 
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-left">
-                <div class="brand-logo">
-                    <span class="brand-name">AssetCare<span class="brand-highlight">360</span></span>
-                </div>
-                <div class="header-divider"></div>
-                <h1 class="header-title">
-                    <i class="fas fa-user-tie"></i> Supervisor Dashboard
-                </h1>
-            </div>
-            <div class="header-user">
-                <div class="user-info" onclick="window.location.href='/profile/index.html'"
-                    style="cursor: pointer; transition: all 0.2s;"
-                    onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'; this.style.borderRadius='8px'"
-                    onmouseout="this.style.backgroundColor='transparent'" title="View Profile">
-                    <div class="user-avatar" id="userAvatar">S</div>
-                    <div class="user-details">
-                        <div class="user-name" id="userName">Loading...</div>
-                        <div class="user-meta">
-                            <span id="userEmployeeId"></span>
-                            <span class="separator">•</span>
-                            <span id="userRole"></span>
-                        </div>
-                    </div>
-                </div>
-                <button class="logout-btn" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </button>
-            </div>
-        </header>
-
-        <div class="main-wrapper">
-            <!-- Sidebar -->
-            <aside class="sidebar">
-                <!-- <h2><i class="fas fa-user-tie"></i> Supervisor Portal</h2> -->
-                <nav>
-                    <div class="nav-item active" data-section="dashboard">
-                        <i class="nav-icon fas fa-chart-line"></i>
-                        <span>Dashboard</span>
-                    </div>
-                    <div class="nav-item" data-section="daily-check-reports">
-                        <i class="nav-icon fas fa-clipboard-check"></i>
-                        <span>Weekly Check Reports</span>
-                    </div>
-                    <div class="nav-item" data-section="fault-tickets">
-                        <i class="nav-icon fas fa-exclamation-triangle"></i>
-                        <span>Fault Tickets</span>
-                    </div>
-                    <div class="nav-item" data-section="repair-management">
-                        <i class="nav-icon fas fa-tools"></i>
-                        <span>Repair Management</span>
-                    </div>
-                    <div class="nav-item" data-section="budget-approval">
-                        <i class="nav-icon fas fa-dollar-sign"></i>
-                        <span>Budget Approval</span>
-                    </div>
-                    <div class="nav-item" data-section="asset-status">
-                        <i class="nav-icon fas fa-truck"></i>
-                        <span>Asset Status</span>
-                    </div>
-                    <div class="nav-item" data-section="technicians">
-                        <i class="nav-icon fas fa-user-cog"></i>
-                        <span>Technicians</span>
-                    </div>
-                </nav>
-            </aside>
-
-            <!-- Main Content -->
-            <main class="main-content">
-                <!-- Dashboard Section -->
+    <ac-layout
+        title="Supervisor Dashboard"
+        icon="fa-user-tie"
+        active-section="dashboard"
+        nav='[
+            {"section":"dashboard","icon":"fas fa-chart-line","label":"Dashboard"},
+            {"section":"daily-check-reports","icon":"fas fa-clipboard-check","label":"Weekly Check Reports"},
+            {"section":"fault-tickets","icon":"fas fa-exclamation-triangle","label":"Fault Tickets"},
+            {"section":"repair-management","icon":"fas fa-tools","label":"Repair Management"},
+            {"section":"budget-approval","icon":"fas fa-dollar-sign","label":"Budget Approval"},
+            {"section":"asset-status","icon":"fas fa-truck","label":"Asset Status"},
+            {"section":"technicians","icon":"fas fa-user-cog","label":"Technicians"}
+        ]'>
                 <section class="content-section active" id="dashboard">
                     <div class="page-header">
                         <h2 class="page-title"><i class="fas fa-chart-line"></i> Dashboard Overview</h2>
@@ -958,9 +898,7 @@
                         </div>
                     </div>
                 </section>
-            </main>
-        </div>
-    </div>
+    </ac-layout>
 
     <!-- Toast Notification -->
     <div id="toast" class="toast"></div>
@@ -1181,12 +1119,21 @@
         </div>
     </div>
 
+    <!-- Shared Components -->
+    <confirm-dialog></confirm-dialog>
+
     <!-- Scripts -->
     <script src="../../js/config.js?v=4"></script>
     <script src="../../js/api.js?v=4"></script>
     <script src="../../js/auth.js?v=4"></script>
+    <script src="../../components/shared/ac-header.js"></script>
+    <script src="../../components/shared/ac-sidebar.js"></script>
+    <script src="../../components/shared/ac-layout.js"></script>
+    <script src="../../components/styles/buttons.js"></script>
+    <script src="../../components/styles/icons.js"></script>
+    <script src="../../components/shared/confirm-dialog.js"></script>
     <script src="../../js/dashboard-init.js"></script>
-    <script src="script.js?v=6"></script>
+    <script src="script.js?v=7"></script>
 </body>
 
 </html>

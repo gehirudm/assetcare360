@@ -14,58 +14,19 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <h1 class="header-title">Maintenance Manager Dashboard</h1>
-            <div class="header-user">
-                <div class="user-info">
-                    <div class="user-avatar" id="userAvatar">MM</div>
-                    <span id="userName">Loading...</span>
-                </div>
-                <button class="logout-btn" onclick="logout()">
-                    <span><i class="fas fa-sign-out-alt"></i></span>
-                    Logout
-                </button>
-            </div>
-        </header>
-
-        <div class="main-wrapper">
-            <aside class="sidebar">
-                <h2>Maintenance Manager</h2>
-                <nav>
-                    <div class="nav-item active" data-section="dashboard">
-                        <span class="nav-icon"><i class="fas fa-chart-bar"></i></span>
-                        <span>Dashboard</span>
-                    </div>
-                    <div class="nav-item" data-section="fault-tickets">
-                        <span class="nav-icon"><i class="fas fa-ticket-alt"></i></span>
-                        <span>Fault Tickets</span>
-                    </div>
-                    <div class="nav-item" data-section="service-records">
-                        <span class="nav-icon"><i class="fas fa-file-alt"></i></span>
-                        <span>Service Records</span>
-                    </div>
-                    <div class="nav-item" data-section="cost-approvals">
-                        <span class="nav-icon"><i class="fas fa-money-bill-wave"></i></span>
-                        <span>Cost Approvals</span>
-                    </div>
-                    <div class="nav-item" data-section="service-warranty">
-                        <span class="nav-icon"><i class="fas fa-shield-alt"></i></span>
-                        <span>Service & Warranty Monitor</span>
-                    </div>
-                    <div class="nav-item" data-section="service-reports">
-                        <span class="nav-icon"><i class="fas fa-clipboard-list"></i></span>
-                        <span>Service Report Management</span>
-                    </div>
-                    <div class="nav-item" data-section="notifications">
-                        <span class="nav-icon"><i class="fas fa-bell"></i></span>
-                        <span>Notifications</span>
-                    </div>
-                </nav>
-            </aside>
-
-            <main class="main-content">
+    <ac-layout
+        title="Maintenance Manager Dashboard"
+        icon="fa-wrench"
+        active-section="dashboard"
+        nav='[
+            {"section":"dashboard","icon":"fas fa-chart-bar","label":"Dashboard"},
+            {"section":"fault-tickets","icon":"fas fa-ticket-alt","label":"Fault Tickets"},
+            {"section":"service-records","icon":"fas fa-file-alt","label":"Service Records"},
+            {"section":"cost-approvals","icon":"fas fa-money-bill-wave","label":"Cost Approvals"},
+            {"section":"service-warranty","icon":"fas fa-shield-alt","label":"Service &amp; Warranty Monitor"},
+            {"section":"service-reports","icon":"fas fa-clipboard-list","label":"Service Report Management"},
+            {"section":"notifications","icon":"fas fa-bell","label":"Notifications"}
+        ]'>
                 <!-- Dashboard Section -->
                 <section class="content-section active" id="dashboard">
                     <div class="page-header">
@@ -1024,9 +985,7 @@
                         </div>
                     </div>
                 </section>
-            </main>
-        </div>
-    </div>
+    </ac-layout>
 
     <!-- Modals -->
     <!-- Approve Cost Modal -->
@@ -1204,10 +1163,19 @@
         Action completed successfully!
     </div>
 
-    
+    <!-- Shared Components -->
+    <confirm-dialog></confirm-dialog>
+
+    <script src="../../js/config.js"></script>
     <script src="../../js/api.js"></script>
     <script src="../../js/auth.js"></script>
     <script src="../../js/utils.js"></script>
+    <script src="../../components/shared/ac-header.js"></script>
+    <script src="../../components/shared/ac-sidebar.js"></script>
+    <script src="../../components/shared/ac-layout.js"></script>
+    <script src="../../components/styles/buttons.js"></script>
+    <script src="../../components/styles/icons.js"></script>
+    <script src="../../components/shared/confirm-dialog.js"></script>
     <script src="../../js/dashboard-init.js"></script>
     <script src="script.js"></script>
 

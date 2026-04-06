@@ -183,9 +183,8 @@ function filterTicketsByStatus(status) {
  * Updates the sidebar badge and renders the notifications list.
  */
 async function loadNotifications() {
-    const list = document.getElementById('notificationsList');
+    const list  = document.getElementById('notificationsList');
     const empty = document.getElementById('notifEmpty');
-    const badge = document.getElementById('notifBadge');
 
     if (!list) return;
 
@@ -243,13 +242,11 @@ async function loadNotifications() {
             }
         });
 
-        // Update badge — only show count of items that need action (not passive waits)
+        // Update badge via the sidebar component's public method
         const actionableCount = notifications.filter(n => n.action !== null).length;
-        if (actionableCount > 0) {
-            badge.textContent = actionableCount;
-            badge.style.display = 'inline-flex';
-        } else {
-            badge.style.display = 'none';
+        const sidebar = document.querySelector('to-shell-sidebar');
+        if (sidebar) {
+            sidebar.setNotifBadge(actionableCount);
         }
 
         // Render list

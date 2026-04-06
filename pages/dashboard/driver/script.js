@@ -1,32 +1,5 @@
-// Navigation functionality
-function navigateTo(sectionId) {
-    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-    document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-
-    // Find and activate the corresponding nav item
-    const navItem = document.querySelector(`[data-section="${sectionId}"]`);
-    if (navItem) {
-        navItem.classList.add('active');
-    }
-
-    // Show the corresponding section
-    const section = document.getElementById(sectionId);
-    if (section) {
-        section.classList.add('active');
-    }
-}
-
-document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', function () {
-        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-        document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-
-        this.classList.add('active');
-
-        const sectionId = this.getAttribute('data-section');
-        document.getElementById(sectionId).classList.add('active');
-    });
-});
+// Navigation is handled by <ac-layout>. The navigateTo global is
+// auto-registered by <ac-layout> so existing onclick attributes keep working.
 
 // Modal functionality
 function openModal(modalId, data = null) {

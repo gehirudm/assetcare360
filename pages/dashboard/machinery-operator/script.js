@@ -67,15 +67,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         const user = await DashboardInit.init(['Machinary Operator', 'Admin'], {
             updateUserDisplay: true,
             onSuccess: async (user) => {
-                // Store current user
                 currentUser = user;
-
-                // Update specific user info elements for this dashboard
-                const userNameElement = document.getElementById('userName');
-
-                if (userNameElement) {
-                    userNameElement.textContent = user.full_name || user.name || 'Machine Operator';
-                }
 
                 // Load initial data
                 loadDashboardData();
@@ -85,49 +77,26 @@ document.addEventListener('DOMContentLoaded', async function () {
                 loadTickets();
                 loadNotifications();
 
-                // Refresh weekly check reports every 30 seconds to see status updates
+                // Refresh every 30 seconds
                 setInterval(() => {
                     loadConditionUpdates();
                     loadDashboardData();
-                }, 30000); // 30 seconds
+                }, 30000);
 
-                // Setup event listeners
-                setupNavigation();
+                // Setup form handlers and mobile menu
                 setupFormHandlers();
                 setupMobileMenu();
             }
         });
     } catch (error) {
         console.error('Initialization error:', error);
-        // DashboardInit will handle redirects automatically
     }
 });
 
 // ==================== NAVIGATION ====================
-
-function setupNavigation() {
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', function () {
-            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-            document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-            this.classList.add('active');
-            document.getElementById(this.getAttribute('data-section')).classList.add('active');
-        });
-    });
-}
-
-function navigateTo(sectionId) {
-    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-    document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-    const navItem = document.querySelector(`[data-section="${sectionId}"]`);
-    if (navItem) {
-        navItem.classList.add('active');
-    }
-    const section = document.getElementById(sectionId);
-    if (section) {
-        section.classList.add('active');
-    }
-}
+// Navigation is handled by <ac-layout>. Listen for section-change events.
+document.querySelector('ac-layout')
+    ?.addEventListener('section-change', () => { /* sections load on initial data fetch */ });
 
 // ==================== DATA LOADING ====================
 

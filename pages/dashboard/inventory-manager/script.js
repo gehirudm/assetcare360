@@ -6,29 +6,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         const user = await DashboardInit.init(['Inventory Manager', 'Admin'], {
             updateUserDisplay: true,
             onSuccess: async (user) => {
-                // Store current user
                 currentUser = user;
-
-                // Update specific user info elements for this dashboard
-                const userNameElement = document.getElementById('userName');
-                const userRoleElement = document.getElementById('userRole');
-                const userEmployeeIdElement = document.getElementById('userEmployeeId');
-                const userAvatarElement = document.getElementById('userAvatar');
-
-                if (userNameElement) {
-                    userNameElement.textContent = user.full_name || 'Inventory Manager';
-                }
-                if (userRoleElement) {
-                    userRoleElement.textContent = user.role || 'Inventory Manager';
-                }
-                if (userEmployeeIdElement && user.employee_id) {
-                    userEmployeeIdElement.textContent = `ID: ${user.employee_id}`;
-                }
-                if (userAvatarElement && user.full_name) {
-                    userAvatarElement.textContent = user.full_name.charAt(0).toUpperCase();
-                }
-
-                // Initialize the application
                 await initializeApp();
             }
         });
@@ -86,9 +64,6 @@ async function initializeApp() {
 
         // Load current user info
         await loadCurrentUser();
-
-        // Initialize navigation
-        initializeNavigation();
 
         // Load dashboard data
         await loadDashboardData().catch(err => {
@@ -173,76 +148,13 @@ function showLoading(show) {
 }
 
 // ==================== NAVIGATION ====================
-
-function initializeNavigation() {
-    console.log('Initializing navigation...');
-    const navItems = document.querySelectorAll('.nav-item');
-    console.log(`Found ${navItems.length} nav items`);
-
-    navItems.forEach(item => {
-        item.addEventListener('click', async function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            console.log('Nav item clicked:', this.getAttribute('data-section'));
-
-            // Remove active class from all nav items and sections
-            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-            document.querySelectorAll('.content-section').forEach(section => {
-                section.classList.remove('active');
-                console.log(`Hiding section: ${section.id}`);
-            });
-
-            // Add active class to clicked nav item
-            this.classList.add('active');
-
-            // Show corresponding section
-            const sectionId = this.getAttribute('data-section');
-            const targetSection = document.getElementById(sectionId);
-
-            console.log(`Attempting to show section: ${sectionId}`, targetSection);
-
-            if (targetSection) {
-                targetSection.classList.add('active');
-                console.log(`Section ${sectionId} is now active`);
-
-                // Scroll to top of content
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-
-                // Load section data (don't await to avoid blocking UI)
-                loadSectionData(sectionId).catch(err => {
-                    console.error('Error loading section data:', err);
-                });
-            } else {
-                console.error(`Section with id '${sectionId}' not found`);
-            }
+// Navigation is handled by <ac-layout>. Listen for section-change events.
+document.querySelector('ac-layout')
+    ?.addEventListener('section-change', e => {
+        loadSectionData(e.detail.section).catch(err => {
+            console.error('Error loading section data:', err);
         });
     });
-
-    console.log('Navigation initialized successfully');
-}
-
-// Navigate to a specific section programmatically
-function navigateTo(sectionId) {
-    // Remove active class from all nav items and sections
-    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-    document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-
-    // Find and activate the nav item
-    const navItem = document.querySelector(`[data-section="${sectionId}"]`);
-    if (navItem) {
-        navItem.classList.add('active');
-    }
-
-    // Show the section
-    const section = document.getElementById(sectionId);
-    if (section) {
-        section.classList.add('active');
-    }
-
-    // Load section data
-    loadSectionData(sectionId);
-}
 
 async function loadSectionData(sectionId) {
     try {

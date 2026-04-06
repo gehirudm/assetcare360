@@ -8,66 +8,17 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-left">
-                <div class="brand-logo">
-                    <span class="brand-name">AssetCare<span class="brand-highlight">360</span></span>
-                </div>
-                <div class="header-divider"></div>
-                <h1 class="header-title">
-                    <i class="fas fa-cogs"></i> Machinery Operator Dashboard
-                </h1>
-            </div>
-            <div class="header-user">
-                <div class="user-info" onclick="window.location.href='/profile/index.html'" style="cursor: pointer; transition: all 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'; this.style.borderRadius='8px'" onmouseout="this.style.backgroundColor='transparent'" title="View Profile">
-                    <div class="user-avatar" id="userAvatar">MO</div>
-                    <div class="user-details">
-                        <div class="user-name" id="userName">Loading...</div>
-                        <div class="header-user-meta">
-                            <span id="userEmployeeId"></span>
-                            <span class="separator">•</span>
-                            <span id="userRole"></span>
-                        </div>
-                    </div>
-                </div>
-                <button class="logout-btn" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </button>
-            </div>
-        </header>
-
-        <div class="main-wrapper">
-            <!-- Sidebar -->
-            <aside class="sidebar">
-                <nav>
-                    <div class="nav-item active" data-section="dashboard">
-                        <i class="nav-icon fas fa-chart-line"></i>
-                        <span>Dashboard</span>
-                    </div>
-                    <div class="nav-item" data-section="fault-reporting">
-                        <i class="nav-icon fas fa-exclamation-triangle"></i>
-                        <span>Fault Reporting</span>
-                    </div>
-                    <div class="nav-item" data-section="condition-updates">
-                        <i class="nav-icon fas fa-clipboard-check"></i>
-                        <span>Weekly Check Reports</span>
-                    </div>
-                    <div class="nav-item" data-section="ticket-tracking">
-                        <i class="nav-icon fas fa-ticket-alt"></i>
-                        <span>Ticket Tracking</span>
-                    </div>
-                    <div class="nav-item" data-section="notifications">
-                        <i class="nav-icon fas fa-bell"></i>
-                        <span>Notifications</span>
-                    </div>
-                </nav>
-            </aside>
-
-            <!-- Main Content -->
-            <main class="main-content">
+    <ac-layout
+        title="Machinery Operator Dashboard"
+        icon="fa-cogs"
+        active-section="dashboard"
+        nav='[
+            {"section":"dashboard","icon":"fas fa-chart-line","label":"Dashboard"},
+            {"section":"fault-reporting","icon":"fas fa-exclamation-triangle","label":"Fault Reporting"},
+            {"section":"condition-updates","icon":"fas fa-clipboard-check","label":"Weekly Check Reports"},
+            {"section":"ticket-tracking","icon":"fas fa-ticket-alt","label":"Ticket Tracking"},
+            {"section":"notifications","icon":"fas fa-bell","label":"Notifications","badge":true}
+        ]'>
                 <!-- Dashboard Section -->
                 <section class="content-section active" id="dashboard">
                     <div class="page-header">
@@ -348,9 +299,7 @@
                         </div>
                     </div>
                 </section>
-            </main>
-        </div>
-    </div>
+    </ac-layout>
 
     <!-- Report Fault Modal -->
     <div id="reportFaultModal" class="modal">
@@ -566,11 +515,20 @@
     <!-- Toast Notification -->
     <div id="toast" class="toast"></div>
 
+    <!-- Shared Components -->
+    <confirm-dialog></confirm-dialog>
+
     <!-- Scripts -->
     <script src="../../js/auth.js"></script>
     <script src="../../js/utils.js"></script>
     <script src="../../js/config.js"></script>
     <script src="../../js/api.js"></script>
+    <script src="../../components/shared/ac-header.js"></script>
+    <script src="../../components/shared/ac-sidebar.js"></script>
+    <script src="../../components/shared/ac-layout.js"></script>
+    <script src="../../components/styles/buttons.js"></script>
+    <script src="../../components/styles/icons.js"></script>
+    <script src="../../components/shared/confirm-dialog.js"></script>
     <script src="../../js/dashboard-init.js"></script>
     <script src="script.js"></script>
 </body>

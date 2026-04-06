@@ -1,89 +1,29 @@
 // ==================== INITIALIZATION & AUTH ====================
 
-// Check authorization on page load
-(async function initializeDashboard() {
-    // Require supervisor role
-    const authorized = await Auth.requireRole('Supervisor');
+DashboardInit.init('Supervisor', {
+    onSuccess: () => {
+        loadDashboardData();
 
-    if (!authorized) {
-        return; // Auth.requireRole will handle redirection
-    }
+        // Refresh weekly check reports every 30 seconds
+        setInterval(() => {
+            const currentSection = document.querySelector('.content-section.active')?.id;
+            if (currentSection === 'daily-check-reports') {
+                loadDailyCheckReports();
+            }
+        }, 30000);
 
-    // Load user data
-    const user = await Auth.checkAuth();
-    if (user) {
-        // Update user name
-        const fullName = user.full_name || user.name || 'Supervisor';
-        document.getElementById('userName').textContent = fullName;
-
-        // Update user avatar with first letter of name
-        const avatar = document.getElementById('userAvatar');
-        avatar.textContent = fullName.charAt(0).toUpperCase();
-
-        // Update employee ID
-        const employeeIdElement = document.getElementById('userEmployeeId');
-        if (employeeIdElement && user.employee_id) {
-            employeeIdElement.textContent = `ID: ${user.employee_id}`;
-        }
-
-        // Update role
-        const roleElement = document.getElementById('userRole');
-        if (roleElement && user.role) {
-            roleElement.textContent = user.role;
+        // Set up photo upload handler
+        const photoInput = document.getElementById('ticketPhotos');
+        if (photoInput) {
+            photoInput.addEventListener('change', handleCreateTicketPhotoUpload);
         }
     }
-
-    // Load initial data
-    loadDashboardData();
-
-    // Refresh weekly check reports every 30 seconds to keep status updated
-    setInterval(() => {
-        const currentSection = document.querySelector('.content-section.active')?.id;
-        if (currentSection === 'daily-check-reports') {
-            loadDailyCheckReports();
-        }
-    }, 30000); // 30 seconds
-
-    // Set up photo upload handler
-    const photoInput = document.getElementById('ticketPhotos');
-    if (photoInput) {
-        photoInput.addEventListener('change', handleCreateTicketPhotoUpload);
-    }
-})();
+});
 
 // ==================== NAVIGATION ====================
 
-document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', function () {
-        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-        document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-
-        this.classList.add('active');
-
-        const sectionId = this.getAttribute('data-section');
-        document.getElementById(sectionId).classList.add('active');
-
-        // Load section-specific data
-        loadSectionData(sectionId);
-    });
-});
-
-function navigateTo(sectionId) {
-    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-    document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-
-    const navItem = document.querySelector(`[data-section="${sectionId}"]`);
-    if (navItem) {
-        navItem.classList.add('active');
-    }
-
-    const section = document.getElementById(sectionId);
-    if (section) {
-        section.classList.add('active');
-    }
-
-    loadSectionData(sectionId);
-}
+document.querySelector('ac-layout')
+    ?.addEventListener('section-change', e => loadSectionData(e.detail.section));
 
 // ==================== DATA LOADING ====================
 

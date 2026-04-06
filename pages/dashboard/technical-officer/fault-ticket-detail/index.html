@@ -15,76 +15,13 @@
 <body>
 <div class="container">
 
-    <!-- ── Header (identical to TO dashboard) ─────────────────────────── -->
-    <header class="header">
-        <div class="header-left">
-            <div class="brand-logo">
-                <span class="brand-name">AssetCare<span class="brand-highlight">360</span></span>
-            </div>
-            <div class="header-divider"></div>
-            <h1 class="header-title">
-                <i class="fas fa-user-cog"></i> Technical Officer Dashboard
-            </h1>
-        </div>
-        <div class="header-user">
-            <div class="user-info" onclick="window.location.href='/profile/index.html'"
-                style="cursor: pointer; transition: all 0.2s;"
-                onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'; this.style.borderRadius='8px'"
-                onmouseout="this.style.backgroundColor='transparent'" title="View Profile">
-                <div class="user-avatar" id="userAvatar">T</div>
-                <div class="user-details">
-                    <div class="user-name" id="userName">Loading...</div>
-                    <div class="user-meta">
-                        <span id="userEmployeeId"></span>
-                        <span class="separator">•</span>
-                        <span id="userRole"></span>
-                    </div>
-                </div>
-            </div>
-            <button class="logout-btn" onclick="logout()">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Logout</span>
-            </button>
-        </div>
-    </header>
+    <!-- ── Header ──────────────────────────────────────────────────────── -->
+    <to-shell-header></to-shell-header>
 
     <div class="main-wrapper">
 
-        <!-- ── Sidebar (identical to TO dashboard) ────────────────────── -->
-        <aside class="sidebar">
-            <nav>
-                <div class="nav-item" data-section="dashboard"
-                    onclick="window.location.href='../?section=dashboard'">
-                    <i class="nav-icon fas fa-chart-line"></i>
-                    <span>Dashboard</span>
-                </div>
-                <div class="nav-item active" data-section="tickets"
-                    onclick="window.location.href='../?section=tickets'">
-                    <i class="nav-icon fas fa-ticket-alt"></i>
-                    <span>Fault &amp; Repair Tickets</span>
-                </div>
-                <div class="nav-item" data-section="spare-parts"
-                    onclick="window.location.href='../?section=spare-parts'">
-                    <i class="nav-icon fas fa-tools"></i>
-                    <span>Spare Part Management</span>
-                </div>
-                <div class="nav-item" data-section="inventory"
-                    onclick="window.location.href='../?section=inventory'">
-                    <i class="nav-icon fas fa-warehouse"></i>
-                    <span>Inventory Management</span>
-                </div>
-                <div class="nav-item" data-section="service-warranty"
-                    onclick="window.location.href='../?section=service-warranty'">
-                    <i class="nav-icon fas fa-shield-alt"></i>
-                    <span>Service &amp; Warranty</span>
-                </div>
-                <div class="nav-item" data-section="feedback"
-                    onclick="window.location.href='../?section=feedback'">
-                    <i class="nav-icon fas fa-comments"></i>
-                    <span>Asset Feedback</span>
-                </div>
-            </nav>
-        </aside>
+        <!-- ── Sidebar ─────────────────────────────────────────────────── -->
+        <to-shell-sidebar mode="subpage" active-section="tickets" base-path="../"></to-shell-sidebar>
 
         <!-- ── Main Content ────────────────────────────────────────────── -->
         <main class="main-content detail-page-content">
@@ -566,9 +503,17 @@
         <span id="toastMessage"></span>
     </div>
 
+    <!-- Shared Components -->
+    <confirm-dialog></confirm-dialog>
+
     <script src="../../../js/config.js"></script>
     <script src="../../../js/api.js"></script>
     <script src="../../../js/auth.js"></script>
+    <script src="../../../components/technical-officer/to-shell-header.js"></script>
+    <script src="../../../components/technical-officer/to-shell-sidebar.js"></script>
+    <script src="../../../components/styles/buttons.js"></script>
+    <script src="../../../components/styles/icons.js"></script>
+    <script src="../../../components/shared/confirm-dialog.js"></script>
     <script src="../../../js/dashboard-init.js"></script>
     <script src="script.js"></script>
 </body>

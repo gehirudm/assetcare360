@@ -14,52 +14,18 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <h1 class="header-title">Auction Officer Dashboard</h1>
-            <div class="header-user">
-                <div class="user-info">
-                    <div class="user-avatar" id="userAvatar">AO</div>
-                    <span id="userName">Loading...</span>
-                </div>
-                <button class="logout-btn" onclick="logout()">
-                    <span><i class="fas fa-sign-out-alt"></i></span> Logout
-                </button>
-            </div>
-        </header>
-
-        <div class="main-wrapper">
-            <aside class="sidebar">
-                <h2>Auction Officer</h2>
-                <nav>
-                    <div class="nav-item active" data-section="dashboard">
-                        <span class="nav-icon"><i class="fas fa-chart-bar"></i></span>
-                        <span>Dashboard</span>
-                    </div>
-                    <div class="nav-item" data-section="active-auctions">
-                        <span class="nav-icon"><i class="fas fa-gavel"></i></span>
-                        <span>Active Auctions</span>
-                    </div>
-                    <div class="nav-item" data-section="assets">
-                        <span class="nav-icon"><i class="fas fa-truck"></i></span>
-                        <span>Assets for Auction</span>
-                    </div>
-                    <div class="nav-item" data-section="bidders">
-                        <span class="nav-icon"><i class="fas fa-users"></i></span>
-                        <span>Bidder Management</span>
-                    </div>
-                    <div class="nav-item" data-section="schedule">
-                        <span class="nav-icon"><i class="fas fa-calendar-alt"></i></span>
-                        <span>Auction Schedule</span>
-                    </div>
-                    <div class="nav-item" data-section="reports">
-                        <span class="nav-icon"><i class="fas fa-chart-line"></i></span>
-                        <span>Reports</span>
-                    </div>
-                </nav>
-            </aside>
-
-            <main class="main-content">
+    <ac-layout
+        title="Auction Officer Dashboard"
+        icon="fa-gavel"
+        active-section="dashboard"
+        nav='[
+            {"section":"dashboard","icon":"fas fa-chart-bar","label":"Dashboard"},
+            {"section":"active-auctions","icon":"fas fa-gavel","label":"Active Auctions"},
+            {"section":"assets","icon":"fas fa-truck","label":"Assets for Auction"},
+            {"section":"bidders","icon":"fas fa-users","label":"Bidder Management"},
+            {"section":"schedule","icon":"fas fa-calendar-alt","label":"Auction Schedule"},
+            {"section":"reports","icon":"fas fa-chart-line","label":"Reports"}
+        ]'>
                 <!-- Dashboard Section -->
                 <section class="content-section active" id="dashboard">
                     <div class="page-header">
@@ -478,9 +444,7 @@
                         </div>
                     </div>
                 </section>
-            </main>
-        </div>
-    </div>
+    </ac-layout>
 
     <!-- Modals -->
     <div id="createAuctionModal" class="modal">
@@ -620,9 +584,18 @@
 
     <div id="toast" class="toast"></div>
 
+    <!-- Shared Components -->
+    <confirm-dialog></confirm-dialog>
+
     <script src="../../js/api.js"></script>
     <script src="../../js/auth.js"></script>
     <script src="../../js/utils.js"></script>
+    <script src="../../components/shared/ac-header.js"></script>
+    <script src="../../components/shared/ac-sidebar.js"></script>
+    <script src="../../components/shared/ac-layout.js"></script>
+    <script src="../../components/styles/buttons.js"></script>
+    <script src="../../components/styles/icons.js"></script>
+    <script src="../../components/shared/confirm-dialog.js"></script>
     <script src="../../js/dashboard-init.js"></script>
     <script src="script.js"></script>
 </body>

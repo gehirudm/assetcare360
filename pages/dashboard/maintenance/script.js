@@ -315,27 +315,8 @@ function setActiveButtons(selector, trigger) {
     }
 }
 
-// Navigation
-function bindNavigation() {
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', function () {
-            navigateToSection(this.getAttribute('data-section'));
-        });
-    });
-}
-
-function navigateToSection(sectionId) {
-    const targetNav = document.querySelector(`[data-section="${sectionId}"]`);
-    const targetSection = document.getElementById(sectionId);
-
-    if (!targetSection) return;
-
-    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-    document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-
-    if (targetNav) targetNav.classList.add('active');
-    targetSection.classList.add('active');
-}
+// Navigation is handled by <ac-layout>. The navigateToSection global is
+// auto-registered by <ac-layout> so existing onclick attributes keep working.
 
 // Tabs
 function switchTab(tabName, evt) {
@@ -778,7 +759,6 @@ function setupMobileMenu() {
 document.addEventListener('DOMContentLoaded', async () => {
     await DashboardInit.init(['Maintenance Manager'], { updateUserDisplay: true });
 
-    bindNavigation();
     initializeForms();
     updateServiceScheduleTable();
     setDefaultDates();

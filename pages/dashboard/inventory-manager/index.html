@@ -16,6 +16,12 @@
     <script src="../../js/api.js"></script>
     <script src="../../js/auth.js"></script>
     <script src="../../js/utils.js"></script>
+    <script src="../../components/shared/ac-header.js"></script>
+    <script src="../../components/shared/ac-sidebar.js"></script>
+    <script src="../../components/shared/ac-layout.js"></script>
+    <script src="../../components/styles/buttons.js"></script>
+    <script src="../../components/styles/icons.js"></script>
+    <script src="../../components/shared/confirm-dialog.js"></script>
     <script src="../../js/dashboard-init.js"></script>
 </head>
 <body>
@@ -24,76 +30,20 @@
         <div class="loading"></div>
     </div>
 
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-left">
-                <div class="brand-logo">
-                    <span class="brand-name">AssetCare<span class="brand-highlight">360</span></span>
-                </div>
-                <div class="header-divider"></div>
-                <h1 class="header-title">
-                    <i class="fas fa-boxes"></i> Inventory Manager Dashboard
-                </h1>
-            </div>
-            <div class="header-user">
-                <div class="user-info" onclick="window.location.href='/profile/index.html'" style="cursor: pointer; transition: all 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'; this.style.borderRadius='8px'" onmouseout="this.style.backgroundColor='transparent'" title="View Profile">
-                    <div class="user-avatar" id="userAvatar">IM</div>
-                    <div class="user-details">
-                        <div class="user-name" id="userName">Loading...</div>
-                        <div class="user-meta">
-                            <span id="userEmployeeId"></span>
-                            <span class="separator">•</span>
-                            <span id="userRole"></span>
-                        </div>
-                    </div>
-                </div>
-                <button class="logout-btn" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </button>
-            </div>
-        </header>
-
-        <div class="main-wrapper">
-            <aside class="sidebar">
-                <nav>
-                    <div class="nav-item active" data-section="dashboard">
-                        <i class="nav-icon fas fa-tachometer-alt"></i>
-                        <span>Dashboard</span>
-                    </div>
-                    <div class="nav-item" data-section="machines">
-                        <i class="nav-icon fas fa-cogs"></i>
-                        <span>Manage Machines</span>
-                    </div>
-                    <div class="nav-item" data-section="vehicles">
-                        <i class="nav-icon fas fa-truck"></i>
-                        <span>Manage Vehicles</span>
-                    </div>
-                    <div class="nav-item" data-section="catalog">
-                        <i class="nav-icon fas fa-list-alt"></i>
-                        <span>Spare Parts Catalog</span>
-                    </div>
-                    <div class="nav-item" data-section="sparepart-addition">
-                        <i class="nav-icon fas fa-plus-circle"></i>
-                        <span>Sparepart Addition</span>
-                    </div>
-                    <div class="nav-item" data-section="orders-approvals">
-                        <i class="nav-icon fas fa-clipboard-check"></i>
-                        <span>Orders & Approvals</span>
-                    </div>
-                    <div class="nav-item" data-section="usage-tracking">
-                        <i class="nav-icon fas fa-chart-line"></i>
-                        <span>Usage Tracking</span>
-                    </div>
-                    <div class="nav-item" data-section="notifications">
-                        <i class="nav-icon fas fa-bell"></i>
-                        <span>Notifications</span>
-                    </div>
-                </nav>
-            </aside>
-
-            <main class="main-content">
+    <ac-layout
+        title="Inventory Manager Dashboard"
+        icon="fa-boxes"
+        active-section="dashboard"
+        nav='[
+            {"section":"dashboard","icon":"fas fa-tachometer-alt","label":"Dashboard"},
+            {"section":"machines","icon":"fas fa-cogs","label":"Manage Machines"},
+            {"section":"vehicles","icon":"fas fa-truck","label":"Manage Vehicles"},
+            {"section":"catalog","icon":"fas fa-list-alt","label":"Spare Parts Catalog"},
+            {"section":"sparepart-addition","icon":"fas fa-plus-circle","label":"Sparepart Addition"},
+            {"section":"orders-approvals","icon":"fas fa-clipboard-check","label":"Orders &amp; Approvals"},
+            {"section":"usage-tracking","icon":"fas fa-chart-line","label":"Usage Tracking"},
+            {"section":"notifications","icon":"fas fa-bell","label":"Notifications","badge":true}
+        ]'>
                 <!-- Dashboard Section -->
                 <section class="content-section active" id="dashboard">
                     <div class="page-header">
@@ -604,9 +554,7 @@
                         </div>
                     </div>
                 </section>
-            </main>
-        </div>
-    </div>
+    </ac-layout>
 
     <!-- Modals will be included here -->
     <div id="modalsContainer">
@@ -1078,6 +1026,9 @@
     <div id="toast" class="toast">
         Action completed successfully!
     </div>
+
+    <!-- Shared Components -->
+    <confirm-dialog></confirm-dialog>
 
     <!-- Load JavaScript -->
     <script src="script.js?v=1.7.0"></script>
