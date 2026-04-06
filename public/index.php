@@ -186,6 +186,7 @@ $router->delete('/products/:id', 'ProductController', 'destroy');
 
 // Sparepart usage tracking routes (Inventory Manager and above)
 $router->get('/usage', 'SparepartUsageController', 'getAll');
+$router->get('/usage/totals', 'SparepartUsageController', 'getTotals');
 $router->post('/usage', 'SparepartUsageController', 'create');
 $router->get('/usage/sparepart/:id', 'SparepartUsageController', 'getHistory');
 $router->get('/usage/stats/:id', 'SparepartUsageController', 'getStats');
@@ -258,6 +259,8 @@ $router->patch('/tec-repair-tickets/:id/status', 'TecFaultRepairTicketController
 // Spare Part Request routes (Technical Officer → Inventory Manager)
 $router->get('/spare-part-requests/stats', 'SparePartRequestController', 'stats');
 $router->get('/spare-part-requests/ticket/:id', 'SparePartRequestController', 'getByTicket');
+$router->get('/spare-part-requests/rejected-by-sparepart', 'SparePartRequestController', 'getRejectedBySparepart');
+$router->get('/spare-part-requests/:id/check-stock', 'SparePartRequestController', 'checkStock');
 $router->get('/spare-part-requests', 'SparePartRequestController', 'index');
 $router->get('/spare-part-requests/:id', 'SparePartRequestController', 'show');
 $router->post('/spare-part-requests', 'SparePartRequestController', 'create');
