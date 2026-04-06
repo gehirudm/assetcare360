@@ -110,6 +110,30 @@ class SparepartUsageService {
     }
     
     /**
+     * Get total quantity issued per sparepart (no pagination — full aggregate)
+     */
+    public function getIssuedTotals() {
+        try {
+            $totals = $this->usageModel->getIssuedTotals();
+            // Key by sparepart_id for easy lookup
+            $map = [];
+            foreach ($totals as $row) {
+                $map[$row['sparepart_id']] = (int)$row['total_issued'];
+            }
+            return [
+                'status' => 'success',
+                'data' => ['totals' => $map]
+            ];
+        } catch (Exception $e) {
+            error_log("Error in getIssuedTotals: " . $e->getMessage());
+            return [
+                'status' => 'error',
+                'message' => 'Failed to fetch issued totals: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
      * Get all usage records with pagination
      */
     public function getAllUsage($page = 1, $perPage = 50) {

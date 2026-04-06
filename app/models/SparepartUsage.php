@@ -69,6 +69,20 @@ class SparepartUsage extends BaseModel {
     }
     
     /**
+     * Get total quantity issued per sparepart (all time, all records)
+     */
+    public function getIssuedTotals() {
+        $sql = "SELECT sparepart_id, SUM(quantity_issued) as total_issued
+                FROM {$this->table}
+                GROUP BY sparepart_id";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
      * Get usage statistics for a sparepart
      */
     public function getUsageStats($sparepartId) {

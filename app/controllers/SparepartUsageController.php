@@ -94,6 +94,19 @@ class SparepartUsageController {
         }
     }
     
+    public function getTotals() {
+        try {
+            $result = $this->service->getIssuedTotals();
+            return Response::json($result, $result['status'] === 'success' ? 200 : 500);
+        } catch (Exception $e) {
+            error_log("Error fetching issued totals: " . $e->getMessage());
+            return Response::json([
+                'status' => 'error',
+                'message' => 'Failed to fetch issued totals'
+            ], 500);
+        }
+    }
+
     public function getAvailableQuantity() {
         try {
             $sparepartId = $_GET['id'] ?? $_GET['sparepart_id'] ?? null;
