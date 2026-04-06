@@ -36,6 +36,7 @@
 - ⏳ `testing/openapi.yaml` may be out of date with latest budget/work-update gating changes
 - ⏳ Frontend budget-submission form should validate `total_amount > 0` before POSTing
 - ⏳ Other role dashboards (supervisor, driver, maintenance, etc.) — status varies
+- ⏳ Dashboard Web Components refactor backlog created (agent-memory TASK004–TASK016 + Beads epic/children) and ready for staged execution
 
 ## Known Bugs Fixed (this session)
 - `Response::badRequest()` used in `TecFaultRepairTicketController` — doesn't exist; replaced with `Response::error('…', 400)`

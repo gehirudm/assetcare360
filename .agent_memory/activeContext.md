@@ -48,3 +48,12 @@ Budget step correctness — ensuring fault tickets cannot progress to work-in-pr
 - Update `testing/openapi.yaml` with any API changes from budget fixes
 - Verify frontend budget-step form validates `total_amount > 0` before submitting
 - Use `dashboard-styling-guide.md` as template when building Supervisor / Manager / Admin dashboards
+
+### Dashboard Refactor Backlog Setup (latest session)
+- Completed full dashboard analysis (sections, script size, shell pattern, event density, script bootstraps)
+- Created agent-memory tasks `TASK004` to `TASK016` covering:
+	- Program coordination
+	- Per-dashboard section componentization tasks
+	- Cross-cutting inline-event migration and bootstrap normalization
+	- Transportation Manager dashboard bootstrap
+- Created matching Beads epic `assetcare-backend-new-t2k` and linked 12 child parent-child issues for execution tracking
