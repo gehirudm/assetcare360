@@ -172,4 +172,30 @@ class SparePartRequest extends BaseModel {
 
         return $counts;
     }
+
+    /**
+     * Get all Rejected requests that contain a specific sparepart (by part_code or name).
+     * Used after a stock addition to notify the IM which orders can be re-approved.
+     */
+    public function getRejectedBySparepart($sparepartId) {
+        $sql = "SELECT DISTINCT spr.*,
+                       ft.ticket_id as fault_ticket_code,
+                       ft.description as ticket_description,
+                       ft.priority as ticket_priority,
+                       ft.status as ticket_status,
+                       u.full_name as requested_by_name,
+                       reviewer.full_name as reviewed_by_name
+                FROM `{$this->table}` spr
+                LEFT JOIN fault_tickets ft ON spr.fault_ticket_id = ft.id
+                LEFT JOIN users u ON spr.requested_by = u.id
+                LEFT JOIN users reviewer ON spr.reviewed_by = reviewer.id
+                INNER JOIN spare_part_request_items spri ON spri.request_id = spr.id
+                WHERE spr.status = 'Rejected'
+                AND (spri.part_code = ? OR spri.part_code LIKE ?)
+                ORDER BY spr.created_at DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$sparepartId, '%' . $sparepartId . '%']);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

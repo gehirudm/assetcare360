@@ -95,6 +95,20 @@ class SparePartRequestController {
      * GET /spare-part-requests/stats
      * Get request counts by status
      */
+    public function getRejectedBySparepart() {
+        try {
+            $sparepartId = $_GET['sparepart_id'] ?? null;
+            if (!$sparepartId) {
+                return Response::json(['status' => 'error', 'message' => 'sparepart_id is required'], 400);
+            }
+            $result = $this->service->getRejectedBySparepart($sparepartId);
+            return Response::json($result, $result['status'] === 'success' ? 200 : 500);
+        } catch (Exception $e) {
+            error_log('Error in getRejectedBySparepart: ' . $e->getMessage());
+            return Response::json(['status' => 'error', 'message' => 'Failed to fetch rejected requests'], 500);
+        }
+    }
+
     public function stats() {
         try {
             $result = $this->service->getStats();
@@ -133,6 +147,25 @@ class SparePartRequestController {
         } catch (Exception $e) {
             error_log("Error in SparePartRequestController::create: " . $e->getMessage());
             return Response::json(['status' => 'error', 'message' => 'Failed to create request: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * GET /spare-part-requests/:id/check-stock
+     * Pre-check stock availability for each item before approving
+     */
+    public function checkStock() {
+        try {
+            $id = $_GET['id'] ?? null;
+            if (!$id) {
+                return Response::json(['status' => 'error', 'message' => 'Request ID is required'], 400);
+            }
+
+            $result = $this->service->checkStockAvailability($id);
+            return Response::json(['status' => 'success', 'data' => $result]);
+        } catch (Exception $e) {
+            error_log("Error in SparePartRequestController::checkStock: " . $e->getMessage());
+            return Response::json(['status' => 'error', 'message' => 'Failed to check stock availability'], 500);
         }
     }
 
