@@ -67,6 +67,7 @@ require_once __DIR__ . '/../app/controllers/SparepartAdditionController.php';
 require_once __DIR__ . '/../app/controllers/FaultTicketController.php';
 require_once __DIR__ . '/../app/controllers/TicketWorkUpdateController.php';
 require_once __DIR__ . '/../app/controllers/BudgetReportController.php';
+require_once __DIR__ . '/../app/controllers/SystemSettingController.php';
 require_once __DIR__ . '/../app/controllers/FileController.php';
 require_once __DIR__ . '/../app/controllers/VehicleCheckController.php';
 require_once __DIR__ . '/../app/controllers/MachineWeeklyCheckController.php';
@@ -221,6 +222,11 @@ $router->post('/budget-reports', 'BudgetReportController', 'create');
 $router->put('/budget-reports/:id', 'BudgetReportController', 'update');
 $router->post('/budget-reports/:id/review', 'BudgetReportController', 'review');
 $router->delete('/budget-reports/:id', 'BudgetReportController', 'delete');
+
+// System settings routes (Admin only)
+$router->get('/system-settings', 'SystemSettingController', 'index');
+$router->get('/system-settings/:key', 'SystemSettingController', 'show');
+$router->put('/system-settings/:key', 'SystemSettingController', 'update');
 
 // File serving routes (for uploaded files)
 $router->get('/uploads/fault-tickets/:filename', 'FileController', 'serveFaultTicketImage');

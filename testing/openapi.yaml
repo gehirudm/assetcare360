@@ -47,7 +47,9 @@ tags:
   - name: Products
     description: Product/Inventory operations
   - name: Budget Reports
-    description: Budget report submission and management for fault tickets
+    description: Budget report submission and approval workflow for fault tickets. Budgets within petty cash limit are approved by Supervisors; amounts exceeding the limit require Maintenance Manager approval.
+  - name: System Settings
+    description: System-wide configuration settings (Admin only). Includes petty cash limit for budget approval routing.
 
 security:
   - bearerAuth: []
@@ -2603,6 +2605,10 @@ components:
       description: |
         Submit a new budget report for a fault ticket (Technical Officer only).
         
+        **Budget Approval Routing:**
+        - If total_amount <= petty cash limit → approval_level = "supervisor" (Supervisor can approve)
+        - If total_amount > petty cash limit → approval_level = "maintenance_manager" (Maintenance Manager must approve)
+        
         **Requirements:**
         - Ticket must be in "Open" or "Assigned" status (before work begins)
         - After submission, ticket status automatically changes to "Waiting for Budget Approval"
@@ -2647,12 +2653,19 @@ components:
                     example: success
                   message:
                     type: string
-                    example: Budget report created successfully
+                    example: Budget report created. Awaiting Supervisor approval.
                   data:
                     type: object
                     properties:
                       report:
                         $ref: '#/components/schemas/BudgetReport'
+                      approval_level:
+                        type: string
+                        enum: [supervisor, maintenance_manager]
+                        example: supervisor
+                      petty_cash_limit:
+                        type: number
+                        example: 50000.00
         '400':
           description: Bad request (missing fields or invalid data)
           content:
@@ -2677,7 +2690,11 @@ components:
       tags:
         - Budget Reports
       summary: Get all pending budget reports
-      description: Retrieve all pending budget reports (Supervisor/Admin only)
+      description: |
+        Retrieve pending budget reports filtered by the caller's role:
+        - **Supervisor**: sees only supervisor-level reports (within petty cash limit)
+        - **Maintenance Manager**: sees only maintenance_manager-level reports (exceeding petty cash limit)
+        - **Admin**: sees all pending reports
       security:
         - bearerAuth: []
         - cookieAuth: []
@@ -2864,7 +2881,17 @@ components:
       tags:
         - Budget Reports
       summary: Review budget report
-      description: Approve or reject a budget report (Supervisor/Admin only)
+      description: |
+        Approve or reject a budget report.
+        
+        **Role-based enforcement:**
+        - Reports with approval_level "supervisor" → Supervisor, Maintenance Manager, or Admin can approve
+        - Reports with approval_level "maintenance_manager" → only Maintenance Manager or Admin can approve
+        
+        **Status transitions on the fault ticket:**
+        - Approved → ticket moves to "Assigned"
+        - Rejected → ticket moves to "Assigned" (for resubmission)
+        - Revised → ticket stays in "Waiting for Budget Approval"
       security:
         - bearerAuth: []
         - cookieAuth: []
@@ -2910,6 +2937,145 @@ components:
                     properties:
                       report:
                         $ref: '#/components/schemas/BudgetReport'
+
+  # ==================== SYSTEM SETTINGS ====================
+  /system-settings:
+    get:
+      tags:
+        - System Settings
+      summary: Get all system settings
+      description: Retrieve all system settings (Admin only)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: List of system settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      settings:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SystemSetting'
+        '403':
+          description: Forbidden - Admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /system-settings/{key}:
+    get:
+      tags:
+        - System Settings
+      summary: Get a system setting by key
+      description: Retrieve a single system setting by its key
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Setting key (e.g., petty_cash_limit)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: System setting
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      setting:
+                        $ref: '#/components/schemas/SystemSetting'
+        '404':
+          description: Setting not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - System Settings
+      summary: Update a system setting
+      description: Update the value of a system setting (Admin only). Value is validated against the setting's data_type.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Setting key (e.g., petty_cash_limit)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - value
+              properties:
+                value:
+                  description: The new value for the setting. Type must match the setting's data_type.
+                  example: 75000.00
+      responses:
+        '200':
+          description: Setting updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Setting updated successfully
+                  data:
+                    type: object
+                    properties:
+                      setting:
+                        $ref: '#/components/schemas/SystemSetting'
+        '400':
+          description: Invalid value for setting data type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Setting not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   schemas:
@@ -3234,6 +3400,11 @@ components:
         total_amount:
           type: string
           example: "60000.00"
+        approval_level:
+          type: string
+          enum: [supervisor, maintenance_manager]
+          description: "Determines who can approve: supervisor (within petty cash) or maintenance_manager (exceeds petty cash)"
+          example: supervisor
         status:
           type: string
           enum: [pending, approved, rejected, revised]
@@ -3281,7 +3452,42 @@ components:
           type: array
           items:
             type: string
-    
+
+    SystemSetting:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        setting_key:
+          type: string
+          example: petty_cash_limit
+        setting_value:
+          type: string
+          example: "50000.00"
+        data_type:
+          type: string
+          enum: [string, integer, decimal, boolean, json]
+          example: decimal
+        description:
+          type: string
+          nullable: true
+          example: "Maximum budget amount that a Supervisor can approve. Amounts exceeding this require Maintenance Manager approval."
+        updated_by:
+          type: integer
+          nullable: true
+          example: 1
+        updated_by_name:
+          type: string
+          nullable: true
+          example: "Admin User"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
     Pagination:
       type: object
       properties:
