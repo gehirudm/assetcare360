@@ -27,12 +27,12 @@ Section-level extraction is needed to break down script ownership and remove glo
 
 ## Progress Tracking
 
-**Overall Status:** In Progress - 22%
+**Overall Status:** In Progress - 34%
 
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
 |----|-------------|--------|---------|-------|
-| 7.1 | Extract dashboard summary component | Not Started | Apr 7, 2026 | Summary cards + activity feed |
+| 7.1 | Extract dashboard summary component | Complete | Apr 7, 2026 | Added `<supervisor-dashboard-overview>` with summary cards + activity feed and section-navigation events |
 | 7.2 | Extract checks/tickets/repair components | Not Started | Apr 7, 2026 | Keep review and assignment flows |
 | 7.3 | Extract budget/assets/technicians components | In Progress | Apr 7, 2026 | Asset-status section extracted first as `<supervisor-asset-status>`; budget/technicians pending |
 | 7.4 | Remove section logic from monolith script | In Progress | Apr 7, 2026 | Parent now bridges asset-status component events; broader monolith cleanup still pending |
@@ -48,3 +48,11 @@ Section-level extraction is needed to break down script ownership and remove glo
 - Converted asset view/update actions to component-dispatched custom events (`supervisor-asset-status:view`, `supervisor-asset-status:update`) and bridged them in parent `pages/dashboard/supervisor/script.js`.
 - Updated section loading flow so `asset-status` now refreshes via component API (`refreshSupervisorAssetStatus`) instead of legacy placeholder loader.
 - Validation: `node --check` and diagnostics passed for touched supervisor files.
+
+### April 7, 2026 (Execution Update - Dashboard Overview Slice)
+- Added `pages/dashboard/supervisor/components/dashboard-overview/script.js` with `<supervisor-dashboard-overview>` component for the dashboard summary and recent-activity markup.
+- Replaced inline dashboard section markup in `pages/dashboard/supervisor/index.html` with a single `<supervisor-dashboard-overview>` host and registered its script include.
+- Removed summary-card inline handlers (`onclick="navigateTo(...)"`) from this section by moving navigation ownership into component-local event delegation (`data-section-nav`).
+- Added parent orchestration bridge in `pages/dashboard/supervisor/script.js` for `supervisor-dashboard-overview:navigate` and delegated navigation to `<ac-layout>.navigateTo(...)`.
+- Scoped `updateDashboardSummary(...)` selection to `supervisor-dashboard-overview .summary-card` so summary updates target the extracted section.
+- Validation: `node --check` passed for touched supervisor scripts.

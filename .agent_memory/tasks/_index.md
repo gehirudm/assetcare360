@@ -1,7 +1,7 @@
 # Tasks Index
 
 ## In Progress
-- [TASK007] Supervisor dashboard componentization — Started with asset-status extraction to `<supervisor-asset-status>` and parent bridge wiring
+- [TASK007] Supervisor dashboard componentization — Asset-status and dashboard-overview extracted to components with parent bridge wiring; checks/tickets/repair/budget/technicians still pending
 - [TASK003] Run migration 047 and update OpenAPI spec — OpenAPI updates completed; migration confirmation blocked by DB connection refusal in sandbox
 
 ## Pending
