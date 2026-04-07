@@ -1781,21 +1781,10 @@ async function viewUserDetails(employeeId) {
     title.textContent = `User Details - ${employeeId}`;
     content.innerHTML = `
         <div class="form-section">
-            <h5>Personal Information</h5>
-            <div class="form-grid">
-                <div><strong>Employee ID:</strong> ${employeeId}</div>
-                <div><strong>Name:</strong> John Smith</div>
-                <div><strong>Email:</strong> john.smith@company.com</div>
-                <div><strong>Phone:</strong> +94 77 123 4567</div>
-            </div>
-        </div>
-        <div class="form-section">
-            <h5>Work Information</h5>
-            <div class="form-grid">
-                <div><strong>Role:</strong> Supervisor</div>
-                <div><strong>Department:</strong> Maintenance</div>
-                <div><strong>Status:</strong> <span class="status-text status-active">Active</span></div>
-                <div><strong>Last Login:</strong> Today at 9:30 AM</div>
+            <h5>User details unavailable</h5>
+            <div style="background: var(--light-bg); padding: 12px; border-radius: 8px;">
+                Could not resolve employee ID <strong>${employeeId}</strong> from loaded user data.
+                Please refresh users or open this record from the User Accounts list.
             </div>
         </div>
         <div style="text-align: right; margin-top: 20px;">
@@ -1805,6 +1794,7 @@ async function viewUserDetails(employeeId) {
 
     modal.classList.add('active');
     modal.style.display = 'flex';
+    showDashboardToast(`Unable to load profile details for ${employeeId}`, 'warning');
 }
 
 function generateActivityReport(employeeId) {

@@ -30,11 +30,7 @@ class SupervisorDashboardOverview extends HTMLElement {
         const pendingValue = Number(count);
         if (!Number.isFinite(pendingValue)) return;
 
-        const pendingSummaryCard = Array.from(this.querySelectorAll('.summary-card')).find((card) => {
-            const title = card.querySelector('.summary-title');
-            return title && title.textContent.includes('Pending Reports');
-        });
-
+        const pendingSummaryCard = this.querySelector('.summary-card[data-summary-type="pending-reports"]');
         const summaryNumber = pendingSummaryCard?.querySelector('.summary-number');
         if (summaryNumber) {
             summaryNumber.textContent = String(pendingValue);
@@ -49,7 +45,7 @@ class SupervisorDashboardOverview extends HTMLElement {
             </div>
 
             <div class="grid">
-                <div class="summary-card clickable" data-section-nav="daily-check-reports">
+                <div class="summary-card clickable" data-section-nav="daily-check-reports" data-summary-type="pending-reports">
                     <div class="summary-card-content">
                         <div class="summary-icon">
                             <i class="fas fa-clipboard-check"></i>

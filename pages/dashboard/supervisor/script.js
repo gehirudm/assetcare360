@@ -114,7 +114,7 @@ function refreshSupervisorAssetStatus() {
 function updateDashboardSummary(pendingCount) {
     const overview = document.querySelector('supervisor-dashboard-overview');
     if (!overview || typeof overview.updatePendingReports !== 'function') {
-        console.warn('supervisor-dashboard-overview is unavailable for summary updates');
+        console.warn('supervisor-dashboard-overview not ready; skipping pending report summary update during current render cycle.');
         return;
     }
     overview.updatePendingReports(pendingCount);
