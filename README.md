@@ -135,7 +135,33 @@ The easiest way to set up the project is using the automated setup script:
    php scripts/migrate.php migrate
    ```
 
-4. **Start the development server**
+5. **Start/stop services with scripts (CLI or interactive menu)**
+   ```bash
+   # list supported services
+   ./start.sh --list
+
+   # start one service
+   ./start.sh backend
+   ./start.sh frontend
+   ./start.sh audit-consumer
+   ./start.sh notification-consumer
+   ./start.sh service-due-producer
+
+   # start all services
+   ./start.sh all
+
+   # interactive menu mode
+   ./start.sh --gui
+
+   # stop one/all services
+   ./stop.sh backend
+   ./stop.sh all
+   ./stop.sh --gui
+   ```
+
+   Service runtime PID and log files are stored in `/tmp/assetcare360-services`.
+
+6. **Start the development server**
    ```bash
    cd public
    php -S localhost:8000
