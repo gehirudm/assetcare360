@@ -8,7 +8,7 @@
 Create complete dashboard refactor tasks in memory and Beads.
 
 ## Thought Process
-TO has started incremental extraction (`create-fault-ticket-model`), but major section logic still remains in a large monolithic script. Remaining sections are:
+TO has started incremental extraction (`create-fault-ticket`), but major section logic still remains in a large monolithic script. Remaining sections are:
 - `tickets`
 - `spare-parts`
 - `inventory`
