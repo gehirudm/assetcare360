@@ -220,13 +220,13 @@ async function loadNotifications() {
             const type = n.type || 'info';
             const title = n.title || 'Notification';
             const desc = n.message || 'No details available.';
-            const icon = type === 'success'
-                ? 'fa-check-circle'
-                : type === 'warning'
-                    ? 'fa-exclamation-triangle'
-                    : type === 'error'
-                        ? 'fa-times-circle'
-                        : 'fa-bell';
+            const iconMap = {
+                success: 'fa-check-circle',
+                warning: 'fa-exclamation-triangle',
+                error: 'fa-times-circle',
+                info: 'fa-bell'
+            };
+            const icon = iconMap[type] || iconMap.info;
             const readClass = Number(n.is_read) === 1 ? 'notif-read' : '';
 
             card.className = `notif-card notif-${type} ${readClass}`.trim();

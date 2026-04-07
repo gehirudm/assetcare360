@@ -52,13 +52,25 @@ $notificationInsert = $db->prepare(
 $processedInsert = $db->prepare('INSERT INTO processed_events (consumer_name, event_uuid) VALUES (?, ?)');
 $processedCheck = $db->prepare('SELECT COUNT(*) FROM processed_events WHERE consumer_name = ? AND event_uuid = ?');
 
+function deterministicUuid(string $seed): string {
+    $hex = substr(hash('sha1', $seed), 0, 32);
+    return sprintf(
+        '%s-%s-%s-%s-%s',
+        substr($hex, 0, 8),
+        substr($hex, 8, 4),
+        substr($hex, 12, 4),
+        substr($hex, 16, 4),
+        substr($hex, 20, 12)
+    );
+}
+
 $buildRecords = function (array $event): array {
     $data = $event['data'];
     $records = [];
 
     switch ($event['event']) {
         case DomainEvents::FAULT_TICKET_ASSIGNED:
-            $ticketId = $data['ticket_id'] ?? ('#' . ($data['ticket_db_id'] ?? '')); 
+            $ticketId = $data['ticket_id'] ?? (($data['ticket_db_id'] ?? null) ? ('#' . $data['ticket_db_id']) : 'Unknown');
             $title = 'New ticket assigned';
             $message = "Ticket {$ticketId} was assigned to you.";
             $userIds = isset($data['technician_user_ids']) && is_array($data['technician_user_ids']) ? $data['technician_user_ids'] : [];
@@ -69,6 +81,7 @@ $buildRecords = function (array $event): array {
                     'title' => $title,
                     'message' => $message,
                     'type' => 'info',
+                    'source_event_id' => (string)$ticketId,
                 ];
             }
             break;
@@ -80,6 +93,7 @@ $buildRecords = function (array $event): array {
                 'title' => 'Budget review required',
                 'message' => 'A budget report is waiting for your approval.',
                 'type' => 'warning',
+                'source_event_id' => (string)($data['report_id'] ?? ''),
             ];
             break;
 
@@ -90,6 +104,7 @@ $buildRecords = function (array $event): array {
                 'title' => 'Budget decision received',
                 'message' => 'Your budget report has been reviewed: ' . strtoupper((string)($data['status'] ?? 'pending')),
                 'type' => (($data['status'] ?? '') === 'approved') ? 'success' : 'warning',
+                'source_event_id' => (string)($data['report_id'] ?? ''),
             ];
             break;
 
@@ -100,6 +115,7 @@ $buildRecords = function (array $event): array {
                 'title' => 'Spare-part request submitted',
                 'message' => 'A new spare-part request is pending review.',
                 'type' => 'info',
+                'source_event_id' => (string)($data['request_id'] ?? $data['request_db_id'] ?? ''),
             ];
             break;
 
@@ -112,6 +128,7 @@ $buildRecords = function (array $event): array {
                 'title' => 'Spare-part request updated',
                 'message' => "Your spare-part request was {$status}.",
                 'type' => $status === 'approved' ? 'success' : 'warning',
+                'source_event_id' => (string)($data['request_id'] ?? $data['request_db_id'] ?? ''),
             ];
             break;
 
@@ -124,6 +141,7 @@ $buildRecords = function (array $event): array {
                 'title' => 'Asset service due soon',
                 'message' => "{$assetCode} requires service on {$dueDate}.",
                 'type' => 'warning',
+                'source_event_id' => (string)($data['asset_code'] ?? $data['asset_id'] ?? ''),
             ];
             break;
     }
@@ -144,6 +162,7 @@ $callback = function (\PhpAmqpLib\Message\AMQPMessage $msg) use ($db, $consumerN
         }
 
         $eventUuid = $payload['id'];
+        $eventName = (string)$payload['event'];
 
         $processedCheck->execute([$consumerName, $eventUuid]);
         if ((int)$processedCheck->fetchColumn() > 0) {
@@ -152,16 +171,20 @@ $callback = function (\PhpAmqpLib\Message\AMQPMessage $msg) use ($db, $consumerN
         }
 
         $records = $buildRecords($payload);
-        foreach ($records as $record) {
+        foreach ($records as $index => $record) {
+            $recipientKey = $record['user_id'] !== null
+                ? 'user:' . $record['user_id']
+                : 'role:' . ($record['target_role'] ?? 'all');
+            $notificationId = deterministicUuid($eventUuid . '|' . $recipientKey . '|' . $index);
             $notificationInsert->execute([
-                sprintf('%s-%04d', $eventUuid, random_int(1000, 9999)),
+                $notificationId,
                 $record['user_id'],
                 $record['target_role'],
                 $record['title'],
                 $record['message'],
                 $record['type'],
-                $payload['event'],
-                (string)($payload['data']['ticket_id'] ?? $payload['data']['request_id'] ?? $payload['data']['asset_id'] ?? ''),
+                $eventName,
+                $record['source_event_id'] ?? null,
                 json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             ]);
         }

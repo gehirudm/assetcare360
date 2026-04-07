@@ -66,7 +66,10 @@ class EventPublisher {
                 'type' => $eventName,
             ]);
 
-            $channel->basic_publish($message, RABBITMQ_EXCHANGE, $routingKey, true);
+            // `mandatory=false` is intentional here so producer uptime is not coupled to
+            // immediate queue bindings for every routing key; unrouted paths are handled
+            // operationally via exchange/queue topology monitoring.
+            $channel->basic_publish($message, RABBITMQ_EXCHANGE, $routingKey, false);
 
             $channel->close();
             $connection->close();

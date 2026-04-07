@@ -61,6 +61,12 @@ $publishAsset = function (string $assetType, array $asset) use (&$published, &$s
         $insertLock->execute([$lockKey, $assetType, $assetId, $dueDate]);
         $published++;
     } else {
+        error_log(sprintf(
+            '[service-due] publish failed for %s asset_id=%d due_date=%s',
+            $assetType,
+            $assetId,
+            (string)($dueDate ?? 'null')
+        ));
         $skipped++;
     }
 };
