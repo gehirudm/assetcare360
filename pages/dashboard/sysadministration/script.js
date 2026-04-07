@@ -1759,10 +1759,20 @@ function showDashboardToast(message, type = 'success') {
         Utils.showToast(message, type);
         return;
     }
-    alert(message);
+    console.warn('Toast utility unavailable:', message);
 }
 
-function viewUserDetails(employeeId) {
+async function viewUserDetails(employeeId) {
+    if (typeof userManagement !== 'undefined' && userManagement) {
+        const matchingUser = Array.isArray(userManagement.currentUsers)
+            ? userManagement.currentUsers.find(user => user.employee_id === employeeId)
+            : null;
+        if (matchingUser && typeof userManagement.viewUserDetails === 'function') {
+            await userManagement.viewUserDetails(matchingUser.id);
+            return;
+        }
+    }
+
     const modal = document.getElementById('detailsModal');
     const title = document.getElementById('detailsTitle');
     const content = document.getElementById('detailsContent');
