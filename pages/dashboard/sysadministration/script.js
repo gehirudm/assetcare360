@@ -793,6 +793,24 @@ function applyAllFilters() {
 
 // Update user count after initial load
 document.addEventListener('DOMContentLoaded', function() {
+    const overviewComponent = document.querySelector('sa-dashboard-overview');
+    if (overviewComponent) {
+        overviewComponent.addEventListener('sa-dashboard-overview:navigate', (event) => {
+            const section = event.detail?.section;
+            if (!section) return;
+
+            const layout = document.querySelector('ac-layout');
+            if (layout && typeof layout.navigateTo === 'function') {
+                layout.navigateTo(section);
+                return;
+            }
+
+            if (typeof window.navigateToSection === 'function') {
+                window.navigateToSection(section);
+            }
+        });
+    }
+
     // Wait for users to load, then update count
     setTimeout(() => {
         const users = document.querySelectorAll('#userList .user-item');

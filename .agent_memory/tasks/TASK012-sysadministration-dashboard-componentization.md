@@ -27,13 +27,13 @@ Refactor must consolidate entrypoint logic and componentize each model section.
 
 ## Progress Tracking
 
-**Overall Status:** In Progress - 28%
+**Overall Status:** In Progress - 42%
 
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
 |----|-------------|--------|---------|-------|
 | 12.1 | Consolidate script entrypoint | Complete | Apr 7, 2026 | Removed `legacy-script.js` include and retained compatibility handlers in canonical `script.js` |
-| 12.2 | Extract accounts/configuration components | Not Started | Apr 7, 2026 | Preserve current forms/validation |
+| 12.2 | Extract accounts/configuration components | In Progress | Apr 7, 2026 | Dashboard overview extracted to `<sa-dashboard-overview>` as first slice; user/service settings still pending |
 | 12.3 | Extract logs/activity components | Not Started | Apr 7, 2026 | Keep filtering and pagination |
 | 12.4 | Decompose root script logic | Not Started | Apr 7, 2026 | Root orchestrates only |
 
@@ -45,3 +45,8 @@ Refactor must consolidate entrypoint logic and componentize each model section.
 - Removed dual-entrypoint ambiguity by deleting the `legacy-script.js` include from `pages/dashboard/sysadministration/index.html`.
 - Added compatibility global handlers in `pages/dashboard/sysadministration/script.js` for activity section inline actions (`viewUserDetails`, `generateActivityReport`, `sendInactivityReminder`) so behavior remains intact after consolidation.
 - Kept modal open/close and existing section routing behavior unchanged while shifting ownership to the canonical script.
+
+### April 7, 2026 (Execution Update - Componentization Slice 1)
+- Extracted the `dashboard` section markup into `pages/components/sysadministration/sa-dashboard-overview.js` with a dedicated `<sa-dashboard-overview>` custom element.
+- Replaced inlined dashboard overview markup in `pages/dashboard/sysadministration/index.html` with the component host and added the component script include in dependency load order.
+- Added event bridge logic in `pages/dashboard/sysadministration/script.js` to handle `sa-dashboard-overview:navigate` events and route via `<ac-layout>.navigateTo(...)` while preserving existing section navigation behavior.
