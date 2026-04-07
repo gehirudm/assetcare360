@@ -48,6 +48,8 @@ tags:
     description: Product/Inventory operations
   - name: Budget Reports
     description: Budget report submission and approval workflow for fault tickets. Budgets within petty cash limit are approved by Supervisors; amounts exceeding the limit require Maintenance Manager approval.
+  - name: Ticket Work Updates
+    description: Technical Officer work completion updates for fault tickets.
   - name: System Settings
     description: System-wide configuration settings (Admin only). Includes petty cash limit for budget approval routing.
 
@@ -2596,6 +2598,179 @@ components:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  # ==================== TICKET WORK UPDATES ====================
+  /ticket-work-updates:
+    post:
+      tags:
+        - Ticket Work Updates
+      summary: Create work update
+      description: |
+        Submit a work completion update for a fault ticket (Technical Officer only).
+
+        **Requirements:**
+        - `ticket_id`, `time_spent`, and `machine_description` are required
+        - `time_spent` must be greater than 0
+        - Ticket must not already have a work completion record
+        - If the latest budget report for the ticket is `pending`, submission is blocked
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ticket_id
+                - time_spent
+                - machine_description
+              properties:
+                ticket_id:
+                  type: integer
+                  example: 1
+                parts_used:
+                  type: string
+                  nullable: true
+                  example: "Brake pads, hydraulic fluid"
+                time_spent:
+                  type: number
+                  format: float
+                  minimum: 0.01
+                  example: 3.5
+                machine_description:
+                  type: string
+                  example: "Replaced damaged line and verified system pressure stability."
+                work_status:
+                  type: string
+                  example: Completed
+      responses:
+        '201':
+          description: Work update created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Work update saved successfully
+                  data:
+                    type: object
+                    properties:
+                      work_update_id:
+                        type: integer
+                        example: 24
+                      message:
+                        type: string
+                        example: Work update saved successfully
+        '400':
+          description: Bad request (validation failure or pending budget approval)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                pendingBudgetApproval:
+                  summary: Budget report still pending
+                  value:
+                    status: error
+                    message: Cannot submit work update: the budget report for this ticket is still pending approval. Please wait for approval before starting work.
+        '403':
+          description: Forbidden - only Technical Officers can submit work updates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ticket-work-updates/ticket/{id}:
+    get:
+      tags:
+        - Ticket Work Updates
+      summary: Get work updates for a ticket
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Fault ticket ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Work updates for ticket
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      updates:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TicketWorkUpdate'
+                      total_time:
+                        type: number
+                        format: float
+                        example: 5.5
+        '400':
+          description: Ticket ID missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ticket-work-updates/latest/{id}:
+    get:
+      tags:
+        - Ticket Work Updates
+      summary: Get latest work update for a ticket
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Fault ticket ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Latest work update
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/TicketWorkUpdate'
+        '404':
+          description: No work updates found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   # ==================== BUDGET REPORTS ====================
   /budget-reports:
     post:
@@ -2639,6 +2814,7 @@ components:
                 total_amount:
                   type: number
                   format: decimal
+                  minimum: 0.01
                   example: 60000.00
       responses:
         '201':
@@ -2667,7 +2843,7 @@ components:
                         type: number
                         example: 50000.00
         '400':
-          description: Bad request (missing fields or invalid data)
+          description: Bad request (missing fields or invalid data such as total_amount <= 0)
           content:
             application/json:
               schema:
@@ -2820,6 +2996,7 @@ components:
                 total_amount:
                   type: number
                   format: decimal
+                  minimum: 0.01
       responses:
         '200':
           description: Budget report updated successfully
@@ -3438,6 +3615,40 @@ components:
           type: string
           format: date-time
           example: "2025-10-22T14:30:00Z"
+
+    TicketWorkUpdate:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 24
+        ticket_id:
+          type: integer
+          example: 1
+        technical_officer_id:
+          type: integer
+          example: 5
+        parts_used:
+          type: string
+          nullable: true
+          example: "Brake pads, hydraulic fluid"
+        time_spent:
+          type: string
+          example: "3.50"
+        machine_description:
+          type: string
+          example: "Replaced damaged line and verified system pressure stability."
+        work_status:
+          type: string
+          example: Completed
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-04-07 11:20:00"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-04-07 11:20:00"
     
     ErrorResponse:
       type: object
