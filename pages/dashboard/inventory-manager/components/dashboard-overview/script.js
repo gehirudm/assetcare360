@@ -3,7 +3,7 @@ const INVENTORY_DASHBOARD_OVERVIEW_BASE = new URL(
     document.currentScript ? document.currentScript.src : window.location.href
 );
 
-class InventoryDashboardOverviewModel extends HTMLElement {
+class InventoryDashboardOverview extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
@@ -181,7 +181,7 @@ class InventoryDashboardOverviewModel extends HTMLElement {
             }
             return await response.text();
         } catch (error) {
-            console.error('Failed to load dashboard-overview-model styles:', error);
+            console.error('Failed to load dashboard-overview styles:', error);
             return ':host { display: block; }';
         }
     }
@@ -348,4 +348,4 @@ class InventoryDashboardOverviewModel extends HTMLElement {
     }
 }
 
-customElements.define('inventory-dashboard-overview-model', InventoryDashboardOverviewModel);
+customElements.define('inventory-dashboard-overview', InventoryDashboardOverview);

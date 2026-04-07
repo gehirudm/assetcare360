@@ -91,11 +91,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         currentUser = await Auth.checkAuth();
         if (!currentUser) {
-            window.location.href = '/auth/login/';
+            window.location.href = CONFIG.ROUTES.LOGIN;
             return;
         }
     } catch (e) {
-        window.location.href = '/auth/login/';
+        window.location.href = CONFIG.ROUTES.LOGIN;
         return;
     }
 

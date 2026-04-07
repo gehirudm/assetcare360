@@ -5,21 +5,21 @@
 /* Component inherits most styles from parent dashboard */
 /* These rules are component-specific overrides/additions */
 
-inventory-orders-approvals-model {
+inventory-orders-approvals {
     display: block;
 }
 
 /* Ensure modal overlay z-index is high enough */
-inventory-orders-approvals-model .modal {
+inventory-orders-approvals .modal {
     z-index: 1000;
 }
 
-inventory-orders-approvals-model .modal.active {
+inventory-orders-approvals .modal.active {
     display: flex;
 }
 
 /* Form section spacing inside modals */
-inventory-orders-approvals-model .form-section h5 {
+inventory-orders-approvals .form-section h5 {
     margin-top: 0;
     margin-bottom: 12px;
     font-weight: 600;
@@ -28,17 +28,17 @@ inventory-orders-approvals-model .form-section h5 {
     gap: 8px;
 }
 
-inventory-orders-approvals-model .form-section h5 i {
+inventory-orders-approvals .form-section h5 i {
     color: var(--tang-blue);
 }
 
 /* Order item hover state */
-inventory-orders-approvals-model .inventory-item {
+inventory-orders-approvals .inventory-item {
     cursor: pointer;
     transition: all 0.2s;
 }
 
-inventory-orders-approvals-model .inventory-item:hover {
+inventory-orders-approvals .inventory-item:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }

@@ -1,6 +1,6 @@
-const CREATE_FAULT_TICKET_MODEL_BASE = new URL('./', document.currentScript ? document.currentScript.src : window.location.href);
+const CREATE_FAULT_TICKET_BASE = new URL('./', document.currentScript ? document.currentScript.src : window.location.href);
 
-class CreateFaultTicketModel extends HTMLElement {
+class CreateFaultTicket extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
@@ -39,13 +39,13 @@ class CreateFaultTicketModel extends HTMLElement {
 
     async _loadStyles() {
         try {
-            const response = await fetch(new URL('style.css', CREATE_FAULT_TICKET_MODEL_BASE));
+            const response = await fetch(new URL('style.css', CREATE_FAULT_TICKET_BASE));
             if (!response.ok) {
                 throw new Error(`Failed to load style.css (${response.status})`);
             }
             return await response.text();
         } catch (error) {
-            console.error('Failed to load create-fault-ticket-model styles:', error);
+            console.error('Failed to load create-fault-ticket styles:', error);
             return ':host{display:block;margin-bottom:20px;}';
         }
     }
@@ -337,6 +337,6 @@ class CreateFaultTicketModel extends HTMLElement {
     }
 }
 
-if (!customElements.get('create-fault-ticket-model')) {
-    customElements.define('create-fault-ticket-model', CreateFaultTicketModel);
+if (!customElements.get('create-fault-ticket')) {
+    customElements.define('create-fault-ticket', CreateFaultTicket);
 }

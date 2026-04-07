@@ -2,12 +2,12 @@
  * Vehicles Model Component Styles
  */
 
-inventory-vehicles-model {
+inventory-vehicles {
     display: block;
 }
 
 /* Component-specific overrides */
-inventory-vehicles-model .inventory-item:hover {
+inventory-vehicles .inventory-item:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     cursor: pointer;

@@ -1,9 +1,9 @@
 /**
- * inventory-catalog-model.js
+ * inventory-catalog.js
  * Component for Inventory Manager Spare Parts Catalog section
  */
 
-class InventoryCatalogModel extends HTMLElement {
+class InventoryCatalog extends HTMLElement {
     constructor() {
         super();
         this.products = [];
@@ -18,12 +18,12 @@ class InventoryCatalogModel extends HTMLElement {
     }
 
     loadStyles() {
-        const linkId = 'inventory-catalog-model-styles';
+        const linkId = 'inventory-catalog-styles';
         if (!document.getElementById(linkId)) {
             const link = document.createElement('link');
             link.id = linkId;
             link.rel = 'stylesheet';
-            link.href = './components/catalog-model/style.css';
+            link.href = './components/catalog/style.css';
             document.head.appendChild(link);
         }
     }
@@ -293,4 +293,4 @@ class InventoryCatalogModel extends HTMLElement {
     }
 }
 
-customElements.define('inventory-catalog-model', InventoryCatalogModel);
+customElements.define('inventory-catalog', InventoryCatalog);

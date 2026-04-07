@@ -3,7 +3,7 @@ const INVENTORY_USAGE_TRACKING_BASE = new URL(
     document.currentScript ? document.currentScript.src : window.location.href
 );
 
-class InventoryUsageTrackingModel extends HTMLElement {
+class InventoryUsageTracking extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
@@ -254,7 +254,7 @@ class InventoryUsageTrackingModel extends HTMLElement {
             }
             return await response.text();
         } catch (error) {
-            console.error('Failed to load usage-tracking-model styles:', error);
+            console.error('Failed to load usage-tracking styles:', error);
             return ':host { display: block; }';
         }
     }
@@ -449,4 +449,4 @@ class InventoryUsageTrackingModel extends HTMLElement {
     }
 }
 
-customElements.define('inventory-usage-tracking-model', InventoryUsageTrackingModel);
+customElements.define('inventory-usage-tracking', InventoryUsageTracking);

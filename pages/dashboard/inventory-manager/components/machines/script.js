@@ -1,9 +1,9 @@
 /**
- * inventory-machines-model.js
+ * inventory-machines.js
  * Component for Inventory Manager Machines Management section
  */
 
-class InventoryMachinesModel extends HTMLElement {
+class InventoryMachines extends HTMLElement {
     constructor() {
         super();
         this.machines = [];
@@ -17,12 +17,12 @@ class InventoryMachinesModel extends HTMLElement {
     }
 
     loadStyles() {
-        const linkId = 'inventory-machines-model-styles';
+        const linkId = 'inventory-machines-styles';
         if (!document.getElementById(linkId)) {
             const link = document.createElement('link');
             link.id = linkId;
             link.rel = 'stylesheet';
-            link.href = './components/machines-model/style.css';
+            link.href = './components/machines/style.css';
             document.head.appendChild(link);
         }
     }
@@ -223,4 +223,4 @@ class InventoryMachinesModel extends HTMLElement {
     }
 }
 
-customElements.define('inventory-machines-model', InventoryMachinesModel);
+customElements.define('inventory-machines', InventoryMachines);

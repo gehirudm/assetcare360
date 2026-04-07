@@ -651,9 +651,9 @@ function filterPartsByStatus(status) {
     partsCount.textContent = `${visibleCount} request${visibleCount !== 1 ? 's' : ''}`;
 }
 
-// Bind create-fault-ticket-model child events to parent-level dashboard orchestration.
-function bindCreateFaultTicketModel() {
-    const model = document.querySelector('create-fault-ticket-model');
+// Bind create-fault-ticket child events to parent-level dashboard orchestration.
+function bindCreateFaultTicket() {
+    const model = document.querySelector('create-fault-ticket');
     if (!model || model.dataset.bound === 'true') return;
 
     model.dataset.bound = 'true';
@@ -1593,7 +1593,7 @@ function toggleSidebar() {
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', function () {
     initializeForms();
-    bindCreateFaultTicketModel();
+    bindCreateFaultTicket();
 
     // Set today's date as default for date inputs
     const today = new Date().toISOString().split('T')[0];

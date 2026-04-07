@@ -1,9 +1,9 @@
 /**
- * inventory-vehicles-model.js
+ * inventory-vehicles.js
  * Component for Inventory Manager Vehicles Management section
  */
 
-class InventoryVehiclesModel extends HTMLElement {
+class InventoryVehicles extends HTMLElement {
     constructor() {
         super();
         this.vehicles = [];
@@ -17,12 +17,12 @@ class InventoryVehiclesModel extends HTMLElement {
     }
 
     loadStyles() {
-        const linkId = 'inventory-vehicles-model-styles';
+        const linkId = 'inventory-vehicles-styles';
         if (!document.getElementById(linkId)) {
             const link = document.createElement('link');
             link.id = linkId;
             link.rel = 'stylesheet';
-            link.href = './components/vehicles-model/style.css';
+            link.href = './components/vehicles/style.css';
             document.head.appendChild(link);
         }
     }
@@ -224,4 +224,4 @@ class InventoryVehiclesModel extends HTMLElement {
     }
 }
 
-customElements.define('inventory-vehicles-model', InventoryVehiclesModel);
+customElements.define('inventory-vehicles', InventoryVehicles);

@@ -1,9 +1,9 @@
 /**
- * inventory-sparepart-addition-model.js
+ * inventory-sparepart-addition.js
  * Component for Inventory Manager Sparepart Addition section
  */
 
-class InventorySparepartAdditionModel extends HTMLElement {
+class InventorySparepartAddition extends HTMLElement {
     constructor() {
         super();
         this.additions = [];
@@ -17,12 +17,12 @@ class InventorySparepartAdditionModel extends HTMLElement {
     }
 
     loadStyles() {
-        const linkId = 'inventory-sparepart-addition-model-styles';
+        const linkId = 'inventory-sparepart-addition-styles';
         if (!document.getElementById(linkId)) {
             const link = document.createElement('link');
             link.id = linkId;
             link.rel = 'stylesheet';
-            link.href = './components/sparepart-addition-model/style.css';
+            link.href = './components/sparepart-addition/style.css';
             document.head.appendChild(link);
         }
     }
@@ -281,6 +281,6 @@ class InventorySparepartAdditionModel extends HTMLElement {
     }
 }
 
-if (!customElements.get('inventory-sparepart-addition-model')) {
-    customElements.define('inventory-sparepart-addition-model', InventorySparepartAdditionModel);
+if (!customElements.get('inventory-sparepart-addition')) {
+    customElements.define('inventory-sparepart-addition', InventorySparepartAddition);
 }

@@ -3,7 +3,7 @@ const INVENTORY_NOTIFICATIONS_MODEL_BASE = new URL(
     document.currentScript ? document.currentScript.src : window.location.href
 );
 
-class InventoryNotificationsModel extends HTMLElement {
+class InventoryNotifications extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
@@ -191,7 +191,7 @@ class InventoryNotificationsModel extends HTMLElement {
             }
             return await response.text();
         } catch (error) {
-            console.error('Failed to load notifications-model styles:', error);
+            console.error('Failed to load notifications styles:', error);
             return ':host { display: block; }';
         }
     }
@@ -575,4 +575,4 @@ class InventoryNotificationsModel extends HTMLElement {
     }
 }
 
-customElements.define('inventory-notifications-model', InventoryNotificationsModel);
+customElements.define('inventory-notifications', InventoryNotifications);

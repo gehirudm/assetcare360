@@ -47,499 +47,46 @@
         ]'>
                 <!-- Dashboard Section -->
                 <section class="content-section active" id="dashboard">
-                    <inventory-dashboard-overview-model></inventory-dashboard-overview-model>
+                    <inventory-dashboard-overview></inventory-dashboard-overview>
                 </section>
 
                 <!-- Machines Section -->
                 <section class="content-section" id="machines">
-                    <inventory-machines-model></inventory-machines-model>
+                    <inventory-machines></inventory-machines>
                 </section>
 
                 <!-- Vehicles Section -->
                 <section class="content-section" id="vehicles">
-                    <inventory-vehicles-model></inventory-vehicles-model>
+                    <inventory-vehicles></inventory-vehicles>
                 </section>
 
                 <!-- Spare Parts Catalog -->
                 <section class="content-section" id="catalog">
-                    <inventory-catalog-model></inventory-catalog-model>
+                    <inventory-catalog></inventory-catalog>
                 </section>
 
                 <!-- Orders & Approvals -->
                 <section class="content-section" id="orders-approvals">
-                    <inventory-orders-approvals-model></inventory-orders-approvals-model>
+                    <inventory-orders-approvals></inventory-orders-approvals>
                 </section>
 
                 <!-- Sparepart Addition Section -->
                 <section class="content-section" id="sparepart-addition">
-                    <inventory-sparepart-addition-model></inventory-sparepart-addition-model>
+                    <inventory-sparepart-addition></inventory-sparepart-addition>
                 </section>
 
                 <!-- Usage Tracking -->
                 <section class="content-section" id="usage-tracking">
-                    <inventory-usage-tracking-model></inventory-usage-tracking-model>
+                    <inventory-usage-tracking></inventory-usage-tracking>
                 </section>
 
                 <!-- Notifications -->
                 <section class="content-section" id="notifications">
-                    <inventory-notifications-model></inventory-notifications-model>
+                    <inventory-notifications></inventory-notifications>
                 </section>
     </ac-layout>
 
-    <!-- Modals will be included here -->
-    <div id="modalsContainer">
-        <!-- Modals will be loaded by JavaScript -->
-    </div>
-
-    <!-- Add Part Modal -->
-    <div id="addPartModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-plus-circle"></i> Add New Spare Part</h2>
-                <button class="btn-close" onclick="closeModal('addPartModal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <form id="addPartForm">
-                <div class="form-section">
-                    <h5><i class="fas fa-box"></i> Basic Information</h5>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Sparepart ID</label>
-                            <input type="text" class="form-input" id="sparepartIdDisplay" 
-                                   placeholder="Auto-generated" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
-                            <small style="color: var(--muted); display: block; margin-top: 4px;">Automatically generated unique identifier</small>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Category *</label>
-                            <select class="form-select" id="partCategory" required onchange="updateSparepartNameOptions(); updateCompatibilityOptions();">
-                                <option value="">Select Category</option>
-                                <option value="vehicles">Vehicles</option>
-                                <option value="machines">Machines</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Sparepart Name *</label>
-                            <select class="form-select" id="sparepartName" required>
-                                <option value="">Select Category First</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Storage Location *</label>
-                        <select class="form-select" id="partLocation" required>
-                            <option value="">Select Location</option>
-                            <option value="LOCATION 1">LOCATION 1</option>
-                            <option value="LOCATION 2">LOCATION 2</option>
-                            <option value="LOCATION 3">LOCATION 3</option>
-                            <option value="LOCATION 4">LOCATION 4</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h5><i class="fas fa-link"></i> Machine Compatibility</h5>
-                    <div class="form-group">
-                        <label class="form-label" id="compatibilityLabel">Compatible Machines/Vehicles</label>
-                        <div id="compatibilityCheckboxes" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
-                            <p style="color: #999; grid-column: 1 / -1;">Please select a category first</p>
-                        </div>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Add to Catalog</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal('addPartModal')"><i class="fas fa-times"></i> Cancel</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Edit Part Modal -->
-    <div id="editPartModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-edit"></i> Edit Spare Part</h2>
-                <button class="btn-close" onclick="closeModal('editPartModal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <form id="editPartForm">
-                <input type="hidden" id="editPartId">
-                <div class="form-section">
-                    <h5><i class="fas fa-box"></i> Basic Information</h5>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Sparepart ID</label>
-                            <input type="text" class="form-input" id="editSparepartId" 
-                                   readonly style="background-color: #f3f4f6; cursor: not-allowed;">
-                            <small style="color: var(--muted); display: block; margin-top: 4px;">Sparepart identifier (cannot be changed)</small>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Category *</label>
-                            <select class="form-select" id="editPartCategory" required onchange="updateEditSparepartNameOptions(); updateEditCompatibilityOptions();">
-                                <option value="">Select Category</option>
-                                <option value="vehicles">Vehicles</option>
-                                <option value="machines">Machines</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Sparepart Name *</label>
-                            <select class="form-select" id="editSparepartName" required>
-                                <option value="">Select Category First</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Quantity *</label>
-                            <input type="number" class="form-input" id="editPartQuantity" min="0" required>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Storage Location *</label>
-                        <select class="form-select" id="editPartLocation" required>
-                            <option value="">Select Location</option>
-                            <option value="LOCATION 1">LOCATION 1</option>
-                            <option value="LOCATION 2">LOCATION 2</option>
-                            <option value="LOCATION 3">LOCATION 3</option>
-                            <option value="LOCATION 4">LOCATION 4</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h5><i class="fas fa-truck"></i> Supplier Details</h5>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Supplier Name</label>
-                            <input type="text" class="form-input" id="editPartSupplier" placeholder="Enter supplier name" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Supplier Contact</label>
-                            <input type="text" class="form-input" id="editPartSupplierContact" placeholder="Enter supplier contact">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Supplier Address</label>
-                        <textarea class="form-textarea" id="editPartSupplierAddress" placeholder="Enter supplier address"></textarea>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h5><i class="fas fa-link"></i> Machine Compatibility</h5>
-                    <div class="form-group">
-                        <label class="form-label" id="editCompatibilityLabel">Compatible Machines/Vehicles</label>
-                        <div id="editCompatibilityCheckboxes" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
-                            <p style="color: #999; grid-column: 1 / -1;">Please select a category first</p>
-                        </div>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update Part</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal('editPartModal')"><i class="fas fa-times"></i> Cancel</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- View Details Modal -->
-    <div id="detailsModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="detailsTitle"><i class="fas fa-info-circle"></i> Asset Details</h2>
-                <button class="btn-close" onclick="closeModal('detailsModal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="form-section">
-                <div id="detailsContent"></div>
-            </div>
-            <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')"><i class="fas fa-times"></i> Close</button>
-        </div>
-    </div>
-
-    <!-- Delete Confirmation Modal -->
-    <div id="deleteModal" class="modal">
-        <div class="modal-content">
-            <button class="close" onclick="closeModal('deleteModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Confirm Delete</h2>
-            <div class="confirm-dialog">
-                <p id="deleteMessage"></p>
-                <button id="confirmDeleteBtn" class="btn btn-danger"><i class="fas fa-trash"></i> Yes, Delete</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal('deleteModal')"><i class="fas fa-times"></i> Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Reorder Form Modal -->
-        <!-- Reorder Form Modal -->
-    <div id="reorderModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-sync"></i> Reorder Part</h2>
-                <button class="btn-close" onclick="closeModal('reorderModal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <form id="reorderForm">
-                <div class="form-section">
-                    <h5><i class="fas fa-clipboard-list"></i> Reorder Information</h5>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Sparepart Name</label>
-                            <input type="text" class="form-input" id="reorderSparepartName" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Current Stock</label>
-                            <input type="text" class="form-input" id="reorderCurrentStock" readonly>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Quantity to Order</label>
-                            <input type="number" class="form-input" id="reorderQuantity" min="1" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Priority</label>
-                            <select class="form-select" id="reorderPriority" required>
-                                <option value="normal">Normal</option>
-                                <option value="urgent">Urgent</option>
-                                <option value="critical">Critical</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Justification</label>
-                        <textarea class="form-textarea" id="reorderJustification" placeholder="Reason for reordering" required></textarea>
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Submit Reorder Request</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal('reorderModal')"><i class="fas fa-times"></i> Cancel</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Add Usage Entry Modal -->
-    <!-- Issue Sparepart Modal -->
-    <div id="issueModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-share-square"></i> Issue Sparepart</h2>
-                <button class="btn-close" onclick="closeModal('issueModal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <form id="issueForm">
-                <input type="hidden" id="issuePartId">
-                <input type="hidden" id="issuePartDbId">
-
-                <div class="form-section">
-                    <h5><i class="fas fa-box"></i> Sparepart Details</h5>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Sparepart ID</label>
-                            <input type="text" class="form-input" id="issueSparepartId" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Sparepart Name</label>
-                            <input type="text" class="form-input" id="issueSparepartName" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Available Quantity</label>
-                            <input type="text" class="form-input" id="issueAvailableQty" readonly style="background-color: #f3f4f6; cursor: not-allowed; font-weight: 600; color: #2563eb;">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Issue Date</label>
-                            <input type="text" class="form-input" id="issueDate" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h5><i class="fas fa-edit"></i> Issuance Details</h5>
-                    <div class="form-group">
-                        <label class="form-label">Number of Parts Issued *</label>
-                        <input type="number" class="form-input" id="issueQuantity" min="1" placeholder="Enter number of parts to issue" required>
-                        <small style="color: #6b7280; margin-top: 4px; display: block;">Must not exceed available quantity</small>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Update &amp; Issue</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal('issueModal')"><i class="fas fa-times"></i> Cancel</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Addition Detail Modal -->
-    <div id="additionDetailModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-info-circle"></i> Stock Addition Details</h2>
-                <button class="btn-close" onclick="closeModal('additionDetailModal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div id="additionDetailContent" style="padding: 20px;">
-                <!-- Content will be populated dynamically -->
-            </div>
-            <button type="button" class="btn btn-secondary" onclick="closeModal('additionDetailModal')"><i class="fas fa-times"></i> Close</button>
-        </div>
-    </div>
-
-    <!-- Add Stock Modal -->
-    <div id="addStockModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-plus-circle"></i> Add New Spare Part</h2>
-                <button class="btn-close" onclick="closeModal('addStockModal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <form id="addStockForm">
-                <div class="form-section">
-                    <h5><i class="fas fa-box"></i> Basic Information</h5>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Sparepart ID</label>
-                            <input type="text" class="form-input" id="addStockSparepartIdDisplay" 
-                                   placeholder="Auto-generated" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
-                            <small style="color: var(--muted); display: block; margin-top: 4px;">Automatically generated unique identifier</small>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Category *</label>
-                            <select class="form-select" id="addStockCategory" required onchange="updateAddStockSparepartNameOptions(); updateAddStockCompatibilityOptions();">
-                                <option value="">Select Category</option>
-                                <option value="vehicles">Vehicles</option>
-                                <option value="machines">Machines</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Sparepart Name *</label>
-                            <select class="form-select" id="addStockSparepartName" required>
-                                <option value="">Select Category First</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Quantity *</label>
-                            <input type="number" class="form-input" id="addStockQuantity" min="0" required>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Storage Location *</label>
-                        <select class="form-select" id="addStockLocation" required>
-                            <option value="">Select Location</option>
-                            <option value="LOCATION 1">LOCATION 1</option>
-                            <option value="LOCATION 2">LOCATION 2</option>
-                            <option value="LOCATION 3">LOCATION 3</option>
-                            <option value="LOCATION 4">LOCATION 4</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h5><i class="fas fa-truck"></i> Supplier Details</h5>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Supplier Name</label>
-                            <input type="text" class="form-input" id="addStockSupplier" placeholder="Enter supplier name" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Supplier Contact</label>
-                            <input type="text" class="form-input" id="addStockSupplierContact" placeholder="Enter supplier contact">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Supplier Address</label>
-                        <textarea class="form-textarea" id="addStockSupplierAddress" placeholder="Enter supplier address"></textarea>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h5><i class="fas fa-shield-alt"></i> Warranty Details</h5>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Warranty Period (months)</label>
-                            <input type="number" class="form-input" id="addStockWarrantyPeriod" min="0" max="60">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Warranty Start Date</label>
-                            <input type="date" class="form-input" id="addStockWarrantyStart">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Warranty Terms</label>
-                        <textarea class="form-textarea" id="addStockWarrantyTerms" placeholder="Enter warranty terms and conditions"></textarea>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h5><i class="fas fa-link"></i> Machine Compatibility</h5>
-                    <div class="form-group">
-                        <label class="form-label" id="addStockCompatibilityLabel">Compatible Machines/Vehicles</label>
-                        <div id="addStockCompatibilityCheckboxes" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
-                            <p style="color: #999; grid-column: 1 / -1;">Please select a category first</p>
-                        </div>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Add to Catalog</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal('addStockModal')"><i class="fas fa-times"></i> Cancel</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Generate Report Modal -->
-    <div id="reportModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-chart-bar"></i> Generate Usage Report</h2>
-                <button class="btn-close" onclick="closeModal('reportModal')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <form id="reportForm">
-                <div class="form-section">
-                    <h5><i class="fas fa-file-alt"></i> Report Configuration</h5>
-                    <div class="form-group">
-                        <label class="form-label">Machine ID</label>
-                        <input type="text" class="form-input" id="reportMachineId" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Report Type</label>
-                        <select class="form-select" id="reportType" required>
-                            <option value="">Select Report Type</option>
-                            <option value="Usage Summary">Usage Summary</option>
-                            <option value="Cost Analysis">Cost Analysis</option>
-                            <option value="Parts Consumption">Parts Consumption</option>
-                            <option value="Maintenance History">Maintenance History</option>
-                        </select>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">From Date</label>
-                            <input type="date" class="form-input" id="reportFromDate" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">To Date</label>
-                            <input type="date" class="form-input" id="reportToDate" required>
-                        </div>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-success"><i class="fas fa-download"></i> Generate Report</button>
-                <button type="button" class="btn btn-secondary" onclick="closeModal('reportModal')"><i class="fas fa-times"></i> Cancel</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="toast">
-        Action completed successfully!
-    </div>
+    <inventory-page-modals></inventory-page-modals>
 
     <!-- Toast Notification -->
     <div id="toast" class="toast">
@@ -550,14 +97,15 @@
     <confirm-dialog></confirm-dialog>
 
     <!-- Load JavaScript -->
-    <script src="./components/dashboard-overview-model/script.js"></script>
-    <script src="./components/usage-tracking-model/script.js"></script>
-    <script src="./components/notifications-model/script.js"></script>
-    <script src="./components/orders-approvals-model/script.js"></script>
-    <script src="./components/catalog-model/script.js"></script>
-    <script src="./components/sparepart-addition-model/script.js"></script>
-    <script src="./components/machines-model/script.js"></script>
-    <script src="./components/vehicles-model/script.js"></script>
+    <script src="./components/dashboard-overview/script.js"></script>
+    <script src="./components/usage-tracking/script.js"></script>
+    <script src="./components/notifications/script.js"></script>
+    <script src="./components/orders-approvals/script.js"></script>
+    <script src="./components/catalog/script.js"></script>
+    <script src="./components/sparepart-addition/script.js"></script>
+    <script src="./components/page-modals/script.js"></script>
+    <script src="./components/machines/script.js"></script>
+    <script src="./components/vehicles/script.js"></script>
     <script src="script.js?v=1.7.0"></script>
 </body>
 </html>

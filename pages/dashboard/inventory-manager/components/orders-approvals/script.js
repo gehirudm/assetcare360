@@ -1,9 +1,9 @@
 /**
- * inventory-orders-approvals-model.js
+ * inventory-orders-approvals.js
  * Component for Inventory Manager Orders & Approvals section
  */
 
-class InventoryOrdersApprovalsModel extends HTMLElement {
+class InventoryOrdersApprovals extends HTMLElement {
     constructor() {
         super();
         this.allOrders = [];
@@ -18,12 +18,12 @@ class InventoryOrdersApprovalsModel extends HTMLElement {
     }
 
     loadStyles() {
-        const linkId = 'inventory-orders-approvals-model-styles';
+        const linkId = 'inventory-orders-approvals-styles';
         if (!document.getElementById(linkId)) {
             const link = document.createElement('link');
             link.id = linkId;
             link.rel = 'stylesheet';
-            link.href = './components/orders-approvals-model/style.css';
+            link.href = './components/orders-approvals/style.css';
             document.head.appendChild(link);
         }
     }
@@ -629,4 +629,4 @@ class InventoryOrdersApprovalsModel extends HTMLElement {
     }
 }
 
-customElements.define('inventory-orders-approvals-model', InventoryOrdersApprovalsModel);
+customElements.define('inventory-orders-approvals', InventoryOrdersApprovals);
