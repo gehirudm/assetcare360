@@ -35,13 +35,13 @@ Dashboard Web Components refactor execution — finishing Inventory Manager sect
 - Kept existing JS integration (`document.getElementById(...).value`, required toggles) compatible via `control-id` host mapping in `<ac-form-control>`
 - Updated `web-components.instructions.md` with Rule 10 and component table entries for modal/form components
 
-### Incremental TO model extraction (latest session)
-- Extracted first dashboard-scoped component: `pages/dashboard/technical-officer/components/create-fault-ticket-model/`
-	- `script.js` defines `<create-fault-ticket-model>` with shadow DOM, local state, event handling, and style.css loading
-	- `style.css` encapsulates button, modal, and form styling for this model section
-- Replaced in-page create-ticket trigger/modal HTML with `<create-fault-ticket-model>` tag in `technical-officer/index.html`
+### Incremental TO component extraction (latest session)
+- Extracted first dashboard-scoped component: `pages/dashboard/technical-officer/components/create-fault-ticket/`
+	- `script.js` defines `<create-fault-ticket>` with shadow DOM, local state, event handling, and style.css loading
+	- `style.css` encapsulates button, modal, and form styling for this section
+- Replaced in-page create-ticket trigger/modal HTML with `<create-fault-ticket>` tag in `technical-officer/index.html`
 - Removed create-ticket form/toggle logic from monolithic `technical-officer/script.js`
-- Added parent orchestration listener (`bindCreateFaultTicketModel`) using custom event `create-fault-ticket-created`
+- Added parent orchestration listener (`bindCreateFaultTicket`) using custom event `create-fault-ticket-created`
 
 ## Next Steps
 - Run pending migration `047_create_system_settings_and_budget_approval.php`
@@ -60,15 +60,45 @@ Dashboard Web Components refactor execution — finishing Inventory Manager sect
 
 ### Inventory Manager execution slice (completed)
 - Completed section-by-section extraction for all 8 Inventory Manager sections:
-	- `dashboard-overview-model`
-	- `machines-model`
-	- `vehicles-model`
-	- `catalog-model`
-	- `sparepart-addition-model`
-	- `orders-approvals-model`
-	- `usage-tracking-model`
-	- `notifications-model`
-- Replaced inline Sparepart Addition section markup with `<inventory-sparepart-addition-model>` and removed inline handler usage.
-- Added parent action/refresh bridge for addition events (`bindSparepartAdditionModel`, `refreshSparepartAdditionModel`).
+	- `dashboard-overview`
+	- `machines`
+	- `vehicles`
+	- `catalog`
+	- `sparepart-addition`
+	- `orders-approvals`
+	- `usage-tracking`
+	- `notifications`
+- Replaced inline Sparepart Addition section markup with `<inventory-sparepart-addition>` and removed inline handler usage.
+- Added parent action/refresh bridge for addition events (`bindSparepartAddition`, `refreshSparepartAddition`).
 - Removed legacy Sparepart Addition load/filter/render monolith logic and redirected post-save/delete refreshes through component APIs.
 - Inventory Manager monolith script reduced from `3580` to `2672` lines (about 25% reduction) while preserving existing modal workflows.
+
+### Dashboard bootstrap normalization slice (completed)
+- Claimed and completed bootstrap normalization task for dashboard entrypoints.
+- Fixed include order mismatch in `pages/dashboard/machinery-operator/index.html` (`config` → `api` → `auth` → `utils`).
+- Removed duplicate `config.js` include from `pages/dashboard/maintenance/index.html`.
+- Corrected style dependency load order in `pages/dashboard/technical-officer/index.html` (shared style modules now load before `create-fault-ticket`).
+- Standardized auth redirect paths to `CONFIG.ROUTES.LOGIN` in Inventory Manager and TO fault-ticket-detail scripts.
+- Ran syntax and diagnostics checks on changed files; no errors.
+- Transportation Manager dashboard remains intentionally empty and is tracked under TASK016.
+
+### Completed-dashboard quality remediation (latest)
+- Renamed completed section component folders, custom-element tags, and bridge helper names to remove `-model` suffixes in Inventory Manager and TO create-ticket.
+- Added `pages/dashboard/inventory-manager/components/page-modals/script.js` and moved popup modal HTML out of `inventory-manager/index.html` into `<inventory-page-modals>`.
+- Migrated large catalog and sparepart-addition modal/action logic block from `inventory-manager/script.js` into `components/page-modals/script.js` to reduce section-specific monolith code.
+- Verified dashboard codebase has no remaining `*-model` component/tag usage (`pages/dashboard/**`).
+- Ran diagnostics and syntax checks on touched Inventory Manager and TO files; no errors.
+
+### RabbitMQ event architecture backlog setup (latest)
+- Created new implementation program task `TASK018` plus execution tasks `TASK019` to `TASK027` in `.agent_memory/tasks/`.
+- Created Beads epic `assetcare-backend-new-lm7` for event-driven architecture and linked child issues:
+	- `assetcare-backend-new-de6` (event contract)
+	- `assetcare-backend-new-506` (publisher integration)
+	- `assetcare-backend-new-042` (event emission points)
+	- `assetcare-backend-new-2jm` (audit consumer)
+	- `assetcare-backend-new-7i9` (notification consumer)
+	- `assetcare-backend-new-1cp` (scheduler producer)
+	- `assetcare-backend-new-1ew` (notifications API)
+	- `assetcare-backend-new-6qe` (frontend integration)
+	- `assetcare-backend-new-81v` (reliability hardening)
+- Added parent-child and blocks dependencies in Beads to enforce practical implementation order.

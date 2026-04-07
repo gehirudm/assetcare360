@@ -25,43 +25,59 @@
 - ✅ Shared modal/form components (`ac-modal`, `ac-input-group`, `ac-form-control`)
   - TO "Create New Repair Ticket" modal refactored to component-based structure
   - Component styles encapsulated in shadow DOM (constructable stylesheets), not page stylesheet
-- ✅ Technical Officer first model extraction to dashboard component structure
-  - Added `components/create-fault-ticket-model/script.js` + `style.css`
+- ✅ Technical Officer first component extraction to dashboard component structure
+  - Added `components/create-fault-ticket/script.js` + `style.css`
   - Removed create-ticket modal-specific logic from monolithic TO script
   - Parent/child communication now event-driven (`create-fault-ticket-created`)
 - ✅ Inventory Manager notifications extraction
-  - Added `components/notifications-model/script.js` + `style.css`
-  - Replaced inline notifications section markup with `<inventory-notifications-model>`
+  - Added `components/notifications/script.js` + `style.css`
+  - Replaced inline notifications section markup with `<inventory-notifications>`
   - Removed notification helpers from monolithic `inventory-manager/script.js`
   - Added event bridge for sidebar badge updates and cross-section actions
 - ✅ Inventory Manager dashboard overview extraction
-  - Added `components/dashboard-overview-model/script.js` + `style.css`
-  - Replaced inline dashboard section markup with `<inventory-dashboard-overview-model>`
+  - Added `components/dashboard-overview/script.js` + `style.css`
+  - Replaced inline dashboard section markup with `<inventory-dashboard-overview>`
   - Added parent event bridge for dashboard section navigation + refresh
   - Removed legacy dashboard functions from monolithic `inventory-manager/script.js`
 - ✅ Inventory Manager usage tracking extraction
-  - Added `components/usage-tracking-model/script.js` + `style.css`
-  - Replaced inline usage section markup with `<inventory-usage-tracking-model>`
-  - Added parent refresh bridge (`refreshUsageTrackingModel`) for section loading
+  - Added `components/usage-tracking/script.js` + `style.css`
+  - Replaced inline usage section markup with `<inventory-usage-tracking>`
+  - Added parent refresh bridge (`refreshUsageTracking`) for section loading
   - Removed legacy usage handlers/listeners from monolithic `inventory-manager/script.js`
 - ✅ Inventory Manager orders and approvals extraction
-  - Added `components/orders-approvals-model/script.js` + `style.css`
-  - Replaced inline orders section markup with `<inventory-orders-approvals-model>`
+  - Added `components/orders-approvals/script.js` + `style.css`
+  - Replaced inline orders section markup with `<inventory-orders-approvals>`
   - Removed legacy orderActionModal from page HTML (now component-internal)
-  - Added `refreshOrdersApprovalsModel()` parent bridge with currentUser injection
+  - Added `refreshOrdersApprovals()` parent bridge with currentUser injection
   - Fixed notification-to-orders navigation to use component `viewOrderDetails()` method
   - Removed 15 order management functions (470 lines) and 2 global state variables
 - ✅ Inventory Manager catalog extraction
-  - Added `components/catalog-model/script.js` + `style.css`
-  - Replaced inline catalog section markup with `<inventory-catalog-model>`
-  - Added parent action/refresh bridge (`bindCatalogModel`, `refreshCatalogModel`)
+  - Added `components/catalog/script.js` + `style.css`
+  - Replaced inline catalog section markup with `<inventory-catalog>`
+  - Added parent action/refresh bridge (`bindCatalog`, `refreshCatalog`)
   - Removed legacy catalog load/render/filter functions from monolithic `inventory-manager/script.js`
 - ✅ Inventory Manager sparepart-addition extraction
-  - Added `components/sparepart-addition-model/script.js` + `style.css`
-  - Replaced inline addition section markup with `<inventory-sparepart-addition-model>`
-  - Added parent action/refresh bridge (`bindSparepartAdditionModel`, `refreshSparepartAdditionModel`)
+  - Added `components/sparepart-addition/script.js` + `style.css`
+  - Replaced inline addition section markup with `<inventory-sparepart-addition>`
+  - Added parent action/refresh bridge (`bindSparepartAddition`, `refreshSparepartAddition`)
   - Removed legacy addition load/render/filter functions from monolithic `inventory-manager/script.js`
   - Monolithic script reduced from 3580 → 2672 lines (~25% reduction)
+- ✅ Completed-dashboard quality cleanup (TASK017)
+  - Removed `-model` naming from completed Inventory Manager and TO create-ticket component folders, custom tags, and parent bridge helpers
+  - Componentized remaining Inventory Manager popup markup via `components/page-modals/script.js` + `<inventory-page-modals>` host in page HTML
+  - Migrated catalog/sparepart-addition modal and CRUD handlers out of `inventory-manager/script.js` into `components/page-modals/script.js`
+  - Cleared remaining `*-model` usage from `pages/dashboard/**`
+  - Syntax/diagnostic validation passed for all touched files
+- ✅ Dashboard bootstrap/load-order normalization (TASK015)
+  - Normalized core include order in `machinery-operator/index.html` to `config → api → auth → utils`
+  - Removed duplicate `config.js` include from `maintenance/index.html`
+  - Ensured style modules load before `create-fault-ticket` in `technical-officer/index.html`
+  - Standardized auth redirects to `CONFIG.ROUTES.LOGIN` in Inventory Manager and TO fault-ticket-detail scripts
+  - Syntax/diagnostic validation passed for all touched files
+- ✅ RabbitMQ event-architecture backlog setup
+  - Created memory tasks `TASK018` through `TASK027` for practical implementation slices
+  - Created Beads epic `assetcare-backend-new-lm7` and child issues for event contract, publisher, emitters, consumers, scheduler, API, frontend, and hardening
+  - Added dependency links in Beads to establish execution order
 - ✅ 47 database migrations applied
 
 ## What's Left / Known Issues
@@ -70,6 +86,7 @@
 - ⏳ Frontend budget-submission form should validate `total_amount > 0` before POSTing
 - ⏳ Other role dashboards (supervisor, driver, maintenance, etc.) — status varies
 - ⏳ Dashboard Web Components refactor backlog created (agent-memory TASK004–TASK016 + Beads epic/children) and ready for staged execution
+- ⏳ RabbitMQ event architecture implementation slices are planned (TASK018–TASK027 + Beads epic `assetcare-backend-new-lm7`) and ready to start
 
 ## Known Bugs Fixed (this session)
 - `Response::badRequest()` used in `TecFaultRepairTicketController` — doesn't exist; replaced with `Response::error('…', 400)`
