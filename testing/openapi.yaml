@@ -2843,7 +2843,7 @@ components:
                         type: number
                         example: 50000.00
         '400':
-          description: Bad request (missing fields or invalid data such as total_amount <= 0)
+          description: Bad request (missing fields or invalid data such as total_amount less than or equal to 0)
           content:
             application/json:
               schema:

@@ -30,7 +30,8 @@ class TransportOverview extends HTMLElement {
     }
 
     render() {
-        const firstName = (this._user?.full_name || 'Transportation Manager').split(' ')[0];
+        const displayName = this._user?.full_name?.trim() || 'Transportation Manager';
+        const firstName = displayName.split(' ')[0];
         this.innerHTML = `
             <div class="card">
                 <h3><i class="fas fa-route"></i> Welcome, ${firstName}</h3>
