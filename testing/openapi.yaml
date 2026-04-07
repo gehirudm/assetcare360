@@ -2678,7 +2678,7 @@ components:
                   summary: Budget report still pending
                   value:
                     status: error
-                    message: Cannot submit work update: the budget report for this ticket is still pending approval. Please wait for approval before starting work.
+                    message: "Cannot submit work update: the budget report for this ticket is still pending approval. Please wait for approval before starting work."
         '403':
           description: Forbidden - only Technical Officers can submit work updates
           content:

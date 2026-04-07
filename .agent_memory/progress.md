@@ -126,11 +126,21 @@
   - Created memory tasks `TASK018` through `TASK027` for practical implementation slices
   - Created Beads epic `assetcare-backend-new-lm7` and child issues for event contract, publisher, emitters, consumers, scheduler, API, frontend, and hardening
   - Added dependency links in Beads to establish execution order
+- ✅ Transportation Manager dashboard bootstrap (TASK016)
+  - Replaced empty dashboard files with baseline `<ac-layout>` shell and section map
+  - Added auth bootstrap and section routing orchestration in page script
+  - Added initial role-scoped component scaffold: `<transport-overview>`
+- ✅ Dashboard web-components refactor program orchestration (TASK004)
+  - Sequencing/acceptance/checkpoint standards finalized and synchronized with child tasks
+- ✅ RabbitMQ event architecture program orchestration (TASK018)
+  - Program-level decomposition complete; execution now tracked in TASK019–TASK027
+- ✅ OpenAPI coverage expanded for budget/work-update constraints (TASK003 partial)
+  - Added explicit `total_amount > 0` payload constraints (`minimum: 0.01`)
+  - Added Ticket Work Updates endpoints and pending-budget 400 error example
 - ✅ 47 database migrations applied
 
 ## What's Left / Known Issues
-- ⏳ Migration `047` may not have been run yet (pending confirmation)
-- ⏳ `testing/openapi.yaml` may be out of date with latest budget/work-update gating changes
+- ⏳ Migration `047` run/confirmation remains blocked in current sandbox due DB connection refusal
 - ⏳ Frontend budget-submission form should validate `total_amount > 0` before POSTing
 - ⏳ Other role dashboards (supervisor, driver, maintenance, etc.) — status varies
 - ⏳ Dashboard Web Components refactor backlog created (agent-memory TASK004–TASK016 + Beads epic/children) and ready for staged execution

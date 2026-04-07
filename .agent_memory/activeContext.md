@@ -1,9 +1,25 @@
 # Active Context
 
 ## Current Focus
-Dashboard Web Components refactor execution — TASK006 and TASK005 are complete; next execution target is TASK007 (Supervisor dashboard componentization).
+Dashboard Web Components refactor execution — TASK007 remains active; TASK016 baseline bootstrap is now complete. Event architecture execution has moved from program setup (TASK018) into implementation slices (TASK019+).
 
 ## Recent Changes (April 6, 2026)
+
+### TASK003 + TASK016 + Program task sync (latest session)
+- Updated `testing/openapi.yaml` for budget/work-update correctness:
+  - Added explicit `minimum: 0.01` constraints for `total_amount` in budget create/update payloads.
+  - Added Ticket Work Updates API docs (`/ticket-work-updates`, `/ticket-work-updates/ticket/{id}`, `/ticket-work-updates/latest/{id}`), including 400 pending-budget error example.
+- Attempted migration status check via `php scripts/migrate.php status`; blocked in sandbox with DB connection refused.
+- Bootstrapped previously empty Transportation Manager dashboard:
+  - Added `pages/dashboard/transportation-manager/index.html` with shared `<ac-layout>` shell and baseline section map.
+  - Added `pages/dashboard/transportation-manager/script.js` auth/bootstrap via `DashboardInit` and section-change URL synchronization.
+  - Added first component scaffold `pages/dashboard/transportation-manager/components/dashboard-overview/script.js` defining `<transport-overview>`.
+  - Added baseline `style.css` for shell placeholders/loading state.
+- Updated memory task tracking:
+  - TASK004 marked Completed (program orchestration finalized)
+  - TASK016 marked Completed (dashboard bootstrap complete)
+  - TASK018 marked Completed (program decomposition complete; execution delegated to TASK019–TASK027)
+  - TASK003 moved to In Progress (OpenAPI done; migration confirmation blocked by environment DB availability)
 
 ### Budget Step Fixes
 1. **`BudgetReportController.php`** — `create()` and `update()` now reject `total_amount <= 0` (changed from `< 0`). Error message: "Total amount must be greater than zero".
