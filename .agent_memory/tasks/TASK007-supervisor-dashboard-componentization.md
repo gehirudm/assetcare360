@@ -27,15 +27,15 @@ Section-level extraction is needed to break down script ownership and remove glo
 
 ## Progress Tracking
 
-**Overall Status:** In Progress - 34%
+**Overall Status:** In Progress - 62%
 
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
 |----|-------------|--------|---------|-------|
 | 7.1 | Extract dashboard summary component | Complete | Apr 7, 2026 | Added `<supervisor-dashboard-overview>` with summary cards + activity feed and section-navigation events |
 | 7.2 | Extract checks/tickets/repair components | Not Started | Apr 7, 2026 | Keep review and assignment flows |
-| 7.3 | Extract budget/assets/technicians components | In Progress | Apr 7, 2026 | Asset-status section extracted first as `<supervisor-asset-status>`; budget/technicians pending |
-| 7.4 | Remove section logic from monolith script | In Progress | Apr 7, 2026 | Parent now bridges asset-status component events; broader monolith cleanup still pending |
+| 7.3 | Extract budget/assets/technicians components | In Progress | Apr 7, 2026 | Asset-status, technicians, and budget extracted as components |
+| 7.4 | Remove section logic from monolith script | In Progress | Apr 7, 2026 | Parent now bridges dashboard-overview, asset-status, technicians, and budget components |
 
 ## Progress Log
 ### April 7, 2026
@@ -56,3 +56,20 @@ Section-level extraction is needed to break down script ownership and remove glo
 - Added parent orchestration bridge in `pages/dashboard/supervisor/script.js` for `supervisor-dashboard-overview:navigate` and delegated navigation to `<ac-layout>.navigateTo(...)`.
 - Scoped `updateDashboardSummary(...)` selection to `supervisor-dashboard-overview .summary-card` so summary updates target the extracted section.
 - Validation: `node --check` passed for touched supervisor scripts.
+
+### April 7, 2026 (Execution Update - Technicians Slice)
+- Added `pages/dashboard/supervisor/components/technicians/script.js` with `<supervisor-technicians>` component for technicians section layout and list rendering states.
+- Replaced inline technicians section markup in `pages/dashboard/supervisor/index.html` with `<supervisor-technicians>` host and added component script include.
+- Added parent bridge `bindSupervisorTechnicians()` in `pages/dashboard/supervisor/script.js` to route component view events to existing `viewTechnicianDetails(...)` behavior.
+- Updated `loadTechnicians()` orchestration in parent script to use component APIs (`setLoading`, `setEmpty`, `setError`, `renderTechnicians`) and removed inline technician `onclick` rendering from parent-generated markup.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.
+
+### April 7, 2026 (Execution Update - Budget Approval Slice)
+- Added `pages/dashboard/supervisor/components/budget-approval/script.js` with `<supervisor-budget-approval>` component.
+- Replaced inline budget-approval section markup in `pages/dashboard/supervisor/index.html` with `<supervisor-budget-approval>` host and added component script include.
+- Moved budget filter/dropdown/action UI handling into component-owned event delegation and local state.
+- Added parent bridge methods in `pages/dashboard/supervisor/script.js`:
+	- `bindSupervisorBudgetApproval()` for view/filter/status-change event routing
+	- `refreshSupervisorBudgetApproval()` for section activation refresh
+- Updated `loadSectionData('budget-approval')` to refresh component state and added null guard in legacy `loadBudgets()` helper to prevent stale DOM ID runtime errors.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.

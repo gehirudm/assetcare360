@@ -130,6 +130,25 @@ Dashboard Web Components refactor execution — TASK007 remains active; TASK016 
 - TASK007 moved to In Progress with first extraction slice completed.
 - Validation: `node --check` and diagnostics passed for touched supervisor files.
 
+### Supervisor technicians extraction slice (latest)
+- Added `pages/dashboard/supervisor/components/technicians/script.js` defining `<supervisor-technicians>` with component-owned section layout and list state rendering (`setLoading`, `setEmpty`, `setError`, `renderTechnicians`).
+- Replaced inline technicians section markup in `pages/dashboard/supervisor/index.html` with `<supervisor-technicians>` and added script include.
+- Added parent bridge `bindSupervisorTechnicians()` in `pages/dashboard/supervisor/script.js` to route component `supervisor-technicians:view` events to existing `viewTechnicianDetails(...)` behavior.
+- Updated parent `loadTechnicians()` to use component APIs and remove inline `onclick` rendering for technician view actions.
+- TASK007 progress advanced with technicians section now extracted; remaining supervisor extractions are checks/tickets/repair and budget.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.
+
+### Supervisor budget-approval extraction slice (latest)
+- Added `pages/dashboard/supervisor/components/budget-approval/script.js` defining `<supervisor-budget-approval>`.
+- Replaced inline budget-approval markup in `pages/dashboard/supervisor/index.html` with `<supervisor-budget-approval>` and added script include.
+- Moved budget filter/dropdown/approve/reject UI handling into component-owned event delegation and local state.
+- Added parent bridges in `pages/dashboard/supervisor/script.js`:
+	- `bindSupervisorBudgetApproval()` for component view/filter/status-change events
+	- `refreshSupervisorBudgetApproval()` for section activation refresh
+- Updated `loadSectionData('budget-approval')` to refresh component state and hardened legacy `loadBudgets()` with null guard against removed IDs.
+- TASK007 progress advanced further; remaining supervisor extractions are checks/tickets/repair sections.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.
+
 ## Next Steps
 - Run pending migration `047_create_system_settings_and_budget_approval.php`
 - Update `testing/openapi.yaml` with any API changes from budget fixes

@@ -76,6 +76,12 @@
   - Added `components/asset-status/script.js` with `<supervisor-asset-status>`
   - Replaced inline asset-status section markup with component host in supervisor dashboard HTML
   - Added parent bridge wiring for component events (`view`, `update`, `filter`) and section refresh integration
+  - Added `components/technicians/script.js` with `<supervisor-technicians>`
+  - Replaced inline technicians section markup with component host and bridged `supervisor-technicians:view` events in parent script
+  - Updated `loadTechnicians()` to render list/loading/error states via component APIs instead of inline markup/handlers
+  - Added `components/budget-approval/script.js` with `<supervisor-budget-approval>`
+  - Replaced inline budget-approval section markup with component host and bridged view/filter/status-change events in parent script
+  - Updated budget section activation flow to refresh component state and added null guard for stale legacy budget DOM IDs
   - Syntax and diagnostics validation passed for touched supervisor files
 - ✅ Inventory Manager notifications extraction
   - Added `components/notifications/script.js` + `style.css`

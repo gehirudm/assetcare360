@@ -4,6 +4,8 @@ DashboardInit.init('Supervisor', {
     onSuccess: () => {
         bindSupervisorDashboardOverview();
         bindSupervisorAssetStatus();
+        bindSupervisorBudgetApproval();
+        bindSupervisorTechnicians();
         loadDashboardData();
 
         // Refresh weekly check reports every 30 seconds
@@ -52,7 +54,7 @@ function loadSectionData(sectionId) {
             loadRepairs();
             break;
         case 'budget-approval':
-            loadBudgets();
+            refreshSupervisorBudgetApproval();
             break;
         case 'asset-status':
             refreshSupervisorAssetStatus();
@@ -107,6 +109,56 @@ function refreshSupervisorAssetStatus() {
     const component = document.querySelector('supervisor-asset-status');
     if (!component || typeof component.refresh !== 'function') return;
     component.refresh();
+}
+
+function bindSupervisorBudgetApproval() {
+    const component = document.querySelector('supervisor-budget-approval');
+    if (!component || component.dataset.bound === 'true') return;
+
+    component.dataset.bound = 'true';
+
+    component.addEventListener('supervisor-budget-approval:view', (event) => {
+        const budgetId = event.detail?.budgetId;
+        if (!budgetId) return;
+        viewBudgetDetails(budgetId);
+    });
+
+    component.addEventListener('supervisor-budget-approval:filter', (event) => {
+        const visibleCount = Number(event.detail?.visibleCount);
+        if (!Number.isFinite(visibleCount)) return;
+        showToast(`Showing ${visibleCount} budget${visibleCount !== 1 ? 's' : ''}`, 'info');
+    });
+
+    component.addEventListener('supervisor-budget-approval:status-change', (event) => {
+        const budgetId = event.detail?.budgetId;
+        const status = event.detail?.status;
+        if (!budgetId || !status) return;
+
+        if (status === 'approved') {
+            showToast(`Budget ${budgetId} approved!`, 'success');
+        } else if (status === 'rejected') {
+            showToast(`Budget ${budgetId} rejected.`, 'warning');
+        }
+    });
+}
+
+function refreshSupervisorBudgetApproval() {
+    const component = document.querySelector('supervisor-budget-approval');
+    if (!component || typeof component.refresh !== 'function') return;
+    component.refresh();
+}
+
+function bindSupervisorTechnicians() {
+    const component = document.querySelector('supervisor-technicians');
+    if (!component || component.dataset.bound === 'true') return;
+
+    component.dataset.bound = 'true';
+
+    component.addEventListener('supervisor-technicians:view', (event) => {
+        const technicianId = Number(event.detail?.technicianId);
+        if (!technicianId) return;
+        viewTechnicianDetails(technicianId);
+    });
 }
 
 // ==================== WEEKLY CHECK REPORTS ====================
@@ -2563,6 +2615,10 @@ function viewAllOutsourced() {
 
 async function loadBudgets() {
     const tbody = document.getElementById('budgetsTableBody');
+    if (!tbody) {
+        return;
+    }
+
     tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading budgets...</td></tr>';
 
     // TODO: Replace with actual API call
@@ -2620,12 +2676,14 @@ function filterAssets(status) {
 // ==================== TECHNICIANS ====================
 
 async function loadTechnicians() {
-    const table = document.getElementById('technicianAssignmentsTable');
-    if (!table) {
+    const component = document.querySelector('supervisor-technicians');
+    if (!component) {
         return;
     }
 
-    table.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 18px;"><i class="fas fa-spinner fa-spin"></i> Loading technicians...</p>';
+    if (typeof component.setLoading === 'function') {
+        component.setLoading();
+    }
 
     try {
         const techniciansPromise = fetchTechniciansWithWorkload();
@@ -2645,16 +2703,13 @@ async function loadTechnicians() {
         updateTechnicianSummaryCards(technicians, technicianOverviewAssignments);
 
         if (technicians.length === 0) {
-            table.innerHTML = `
-                <div style="padding: 24px; text-align: center; color: var(--muted);">
-                    <i class="fas fa-user-slash" style="font-size: 24px; margin-bottom: 10px;"></i>
-                    <p>No active technicians found.</p>
-                </div>
-            `;
+            if (typeof component.setEmpty === 'function') {
+                component.setEmpty();
+            }
             return;
         }
 
-        table.innerHTML = technicians.map(technician => {
+        const viewModel = technicians.map(technician => {
             const assignedTickets = technicianOverviewAssignments.get(Number(technician.id)) || [];
             const workloadCount = getTechnicianWorkloadCount(technician, technicianOverviewAssignments);
             const workloadStatus = getTechnicianWorkloadStatus(workloadCount);
@@ -2666,29 +2721,20 @@ async function loadTechnicians() {
             const expertise = escapeHtml(technician.technical_expertise || 'General');
             const assignmentLabel = `${workloadCount} active assignment${workloadCount === 1 ? '' : 's'}`;
 
-            return `
-                <div class="inventory-item" data-id="${technician.id}">
-                    <div class="item-details">
-                        <strong><i class="fas fa-user-cog"></i> ${technicianName}</strong>
-                        <div class="item-meta">
-                            <i class="fas fa-wrench"></i> ${expertise} |
-                            <i class="fas fa-tasks"></i> ${assignmentLabel}
-                        </div>
-                        <div class="item-meta">
-                            <span class="status-text ${workloadStatus.className}">${workloadStatus.label}</span> |
-                            <i class="fas fa-ticket-alt"></i> ${escapeHtml(statusSummary)}
-                        </div>
-                    </div>
-                    <div class="item-actions">
-                        <div class="action-buttons">
-                            <button class="btn btn-primary btn-small" onclick="viewTechnicianDetails(${Number(technician.id)})">
-                                <i class="fas fa-eye"></i> VIEW
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+            return {
+                id: Number(technician.id),
+                technicianName,
+                expertise,
+                assignmentLabel,
+                workloadClass: workloadStatus.className,
+                workloadLabel: workloadStatus.label,
+                statusSummary: escapeHtml(statusSummary)
+            };
+        });
+
+        if (typeof component.renderTechnicians === 'function') {
+            component.renderTechnicians(viewModel);
+        }
     } catch (error) {
         console.error('Error loading technicians:', error);
         technicianOverviewData = [];
@@ -2696,7 +2742,9 @@ async function loadTechnicians() {
         technicianTicketDataAvailable = false;
         updateTechnicianSummaryCards([], new Map());
 
-        table.innerHTML = '<p style="text-align: center; color: var(--danger); padding: 18px;">Failed to load technicians. Please try again.</p>';
+        if (typeof component.setError === 'function') {
+            component.setError('Failed to load technicians. Please try again.');
+        }
         showToast('Failed to load technicians', 'error');
     }
 }
