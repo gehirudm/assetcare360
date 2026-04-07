@@ -119,14 +119,14 @@ The easiest way to set up the project is using the automated setup script:
    ```bash
    composer install
    # update .env with RabbitMQ settings and set EVENTS_ENABLED=true
-   php scripts/consume_audit_events.php
-   php scripts/consume_notification_events.php
-   php scripts/check_service_due.php
+   php services/consume_audit_events.php
+   php services/consume_notification_events.php
+   php services/check_service_due.php
    ```
 
    Suggested cron for service-due producer:
    ```cron
-   */10 * * * * /usr/bin/php /path/to/assetcare360/scripts/check_service_due.php >> /var/log/assetcare360-service-due.log 2>&1
+   */10 * * * * /usr/bin/php /path/to/assetcare360/services/check_service_due.php >> /var/log/assetcare360-service-due.log 2>&1
    ```
 
    For existing databases that already have historical changes applied manually, baseline old migrations first, then run new ones:
