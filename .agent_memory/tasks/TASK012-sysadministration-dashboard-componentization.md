@@ -27,13 +27,13 @@ Refactor must consolidate entrypoint logic and componentize each model section.
 
 ## Progress Tracking
 
-**Overall Status:** In Progress - 54%
+**Overall Status:** In Progress - 66%
 
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
 |----|-------------|--------|---------|-------|
 | 12.1 | Consolidate script entrypoint | Complete | Apr 7, 2026 | Removed `legacy-script.js` include and retained compatibility handlers in canonical `script.js` |
-| 12.2 | Extract accounts/configuration components | In Progress | Apr 7, 2026 | Added `<sa-user-accounts>` extraction after `<sa-dashboard-overview>`; service/settings sections still pending |
+| 12.2 | Extract accounts/configuration components | In Progress | Apr 7, 2026 | Added `<sa-user-accounts>` and `<sa-service-config>` extraction; petty cash/notification settings still pending |
 | 12.3 | Extract logs/activity components | Not Started | Apr 7, 2026 | Keep filtering and pagination |
 | 12.4 | Decompose root script logic | Not Started | Apr 7, 2026 | Root orchestrates only |
 
@@ -55,3 +55,8 @@ Refactor must consolidate entrypoint logic and componentize each model section.
 - Extracted the `user-accounts` section body into `pages/components/sysadministration/sa-user-accounts.js` as a light-DOM component preserving all existing IDs and inline handlers used by `script.js`.
 - Replaced inline `user-accounts` markup in `pages/dashboard/sysadministration/index.html` with `<sa-user-accounts></sa-user-accounts>`.
 - Added the new component script include in sysadministration dependency load order alongside the existing dashboard overview component.
+
+### April 7, 2026 (Execution Update - Componentization Slice 3)
+- Extracted the `service-config` section body into `pages/components/sysadministration/sa-service-config.js` as a light-DOM component, keeping existing inline action handlers unchanged.
+- Replaced inline `service-config` markup in `pages/dashboard/sysadministration/index.html` with `<sa-service-config></sa-service-config>`.
+- Added the new component script include in sysadministration dependency load order with other sysadmin section components.
