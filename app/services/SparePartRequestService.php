@@ -179,9 +179,18 @@ class SparePartRequestService {
 
             $db->commit();
 
+            $updated = $this->requestModel->getRequestById($id);
+
             return [
                 'status' => 'success',
-                'message' => 'Spare part request approved. Fault ticket updated to Parts Approved.'
+                'message' => 'Spare part request approved. Fault ticket updated to Parts Approved.',
+                'data' => [
+                    'id' => (int) $id,
+                    'request_id' => $updated['request_id'] ?? null,
+                    'fault_ticket_id' => isset($updated['fault_ticket_id']) ? (int) $updated['fault_ticket_id'] : null,
+                    'requested_by' => isset($updated['requested_by']) ? (int) $updated['requested_by'] : null,
+                    'status' => $updated['status'] ?? SparePartRequest::STATUS_APPROVED,
+                ]
             ];
         } catch (Exception $e) {
             if (isset($db)) {
@@ -213,9 +222,18 @@ class SparePartRequestService {
                 'reviewed_at' => date('Y-m-d H:i:s')
             ]);
 
+            $updated = $this->requestModel->getRequestById($id);
+
             return [
                 'status' => 'success',
-                'message' => 'Spare part request rejected.'
+                'message' => 'Spare part request rejected.',
+                'data' => [
+                    'id' => (int) $id,
+                    'request_id' => $updated['request_id'] ?? null,
+                    'fault_ticket_id' => isset($updated['fault_ticket_id']) ? (int) $updated['fault_ticket_id'] : null,
+                    'requested_by' => isset($updated['requested_by']) ? (int) $updated['requested_by'] : null,
+                    'status' => $updated['status'] ?? SparePartRequest::STATUS_REJECTED,
+                ]
             ];
         } catch (Exception $e) {
             error_log("Error rejecting spare part request: " . $e->getMessage());

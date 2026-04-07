@@ -187,97 +187,62 @@ function filterTicketsByStatus(status) {
 // ==================== NOTIFICATIONS ====================
 
 /**
- * Derives actionable notifications from fault tickets assigned to the current user.
- * Updates the sidebar badge and renders the notifications list.
+ * Loads notifications from backend notification APIs.
  */
 async function loadNotifications() {
-    const list  = document.getElementById('notificationsList');
+    const list = document.getElementById('notificationsList');
     const empty = document.getElementById('notifEmpty');
-
     if (!list) return;
 
     try {
-        const response = await API.get('/fault-tickets');
-        if (response.status !== 'success') throw new Error(response.message || 'Failed');
+        const response = await API.get('/notifications?limit=50');
+        if (!response || response.status !== 'success') {
+            throw new Error(response?.message || 'Failed to load notifications');
+        }
 
-        const tickets = (response.data && (response.data.tickets || response.data)) || [];
-
-        // Only tickets assigned to the current user
-        const myTickets = tickets.filter(t =>
-            t.assignments && Array.isArray(t.assignments) &&
-            t.assignments.some(a => a.assigned_to == currentUser.id)
-        );
-
-        const notifications = [];
-
-        myTickets.forEach(t => {
-            const s = (t.status || '').toLowerCase();
-            const id = t.ticket_id || t.id;
-            const asset = t.machine_name || t.vehicle_name || t.asset_name || 'Asset';
-
-            if (s === 'assigned') {
-                notifications.push({
-                    type: 'info',
-                    icon: 'fa-ticket-alt',
-                    title: `New ticket assigned — ${id}`,
-                    desc: `${t.issue || t.description || 'No description'} · ${asset}`,
-                    action: { label: 'View Ticket', section: 'tickets' }
-                });
-            } else if (s === 'parts approved') {
-                notifications.push({
-                    type: 'success',
-                    icon: 'fa-boxes',
-                    title: `Spare parts approved — ${id}`,
-                    desc: `Parts for ${asset} have been approved. You can begin work.`,
-                    action: { label: 'View Ticket', section: 'tickets' }
-                });
-            } else if (s === 'waiting for budget approval') {
-                notifications.push({
-                    type: 'warning',
-                    icon: 'fa-file-invoice-dollar',
-                    title: `Budget pending approval — ${id}`,
-                    desc: `Budget report for ${asset} is awaiting supervisor review.`,
-                    action: null
-                });
-            } else if (s === 'waiting for spare parts') {
-                notifications.push({
-                    type: 'warning',
-                    icon: 'fa-tools',
-                    title: `Waiting for spare parts — ${id}`,
-                    desc: `Parts request for ${asset} is pending fulfillment.`,
-                    action: null
-                });
-            }
-        });
-
-        // Update badge via the sidebar component's public method
-        const actionableCount = notifications.filter(n => n.action !== null).length;
+        const notifications = (response.data && response.data.notifications) || [];
+        const unreadCount = Number(response?.data?.unread_count || 0);
         const sidebar = document.querySelector('to-shell-sidebar');
         if (sidebar) {
-            sidebar.setNotifBadge(actionableCount);
+            sidebar.setNotifBadge(unreadCount);
         }
 
-        // Render list
-        // Remove old notification cards (keep the empty state element)
         list.querySelectorAll('.notif-card').forEach(el => el.remove());
 
-        if (notifications.length === 0) {
+        if (!Array.isArray(notifications) || notifications.length === 0) {
             empty.style.display = 'block';
-        } else {
-            empty.style.display = 'none';
-            notifications.forEach(n => {
-                const card = document.createElement('div');
-                card.className = `notif-card notif-${n.type}`;
-                card.innerHTML = `
-                    <div class="notif-icon"><i class="fas ${n.icon}"></i></div>
-                    <div class="notif-body">
-                        <div class="notif-title">${n.title}</div>
-                        <div class="notif-desc">${n.desc}</div>
-                        ${n.action ? `<div class="notif-action"><button class="btn btn-small btn-primary" onclick="navigateTo('${n.action.section}')">${n.action.label}</button></div>` : ''}
-                    </div>`;
-                list.appendChild(card);
-            });
+            return;
         }
+
+        empty.style.display = 'none';
+        notifications.forEach(n => {
+            const card = document.createElement('div');
+            const type = n.type || 'info';
+            const title = n.title || 'Notification';
+            const desc = n.message || 'No details available.';
+            const icon = type === 'success'
+                ? 'fa-check-circle'
+                : type === 'warning'
+                    ? 'fa-exclamation-triangle'
+                    : type === 'error'
+                        ? 'fa-times-circle'
+                        : 'fa-bell';
+            const readClass = Number(n.is_read) === 1 ? 'notif-read' : '';
+
+            card.className = `notif-card notif-${type} ${readClass}`.trim();
+            card.innerHTML = `
+                <div class="notif-icon"><i class="fas ${icon}"></i></div>
+                <div class="notif-body">
+                    <div class="notif-title">${title}</div>
+                    <div class="notif-desc">${desc}</div>
+                    <div class="notif-action">
+                        ${Number(n.is_read) === 1
+                            ? '<span class="badge-success">Read</span>'
+                            : `<button class="btn btn-small btn-secondary" onclick="markNotificationAsRead('${n.notification_id}')">Mark as Read</button>`}
+                    </div>
+                </div>`;
+            list.appendChild(card);
+        });
     } catch (err) {
         console.error('loadNotifications error:', err);
         list.querySelectorAll('.notif-card').forEach(el => el.remove());
@@ -285,6 +250,22 @@ async function loadNotifications() {
         errEl.className = 'notif-card notif-danger';
         errEl.innerHTML = `<div class="notif-icon"><i class="fas fa-exclamation-circle"></i></div><div class="notif-body"><div class="notif-title">Failed to load notifications</div><div class="notif-desc">Please refresh the page and try again.</div></div>`;
         list.appendChild(errEl);
+    }
+}
+
+async function markNotificationAsRead(notificationId) {
+    if (!notificationId) return;
+    try {
+        const response = await API.post('/notifications/read', { notification_id: notificationId });
+        if (!response || response.status !== 'success') {
+            throw new Error(response?.message || 'Failed to update notification');
+        }
+        await loadNotifications();
+    } catch (err) {
+        console.error('markNotificationAsRead error:', err);
+        if (window.Utils && typeof window.Utils.showToast === 'function') {
+            window.Utils.showToast('Failed to mark notification as read', 'error');
+        }
     }
 }
 

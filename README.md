@@ -20,6 +20,7 @@ A PHP-based backend for an inventory management system with role-based access co
 - ✅ Machine and vehicle inventory management
 - ✅ Fault ticket system with image uploads (max 5 images per report)
 - ✅ UUID-based image storage for fault reports  
+- ✅ RabbitMQ event pipeline (publisher + audit/notification consumers + service-due producer)
 
 ## Project Structure
 
@@ -112,6 +113,20 @@ The easiest way to set up the project is using the automated setup script:
    ```bash
    php scripts/migrate.php status
    php scripts/migrate.php migrate
+   ```
+
+4. **(Optional) Enable event pipeline**
+   ```bash
+   composer install
+   # update .env with RabbitMQ settings and set EVENTS_ENABLED=true
+   php scripts/consume_audit_events.php
+   php scripts/consume_notification_events.php
+   php scripts/check_service_due.php
+   ```
+
+   Suggested cron for service-due producer:
+   ```cron
+   */10 * * * * /usr/bin/php /path/to/assetcare360/scripts/check_service_due.php >> /var/log/assetcare360-service-due.log 2>&1
    ```
 
    For existing databases that already have historical changes applied manually, baseline old migrations first, then run new ones:
