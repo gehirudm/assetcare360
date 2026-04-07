@@ -1,7 +1,7 @@
 # Tasks Index
 
 ## In Progress
-- [TASK008] Inventory Manager dashboard componentization — 4 of 8 sections extracted (dashboard, notifications, usage-tracking, orders-approvals); remaining: machines, vehicles, catalog, sparepart-addition
+_(none)_
 
 ## Pending
 - [TASK004] Dashboard web-components refactor program — Coordinate scope, sequencing, and completion criteria across all dashboards
@@ -19,6 +19,7 @@
 - [TASK003] Run migration 047 and update OpenAPI spec — migration not confirmed run; openapi.yaml needs update for budget/work-update changes
 
 ## Completed
+- [TASK008] Inventory Manager dashboard componentization — All 8 sections extracted to dashboard-scoped components; monolith reduced from 3580 to 2672 lines — Completed April 7, 2026
 - [TASK001] Technical Officer fault-ticket-detail page — Full dashboard shell, step flow, breadcrumb nav, style fixes — Completed April 6, 2026
 - [TASK002] Budget step correctness — Zero-amount rejection, pending-budget gate, UI dash display — Completed April 6, 2026
 

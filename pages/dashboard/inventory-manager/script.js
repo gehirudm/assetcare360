@@ -80,6 +80,12 @@ async function initializeApp() {
             console.warn('Initial notifications refresh failed:', err);
         });
 
+        // Wire catalog section events
+        bindCatalogModel();
+
+        // Wire sparepart addition events
+        bindSparepartAdditionModel();
+
         // Load initial data for active section
         const activeSection = document.querySelector('.content-section.active')?.id;
         if (activeSection) {
@@ -301,6 +307,99 @@ async function refreshNotificationsModel() {
     await notificationsModel.refresh();
 }
 
+function bindCatalogModel() {
+    const catalogModel = document.querySelector('inventory-catalog-model');
+    if (!catalogModel || catalogModel._inventoryCatalogBound) {
+        return;
+    }
+
+    catalogModel._inventoryCatalogBound = true;
+
+    catalogModel.addEventListener('inventory-catalog:add', () => {
+        openAddPartModal();
+    });
+
+    catalogModel.addEventListener('inventory-catalog:view', event => {
+        const sparepartId = event.detail?.sparepartId;
+        if (sparepartId) {
+            viewPartDetails(sparepartId);
+        }
+    });
+
+    catalogModel.addEventListener('inventory-catalog:edit', event => {
+        const sparepartId = event.detail?.sparepartId;
+        if (sparepartId) {
+            editPart(sparepartId);
+        }
+    });
+
+    catalogModel.addEventListener('inventory-catalog:delete', event => {
+        const sparepartId = event.detail?.sparepartId;
+        if (sparepartId) {
+            deletePart(sparepartId);
+        }
+    });
+
+    catalogModel.addEventListener('inventory-catalog:reorder', event => {
+        const sparepartId = event.detail?.sparepartId;
+        if (sparepartId) {
+            reorderPart(sparepartId);
+        }
+    });
+}
+
+async function refreshCatalogModel() {
+    const catalogModel = document.querySelector('inventory-catalog-model');
+    if (!catalogModel || typeof catalogModel.refresh !== 'function') {
+        return;
+    }
+
+    await catalogModel.refresh();
+}
+
+function bindSparepartAdditionModel() {
+    const additionsModel = document.querySelector('inventory-sparepart-addition-model');
+    if (!additionsModel || additionsModel._inventorySparepartAdditionBound) {
+        return;
+    }
+
+    additionsModel._inventorySparepartAdditionBound = true;
+
+    additionsModel.addEventListener('inventory-sparepart-addition:add', () => {
+        openAddStockModal();
+    });
+
+    additionsModel.addEventListener('inventory-sparepart-addition:view', event => {
+        const additionData = event.detail?.addition || event.detail?.additionId;
+        if (additionData) {
+            viewAdditionDetails(additionData);
+        }
+    });
+
+    additionsModel.addEventListener('inventory-sparepart-addition:edit', event => {
+        const additionData = event.detail?.addition || event.detail?.additionId;
+        if (additionData) {
+            editAddition(additionData);
+        }
+    });
+
+    additionsModel.addEventListener('inventory-sparepart-addition:delete', event => {
+        const additionData = event.detail?.addition || event.detail?.additionId;
+        if (additionData) {
+            deleteAddition(additionData);
+        }
+    });
+}
+
+async function refreshSparepartAdditionModel() {
+    const additionsModel = document.querySelector('inventory-sparepart-addition-model');
+    if (!additionsModel || typeof additionsModel.refresh !== 'function') {
+        return;
+    }
+
+    await additionsModel.refresh();
+}
+
 async function refreshUsageTrackingModel() {
     const usageModel = document.querySelector('inventory-usage-tracking-model');
     if (!usageModel || typeof usageModel.refresh !== 'function') {
@@ -356,12 +455,10 @@ async function loadSectionData(sectionId) {
                 refreshVehiclesModel();
                 break;
             case 'catalog':
-                // Load spare parts from database
-                await loadSpareParts();
+                await refreshCatalogModel();
                 break;
             case 'sparepart-addition':
-                await loadSparepartsForAddition();
-                await loadRecentAdditions();
+                await refreshSparepartAdditionModel();
                 break;
             case 'orders-approvals':
                 refreshOrdersApprovalsModel();
@@ -1497,9 +1594,6 @@ async function updateItemStatus(id, type, status) {
 
 // ==================== SPARE PARTS CATALOG FUNCTIONS ====================
 
-let currentStockFilter = 'all';
-let currentCategoryFilter = 'all';
-
 // Define spare part names for each category
 const SPARE_PART_NAMES = {
     vehicles: [
@@ -1638,88 +1732,6 @@ function updateEditCompatibilityOptions() {
 
 // ==================== SPARE PARTS / PRODUCTS API FUNCTIONS ====================
 
-// Load spare parts from database
-async function loadSpareParts() {
-    try {
-        showLoading(true);
-        const response = await API.get('/products');
-
-        if (response.status === 'success' && response.data && response.data.products) {
-            const products = response.data.products;
-            displaySpareParts(products);
-            updateCatalogCount(products.length);
-        } else {
-            console.error('Failed to load spare parts:', response.message);
-            Utils.showToast('Failed to load spare parts', 'error');
-        }
-    } catch (error) {
-        console.error('Error loading spare parts:', error);
-        Utils.showToast('Error loading spare parts', 'error');
-    } finally {
-        showLoading(false);
-    }
-}
-
-// Display spare parts in the catalog
-function displaySpareParts(products) {
-    const catalogItems = document.getElementById('catalogItems');
-    catalogItems.innerHTML = '';
-
-    if (products.length === 0) {
-        catalogItems.innerHTML = '<div class="no-data"><i class="fas fa-box-open"></i><p>No spare parts in catalog</p></div>';
-        return;
-    }
-
-    products.forEach(product => {
-        const quantity = parseInt(product.quantity) || 0;
-        const stockStatus = quantity > 10 ? 'in-stock' : (quantity > 0 ? 'low-stock' : 'out-of-stock');
-        const stockBadge = quantity > 10 ? 'status-in-stock' : (quantity > 0 ? 'status-low-stock' : 'status-out-of-stock');
-        const stockText = quantity > 10 ? 'In Stock' : (quantity > 0 ? 'Low Stock' : 'Out of Stock');
-
-        const newItem = document.createElement('div');
-        newItem.className = 'inventory-item';
-        newItem.setAttribute('data-status', stockStatus);
-        newItem.setAttribute('data-category', product.category || 'unknown');
-        newItem.setAttribute('data-id', product.sparepart_id);
-        newItem.innerHTML = `
-            <div class="item-details">
-                <strong><i class="fas fa-box"></i> ${product.name}</strong>
-                <div class="item-meta">
-                    <i class="fas fa-hashtag"></i> ${product.sparepart_id} | 
-                    <i class="fas fa-tag"></i> ${(product.category || 'Unknown').charAt(0).toUpperCase() + (product.category || 'Unknown').slice(1)} Parts
-                </div>
-                <div class="item-description">
-                    <span class="status-text ${stockBadge}">${stockText}</span> | 
-                    <i class="fas fa-boxes"></i> ${quantity} units
-                </div>
-            </div>
-            <div class="item-actions">
-                <div class="action-buttons">
-                    <button class="btn btn-primary btn-small" onclick="viewPartDetails('${product.sparepart_id}')"><i class="fas fa-eye"></i> VIEW</button>
-                    <button class="btn btn-secondary btn-small" onclick="editPart('${product.sparepart_id}')"><i class="fas fa-edit"></i> EDIT</button>
-                    <div class="dropdown-container">
-                        <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'part-${product.sparepart_id}')">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
-                        <div class="dropdown-menu" id="dropdown-part-${product.sparepart_id}">
-                            ${quantity <= 10 ? `
-                                <button class="dropdown-item" onclick="reorderPart('${product.sparepart_id}'); closeAllDropdowns();">
-                                    <i class="fas fa-sync"></i> Reorder
-                                </button>
-                            ` : ''}
-                            <button class="dropdown-item danger" onclick="deletePart('${product.sparepart_id}'); closeAllDropdowns();">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        catalogItems.appendChild(newItem);
-    });
-}
-
 // CREATE - Add Part
 async function openAddPartModal() {
     try {
@@ -1777,7 +1789,7 @@ async function saveSparePart(data) {
             closeModal('addPartModal');
             document.getElementById('addPartForm').reset();
             // Reload spare parts
-            await loadSpareParts();
+            await refreshCatalogModel();
         } else {
             console.error('Failed to add spare part:', response);
             Utils.showToast(`Failed to add spare part: ${response.message}`, 'error');
@@ -1788,58 +1800,6 @@ async function saveSparePart(data) {
     } finally {
         showLoading(false);
     }
-}
-
-function addPartToCatalog(partName, productId, category, quantity, location, supplier) {
-    const catalogItems = document.getElementById('catalogItems');
-    const stockStatus = quantity > 10 ? 'in-stock' : (quantity > 0 ? 'low-stock' : 'out-of-stock');
-    const stockBadge = quantity > 10 ? 'status-in-stock' : (quantity > 0 ? 'status-low-stock' : 'status-out-of-stock');
-    const stockText = quantity > 10 ? 'In Stock' : (quantity > 0 ? 'Low Stock' : 'Out of Stock');
-
-    const newItem = document.createElement('div');
-    newItem.className = 'inventory-item';
-    newItem.setAttribute('data-status', stockStatus);
-    newItem.setAttribute('data-category', category);
-    newItem.setAttribute('data-id', productId);
-    newItem.innerHTML = `
-        <div class="item-details">
-            <strong><i class="fas fa-box"></i> ${partName}</strong>
-            <div class="item-meta">
-                <i class="fas fa-hashtag"></i> ${productId} | 
-                <i class="fas fa-tag"></i> ${category.charAt(0).toUpperCase() + category.slice(1)} Parts
-            </div>
-            <div class="item-description">
-                <span class="status-text ${stockBadge}">${stockText}</span> | 
-                <i class="fas fa-boxes"></i> ${quantity} units
-            </div>
-        </div>
-        <div class="item-actions">
-            <div class="action-buttons">
-                <button class="btn btn-primary btn-small" onclick="viewPartDetails('${productId}')"><i class="fas fa-eye"></i> VIEW</button>
-                <button class="btn btn-secondary btn-small" onclick="editPart('${productId}')"><i class="fas fa-edit"></i> EDIT</button>
-                <div class="dropdown-container">
-                    <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'part-${productId}')">
-                        <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                    <div class="dropdown-menu" id="dropdown-part-${productId}">
-                        ${quantity <= 10 ? `
-                            <button class="dropdown-item" onclick="reorderPart('${productId}'); closeAllDropdowns();">
-                                <i class="fas fa-sync"></i> Reorder
-                            </button>
-                        ` : ''}
-                        <button class="dropdown-item danger" onclick="deletePart('${productId}'); closeAllDropdowns();">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    catalogItems.appendChild(newItem);
-
-    const items = document.querySelectorAll('#catalogItems .inventory-item');
-    updateCatalogCount(items.length);
 }
 
 // READ - View Part Details
@@ -2019,7 +1979,7 @@ document.getElementById('editPartForm').addEventListener('submit', async functio
             closeModal('editPartModal');
             this.reset();
             // Reload spare parts list
-            await loadSpareParts();
+            await refreshCatalogModel();
         } else {
             Utils.showToast('Failed to update spare part', 'error');
         }
@@ -2056,7 +2016,7 @@ async function deletePart(partId) {
                 Utils.showToast(`Part ${partId} deleted successfully!`, 'success');
                 closeModal('deleteModal');
                 // Reload spare parts
-                await loadSpareParts();
+                await refreshCatalogModel();
             } else {
                 Utils.showToast(`Failed to delete part: ${response.message}`, 'error');
             }
@@ -2070,58 +2030,6 @@ async function deletePart(partId) {
 
     openModal('deleteModal');
 }
-
-// FILTER FUNCTIONS
-function filterCatalogByStock(status) {
-    document.querySelectorAll('#stockFilterTabs .filter-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-    currentStockFilter = status;
-    applyCatalogFilters();
-}
-
-function filterCatalogByCategory(category) {
-    document.querySelectorAll('#categoryFilterTabs .filter-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-    currentCategoryFilter = category;
-    applyCatalogFilters();
-}
-
-function applyCatalogFilters() {
-    const searchValue = document.getElementById('catalogSearch').value.toLowerCase();
-    const items = document.querySelectorAll('#catalogItems .inventory-item');
-    let visibleCount = 0;
-
-    items.forEach(item => {
-        const itemText = item.textContent.toLowerCase();
-        const itemStatus = item.getAttribute('data-status');
-        const itemCategory = item.getAttribute('data-category');
-
-        const matchesSearch = searchValue === '' || itemText.includes(searchValue);
-        const matchesStock = currentStockFilter === 'all' || itemStatus === currentStockFilter;
-        const matchesCategory = currentCategoryFilter === 'all' || itemCategory === currentCategoryFilter;
-
-        if (matchesSearch && matchesStock && matchesCategory) {
-            item.style.display = 'flex';
-            visibleCount++;
-        } else {
-            item.style.display = 'none';
-        }
-    });
-
-    updateCatalogCount(visibleCount);
-}
-
-function updateCatalogCount(count) {
-    const countBadge = document.getElementById('catalogCount');
-    if (countBadge) {
-        countBadge.textContent = `${count} item${count !== 1 ? 's' : ''}`;
-    }
-}
-
-// Initialize search handler for catalog
-document.getElementById('catalogSearch')?.addEventListener('input', function () {
-    applyCatalogFilters();
-});
 
 // REORDER FUNCTIONS
 function reorderPart(partId) {
@@ -2153,51 +2061,6 @@ document.getElementById('reorderForm').addEventListener('submit', function (e) {
 });
 
 // ==================== SPAREPART ADDITION ====================
-
-// Load all spareparts into the datalist for autocomplete
-async function loadSparepartsForAddition() {
-    try {
-        const response = await API.get('/products');
-        if (response.status === 'success' && response.data && response.data.products) {
-            const datalist = document.getElementById('sparepartsList');
-            datalist.innerHTML = '';
-
-            response.data.products.forEach(part => {
-                const option = document.createElement('option');
-                option.value = part.sparepart_id;
-                option.textContent = `${part.sparepart_id} - ${part.name}`;
-                datalist.appendChild(option);
-            });
-        }
-    } catch (error) {
-        console.error('Error loading spareparts for addition:', error);
-    }
-}
-
-// Handle sparepart selection - auto-fill details
-document.getElementById('addStockSparepartId')?.addEventListener('input', async function () {
-    const sparepartId = this.value.trim();
-
-    if (sparepartId.length >= 3) {
-        try {
-            const response = await API.get(`/products/${sparepartId}`);
-            if (response.status === 'success' && response.data) {
-                const part = response.data;
-                document.getElementById('addStockSparepartName').value = part.name || '';
-                document.getElementById('addStockCurrentQty').value = `${part.quantity || 0} units`;
-
-                // Pre-fill supplier if available
-                if (part.supplier) {
-                    document.getElementById('addStockSupplier').value = part.supplier;
-                }
-            }
-        } catch (error) {
-            // Clear fields if not found
-            document.getElementById('addStockSparepartName').value = '';
-            document.getElementById('addStockCurrentQty').value = '';
-        }
-    }
-});
 
 // Handle add stock form submission
 document.getElementById('addStockForm')?.addEventListener('submit', async function (e) {
@@ -2308,7 +2171,7 @@ async function updateAdditionRecord(data) {
             window.editingAdditionId = null;
 
             // Reload recent additions and spare parts
-            await Promise.all([loadRecentAdditions(), loadSpareParts()]);
+            await Promise.all([refreshSparepartAdditionModel(), refreshCatalogModel()]);
         } else {
             console.error('Failed to update addition:', response);
             Utils.showToast(`Failed to update: ${response.message}`, 'error');
@@ -2409,8 +2272,10 @@ async function saveSparePartFromAddStock(data) {
             document.getElementById('addStockForm').reset();
 
             // Reload spare parts and recent additions
-            await loadSpareParts();
-            loadRecentAdditions();
+            await Promise.all([
+                refreshCatalogModel(),
+                refreshSparepartAdditionModel()
+            ]);
         } else {
             console.error('Failed to save spare part:', response);
             Utils.showToast(`Failed to save spare part: ${response.message}`, 'error');
@@ -2510,153 +2375,18 @@ function updateAddStockCompatibilityOptions() {
     }
 }
 
-// Load recent stock additions
-async function loadRecentAdditions() {
-    const container = document.getElementById('recentAdditionsItems');
-    container.innerHTML = '<div style="text-align:center; padding:40px; color:#6b7280;"><i class="fas fa-spinner fa-spin" style="font-size:2em; margin-bottom:10px;"></i><p>Loading recent additions...</p></div>';
-
-    try {
-        const response = await API.get('/additions?per_page=50');
-
-        if (response.status === 'success' && response.data && response.data.additions) {
-            const additions = response.data.additions;
-
-            // Update count
-            const countEl = document.getElementById('additionsCount');
-            if (countEl) countEl.textContent = `${additions.length} items`;
-
-            if (additions.length === 0) {
-                container.innerHTML = '<div class="no-data"><i class="fas fa-box-open"></i><p>No stock additions yet</p></div>';
-                return;
-            }
-
-            container.innerHTML = '';
-
-            additions.forEach(addition => {
-                const date = new Date(addition.received_date).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                });
-
-                const categoryLabel = addition.category ?
-                    (addition.category.charAt(0).toUpperCase() + addition.category.slice(1) + ' Parts') : 'Unknown';
-
-                const item = document.createElement('div');
-                item.className = 'inventory-item';
-                item.setAttribute('data-id', addition.id);
-                item.setAttribute('data-category', addition.category || 'unknown');
-                item.setAttribute('data-name', (addition.sparepart_name || '').toLowerCase());
-                item.setAttribute('data-supplier', (addition.supplier || '').toLowerCase());
-                item.setAttribute('data-sparepart-id', (addition.sparepart_id || '').toLowerCase());
-                item.innerHTML = `
-                    <div class="item-details">
-                        <strong><i class="fas fa-box"></i> ${addition.sparepart_name}</strong>
-                        <div class="item-meta">
-                            <i class="fas fa-hashtag"></i> ${addition.sparepart_id} | 
-                            <i class="fas fa-tag"></i> ${categoryLabel} |
-                            <i class="fas fa-calendar"></i> ${date}
-                        </div>
-                        <div class="item-description">
-                            <span class="status-text" style="background:#dcfce7; color:#166534;"><i class="fas fa-plus-circle"></i> +${addition.quantity_added} units</span> | 
-                            <span class="status-text" style="background:#fef3c7; color:#92400e;"><i class="fas fa-truck"></i> ${addition.supplier || 'N/A'}</span> |
-                            <i class="fas fa-map-marker-alt"></i> ${addition.location || 'N/A'}
-                        </div>
-                    </div>
-                    <div class="item-actions">
-                        <div class="action-buttons">
-                            <button class="btn btn-primary btn-small" onclick="viewAdditionDetails(${addition.id})">
-                                <i class="fas fa-eye"></i> VIEW
-                            </button>
-                            <button class="btn btn-secondary btn-small" onclick="editAddition(${addition.id})">
-                                <i class="fas fa-edit"></i> EDIT
-                            </button>
-                            <div class="dropdown-container">
-                                <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'addition-${addition.id}')">
-                                    <i class="fas fa-ellipsis-v"></i>
-                                </button>
-                                <div class="dropdown-menu" id="dropdown-addition-${addition.id}">
-                                    <button class="dropdown-item danger" onclick="deleteAddition(${addition.id}); closeAllDropdowns();">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(item);
-            });
-
-            // Store additions data for detail view
-            window.additionsData = additions;
-        } else {
-            throw new Error(response.message || 'Failed to load additions');
-        }
-    } catch (error) {
-        console.error('Error loading recent additions:', error);
-        container.innerHTML = '<div style="text-align:center; padding:40px; color:#dc2626;"><i class="fas fa-exclamation-triangle" style="font-size:2em; margin-bottom:10px;"></i><p>Failed to load additions</p></div>';
+function resolveAdditionRecord(additionRef) {
+    if (additionRef && typeof additionRef === 'object') {
+        return additionRef;
     }
-}
 
-// Filter additions by search text
-function filterAdditions() {
-    const searchText = (document.getElementById('additionSearch')?.value || '').toLowerCase();
-    const items = document.querySelectorAll('#recentAdditionsItems .inventory-item');
-    let visibleCount = 0;
-
-    items.forEach(item => {
-        const name = item.getAttribute('data-name') || '';
-        const supplier = item.getAttribute('data-supplier') || '';
-        const sparepartId = item.getAttribute('data-sparepart-id') || '';
-        const isVisible = !searchText || name.includes(searchText) || supplier.includes(searchText) || sparepartId.includes(searchText);
-
-        // Also check current category filter
-        const activeCatBtn = document.querySelector('#additionCategoryFilter .filter-btn.active');
-        const activeCategory = activeCatBtn ? activeCatBtn.textContent.trim().toLowerCase() : 'all categories';
-        const itemCategory = item.getAttribute('data-category') || '';
-        const categoryMatch = activeCategory === 'all categories' || itemCategory === activeCategory;
-
-        item.style.display = (isVisible && categoryMatch) ? '' : 'none';
-        if (isVisible && categoryMatch) visibleCount++;
-    });
-
-    const countEl = document.getElementById('additionsCount');
-    if (countEl) countEl.textContent = `${visibleCount} items`;
-}
-
-// Filter additions by category
-function filterAdditionsByCategory(category) {
-    // Update active button
-    document.querySelectorAll('#additionCategoryFilter .filter-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
-
-    const items = document.querySelectorAll('#recentAdditionsItems .inventory-item');
-    const searchText = (document.getElementById('additionSearch')?.value || '').toLowerCase();
-    let visibleCount = 0;
-
-    items.forEach(item => {
-        const itemCategory = item.getAttribute('data-category') || '';
-        const categoryMatch = category === 'all' || itemCategory === category;
-
-        // Also apply search filter
-        const name = item.getAttribute('data-name') || '';
-        const supplier = item.getAttribute('data-supplier') || '';
-        const sparepartId = item.getAttribute('data-sparepart-id') || '';
-        const searchMatch = !searchText || name.includes(searchText) || supplier.includes(searchText) || sparepartId.includes(searchText);
-
-        item.style.display = (categoryMatch && searchMatch) ? '' : 'none';
-        if (categoryMatch && searchMatch) visibleCount++;
-    });
-
-    const countEl = document.getElementById('additionsCount');
-    if (countEl) countEl.textContent = `${visibleCount} items`;
+    const additions = Array.isArray(window.additionsData) ? window.additionsData : [];
+    return additions.find(a => a.id == additionRef);
 }
 
 // View addition details in modal
-function viewAdditionDetails(additionId) {
-    const addition = window.additionsData?.find(a => a.id == additionId);
+function viewAdditionDetails(additionRef) {
+    const addition = resolveAdditionRecord(additionRef);
     if (!addition) {
         Utils.showToast('Addition details not found', 'error');
         return;
@@ -2760,19 +2490,15 @@ function viewAdditionDetails(additionId) {
 }
 
 // Edit addition - open modal with pre-filled data
-async function editAddition(additionId) {
-    console.log('editAddition called with ID:', additionId);
-
-    const addition = window.additionsData?.find(a => a.id == additionId);
+async function editAddition(additionRef) {
+    const addition = resolveAdditionRecord(additionRef);
     if (!addition) {
         Utils.showToast('Addition details not found', 'error');
         return;
     }
 
-    console.log('Found addition:', addition);
-
     // Store the addition ID for updating
-    window.editingAdditionId = additionId;
+    window.editingAdditionId = addition.id;
 
     // Open the add stock modal and populate with existing data
     try {
@@ -2851,7 +2577,6 @@ async function editAddition(additionId) {
         if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Update Addition';
 
         openModal('addStockModal');
-        console.log('Modal opened for editing');
     } catch (error) {
         console.error('Failed to open edit modal:', error);
         Utils.showToast('Failed to load addition for editing', 'error');
@@ -2859,8 +2584,8 @@ async function editAddition(additionId) {
 }
 
 // Delete addition
-async function deleteAddition(additionId) {
-    const addition = window.additionsData?.find(a => a.id == additionId);
+async function deleteAddition(additionRef) {
+    const addition = resolveAdditionRecord(additionRef);
     if (!addition) {
         Utils.showToast('Addition not found', 'error');
         return;
@@ -2874,11 +2599,11 @@ async function deleteAddition(additionId) {
     if (!confirmDelete) return;
 
     try {
-        const response = await API.delete(`/additions/${additionId}`);
+        const response = await API.delete(`/additions/${addition.id}`);
 
         if (response.status === 'success') {
             Utils.showToast('Stock addition deleted successfully', 'success');
-            await loadRecentAdditions();
+            await refreshSparepartAdditionModel();
         } else {
             throw new Error(response.message || 'Failed to delete addition');
         }
@@ -2905,8 +2630,14 @@ async function openAddStockModal() {
         if (form) form.reset();
 
         // Clear compatibility checkboxes
-        const compatibilityContainer = document.getElementById('addStockCompatibility');
-        if (compatibilityContainer) compatibilityContainer.innerHTML = '';
+        const compatibilityContainer = document.getElementById('addStockCompatibilityCheckboxes');
+        if (compatibilityContainer) {
+            compatibilityContainer.innerHTML = '<p style="color: #999; grid-column: 1 / -1;">Please select a category first</p>';
+        }
+        const compatibilityLabel = document.getElementById('addStockCompatibilityLabel');
+        if (compatibilityLabel) {
+            compatibilityLabel.textContent = 'Compatible Machines/Vehicles';
+        }
 
         // Reset category dropdown
         document.getElementById('addStockCategory').value = '';

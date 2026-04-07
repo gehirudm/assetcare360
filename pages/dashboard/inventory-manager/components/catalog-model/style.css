@@ -1,0 +1,24 @@
+/* Inventory catalog component-specific styling */
+
+.catalog-empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px;
+}
+
+.catalog-empty i {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.catalog-action-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.catalog-item {
+    cursor: default;
+}

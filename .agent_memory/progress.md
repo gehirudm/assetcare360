@@ -29,29 +29,39 @@
   - Added `components/create-fault-ticket-model/script.js` + `style.css`
   - Removed create-ticket modal-specific logic from monolithic TO script
   - Parent/child communication now event-driven (`create-fault-ticket-created`)
-- ✅ Inventory Manager notifications extraction (first TASK008 execution slice)
+- ✅ Inventory Manager notifications extraction
   - Added `components/notifications-model/script.js` + `style.css`
   - Replaced inline notifications section markup with `<inventory-notifications-model>`
   - Removed notification helpers from monolithic `inventory-manager/script.js`
   - Added event bridge for sidebar badge updates and cross-section actions
-- ✅ Inventory Manager dashboard overview extraction (second TASK008 execution slice)
+- ✅ Inventory Manager dashboard overview extraction
   - Added `components/dashboard-overview-model/script.js` + `style.css`
   - Replaced inline dashboard section markup with `<inventory-dashboard-overview-model>`
   - Added parent event bridge for dashboard section navigation + refresh
   - Removed legacy dashboard functions from monolithic `inventory-manager/script.js`
-- ✅ Inventory Manager usage-tracking extraction (third TASK008 execution slice)
+- ✅ Inventory Manager usage tracking extraction
   - Added `components/usage-tracking-model/script.js` + `style.css`
   - Replaced inline usage section markup with `<inventory-usage-tracking-model>`
   - Added parent refresh bridge (`refreshUsageTrackingModel`) for section loading
   - Removed legacy usage handlers/listeners from monolithic `inventory-manager/script.js`
-- ✅ Inventory Manager orders-approvals extraction (fourth TASK008 execution slice)
+- ✅ Inventory Manager orders and approvals extraction
   - Added `components/orders-approvals-model/script.js` + `style.css`
   - Replaced inline orders section markup with `<inventory-orders-approvals-model>`
   - Removed legacy orderActionModal from page HTML (now component-internal)
   - Added `refreshOrdersApprovalsModel()` parent bridge with currentUser injection
   - Fixed notification-to-orders navigation to use component `viewOrderDetails()` method
   - Removed 15 order management functions (470 lines) and 2 global state variables
-  - Monolithic script reduced from 3580 → 3129 lines (12.6% reduction)
+- ✅ Inventory Manager catalog extraction
+  - Added `components/catalog-model/script.js` + `style.css`
+  - Replaced inline catalog section markup with `<inventory-catalog-model>`
+  - Added parent action/refresh bridge (`bindCatalogModel`, `refreshCatalogModel`)
+  - Removed legacy catalog load/render/filter functions from monolithic `inventory-manager/script.js`
+- ✅ Inventory Manager sparepart-addition extraction
+  - Added `components/sparepart-addition-model/script.js` + `style.css`
+  - Replaced inline addition section markup with `<inventory-sparepart-addition-model>`
+  - Added parent action/refresh bridge (`bindSparepartAdditionModel`, `refreshSparepartAdditionModel`)
+  - Removed legacy addition load/render/filter functions from monolithic `inventory-manager/script.js`
+  - Monolithic script reduced from 3580 → 2672 lines (~25% reduction)
 - ✅ 47 database migrations applied
 
 ## What's Left / Known Issues

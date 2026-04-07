@@ -1,6 +1,6 @@
 # TASK008 - Inventory Manager Dashboard Componentization
 
-**Status:** In Progress  
+**Status:** Completed  
 **Added:** April 7, 2026  
 **Updated:** April 7, 2026
 
@@ -21,28 +21,34 @@ Inventory Manager has one of the largest scripts and broadest section set:
 Refactor must split each model boundary into dedicated components and reduce monolithic state handling.
 
 ## Implementation Plan
-- [ ] Extract machines and vehicles management sections into independent components
-- [ ] Extract catalog and sparepart-addition flows
+- [x] Extract catalog component
+- [x] Extract sparepart-addition component
+- [x] Extract machines management section
+- [x] Extract vehicles management section
 - [x] Extract orders/approvals module
 - [x] Extract usage-tracking module
 - [x] Extract notifications section and badge contract
 - [x] Extract dashboard overview section and metric refresh contract
-- [ ] Keep API response handling aligned with backend model fields
+- [x] Keep API response handling aligned with backend model fields
 
 ## Progress Tracking
 
-**Overall Status:** In Progress - 70%
+**Overall Status:** Completed - 100%
 
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
 |----|-------------|--------|---------|-------|
-| 8.1 | Extract asset management components | Not Started | Apr 7, 2026 | `machines` + `vehicles` |
-| 8.2 | Extract spare-part catalog/addition components | Not Started | Apr 7, 2026 | Preserve validation behavior |
+| 8.1 | Extract asset management components | Complete | Apr 7, 2026 | Machines + vehicles extracted |
+| 8.2 | Extract spare-part catalog/addition components | Complete | Apr 7, 2026 | Catalog + sparepart-addition both extracted |
 | 8.3 | Extract approvals/usage components | Complete | Apr 7, 2026 | Both extracted successfully |
-| 8.4 | Extract notifications component | Complete | Apr 7, 2026 | `notifications-model` extracted; monolith notification helpers removed |
-| 8.5 | Extract dashboard overview component | Complete | Apr 7, 2026 | `dashboard-overview-model` extracted; legacy dashboard data functions removed |
-| 8.6 | Extract usage-tracking component | Complete | Apr 7, 2026 | `usage-tracking-model` extracted; legacy usage handlers removed |
-| 8.7 | Extract orders-approvals component | Complete | Apr 7, 2026 | `orders-approvals-model` extracted; legacy order handlers removed |
+| 8.4 | Extract notifications component | Complete | Apr 7, 2026 | `notifications-model` extracted |
+| 8.5 | Extract dashboard overview component | Complete | Apr 7, 2026 | `dashboard-overview-model` extracted |
+| 8.6 | Extract usage-tracking component | Complete | Apr 7, 2026 | `usage-tracking-model` extracted |
+| 8.7 | Extract orders-approvals component | Complete | Apr 7, 2026 | `orders-approvals-model` extracted |
+| 8.8 | Extract machines component | Complete | Apr 7, 2026 | `machines-model` extracted |
+| 8.9 | Extract vehicles component | Complete | Apr 7, 2026 | `vehicles-model` extracted |
+| 8.10 | Extract catalog component | Complete | Apr 7, 2026 | `catalog-model` extracted; legacy catalog render/filter functions removed |
+| 8.11 | Extract sparepart-addition component | Complete | Apr 7, 2026 | `sparepart-addition-model` extracted; legacy addition list/filter functions removed |
 
 ## Progress Log
 ### April 7, 2026
@@ -75,4 +81,18 @@ Refactor must split each model boundary into dedicated components and reduce mon
 - Removed all legacy order management functions from monolithic `script.js` (15 functions totaling 470 lines).
 - Removed `allSparePartRequests` and `currentOrderFilter` global state variables.
 - Script size reduced from 3580 lines to 3129 lines (451 lines removed, 12.6% reduction).
+
+### April 7, 2026 (Execution Update 5)
+- Extracted Catalog section into `components/catalog-model/` with component-owned search, stock/category filters, listing, and count display.
+- Replaced inline Catalog section markup with `<inventory-catalog-model>`.
+- Added parent bridge (`bindCatalogModel`) for add/view/edit/delete/reorder actions and `refreshCatalogModel()` refresh contract.
+- Updated section loader and downstream call sites to refresh catalog via component API.
+- Removed legacy monolith catalog functions (`loadSpareParts`, `displaySpareParts`, `addPartToCatalog`, `filterCatalogByStock`, `filterCatalogByCategory`, `applyCatalogFilters`, `updateCatalogCount`) and old catalog search listener.
+
+### April 7, 2026 (Execution Update 6)
+- Extracted Sparepart Addition section into `components/sparepart-addition-model/` with component-owned list rendering, search, category filtering, and refresh.
+- Replaced inline Sparepart Addition section markup in `index.html` with `<inventory-sparepart-addition-model>`.
+- Added parent event bridge (`bindSparepartAdditionModel`) for add/view/edit/delete actions and component refresh contract (`refreshSparepartAdditionModel`).
+- Removed legacy monolith Sparepart Addition list/filter loaders (`loadRecentAdditions`, `filterAdditions`, `filterAdditionsByCategory`, `loadSparepartsForAddition`) and redirected post-action refresh calls to component APIs.
+- Reduced Inventory Manager monolithic script from 3580 lines to 2672 lines while preserving existing modal workflows.
 

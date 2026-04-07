@@ -24,12 +24,6 @@
     <script src="../../components/shared/confirm-dialog.js"></script>
     <script src="../../js/dashboard-init.js"></script>
     
-    <!-- Dashboard-scoped components -->
-    <script src="./components/notifications-model/script.js"></script>
-    <script src="./components/dashboard-overview-model/script.js"></script>
-    <script src="./components/usage-tracking-model/script.js"></script>
-    <script src="./components/orders-approvals-model/script.js"></script>
-
 </head>
 <body>
     <!-- Loading Overlay -->
@@ -68,132 +62,7 @@
 
                 <!-- Spare Parts Catalog -->
                 <section class="content-section" id="catalog">
-                    <div class="page-header">
-                        <h2 class="page-title"><i class="fas fa-list-alt"></i> Spare Parts Catalog</h2>
-                        <p class="page-subtitle">Browse and manage spare parts inventory</p>
-                    </div>
-                    
-                    <div class="search-bar">
-                        <input type="text" id="catalogSearch" class="search-input" placeholder="Search by sparepart name, number, or machine...">
-                        <button class="btn btn-primary" onclick="openAddPartModal()">
-                            <i class="fas fa-plus"></i> Add New Sparepart
-                        </button>
-                    </div>
-                    
-                    <div class="filter-controls" id="stockFilterTabs">
-                        <button class="filter-btn active" onclick="filterCatalogByStock('all')">All Stock</button>
-                        <button class="filter-btn" onclick="filterCatalogByStock('in-stock')">In Stock</button>
-                        <button class="filter-btn" onclick="filterCatalogByStock('low-stock')">Low Stock</button>
-                        <button class="filter-btn" onclick="filterCatalogByStock('out-of-stock')">Out of Stock</button>
-                    </div>
-
-                    <div class="filter-controls" id="categoryFilterTabs" style="margin-top:10px;">
-                        <button class="filter-btn active" onclick="filterCatalogByCategory('all')">All Categories</button>
-                        <button class="filter-btn" onclick="filterCatalogByCategory('vehicles')">Vehicles</button>
-                        <button class="filter-btn" onclick="filterCatalogByCategory('machines')">Machines</button>
-                    </div>
-                    
-                    <div class="card">
-                        <div class="card-header">
-                            <span><i class="fas fa-boxes"></i> Parts Catalog</span>
-                            <span id="catalogCount" class="status-text status-normal">3 items</span>
-                        </div>
-                        <div id="catalogItems">
-                            <div class="inventory-item" data-status="in-stock" data-category="vehicles" data-id="BP-001">
-                                <div class="item-details">
-                                    <strong><i class="fas fa-box"></i> Brake Pads</strong>
-                                    <div class="item-meta">
-                                        <i class="fas fa-hashtag"></i> BP-001 | 
-                                        <i class="fas fa-tag"></i> Vehicles Parts
-                                    </div>
-                                    <div class="item-description">
-                                        <span class="status-text status-in-stock">In Stock</span> | 
-                                        <i class="fas fa-boxes"></i> 45 units
-                                    </div>
-                                </div>
-                                <div class="item-actions">
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewPartDetails('BP-001')"><i class="fas fa-eye"></i> VIEW</button>
-                                        <button class="btn btn-secondary btn-small" onclick="editPart('BP-001')"><i class="fas fa-edit"></i> EDIT</button>
-                                        <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'part-BP-001')">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div class="dropdown-menu" id="dropdown-part-BP-001">
-                                                <button class="dropdown-item danger" onclick="deletePart('BP-001'); closeAllDropdowns();">
-                                                    <i class="fas fa-trash"></i> Delete
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="inventory-item" data-status="low-stock" data-category="machines" data-id="OF-205">
-                                <div class="item-details">
-                                    <strong><i class="fas fa-box"></i> Oil Filter</strong>
-                                    <div class="item-meta">
-                                        <i class="fas fa-hashtag"></i> OF-205 | 
-                                        <i class="fas fa-tag"></i> Machines Parts
-                                    </div>
-                                    <div class="item-description">
-                                        <span class="status-text status-low-stock">Low Stock</span> | 
-                                        <i class="fas fa-boxes"></i> 8 units
-                                    </div>
-                                </div>
-                                <div class="item-actions">
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewPartDetails('OF-205')"><i class="fas fa-eye"></i> VIEW</button>
-                                        <button class="btn btn-secondary btn-small" onclick="editPart('OF-205')"><i class="fas fa-edit"></i> EDIT</button>
-                                        <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'part-OF-205')">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div class="dropdown-menu" id="dropdown-part-OF-205">
-                                                <button class="dropdown-item" onclick="reorderPart('OF-205'); closeAllDropdowns();">
-                                                    <i class="fas fa-sync"></i> Reorder
-                                                </button>
-                                                <button class="dropdown-item danger" onclick="deletePart('OF-205'); closeAllDropdowns();">
-                                                    <i class="fas fa-trash"></i> Delete
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="inventory-item" data-status="out-of-stock" data-category="machines" data-id="HYD-250">
-                                <div class="item-details">
-                                    <strong><i class="fas fa-box"></i> Hydraulic Pump</strong>
-                                    <div class="item-meta">
-                                        <i class="fas fa-hashtag"></i> HYD-250 | 
-                                        <i class="fas fa-tag"></i> Machines Parts
-                                    </div>
-                                    <div class="item-description">
-                                        <span class="status-text status-out-of-stock">Out of Stock</span> | 
-                                        <i class="fas fa-boxes"></i> 0 units
-                                    </div>
-                                </div>
-                                <div class="item-actions">
-                                    <div class="action-buttons">
-                                        <button class="btn btn-primary btn-small" onclick="viewPartDetails('HYD-250')"><i class="fas fa-eye"></i> VIEW</button>
-                                        <button class="btn btn-secondary btn-small" onclick="editPart('HYD-250')"><i class="fas fa-edit"></i> EDIT</button>
-                                        <div class="dropdown-container">
-                                            <button class="btn btn-small btn-secondary dropdown-trigger" onclick="toggleDropdown(event, 'part-HYD-250')">
-                                                <i class="fas fa-ellipsis-v"></i>
-                                            </button>
-                                            <div class="dropdown-menu" id="dropdown-part-HYD-250">
-                                                <button class="dropdown-item" onclick="reorderPart('HYD-250'); closeAllDropdowns();">
-                                                    <i class="fas fa-sync"></i> Reorder
-                                                </button>
-                                                <button class="dropdown-item danger" onclick="deletePart('HYD-250'); closeAllDropdowns();">
-                                                    <i class="fas fa-trash"></i> Delete
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <inventory-catalog-model></inventory-catalog-model>
                 </section>
 
                 <!-- Orders & Approvals -->
@@ -203,40 +72,7 @@
 
                 <!-- Sparepart Addition Section -->
                 <section class="content-section" id="sparepart-addition">
-                    <div class="page-header">
-                        <h2 class="page-title"><i class="fas fa-plus-circle"></i> Sparepart Addition</h2>
-                        <p class="page-subtitle">Add new stock to existing spareparts or record new stock arrivals</p>
-                    </div>
-
-                    <div class="search-bar">
-                        <input type="text" id="additionSearch" class="search-input" placeholder="Search by sparepart name, ID, or supplier..." oninput="filterAdditions()">
-                        <button class="btn btn-primary" onclick="openAddStockModal()">
-                            <i class="fas fa-plus"></i> Add Stock
-                        </button>
-                        <button class="btn btn-secondary" onclick="loadRecentAdditions()">
-                            <i class="fas fa-sync"></i> Refresh
-                        </button>
-                    </div>
-
-                    <div class="filter-controls" id="additionCategoryFilter">
-                        <button class="filter-btn active" onclick="filterAdditionsByCategory('all')">All Categories</button>
-                        <button class="filter-btn" onclick="filterAdditionsByCategory('vehicles')">Vehicles</button>
-                        <button class="filter-btn" onclick="filterAdditionsByCategory('machines')">Machines</button>
-                    </div>
-
-                    <!-- Recent Stock Additions -->
-                    <div class="card">
-                        <div class="card-header">
-                            <span><i class="fas fa-history"></i> Stock Additions</span>
-                            <span id="additionsCount" class="status-text status-normal">0 items</span>
-                        </div>
-                        <div id="recentAdditionsItems">
-                            <div style="text-align: center; padding: 40px; color: #6b7280;">
-                                <i class="fas fa-spinner fa-spin" style="font-size: 2em; margin-bottom: 10px;"></i>
-                                <p>Loading recent additions...</p>
-                            </div>
-                        </div>
-                    </div>
+                    <inventory-sparepart-addition-model></inventory-sparepart-addition-model>
                 </section>
 
                 <!-- Usage Tracking -->
@@ -718,6 +554,8 @@
     <script src="./components/usage-tracking-model/script.js"></script>
     <script src="./components/notifications-model/script.js"></script>
     <script src="./components/orders-approvals-model/script.js"></script>
+    <script src="./components/catalog-model/script.js"></script>
+    <script src="./components/sparepart-addition-model/script.js"></script>
     <script src="./components/machines-model/script.js"></script>
     <script src="./components/vehicles-model/script.js"></script>
     <script src="script.js?v=1.7.0"></script>

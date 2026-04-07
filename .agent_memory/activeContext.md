@@ -1,7 +1,7 @@
 # Active Context
 
 ## Current Focus
-Budget step correctness — ensuring fault tickets cannot progress to work-in-progress while budget approval is pending, and that the UI displays sensible values when no/zero budget is set.
+Dashboard Web Components refactor execution — finishing Inventory Manager section extraction and monolith cleanup, then rolling the same pattern into remaining dashboards.
 
 ## Recent Changes (April 6, 2026)
 
@@ -58,21 +58,17 @@ Budget step correctness — ensuring fault tickets cannot progress to work-in-pr
 	- Transportation Manager dashboard bootstrap
 - Created matching Beads epic `assetcare-backend-new-t2k` and linked 12 child parent-child issues for execution tracking
 
-### Inventory Manager execution slice (current)
-- Claimed Inventory Manager componentization issue and started section-by-section extraction.
-- Extracted Notifications section into `pages/dashboard/inventory-manager/components/notifications-model/`.
-- Replaced inline notifications HTML handlers with custom-event contracts (`reorder`, `view-part`, `view-order`, `count-change`).
-- Removed notification-specific helpers from the Inventory Manager monolith (`dismissNotification`, `quickApprove`, `quickReject`, `viewRequest`, `configureAlerts`, `viewAllActivities`, `approveAllOrders`).
-- Extracted Dashboard Overview section into `pages/dashboard/inventory-manager/components/dashboard-overview-model/`.
-- Replaced inline dashboard summary/activity markup with `<inventory-dashboard-overview-model>` and moved metric/activity refresh into the component.
-- Added parent wiring for overview navigation events and removed legacy dashboard functions (`loadDashboardData`, `updateUrgentItems`, `updateRecentActivity`).
-- Extracted Usage Tracking section into `pages/dashboard/inventory-manager/components/usage-tracking-model/` with component-scoped search/table/modal logic.
-- Replaced inline usage section markup with `<inventory-usage-tracking-model>` and switched section load to `refreshUsageTrackingModel()`.
-- Removed usage-specific monolith handlers (`loadUsageTracking`, `filterUsageTable`, `openIssueModal`, `viewUsageDetails`, `editUsageRecord`, `deleteUsageRecord`, `generateMachineReport`, usage/report form listeners).
-- Extracted Orders & Approvals section into `pages/dashboard/inventory-manager/components/orders-approvals-model/` with component-owned approval/rejection workflows and details modal.
-- Replaced inline orders section markup with `<inventory-orders-approvals-model>` and removed legacy orderActionModal from page HTML.
-- Added `refreshOrdersApprovalsModel()` parent bridge that sets currentUser and calls component refresh.
-- Fixed notification-to-orders navigation to trigger component `viewOrderDetails()` method.
-- Removed 15 order management functions (470 lines) and global state variables (`allSparePartRequests`, `currentOrderFilter`).
-- Monolithic script reduced from 3580 lines to 3129 lines (12.6% reduction).
-- 70% complete; remaining sections: machines, vehicles, catalog, sparepart-addition.
+### Inventory Manager execution slice (completed)
+- Completed section-by-section extraction for all 8 Inventory Manager sections:
+	- `dashboard-overview-model`
+	- `machines-model`
+	- `vehicles-model`
+	- `catalog-model`
+	- `sparepart-addition-model`
+	- `orders-approvals-model`
+	- `usage-tracking-model`
+	- `notifications-model`
+- Replaced inline Sparepart Addition section markup with `<inventory-sparepart-addition-model>` and removed inline handler usage.
+- Added parent action/refresh bridge for addition events (`bindSparepartAdditionModel`, `refreshSparepartAdditionModel`).
+- Removed legacy Sparepart Addition load/filter/render monolith logic and redirected post-save/delete refreshes through component APIs.
+- Inventory Manager monolith script reduced from `3580` to `2672` lines (about 25% reduction) while preserving existing modal workflows.
