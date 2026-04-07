@@ -27,13 +27,13 @@ Refactor must consolidate entrypoint logic and componentize each model section.
 
 ## Progress Tracking
 
-**Overall Status:** In Progress - 42%
+**Overall Status:** In Progress - 54%
 
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
 |----|-------------|--------|---------|-------|
 | 12.1 | Consolidate script entrypoint | Complete | Apr 7, 2026 | Removed `legacy-script.js` include and retained compatibility handlers in canonical `script.js` |
-| 12.2 | Extract accounts/configuration components | In Progress | Apr 7, 2026 | Dashboard overview extracted to `<sa-dashboard-overview>` as first slice; user/service settings still pending |
+| 12.2 | Extract accounts/configuration components | In Progress | Apr 7, 2026 | Added `<sa-user-accounts>` extraction after `<sa-dashboard-overview>`; service/settings sections still pending |
 | 12.3 | Extract logs/activity components | Not Started | Apr 7, 2026 | Keep filtering and pagination |
 | 12.4 | Decompose root script logic | Not Started | Apr 7, 2026 | Root orchestrates only |
 
@@ -50,3 +50,8 @@ Refactor must consolidate entrypoint logic and componentize each model section.
 - Extracted the `dashboard` section markup into `pages/components/sysadministration/sa-dashboard-overview.js` with a dedicated `<sa-dashboard-overview>` custom element.
 - Replaced inlined dashboard overview markup in `pages/dashboard/sysadministration/index.html` with the component host and added the component script include in dependency load order.
 - Added event bridge logic in `pages/dashboard/sysadministration/script.js` to handle `sa-dashboard-overview:navigate` events and route via `<ac-layout>.navigateTo(...)` while preserving existing section navigation behavior.
+
+### April 7, 2026 (Execution Update - Componentization Slice 2)
+- Extracted the `user-accounts` section body into `pages/components/sysadministration/sa-user-accounts.js` as a light-DOM component preserving all existing IDs and inline handlers used by `script.js`.
+- Replaced inline `user-accounts` markup in `pages/dashboard/sysadministration/index.html` with `<sa-user-accounts></sa-user-accounts>`.
+- Added the new component script include in sysadministration dependency load order alongside the existing dashboard overview component.
