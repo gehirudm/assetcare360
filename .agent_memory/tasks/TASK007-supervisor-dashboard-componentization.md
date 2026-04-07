@@ -27,15 +27,15 @@ Section-level extraction is needed to break down script ownership and remove glo
 
 ## Progress Tracking
 
-**Overall Status:** In Progress - 62%
+**Overall Status:** In Progress - 84%
 
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
 |----|-------------|--------|---------|-------|
 | 7.1 | Extract dashboard summary component | Complete | Apr 7, 2026 | Added `<supervisor-dashboard-overview>` with summary cards + activity feed and section-navigation events |
-| 7.2 | Extract checks/tickets/repair components | Not Started | Apr 7, 2026 | Keep review and assignment flows |
-| 7.3 | Extract budget/assets/technicians components | In Progress | Apr 7, 2026 | Asset-status, technicians, and budget extracted as components |
-| 7.4 | Remove section logic from monolith script | In Progress | Apr 7, 2026 | Parent now bridges dashboard-overview, asset-status, technicians, and budget components |
+| 7.2 | Extract checks/tickets/repair components | In Progress | Apr 7, 2026 | Repair-management and fault-tickets extracted; daily-check-reports still pending |
+| 7.3 | Extract budget/assets/technicians components | Complete | Apr 7, 2026 | Asset-status, technicians, and budget extracted as components |
+| 7.4 | Remove section logic from monolith script | In Progress | Apr 7, 2026 | Parent now bridges dashboard-overview, fault-tickets, asset-status, repair-management, technicians, and budget components |
 
 ## Progress Log
 ### April 7, 2026
@@ -72,4 +72,25 @@ Section-level extraction is needed to break down script ownership and remove glo
 	- `bindSupervisorBudgetApproval()` for view/filter/status-change event routing
 	- `refreshSupervisorBudgetApproval()` for section activation refresh
 - Updated `loadSectionData('budget-approval')` to refresh component state and added null guard in legacy `loadBudgets()` helper to prevent stale DOM ID runtime errors.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.
+
+### April 7, 2026 (Execution Update - Repair Management Slice)
+- Added `pages/dashboard/supervisor/components/repair-management/script.js` with `<supervisor-repair-management>` component.
+- Replaced inline repair-management section markup in `pages/dashboard/supervisor/index.html` with `<supervisor-repair-management>` host and added component script include.
+- Moved repair action/dropdown interactions into component-owned event delegation with custom events (view/approve/reject/outsource/progress/timeline and section-level actions).
+- Added parent bridge methods in `pages/dashboard/supervisor/script.js`:
+	- `bindSupervisorRepairManagement()` for component action event routing
+	- `refreshSupervisorRepairManagement()` for section activation refresh
+- Updated `loadSectionData('repair-management')` to route through component refresh bridge and corrected legacy `loadRepairs()` selector mismatch (`pendingRepairsList` with null guards) to avoid stale ID runtime errors.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.
+
+### April 7, 2026 (Execution Update - Fault Tickets Slice)
+- Added `pages/dashboard/supervisor/components/fault-tickets/script.js` with `<supervisor-fault-tickets>` component.
+- Replaced inline fault-tickets section markup in `pages/dashboard/supervisor/index.html` with `<supervisor-fault-tickets>` host and added component script include.
+- Moved fault-ticket status/source filter controls and create-ticket trigger into component-owned event delegation.
+- Added parent bridge methods in `pages/dashboard/supervisor/script.js`:
+	- `bindSupervisorFaultTickets()` for filter/create event routing
+	- `refreshSupervisorFaultTickets()` for section activation refresh
+- Updated `loadSectionData('fault-tickets')` to use component refresh bridge and hardened fault-ticket loading/error rendering to use component APIs when available.
+- Refactored `filterTicketsByStatus` / `filterTicketsBySource` to remove implicit `event` dependency and support component-driven calls.
 - Validation: `node --check` and diagnostics passed for touched supervisor files.

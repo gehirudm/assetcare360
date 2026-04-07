@@ -76,6 +76,12 @@
   - Added `components/asset-status/script.js` with `<supervisor-asset-status>`
   - Replaced inline asset-status section markup with component host in supervisor dashboard HTML
   - Added parent bridge wiring for component events (`view`, `update`, `filter`) and section refresh integration
+  - Added `components/repair-management/script.js` with `<supervisor-repair-management>`
+  - Replaced inline repair-management section markup with component host and bridged repair action events in parent script
+  - Updated repair section activation flow to use component bridge and fixed stale `loadRepairs()` DOM selector mismatch
+  - Added `components/fault-tickets/script.js` with `<supervisor-fault-tickets>`
+  - Replaced inline fault-tickets section markup with component host and bridged status/source filters + create-ticket actions in parent script
+  - Updated fault-ticket section activation to use component refresh bridge and removed implicit `event` dependency in ticket filter handlers
   - Added `components/technicians/script.js` with `<supervisor-technicians>`
   - Replaced inline technicians section markup with component host and bridged `supervisor-technicians:view` events in parent script
   - Updated `loadTechnicians()` to render list/loading/error states via component APIs instead of inline markup/handlers

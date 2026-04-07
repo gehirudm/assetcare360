@@ -3,7 +3,9 @@
 DashboardInit.init('Supervisor', {
     onSuccess: () => {
         bindSupervisorDashboardOverview();
+        bindSupervisorFaultTickets();
         bindSupervisorAssetStatus();
+        bindSupervisorRepairManagement();
         bindSupervisorBudgetApproval();
         bindSupervisorTechnicians();
         loadDashboardData();
@@ -48,10 +50,10 @@ function loadSectionData(sectionId) {
             loadDailyCheckReports();
             break;
         case 'fault-tickets':
-            loadFaultTickets();
+            refreshSupervisorFaultTickets();
             break;
         case 'repair-management':
-            loadRepairs();
+            refreshSupervisorRepairManagement();
             break;
         case 'budget-approval':
             refreshSupervisorBudgetApproval();
@@ -78,6 +80,41 @@ function bindSupervisorDashboardOverview() {
         if (!section || !layout || typeof layout.navigateTo !== 'function') return;
         layout.navigateTo(section);
     });
+}
+
+function bindSupervisorFaultTickets() {
+    const component = document.querySelector('supervisor-fault-tickets');
+    if (!component || component.dataset.bound === 'true') return;
+
+    component.dataset.bound = 'true';
+
+    component.addEventListener('supervisor-fault-tickets:filter-status', (event) => {
+        const status = event.detail?.status;
+        if (!status) return;
+        filterTicketsByStatus(status);
+    });
+
+    component.addEventListener('supervisor-fault-tickets:filter-source', (event) => {
+        const source = event.detail?.source;
+        if (!source) return;
+        filterTicketsBySource(source);
+    });
+
+    component.addEventListener('supervisor-fault-tickets:create-ticket', () => {
+        createNewTicket();
+    });
+}
+
+function refreshSupervisorFaultTickets() {
+    const component = document.querySelector('supervisor-fault-tickets');
+    if (component && typeof component.setStatusFilter === 'function') {
+        component.setStatusFilter(currentTicketStatusFilter);
+    }
+    if (component && typeof component.setSourceFilter === 'function') {
+        component.setSourceFilter(currentTicketSourceFilter);
+    }
+
+    loadFaultTickets();
 }
 
 function bindSupervisorAssetStatus() {
@@ -109,6 +146,68 @@ function refreshSupervisorAssetStatus() {
     const component = document.querySelector('supervisor-asset-status');
     if (!component || typeof component.refresh !== 'function') return;
     component.refresh();
+}
+
+function bindSupervisorRepairManagement() {
+    const component = document.querySelector('supervisor-repair-management');
+    if (!component || component.dataset.bound === 'true') return;
+
+    component.dataset.bound = 'true';
+
+    component.addEventListener('supervisor-repair-management:view-repair-details', (event) => {
+        const repairId = event.detail?.repairId;
+        if (!repairId) return;
+        viewRepairDetails(repairId);
+    });
+
+    component.addEventListener('supervisor-repair-management:approve-repair', (event) => {
+        const repairId = event.detail?.repairId;
+        if (!repairId) return;
+        greenLightRepair(repairId);
+    });
+
+    component.addEventListener('supervisor-repair-management:reject-repair', (event) => {
+        const repairId = event.detail?.repairId;
+        if (!repairId) return;
+        rejectRepair(repairId);
+    });
+
+    component.addEventListener('supervisor-repair-management:outsource-repair', (event) => {
+        const repairId = event.detail?.repairId;
+        if (!repairId) return;
+        markAsOutsourced(repairId);
+    });
+
+    component.addEventListener('supervisor-repair-management:view-repair-progress', (event) => {
+        const repairId = event.detail?.repairId;
+        if (!repairId) return;
+        viewRepairProgress(repairId);
+    });
+
+    component.addEventListener('supervisor-repair-management:update-repair-timeline', (event) => {
+        const repairId = event.detail?.repairId;
+        if (!repairId) return;
+        updateRepairTimeline(repairId);
+    });
+
+    component.addEventListener('supervisor-repair-management:view-outsourced', () => {
+        viewAllOutsourced();
+    });
+
+    component.addEventListener('supervisor-repair-management:update-component-info', () => {
+        updateComponentInfo();
+    });
+}
+
+function refreshSupervisorRepairManagement() {
+    const component = document.querySelector('supervisor-repair-management');
+    if (!component) return;
+
+    if (typeof component.refresh === 'function') {
+        component.refresh();
+    }
+
+    loadRepairs();
 }
 
 function bindSupervisorBudgetApproval() {
@@ -827,14 +926,20 @@ let allBreakdownItems = []; // Store breakdown reports for unassigned list
 
 async function loadFaultTickets() {
     try {
-        // Load unassigned tickets
-        const unassignedList = document.getElementById('unassignedTicketsList');
-        unassignedList.innerHTML = '<p style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
+        const faultTickets = document.querySelector('supervisor-fault-tickets');
+        if (faultTickets && typeof faultTickets.setLoading === 'function') {
+            faultTickets.setLoading();
+        } else {
+            const unassignedList = document.getElementById('unassignedTicketsList');
+            const activeList = document.getElementById('activeTicketsList');
 
-        // Load active tickets
-        const activeList = document.getElementById('activeTicketsList');
-        if (activeList) {
-            activeList.innerHTML = '<p style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading tickets...</p>';
+            if (unassignedList) {
+                unassignedList.innerHTML = '<p style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
+            }
+
+            if (activeList) {
+                activeList.innerHTML = '<p style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading tickets...</p>';
+            }
         }
 
         const token = localStorage.getItem(CONFIG.STORAGE_KEYS.AUTH_TOKEN);
@@ -999,18 +1104,30 @@ async function loadFaultTickets() {
 
     } catch (error) {
         console.error('Error loading fault tickets:', error);
-        document.getElementById('unassignedTicketsList').innerHTML = '<p style="text-align: center; color: var(--danger);">Error loading tickets</p>';
-        const activeList = document.getElementById('activeTicketsList');
-        if (activeList) {
-            activeList.innerHTML = '<p style="text-align: center; color: var(--danger);">Error loading tickets</p>';
+
+        const faultTickets = document.querySelector('supervisor-fault-tickets');
+        if (faultTickets && typeof faultTickets.setError === 'function') {
+            faultTickets.setError('Error loading tickets');
+        } else {
+            const unassignedList = document.getElementById('unassignedTicketsList');
+            const activeList = document.getElementById('activeTicketsList');
+
+            if (unassignedList) {
+                unassignedList.innerHTML = '<p style="text-align: center; color: var(--danger);">Error loading tickets</p>';
+            }
+
+            if (activeList) {
+                activeList.innerHTML = '<p style="text-align: center; color: var(--danger);">Error loading tickets</p>';
+            }
         }
+
         showToast('Failed to load fault tickets', 'error');
     }
 }
 
 function displayFilteredTickets() {
     const unassignedList = document.getElementById('unassignedTicketsList');
-    const tbody = document.getElementById('activeTicketsBody');
+    if (!unassignedList) return;
 
     // Filter tickets based on current filters
     let filteredTickets = allTickets.filter(ticket => {
@@ -1323,12 +1440,10 @@ function displayFilteredTickets() {
 function filterTicketsByStatus(status) {
     currentTicketStatusFilter = status;
 
-    // Update active button - only in the same parent container
-    const parentContainer = event.target.parentElement;
-    parentContainer.querySelectorAll('button').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
+    const component = document.querySelector('supervisor-fault-tickets');
+    if (component && typeof component.setStatusFilter === 'function') {
+        component.setStatusFilter(status);
+    }
 
     displayFilteredTickets();
     showToast(`Showing ${status === 'all' ? 'all' : status} tickets`);
@@ -1337,12 +1452,10 @@ function filterTicketsByStatus(status) {
 function filterTicketsBySource(source) {
     currentTicketSourceFilter = source;
 
-    // Update active button - only in the same parent container
-    const parentContainer = event.target.parentElement;
-    parentContainer.querySelectorAll('button').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
+    const component = document.querySelector('supervisor-fault-tickets');
+    if (component && typeof component.setSourceFilter === 'function') {
+        component.setSourceFilter(source);
+    }
 
     displayFilteredTickets();
     showToast(`Showing ${source === 'all' ? 'all sources' : source + ' tickets'}`);
@@ -2569,9 +2682,13 @@ async function createTicketFromBreakdown(type, id) {
 // ==================== REPAIR MANAGEMENT ====================
 
 async function loadRepairs() {
-    const awaitingDiv = document.getElementById('repairsAwaitingApproval');
+    const awaitingDiv = document.getElementById('pendingRepairsList');
     const ongoingDiv = document.getElementById('ongoingRepairsList');
     const outsourcedDiv = document.getElementById('outsourcedRepairsList');
+
+    if (!awaitingDiv || !ongoingDiv || !outsourcedDiv) {
+        return;
+    }
 
     awaitingDiv.innerHTML = '<p style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
     ongoingDiv.innerHTML = '<p style="text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';

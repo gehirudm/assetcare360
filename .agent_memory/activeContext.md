@@ -149,6 +149,29 @@ Dashboard Web Components refactor execution — TASK007 remains active; TASK016 
 - TASK007 progress advanced further; remaining supervisor extractions are checks/tickets/repair sections.
 - Validation: `node --check` and diagnostics passed for touched supervisor files.
 
+### Supervisor repair-management extraction slice (latest)
+- Added `pages/dashboard/supervisor/components/repair-management/script.js` defining `<supervisor-repair-management>`.
+- Replaced inline repair-management markup in `pages/dashboard/supervisor/index.html` with `<supervisor-repair-management>` and added script include.
+- Moved repair action/dropdown interactions into component-owned event delegation and custom events.
+- Added parent bridges in `pages/dashboard/supervisor/script.js`:
+	- `bindSupervisorRepairManagement()` for action routing
+	- `refreshSupervisorRepairManagement()` for section activation refresh
+- Updated `loadSectionData('repair-management')` to use component refresh bridge.
+- Fixed legacy selector mismatch in `loadRepairs()` (`pendingRepairsList` plus null guards) to avoid stale ID runtime errors after section extraction.
+- TASK007 now has fault-tickets extracted; daily-check-reports remains the primary pending extraction.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.
+
+### Supervisor fault-tickets extraction slice (latest)
+- Added `pages/dashboard/supervisor/components/fault-tickets/script.js` defining `<supervisor-fault-tickets>`.
+- Replaced inline fault-tickets markup in `pages/dashboard/supervisor/index.html` with `<supervisor-fault-tickets>` and added script include.
+- Moved status/source filter controls and create-ticket trigger into component-owned event delegation.
+- Added parent bridges in `pages/dashboard/supervisor/script.js`:
+	- `bindSupervisorFaultTickets()` for filter/create event routing
+	- `refreshSupervisorFaultTickets()` for section activation refresh
+- Updated `loadSectionData('fault-tickets')` to use component refresh bridge and hardened fault-ticket loading/error rendering to prefer component APIs.
+- Refactored `filterTicketsByStatus` and `filterTicketsBySource` to remove implicit `event` dependency and support component-driven calls.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.
+
 ## Next Steps
 - Run pending migration `047_create_system_settings_and_budget_approval.php`
 - Update `testing/openapi.yaml` with any API changes from budget fixes
