@@ -2,11 +2,19 @@ class TransportOverview extends HTMLElement {
     constructor() {
         super();
         this._user = null;
+        this._onRootClick = this._onRootClick.bind(this);
     }
 
     connectedCallback() {
         this.render();
-        this.bindEvents();
+        if (this._eventsBound) return;
+        this.addEventListener('click', this._onRootClick);
+        this._eventsBound = true;
+    }
+
+    disconnectedCallback() {
+        this.removeEventListener('click', this._onRootClick);
+        this._eventsBound = false;
     }
 
     setUser(user) {
@@ -14,19 +22,17 @@ class TransportOverview extends HTMLElement {
         this.render();
     }
 
-    bindEvents() {
-        this.addEventListener('click', (event) => {
-            const trigger = event.target.closest('[data-go-section]');
-            if (!trigger) return;
+    _onRootClick(event) {
+        const trigger = event.target.closest('[data-go-section]');
+        if (!trigger) return;
 
-            const section = trigger.getAttribute('data-go-section');
-            if (!section) return;
+        const section = trigger.getAttribute('data-go-section');
+        if (!section) return;
 
-            this.dispatchEvent(new CustomEvent('transport-overview:navigate', {
-                detail: { section },
-                bubbles: true
-            }));
-        });
+        this.dispatchEvent(new CustomEvent('transport-overview:navigate', {
+            detail: { section },
+            bubbles: true
+        }));
     }
 
     render() {

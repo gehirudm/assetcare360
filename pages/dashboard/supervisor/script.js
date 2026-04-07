@@ -66,9 +66,9 @@ function loadSectionData(sectionId) {
 
 function bindSupervisorDashboardOverview() {
     const component = document.querySelector('supervisor-dashboard-overview');
-    if (!component || component.dataset.bound === 'true') return;
+    if (!component || component._supervisorDashboardOverviewBound) return;
 
-    component.dataset.bound = 'true';
+    component._supervisorDashboardOverviewBound = true;
 
     component.addEventListener('supervisor-dashboard-overview:navigate', (event) => {
         const section = event.detail?.section;
@@ -112,17 +112,9 @@ function refreshSupervisorAssetStatus() {
 // ==================== WEEKLY CHECK REPORTS ====================
 
 function updateDashboardSummary(pendingCount) {
-    // Update the summary card for weekly check reports
-    const summaryCards = document.querySelectorAll('supervisor-dashboard-overview .summary-card');
-    summaryCards.forEach(card => {
-        const title = card.querySelector('.summary-title');
-        if (title && title.textContent.includes('Weekly Check')) {
-            const summaryNumber = card.querySelector('.summary-number');
-            if (summaryNumber) {
-                summaryNumber.textContent = pendingCount;
-            }
-        }
-    });
+    const overview = document.querySelector('supervisor-dashboard-overview');
+    if (!overview || typeof overview.updatePendingReports !== 'function') return;
+    overview.updatePendingReports(pendingCount);
 }
 
 async function loadDailyCheckReports() {

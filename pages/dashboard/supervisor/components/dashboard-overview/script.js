@@ -5,10 +5,8 @@ class SupervisorDashboardOverview extends HTMLElement {
     }
 
     connectedCallback() {
-        if (this._initialized) return;
         this.render();
         this.addEventListener('click', this._onRootClick);
-        this._initialized = true;
     }
 
     disconnectedCallback() {
@@ -26,6 +24,21 @@ class SupervisorDashboardOverview extends HTMLElement {
             bubbles: true,
             detail: { section }
         }));
+    }
+
+    updatePendingReports(count) {
+        const pendingValue = Number(count);
+        if (!Number.isFinite(pendingValue)) return;
+
+        const pendingSummaryCard = Array.from(this.querySelectorAll('.summary-card')).find((card) => {
+            const title = card.querySelector('.summary-title');
+            return title && title.textContent.includes('Pending Reports');
+        });
+
+        const summaryNumber = pendingSummaryCard?.querySelector('.summary-number');
+        if (summaryNumber) {
+            summaryNumber.textContent = String(pendingValue);
+        }
     }
 
     render() {
@@ -150,6 +163,4 @@ class SupervisorDashboardOverview extends HTMLElement {
     }
 }
 
-if (!customElements.get('supervisor-dashboard-overview')) {
-    customElements.define('supervisor-dashboard-overview', SupervisorDashboardOverview);
-}
+customElements.define('supervisor-dashboard-overview', SupervisorDashboardOverview);

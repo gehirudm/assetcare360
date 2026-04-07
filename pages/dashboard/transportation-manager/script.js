@@ -22,9 +22,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function bindLayoutSectionRouting() {
     const layout = document.querySelector('ac-layout');
-    if (!layout || layout._transportationManagerBound) return;
+    if (!layout || layout._sectionRoutingBound) return;
 
-    layout._transportationManagerBound = true;
+    layout._sectionRoutingBound = true;
     layout.addEventListener('section-change', (event) => {
         const section = event.detail?.section;
         if (!section) return;
@@ -37,9 +37,9 @@ function bindLayoutSectionRouting() {
 
 function bindOverviewEvents() {
     const overview = document.querySelector('transport-overview');
-    if (!overview || overview._transportOverviewBound) return;
+    if (!overview || overview._overviewBridgeBound) return;
 
-    overview._transportOverviewBound = true;
+    overview._overviewBridgeBound = true;
     overview.addEventListener('transport-overview:navigate', (event) => {
         const section = event.detail?.section;
         const layout = document.querySelector('ac-layout');
