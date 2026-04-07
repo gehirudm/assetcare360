@@ -9,25 +9,10 @@ let requestedPartsMap = {};
 // Track the current ticket being updated in the update work modal
 let currentUpdateTicketId = null;
 
-// Navigation functionality — uses ?section= query param so the URL reflects the current view
-// and external pages (e.g. fault-ticket-detail) can deep-link back to a specific section.
-function navigateTo(sectionId) {
-    const url = new URL(window.location.href);
-    url.searchParams.set('section', sectionId);
-    history.pushState({ section: sectionId }, '', url.toString());
-    activateSection(sectionId);
-}
+// Navigation is handled by <ac-layout>; this keeps query-param deep links in sync.
+let isHistoryNavigation = false;
 
-function activateSection(sectionId) {
-    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-    document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
-
-    const targetNav = document.querySelector(`.nav-item[data-section="${sectionId}"]`);
-    if (targetNav) targetNav.classList.add('active');
-
-    const targetSection = document.getElementById(sectionId);
-    if (targetSection) targetSection.classList.add('active');
-
+function handleSectionActivation(sectionId) {
     if (sectionId === 'notifications') {
         refreshTONotifications().catch(error => {
             console.error('Failed to refresh notifications section:', error);
@@ -39,24 +24,67 @@ function activateSection(sectionId) {
             console.error('Failed to refresh inventory section:', error);
         });
     }
+
+    if (sectionId === 'spare-parts') {
+        refreshTOSpareParts();
+    }
+}
+
+function navigateToSection(sectionId) {
+    const layout = document.querySelector('ac-layout');
+    if (!layout || typeof layout.navigateTo !== 'function') return;
+
+    layout.navigateTo(sectionId);
+}
+
+function syncSectionInUrl(sectionId, replace = false) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('section', sectionId);
+
+    if (replace) {
+        history.replaceState({ section: sectionId }, '', url.toString());
+        return;
+    }
+
+    history.pushState({ section: sectionId }, '', url.toString());
 }
 
 // Restore section from query param on load / browser back-forward
 function restoreSectionFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const section = params.get('section') || 'dashboard';
-    activateSection(section);
+
+    const layout = document.querySelector('ac-layout');
+    if (!layout || typeof layout.navigateTo !== 'function') return;
+
+    isHistoryNavigation = true;
+    layout.navigateTo(section);
+    syncSectionInUrl(section, true);
 }
 
 window.addEventListener('popstate', (e) => {
-    const section = (e.state && e.state.section) || 'dashboard';
-    activateSection(section);
+    const section = (e.state && e.state.section)
+        || new URLSearchParams(window.location.search).get('section')
+        || 'dashboard';
+
+    const layout = document.querySelector('ac-layout');
+    if (!layout || typeof layout.navigateTo !== 'function') return;
+
+    isHistoryNavigation = true;
+    layout.navigateTo(section);
 });
 
-document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', function () {
-        navigateTo(this.getAttribute('data-section'));
-    });
+document.querySelector('ac-layout')?.addEventListener('section-change', (event) => {
+    const section = event.detail?.section;
+    if (!section) return;
+
+    if (isHistoryNavigation) {
+        isHistoryNavigation = false;
+    } else {
+        syncSectionInUrl(section);
+    }
+
+    handleSectionActivation(section);
 });
 
 // Modal functionality
@@ -156,7 +184,13 @@ function showToast(message, type = 'success') {
 }
 
 // Filter tickets by status
-function filterTicketsByStatus(status) {
+function filterTicketsByStatus(status, clickedButton = null) {
+    const ticketsComponent = document.querySelector('to-tickets');
+    if (ticketsComponent && typeof ticketsComponent.applyFilter === 'function') {
+        ticketsComponent.applyFilter(status, clickedButton);
+        return;
+    }
+
     const tickets = document.querySelectorAll('#allTicketsList .ticket-item');
     const noTicketsMessage = document.getElementById('noTicketsMessage');
     const ticketCount = document.getElementById('ticketCount');
@@ -169,8 +203,10 @@ function filterTicketsByStatus(status) {
     });
 
     // Find and activate the clicked button
-    const clickedButton = event ? event.target : filterButtons[0];
-    clickedButton.classList.add('active');
+    const targetButton = clickedButton || filterButtons[0];
+    if (targetButton) {
+        targetButton.classList.add('active');
+    }
 
     // Filter tickets
     tickets.forEach(ticket => {
@@ -204,7 +240,38 @@ function bindTONotifications() {
     notificationsComponent.addEventListener('technical-officer-notifications:navigate', (event) => {
         const section = event.detail?.section;
         if (!section) return;
-        navigateTo(section);
+        navigateToSection(section);
+    });
+}
+
+function bindTOTickets() {
+    const ticketsComponent = document.querySelector('to-tickets');
+    if (!ticketsComponent || ticketsComponent.dataset.bound === 'true') return;
+
+    ticketsComponent.dataset.bound = 'true';
+
+    ticketsComponent.addEventListener('technical-officer-tickets:view-ticket', (event) => {
+        const ticketId = Number(event.detail?.ticketId);
+        if (!ticketId) return;
+        viewTicket(ticketId);
+    });
+
+    ticketsComponent.addEventListener('technical-officer-tickets:request-spare-parts', (event) => {
+        const ticketId = Number(event.detail?.ticketId);
+        if (!ticketId) return;
+        requestSparePartsForTicket(ticketId);
+    });
+
+    ticketsComponent.addEventListener('technical-officer-tickets:start-work', (event) => {
+        const ticketId = Number(event.detail?.ticketId);
+        if (!ticketId) return;
+        startTicketWork(ticketId);
+    });
+
+    ticketsComponent.addEventListener('technical-officer-tickets:update-work', (event) => {
+        const ticketId = Number(event.detail?.ticketId);
+        if (!ticketId) return;
+        updateWork(ticketId);
     });
 }
 
@@ -253,13 +320,48 @@ function bindTOFeedback() {
     });
 }
 
+function bindTOSpareParts() {
+    const sparePartsComponent = document.querySelector('to-spare-parts');
+    if (!sparePartsComponent || sparePartsComponent.dataset.bound === 'true') return;
+
+    sparePartsComponent.dataset.bound = 'true';
+    sparePartsComponent.addEventListener('technical-officer-spare-parts:open-request-modal', () => {
+        openModal('requestPartsModal');
+    });
+}
+
+function refreshTOSpareParts() {
+    const sparePartsComponent = document.querySelector('to-spare-parts');
+    if (!sparePartsComponent) return;
+
+    if (typeof sparePartsComponent.refresh === 'function') {
+        sparePartsComponent.refresh();
+    }
+}
+
+function bindTOServiceWarranty() {
+    const serviceWarrantyComponent = document.querySelector('to-service-warranty');
+    if (!serviceWarrantyComponent || serviceWarrantyComponent.dataset.bound === 'true') return;
+
+    serviceWarrantyComponent.dataset.bound = 'true';
+    serviceWarrantyComponent.addEventListener('technical-officer-service-warranty:submitted', (event) => {
+        const message = event.detail?.message || 'Warranty claim submitted to Inventory Manager!';
+        showToast(message, 'success');
+    });
+}
+
 // Load tickets from backend
 async function loadTickets() {
+    const ticketsComponent = document.querySelector('to-tickets');
     const ticketsList = document.getElementById('allTicketsList');
     const ticketCount = document.getElementById('ticketCount');
 
     // Show loading state
-    ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-spinner fa-spin" style="font-size: 2rem;"></i><p style="margin-top: 15px;">Loading tickets...</p></div>';
+    if (ticketsComponent && typeof ticketsComponent.setLoading === 'function') {
+        ticketsComponent.setLoading();
+    } else if (ticketsList) {
+        ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-spinner fa-spin" style="font-size: 2rem;"></i><p style="margin-top: 15px;">Loading tickets...</p></div>';
+    }
 
     try {
         const response = await API.get('/fault-tickets');
@@ -292,20 +394,27 @@ async function loadTickets() {
 
             if (allTickets.length > 0) {
                 renderTickets(allTickets);
-                ticketCount.textContent = `${allTickets.length} ticket${allTickets.length !== 1 ? 's' : ''}`;
-
-                // Update dashboard counts
-                updateDashboardCounts(allTickets);
             } else {
-                ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px;"></i><p>No tickets assigned to you yet</p></div>';
-                ticketCount.textContent = '0 tickets';
+                if (ticketsComponent && typeof ticketsComponent.setEmpty === 'function') {
+                    ticketsComponent.setEmpty('No tickets assigned to you yet');
+                } else {
+                    ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px;"></i><p>No tickets assigned to you yet</p></div>';
+                    ticketCount.textContent = '0 tickets';
+                }
             }
+
+            // Update dashboard counts
+            updateDashboardCounts(allTickets);
         } else {
             throw new Error(response.message || 'Failed to load tickets');
         }
     } catch (error) {
         console.error('Error loading tickets:', error);
-        ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 15px;"></i><p>Error loading tickets. Please try again.</p></div>';
+        if (ticketsComponent && typeof ticketsComponent.setError === 'function') {
+            ticketsComponent.setError('Error loading tickets. Please try again.');
+        } else if (ticketsList) {
+            ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 15px;"></i><p>Error loading tickets. Please try again.</p></div>';
+        }
     }
 }
 
@@ -322,6 +431,12 @@ function getDisplayTicketId(ticket) {
 
 // Render tickets
 function renderTickets(tickets) {
+    const ticketsComponent = document.querySelector('to-tickets');
+    if (ticketsComponent && typeof ticketsComponent.renderTickets === 'function') {
+        ticketsComponent.renderTickets(tickets);
+        return;
+    }
+
     const ticketsList = document.getElementById('allTicketsList');
 
     if (tickets.length === 0) {
@@ -580,42 +695,6 @@ function markDone(ticketId) {
     completeTicketWork();
 }
 
-// Filter parts requests by status
-function filterPartsByStatus(status) {
-    const requests = document.querySelectorAll('#allPartsRequests .request-item');
-    const noPartsMessage = document.getElementById('noPartsMessage');
-    const partsCount = document.getElementById('partsCount');
-    const filterButtons = document.querySelectorAll('#partsFilterTabs .filter-btn');
-    let visibleCount = 0;
-
-    // Update active button styling
-    filterButtons.forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
-
-    // Filter requests
-    requests.forEach(request => {
-        const requestStatus = request.getAttribute('data-status');
-        if (status === 'all' || requestStatus === status) {
-            request.style.display = 'block';
-            visibleCount++;
-        } else {
-            request.style.display = 'none';
-        }
-    });
-
-    // Show/hide no requests message
-    if (visibleCount === 0) {
-        noPartsMessage.style.display = 'block';
-    } else {
-        noPartsMessage.style.display = 'none';
-    }
-
-    // Update parts count
-    partsCount.textContent = `${visibleCount} request${visibleCount !== 1 ? 's' : ''}`;
-}
-
 // Bind create-fault-ticket child events to parent-level dashboard orchestration.
 function bindCreateFaultTicket() {
     const model = document.querySelector('create-fault-ticket');
@@ -827,42 +906,6 @@ function viewPartRequestDetails(requestId) {
             `;
 
     modal.classList.add('active');
-}
-
-// Filter warranty claims by status
-function filterWarrantyByStatus(status) {
-    const claims = document.querySelectorAll('#allWarrantyClaims .request-item');
-    const noWarrantyMessage = document.getElementById('noWarrantyMessage');
-    const warrantyCount = document.getElementById('warrantyCount');
-    const filterButtons = document.querySelectorAll('#warrantyFilterTabs .filter-btn');
-    let visibleCount = 0;
-
-    // Update active button styling
-    filterButtons.forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
-
-    // Filter warranty claims
-    claims.forEach(claim => {
-        const claimStatus = claim.getAttribute('data-status');
-        if (status === 'all' || claimStatus === status) {
-            claim.style.display = '';
-            visibleCount++;
-        } else {
-            claim.style.display = 'none';
-        }
-    });
-
-    // Show/hide no claims message
-    if (visibleCount === 0) {
-        noWarrantyMessage.style.display = 'block';
-    } else {
-        noWarrantyMessage.style.display = 'none';
-    }
-
-    // Update warranty count
-    warrantyCount.textContent = `${visibleCount} claim${visibleCount !== 1 ? 's' : ''}`;
 }
 
 // Start ticket work - changes status from Parts Approved to In Progress
@@ -1107,14 +1150,6 @@ function initializeForms() {
         if (additionalNotesTextarea) additionalNotesTextarea.value = '';
     });
 
-    // Warranty Claim Form
-    document.getElementById('warrantyClaimForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-        showToast('Warranty claim submitted to Inventory Manager!');
-        closeModal('warrantyClaimModal');
-        this.reset();
-    });
-
 }
 
 // logout(), createConfirmationDialog(), closeConfirmation(), confirmAction()
@@ -1158,60 +1193,31 @@ function toggleSidebar() {
 // Check authorization on page load
 (async function initializeDashboard() {
     try {
-        // Require Technical Officer role
-        const authorized = await Auth.requireRole('Technical Officer');
+        const user = await DashboardInit.init('Technical Officer', {
+            updateUserDisplay: true
+        });
 
-        if (!authorized) {
-            console.error('Authorization failed');
-            return; // Auth.requireRole will handle redirection
+        if (!user) {
+            console.error('No authorized user data received for Technical Officer dashboard');
+            return;
         }
 
-        // Load user data
-        const user = await Auth.checkAuth();
+        currentUser = user;
         console.log('Technical Officer Dashboard - User loaded:', user);
 
-        if (user) {
-            currentUser = user; // Store for ticket filtering
-            console.log('currentUser set to:', currentUser);
+        bindTOInventory();
+        bindTONotifications();
+        bindTOFeedback();
+        bindTOTickets();
+        bindTOSpareParts();
+        bindTOServiceWarranty();
 
-            // Update user name
-            const fullName = user.full_name || user.name || 'Technical Officer';
-            const userNameElement = document.getElementById('userName');
-            if (userNameElement) {
-                userNameElement.textContent = fullName;
-            }
-
-            // Update user avatar with first letter of name
-            const avatar = document.getElementById('userAvatar');
-            if (avatar) {
-                avatar.textContent = fullName.charAt(0).toUpperCase();
-            }
-
-            // Update employee ID
-            const employeeIdElement = document.getElementById('userEmployeeId');
-            if (employeeIdElement && user.employee_id) {
-                employeeIdElement.textContent = `ID: ${user.employee_id}`;
-            }
-
-            // Update role
-            const roleElement = document.getElementById('userRole');
-            if (roleElement && user.role) {
-                roleElement.textContent = user.role;
-            }
-
-            bindTOInventory();
-            bindTONotifications();
-            bindTOFeedback();
-
-            // Load tickets and inventory after user data is loaded
-            console.log('Loading tickets and inventory...');
-            await loadTickets();
-            await refreshTOInventory();
-            await refreshTONotifications();
-            console.log('Tickets and inventory loaded');
-        } else {
-            console.error('No user data received');
-        }
+        // Load tickets and inventory after user data is loaded
+        console.log('Loading tickets and inventory...');
+        await loadTickets();
+        await refreshTOInventory();
+        await refreshTONotifications();
+        console.log('Tickets and inventory loaded');
     } catch (error) {
         console.error('Error initializing dashboard:', error);
     }
@@ -1221,9 +1227,12 @@ function toggleSidebar() {
 document.addEventListener('DOMContentLoaded', function () {
     initializeForms();
     bindCreateFaultTicket();
+    bindTOTickets();
     bindTOInventory();
     bindTONotifications();
     bindTOFeedback();
+    bindTOSpareParts();
+    bindTOServiceWarranty();
 
     // Set today's date as default for date inputs
     const today = new Date().toISOString().split('T')[0];

@@ -1,12 +1,10 @@
 # Tasks Index
 
 ## In Progress
-- [TASK006] Technical Officer section componentization — Notifications, inventory, and feedback extracted (`to-notifications`, `to-inventory`, `to-feedback`); tickets, spare-parts, and service-warranty pending
+- [TASK007] Supervisor dashboard componentization — Started with asset-status extraction to `<supervisor-asset-status>` and parent bridge wiring
 
 ## Pending
 - [TASK004] Dashboard web-components refactor program — Coordinate scope, sequencing, and completion criteria across all dashboards
-- [TASK005] Technical Officer shell and navigation migration — Move TO to ac-layout and remove legacy shell/navigation stack
-- [TASK007] Supervisor dashboard componentization — Split all supervisor sections out of monolithic script
 - [TASK009] Driver dashboard componentization — Decompose high-complexity script and modal-heavy sections
 - [TASK010] Machinery Operator dashboard componentization — Extract section components and badge/event flows
 - [TASK011] Maintenance dashboard componentization — Componentize sections and clean include-order issues
@@ -27,6 +25,8 @@
 - [TASK027] Event pipeline reliability hardening — Add idempotency, manual ack discipline, and retry/DLQ operational safeguards
 
 ## Completed
+- [TASK005] Technical Officer shell and navigation migration — TO dashboard moved to `<ac-layout>` and shared DashboardInit/bootstrap/navigation contracts — Completed April 7, 2026
+- [TASK006] Technical Officer section componentization — All major TO sections fully componentized; ticket list/filter/action UI moved to `<to-tickets>` with parent event bridges — Completed April 7, 2026
 - [TASK008] Inventory Manager dashboard componentization — All 8 sections extracted to dashboard-scoped components; monolith reduced from 3580 to 2672 lines — Completed April 7, 2026
 - [TASK017] Completed-dashboard refactor quality cleanup — removed `-model` naming, componentized Inventory Manager popups, and migrated section modal/CRUD logic from monolith script — Completed April 7, 2026
 - [TASK015] Dashboard script bootstrap normalization — Core include order normalized, duplicate config include removed, and auth redirect paths standardized — Completed April 7, 2026

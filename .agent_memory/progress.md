@@ -22,6 +22,12 @@
   - Full dashboard shell (header + sidebar) on detail page
   - Step-by-step ticket flow visualisation (7 steps)
   - Breadcrumb sub-header with icon back-button
+- ✅ Technical Officer main dashboard shell/navigation migration (TASK005)
+  - Migrated main TO dashboard page shell from `to-shell-header`/`to-shell-sidebar` to shared `<ac-layout>` + shared header/sidebar components
+  - Replaced manual nav activation with `<ac-layout>` `section-change` orchestration and URL query-param synchronization for deep-link compatibility
+  - Aligned auth/bootstrap with `DashboardInit.init('Technical Officer')` and shared `<ac-header>` user rendering
+  - Updated notifications badge bridge to write through `ac-layout ac-sidebar`
+  - Syntax and diagnostics validation passed for touched TO files
 - ✅ Shared modal/form components (`ac-modal`, `ac-input-group`, `ac-form-control`)
   - TO "Create New Repair Ticket" modal refactored to component-based structure
   - Component styles encapsulated in shadow DOM (constructable stylesheets), not page stylesheet
@@ -47,6 +53,30 @@
   - Added parent bridge method for feedback submission event handling (`bindTOFeedback`)
   - Removed legacy parent `assetFeedbackForm` listener
   - Syntax and diagnostics validation passed for touched TO files
+- ✅ Technical Officer service-warranty extraction
+  - Added `components/service-warranty/script.js` with `<to-service-warranty>`
+  - Replaced inline service-warranty section markup and removed page-level warranty modal HTML
+  - Added parent bridge method for warranty submit event handling (`bindTOServiceWarranty`)
+  - Removed legacy `filterWarrantyByStatus` function and parent `warrantyClaimForm` listener
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Technical Officer spare-parts extraction
+  - Added `components/spare-parts/script.js` with `<to-spare-parts>`
+  - Replaced inline spare-parts section markup in TO dashboard page
+  - Added parent bridge methods (`bindTOSpareParts`, `refreshTOSpareParts`) to preserve existing request modal flow
+  - Removed legacy parent section filter handler (`filterPartsByStatus`)
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Technical Officer tickets extraction and UI decoupling
+  - Added `components/tickets/script.js` with `<to-tickets>`
+  - Replaced inline tickets section markup and moved ticket list rendering/filtering into `<to-tickets>` methods
+  - Added component-dispatched action events for view/request/start/update flows with parent bridge handlers
+  - Updated `loadTickets()` / `renderTickets()` orchestration to call tickets component APIs (`setLoading`, `setEmpty`, `setError`, `renderTickets`)
+  - Removed duplicate parent filter wiring so filter state is component-owned
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Supervisor componentization started (TASK007)
+  - Added `components/asset-status/script.js` with `<supervisor-asset-status>`
+  - Replaced inline asset-status section markup with component host in supervisor dashboard HTML
+  - Added parent bridge wiring for component events (`view`, `update`, `filter`) and section refresh integration
+  - Syntax and diagnostics validation passed for touched supervisor files
 - ✅ Inventory Manager notifications extraction
   - Added `components/notifications/script.js` + `style.css`
   - Replaced inline notifications section markup with `<inventory-notifications>`

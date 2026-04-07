@@ -2,6 +2,7 @@
 
 DashboardInit.init('Supervisor', {
     onSuccess: () => {
+        bindSupervisorAssetStatus();
         loadDashboardData();
 
         // Refresh weekly check reports every 30 seconds
@@ -53,13 +54,44 @@ function loadSectionData(sectionId) {
             loadBudgets();
             break;
         case 'asset-status':
-            loadAssetStatus();
+            refreshSupervisorAssetStatus();
             break;
         case 'technicians':
         case 'technician-assignments':
             loadTechnicians();
             break;
     }
+}
+
+function bindSupervisorAssetStatus() {
+    const component = document.querySelector('supervisor-asset-status');
+    if (!component || component.dataset.bound === 'true') return;
+
+    component.dataset.bound = 'true';
+
+    component.addEventListener('supervisor-asset-status:filter', (event) => {
+        const visibleCount = Number(event.detail?.visibleCount);
+        if (!Number.isFinite(visibleCount)) return;
+        showToast(`Showing ${visibleCount} asset${visibleCount !== 1 ? 's' : ''}`, 'info');
+    });
+
+    component.addEventListener('supervisor-asset-status:view', (event) => {
+        const assetId = event.detail?.assetId;
+        if (!assetId) return;
+        viewAssetDetails(assetId);
+    });
+
+    component.addEventListener('supervisor-asset-status:update', (event) => {
+        const assetId = event.detail?.assetId;
+        if (!assetId) return;
+        updateAssetStatus(assetId);
+    });
+}
+
+function refreshSupervisorAssetStatus() {
+    const component = document.querySelector('supervisor-asset-status');
+    if (!component || typeof component.refresh !== 'function') return;
+    component.refresh();
 }
 
 // ==================== WEEKLY CHECK REPORTS ====================
