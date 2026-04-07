@@ -1754,6 +1754,57 @@ function testTemplate(templateId) {
     };
 }
 
+function showDashboardToast(message, type = 'success') {
+    if (typeof Utils !== 'undefined' && typeof Utils.showToast === 'function') {
+        Utils.showToast(message, type);
+        return;
+    }
+    alert(message);
+}
+
+function viewUserDetails(employeeId) {
+    const modal = document.getElementById('detailsModal');
+    const title = document.getElementById('detailsTitle');
+    const content = document.getElementById('detailsContent');
+    if (!modal || !title || !content) return;
+
+    title.textContent = `User Details - ${employeeId}`;
+    content.innerHTML = `
+        <div class="form-section">
+            <h5>Personal Information</h5>
+            <div class="form-grid">
+                <div><strong>Employee ID:</strong> ${employeeId}</div>
+                <div><strong>Name:</strong> John Smith</div>
+                <div><strong>Email:</strong> john.smith@company.com</div>
+                <div><strong>Phone:</strong> +94 77 123 4567</div>
+            </div>
+        </div>
+        <div class="form-section">
+            <h5>Work Information</h5>
+            <div class="form-grid">
+                <div><strong>Role:</strong> Supervisor</div>
+                <div><strong>Department:</strong> Maintenance</div>
+                <div><strong>Status:</strong> <span class="status-text status-active">Active</span></div>
+                <div><strong>Last Login:</strong> Today at 9:30 AM</div>
+            </div>
+        </div>
+        <div style="text-align: right; margin-top: 20px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')">Close</button>
+        </div>
+    `;
+
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+}
+
+function generateActivityReport(employeeId) {
+    showDashboardToast(`Generating activity report for ${employeeId}...`, 'info');
+}
+
+function sendInactivityReminder(employeeId) {
+    showDashboardToast(`Inactivity reminder sent to ${employeeId}`, 'success');
+}
+
 // ==================== USER ACTIVITY TRACKING ====================
 
 function viewUserSession(employeeId) {

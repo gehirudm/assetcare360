@@ -8,7 +8,7 @@
 - [TASK009] Driver dashboard componentization — Decompose high-complexity script and modal-heavy sections
 - [TASK010] Machinery Operator dashboard componentization — Extract section components and badge/event flows
 - [TASK011] Maintenance dashboard componentization — Componentize sections and clean include-order issues
-- [TASK012] SysAdministration dashboard componentization — Consolidate dual entrypoints and extract section components
+- [TASK012] SysAdministration dashboard componentization — In progress: dual entrypoint consolidated to `script.js`; section component extraction pending
 - [TASK013] Auction dashboard componentization — Extract auction sections into dashboard-scoped components
 - [TASK014] Inline events to component events migration — Remove inline handlers and adopt custom-event contracts
 - [TASK019] Define event envelope and domain catalog — Standardize versioned event payload contract and domain event constants
