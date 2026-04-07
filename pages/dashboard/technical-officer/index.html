@@ -172,31 +172,7 @@
 
                 <!-- Inventory Management -->
                 <section class="content-section" id="inventory">
-                    <div class="page-header">
-                        <h1 class="page-title">Inventory Management</h1>
-                        <p class="page-subtitle">Manage and view vehicles and machines</p>
-                    </div>
-
-                    <!-- Tab Filters -->
-                    <div class="filter-controls" id="inventoryFilterTabs">
-                        <button class="filter-btn active" onclick="filterInventoryByType('all')">All Assets</button>
-                        <button class="filter-btn" onclick="filterInventoryByType('vehicle')">Vehicles</button>
-                        <button class="filter-btn" onclick="filterInventoryByType('machine')">Machines</button>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <span><i class="fas fa-warehouse"></i> Assets Inventory</span>
-                            <span id="inventoryCount" class="status-badge status-normal">Loading...</span>
-                        </div>
-                        <div id="allInventoryList" class="inventory-list">
-                            <!-- Inventory items will be loaded dynamically -->
-                        </div>
-                        <div id="noInventoryMessage"
-                            style="display: none; text-align: center; color: var(--muted); padding: 20px;">
-                            No inventory items found for this filter
-                        </div>
-                    </div>
+                    <to-inventory></to-inventory>
                 </section>
 
                 <!-- Service & Warranty -->
@@ -236,47 +212,12 @@
 
                 <!-- Notifications -->
                 <section class="content-section" id="notifications">
-                    <div class="page-header">
-                        <h2 class="page-title"><i class="fas fa-bell"></i> Notifications</h2>
-                        <p class="page-subtitle">Tickets and updates that require your attention</p>
-                    </div>
-                    <div id="notificationsList">
-                        <div class="notif-empty" id="notifEmpty" style="display:none;">
-                            <i class="fas fa-check-circle"></i>
-                            <p>You're all caught up! No pending notifications.</p>
-                        </div>
-                    </div>
+                    <to-notifications></to-notifications>
                 </section>
 
                 <!-- Asset Feedback -->
                 <section class="content-section" id="feedback">
-                    <div class="page-header">
-                        <h1 class="page-title">Asset Feedback</h1>
-                        <p class="page-subtitle">Submit feedback post-repair (shared with Supervisor & MM)</p>
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <button class="btn btn-primary" onclick="openModal('feedbackModal')">
-                            Submit Asset Feedback
-                        </button>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header"><i class="fas fa-file-alt"></i> Recent Feedback Submissions</div>
-                        <div class="request-item">
-                            <div class="ticket-details">
-                                <strong>FB-001</strong>
-                                <div class="ticket-meta">Equipment: Vehicle #101 | Component: Engine System</div>
-                                <div class="ticket-issue">Post-repair assessment: Good performance, minor temperature
-                                    variations</div>
-                                <div class="ticket-meta">Shared with: Supervisor & Maintenance Manager</div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-complete">Submitted</span>
-                                <small style="color: var(--muted);">Aug 22</small>
-                            </div>
-                        </div>
-                    </div>
+                    <to-feedback></to-feedback>
                 </section>
             </main>
         </div>
@@ -569,53 +510,6 @@
         </div>
     </div>
 
-    <!-- Asset Feedback Modal -->
-    <div id="feedbackModal" class="modal">
-        <div class="modal-content">
-            <button class="close" onclick="closeModal('feedbackModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Submit Asset Feedback</h2>
-            <form id="assetFeedbackForm">
-                <div class="form-section">
-                    <h5><i class="fas fa-comments"></i> Asset Performance Feedback</h5>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label">Equipment ID</label>
-                            <input type="text" class="form-input" placeholder="Enter equipment identifier" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Component/System</label>
-                            <select class="form-select" required>
-                                <option value="">Select Component</option>
-                                <option value="engine">Engine System</option>
-                                <option value="transmission">Transmission</option>
-                                <option value="hydraulics">Hydraulic System</option>
-                                <option value="brakes">Brake System</option>
-                                <option value="electrical">Electrical System</option>
-                                <option value="cooling">Cooling System</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Feedback Type</label>
-                        <select class="form-select" required>
-                            <option value="">Select Type</option>
-                            <option value="post-repair">Post-Repair Assessment</option>
-                            <option value="preventive">Preventive Observation</option>
-                            <option value="performance">Performance Review</option>
-                            <option value="recommendation">Maintenance Recommendation</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Detailed Feedback</label>
-                        <textarea class="form-textarea"
-                            placeholder="Provide detailed feedback about asset performance..." required></textarea>
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary">Submit Feedback</button>
-            </form>
-        </div>
-    </div>
-
     <!-- View Details Modal -->
     <div id="viewDetailsModal" class="modal">
         <div class="modal-content" style="max-width: 800px;">
@@ -674,6 +568,9 @@
     <script src="../../components/technical-officer/to-shell-sidebar.js"></script>
     <script src="../../components/styles/buttons.js"></script>
     <script src="../../components/styles/icons.js"></script>
+    <script src="./components/notifications/script.js"></script>
+    <script src="./components/inventory/script.js"></script>
+    <script src="./components/feedback/script.js"></script>
     <script src="./components/create-fault-ticket/script.js"></script>
     <script src="../../components/shared/confirm-dialog.js"></script>
     <script src="../../js/dashboard-init.js"></script>

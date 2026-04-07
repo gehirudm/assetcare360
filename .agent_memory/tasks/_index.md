@@ -1,12 +1,11 @@
 # Tasks Index
 
 ## In Progress
-_(none)_
+- [TASK006] Technical Officer section componentization — Notifications, inventory, and feedback extracted (`to-notifications`, `to-inventory`, `to-feedback`); tickets, spare-parts, and service-warranty pending
 
 ## Pending
 - [TASK004] Dashboard web-components refactor program — Coordinate scope, sequencing, and completion criteria across all dashboards
 - [TASK005] Technical Officer shell and navigation migration — Move TO to ac-layout and remove legacy shell/navigation stack
-- [TASK006] Technical Officer section componentization — Extract remaining TO sections into dashboard-scoped components
 - [TASK007] Supervisor dashboard componentization — Split all supervisor sections out of monolithic script
 - [TASK009] Driver dashboard componentization — Decompose high-complexity script and modal-heavy sections
 - [TASK010] Machinery Operator dashboard componentization — Extract section components and badge/event flows

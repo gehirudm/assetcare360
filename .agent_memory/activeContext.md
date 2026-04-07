@@ -43,6 +43,33 @@ Dashboard Web Components refactor execution — finishing Inventory Manager sect
 - Removed create-ticket form/toggle logic from monolithic `technical-officer/script.js`
 - Added parent orchestration listener (`bindCreateFaultTicket`) using custom event `create-fault-ticket-created`
 
+### TO notifications extraction slice (latest)
+- Added `pages/dashboard/technical-officer/components/notifications/script.js` with `<to-notifications>` component.
+- Replaced inline notifications section markup with `<to-notifications>` in `technical-officer/index.html`.
+- Moved notifications rendering and badge updates from parent monolith into component.
+- Added parent bridge methods in `technical-officer/script.js`:
+	- `bindTONotifications()` for event wiring
+	- `refreshTONotifications()` for refresh + user context
+- Added auto-refresh hook when navigating to notifications section.
+- Removed legacy `loadNotifications()` from parent script and validated syntax/diagnostics.
+
+### TO inventory extraction slice (latest)
+- Added `pages/dashboard/technical-officer/components/inventory/script.js` with `<to-inventory>` component.
+- Replaced inline inventory section markup in `technical-officer/index.html` with `<to-inventory>` and loaded the new script.
+- Moved inventory loading/filtering/details modal behavior into the component, including backend-aligned parsing for `/vehicles` and `/machines` responses.
+- Added parent bridge methods in `technical-officer/script.js`:
+	- `bindTOInventory()` for component error-to-toast wiring
+	- `refreshTOInventory()` for startup and section activation refresh
+- Removed stale inventory monolith logic and duplicate inventory helper definitions from parent script.
+- Validation: `node --check` and diagnostics passed for touched TO files.
+
+### TO feedback extraction slice (latest)
+- Added `pages/dashboard/technical-officer/components/feedback/script.js` with `<to-feedback>` component.
+- Replaced inline feedback section markup in `technical-officer/index.html` with `<to-feedback>` and removed the legacy feedback modal markup from page-level HTML.
+- Moved feedback modal open/close and submit behavior into the component with local event handling.
+- Added parent bridge method `bindTOFeedback()` in `technical-officer/script.js` to convert component submit events into global toast notifications.
+- Removed old parent `assetFeedbackForm` submit listener and validated syntax/diagnostics.
+
 ## Next Steps
 - Run pending migration `047_create_system_settings_and_budget_approval.php`
 - Update `testing/openapi.yaml` with any API changes from budget fixes

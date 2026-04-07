@@ -29,6 +29,24 @@
   - Added `components/create-fault-ticket/script.js` + `style.css`
   - Removed create-ticket modal-specific logic from monolithic TO script
   - Parent/child communication now event-driven (`create-fault-ticket-created`)
+- ✅ Technical Officer notifications extraction
+  - Added `components/notifications/script.js` with `<to-notifications>`
+  - Replaced inline notifications markup in TO dashboard page
+  - Removed inline notifications loader logic from parent TO script
+  - Added parent bridge methods for notifications refresh and navigation event wiring
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Technical Officer inventory extraction
+  - Added `components/inventory/script.js` with `<to-inventory>`
+  - Replaced inline inventory markup in TO dashboard page
+  - Added parent bridge methods for inventory refresh/error orchestration
+  - Removed legacy and duplicate inventory helper functions from parent TO script
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Technical Officer feedback extraction
+  - Added `components/feedback/script.js` with `<to-feedback>`
+  - Replaced inline feedback section markup and removed page-level feedback modal HTML
+  - Added parent bridge method for feedback submission event handling (`bindTOFeedback`)
+  - Removed legacy parent `assetFeedbackForm` listener
+  - Syntax and diagnostics validation passed for touched TO files
 - ✅ Inventory Manager notifications extraction
   - Added `components/notifications/script.js` + `style.css`
   - Replaced inline notifications section markup with `<inventory-notifications>`
