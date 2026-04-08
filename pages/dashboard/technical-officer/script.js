@@ -249,7 +249,7 @@ async function loadNotifications() {
         const notifications = (response.data && response.data.notifications) || [];
         const unreadCount = Number(response?.data?.unread_count || 0);
         const sidebar = document.querySelector('to-shell-sidebar');
-        if (sidebar) {
+        if (sidebar && typeof sidebar.setNotifBadge === 'function') {
             sidebar.setNotifBadge(unreadCount);
         }
 
@@ -435,9 +435,19 @@ function bindTOServiceWarranty() {
 
 // Load tickets from backend
 async function loadTickets() {
-    const ticketsComponent = document.querySelector('to-tickets');
+    let ticketsComponent = document.querySelector('to-tickets');
     const ticketsList = document.getElementById('allTicketsList');
     const ticketCount = document.getElementById('ticketCount');
+
+    // Ensure custom element upgrades before relying on component methods.
+    if (ticketsComponent && typeof ticketsComponent.renderTickets !== 'function') {
+        try {
+            await customElements.whenDefined('to-tickets');
+            ticketsComponent = document.querySelector('to-tickets');
+        } catch (error) {
+            console.warn('to-tickets component was not ready in time:', error);
+        }
+    }
 
     // Show loading state
     if (ticketsComponent && typeof ticketsComponent.setLoading === 'function') {
@@ -481,8 +491,12 @@ async function loadTickets() {
                 if (ticketsComponent && typeof ticketsComponent.setEmpty === 'function') {
                     ticketsComponent.setEmpty('No tickets assigned to you yet');
                 } else {
-                    ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px;"></i><p>No tickets assigned to you yet</p></div>';
-                    ticketCount.textContent = '0 tickets';
+                    if (ticketsList) {
+                        ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px;"></i><p>No tickets assigned to you yet</p></div>';
+                    }
+                    if (ticketCount) {
+                        ticketCount.textContent = '0 tickets';
+                    }
                 }
             }
 
@@ -521,6 +535,10 @@ function renderTickets(tickets) {
     }
 
     const ticketsList = document.getElementById('allTicketsList');
+    if (!ticketsList) {
+        console.warn('renderTickets fallback aborted: #allTicketsList not found and to-tickets component API unavailable.');
+        return;
+    }
 
     if (tickets.length === 0) {
         ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px;"></i><p>No tickets found</p></div>';
@@ -1287,6 +1305,11 @@ function toggleSidebar() {
 
         currentUser = user;
         console.log('Technical Officer Dashboard - User loaded:', user);
+
+        const shellSidebar = document.querySelector('to-shell-sidebar');
+        if (shellSidebar && typeof shellSidebar.refreshNotificationBadge === 'function') {
+            await shellSidebar.refreshNotificationBadge();
+        }
 
         bindTOInventory();
         bindTONotifications();

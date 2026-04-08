@@ -3,6 +3,22 @@
 ## Current Focus
 Dashboard Web Components refactor execution — TASK007 remains active; TASK016 baseline bootstrap is now complete. Event architecture execution has moved from program setup (TASK018) into implementation slices (TASK019+).
 
+### TO dashboard section visibility regression fix (April 9, 2026)
+- Resolved a Technical Officer dashboard regression where sidebar rendered but all content sections were missing.
+- Root cause: `ac-layout` `attributeChangedCallback` executed during custom-element upgrade and re-rendered before first mount, clearing light-DOM `<section class="content-section">` children.
+- Fix applied in `pages/components/shared/ac-layout.js`:
+	- Added first-mount guard (`_isMounted`) to block pre-mount attribute rerenders.
+	- Added resilient initial mount flow with bounded animation-frame retries for section capture.
+- Verified with browser testing: TO dashboard now loads 7 sections and section switching works again.
+
+### Shared header dropdown styling normalization (April 9, 2026)
+- Resolved cross-dashboard profile dropdown styling drift where some dashboards showed an unstyled inline menu.
+- Root cause: dropdown CSS existed only in Technical Officer stylesheet while other dashboards retained legacy header styles.
+- Fix applied in `pages/components/shared/ac-header.js`:
+	- Added shared, prefixed `ac-header` dropdown styles injected once into `document.head`.
+	- Standardized trigger/avatar/panel/item styles and panel positioning (`position:absolute`, fixed width, elevated z-index).
+- Verified with browser testing in SysAdministration and Technical Officer dashboards: dropdown now renders as a styled floating panel consistently.
+
 ## Recent Changes (April 6, 2026)
 
 ### TASK003 + TASK016 + Program task sync (latest session)

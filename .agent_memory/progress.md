@@ -170,3 +170,5 @@
 - Budget step showing `LKR 0.00` when no amount provided
 - No backend gate preventing work-update while budget is pending
 - Zero-amount budget could be submitted (`total_amount = 0` was accepted)
+- Technical Officer dashboard could render sidebar with empty main content due `ac-layout` pre-mount attribute rerender; fixed by guarding attribute updates until first mount and retrying initial section capture.
+- Profile dropdown in shared dashboard header rendered unstyled in multiple dashboards; fixed by moving dropdown presentation rules into shared `ac-header` styles injected once for all dashboards.

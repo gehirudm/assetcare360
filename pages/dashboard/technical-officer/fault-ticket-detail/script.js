@@ -102,6 +102,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Populate header user info (same as dashboard)
     DashboardInit.updateUserInfo(currentUser);
 
+    const shellSidebar = document.querySelector('to-shell-sidebar');
+    if (shellSidebar && typeof shellSidebar.refreshNotificationBadge === 'function') {
+        await shellSidebar.refreshNotificationBadge();
+    }
+
     // Load everything
     await loadAll();
 });

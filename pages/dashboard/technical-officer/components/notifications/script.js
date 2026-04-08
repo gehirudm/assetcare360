@@ -162,16 +162,20 @@ class TONotifications extends HTMLElement {
     }
 
     updateBadge(count) {
+        const shellSidebar = document.querySelector('to-shell-sidebar');
+        if (shellSidebar && typeof shellSidebar.refreshNotificationBadge === 'function') {
+            shellSidebar.refreshNotificationBadge();
+            return;
+        }
+
         const sharedSidebar = document.querySelector('ac-layout ac-sidebar');
         if (sharedSidebar && typeof sharedSidebar.setNotifBadge === 'function') {
             sharedSidebar.setNotifBadge(count);
             return;
         }
 
-        // Legacy fallback for pages that still use TO shell components.
-        const legacySidebar = document.querySelector('to-shell-sidebar');
-        if (legacySidebar && typeof legacySidebar.setNotifBadge === 'function') {
-            legacySidebar.setNotifBadge(count);
+        if (shellSidebar && typeof shellSidebar.setNotifBadge === 'function') {
+            shellSidebar.setNotifBadge(count);
         }
     }
 
