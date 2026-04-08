@@ -2,6 +2,8 @@
 
 require_once __DIR__ . '/../services/MachineService.php';
 require_once __DIR__ . '/../helpers/Response.php';
+require_once __DIR__ . '/../services/EventEmitter.php';
+require_once __DIR__ . '/../events/DomainEvents.php';
 
 /**
  * Machine Controller
@@ -9,9 +11,11 @@ require_once __DIR__ . '/../helpers/Response.php';
  */
 class MachineController {
     private $machineService;
+    private $eventEmitter;
     
     public function __construct() {
         $this->machineService = new MachineService();
+        $this->eventEmitter = new EventEmitter();
     }
     
     /**
@@ -62,6 +66,18 @@ class MachineController {
             $userId = $user['id'] ?? null;
             
             $machine = $this->machineService->createMachine($data, $userId);
+            $this->eventEmitter->emit(
+                DomainEvents::ASSET_MACHINE_CREATED,
+                [
+                    'machine_db_id' => $machine['id'] ?? null,
+                    'machine_id' => $machine['machine_id'] ?? null,
+                    'status' => $machine['status'] ?? null,
+                ],
+                [
+                    'user_id' => $userId,
+                    'role' => $user['role'] ?? null,
+                ]
+            );
             
             Response::success($machine, 'Machine created successfully', 201);
         } catch (Exception $e) {

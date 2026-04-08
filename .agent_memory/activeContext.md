@@ -102,3 +102,13 @@ Dashboard Web Components refactor execution — finishing Inventory Manager sect
 	- `assetcare-backend-new-6qe` (frontend integration)
 	- `assetcare-backend-new-81v` (reliability hardening)
 - Added parent-child and blocks dependencies in Beads to enforce practical implementation order.
+
+### RabbitMQ event architecture implementation (latest)
+- Implemented TASK018–TASK027 end-to-end:
+	- Added composer dependency `php-amqplib/php-amqplib` and RabbitMQ env/config constants.
+	- Added event contract layer (`DomainEvents`, `EventEnvelope`) and reusable backend `EventPublisher`/`EventEmitter`.
+	- Added migration `048_create_event_pipeline_tables.php` (`event_audit_logs`, `notifications`, `processed_events`, `service_due_event_locks`).
+	- Wired event emission into machine/vehicle creation, fault ticket create/assign, budget report create/review, and spare-part request create/approve/reject.
+	- Added workers `scripts/consume_audit_events.php` and `scripts/consume_notification_events.php` with manual ack/nack, idempotency checks, and DLQ exchange binding.
+	- Added scheduled producer `scripts/check_service_due.php` for `ASSET_SERVICE_DUE_SOON` events with duplicate suppression locks.
+	- Added notifications API (`GET /api/notifications`, `POST /api/notifications/read`) and Technical Officer dashboard integration for API-backed notification rendering and mark-as-read.

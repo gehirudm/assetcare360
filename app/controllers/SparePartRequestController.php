@@ -3,6 +3,8 @@
 require_once __DIR__ . '/../services/SparePartRequestService.php';
 require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
+require_once __DIR__ . '/../services/EventEmitter.php';
+require_once __DIR__ . '/../events/DomainEvents.php';
 
 /**
  * Spare Part Request Controller
@@ -12,9 +14,11 @@ require_once __DIR__ . '/../middleware/RoleMiddleware.php';
  */
 class SparePartRequestController {
     private $service;
+    private $eventEmitter;
 
     public function __construct() {
         $this->service = new SparePartRequestService();
+        $this->eventEmitter = new EventEmitter();
     }
 
     /**
@@ -126,6 +130,19 @@ class SparePartRequestController {
             $result = $this->service->create($data);
 
             if ($result['status'] === 'success') {
+                $this->eventEmitter->emit(
+                    DomainEvents::SPARE_PART_REQUEST_CREATED,
+                    [
+                        'request_db_id' => (int) ($result['data']['id'] ?? 0),
+                        'request_id' => $result['data']['request_id'] ?? null,
+                        'fault_ticket_id' => (int) ($data['fault_ticket_id'] ?? 0),
+                        'requested_by' => (int) ($data['requested_by'] ?? 0),
+                    ],
+                    [
+                        'user_id' => $user['id'] ?? null,
+                        'role' => $user['role'] ?? null,
+                    ]
+                );
                 return Response::json($result, 201);
             } else {
                 return Response::json($result, 400);
@@ -156,6 +173,18 @@ class SparePartRequestController {
             $result = $this->service->approve($id, $reviewedBy, $notes);
 
             if ($result['status'] === 'success') {
+                $this->eventEmitter->emit(
+                    DomainEvents::SPARE_PART_REQUEST_APPROVED,
+                    [
+                        'request_db_id' => (int) $id,
+                        'requested_by' => (int) ($result['data']['requested_by'] ?? 0),
+                        'reviewed_by' => (int) ($reviewedBy ?? 0),
+                    ],
+                    [
+                        'user_id' => $user['id'] ?? null,
+                        'role' => $user['role'] ?? null,
+                    ]
+                );
                 return Response::json($result);
             } else {
                 return Response::json($result, 400);
@@ -186,6 +215,18 @@ class SparePartRequestController {
             $result = $this->service->reject($id, $reviewedBy, $notes);
 
             if ($result['status'] === 'success') {
+                $this->eventEmitter->emit(
+                    DomainEvents::SPARE_PART_REQUEST_REJECTED,
+                    [
+                        'request_db_id' => (int) $id,
+                        'requested_by' => (int) ($result['data']['requested_by'] ?? 0),
+                        'reviewed_by' => (int) ($reviewedBy ?? 0),
+                    ],
+                    [
+                        'user_id' => $user['id'] ?? null,
+                        'role' => $user['role'] ?? null,
+                    ]
+                );
                 return Response::json($result);
             } else {
                 return Response::json($result, 400);

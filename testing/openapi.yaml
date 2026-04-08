@@ -50,6 +50,8 @@ tags:
     description: Budget report submission and approval workflow for fault tickets. Budgets within petty cash limit are approved by Supervisors; amounts exceeding the limit require Maintenance Manager approval.
   - name: System Settings
     description: System-wide configuration settings (Admin only). Includes petty cash limit for budget approval routing.
+  - name: Notifications
+    description: User notification listing and read-state updates.
 
 security:
   - bearerAuth: []
@@ -1533,6 +1535,117 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /notifications:
+    get:
+      tags:
+        - Notifications
+      summary: List notifications for the current user
+      description: Returns notifications targeted to the authenticated user, role, or global broadcast notifications.
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: unread_only
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Notifications retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Success
+                  data:
+                    type: object
+                    properties:
+                      notifications:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Notification'
+                      pagination:
+                        type: object
+                        properties:
+                          page:
+                            type: integer
+                            example: 1
+                          limit:
+                            type: integer
+                            example: 20
+                          total:
+                            type: integer
+                            example: 52
+                          total_pages:
+                            type: integer
+                            example: 3
+                      unread_count:
+                        type: integer
+                        example: 3
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/read:
+    post:
+      tags:
+        - Notifications
+      summary: Mark a notification as read
+      description: Marks a specific notification as read, or all visible notifications when mark_all=true.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notification_id:
+                  type: string
+                  example: "3f0fb3fc-91a5-462c-9fcf-a282218da9d4"
+                mark_all:
+                  type: boolean
+                  example: false
+      responses:
+        '200':
+          description: Read state updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Notification read state updated
+                  data:
+                    type: object
+                    properties:
+                      unread_count:
+                        type: integer
+                        example: 2
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
 # ==================== COMPONENTS ====================
 components:
   securitySchemes:
@@ -1715,6 +1828,49 @@ components:
           type: string
           format: date-time
         updated_at:
+          type: string
+          format: date-time
+
+    Notification:
+      type: object
+      properties:
+        notification_id:
+          type: string
+          example: "3f0fb3fc-91a5-462c-9fcf-a282218da9d4"
+        user_id:
+          type: integer
+          nullable: true
+          example: 7
+        target_role:
+          type: string
+          nullable: true
+          example: "Inventory Manager"
+        title:
+          type: string
+          example: "Budget review required"
+        message:
+          type: string
+          example: "A budget report is waiting for your approval."
+        type:
+          type: string
+          enum: [info, success, warning, error]
+          example: warning
+        source_event:
+          type: string
+          example: "BUDGET_REPORT_CREATED"
+        source_event_id:
+          type: string
+          nullable: true
+          example: "BR-001"
+        is_read:
+          type: integer
+          enum: [0, 1]
+          example: 0
+        read_at:
+          type: string
+          nullable: true
+          format: date-time
+        created_at:
           type: string
           format: date-time
 

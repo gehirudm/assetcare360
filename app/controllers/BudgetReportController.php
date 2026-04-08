@@ -4,16 +4,20 @@ require_once __DIR__ . '/../models/BudgetReport.php';
 require_once __DIR__ . '/../models/FaultTicket.php';
 require_once __DIR__ . '/../models/SystemSetting.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
+require_once __DIR__ . '/../services/EventEmitter.php';
+require_once __DIR__ . '/../events/DomainEvents.php';
 
 class BudgetReportController {
     private $budgetReportModel;
     private $faultTicketModel;
     private $settingModel;
+    private $eventEmitter;
     
     public function __construct() {
         $this->budgetReportModel = new BudgetReport();
         $this->faultTicketModel = new FaultTicket();
         $this->settingModel = new SystemSetting();
+        $this->eventEmitter = new EventEmitter();
     }
     
     /**
@@ -116,6 +120,21 @@ class BudgetReportController {
                 $approvalMessage = $approvalLevel === 'maintenance_manager' 
                     ? 'Budget report created. Amount exceeds petty cash limit — requires Maintenance Manager approval.' 
                     : 'Budget report created. Awaiting Supervisor approval.';
+
+                $this->eventEmitter->emit(
+                    DomainEvents::BUDGET_REPORT_CREATED,
+                    [
+                        'report_id' => (int) $reportId,
+                        'fault_ticket_id' => (int) $data['fault_ticket_id'],
+                        'submitted_by' => (int) $user['id'],
+                        'total_amount' => (float) $reportData['total_amount'],
+                        'approval_role' => $approvalLevel === 'maintenance_manager' ? 'Maintenance Manager' : 'Supervisor',
+                    ],
+                    [
+                        'user_id' => $user['id'] ?? null,
+                        'role' => $user['role'] ?? null,
+                    ]
+                );
                 
                 http_response_code(201);
                 echo json_encode([
@@ -346,6 +365,21 @@ class BudgetReportController {
             
             if ($success) {
                 $report = $this->budgetReportModel->findById($id);
+
+                $this->eventEmitter->emit(
+                    DomainEvents::BUDGET_REPORT_REVIEWED,
+                    [
+                        'report_id' => (int) $id,
+                        'fault_ticket_id' => (int) $existingReport['fault_ticket_id'],
+                        'status' => $data['status'],
+                        'reviewed_by' => (int) $user['id'],
+                        'submitted_by' => (int) ($existingReport['submitted_by'] ?? 0),
+                    ],
+                    [
+                        'user_id' => $user['id'] ?? null,
+                        'role' => $user['role'] ?? null,
+                    ]
+                );
                 
                 echo json_encode([
                     'status' => 'success',
