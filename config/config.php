@@ -67,6 +67,23 @@ define('API_PREFIX', '/api');
 define('TIMEZONE', 'Asia/Colombo');
 
 /**
+ * Event Pipeline Configuration
+ */
+define('EVENTS_ENABLED', filter_var(env('EVENTS_ENABLED', 'false'), FILTER_VALIDATE_BOOLEAN));
+define('EVENTS_SCHEMA_VERSION', env('EVENTS_SCHEMA_VERSION', '1.0'));
+define('RABBITMQ_HOST', env('RABBITMQ_HOST', '127.0.0.1'));
+define('RABBITMQ_PORT', (int) env('RABBITMQ_PORT', 5672));
+define('RABBITMQ_USER', env('RABBITMQ_USER', 'guest'));
+define('RABBITMQ_PASS', env('RABBITMQ_PASS', 'guest'));
+define('RABBITMQ_VHOST', env('RABBITMQ_VHOST', '/'));
+define('RABBITMQ_EXCHANGE', env('RABBITMQ_EXCHANGE', 'events'));
+define('RABBITMQ_EXCHANGE_TYPE', env('RABBITMQ_EXCHANGE_TYPE', 'topic'));
+define('RABBITMQ_AUDIT_QUEUE', env('RABBITMQ_AUDIT_QUEUE', 'audit_queue'));
+define('RABBITMQ_NOTIFICATION_QUEUE', env('RABBITMQ_NOTIFICATION_QUEUE', 'notification_queue'));
+define('RABBITMQ_DLX_EXCHANGE', env('RABBITMQ_DLX_EXCHANGE', 'events.dlx'));
+define('RABBITMQ_DLQ_PREFIX', env('RABBITMQ_DLQ_PREFIX', 'events.dlq'));
+
+/**
  * Logging Configuration
  */
 define('LOG_REQUESTS', true);

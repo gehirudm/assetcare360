@@ -2,6 +2,8 @@
 
 require_once __DIR__ . '/../services/VehicleService.php';
 require_once __DIR__ . '/../helpers/Response.php';
+require_once __DIR__ . '/../services/EventEmitter.php';
+require_once __DIR__ . '/../events/DomainEvents.php';
 
 /**
  * Vehicle Controller
@@ -9,9 +11,11 @@ require_once __DIR__ . '/../helpers/Response.php';
  */
 class VehicleController {
     private $vehicleService;
+    private $eventEmitter;
     
     public function __construct() {
         $this->vehicleService = new VehicleService();
+        $this->eventEmitter = new EventEmitter();
     }
     
     /**
@@ -65,6 +69,19 @@ class VehicleController {
             $userId = $user['id'] ?? null;
             
             $vehicle = $this->vehicleService->createVehicle($data, $userId);
+            $this->eventEmitter->emit(
+                DomainEvents::ASSET_VEHICLE_CREATED,
+                [
+                    'vehicle_db_id' => $vehicle['id'] ?? null,
+                    'vehicle_id' => $vehicle['vehicle_id'] ?? null,
+                    'number_plate' => $vehicle['number_plate'] ?? null,
+                    'status' => $vehicle['status'] ?? null,
+                ],
+                [
+                    'user_id' => $userId,
+                    'role' => $user['role'] ?? null,
+                ]
+            );
             
             Response::success($vehicle, 'Vehicle created successfully', 201);
         } catch (Exception $e) {

@@ -30,11 +30,11 @@ This is a cross-cutting architecture change touching backend, data model, worker
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
 |----|-------------|--------|---------|-------|
-| 18.1 | Program setup and dependency mapping | Complete | Apr 7, 2026 | Epic + child issues and task dependencies mapped |
-| 18.2 | Backend event production pipeline | Complete | Apr 7, 2026 | Broken into executable TASK019–TASK021 |
-| 18.3 | Consumer services implementation | Complete | Apr 7, 2026 | Broken into executable TASK022–TASK024 |
-| 18.4 | Notification delivery path | Complete | Apr 7, 2026 | Broken into executable TASK025–TASK026 |
-| 18.5 | Reliability and production hardening | Complete | Apr 7, 2026 | Explicitly tracked as TASK027 |
+| 18.1 | Program setup and dependency mapping | Complete | Apr 7, 2026 | Parent orchestration task |
+| 18.2 | Backend event production pipeline | Complete | Apr 7, 2026 | Event contract + publisher + emitters |
+| 18.3 | Consumer services implementation | Complete | Apr 7, 2026 | Audit + notification workers |
+| 18.4 | Notification delivery path | Complete | Apr 7, 2026 | API + frontend integration |
+| 18.5 | Reliability and production hardening | Complete | Apr 7, 2026 | Idempotency, ack, retry, durability |
 
 ## Progress Log
 ### April 7, 2026
@@ -42,7 +42,5 @@ This is a cross-cutting architecture change touching backend, data model, worker
 - Linked to Beads epic `assetcare-backend-new-lm7`.
 - Child implementation tasks created in memory bank and Beads.
 
-### April 7, 2026 (Completion Update)
-- Completed program-level decomposition for RabbitMQ event architecture into runnable implementation slices (`TASK019`–`TASK027`).
-- Established parent-child and blocking dependencies to enforce practical build order from contract → publisher → emitters → consumers → API/frontend → reliability.
-- Program orchestration objective is complete; execution now proceeds through child tasks.
+### April 7, 2026
+- Program execution completed across contract, publisher, consumers, scheduler, API, frontend integration, and reliability safeguards.

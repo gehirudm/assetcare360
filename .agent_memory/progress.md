@@ -138,6 +138,13 @@
   - Created memory tasks `TASK018` through `TASK027` for practical implementation slices
   - Created Beads epic `assetcare-backend-new-lm7` and child issues for event contract, publisher, emitters, consumers, scheduler, API, frontend, and hardening
   - Added dependency links in Beads to establish execution order
+- ✅ RabbitMQ event architecture implementation (TASK018–TASK027)
+  - Added event contract/catalog (`DomainEvents`, `EventEnvelope`), publisher (`EventPublisher`), and fail-safe emitter (`EventEmitter`)
+  - Added migration `048` with `event_audit_logs`, `notifications`, `processed_events`, and `service_due_event_locks`
+  - Added audit and notification consumers with manual ack/nack, idempotency, and DLQ binding
+  - Added service-due cron producer script with duplicate suppression
+  - Added notifications API endpoints and OpenAPI documentation
+  - Integrated Technical Officer notification UI with backend notifications API and mark-as-read flow
 - ✅ Transportation Manager dashboard bootstrap (TASK016)
   - Replaced empty dashboard files with baseline `<ac-layout>` shell and section map
   - Added auth bootstrap and section routing orchestration in page script
@@ -156,7 +163,7 @@
 - ⏳ Frontend budget-submission form should validate `total_amount > 0` before POSTing
 - ⏳ Other role dashboards (supervisor, driver, maintenance, etc.) — status varies
 - ⏳ Dashboard Web Components refactor backlog created (agent-memory TASK004–TASK016 + Beads epic/children) and ready for staged execution
-- ⏳ RabbitMQ event architecture implementation slices are planned (TASK018–TASK027 + Beads epic `assetcare-backend-new-lm7`) and ready to start
+- ⏳ Verify migration 048 and event consumers against a live RabbitMQ + database environment
 
 ## Known Bugs Fixed (this session)
 - `Response::badRequest()` used in `TecFaultRepairTicketController` — doesn't exist; replaced with `Response::error('…', 400)`

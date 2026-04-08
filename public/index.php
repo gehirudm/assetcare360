@@ -76,6 +76,7 @@ require_once __DIR__ . '/../app/controllers/RouteBreakdownController.php';
 require_once __DIR__ . '/../app/controllers/MachineBreakdownController.php';
 require_once __DIR__ . '/../app/controllers/TecFaultRepairTicketController.php';
 require_once __DIR__ . '/../app/controllers/SparePartRequestController.php';
+require_once __DIR__ . '/../app/controllers/NotificationController.php';
 
 // Initialize request logger
 $requestLogger = new RequestLogger();
@@ -227,6 +228,10 @@ $router->delete('/budget-reports/:id', 'BudgetReportController', 'delete');
 $router->get('/system-settings', 'SystemSettingController', 'index');
 $router->get('/system-settings/:key', 'SystemSettingController', 'show');
 $router->put('/system-settings/:key', 'SystemSettingController', 'update');
+
+// Notification routes
+$router->get('/notifications', 'NotificationController', 'index');
+$router->post('/notifications/read', 'NotificationController', 'markRead');
 
 // File serving routes (for uploaded files)
 $router->get('/uploads/fault-tickets/:filename', 'FileController', 'serveFaultTicketImage');

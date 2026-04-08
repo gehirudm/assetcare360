@@ -11,15 +11,8 @@
 - [TASK012] SysAdministration dashboard componentization — In progress: entrypoint consolidated, overview/user-accounts/service-config extracted; remaining sections pending
 - [TASK013] Auction dashboard componentization — Extract auction sections into dashboard-scoped components
 - [TASK014] Inline events to component events migration — Remove inline handlers and adopt custom-event contracts
-- [TASK019] Define event envelope and domain catalog — Standardize versioned event payload contract and domain event constants
-- [TASK020] Integrate RabbitMQ publisher into backend — Add php-amqplib-based EventPublisher and durable exchange configuration
-- [TASK021] Emit business events after successful state changes — Instrument initial workflows to publish domain events post-success
-- [TASK022] Build audit consumer service and storage — Persist full event payloads for traceability in audit logs
-- [TASK023] Build notification consumer and notifications store — Consume selected events into user-facing notification records
-- [TASK024] Implement service-due cron event producer — Publish scheduled service-due reminder events from cron
-- [TASK025] Add notifications API endpoints — Expose notification list/read APIs and document in OpenAPI
-- [TASK026] Frontend notifications API integration — Connect dashboard notification UI to backend endpoints with robust error handling
-- [TASK027] Event pipeline reliability hardening — Add idempotency, manual ack discipline, and retry/DLQ operational safeguards
+- [TASK016] Transportation Manager dashboard bootstrap — Define and scaffold empty dashboard before componentization
+- [TASK003] Run migration 047 and update OpenAPI spec — migration not confirmed run; openapi.yaml needs update for budget/work-update changes
 
 ## Completed
 - [TASK005] Technical Officer shell and navigation migration — TO dashboard moved to `<ac-layout>` and shared DashboardInit/bootstrap/navigation contracts — Completed April 7, 2026
@@ -27,6 +20,16 @@
 - [TASK008] Inventory Manager dashboard componentization — All 8 sections extracted to dashboard-scoped components; monolith reduced from 3580 to 2672 lines — Completed April 7, 2026
 - [TASK017] Completed-dashboard refactor quality cleanup — removed `-model` naming, componentized Inventory Manager popups, and migrated section modal/CRUD logic from monolith script — Completed April 7, 2026
 - [TASK015] Dashboard script bootstrap normalization — Core include order normalized, duplicate config include removed, and auth redirect paths standardized — Completed April 7, 2026
+- [TASK018] RabbitMQ event architecture program — Event contract, publisher, emitters, consumers, service-due producer, notifications API/UI, and reliability controls delivered — Completed April 7, 2026
+- [TASK019] Define event envelope and domain catalog — DomainEvents catalog and EventEnvelope validation implemented — Completed April 7, 2026
+- [TASK020] Integrate RabbitMQ publisher into backend — php-amqplib dependency + durable topic exchange publisher added — Completed April 7, 2026
+- [TASK021] Emit business events after successful state changes — Event emission added to assets, fault tickets, budget, and spare-part workflows — Completed April 7, 2026
+- [TASK022] Build audit consumer service and storage — audit consumer + event_audit_logs persistence implemented — Completed April 7, 2026
+- [TASK023] Build notification consumer and notifications store — notification consumer + notifications persistence implemented — Completed April 7, 2026
+- [TASK024] Implement service-due cron event producer — scheduled producer script with dedup locks implemented — Completed April 7, 2026
+- [TASK025] Add notifications API endpoints — `/notifications` and `/notifications/read` endpoints added and documented — Completed April 7, 2026
+- [TASK026] Frontend notifications API integration — Technical Officer notifications now API-driven with read-state updates — Completed April 7, 2026
+- [TASK027] Event pipeline reliability hardening — processed-event idempotency, manual ack/nack, and DLQ wiring implemented — Completed April 7, 2026
 - [TASK016] Transportation Manager dashboard bootstrap — Implemented baseline `<ac-layout>` shell, auth/bootstrap routing, and initial dashboard overview component scaffold — Completed April 7, 2026
 - [TASK004] Dashboard web-components refactor program — Program sequencing, standards, and Beads synchronization finalized across child dashboard tasks — Completed April 7, 2026
 - [TASK018] RabbitMQ event architecture program — Program decomposition and dependency mapping completed; execution delegated to TASK019–TASK027 — Completed April 7, 2026

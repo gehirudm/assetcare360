@@ -3,6 +3,9 @@
 require_once __DIR__ . '/../services/FaultTicketService.php';
 require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
+require_once __DIR__ . '/../models/FaultTicket.php';
+require_once __DIR__ . '/../services/EventEmitter.php';
+require_once __DIR__ . '/../events/DomainEvents.php';
 
 /**
  * Fault Ticket Controller
@@ -11,9 +14,13 @@ require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 class FaultTicketController {
     
     private $faultTicketService;
+    private $eventEmitter;
+    private $faultTicketModel;
     
     public function __construct() {
         $this->faultTicketService = new FaultTicketService();
+        $this->eventEmitter = new EventEmitter();
+        $this->faultTicketModel = new FaultTicket();
     }
     
     /**
@@ -115,6 +122,24 @@ class FaultTicketController {
                 }
                 return;
             }
+
+            $ticketDbId = (int) ($result['data']['id'] ?? 0);
+            if ($ticketDbId > 0) {
+                $ticket = $this->faultTicketModel->findById($ticketDbId);
+                $this->eventEmitter->emit(
+                    DomainEvents::FAULT_TICKET_CREATED,
+                    [
+                        'ticket_db_id' => $ticketDbId,
+                        'ticket_id' => $ticket['ticket_id'] ?? null,
+                        'priority' => $ticket['priority'] ?? ($data['priority'] ?? null),
+                        'status' => $ticket['status'] ?? FaultTicket::STATUS_OPEN,
+                    ],
+                    [
+                        'user_id' => $user['id'] ?? null,
+                        'role' => $user['role'] ?? null,
+                    ]
+                );
+            }
             
             Response::success($result['data'], $result['message'], 201);
             
@@ -212,6 +237,24 @@ class FaultTicketController {
             if (!$result['success']) {
                 Response::error($result['message'] ?? 'Failed to assign technicians', 400);
                 return;
+            }
+
+            $ticket = $this->faultTicketModel->findById($id);
+            $technicianIds = array_values(array_filter(array_map('intval', $data['technician_ids'] ?? [])));
+            if (!empty($technicianIds)) {
+                $this->eventEmitter->emit(
+                    DomainEvents::FAULT_TICKET_ASSIGNED,
+                    [
+                        'ticket_db_id' => (int) $id,
+                        'ticket_id' => $ticket['ticket_id'] ?? null,
+                        'technician_user_ids' => $technicianIds,
+                        'status' => $ticket['status'] ?? 'Assigned',
+                    ],
+                    [
+                        'user_id' => $user['id'] ?? null,
+                        'role' => $user['role'] ?? null,
+                    ]
+                );
             }
             
             Response::success(null, $result['message']);

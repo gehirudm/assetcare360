@@ -232,6 +232,87 @@ function filterTicketsByStatus(status, clickedButton = null) {
 
 // ==================== NOTIFICATIONS ====================
 
+/**
+ * Loads notifications from backend notification APIs.
+ */
+async function loadNotifications() {
+    const list = document.getElementById('notificationsList');
+    const empty = document.getElementById('notifEmpty');
+    if (!list) return;
+
+    try {
+        const response = await API.get('/notifications?limit=50');
+        if (!response || response.status !== 'success') {
+            throw new Error(response?.message || 'Failed to load notifications');
+        }
+
+        const notifications = (response.data && response.data.notifications) || [];
+        const unreadCount = Number(response?.data?.unread_count || 0);
+        const sidebar = document.querySelector('to-shell-sidebar');
+        if (sidebar) {
+            sidebar.setNotifBadge(unreadCount);
+        }
+
+        list.querySelectorAll('.notif-card').forEach(el => el.remove());
+
+        if (!Array.isArray(notifications) || notifications.length === 0) {
+            empty.style.display = 'block';
+            return;
+        }
+
+        empty.style.display = 'none';
+        notifications.forEach(n => {
+            const card = document.createElement('div');
+            const type = n.type || 'info';
+            const title = n.title || 'Notification';
+            const desc = n.message || 'No details available.';
+            const iconMap = {
+                success: 'fa-check-circle',
+                warning: 'fa-exclamation-triangle',
+                error: 'fa-times-circle',
+                info: 'fa-bell'
+            };
+            const icon = iconMap[type] || iconMap.info;
+            const readClass = Number(n.is_read) === 1 ? 'notif-read' : '';
+
+            card.className = `notif-card notif-${type} ${readClass}`.trim();
+            card.innerHTML = `
+                <div class="notif-icon"><i class="fas ${icon}"></i></div>
+                <div class="notif-body">
+                    <div class="notif-title">${title}</div>
+                    <div class="notif-desc">${desc}</div>
+                    <div class="notif-action">
+                        ${Number(n.is_read) === 1
+                            ? '<span class="badge-success">Read</span>'
+                            : `<button class="btn btn-small btn-secondary" onclick="markNotificationAsRead('${n.notification_id}')">Mark as Read</button>`}
+                    </div>
+                </div>`;
+            list.appendChild(card);
+        });
+    } catch (err) {
+        console.error('loadNotifications error:', err);
+        list.querySelectorAll('.notif-card').forEach(el => el.remove());
+        const errEl = document.createElement('div');
+        errEl.className = 'notif-card notif-danger';
+        errEl.innerHTML = `<div class="notif-icon"><i class="fas fa-exclamation-circle"></i></div><div class="notif-body"><div class="notif-title">Failed to load notifications</div><div class="notif-desc">Please refresh the page and try again.</div></div>`;
+        list.appendChild(errEl);
+    }
+}
+
+async function markNotificationAsRead(notificationId) {
+    if (!notificationId) return;
+    try {
+        const response = await API.post('/notifications/read', { notification_id: notificationId });
+        if (!response || response.status !== 'success') {
+            throw new Error(response?.message || 'Failed to update notification');
+        }
+        await loadNotifications();
+    } catch (err) {
+        console.error('markNotificationAsRead error:', err);
+        if (window.Utils && typeof window.Utils.showToast === 'function') {
+            window.Utils.showToast('Failed to mark notification as read', 'error');
+        }
+    }
 function bindTONotifications() {
     const notificationsComponent = document.querySelector('to-notifications');
     if (!notificationsComponent || notificationsComponent.dataset.bound === 'true') return;
