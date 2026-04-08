@@ -13,15 +13,19 @@
 </head>
 
 <body>
-    <div class="container">
-        <!-- Header -->
-        <to-shell-header></to-shell-header>
-
-        <div class="main-wrapper">
-            <!-- Sidebar -->
-            <to-shell-sidebar active-section="dashboard"></to-shell-sidebar>
-
-            <main class="main-content">
+    <ac-layout
+        title="Technical Officer Dashboard"
+        icon="fa-tools"
+        active-section="dashboard"
+        nav='[
+            {"section":"dashboard","icon":"fas fa-chart-line","label":"Dashboard"},
+            {"section":"tickets","icon":"fas fa-ticket-alt","label":"Fault &amp; Repair Tickets"},
+            {"section":"spare-parts","icon":"fas fa-boxes","label":"Spare Part Management"},
+            {"section":"inventory","icon":"fas fa-warehouse","label":"Inventory Management"},
+            {"section":"service-warranty","icon":"fas fa-shield-alt","label":"Service &amp; Warranty"},
+            {"section":"notifications","icon":"fas fa-bell","label":"Notifications","badge":true},
+            {"section":"feedback","icon":"fas fa-comment-dots","label":"Asset Feedback"}
+        ]'>
                 <!-- Dashboard Section -->
                 <section class="content-section active" id="dashboard">
                     <div class="page-header">
@@ -99,188 +103,34 @@
 
                 <!-- Fault & Repair Tickets -->
                 <section class="content-section" id="tickets">
-                    <div class="page-header">
-                        <h1 class="page-title">Fault & Repair Tickets</h1>
-                        <p class="page-subtitle">Manage tickets assigned by supervisors</p>
-                    </div>
-
-                    <create-fault-ticket></create-fault-ticket>
-
-                    <!-- Tab Filters -->
-                    <div class="filter-controls" id="ticketFilterTabs">
-                        <button class="filter-btn active" onclick="filterTicketsByStatus('all')">All Tickets</button>
-                        <button class="filter-btn" onclick="filterTicketsByStatus('pending')">Pending</button>
-                        <button class="filter-btn" onclick="filterTicketsByStatus('waiting-for-spare-parts')">Waiting
-                            for Parts</button>
-                        <button class="filter-btn" onclick="filterTicketsByStatus('parts-approved')">Parts
-                            Approved</button>
-                        <button class="filter-btn" onclick="filterTicketsByStatus('in-progress')">In Progress</button>
-                        <button class="filter-btn" onclick="filterTicketsByStatus('completed')">Completed</button>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <span><i class="fas fa-ticket-alt"></i> Tickets</span>
-                            <span id="ticketCount" class="status-badge status-normal">Loading...</span>
-                        </div>
-                        <div id="allTicketsList" class="inventory-list">
-                            <!-- Tickets will be loaded dynamically -->
-
-
-                        </div>
-                        <div id="noTicketsMessage"
-                            style="display: none; text-align: center; color: var(--muted); padding: 20px;">
-                            No tickets found for this filter
-                        </div>
-                    </div>
+                    <to-tickets></to-tickets>
                 </section>
 
                 <!-- Spare Part Management -->
                 <section class="content-section" id="spare-parts">
-                    <div class="page-header">
-                        <h1 class="page-title">Spare Part Management</h1>
-                        <p class="page-subtitle">Request and track spare parts</p>
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <button class="btn btn-primary" onclick="openModal('requestPartsModal')">
-                            Request New Parts
-                        </button>
-                    </div>
-
-                    <!-- Tab Filters -->
-                    <div class="filter-controls" id="partsFilterTabs">
-                        <button class="filter-btn active" onclick="filterPartsByStatus('all')">All Requests</button>
-                        <button class="filter-btn" onclick="filterPartsByStatus('approved')">Approved</button>
-                        <button class="filter-btn" onclick="filterPartsByStatus('pending')">Pending</button>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <span><i class="fas fa-tools"></i> My Parts Requests</span>
-                            <span id="partsCount" class="status-badge status-normal">Loading...</span>
-                        </div>
-                        <div id="allPartsRequests" class="inventory-list">
-                            <!-- Parts requests will be loaded dynamically -->
-                        </div>
-                        <div id="noPartsMessage"
-                            style="display: none; text-align: center; color: var(--muted); padding: 20px;">
-                            No parts requests found for this filter
-                        </div>
-                    </div>
+                    <to-spare-parts></to-spare-parts>
                 </section>
 
                 <!-- Inventory Management -->
                 <section class="content-section" id="inventory">
-                    <div class="page-header">
-                        <h1 class="page-title">Inventory Management</h1>
-                        <p class="page-subtitle">Manage and view vehicles and machines</p>
-                    </div>
-
-                    <!-- Tab Filters -->
-                    <div class="filter-controls" id="inventoryFilterTabs">
-                        <button class="filter-btn active" onclick="filterInventoryByType('all')">All Assets</button>
-                        <button class="filter-btn" onclick="filterInventoryByType('vehicle')">Vehicles</button>
-                        <button class="filter-btn" onclick="filterInventoryByType('machine')">Machines</button>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <span><i class="fas fa-warehouse"></i> Assets Inventory</span>
-                            <span id="inventoryCount" class="status-badge status-normal">Loading...</span>
-                        </div>
-                        <div id="allInventoryList" class="inventory-list">
-                            <!-- Inventory items will be loaded dynamically -->
-                        </div>
-                        <div id="noInventoryMessage"
-                            style="display: none; text-align: center; color: var(--muted); padding: 20px;">
-                            No inventory items found for this filter
-                        </div>
-                    </div>
+                    <to-inventory></to-inventory>
                 </section>
 
                 <!-- Service & Warranty -->
                 <section class="content-section" id="service-warranty">
-                    <div class="page-header">
-                        <h1 class="page-title">Service & Warranty Handling</h1>
-                        <p class="page-subtitle">Track service timelines and claim warranties</p>
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <button class="btn btn-primary" onclick="openModal('warrantyClaimModal')">
-                            Claim Warranty
-                        </button>
-                    </div>
-
-                    <!-- Tab Filters -->
-                    <div class="filter-controls" id="warrantyFilterTabs">
-                        <button class="filter-btn active" onclick="filterWarrantyByStatus('all')">All Claims</button>
-                        <button class="filter-btn" onclick="filterWarrantyByStatus('approved')">Approved</button>
-                        <button class="filter-btn" onclick="filterWarrantyByStatus('pending')">Pending</button>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <span><i class="fas fa-shield-alt"></i> Warranty Claims</span>
-                            <span id="warrantyCount" class="status-badge status-normal">Loading...</span>
-                        </div>
-                        <div id="allWarrantyClaims" class="inventory-list">
-                            <!-- Warranty claims will be loaded dynamically -->
-                        </div>
-                        <div id="noWarrantyMessage"
-                            style="display: none; text-align: center; color: var(--muted); padding: 20px;">
-                            No warranty claims found for this filter
-                        </div>
-                    </div>
+                    <to-service-warranty></to-service-warranty>
                 </section>
 
                 <!-- Notifications -->
                 <section class="content-section" id="notifications">
-                    <div class="page-header">
-                        <h2 class="page-title"><i class="fas fa-bell"></i> Notifications</h2>
-                        <p class="page-subtitle">Tickets and updates that require your attention</p>
-                    </div>
-                    <div id="notificationsList">
-                        <div class="notif-empty" id="notifEmpty" style="display:none;">
-                            <i class="fas fa-check-circle"></i>
-                            <p>You're all caught up! No pending notifications.</p>
-                        </div>
-                    </div>
+                    <to-notifications></to-notifications>
                 </section>
 
                 <!-- Asset Feedback -->
                 <section class="content-section" id="feedback">
-                    <div class="page-header">
-                        <h1 class="page-title">Asset Feedback</h1>
-                        <p class="page-subtitle">Submit feedback post-repair (shared with Supervisor & MM)</p>
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <button class="btn btn-primary" onclick="openModal('feedbackModal')">
-                            Submit Asset Feedback
-                        </button>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header"><i class="fas fa-file-alt"></i> Recent Feedback Submissions</div>
-                        <div class="request-item">
-                            <div class="ticket-details">
-                                <strong>FB-001</strong>
-                                <div class="ticket-meta">Equipment: Vehicle #101 | Component: Engine System</div>
-                                <div class="ticket-issue">Post-repair assessment: Good performance, minor temperature
-                                    variations</div>
-                                <div class="ticket-meta">Shared with: Supervisor & Maintenance Manager</div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-complete">Submitted</span>
-                                <small style="color: var(--muted);">Aug 22</small>
-                            </div>
-                        </div>
-                    </div>
+                    <to-feedback></to-feedback>
                 </section>
-            </main>
-        </div>
-    </div>
+    </ac-layout>
 
     <!-- Modals -->
     <!-- Process Ticket Modal -->
@@ -529,93 +379,6 @@
         </div>
     </div>
 
-    <!-- Request Parts for Ticket Modal -->
-    <!-- Warranty Claim Modal -->
-    <div id="warrantyClaimModal" class="modal">
-        <div class="modal-content">
-            <button class="close" onclick="closeModal('warrantyClaimModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Claim Warranty</h2>
-            <form id="warrantyClaimForm">
-                <div class="form-section">
-                    <h5><i class="fas fa-shield-alt"></i> Warranty Information</h5>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label">Part Number</label>
-                            <input type="text" class="form-input" placeholder="Enter part number" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Equipment ID</label>
-                            <input type="text" class="form-input" placeholder="Equipment identifier" required>
-                        </div>
-                    </div>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label">Purchase Date</label>
-                            <input type="date" class="form-input" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Warranty Period (months)</label>
-                            <input type="number" class="form-input" min="1" max="60" required>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Defect Description</label>
-                        <textarea class="form-textarea" placeholder="Describe the defect or failure..."
-                            required></textarea>
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary">Submit Warranty Claim</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Asset Feedback Modal -->
-    <div id="feedbackModal" class="modal">
-        <div class="modal-content">
-            <button class="close" onclick="closeModal('feedbackModal')">&times;</button>
-            <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Submit Asset Feedback</h2>
-            <form id="assetFeedbackForm">
-                <div class="form-section">
-                    <h5><i class="fas fa-comments"></i> Asset Performance Feedback</h5>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label">Equipment ID</label>
-                            <input type="text" class="form-input" placeholder="Enter equipment identifier" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Component/System</label>
-                            <select class="form-select" required>
-                                <option value="">Select Component</option>
-                                <option value="engine">Engine System</option>
-                                <option value="transmission">Transmission</option>
-                                <option value="hydraulics">Hydraulic System</option>
-                                <option value="brakes">Brake System</option>
-                                <option value="electrical">Electrical System</option>
-                                <option value="cooling">Cooling System</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Feedback Type</label>
-                        <select class="form-select" required>
-                            <option value="">Select Type</option>
-                            <option value="post-repair">Post-Repair Assessment</option>
-                            <option value="preventive">Preventive Observation</option>
-                            <option value="performance">Performance Review</option>
-                            <option value="recommendation">Maintenance Recommendation</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Detailed Feedback</label>
-                        <textarea class="form-textarea"
-                            placeholder="Provide detailed feedback about asset performance..." required></textarea>
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary">Submit Feedback</button>
-            </form>
-        </div>
-    </div>
-
     <!-- View Details Modal -->
     <div id="viewDetailsModal" class="modal">
         <div class="modal-content" style="max-width: 800px;">
@@ -654,9 +417,6 @@
             </div>
         </div>
     </div>
-    </div>
-    </div>
-    </div>
 
     <!-- Toast Notification -->
     <div id="toast" class="toast">
@@ -670,10 +430,17 @@
     <script src="../../js/config.js"></script>
     <script src="../../js/api.js"></script>
     <script src="../../js/auth.js"></script>
-    <script src="../../components/technical-officer/to-shell-header.js"></script>
-    <script src="../../components/technical-officer/to-shell-sidebar.js"></script>
+    <script src="../../components/shared/ac-header.js"></script>
+    <script src="../../components/shared/ac-sidebar.js"></script>
+    <script src="../../components/shared/ac-layout.js"></script>
     <script src="../../components/styles/buttons.js"></script>
     <script src="../../components/styles/icons.js"></script>
+    <script src="./components/tickets/script.js"></script>
+    <script src="./components/notifications/script.js"></script>
+    <script src="./components/inventory/script.js"></script>
+    <script src="./components/spare-parts/script.js"></script>
+    <script src="./components/service-warranty/script.js"></script>
+    <script src="./components/feedback/script.js"></script>
     <script src="./components/create-fault-ticket/script.js"></script>
     <script src="../../components/shared/confirm-dialog.js"></script>
     <script src="../../js/dashboard-init.js"></script>

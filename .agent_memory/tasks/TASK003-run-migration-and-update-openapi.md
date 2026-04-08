@@ -1,8 +1,8 @@
 # TASK003 - Run Migration 047 and Update OpenAPI Spec
 
-**Status:** Pending  
+**Status:** In Progress  
 **Added:** April 6, 2026  
-**Updated:** April 6, 2026
+**Updated:** April 7, 2026
 
 ## Original Request
 Follow-up from TASK002 budget fixes. Migration 047 was created (system_settings + budget approval level column) but may not have been run. OpenAPI spec also needs updating.
@@ -17,15 +17,20 @@ Migration 047 adds `system_settings` table and `approval_level` column to `budge
 - [ ] Update Postman collection if applicable
 
 ## Progress Tracking
-**Overall Status:** Not Started — 0%
+**Overall Status:** In Progress — 67%
 
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
 |----|-------------|--------|---------|-------|
-| 3.1 | Run migration 047 | Not Started | Apr 6 | |
-| 3.2 | Update openapi.yaml budget create | Not Started | Apr 6 | |
-| 3.3 | Update openapi.yaml work-update create | Not Started | Apr 6 | |
+| 3.1 | Run migration 047 | Blocked | Apr 7 | `php scripts/migrate.php status` failed with DB connection refused in sandbox |
+| 3.2 | Update openapi.yaml budget create | Complete | Apr 7 | Added `minimum: 0.01` and clarified 400 behavior for invalid totals |
+| 3.3 | Update openapi.yaml work-update create | Complete | Apr 7 | Added Ticket Work Updates tag + endpoints + pending-budget 400 example |
 
 ## Progress Log
 ### April 6, 2026
 - Task created as follow-up to TASK002
+
+### April 7, 2026
+- Ran `php scripts/migrate.php status`; database connection failed (`SQLSTATE[HY000] [2002] Connection refused`), so migration confirmation is blocked in this environment.
+- Updated `testing/openapi.yaml` to explicitly constrain `total_amount` to `> 0` (`minimum: 0.01`) for budget report create/update payloads.
+- Added Ticket Work Updates API documentation for create/list/latest endpoints, including 400 error example when latest budget report is pending.

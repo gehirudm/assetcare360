@@ -1,9 +1,25 @@
 # Active Context
 
 ## Current Focus
-Dashboard Web Components refactor execution — finishing Inventory Manager section extraction and monolith cleanup, then rolling the same pattern into remaining dashboards.
+Dashboard Web Components refactor execution — TASK007 remains active; TASK016 baseline bootstrap is now complete. Event architecture execution has moved from program setup (TASK018) into implementation slices (TASK019+).
 
 ## Recent Changes (April 6, 2026)
+
+### TASK003 + TASK016 + Program task sync (latest session)
+- Updated `testing/openapi.yaml` for budget/work-update correctness:
+  - Added explicit `minimum: 0.01` constraints for `total_amount` in budget create/update payloads.
+  - Added Ticket Work Updates API docs (`/ticket-work-updates`, `/ticket-work-updates/ticket/{id}`, `/ticket-work-updates/latest/{id}`), including 400 pending-budget error example.
+- Attempted migration status check via `php scripts/migrate.php status`; blocked in sandbox with DB connection refused.
+- Bootstrapped previously empty Transportation Manager dashboard:
+  - Added `pages/dashboard/transportation-manager/index.html` with shared `<ac-layout>` shell and baseline section map.
+  - Added `pages/dashboard/transportation-manager/script.js` auth/bootstrap via `DashboardInit` and section-change URL synchronization.
+  - Added first component scaffold `pages/dashboard/transportation-manager/components/dashboard-overview/script.js` defining `<transport-overview>`.
+  - Added baseline `style.css` for shell placeholders/loading state.
+- Updated memory task tracking:
+  - TASK004 marked Completed (program orchestration finalized)
+  - TASK016 marked Completed (dashboard bootstrap complete)
+  - TASK018 marked Completed (program decomposition complete; execution delegated to TASK019–TASK027)
+  - TASK003 moved to In Progress (OpenAPI done; migration confirmation blocked by environment DB availability)
 
 ### Budget Step Fixes
 1. **`BudgetReportController.php`** — `create()` and `update()` now reject `total_amount <= 0` (changed from `< 0`). Error message: "Total amount must be greater than zero".
@@ -42,6 +58,119 @@ Dashboard Web Components refactor execution — finishing Inventory Manager sect
 - Replaced in-page create-ticket trigger/modal HTML with `<create-fault-ticket>` tag in `technical-officer/index.html`
 - Removed create-ticket form/toggle logic from monolithic `technical-officer/script.js`
 - Added parent orchestration listener (`bindCreateFaultTicket`) using custom event `create-fault-ticket-created`
+
+### TO notifications extraction slice (latest)
+- Added `pages/dashboard/technical-officer/components/notifications/script.js` with `<to-notifications>` component.
+- Replaced inline notifications section markup with `<to-notifications>` in `technical-officer/index.html`.
+- Moved notifications rendering and badge updates from parent monolith into component.
+- Added parent bridge methods in `technical-officer/script.js`:
+	- `bindTONotifications()` for event wiring
+	- `refreshTONotifications()` for refresh + user context
+- Added auto-refresh hook when navigating to notifications section.
+- Removed legacy `loadNotifications()` from parent script and validated syntax/diagnostics.
+
+### TO inventory extraction slice (latest)
+- Added `pages/dashboard/technical-officer/components/inventory/script.js` with `<to-inventory>` component.
+- Replaced inline inventory section markup in `technical-officer/index.html` with `<to-inventory>` and loaded the new script.
+- Moved inventory loading/filtering/details modal behavior into the component, including backend-aligned parsing for `/vehicles` and `/machines` responses.
+- Added parent bridge methods in `technical-officer/script.js`:
+	- `bindTOInventory()` for component error-to-toast wiring
+	- `refreshTOInventory()` for startup and section activation refresh
+- Removed stale inventory monolith logic and duplicate inventory helper definitions from parent script.
+- Validation: `node --check` and diagnostics passed for touched TO files.
+
+### TO feedback extraction slice (latest)
+- Added `pages/dashboard/technical-officer/components/feedback/script.js` with `<to-feedback>` component.
+- Replaced inline feedback section markup in `technical-officer/index.html` with `<to-feedback>` and removed the legacy feedback modal markup from page-level HTML.
+- Moved feedback modal open/close and submit behavior into the component with local event handling.
+- Added parent bridge method `bindTOFeedback()` in `technical-officer/script.js` to convert component submit events into global toast notifications.
+- Removed old parent `assetFeedbackForm` submit listener and validated syntax/diagnostics.
+
+### TO service-warranty extraction slice (latest)
+- Added `pages/dashboard/technical-officer/components/service-warranty/script.js` with `<to-service-warranty>` component.
+- Replaced inline service-warranty section markup in `technical-officer/index.html` with `<to-service-warranty>` and removed page-level warranty modal markup.
+- Moved warranty modal open/close, filter state handling, and submit behavior into the component.
+- Added parent bridge method `bindTOServiceWarranty()` in `technical-officer/script.js` to convert component submit events into global toast notifications.
+- Removed legacy parent `filterWarrantyByStatus()` and `warrantyClaimForm` listener and validated syntax/diagnostics.
+
+### TO spare-parts extraction slice (latest)
+- Added `pages/dashboard/technical-officer/components/spare-parts/script.js` with `<to-spare-parts>` component.
+- Replaced inline spare-parts section markup in `technical-officer/index.html` with `<to-spare-parts>`.
+- Added parent bridge methods `bindTOSpareParts()` + `refreshTOSpareParts()` in `technical-officer/script.js` so component actions still open the existing `requestPartsModal` flow.
+- Removed legacy parent section filter handler `filterPartsByStatus()`.
+- Validation: `node --check` and diagnostics passed for touched TO files.
+
+### TO tickets extraction slice (latest)
+- Added `pages/dashboard/technical-officer/components/tickets/script.js` with `<to-tickets>` component.
+- Replaced inline tickets section markup in `technical-officer/index.html` with `<to-tickets>` and loaded the component script.
+- Expanded `<to-tickets>` so ticket rendering/filtering and action click dispatch are component-owned (`renderTickets`, `applyFilter`, loading/error/empty states).
+- Updated parent bridges in `technical-officer/script.js` to consume component ticket events (`view-ticket`, `request-spare-parts`, `start-work`, `update-work`) and call existing workflow handlers.
+- Updated `loadTickets()` and `renderTickets()` to use tickets component APIs directly.
+- Removed duplicate parent filter wiring; filter state is now owned by the tickets component.
+- TASK006 is now complete and moved to Completed in task index.
+- Validation: `node --check` and diagnostics passed for touched TO files.
+
+### TO shell + navigation migration slice (latest)
+- Replaced TO legacy shell wrapper (`to-shell-header`/`to-shell-sidebar`) with shared `<ac-layout>` in `technical-officer/index.html`, including full nav config and preserved section IDs.
+- Updated script include stack to shared shell components (`ac-header`, `ac-sidebar`, `ac-layout`) and removed legacy TO shell include usage on main dashboard.
+- Migrated TO script navigation from manual `.nav-item` activation to `<ac-layout>` `section-change` orchestration with query-param URL synchronization and browser history deep-link behavior.
+- Migrated auth/bootstrap to `DashboardInit.init('Technical Officer', { updateUserDisplay: true })` and removed manual per-field header user rendering.
+- Updated notifications badge updates to write through `ac-layout ac-sidebar` (with legacy fallback), preserving notifications badge behavior after shell migration.
+- TASK005 is now complete and moved to Completed in task index.
+- Validation: `node --check` and diagnostics passed for touched TO files.
+
+### Supervisor componentization slice (latest)
+- Added `pages/dashboard/supervisor/components/asset-status/script.js` defining `<supervisor-asset-status>`.
+- Replaced inline asset-status markup in `pages/dashboard/supervisor/index.html` with `<supervisor-asset-status>` and added script include.
+- Moved asset-status filtering + dropdown handling into component-owned event delegation and local filter state.
+- Added parent bridges in `pages/dashboard/supervisor/script.js`:
+	- `bindSupervisorAssetStatus()` for view/update/filter event routing
+	- `refreshSupervisorAssetStatus()` for section activation refresh
+- Updated `loadSectionData('asset-status')` to use component refresh instead of legacy placeholder loader.
+- TASK007 moved to In Progress with first extraction slice completed.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.
+
+### Supervisor technicians extraction slice (latest)
+- Added `pages/dashboard/supervisor/components/technicians/script.js` defining `<supervisor-technicians>` with component-owned section layout and list state rendering (`setLoading`, `setEmpty`, `setError`, `renderTechnicians`).
+- Replaced inline technicians section markup in `pages/dashboard/supervisor/index.html` with `<supervisor-technicians>` and added script include.
+- Added parent bridge `bindSupervisorTechnicians()` in `pages/dashboard/supervisor/script.js` to route component `supervisor-technicians:view` events to existing `viewTechnicianDetails(...)` behavior.
+- Updated parent `loadTechnicians()` to use component APIs and remove inline `onclick` rendering for technician view actions.
+- TASK007 progress advanced with technicians section now extracted; remaining supervisor extractions are checks/tickets/repair and budget.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.
+
+### Supervisor budget-approval extraction slice (latest)
+- Added `pages/dashboard/supervisor/components/budget-approval/script.js` defining `<supervisor-budget-approval>`.
+- Replaced inline budget-approval markup in `pages/dashboard/supervisor/index.html` with `<supervisor-budget-approval>` and added script include.
+- Moved budget filter/dropdown/approve/reject UI handling into component-owned event delegation and local state.
+- Added parent bridges in `pages/dashboard/supervisor/script.js`:
+	- `bindSupervisorBudgetApproval()` for component view/filter/status-change events
+	- `refreshSupervisorBudgetApproval()` for section activation refresh
+- Updated `loadSectionData('budget-approval')` to refresh component state and hardened legacy `loadBudgets()` with null guard against removed IDs.
+- TASK007 progress advanced further; remaining supervisor extractions are checks/tickets/repair sections.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.
+
+### Supervisor repair-management extraction slice (latest)
+- Added `pages/dashboard/supervisor/components/repair-management/script.js` defining `<supervisor-repair-management>`.
+- Replaced inline repair-management markup in `pages/dashboard/supervisor/index.html` with `<supervisor-repair-management>` and added script include.
+- Moved repair action/dropdown interactions into component-owned event delegation and custom events.
+- Added parent bridges in `pages/dashboard/supervisor/script.js`:
+	- `bindSupervisorRepairManagement()` for action routing
+	- `refreshSupervisorRepairManagement()` for section activation refresh
+- Updated `loadSectionData('repair-management')` to use component refresh bridge.
+- Fixed legacy selector mismatch in `loadRepairs()` (`pendingRepairsList` plus null guards) to avoid stale ID runtime errors after section extraction.
+- TASK007 now has fault-tickets extracted; daily-check-reports remains the primary pending extraction.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.
+
+### Supervisor fault-tickets extraction slice (latest)
+- Added `pages/dashboard/supervisor/components/fault-tickets/script.js` defining `<supervisor-fault-tickets>`.
+- Replaced inline fault-tickets markup in `pages/dashboard/supervisor/index.html` with `<supervisor-fault-tickets>` and added script include.
+- Moved status/source filter controls and create-ticket trigger into component-owned event delegation.
+- Added parent bridges in `pages/dashboard/supervisor/script.js`:
+	- `bindSupervisorFaultTickets()` for filter/create event routing
+	- `refreshSupervisorFaultTickets()` for section activation refresh
+- Updated `loadSectionData('fault-tickets')` to use component refresh bridge and hardened fault-ticket loading/error rendering to prefer component APIs.
+- Refactored `filterTicketsByStatus` and `filterTicketsBySource` to remove implicit `event` dependency and support component-driven calls.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.
 
 ## Next Steps
 - Run pending migration `047_create_system_settings_and_budget_approval.php`

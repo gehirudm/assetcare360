@@ -1,6 +1,6 @@
 # TASK007 - Supervisor Dashboard Componentization
 
-**Status:** Pending  
+**Status:** In Progress  
 **Added:** April 7, 2026  
 **Updated:** April 7, 2026
 
@@ -27,16 +27,70 @@ Section-level extraction is needed to break down script ownership and remove glo
 
 ## Progress Tracking
 
-**Overall Status:** Not Started - 0%
+**Overall Status:** In Progress - 84%
 
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
 |----|-------------|--------|---------|-------|
-| 7.1 | Extract dashboard summary component | Not Started | Apr 7, 2026 | Summary cards + activity feed |
-| 7.2 | Extract checks/tickets/repair components | Not Started | Apr 7, 2026 | Keep review and assignment flows |
-| 7.3 | Extract budget/assets/technicians components | Not Started | Apr 7, 2026 | Maintain current table/filter UX |
-| 7.4 | Remove section logic from monolith script | Not Started | Apr 7, 2026 | Main script to orchestration only |
+| 7.1 | Extract dashboard summary component | Complete | Apr 7, 2026 | Added `<supervisor-dashboard-overview>` with summary cards + activity feed and section-navigation events |
+| 7.2 | Extract checks/tickets/repair components | In Progress | Apr 7, 2026 | Repair-management and fault-tickets extracted; daily-check-reports still pending |
+| 7.3 | Extract budget/assets/technicians components | Complete | Apr 7, 2026 | Asset-status, technicians, and budget extracted as components |
+| 7.4 | Remove section logic from monolith script | In Progress | Apr 7, 2026 | Parent now bridges dashboard-overview, fault-tickets, asset-status, repair-management, technicians, and budget components |
 
 ## Progress Log
 ### April 7, 2026
 - Task created after identifying high script size and heavy inline-event density.
+
+### April 7, 2026 (Execution Update - Asset Status Slice)
+- Added `pages/dashboard/supervisor/components/asset-status/script.js` with `<supervisor-asset-status>` component.
+- Replaced inline supervisor asset-status section markup in `pages/dashboard/supervisor/index.html` with `<supervisor-asset-status>` host and added component script include.
+- Moved asset-status filter UI behavior into component-owned event delegation (`data-asset-filter`) with local filtering state.
+- Converted asset view/update actions to component-dispatched custom events (`supervisor-asset-status:view`, `supervisor-asset-status:update`) and bridged them in parent `pages/dashboard/supervisor/script.js`.
+- Updated section loading flow so `asset-status` now refreshes via component API (`refreshSupervisorAssetStatus`) instead of legacy placeholder loader.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.
+
+### April 7, 2026 (Execution Update - Dashboard Overview Slice)
+- Added `pages/dashboard/supervisor/components/dashboard-overview/script.js` with `<supervisor-dashboard-overview>` component for the dashboard summary and recent-activity markup.
+- Replaced inline dashboard section markup in `pages/dashboard/supervisor/index.html` with a single `<supervisor-dashboard-overview>` host and registered its script include.
+- Removed summary-card inline handlers (`onclick="navigateTo(...)"`) from this section by moving navigation ownership into component-local event delegation (`data-section-nav`).
+- Added parent orchestration bridge in `pages/dashboard/supervisor/script.js` for `supervisor-dashboard-overview:navigate` and delegated navigation to `<ac-layout>.navigateTo(...)`.
+- Scoped `updateDashboardSummary(...)` selection to `supervisor-dashboard-overview .summary-card` so summary updates target the extracted section.
+- Validation: `node --check` passed for touched supervisor scripts.
+
+### April 7, 2026 (Execution Update - Technicians Slice)
+- Added `pages/dashboard/supervisor/components/technicians/script.js` with `<supervisor-technicians>` component for technicians section layout and list rendering states.
+- Replaced inline technicians section markup in `pages/dashboard/supervisor/index.html` with `<supervisor-technicians>` host and added component script include.
+- Added parent bridge `bindSupervisorTechnicians()` in `pages/dashboard/supervisor/script.js` to route component view events to existing `viewTechnicianDetails(...)` behavior.
+- Updated `loadTechnicians()` orchestration in parent script to use component APIs (`setLoading`, `setEmpty`, `setError`, `renderTechnicians`) and removed inline technician `onclick` rendering from parent-generated markup.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.
+
+### April 7, 2026 (Execution Update - Budget Approval Slice)
+- Added `pages/dashboard/supervisor/components/budget-approval/script.js` with `<supervisor-budget-approval>` component.
+- Replaced inline budget-approval section markup in `pages/dashboard/supervisor/index.html` with `<supervisor-budget-approval>` host and added component script include.
+- Moved budget filter/dropdown/action UI handling into component-owned event delegation and local state.
+- Added parent bridge methods in `pages/dashboard/supervisor/script.js`:
+	- `bindSupervisorBudgetApproval()` for view/filter/status-change event routing
+	- `refreshSupervisorBudgetApproval()` for section activation refresh
+- Updated `loadSectionData('budget-approval')` to refresh component state and added null guard in legacy `loadBudgets()` helper to prevent stale DOM ID runtime errors.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.
+
+### April 7, 2026 (Execution Update - Repair Management Slice)
+- Added `pages/dashboard/supervisor/components/repair-management/script.js` with `<supervisor-repair-management>` component.
+- Replaced inline repair-management section markup in `pages/dashboard/supervisor/index.html` with `<supervisor-repair-management>` host and added component script include.
+- Moved repair action/dropdown interactions into component-owned event delegation with custom events (view/approve/reject/outsource/progress/timeline and section-level actions).
+- Added parent bridge methods in `pages/dashboard/supervisor/script.js`:
+	- `bindSupervisorRepairManagement()` for component action event routing
+	- `refreshSupervisorRepairManagement()` for section activation refresh
+- Updated `loadSectionData('repair-management')` to route through component refresh bridge and corrected legacy `loadRepairs()` selector mismatch (`pendingRepairsList` with null guards) to avoid stale ID runtime errors.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.
+
+### April 7, 2026 (Execution Update - Fault Tickets Slice)
+- Added `pages/dashboard/supervisor/components/fault-tickets/script.js` with `<supervisor-fault-tickets>` component.
+- Replaced inline fault-tickets section markup in `pages/dashboard/supervisor/index.html` with `<supervisor-fault-tickets>` host and added component script include.
+- Moved fault-ticket status/source filter controls and create-ticket trigger into component-owned event delegation.
+- Added parent bridge methods in `pages/dashboard/supervisor/script.js`:
+	- `bindSupervisorFaultTickets()` for filter/create event routing
+	- `refreshSupervisorFaultTickets()` for section activation refresh
+- Updated `loadSectionData('fault-tickets')` to use component refresh bridge and hardened fault-ticket loading/error rendering to use component APIs when available.
+- Refactored `filterTicketsByStatus` / `filterTicketsBySource` to remove implicit `event` dependency and support component-driven calls.
+- Validation: `node --check` and diagnostics passed for touched supervisor files.

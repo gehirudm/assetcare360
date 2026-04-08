@@ -22,6 +22,12 @@
   - Full dashboard shell (header + sidebar) on detail page
   - Step-by-step ticket flow visualisation (7 steps)
   - Breadcrumb sub-header with icon back-button
+- ✅ Technical Officer main dashboard shell/navigation migration (TASK005)
+  - Migrated main TO dashboard page shell from `to-shell-header`/`to-shell-sidebar` to shared `<ac-layout>` + shared header/sidebar components
+  - Replaced manual nav activation with `<ac-layout>` `section-change` orchestration and URL query-param synchronization for deep-link compatibility
+  - Aligned auth/bootstrap with `DashboardInit.init('Technical Officer')` and shared `<ac-header>` user rendering
+  - Updated notifications badge bridge to write through `ac-layout ac-sidebar`
+  - Syntax and diagnostics validation passed for touched TO files
 - ✅ Shared modal/form components (`ac-modal`, `ac-input-group`, `ac-form-control`)
   - TO "Create New Repair Ticket" modal refactored to component-based structure
   - Component styles encapsulated in shadow DOM (constructable stylesheets), not page stylesheet
@@ -29,6 +35,60 @@
   - Added `components/create-fault-ticket/script.js` + `style.css`
   - Removed create-ticket modal-specific logic from monolithic TO script
   - Parent/child communication now event-driven (`create-fault-ticket-created`)
+- ✅ Technical Officer notifications extraction
+  - Added `components/notifications/script.js` with `<to-notifications>`
+  - Replaced inline notifications markup in TO dashboard page
+  - Removed inline notifications loader logic from parent TO script
+  - Added parent bridge methods for notifications refresh and navigation event wiring
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Technical Officer inventory extraction
+  - Added `components/inventory/script.js` with `<to-inventory>`
+  - Replaced inline inventory markup in TO dashboard page
+  - Added parent bridge methods for inventory refresh/error orchestration
+  - Removed legacy and duplicate inventory helper functions from parent TO script
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Technical Officer feedback extraction
+  - Added `components/feedback/script.js` with `<to-feedback>`
+  - Replaced inline feedback section markup and removed page-level feedback modal HTML
+  - Added parent bridge method for feedback submission event handling (`bindTOFeedback`)
+  - Removed legacy parent `assetFeedbackForm` listener
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Technical Officer service-warranty extraction
+  - Added `components/service-warranty/script.js` with `<to-service-warranty>`
+  - Replaced inline service-warranty section markup and removed page-level warranty modal HTML
+  - Added parent bridge method for warranty submit event handling (`bindTOServiceWarranty`)
+  - Removed legacy `filterWarrantyByStatus` function and parent `warrantyClaimForm` listener
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Technical Officer spare-parts extraction
+  - Added `components/spare-parts/script.js` with `<to-spare-parts>`
+  - Replaced inline spare-parts section markup in TO dashboard page
+  - Added parent bridge methods (`bindTOSpareParts`, `refreshTOSpareParts`) to preserve existing request modal flow
+  - Removed legacy parent section filter handler (`filterPartsByStatus`)
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Technical Officer tickets extraction and UI decoupling
+  - Added `components/tickets/script.js` with `<to-tickets>`
+  - Replaced inline tickets section markup and moved ticket list rendering/filtering into `<to-tickets>` methods
+  - Added component-dispatched action events for view/request/start/update flows with parent bridge handlers
+  - Updated `loadTickets()` / `renderTickets()` orchestration to call tickets component APIs (`setLoading`, `setEmpty`, `setError`, `renderTickets`)
+  - Removed duplicate parent filter wiring so filter state is component-owned
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Supervisor componentization started (TASK007)
+  - Added `components/asset-status/script.js` with `<supervisor-asset-status>`
+  - Replaced inline asset-status section markup with component host in supervisor dashboard HTML
+  - Added parent bridge wiring for component events (`view`, `update`, `filter`) and section refresh integration
+  - Added `components/repair-management/script.js` with `<supervisor-repair-management>`
+  - Replaced inline repair-management section markup with component host and bridged repair action events in parent script
+  - Updated repair section activation flow to use component bridge and fixed stale `loadRepairs()` DOM selector mismatch
+  - Added `components/fault-tickets/script.js` with `<supervisor-fault-tickets>`
+  - Replaced inline fault-tickets section markup with component host and bridged status/source filters + create-ticket actions in parent script
+  - Updated fault-ticket section activation to use component refresh bridge and removed implicit `event` dependency in ticket filter handlers
+  - Added `components/technicians/script.js` with `<supervisor-technicians>`
+  - Replaced inline technicians section markup with component host and bridged `supervisor-technicians:view` events in parent script
+  - Updated `loadTechnicians()` to render list/loading/error states via component APIs instead of inline markup/handlers
+  - Added `components/budget-approval/script.js` with `<supervisor-budget-approval>`
+  - Replaced inline budget-approval section markup with component host and bridged view/filter/status-change events in parent script
+  - Updated budget section activation flow to refresh component state and added null guard for stale legacy budget DOM IDs
+  - Syntax and diagnostics validation passed for touched supervisor files
 - ✅ Inventory Manager notifications extraction
   - Added `components/notifications/script.js` + `style.css`
   - Replaced inline notifications section markup with `<inventory-notifications>`
@@ -85,11 +145,21 @@
   - Added service-due cron producer script with duplicate suppression
   - Added notifications API endpoints and OpenAPI documentation
   - Integrated Technical Officer notification UI with backend notifications API and mark-as-read flow
+- ✅ Transportation Manager dashboard bootstrap (TASK016)
+  - Replaced empty dashboard files with baseline `<ac-layout>` shell and section map
+  - Added auth bootstrap and section routing orchestration in page script
+  - Added initial role-scoped component scaffold: `<transport-overview>`
+- ✅ Dashboard web-components refactor program orchestration (TASK004)
+  - Sequencing/acceptance/checkpoint standards finalized and synchronized with child tasks
+- ✅ RabbitMQ event architecture program orchestration (TASK018)
+  - Program-level decomposition complete; execution now tracked in TASK019–TASK027
+- ✅ OpenAPI coverage expanded for budget/work-update constraints (TASK003 partial)
+  - Added explicit `total_amount > 0` payload constraints (`minimum: 0.01`)
+  - Added Ticket Work Updates endpoints and pending-budget 400 error example
 - ✅ 47 database migrations applied
 
 ## What's Left / Known Issues
-- ⏳ Migration `047` may not have been run yet (pending confirmation)
-- ⏳ `testing/openapi.yaml` may be out of date with latest budget/work-update gating changes
+- ⏳ Migration `047` run/confirmation remains blocked in current sandbox due DB connection refusal
 - ⏳ Frontend budget-submission form should validate `total_amount > 0` before POSTing
 - ⏳ Other role dashboards (supervisor, driver, maintenance, etc.) — status varies
 - ⏳ Dashboard Web Components refactor backlog created (agent-memory TASK004–TASK016 + Beads epic/children) and ready for staged execution

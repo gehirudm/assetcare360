@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transportation Manager Dashboard - AssetCare360</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./style.css">
+
+    <script src="../../js/config.js"></script>
+    <script src="../../js/api.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../components/shared/ac-header.js"></script>
+    <script src="../../components/shared/ac-sidebar.js"></script>
+    <script src="../../components/shared/ac-layout.js"></script>
+    <script src="../../js/dashboard-init.js"></script>
+</head>
+<body>
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading"></div>
+    </div>
+
+    <ac-layout
+        title="Transportation Manager Dashboard"
+        icon="fa-route"
+        active-section="dashboard"
+        nav='[
+            {"section":"dashboard","icon":"fas fa-chart-line","label":"Dashboard"},
+            {"section":"fleet-overview","icon":"fas fa-truck","label":"Fleet Overview"},
+            {"section":"route-planning","icon":"fas fa-map-marked-alt","label":"Route Planning"},
+            {"section":"assignments","icon":"fas fa-user-check","label":"Assignments"},
+            {"section":"reports","icon":"fas fa-file-alt","label":"Reports"},
+            {"section":"notifications","icon":"fas fa-bell","label":"Notifications","badge":true}
+        ]'>
+        <section class="content-section active" id="dashboard">
+            <transport-overview></transport-overview>
+        </section>
+
+        <section class="content-section" id="fleet-overview">
+            <div class="card">
+                <h3>Fleet Overview</h3>
+                <p>Fleet status module will be extracted as a dedicated component in follow-up slices.</p>
+            </div>
+        </section>
+
+        <section class="content-section" id="route-planning">
+            <div class="card">
+                <h3>Route Planning</h3>
+                <p>Route planning workflows will be added as section components.</p>
+            </div>
+        </section>
+
+        <section class="content-section" id="assignments">
+            <div class="card">
+                <h3>Assignments</h3>
+                <p>Driver and vehicle assignment workflows are scaffolded for future extraction.</p>
+            </div>
+        </section>
+
+        <section class="content-section" id="reports">
+            <div class="card">
+                <h3>Reports</h3>
+                <p>Operational and compliance reporting modules will be integrated here.</p>
+            </div>
+        </section>
+
+        <section class="content-section" id="notifications">
+            <div class="card">
+                <h3>Notifications</h3>
+                <p>Notifications API integration will populate this section.</p>
+            </div>
+        </section>
+    </ac-layout>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="./components/dashboard-overview/script.js"></script>
+    <script src="./script.js"></script>
+</body>
+</html>
