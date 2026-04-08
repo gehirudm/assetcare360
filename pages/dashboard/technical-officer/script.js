@@ -313,6 +313,8 @@ async function markNotificationAsRead(notificationId) {
             window.Utils.showToast('Failed to mark notification as read', 'error');
         }
     }
+}
+
 function bindTONotifications() {
     const notificationsComponent = document.querySelector('to-notifications');
     if (!notificationsComponent || notificationsComponent.dataset.bound === 'true') return;
