@@ -1,19 +1,16 @@
 # Tasks Index
 
 ## In Progress
-- [TASK007] Supervisor dashboard componentization — Started with asset-status extraction to `<supervisor-asset-status>` and parent bridge wiring
+- [TASK007] Supervisor dashboard componentization — dashboard-overview, fault-tickets, asset-status, repair-management, technicians, and budget extracted; daily-check-reports still pending
+- [TASK003] Run migration 047 and update OpenAPI spec — OpenAPI updates completed; migration confirmation blocked by DB connection refusal in sandbox
 
 ## Pending
-- [TASK004] Dashboard web-components refactor program — Coordinate scope, sequencing, and completion criteria across all dashboards
 - [TASK009] Driver dashboard componentization — Decompose high-complexity script and modal-heavy sections
 - [TASK010] Machinery Operator dashboard componentization — Extract section components and badge/event flows
 - [TASK011] Maintenance dashboard componentization — Componentize sections and clean include-order issues
-- [TASK012] SysAdministration dashboard componentization — Consolidate dual entrypoints and extract section components
+- [TASK012] SysAdministration dashboard componentization — In progress: entrypoint consolidated, overview/user-accounts/service-config extracted; remaining sections pending
 - [TASK013] Auction dashboard componentization — Extract auction sections into dashboard-scoped components
 - [TASK014] Inline events to component events migration — Remove inline handlers and adopt custom-event contracts
-- [TASK016] Transportation Manager dashboard bootstrap — Define and scaffold empty dashboard before componentization
-- [TASK003] Run migration 047 and update OpenAPI spec — migration not confirmed run; openapi.yaml needs update for budget/work-update changes
-- [TASK018] RabbitMQ event architecture program — Coordinate implementation slices for backend publisher, consumers, scheduler, API, frontend, and reliability
 - [TASK019] Define event envelope and domain catalog — Standardize versioned event payload contract and domain event constants
 - [TASK020] Integrate RabbitMQ publisher into backend — Add php-amqplib-based EventPublisher and durable exchange configuration
 - [TASK021] Emit business events after successful state changes — Instrument initial workflows to publish domain events post-success
@@ -30,6 +27,9 @@
 - [TASK008] Inventory Manager dashboard componentization — All 8 sections extracted to dashboard-scoped components; monolith reduced from 3580 to 2672 lines — Completed April 7, 2026
 - [TASK017] Completed-dashboard refactor quality cleanup — removed `-model` naming, componentized Inventory Manager popups, and migrated section modal/CRUD logic from monolith script — Completed April 7, 2026
 - [TASK015] Dashboard script bootstrap normalization — Core include order normalized, duplicate config include removed, and auth redirect paths standardized — Completed April 7, 2026
+- [TASK016] Transportation Manager dashboard bootstrap — Implemented baseline `<ac-layout>` shell, auth/bootstrap routing, and initial dashboard overview component scaffold — Completed April 7, 2026
+- [TASK004] Dashboard web-components refactor program — Program sequencing, standards, and Beads synchronization finalized across child dashboard tasks — Completed April 7, 2026
+- [TASK018] RabbitMQ event architecture program — Program decomposition and dependency mapping completed; execution delegated to TASK019–TASK027 — Completed April 7, 2026
 - [TASK001] Technical Officer fault-ticket-detail page — Full dashboard shell, step flow, breadcrumb nav, style fixes — Completed April 6, 2026
 - [TASK002] Budget step correctness — Zero-amount rejection, pending-budget gate, UI dash display — Completed April 6, 2026
 

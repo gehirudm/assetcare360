@@ -76,6 +76,18 @@
   - Added `components/asset-status/script.js` with `<supervisor-asset-status>`
   - Replaced inline asset-status section markup with component host in supervisor dashboard HTML
   - Added parent bridge wiring for component events (`view`, `update`, `filter`) and section refresh integration
+  - Added `components/repair-management/script.js` with `<supervisor-repair-management>`
+  - Replaced inline repair-management section markup with component host and bridged repair action events in parent script
+  - Updated repair section activation flow to use component bridge and fixed stale `loadRepairs()` DOM selector mismatch
+  - Added `components/fault-tickets/script.js` with `<supervisor-fault-tickets>`
+  - Replaced inline fault-tickets section markup with component host and bridged status/source filters + create-ticket actions in parent script
+  - Updated fault-ticket section activation to use component refresh bridge and removed implicit `event` dependency in ticket filter handlers
+  - Added `components/technicians/script.js` with `<supervisor-technicians>`
+  - Replaced inline technicians section markup with component host and bridged `supervisor-technicians:view` events in parent script
+  - Updated `loadTechnicians()` to render list/loading/error states via component APIs instead of inline markup/handlers
+  - Added `components/budget-approval/script.js` with `<supervisor-budget-approval>`
+  - Replaced inline budget-approval section markup with component host and bridged view/filter/status-change events in parent script
+  - Updated budget section activation flow to refresh component state and added null guard for stale legacy budget DOM IDs
   - Syntax and diagnostics validation passed for touched supervisor files
 - ✅ Inventory Manager notifications extraction
   - Added `components/notifications/script.js` + `style.css`
@@ -126,11 +138,21 @@
   - Created memory tasks `TASK018` through `TASK027` for practical implementation slices
   - Created Beads epic `assetcare-backend-new-lm7` and child issues for event contract, publisher, emitters, consumers, scheduler, API, frontend, and hardening
   - Added dependency links in Beads to establish execution order
+- ✅ Transportation Manager dashboard bootstrap (TASK016)
+  - Replaced empty dashboard files with baseline `<ac-layout>` shell and section map
+  - Added auth bootstrap and section routing orchestration in page script
+  - Added initial role-scoped component scaffold: `<transport-overview>`
+- ✅ Dashboard web-components refactor program orchestration (TASK004)
+  - Sequencing/acceptance/checkpoint standards finalized and synchronized with child tasks
+- ✅ RabbitMQ event architecture program orchestration (TASK018)
+  - Program-level decomposition complete; execution now tracked in TASK019–TASK027
+- ✅ OpenAPI coverage expanded for budget/work-update constraints (TASK003 partial)
+  - Added explicit `total_amount > 0` payload constraints (`minimum: 0.01`)
+  - Added Ticket Work Updates endpoints and pending-budget 400 error example
 - ✅ 47 database migrations applied
 
 ## What's Left / Known Issues
-- ⏳ Migration `047` may not have been run yet (pending confirmation)
-- ⏳ `testing/openapi.yaml` may be out of date with latest budget/work-update gating changes
+- ⏳ Migration `047` run/confirmation remains blocked in current sandbox due DB connection refusal
 - ⏳ Frontend budget-submission form should validate `total_amount > 0` before POSTing
 - ⏳ Other role dashboards (supervisor, driver, maintenance, etc.) — status varies
 - ⏳ Dashboard Web Components refactor backlog created (agent-memory TASK004–TASK016 + Beads epic/children) and ready for staged execution
