@@ -1,0 +1,18 @@
+{
+  "stage": "before",
+  "viewport": "desktop",
+  "url": "http://127.0.0.1:3000/dashboard/supervisor/index.html",
+  "title": "Supervisor Dashboard - AssetCare360",
+  "interaction": {
+    "activeSection": "daily-check-reports",
+    "visibleReports": 1,
+    "totalReports": 13,
+    "modalOpened": false
+  },
+  "accessibility": {
+    "ariaSnapshot": "- text: AssetCare360\n- heading \"Supervisor Dashboard\" [level=1]\n- button \"SO\"\n- navigation: Dashboard Weekly Check Reports Fault Tickets Repair Management Budget Approval Asset Status Technicians\n- main:\n  - heading \"Weekly Check Reports\" [level=2]\n  - paragraph: Review and approve daily inspection reports\n  - button \"All\"\n  - button \"Pending\"\n  - button \"Approved\"\n  - button \"Rejected\"\n  - button \"All Sources\"\n  - button \"Driver Reports\"\n  - button \"Operator Reports\"\n  - text: Reports for Review\n  - strong: VCHK-006 - LKA-1234\n  - text: Admin User | Driver PENDING | 2/9/2026\n  - button \"VIEW\"\n  - button\n- text: Showing 1 reports\n- heading \"Vehicle Weekly Check Report\" [level=2]\n- button \"×\"\n- heading \"Basic Information\" [level=5]\n- paragraph:\n  - strong: \"Check ID:\"\n  - text: VCHK-006\n- paragraph:\n  - strong: \"Type:\"\n  - text: Driver Vehicle Check\n- paragraph:\n  - strong: \"Week Period:\"\n  - text: Feb 9, 2026 - Feb 15, 2026\n- paragraph:\n  - strong: \"Submitted:\"\n  - text: Feb 9, 2026, 05:21 PM\n- paragraph:\n  - strong: \"Status:\"\n  - text: Pending Review\n- heading \"Vehicle Information\" [level=5]\n- paragraph:\n  - strong: \"Vehicle Registration:\"\n  - text: LKA-1234\n- paragraph:\n  - strong: \"Driver:\"\n  - text: Admin User\n- paragraph:\n  - strong: \"Odometer Reading:\"\n  - text: 750,000 km\n- heading \"Weekly Inspection Checklist\" [level=5]\n- paragraph: Items verified by driver during weekly inspection\n- paragraph:\n  - strong: \"Engine Oil Level:\"\n  - text: ✓ Checked\n- paragraph:\n  - strong: \"Brake System:\"\n  - text: ✓ Checked\n- paragraph:\n  - strong: \"All Lights:\"\n  - text: ✓ Checked\n- paragraph:\n  - strong: \"Tire Pressure:\"\n  - text: ✓ Checked\n- paragraph:\n  - strong: \"Coolant Level:\"\n  - text: ✓ Checked\n- paragraph:\n  - strong: \"Wipers & Washers:\"\n  - text: ✓ Checked\n- button \"Approve\"\n- button \"Reject\"\n- button \"Close\"",
+    "snapshotLength": 1840
+  },
+  "consoleEntries": [],
+  "failedRequests": []
+}

@@ -1,0 +1,5 @@
+[     556ms] [ERROR] Failed to load budget approvals: Error: API client is not available on this page
+    at SupervisorBudgetApproval.loadBudgets (http://127.0.0.1:3000/dashboard/supervisor/components/budget-approval/script.js:114:23)
+    at SupervisorBudgetApproval.refresh (http://127.0.0.1:3000/dashboard/supervisor/components/budget-approval/script.js:28:21)
+    at SupervisorBudgetApproval.connectedCallback (http://127.0.0.1:3000/dashboard/supervisor/components/budget-approval/script.js:19:14)
+    at http://127.0.0.1:3000/dashboard/supervisor/components/budget-approval/script.js:480:20 @ http://127.0.0.1:3000/dashboard/supervisor/components/budget-approval/script.js:124

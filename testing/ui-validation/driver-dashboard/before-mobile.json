@@ -1,0 +1,15 @@
+{
+  "stage": "before",
+  "viewport": "mobile",
+  "url": "http://127.0.0.1:3000/dashboard/driver/index.html",
+  "title": "Driver Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- text: AssetCare360\n- heading \"Driver Dashboard\" [level=1]\n- button \"J\"\n- navigation: Dashboard Trip Log Vehicle Check Breakdown Report Fuel & Mileage Transport Ticket Nearby Garages\n- main:\n  - heading \"Trip Log\" [level=2]\n  - paragraph: Record and track your trips with details\n  - button \"Start New Trip\"\n  - button \"Refresh\"\n  - button \"All\"\n  - button \"Ready\"\n  - button \"In Progress\"\n  - button \"Completed\"\n  - strong: TRP-008\n  - text: fdyufjhk → hkgvjbl | Feb 12, 2026 Completed | 900000 km\n  - button \"VIEW\"\n  - strong: TRP-007\n  - text: kalutara → matara | Feb 11, 2026 Completed | 68000 km\n  - button \"VIEW\"\n  - strong: TRP-006\n  - text: x → y | Feb 9, 2026 Completed | 55500 km\n  - button \"VIEW\"\n  - strong: TRP-005\n  - text: bdhhbb → btrujbj | Feb 9, 2026 Completed | 65500 km\n  - button \"VIEW\"\n  - strong: TRP-004\n  - text: afgsbfae → srbtnets | Feb 8, 2026 Completed | 55550 km\n  - button \"VIEW\"\n  - strong: TRP-003\n  - text: grhrh → thytjjtyj | Feb 8, 2026 Completed | 47001 km\n  - button \"VIEW\"\n  - strong: TRP-002\n  - text: sgsgsg → sgsg | Feb 8, 2026 Completed | 55555 km\n  - button \"VIEW\"\n  - strong: TRP-001\n  - text: Colombo → Kandy | Feb 8, 2026 Completed | 45555 km\n  - button \"VIEW\"",
+    "snapshotLength": 1208
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "activeSection": "trip-log"
+  }
+}

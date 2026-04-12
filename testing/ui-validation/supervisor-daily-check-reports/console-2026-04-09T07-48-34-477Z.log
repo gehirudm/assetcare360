@@ -1,0 +1,5 @@
+[   18761ms] [LOG] Login result: {success: true, user: Object, forcePasswordChange: false, message: Login successful} @ http://127.0.0.1:3000/auth/login.html:536
+[   18763ms] [LOG] Login successful, redirecting user: {id: 3, employee_id: LITRO-INVMGR-001, full_name: Inventory Manager One, role: Inventory Manager, technical_expertise: null} @ http://127.0.0.1:3000/auth/login.html:551
+[   18763ms] [LOG] Redirecting user: {id: 3, employee_id: LITRO-INVMGR-001, full_name: Inventory Manager One, role: Inventory Manager, technical_expertise: null} @ http://127.0.0.1:3000/js/auth.js:171
+[   18763ms] [LOG] Role: Inventory Manager -> Normalized: INVENTORY_MANAGER @ http://127.0.0.1:3000/js/auth.js:172
+[   18763ms] [LOG] Dashboard URL: /dashboard/inventory-manager/index.html @ http://127.0.0.1:3000/js/auth.js:173
