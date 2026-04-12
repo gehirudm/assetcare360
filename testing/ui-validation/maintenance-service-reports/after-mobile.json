@@ -1,0 +1,21 @@
+{
+  "stage": "after",
+  "viewport": "mobile",
+  "url": "http://127.0.0.1:3000/dashboard/maintenance/index.html",
+  "title": "Maintenance Manager Dashboard",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \"Service Report Management\" [level=1]\n  - paragraph: Review service reports with invoices/warranty claims\n  - button \"All Reports\"\n  - button \"Under Review\"\n  - button \"Reviewed\"\n  - text: Reviewed Reports\n  - table:\n    - rowgroup:\n      - row \"Report ID Equipment Service Type Cost Technical Officer Review Date Actions\":\n        - columnheader \"Report ID\"\n        - columnheader \"Equipment\"\n        - columnheader \"Service Type\"\n        - columnheader \"Cost\"\n        - columnheader \"Technical Officer\"\n        - columnheader \"Review Date\"\n        - columnheader \"Actions\"\n    - rowgroup:\n      - 'row \"SR-002 Machine #203 Preventive Maintenance - Hydraulic System LKR 8,500 Technical Officer A 12 Apr 2026 View\"':\n        - cell \"SR-002\"\n        - 'cell \"Machine #203\"'\n        - cell \"Preventive Maintenance - Hydraulic System\"\n        - cell \"LKR 8,500\"\n        - cell \"Technical Officer A\"\n        - cell \"12 Apr 2026\"\n        - cell \"View\":\n          - button \"View\"\n      - 'row \"SR-001 Vehicle #089 Brake System Complete Overhaul LKR 15,000 Technical Officer B Aug 19, 2025 View\"':\n        - cell \"SR-001\"\n        - 'cell \"Vehicle #089\"'\n        - cell \"Brake System Complete Overhaul\"\n        - cell \"LKR 15,000\"\n        - cell \"Technical Officer B\"\n        - cell \"Aug 19, 2025\"\n        - cell \"View\":\n          - button \"View\"\n      - 'row \"SR-003 Machine #180 Engine Maintenance LKR 28,000 Technical Officer A Aug 10, 2025 View\"':\n        - cell \"SR-003\"\n        - 'cell \"Machine #180\"'\n        - cell \"Engine Maintenance\"\n        - cell \"LKR 28,000\"\n        - cell \"Technical Officer A\"\n        - cell \"Aug 10, 2025\"\n        - cell \"View\":\n          - button \"View\"\n  - text: Report Statistics 1 Under Review 25 Reports This Month LKR 2.8L Total Service Cost",
+    "snapshotLength": 1792
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "activeSection": "service-reports",
+    "activeFilter": "Reviewed",
+    "underReviewVisible": 0,
+    "reviewedVisible": 1,
+    "modalStates": {
+      "reportDetailsOpen": false
+    }
+  }
+}
