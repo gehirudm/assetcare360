@@ -33,35 +33,7 @@
 
                 <!-- Weekly Check Reports Section -->
                 <section class="content-section" id="daily-check-reports">
-                    <div class="page-header">
-                        <h2 class="page-title"><i class="fas fa-clipboard-check"></i> Weekly Check Reports</h2>
-                        <p class="page-subtitle">Review and approve daily inspection reports</p>
-                    </div>
-
-                    <div class="filter-controls" id="reportStatusFilters">
-                        <button class="filter-btn active" onclick="filterReportsByStatus('all')">All</button>
-                        <button class="filter-btn" onclick="filterReportsByStatus('pending')">Pending</button>
-                        <button class="filter-btn" onclick="filterReportsByStatus('approved')">Approved</button>
-                        <button class="filter-btn" onclick="filterReportsByStatus('rejected')">Rejected</button>
-                    </div>
-
-                    <div class="filter-controls" id="reportSourceFilters">
-                        <button class="filter-btn active" onclick="filterReportsBySource('all')"
-                            data-filter-source="all">All Sources</button>
-                        <button class="filter-btn" onclick="filterReportsBySource('driver')"
-                            data-filter-source="driver">Driver Reports</button>
-                        <button class="filter-btn" onclick="filterReportsBySource('operator')"
-                            data-filter-source="operator">Operator Reports</button>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <i class="fas fa-list"></i> Reports for Review
-                        </div>
-                        <div id="reportsTableBody" class="inventory-list">
-                            <!-- Reports will be loaded dynamically -->
-                        </div>
-                    </div>
+                    <supervisor-daily-check-reports></supervisor-daily-check-reports>
                 </section>
 
                 <!-- Fault Tickets Section -->
@@ -257,58 +229,6 @@
         </div>
     </div>
 
-    <!-- Report Details Modal -->
-    <div id="reportDetailsModal" class="modal">
-        <div class="modal-content modal-content-large">
-            <div class="modal-header">
-                <h2 id="reportDetailsModalTitle">
-                    <i class="fas fa-file-alt"></i> Report Details
-                </h2>
-                <button class="btn-close" onclick="closeReportDetailsModal()">&times;</button>
-            </div>
-            <div id="reportDetailsModalContent" class="modal-body">
-                <!-- Report details will be loaded dynamically -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeReportDetailsModal()">
-                    <i class="fas fa-times"></i> Close
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Rejection Reason Modal -->
-    <div id="rejectionReasonModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-exclamation-triangle"></i> Reject Report</h2>
-                <button class="btn-close" onclick="closeRejectionReasonModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p style="margin-bottom: 15px; color: #64748b;">Please provide a reason for rejecting this report. The
-                    submitter will be notified.</p>
-                <div class="form-group">
-                    <label for="rejectionReasonText"
-                        style="display: block; margin-bottom: 8px; font-weight: 500; color: #334155;">
-                        Rejection Reason <span style="color: #ef4444;">*</span>
-                    </label>
-                    <textarea id="rejectionReasonText" rows="4" placeholder="Enter reason for rejection..."
-                        style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; min-height: 100px;"></textarea>
-                    <small id="rejectionReasonError" style="color: #ef4444; display: none; margin-top: 5px;">Rejection
-                        reason is required</small>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeRejectionReasonModal()">
-                    <i class="fas fa-times"></i> Cancel
-                </button>
-                <button type="button" class="btn btn-danger" onclick="submitRejection()">
-                    <i class="fas fa-ban"></i> Reject Report
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- Shared Components -->
     <confirm-dialog></confirm-dialog>
 
@@ -329,6 +249,9 @@
     <script src="./components/repair-management/script.js"></script>
     <script src="./components/budget-approval/script.js"></script>
     <script src="./components/technicians/script.js"></script>
+    <script src="./components/page-modals/report-details-modal/script.js"></script>
+    <script src="./components/page-modals/rejection-reason-modal/script.js"></script>
+    <script src="./components/daily-check-reports/script.js"></script>
     <script src="script.js?v=7"></script>
 </body>
 
