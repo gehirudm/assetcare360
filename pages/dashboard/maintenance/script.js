@@ -35,7 +35,7 @@ const ticketData = {
         supervisor: 'Supervisor John',
         assignedTo: 'Technical Officer A',
         status: 'In Progress',
-        costEstimate: '₹45,000',
+        costEstimate: 'LKR 45,000',
         description: 'Engine temperature exceeding normal range during operations. Thermostat and cooling system suspected. Requires complete cooling system inspection and potential engine overhaul.',
         timeline: 'Started: Aug 20, 09:00 AM<br>Expected Completion: Aug 25, 17:00 PM<br>Current Status: Parts ordered, repair in progress',
         partsUsed: 'Thermostat, Coolant, Radiator Hose (Ordered)',
@@ -50,7 +50,7 @@ const ticketData = {
         supervisor: 'Supervisor Mike',
         assignedTo: 'Awaiting Assignment',
         status: 'Pending',
-        costEstimate: '₹32,000',
+        costEstimate: 'LKR 32,000',
         description: 'Hydraulic fluid leaking from main pump assembly. Affecting machine operation efficiency and creating safety hazard.',
         timeline: 'Reported: Aug 22, 14:30 PM<br>Assignment: Pending resource availability<br>Estimated Start: Aug 25, 2025',
         partsUsed: 'Assessment pending',
@@ -65,7 +65,7 @@ const ticketData = {
         supervisor: 'Supervisor John',
         assignedTo: 'Technical Officer B',
         status: 'Completed',
-        costEstimate: '₹15,000',
+        costEstimate: 'LKR 15,000',
         description: 'Complete brake system failure during operation. Emergency repair completed with full brake system replacement.',
         timeline: 'Completed: Aug 19, 11:00 AM<br>Duration: 21 hours<br>Emergency Priority',
         partsUsed: 'Brake pads, Brake fluid, Brake discs, Master cylinder',
@@ -80,7 +80,7 @@ const ticketData = {
         supervisor: 'Supervisor Mike',
         assignedTo: 'Technical Officer C',
         status: 'In Progress',
-        costEstimate: '₹25,000',
+        costEstimate: 'LKR 25,000',
         description: 'Black smoke emitting from exhaust during operation. Possible engine oil burning or air filter issues.',
         timeline: 'Started: Aug 23, 10:00 AM<br>Expected Completion: Aug 26, 16:00 PM<br>Diagnosis in progress',
         partsUsed: 'Air filter, Engine oil (Ordered)',
@@ -133,7 +133,7 @@ const reportData = {
         id: 'SR-001',
         equipment: 'Vehicle #089',
         serviceType: 'Brake System Complete Overhaul',
-        cost: '₹15,000',
+        cost: 'LKR 15,000',
         technicalOfficer: 'Technical Officer B',
         serviceDate: 'Aug 19, 2025',
         description: 'Complete brake system overhaul including master cylinder replacement, brake pad replacement, and brake fluid system flush.',
@@ -148,7 +148,7 @@ const reportData = {
         id: 'SR-002',
         equipment: 'Machine #203',
         serviceType: 'Preventive Maintenance - Hydraulic System',
-        cost: '₹8,500',
+        cost: 'LKR 8,500',
         technicalOfficer: 'Technical Officer A',
         serviceDate: 'Aug 15, 2025',
         description: 'Routine preventive maintenance of hydraulic system including oil change, filter replacement, and system pressure testing.',
@@ -163,7 +163,7 @@ const reportData = {
         id: 'SR-003',
         equipment: 'Machine #180',
         serviceType: 'Engine Maintenance',
-        cost: '₹28,000',
+        cost: 'LKR 28,000',
         technicalOfficer: 'Technical Officer A',
         serviceDate: 'Aug 10, 2025',
         description: 'Major engine maintenance including valve adjustment, timing chain replacement, and complete engine tune-up.',
@@ -178,7 +178,7 @@ const reportData = {
         id: 'SR-004',
         equipment: 'Vehicle #067',
         serviceType: 'Engine Service - Complete overhaul',
-        cost: '₹22,000',
+        cost: 'LKR 22,000',
         technicalOfficer: 'Technical Officer B',
         serviceDate: 'Aug 12, 2025',
         description: 'Complete engine overhaul including piston replacement, crankshaft grinding, and cylinder head refurbishment.',
@@ -191,34 +191,10 @@ const reportData = {
     }
 };
 
-const costApprovalData = {
-    'CA-001': {
-        id: 'CA-001',
-        requestedBy: 'Supervisor John',
-        equipment: 'Vehicle #101',
-        description: 'Engine overhaul - Complete engine rebuild',
-        amount: '₹45,000',
-        justification: 'Complete engine rebuild required due to overheating damage. Current engine is beyond repair and poses safety risk.',
-        requestDate: 'Aug 28, 2025',
-        priority: 'High',
-        relatedTicket: 'TKT-001',
-        estimatedCompletion: '5 days',
-        quotations: 'Quote from Engine Corp Ltd - ₹45,000, Quote from Motor Works - ₹48,000'
-    },
-    'CA-002': {
-        id: 'CA-002',
-        requestedBy: 'Supervisor Mike',
-        equipment: 'Machine #205',
-        description: 'Hydraulic pump replacement',
-        amount: '₹32,000',
-        justification: 'Pump failure causing operational disruption. Machine cannot operate without replacement.',
-        requestDate: 'Aug 27, 2025',
-        priority: 'Medium',
-        relatedTicket: 'TKT-002',
-        estimatedCompletion: '3 days',
-        quotations: 'Quote from Hydraulic Systems Inc - ₹32,000'
-    }
-};
+let costApprovalData = {};
+let pendingCostApprovals = [];
+let approvedCostApprovals = [];
+let rejectedCostApprovals = [];
 
 const serviceScheduleDetails = {
     'VH101': {
@@ -267,6 +243,15 @@ function formatDate(dateString) {
         month: 'short',
         year: 'numeric'
     });
+}
+
+function formatLkrCurrency(value) {
+    const amount = Number.parseFloat(value || 0);
+    const safeAmount = Number.isFinite(amount) ? amount : 0;
+    return `LKR ${safeAmount.toLocaleString('en-LK', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    })}`;
 }
 
 function getDateStatus(dueDateString) {
@@ -348,6 +333,137 @@ function filterCostApprovals(status, evt) {
     cards.forEach(card => {
         card.style.display = (status === 'all' || card.getAttribute('data-approval-status') === status) ? 'block' : 'none';
     });
+}
+
+function mapBudgetApproval(report) {
+    const status = (report.status || 'pending').toLowerCase();
+    const id = String(report.id);
+    const ticketId = report.ticket_display_id || `Ticket #${report.fault_ticket_id}`;
+    const requestedBy = report.submitted_by_name || report.submitted_by_employee_id || 'Unknown';
+    const requestDate = report.created_at ? new Date(report.created_at).toLocaleString('en-LK') : 'N/A';
+    const approvalLevel = report.approval_level === 'maintenance_manager' ? 'Maintenance Manager' : 'Supervisor';
+
+    return {
+        id,
+        status,
+        requestedBy,
+        requestDate,
+        ticketId,
+        description: report.ticket_description || 'No description provided',
+        amount: formatLkrCurrency(report.total_amount),
+        justification: report.justification || 'No justification provided',
+        quotation: report.quotation || 'No quotation details provided',
+        approvalLevel,
+        priority: report.ticket_priority || 'Medium',
+        reviewNotes: report.review_notes || null,
+        raw: report
+    };
+}
+
+async function loadCostApprovals() {
+    const pendingContainer = document.getElementById('costApprovalPendingList');
+    if (pendingContainer) {
+        pendingContainer.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Loading pending approvals...</p>';
+    }
+
+    try {
+        const response = await API.get('/budget-reports/pending');
+        if (response.status !== 'success') {
+            throw new Error(response.message || 'Failed to load budget approvals');
+        }
+
+        const reports = response.data?.reports || [];
+        pendingCostApprovals = reports.map(mapBudgetApproval).filter(item => item.status === 'pending');
+
+        // Reset local reviewed lists each reload to avoid stale copies.
+        approvedCostApprovals = [];
+        rejectedCostApprovals = [];
+
+        costApprovalData = {};
+        pendingCostApprovals.forEach(item => {
+            costApprovalData[item.id] = item;
+        });
+
+        renderPendingCostApprovals();
+        renderCostApprovalHistoryTables();
+    } catch (error) {
+        console.error('Failed to load cost approvals:', error);
+        if (pendingContainer) {
+            pendingContainer.innerHTML = `<p style="text-align: center; color: var(--danger); padding: 20px;">${error.message || 'Failed to load budget approvals'}</p>`;
+        }
+    }
+}
+
+function renderPendingCostApprovals() {
+    const container = document.getElementById('costApprovalPendingList');
+    if (!container) return;
+
+    if (pendingCostApprovals.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 20px;">No pending approvals at the moment.</p>';
+        return;
+    }
+
+    container.innerHTML = pendingCostApprovals.map(item => `
+        <div class="request-item">
+            <div class="ticket-details">
+                <strong>BUD-${String(item.id).padStart(3, '0')}</strong>
+                <div class="ticket-meta">Requested by: ${item.requestedBy} | Date: ${item.requestDate}</div>
+                <div class="ticket-issue">${item.description} (${item.ticketId})</div>
+                <div class="ticket-meta">
+                    <strong>Amount: ${item.amount}</strong><br>
+                    Approval Level: ${item.approvalLevel}
+                </div>
+            </div>
+            <div class="ticket-actions">
+                <span class="status-badge status-pending">Pending</span>
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <button class="btn btn-success btn-small" onclick="approveCost('${item.id}')">Approve</button>
+                    <button class="btn btn-danger btn-small" onclick="rejectCost('${item.id}')">Reject</button>
+                    <button class="btn btn-secondary btn-small" onclick="viewCostDetails('${item.id}')">Details</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderCostApprovalHistoryTables() {
+    const approvedBody = document.getElementById('costApprovalApprovedBody');
+    const rejectedBody = document.getElementById('costApprovalRejectedBody');
+
+    if (approvedBody) {
+        if (approvedCostApprovals.length === 0) {
+            approvedBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted);">No approved records loaded yet</td></tr>';
+        } else {
+            approvedBody.innerHTML = approvedCostApprovals.map(item => `
+                <tr>
+                    <td>BUD-${String(item.id).padStart(3, '0')}</td>
+                    <td>${item.requestedBy}</td>
+                    <td>${item.description}</td>
+                    <td>${item.amount}</td>
+                    <td>${item.reviewedAt || 'Now'}</td>
+                    <td><button class="btn btn-secondary btn-small" onclick="viewCostDetails('${item.id}')">View</button></td>
+                </tr>
+            `).join('');
+        }
+    }
+
+    if (rejectedBody) {
+        if (rejectedCostApprovals.length === 0) {
+            rejectedBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--muted);">No rejected records loaded yet</td></tr>';
+        } else {
+            rejectedBody.innerHTML = rejectedCostApprovals.map(item => `
+                <tr>
+                    <td>BUD-${String(item.id).padStart(3, '0')}</td>
+                    <td>${item.requestedBy}</td>
+                    <td>${item.description}</td>
+                    <td>${item.amount}</td>
+                    <td>${item.reviewedAt || 'Now'}</td>
+                    <td>${item.reviewNotes || 'Rejected by Maintenance Manager'}</td>
+                    <td><button class="btn btn-secondary btn-small" onclick="viewCostDetails('${item.id}')">View</button></td>
+                </tr>
+            `).join('');
+        }
+    }
 }
 
 function filterServiceReports(status, evt) {
@@ -563,14 +679,14 @@ function viewCostDetails(requestId) {
         <div class="form-section">
             <h5><i class="fas fa-money-bill-wave"></i> Cost Request Information</h5>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                <div><strong>Request ID:</strong> ${costData.id}</div>
-                <div><strong>Equipment:</strong> ${costData.equipment}</div>
+                <div><strong>Request ID:</strong> BUD-${String(costData.id).padStart(3, '0')}</div>
+                <div><strong>Ticket:</strong> ${costData.ticketId}</div>
                 <div><strong>Requested By:</strong> ${costData.requestedBy}</div>
                 <div><strong>Request Date:</strong> ${costData.requestDate}</div>
                 <div><strong>Amount:</strong> ${costData.amount}</div>
-                <div><strong>Priority:</strong> ${costData.priority}</div>
-                <div><strong>Related Ticket:</strong> ${costData.relatedTicket}</div>
-                <div><strong>Est. Completion:</strong> ${costData.estimatedCompletion}</div>
+                <div><strong>Priority:</strong> ${costData.priority || 'Medium'}</div>
+                <div><strong>Approval Level:</strong> ${costData.approvalLevel || 'Maintenance Manager'}</div>
+                <div><strong>Status:</strong> ${costData.status || 'pending'}</div>
             </div>
             <div style="margin-bottom: 15px;">
                 <strong>Description:</strong><br>
@@ -581,8 +697,8 @@ function viewCostDetails(requestId) {
                 ${costData.justification}
             </div>
             <div>
-                <strong>Quotations:</strong><br>
-                ${costData.quotations}
+                <strong>Quotation:</strong><br>
+                ${costData.quotation}
             </div>
         </div>
     `;
@@ -634,11 +750,61 @@ function viewServiceDetails(serviceId) {
 }
 
 function approveCost(requestId) {
-    openModal('approveModal', requestId);
+    const confirmed = window.confirm(`Approve budget request ${requestId}?`);
+    if (!confirmed) return;
+
+    reviewCostRequest(requestId, 'approved');
 }
 
 function rejectCost(requestId) {
-    openModal('rejectModal', requestId);
+    const confirmed = window.confirm(`Reject budget request ${requestId}?`);
+    if (!confirmed) return;
+
+    reviewCostRequest(requestId, 'rejected');
+}
+
+async function reviewCostRequest(requestId, status) {
+    try {
+        const response = await API.post(`/budget-reports/${requestId}/review`, {
+            status,
+            review_notes: status === 'approved'
+                ? 'Approved by Maintenance Manager'
+                : 'Rejected by Maintenance Manager'
+        });
+
+        if (response.status !== 'success') {
+            throw new Error(response.message || `Failed to ${status} budget request`);
+        }
+
+        const reviewedItemIndex = pendingCostApprovals.findIndex(item => item.id === String(requestId));
+        if (reviewedItemIndex === -1) {
+            await loadCostApprovals();
+            return;
+        }
+
+        const reviewed = pendingCostApprovals.splice(reviewedItemIndex, 1)[0];
+        reviewed.status = status;
+        reviewed.reviewedAt = new Date().toLocaleString('en-LK');
+        reviewed.reviewNotes = status === 'approved'
+            ? 'Approved by Maintenance Manager'
+            : 'Rejected by Maintenance Manager';
+
+        costApprovalData[reviewed.id] = reviewed;
+
+        if (status === 'approved') {
+            approvedCostApprovals.unshift(reviewed);
+            showToast(`Cost request ${requestId} approved successfully!`);
+        } else {
+            rejectedCostApprovals.unshift(reviewed);
+            showToast(`Cost request ${requestId} rejected.`);
+        }
+
+        renderPendingCostApprovals();
+        renderCostApprovalHistoryTables();
+    } catch (error) {
+        console.error('Cost approval review failed:', error);
+        showToast(error.message || 'Failed to update budget approval status');
+    }
 }
 
 function approveReport(reportId) {
@@ -759,6 +925,7 @@ function setupMobileMenu() {
 document.addEventListener('DOMContentLoaded', async () => {
     await DashboardInit.init(['Maintenance Manager'], { updateUserDisplay: true });
 
+    await loadCostApprovals();
     initializeForms();
     updateServiceScheduleTable();
     setDefaultDates();

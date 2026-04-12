@@ -219,7 +219,7 @@ function bindSupervisorBudgetApproval() {
     component.addEventListener('supervisor-budget-approval:view', (event) => {
         const budgetId = event.detail?.budgetId;
         if (!budgetId) return;
-        viewBudgetDetails(budgetId);
+        viewBudgetDetails(budgetId, event.detail?.budget || null);
     });
 
     component.addEventListener('supervisor-budget-approval:filter', (event) => {
@@ -3001,8 +3001,8 @@ if (window.innerWidth <= 768) {
 function viewRepairDetails(repairId) {
     // Sample data - replace with actual API call
     const repairData = {
-        'REP-001': { id: 'REP-001', title: 'Engine Overhaul', asset: 'Vehicle V-105', assetName: 'Toyota Hiace LKA-1234', ticket: 'MBD-050', technician: 'Mike Johnson', priority: 'Urgent', estimatedCost: '$2,500', estimatedTime: '2 days', description: 'Complete engine overhaul required due to excessive oil consumption and performance issues', parts: 'Engine gaskets, oil filters, air filters, spark plugs, engine oil', status: 'Pending Approval' },
-        'REP-002': { id: 'REP-002', title: 'Transmission Repair', asset: 'Vehicle V-108', assetName: 'Isuzu NPR LKA-5678', ticket: 'MBD-051', technician: 'Sarah Williams', priority: 'Normal', estimatedCost: '$1,800', estimatedTime: '1.5 days', description: 'Transmission fluid leak detected along with gear shifting issues', parts: 'Transmission seals, gasket kit, transmission fluid', status: 'Pending Approval' }
+        'REP-001': { id: 'REP-001', title: 'Engine Overhaul', asset: 'Vehicle V-105', assetName: 'Toyota Hiace LKA-1234', ticket: 'MBD-050', technician: 'Mike Johnson', priority: 'Urgent', estimatedCost: 'LKR 2,500', estimatedTime: '2 days', description: 'Complete engine overhaul required due to excessive oil consumption and performance issues', parts: 'Engine gaskets, oil filters, air filters, spark plugs, engine oil', status: 'Pending Approval' },
+        'REP-002': { id: 'REP-002', title: 'Transmission Repair', asset: 'Vehicle V-108', assetName: 'Isuzu NPR LKA-5678', ticket: 'MBD-051', technician: 'Sarah Williams', priority: 'Normal', estimatedCost: 'LKR 1,800', estimatedTime: '1.5 days', description: 'Transmission fluid leak detected along with gear shifting issues', parts: 'Transmission seals, gasket kit, transmission fluid', status: 'Pending Approval' }
     };
 
     const repair = repairData[repairId] || repairData['REP-001'];
@@ -3203,54 +3203,71 @@ function filterBudgetsByStatus(status) {
     showToast(`Showing ${visibleCount} budget${visibleCount !== 1 ? 's' : ''}`, 'info');
 }
 
-function viewBudgetDetails(budgetId) {
-    // Sample data - replace with actual API call
-    const budgetData = {
-        'BUD-001': { id: 'BUD-001', breakdown: 'BR-003', asset: 'Vehicle LKA-1234', assetName: 'Toyota Hiace', description: 'Tire replacement - In-route breakdown', submittedBy: 'Driver Kamal', submittedDate: '2025-10-21', priority: 'Urgent', requestedAmount: 'LKR 12,500', breakdown: 'Tires (4x): LKR 10,000\nLabor: LKR 1,500\nAlignment: LKR 1,000', location: 'Colombo - Kandy Road (near Kadawatha)', reason: 'Front left tire burst during trip, inspection revealed all tires worn beyond safe limits' },
-        'BUD-002': { id: 'BUD-002', breakdown: 'BR-005', asset: 'Vehicle LKA-5678', assetName: 'Isuzu NPR', description: 'Battery replacement', submittedBy: 'Driver Saman', submittedDate: '2025-10-21', priority: 'Normal', requestedAmount: 'LKR 8,750', breakdown: 'Battery: LKR 7,500\nLabor: LKR 1,000\nTerminal cleaning: LKR 250', location: 'Galle depot', reason: 'Battery completely dead, unable to start vehicle after overnight parking' }
-    };
+function viewBudgetDetails(budgetId, budgetPayload = null) {
+    const amountValue = Number.parseFloat(budgetPayload?.total_amount || 0);
+    const amountLabel = Number.isFinite(amountValue)
+        ? `LKR ${amountValue.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : 'LKR 0.00';
 
-    const budget = budgetData[budgetId] || budgetData['BUD-001'];
+    const statusValue = (budgetPayload?.status || 'pending').toLowerCase();
+    const statusLabel = statusValue.charAt(0).toUpperCase() + statusValue.slice(1);
+
+    const ticketLabel = budgetPayload?.ticket_display_id || `Ticket #${budgetPayload?.fault_ticket_id || 'N/A'}`;
+    const submittedBy = budgetPayload?.submitted_by_name || budgetPayload?.submitted_by_employee_id || 'Unknown';
+    const submittedDate = budgetPayload?.created_at
+        ? new Date(budgetPayload.created_at).toLocaleString('en-LK', {
+            year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit'
+        })
+        : 'N/A';
+    const approvalLevel = budgetPayload?.approval_level === 'maintenance_manager'
+        ? 'Maintenance Manager'
+        : 'Supervisor';
+    const reviewNotes = budgetPayload?.review_notes || 'No review notes provided.';
+
+    const fallbackDescription = 'No budget details were provided for this item.';
+    const description = budgetPayload?.ticket_description || fallbackDescription;
+    const quotation = budgetPayload?.quotation || 'No quotation details provided.';
+    const justification = budgetPayload?.justification || 'No justification provided.';
 
     const content = `
         <div class="form-section">
             <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
-            <p><strong>Budget ID:</strong> <span style="color: var(--royal-blue);">${budget.id}</span></p>
-            <p><strong>Priority:</strong> <span class="status-text status-${budget.priority.toLowerCase()}">${budget.priority.toUpperCase()}</span></p>
-            <p><strong>Submitted Date:</strong> <i class="fas fa-calendar"></i> ${budget.submittedDate}</p>
+            <p><strong>Budget ID:</strong> <span style="color: var(--royal-blue);">${budgetId}</span></p>
+            <p><strong>Status:</strong> <span class="status-text status-${statusValue}">${statusLabel}</span></p>
+            <p><strong>Approval Level:</strong> ${approvalLevel}</p>
+            <p><strong>Submitted Date:</strong> <i class="fas fa-calendar"></i> ${submittedDate}</p>
         </div>
 
         <div class="form-section">
-            <h5><i class="fas fa-car"></i> Asset & Breakdown</h5>
-            <p><strong>Asset:</strong> ${budget.assetName} (${budget.asset})</p>
-            <p><strong>Breakdown ID:</strong> ${budget.breakdown}</p>
-            <p><strong>Submitted By:</strong> <i class="fas fa-user"></i> ${budget.submittedBy}</p>
+            <h5><i class="fas fa-ticket-alt"></i> Fault Ticket</h5>
+            <p><strong>Ticket:</strong> ${ticketLabel}</p>
+            <p><strong>Submitted By:</strong> <i class="fas fa-user"></i> ${submittedBy}</p>
         </div>
 
         <div class="form-section">
-            <h5><i class="fas fa-clipboard-list"></i> Description</h5>
-            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${budget.description}</p>
+            <h5><i class="fas fa-clipboard-list"></i> Ticket Description</h5>
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${description}</p>
         </div>
 
         <div class="form-section">
-            <h5><i class="fas fa-map-marker-alt"></i> Location</h5>
-            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${budget.location}</p>
+            <h5><i class="fas fa-receipt"></i> Quotation</h5>
+            <div style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px; white-space: pre-line;">${quotation}</div>
         </div>
 
         <div class="form-section">
-            <h5><i class="fas fa-question-circle"></i> Reason</h5>
-            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${budget.reason}</p>
+            <h5><i class="fas fa-question-circle"></i> Justification</h5>
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${justification}</p>
         </div>
 
         <div class="form-section">
-            <h5><i class="fas fa-receipt"></i> Cost Breakdown</h5>
-            <div style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px; white-space: pre-line;">${budget.breakdown}</div>
+            <h5><i class="fas fa-comment-alt"></i> Review Notes</h5>
+            <p style="margin-top: 8px; padding: 12px; background: var(--background); border-radius: 6px;">${reviewNotes}</p>
         </div>
 
         <div class="form-section">
             <h5><i class="fas fa-dollar-sign"></i> Total Amount</h5>
             <div style="padding: 15px; background: linear-gradient(135deg, var(--royal-blue), var(--tang-blue)); color: white; border-radius: 8px; text-align: center;">
-                <span style="font-size: 1.5em; font-weight: bold;">${budget.requestedAmount}</span>
+                <span style="font-size: 1.5em; font-weight: bold;">${amountLabel}</span>
             </div>
         </div>
     `;

@@ -82,7 +82,7 @@
                                 <div class="ticket-details">
                                     <strong>CA-001</strong>
                                     <div class="ticket-meta">Engine overhaul - Vehicle #101</div>
-                                    <div class="ticket-meta">Amount: ₹45,000</div>
+                                    <div class="ticket-meta">Amount: LKR 45,000</div>
                                 </div>
                                 <div class="ticket-actions">
                                     <span class="status-badge status-pending">Pending</span>
@@ -92,7 +92,7 @@
                                 <div class="ticket-details">
                                     <strong>CA-002</strong>
                                     <div class="ticket-meta">Hydraulic pump - Machine #205</div>
-                                    <div class="ticket-meta">Amount: ₹32,000</div>
+                                    <div class="ticket-meta">Amount: LKR 32,000</div>
                                 </div>
                                 <div class="ticket-actions">
                                     <span class="status-badge status-pending">Pending</span>
@@ -114,7 +114,7 @@
                         <div class="notification-item warning">
                             <span class="notification-icon"><i class="fas fa-money-bill-wave"></i></span>
                             <div>
-                                <strong>Cost Approval:</strong> Engine repair cost ₹45,000 pending approval
+                                <strong>Cost Approval:</strong> Engine repair cost LKR 45,000 pending approval
                             </div>
                         </div>
                         <div class="notification-item info">
@@ -396,7 +396,7 @@
                                             <td>Vehicle #101</td>
                                             <td>Aug 20, 2025</td>
                                             <td>Engine Repair</td>
-                                            <td>₹45,000</td>
+                                            <td>LKR 45,000</td>
                                             <td>Tech Officer A</td>
                                             <td>Feb 20, 2026</td>
                                             <td><button class="btn btn-secondary btn-small" onclick="viewServiceDetails('VH101-001')">View</button></td>
@@ -405,7 +405,7 @@
                                             <td>Vehicle #089</td>
                                             <td>Aug 19, 2025</td>
                                             <td>Brake System Overhaul</td>
-                                            <td>₹15,000</td>
+                                            <td>LKR 15,000</td>
                                             <td>Tech Officer B</td>
                                             <td>Aug 19, 2026</td>
                                             <td><button class="btn btn-secondary btn-small" onclick="viewServiceDetails('VH089-001')">View</button></td>
@@ -414,7 +414,7 @@
                                             <td>Vehicle #067</td>
                                             <td>Aug 12, 2025</td>
                                             <td>Preventive Maintenance</td>
-                                            <td>₹8,500</td>
+                                            <td>LKR 8,500</td>
                                             <td>Tech Officer A</td>
                                             <td>Nov 12, 2025</td>
                                             <td><button class="btn btn-secondary btn-small" onclick="viewServiceDetails('VH067-001')">View</button></td>
@@ -445,7 +445,7 @@
                                             <td>Machine #205</td>
                                             <td>Aug 15, 2025</td>
                                             <td>Hydraulic System Service</td>
-                                            <td>₹32,000</td>
+                                            <td>LKR 32,000</td>
                                             <td>Tech Officer C</td>
                                             <td>Feb 15, 2026</td>
                                             <td><button class="btn btn-secondary btn-small" onclick="viewServiceDetails('MC205-001')">View</button></td>
@@ -454,7 +454,7 @@
                                             <td>Machine #180</td>
                                             <td>Aug 10, 2025</td>
                                             <td>Engine Maintenance</td>
-                                            <td>₹28,000</td>
+                                            <td>LKR 28,000</td>
                                             <td>Tech Officer A</td>
                                             <td>Nov 10, 2025</td>
                                             <td><button class="btn btn-secondary btn-small" onclick="viewServiceDetails('MC180-001')">View</button></td>
@@ -463,7 +463,7 @@
                                             <td>Machine #203</td>
                                             <td>Aug 08, 2025</td>
                                             <td>Preventive Maintenance</td>
-                                            <td>₹12,000</td>
+                                            <td>LKR 12,000</td>
                                             <td>Tech Officer B</td>
                                             <td>Nov 08, 2025</td>
                                             <td><button class="btn btn-secondary btn-small" onclick="viewServiceDetails('MC203-001')">View</button></td>
@@ -493,43 +493,10 @@
                     <!-- Pending Approvals -->
                     <div class="card cost-approval-card" data-approval-status="pending">
                         <div class="card-header"><i class="fas fa-money-bill-wave"></i> Pending Cost Approvals</div>
-                        <div class="request-item">
-                            <div class="ticket-details">
-                                <strong>CA-001</strong>
-                                <div class="ticket-meta">Requested by: Supervisor John | Date: Aug 28, 2025</div>
-                                <div class="ticket-issue">Engine overhaul - Vehicle #101 (TKT-001)</div>
-                                <div class="ticket-meta">
-                                    <strong>Amount: ₹45,000</strong><br>
-                                    Justification: Complete engine rebuild required due to overheating damage
-                                </div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-pending">Pending</span>
-                                <div style="display: flex; gap: 8px; margin-top: 8px;">
-                                    <button class="btn btn-success btn-small" onclick="approveCost('CA-001')">Approve</button>
-                                    <button class="btn btn-danger btn-small" onclick="rejectCost('CA-001')">Reject</button>
-                                    <button class="btn btn-secondary btn-small" onclick="viewCostDetails('CA-001')">Details</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="request-item">
-                            <div class="ticket-details">
-                                <strong>CA-002</strong>
-                                <div class="ticket-meta">Requested by: Supervisor Mike | Date: Aug 27, 2025</div>
-                                <div class="ticket-issue">Hydraulic pump replacement - Machine #205</div>
-                                <div class="ticket-meta">
-                                    <strong>Amount: ₹32,000</strong><br>
-                                    Justification: Pump failure causing operational disruption
-                                </div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-pending">Pending</span>
-                                <div style="display: flex; gap: 8px; margin-top: 8px;">
-                                    <button class="btn btn-success btn-small" onclick="approveCost('CA-002')">Approve</button>
-                                    <button class="btn btn-danger btn-small" onclick="rejectCost('CA-002')">Reject</button>
-                                    <button class="btn btn-secondary btn-small" onclick="viewCostDetails('CA-002')">Details</button>
-                                </div>
-                            </div>
+                        <div id="costApprovalPendingList">
+                            <p style="text-align: center; color: var(--muted); padding: 20px;">
+                                <i class="fas fa-spinner fa-spin"></i> Loading pending approvals...
+                            </p>
                         </div>
                     </div>
 
@@ -547,22 +514,9 @@
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="costApprovalApprovedBody">
                                 <tr>
-                                    <td>CA-003</td>
-                                    <td>Supervisor John</td>
-                                    <td>Brake system repair - Vehicle #089</td>
-                                    <td>₹15,000</td>
-                                    <td>Aug 25, 2025</td>
-                                    <td><button class="btn btn-secondary btn-small" onclick="viewCostDetails('CA-003')">View</button></td>
-                                </tr>
-                                <tr>
-                                    <td>CA-005</td>
-                                    <td>Supervisor Mike</td>
-                                    <td>Engine maintenance - Machine #180</td>
-                                    <td>₹28,000</td>
-                                    <td>Aug 22, 2025</td>
-                                    <td><button class="btn btn-secondary btn-small" onclick="viewCostDetails('CA-005')">View</button></td>
+                                    <td colspan="6" style="text-align: center; color: var(--muted);">No approved records loaded yet</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -583,15 +537,9 @@
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="costApprovalRejectedBody">
                                 <tr>
-                                    <td>CA-004</td>
-                                    <td>Supervisor Mike</td>
-                                    <td>Transmission overhaul - Vehicle #067</td>
-                                    <td>₹55,000</td>
-                                    <td>Aug 23, 2025</td>
-                                    <td>Budget Exceeded</td>
-                                    <td><button class="btn btn-secondary btn-small" onclick="viewCostDetails('CA-004')">View</button></td>
+                                    <td colspan="7" style="text-align: center; color: var(--muted);">No rejected records loaded yet</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -738,7 +686,7 @@
                                 <div class="ticket-meta">Equipment: Machine #203 | Submitted by: Technical Officer A</div>
                                 <div class="ticket-issue">Preventive Maintenance - Hydraulic System</div>
                                 <div class="ticket-meta">
-                                    Date: Aug 15, 2025 | Cost: ₹8,500<br>
+                                    Date: Aug 15, 2025 | Cost: LKR 8,500<br>
                                     Parts Used: Hydraulic oil, Filters, Seals<br>
                                     Attachments: Invoice_MC203_PREV.pdf
                                 </div>
@@ -757,7 +705,7 @@
                                 <div class="ticket-meta">Equipment: Vehicle #067 | Submitted by: Technical Officer B</div>
                                 <div class="ticket-issue">Engine Service - Complete overhaul</div>
                                 <div class="ticket-meta">
-                                    Date: Aug 12, 2025 | Cost: ₹22,000<br>
+                                    Date: Aug 12, 2025 | Cost: LKR 22,000<br>
                                     Parts Used: Engine parts, Oil, Filters<br>
                                     Attachments: Invoice_VH067_ENG.pdf, Warranty_WC003.pdf
                                 </div>
@@ -792,7 +740,7 @@
                                     <td>SR-001</td>
                                     <td>Vehicle #089</td>
                                     <td>Brake System Overhaul</td>
-                                    <td>₹15,000</td>
+                                    <td>LKR 15,000</td>
                                     <td>Technical Officer B</td>
                                     <td>Aug 20, 2025</td>
                                     <td><button class="btn btn-secondary btn-small" onclick="viewReportDetails('SR-001')">View</button></td>
@@ -801,7 +749,7 @@
                                     <td>SR-003</td>
                                     <td>Machine #180</td>
                                     <td>Engine Maintenance</td>
-                                    <td>₹28,000</td>
+                                    <td>LKR 28,000</td>
                                     <td>Technical Officer A</td>
                                     <td>Aug 18, 2025</td>
                                     <td><button class="btn btn-secondary btn-small" onclick="viewReportDetails('SR-003')">View</button></td>
@@ -823,7 +771,7 @@
                                 <div class="stats-label">Reports This Month</div>
                             </div>
                             <div class="stats-card" style="background: #f0f9ff; border: 1px solid #e0f2fe;">
-                                <div class="stats-number" style="color: var(--royal-blue);">₹2.8L</div>
+                                <div class="stats-number" style="color: var(--royal-blue);">LKR 2.8L</div>
                                 <div class="stats-label">Total Service Cost</div>
                             </div>
                         </div>
@@ -897,7 +845,7 @@
                         <div class="notification-item warning">
                             <span class="notification-icon"><i class="fas fa-money-bill-wave"></i></span>
                             <div>
-                                <strong>High Cost Approval:</strong> Engine repair cost ₹45,000 awaiting approval (CA-001)
+                                <strong>High Cost Approval:</strong> Engine repair cost LKR 45,000 awaiting approval (CA-001)
                                 <div style="margin-top: 5px;">
                                     <button class="btn btn-success btn-small" onclick="approveCost('CA-001')">Approve</button>
                                     <button class="btn btn-danger btn-small" onclick="rejectCost('CA-001')">Reject</button>
@@ -907,7 +855,7 @@
                         <div class="notification-item warning">
                             <span class="notification-icon"><i class="fas fa-money-bill-wave"></i></span>
                             <div>
-                                <strong>Cost Approval Pending:</strong> Hydraulic pump replacement ₹32,000 (CA-002)
+                                <strong>Cost Approval Pending:</strong> Hydraulic pump replacement LKR 32,000 (CA-002)
                                 <div style="margin-top: 5px;">
                                     <button class="btn btn-success btn-small" onclick="approveCost('CA-002')">Approve</button>
                                     <button class="btn btn-danger btn-small" onclick="rejectCost('CA-002')">Reject</button>
