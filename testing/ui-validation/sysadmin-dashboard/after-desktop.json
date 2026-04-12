@@ -1,0 +1,26 @@
+{
+  "stage": "after",
+  "viewport": "desktop",
+  "url": "http://127.0.0.1:3000/dashboard/sysadministration/index.html",
+  "title": "System Administration Dashboard",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \"User Activity Tracking\" [level=1]\n  - paragraph: Monitor real-time user activity and generate reports\n  - button \"All Users\"\n  - button \"Admin\"\n  - button \"Supervisor\"\n  - button \"Inventory Manager\"\n  - button \"Technical Officer\"\n  - button \"Driver\"\n  - button \"Machinary Operator\"\n  - text: 🟢 Currently Active Users 1 active\n  - table:\n    - rowgroup:\n      - row \"User Role Login Time IP Address Current Activity Actions\":\n        - columnheader \"User\"\n        - columnheader \"Role\"\n        - columnheader \"Login Time\"\n        - columnheader \"IP Address\"\n        - columnheader \"Current Activity\"\n        - columnheader \"Actions\"\n    - rowgroup:\n      - row \"John Smith (EMP-001) Supervisor Today 9:30 AM (2h 15m) 192.168.1.45 Viewing Breakdown Tickets View Session Force Logout\":\n        - cell \"John Smith (EMP-001)\"\n        - cell \"Supervisor\"\n        - cell \"Today 9:30 AM (2h 15m)\"\n        - cell \"192.168.1.45\"\n        - cell \"Viewing Breakdown Tickets\"\n        - cell \"View Session Force Logout\":\n          - button \"View Session\"\n          - button \"Force Logout\"\n  - text: Activity Summary (Last 24 Hours) 38 Unique Logins 256 Total Actions 3 Failed Login Attempts Detailed User Activity\n  - textbox \"Search by user name or employee ID...\"\n  - combobox:\n    - option \"Today\" [selected]\n    - option \"Last 7 Days\"\n    - option \"Last 30 Days\"\n  - strong: John Smith (EMP-001)\n  - text: \"Role: Supervisor\"\n  - strong: \"Activity Timeline:\"\n  - text: • 9:30 AM - Logged in • 10:15 AM - Reviewed reports • 11:20 AM - Updated request\n  - button \"Full Log\"\n  - button \"Generate Report\"\n  - strong: Sarah Johnson (EMP-002)\n  - text: \"Role: Inventory Manager\"\n  - strong: \"Activity Timeline:\"\n  - text: • 9:30 AM - Logged in • 10:15 AM - Reviewed reports • 11:20 AM - Updated request\n  - button \"Full Log\"\n  - button \"Generate Report\"\n  - strong: Michael Chen (EMP-003)\n  - text: \"Role: Technical Officer\"\n  - strong: \"Activity Timeline:\"\n  - text: • 9:30 AM - Logged in • 10:15 AM - Reviewed reports • 11:20 AM - Updated request\n  - button \"Full Log\"\n  - button \"Generate Report\"\n  - text: User Inactivity Report\n  - strong: \"No Recent Activity:\"\n  - text: \"Robert Williams (EMP-004) - Last login: 8 days ago\"\n  - button \"View User\"\n  - button \"Send Reminder\"",
+    "snapshotLength": 2283
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "activeSection": "activity-tracking",
+    "visibleLogs": 1,
+    "visibleActiveUsers": 1,
+    "modalStates": {
+      "setPettyCashLimitOpen": false,
+      "createTemplateOpen": false,
+      "detailsOpen": true
+    },
+    "activeFilters": {
+      "logFilter": "Login Events",
+      "activityFilter": "Supervisor"
+    }
+  }
+}
