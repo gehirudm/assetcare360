@@ -1,6 +1,6 @@
 {
-  "stage": "before",
-  "viewport": "desktop",
+  "stage": "after",
+  "viewport": "mobile",
   "url": "http://127.0.0.1:3000/dashboard/driver/index.html",
   "title": "Driver Dashboard - AssetCare360",
   "accessibility": {
