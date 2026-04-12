@@ -9,13 +9,11 @@
 - [TASK010] Machinery Operator dashboard componentization — Extract section components and badge/event flows
 - [TASK011] Maintenance dashboard componentization — Componentize sections and clean include-order issues
 - [TASK012] SysAdministration dashboard componentization — In progress: entrypoint consolidated, overview/user-accounts/service-config extracted; remaining sections pending
-- [TASK013] Auction dashboard componentization — Extract auction sections into dashboard-scoped components
 - [TASK014] Inline events to component events migration — Remove inline handlers and adopt custom-event contracts
-- [TASK016] Transportation Manager dashboard bootstrap — Define and scaffold empty dashboard before componentization
-- [TASK003] Run migration 047 and update OpenAPI spec — migration not confirmed run; openapi.yaml needs update for budget/work-update changes
 - [TASK032] Budget-flow notification routing scope — Temporary broad notifications to all supervisors + maintenance managers; later narrow to controlling supervisor only
 
 ## Completed
+- [TASK013] Auction dashboard componentization — all auction sections extracted into dashboard-scoped components with one-modal-per-component modal decomposition and orchestration-only parent script; before/after Playwright validation passed on desktop + mobile — Completed April 12, 2026
 - [TASK007] Supervisor dashboard componentization — all supervisor sections extracted to dashboard components with one-modal-per-component daily-check modals and orchestration-only parent bridges — Completed April 12, 2026
 - [TASK005] Technical Officer shell and navigation migration — TO dashboard moved to `<ac-layout>` and shared DashboardInit/bootstrap/navigation contracts — Completed April 7, 2026
 - [TASK006] Technical Officer section componentization — All major TO sections fully componentized; ticket list/filter/action UI moved to `<to-tickets>` with parent event bridges — Completed April 7, 2026

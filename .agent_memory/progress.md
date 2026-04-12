@@ -94,6 +94,13 @@
   - Reduced parent supervisor script daily-check path to orchestration-only bridges (`bindSupervisorDailyCheckReports`, `refreshSupervisorDailyCheckReports`) and removed legacy section/modal handlers
   - Validation (desktop + mobile) passed via Playwright flow replay with no console errors/warnings and no failed network requests; after-state artifacts captured in `testing/ui-validation/supervisor-daily-check-reports/after-*.json`
   - Syntax and diagnostics validation passed for touched supervisor files
+- ✅ Auction dashboard componentization completed (TASK013)
+  - Added dashboard-scoped section components under `pages/dashboard/auction/components/` (`dashboard-overview`, `active-auctions`, `assets`, `bidders`, `schedule`, `reports`)
+  - Added one-modal-per-component decomposition under `pages/dashboard/auction/components/page-modals/` (`create-auction-modal`, `register-bidder-modal`, `schedule-auction-modal`, `auction-details-modal`, `auction-bidders-modal`)
+  - Replaced inline section/modal markup in `pages/dashboard/auction/index.html` with component hosts and direct section shells for `<ac-layout>` compatibility
+  - Reduced `pages/dashboard/auction/script.js` to orchestration-only wiring (auth/bootstrap, section bridge, toast bridge, modal bridges)
+  - Added validation spec `testing/ui-validation/auction-dashboard/validate-auction-dashboard.spec.js`
+  - Validation before/after passed (`2/2` desktop+mobile each stage) with no console warnings/errors and no failed network requests
 - ✅ Inventory Manager notifications extraction
   - Added `components/notifications/script.js` + `style.css`
   - Replaced inline notifications section markup with `<inventory-notifications>`
@@ -171,7 +178,7 @@
 ## What's Left / Known Issues
 - ⏳ Migration `047` run/confirmation remains blocked in current sandbox due DB connection refusal
 - ⏳ Frontend budget-submission form should validate `total_amount > 0` before POSTing
-- ⏳ Other role dashboards (supervisor, driver, maintenance, etc.) — status varies
+- ⏳ Remaining role dashboards still pending decomposition (driver, machinery operator, maintenance, sysadministration)
 - ⏳ Dashboard Web Components refactor backlog created (agent-memory TASK004–TASK016 + Beads epic/children) and ready for staged execution
 - ⏳ Verify migration 048 and event consumers against a live RabbitMQ + database environment
 
