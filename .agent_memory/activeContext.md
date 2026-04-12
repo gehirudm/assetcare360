@@ -1,7 +1,7 @@
 # Active Context
 
 ## Current Focus
-Dashboard Web Components refactor execution — TASK007 remains active; TASK016 baseline bootstrap is now complete. Event architecture execution has moved from program setup (TASK018) into implementation slices (TASK019+).
+Dashboard Web Components refactor execution — TASK007 is now complete after supervisor daily-check extraction; next pending dashboard decomposition work is TASK009/TASK010/TASK011/TASK012/TASK013/TASK014. Event architecture execution has moved from program setup (TASK018) into implementation slices (TASK019+).
 
 ### Dashboard decomposition instruction hardening (April 9, 2026)
 - Updated `.github/instructions/component-decomposition-completeness.instructions.md` with mandatory dashboard refactor rules:
@@ -225,6 +225,19 @@ Dashboard Web Components refactor execution — TASK007 remains active; TASK016 
 - Updated `loadSectionData('fault-tickets')` to use component refresh bridge and hardened fault-ticket loading/error rendering to prefer component APIs.
 - Refactored `filterTicketsByStatus` and `filterTicketsBySource` to remove implicit `event` dependency and support component-driven calls.
 - Validation: `node --check` and diagnostics passed for touched supervisor files.
+
+### Supervisor daily-check-reports extraction slice (latest)
+- Added `pages/dashboard/supervisor/components/daily-check-reports/script.js` defining `<supervisor-daily-check-reports>` and moved weekly-check report loading, filtering, detail display, approve/reject actions, and section state into component-local logic.
+- Added one-modal-per-component daily-check modals under `pages/dashboard/supervisor/components/page-modals/`:
+	- `report-details-modal/script.js`
+	- `rejection-reason-modal/script.js`
+- Replaced inline daily-check section and page-level report/rejection modal markup in `pages/dashboard/supervisor/index.html` with component hosts and script includes.
+- Updated `pages/dashboard/supervisor/script.js` to orchestration-only daily-check bridges (`bindSupervisorDailyCheckReports`, `refreshSupervisorDailyCheckReports`) and removed legacy daily-check modal/report handlers from parent scope.
+- UI validation evidence:
+	- Baseline artifacts: `testing/ui-validation/supervisor-daily-check-reports/before-desktop.json` and `before-mobile.json`.
+	- Post-change run: `VAL_STAGE=after npx playwright test testing/ui-validation/supervisor-daily-check-reports/validate-daily-check.spec.js --reporter=line`.
+	- Results: 2/2 tests passed; console warnings/errors = 0; failed network requests = 0; active section remained `daily-check-reports`; modal interaction succeeded on desktop + mobile (`modalOpened: true`).
+- TASK007 is now complete.
 
 ## Next Steps
 - Run pending migration `047_create_system_settings_and_budget_approval.php`

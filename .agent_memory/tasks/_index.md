@@ -1,10 +1,10 @@
 # Tasks Index
 
 ## In Progress
-- [TASK007] Supervisor dashboard componentization — dashboard-overview, fault-tickets, asset-status, repair-management, technicians, and budget extracted; daily-check-reports still pending
 - [TASK003] Run migration 047 and update OpenAPI spec — OpenAPI updates completed; migration confirmation blocked by DB connection refusal in sandbox
 
 ## Pending
+- [TASK033] Add Transportation Manager Role to User Creation — Add the missing role option to user creation/edit modals and filter tabs
 - [TASK009] Driver dashboard componentization — Decompose high-complexity script and modal-heavy sections
 - [TASK010] Machinery Operator dashboard componentization — Extract section components and badge/event flows
 - [TASK011] Maintenance dashboard componentization — Componentize sections and clean include-order issues
@@ -16,6 +16,7 @@
 - [TASK032] Budget-flow notification routing scope — Temporary broad notifications to all supervisors + maintenance managers; later narrow to controlling supervisor only
 
 ## Completed
+- [TASK007] Supervisor dashboard componentization — all supervisor sections extracted to dashboard components with one-modal-per-component daily-check modals and orchestration-only parent bridges — Completed April 12, 2026
 - [TASK005] Technical Officer shell and navigation migration — TO dashboard moved to `<ac-layout>` and shared DashboardInit/bootstrap/navigation contracts — Completed April 7, 2026
 - [TASK006] Technical Officer section componentization — All major TO sections fully componentized; ticket list/filter/action UI moved to `<to-tickets>` with parent event bridges — Completed April 7, 2026
 - [TASK008] Inventory Manager dashboard componentization — All 8 sections extracted to dashboard-scoped components; monolith reduced from 3580 to 2672 lines — Completed April 7, 2026

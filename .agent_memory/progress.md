@@ -72,7 +72,7 @@
   - Updated `loadTickets()` / `renderTickets()` orchestration to call tickets component APIs (`setLoading`, `setEmpty`, `setError`, `renderTickets`)
   - Removed duplicate parent filter wiring so filter state is component-owned
   - Syntax and diagnostics validation passed for touched TO files
-- ✅ Supervisor componentization started (TASK007)
+- ✅ Supervisor componentization completed (TASK007)
   - Added `components/asset-status/script.js` with `<supervisor-asset-status>`
   - Replaced inline asset-status section markup with component host in supervisor dashboard HTML
   - Added parent bridge wiring for component events (`view`, `update`, `filter`) and section refresh integration
@@ -88,6 +88,11 @@
   - Added `components/budget-approval/script.js` with `<supervisor-budget-approval>`
   - Replaced inline budget-approval section markup with component host and bridged view/filter/status-change events in parent script
   - Updated budget section activation flow to refresh component state and added null guard for stale legacy budget DOM IDs
+  - Added `components/daily-check-reports/script.js` with `<supervisor-daily-check-reports>` and moved weekly-check loading/filtering/view/approve/reject behavior into the section component
+  - Added one-modal-per-component daily-check modal components under `components/page-modals/` (`report-details-modal` and `rejection-reason-modal`)
+  - Replaced inline daily-check + modal markup in supervisor page with component hosts and script includes
+  - Reduced parent supervisor script daily-check path to orchestration-only bridges (`bindSupervisorDailyCheckReports`, `refreshSupervisorDailyCheckReports`) and removed legacy section/modal handlers
+  - Validation (desktop + mobile) passed via Playwright flow replay with no console errors/warnings and no failed network requests; after-state artifacts captured in `testing/ui-validation/supervisor-daily-check-reports/after-*.json`
   - Syntax and diagnostics validation passed for touched supervisor files
 - ✅ Inventory Manager notifications extraction
   - Added `components/notifications/script.js` + `style.css`
