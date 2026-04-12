@@ -1,6 +1,6 @@
 # TASK014 - Inline Events To Component Events Migration
 
-**Status:** In Progress  
+**Status:** Completed  
 **Added:** April 7, 2026  
 **Updated:** April 12, 2026
 
@@ -11,22 +11,22 @@ Create comprehensive refactor tasks from all dashboard analysis.
 All active dashboards still have significant inline handlers (`onclick`, `onchange`, `oninput`) in HTML. This creates tight coupling and makes section extraction brittle. A cross-cutting task is needed to enforce event ownership inside components with custom-event communication.
 
 ## Implementation Plan
-- [ ] Audit inline handlers by dashboard and section
-- [ ] Move handlers into component class listeners
-- [ ] Emit custom events for parent orchestration needs
-- [ ] Remove global function dependencies from markup
+- [x] Audit inline handlers by dashboard and section
+- [x] Move handlers into component class listeners
+- [x] Emit custom events for parent orchestration needs
+- [x] Remove global function dependencies from markup
 
 ## Progress Tracking
 
-**Overall Status:** In Progress - 97%
+**Overall Status:** Completed - 100%
 
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
 |----|-------------|--------|---------|-------|
-| 14.1 | Inline handler inventory | In Progress | Apr 12, 2026 | Maintenance + Machinery Operator audits complete with zero inline handlers in page HTML; outstanding inventory is Driver dashboard |
-| 14.2 | Convert handlers in extracted components | In Progress | Apr 12, 2026 | SysAdministration, Maintenance, and Machinery Operator section/modal interactions now use component-local delegated handlers (`data-action` patterns) |
-| 14.3 | Introduce custom-event contracts | In Progress | Apr 12, 2026 | Added `sa-ui:toast`, `maintenance-ui:toast`, and `mo:*` custom-event contracts for toast/modal/refresh orchestration; Driver scope still pending |
-| 14.4 | Remove obsolete global handlers | In Progress | Apr 12, 2026 | Maintenance and Machinery Operator roots are orchestration-only; remaining global cleanup is in Driver dashboard |
+| 14.1 | Inline handler inventory | Complete | Apr 12, 2026 | Driver inventory completed; all active dashboard page HTML scopes now have zero inline handlers |
+| 14.2 | Convert handlers in extracted components | Complete | Apr 12, 2026 | Driver section/modal interactions moved to component-local delegated handlers; no inline handler attributes remain in `pages/dashboard/driver/**` |
+| 14.3 | Introduce custom-event contracts | Complete | Apr 12, 2026 | Added Driver custom-event contracts (`driver-ui:toast`, `driver:modal-open`, `driver:modal-close`, `driver:data-*`) for orchestration-only parent script wiring |
+| 14.4 | Remove obsolete global handlers | Complete | Apr 12, 2026 | Driver root script reduced to orchestration-only; section/modal business logic removed from parent scope |
 
 ## Progress Log
 ### April 7, 2026
@@ -101,3 +101,22 @@ All active dashboards still have significant inline handlers (`onclick`, `onchan
 	- `VAL_STAGE=after`: 2/2 passed (desktop + mobile)
 	- Console warnings/errors: none in final after artifacts
 	- Failed network requests: none in final after artifacts
+
+### April 12, 2026 (Driver Inline Event Migration Closure)
+- Removed all inline handlers from `pages/dashboard/driver/index.html` by replacing inline section and modal markup with dashboard-scoped section components and one-modal-per-component hosts.
+- Converted Driver section interactions to component-local event handling in:
+	- `driver-dashboard-overview`
+	- `driver-trip-log`
+	- `driver-vehicle-check`
+	- `driver-breakdown`
+	- `driver-fuel-mileage`
+	- `driver-transport-ticket`
+	- `driver-garages`
+- Converted Driver modal interactions to modal-local handlers in all modal component files under `pages/dashboard/driver/components/page-modals/`.
+- Added Driver custom-event contracts for parent orchestration and cross-component coordination (`driver-ui:toast`, `driver:modal-open`, `driver:modal-close`, `driver:data-trips-changed`, `driver:data-checks-changed`, `driver:data-breakdowns-changed`, `driver:data-summary-updated`).
+- Reduced `pages/dashboard/driver/script.js` to orchestration-only responsibilities (auth/bootstrap, section refresh routing, shared toast bridge, modal escape close, periodic refresh).
+- Validation evidence (`testing/ui-validation/driver-dashboard/validate-driver-dashboard.spec.js`):
+	- `VAL_STAGE=before`: 2/2 passed (desktop + mobile)
+	- `VAL_STAGE=after`: 2/2 passed (desktop + mobile)
+	- Console warnings/errors: 0
+	- Failed network requests: 0

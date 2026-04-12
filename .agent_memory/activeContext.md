@@ -1,7 +1,26 @@
 # Active Context
 
 ## Current Focus
-Dashboard Web Components refactor execution — TASK007, TASK010, TASK011, TASK012, and TASK013 are now complete; next pending dashboard decomposition work is TASK009/TASK014. Event architecture execution has moved from program setup (TASK018) into implementation slices (TASK019+).
+Dashboard Web Components refactor execution — TASK007, TASK009, TASK010, TASK011, TASK012, TASK013, and TASK014 are now complete for active role scopes. Remaining active engineering work is non-dashboard backlog (migration verification and notification-routing narrowing).
+
+### Driver dashboard componentization + inline-events migration completed (April 12, 2026)
+- Extracted all Driver sections into dashboard-scoped components under `pages/dashboard/driver/components/`:
+	- `driver-dashboard-overview`
+	- `driver-trip-log`
+	- `driver-vehicle-check`
+	- `driver-breakdown`
+	- `driver-fuel-mileage`
+	- `driver-transport-ticket`
+	- `driver-garages`
+- Extracted all Driver page modals one-modal-per-component under `pages/dashboard/driver/components/page-modals/`.
+- Replaced inline section and modal markup in `pages/dashboard/driver/index.html` with component hosts and script includes.
+- Replaced `pages/dashboard/driver/script.js` monolith with orchestration-only bridges (auth/bootstrap, section refresh routing, toast bridge, modal bridge wiring, periodic refresh).
+- Completed inline-events migration for Driver scope by moving interactions to component-local handlers and event contracts (`driver-ui:toast`, `driver:modal-open`, `driver:modal-close`, `driver:data-*`).
+- Validation evidence (`testing/ui-validation/driver-dashboard/validate-driver-dashboard.spec.js`):
+	- Before run: `VAL_STAGE=before` passed (2/2 desktop + mobile)
+	- After run: `VAL_STAGE=after` passed (2/2 desktop + mobile)
+	- Console warnings/errors: 0
+	- Failed network requests: 0
 
 ### Machinery Operator dashboard componentization completed (April 12, 2026)
 - Extracted all Machinery Operator sections into dashboard-scoped components under `pages/dashboard/machinery-operator/components/`:

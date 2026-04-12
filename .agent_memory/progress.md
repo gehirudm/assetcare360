@@ -119,6 +119,16 @@
   - Replaced `pages/dashboard/machinery-operator/script.js` monolith with orchestration-only bridges (auth/bootstrap, section refresh routing, cross-component modal events, toast and sidebar badge wiring)
   - Added `pages/dashboard/machinery-operator/components/mo-utils.js` as shared utility helper for status/date/toast behavior reused across section and modal components
   - Validation passed for full Machinery Operator scope via `testing/ui-validation/machinery-operator-dashboard/validate-machinery-operator-dashboard.spec.js` (`VAL_STAGE=before` and `VAL_STAGE=after`: 2/2 desktop+mobile each stage; console/network regressions: none)
+- ✅ Driver dashboard componentization completed (TASK009)
+  - Added dashboard-scoped section components under `pages/dashboard/driver/components/` (`driver-dashboard-overview`, `driver-trip-log`, `driver-vehicle-check`, `driver-breakdown`, `driver-fuel-mileage`, `driver-transport-ticket`, `driver-garages`) and shared `driver-utils.js`
+  - Added one-modal-per-component files under `pages/dashboard/driver/components/page-modals/` for trip, check, breakdown, fuel/mileage, and ticket flows
+  - Replaced inline section/modal markup in `pages/dashboard/driver/index.html` with component hosts and removed inline handler attributes from `pages/dashboard/driver/**`
+  - Reduced `pages/dashboard/driver/script.js` to orchestration-only responsibilities (auth/bootstrap, refresh routing, toast bridge, modal bridge, periodic refresh)
+  - Validation passed via `testing/ui-validation/driver-dashboard/validate-driver-dashboard.spec.js` (`VAL_STAGE=before` and `VAL_STAGE=after`: 2/2 desktop+mobile each stage; console/network regressions: none)
+- ✅ Inline events to component events migration completed (TASK014)
+  - Completed migration of inline handler usage to component-local event handling across active dashboard scopes (SysAdministration, Maintenance, Machinery Operator, Driver)
+  - Standardized custom-event orchestration contracts so parent dashboard scripts remain orchestration-only
+  - Final Driver closure validated with stage-based before/after Playwright evidence (desktop + mobile) and zero console/network regressions
 - ✅ Supervisor componentization completed (TASK007)
   - Added `components/asset-status/script.js` with `<supervisor-asset-status>`
   - Replaced inline asset-status section markup with component host in supervisor dashboard HTML
@@ -238,7 +248,6 @@
 ## What's Left / Known Issues
 - ⏳ Migration `047` run/confirmation remains blocked in current sandbox due DB connection refusal
 - ⏳ Frontend budget-submission form should validate `total_amount > 0` before POSTing
-- ⏳ Remaining role dashboards still pending decomposition (driver)
 - ⏳ Dashboard Web Components refactor backlog created (agent-memory TASK004–TASK016 + Beads epic/children) and ready for staged execution
 - ⏳ Verify migration 048 and event consumers against a live RabbitMQ + database environment
 
