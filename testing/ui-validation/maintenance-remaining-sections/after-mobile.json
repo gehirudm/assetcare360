@@ -1,0 +1,23 @@
+{
+  "stage": "after",
+  "viewport": "mobile",
+  "url": "http://127.0.0.1:3000/dashboard/maintenance/index.html",
+  "title": "Maintenance Manager Dashboard",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \"Notifications\" [level=1]\n  - paragraph: Categorized alerts and notifications\n  - button \"All Notifications\"\n  - button \"Cost Approvals\"\n  - button \"Service\"\n  - button \"Inventory\"\n  - text: Critical Alerts\n  - strong: \"Warranty Expiring:\"\n  - text: \"Vehicle #089 brake system warranty expires in 2 days\"\n  - button \"Check Warranty\"\n  - strong: \"Overdue Service:\"\n  - text: \"Vehicle #089 routine check is 1 day overdue\"\n  - button \"Schedule Now\"\n  - text: Warranty Notifications\n  - strong: \"Warranty Expiring:\"\n  - text: \"Vehicle #089 brake system warranty expires on Sep 30, 2025\"\n  - strong: \"Warranty Expired:\"\n  - text: \"Machine #205 hydraulic pump warranty expired on Aug 10, 2025\"\n  - strong: \"Warranty Active:\"\n  - text: \"Vehicle #101 engine warranty valid until Dec 15, 2025 Cost Approval Notifications\"\n  - strong: \"High Cost Approval:\"\n  - text: Engine repair cost LKR 45,000 awaiting approval (CA-001)\n  - button \"Approve\"\n  - button \"Reject\"\n  - strong: \"Cost Approval Pending:\"\n  - text: Hydraulic pump replacement LKR 32,000 (CA-002)\n  - button \"Approve\"\n  - button \"Reject\"\n  - text: Service Notifications\n  - strong: \"Service Report Submitted:\"\n  - text: \"Technical Officer uploaded report for Machine #203\"\n  - button \"Review Report\"\n  - strong: \"Service Completed:\"\n  - text: \"Vehicle #089 brake system repair completed successfully\"\n  - strong: \"Service Due:\"\n  - text: \"Vehicle #101 preventive maintenance due on Sep 28, 2025 Inventory Notifications\"\n  - strong: \"Low Stock Alert:\"\n  - text: Brake pad stock running low (from Inventory Manager)\n  - strong: \"Stock Update:\"\n  - text: Hydraulic oil restocked - 50 units added Notification Summary 4 Critical Alerts 7 Pending Actions 15 Today's Notifications 92% Response Rate",
+    "snapshotLength": 1764
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "activeSection": "notifications",
+    "visibleTickets": 5,
+    "visibleWarrantyRows": 1,
+    "visibleNotificationCards": 5,
+    "modalStates": {
+      "ticketDetailsOpen": false,
+      "serviceScheduleOpen": false,
+      "addServiceOpen": false
+    }
+  }
+}
