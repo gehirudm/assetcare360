@@ -17,12 +17,33 @@
  *   setActive(section)         — highlight the given nav item
  *   setNotifBadge(count)       — show/hide the badge on the item with badge:true
  */
+const AC_SIDEBAR_STYLE_ID = 'ac-sidebar-shared-badge-styles';
+
+const AC_SIDEBAR_SHARED_STYLES = `
+ac-sidebar .nav-badge {
+    margin-left: auto;
+    background: #ef4444;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+`;
+
 class ACSidebar extends HTMLElement {
     static get observedAttributes() {
         return ['nav'];
     }
 
     connectedCallback() {
+        this._ensureSharedStyles();
         this.classList.add('sidebar');
         this.render();
     }
@@ -77,6 +98,17 @@ class ACSidebar extends HTMLElement {
         if (!badge) return;
         badge.textContent   = count;
         badge.style.display = count > 0 ? 'inline-flex' : 'none';
+    }
+
+    _ensureSharedStyles() {
+        if (document.getElementById(AC_SIDEBAR_STYLE_ID)) {
+            return;
+        }
+
+        const style = document.createElement('style');
+        style.id = AC_SIDEBAR_STYLE_ID;
+        style.textContent = AC_SIDEBAR_SHARED_STYLES;
+        document.head.appendChild(style);
     }
 }
 

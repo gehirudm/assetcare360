@@ -9,12 +9,16 @@ class InventoryCatalog extends HTMLElement {
         this.products = [];
         this.currentStockFilter = 'all';
         this.currentCategoryFilter = 'all';
+        this._eventsBound = false;
+        this._initialized = false;
     }
 
     connectedCallback() {
+        if (this._initialized) return;
         this.loadStyles();
         this.render();
         this.bindEvents();
+        this._initialized = true;
     }
 
     loadStyles() {
@@ -74,6 +78,9 @@ class InventoryCatalog extends HTMLElement {
     }
 
     bindEvents() {
+        if (this._eventsBound) return;
+        this._eventsBound = true;
+
         // Search
         const searchInput = this.querySelector('#catalogSearch');
         if (searchInput) {
