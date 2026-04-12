@@ -8,6 +8,10 @@ applyTo: "pages/**"
 
 Before changing UI structure, styling, or interaction logic in frontend files, capture the current behavior of the target UI area.
 
+- Create or update a Playwright spec in the NodeJS validation project at `testing/ui-validation/[scope]/validate-[scope].spec.js` before starting the refactor.
+- The spec must support stage-based output using `VAL_STAGE=before` and `VAL_STAGE=after`.
+- Use this spec to generate baseline artifacts in the scope folder (`before-*` JSON/screenshots/log summaries).
+
 - Open the target page and reach the exact section/state that will be refactored.
 - Record baseline evidence using available tools (for example webapp-testing and browser automation tools):
   - Accessibility snapshot of the relevant area
@@ -18,6 +22,9 @@ Before changing UI structure, styling, or interaction logic in frontend files, c
 ## Rule 2 - Re-run the same checks after refactor
 
 After refactor changes are complete, run the same checks against the same UI area and interaction path.
+
+- Re-run the same `testing/ui-validation/[scope]/validate-[scope].spec.js` script with `VAL_STAGE=after`.
+- Ensure after-state artifacts are written beside baseline artifacts (`after-*` JSON/screenshots/log summaries).
 
 - Compare post-change behavior with baseline.
 - Treat newly introduced console errors, warnings, failed requests, broken interactions, missing content, and layout regressions as blockers.
@@ -41,3 +48,8 @@ When reporting completed UI refactors, include a concise verification summary.
 ## Rule 5 - Validate desktop and mobile behavior when layout is affected
 
 If the refactor touches layout, spacing, navigation, or responsive behavior, validate the updated area at desktop and mobile viewport sizes.
+
+## Rule 6 - Use testing/ui-validation as the canonical Playwright project
+
+- UI refactor validation scripts must live under `testing/ui-validation`.
+- Ensure required dependencies for validation execution are available in that project (`playwright` and `@playwright/test`).

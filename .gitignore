@@ -39,3 +39,5 @@ dev.env
 .vscode/settings.json
 
 .playwright-mcp
+
+testing/ui-validation/node_modules/test-results/

@@ -43,6 +43,23 @@ You must also heavily use the webapp-testing skill:
 5. Clear main script to orchestration-only code.
 
 ## Validation Requirements (Every Phase)
+For each refactor phase, create and run Playwright validation scripts in the NodeJS project at `testing/ui-validation` before and after changes.
+
+Script creation requirements:
+- Create or update a dedicated spec per refactor scope under `testing/ui-validation/[scope]/`.
+- Use a stable file name pattern: `validate-[scope].spec.js`.
+- The script must support stage-based artifact generation using `VAL_STAGE=before` and `VAL_STAGE=after`.
+- The script must write artifacts to the same scope folder using stage-specific names (`before-*`, `after-*`) for JSON and screenshots.
+- The script must capture and store:
+  - Accessibility snapshot (or structure equivalent)
+  - Console warnings/errors
+  - Failed network requests
+  - Interaction-path results for the affected feature flow
+
+Environment requirements:
+- Treat `testing/ui-validation` as the canonical NodeJS project for UI refactor validation.
+- Ensure required Playwright dependencies exist there (`playwright` and `@playwright/test`) before execution.
+
 For each refactor phase, run UI validation before and after changes:
 - Accessibility snapshot (or equivalent structure check)
 - Console errors/warnings capture
@@ -52,7 +69,7 @@ For each refactor phase, run UI validation before and after changes:
 
 Testing execution priority:
 1. Use Playwright MCP/browser tools when available.
-2. If MCP browser context is unavailable, use the local webapp-testing skill scripts via terminal.
+2. If MCP browser context is unavailable, run the generated `testing/ui-validation/[scope]/validate-[scope].spec.js` via terminal for both `VAL_STAGE=before` and `VAL_STAGE=after`.
 
 Treat any newly introduced UI regression as blocking and fix it in the same phase.
 
