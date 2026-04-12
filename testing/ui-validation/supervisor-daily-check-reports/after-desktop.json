@@ -1,0 +1,18 @@
+{
+  "stage": "after",
+  "viewport": "desktop",
+  "url": "http://127.0.0.1:3000/dashboard/supervisor/index.html",
+  "title": "Supervisor Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \"Weekly Check Reports\" [level=2]\n  - paragraph: Review and approve daily inspection reports\n  - button \"All\"\n  - button \"Pending\"\n  - button \"Approved\"\n  - button \"Rejected\"\n  - button \"All Sources\"\n  - button \"Driver Reports\"\n  - button \"Operator Reports\"\n  - text: Reports for Review\n  - strong: VCHK-006 - LKA-1234\n  - text: Admin User | Driver PENDING | 2/9/2026\n  - button \"VIEW\"\n  - button",
+    "snapshotLength": 415
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "activeSection": "daily-check-reports",
+    "visibleReports": 1,
+    "totalReports": 13,
+    "modalOpened": true
+  }
+}

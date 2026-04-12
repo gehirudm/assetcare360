@@ -1,0 +1,126 @@
+[     938ms] [ERROR] No authorized user data received for Technical Officer dashboard @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:1301
+[    1008ms] [ERROR] Font Awesome Kit: TypeError: Failed to fetch @ https://kit.fontawesome.com/a422e631ad.js:1
+[   19849ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:8000/api/auth/login:0
+[   19849ms] [ERROR] API Error: Error: Invalid credentials
+    at Object.request (http://127.0.0.1:3000/js/api.js:54:23)
+    at async Object.login (http://127.0.0.1:3000/js/auth.js:60:30)
+    at async HTMLFormElement.<anonymous> (http://127.0.0.1:3000/auth/login.html:535:36) @ http://127.0.0.1:3000/js/api.js:66
+[   19851ms] [ERROR] Login error: Error: Invalid credentials
+    at Object.request (http://127.0.0.1:3000/js/api.js:54:23)
+    at async Object.login (http://127.0.0.1:3000/js/auth.js:60:30)
+    at async HTMLFormElement.<anonymous> (http://127.0.0.1:3000/auth/login.html:535:36) @ http://127.0.0.1:3000/js/auth.js:83
+[   19851ms] [LOG] Login result: {success: false, message: Invalid credentials} @ http://127.0.0.1:3000/auth/login.html:536
+[  125599ms] [LOG] Login result: {success: true, user: Object, forcePasswordChange: false, message: Login successful} @ http://127.0.0.1:3000/auth/login.html:536
+[  125599ms] [LOG] Login successful, redirecting user: {id: 4, employee_id: LITRO-TECHOFFICER-001, full_name: Technical Officer One, role: Technical Officer, technical_expertise: General} @ http://127.0.0.1:3000/auth/login.html:551
+[  125599ms] [LOG] Redirecting user: {id: 4, employee_id: LITRO-TECHOFFICER-001, full_name: Technical Officer One, role: Technical Officer, technical_expertise: General} @ http://127.0.0.1:3000/js/auth.js:171
+[  125599ms] [LOG] Role: Technical Officer -> Normalized: TECHNICAL_OFFICER @ http://127.0.0.1:3000/js/auth.js:172
+[  125599ms] [LOG] Dashboard URL: /dashboard/technical-officer/index.html @ http://127.0.0.1:3000/js/auth.js:173
+[  126273ms] [LOG] Technical Officer Dashboard - User loaded: {id: 4, employee_id: LITRO-TECHOFFICER-001, role: Technical Officer, full_name: Technical Officer One, exp: 1775760158} @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:1306
+[  126273ms] [LOG] Loading tickets and inventory... @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:1321
+[  126297ms] [LOG] === DEBUG: Technical Officer Ticket Filtering === @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:464
+[  126297ms] [LOG] Current user ID: 4 Type: number @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:465
+[  126297ms] [LOG] Total tickets received: 10 @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:466
+[  126297ms] [LOG] Ticket MBD-004: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  126297ms] [LOG] Ticket VBD-004: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  126297ms] [LOG] Ticket MBD-003: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  126297ms] [LOG] Ticket RBD-002: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  126297ms] [LOG] Ticket VBD-002: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  126298ms] [LOG] Ticket RBD-001: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  126298ms] [LOG] Ticket VBD-001: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  126298ms] [LOG] Ticket MBD-002: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  126298ms] [LOG] Ticket MBD-001: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  126298ms] [LOG] Filtered tickets for current user: 9 @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:485
+[  126298ms] [WARNING] renderTickets fallback aborted: #allTicketsList not found and to-tickets component API unavailable. @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:538
+[  126298ms] [LOG] Tickets and inventory loaded @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:1325
+[  295299ms] [LOG] Technical Officer Dashboard - User loaded: {id: 4, employee_id: LITRO-TECHOFFICER-001, role: Technical Officer, full_name: Technical Officer One, exp: 1775760158} @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:1306
+[  295299ms] [LOG] Loading tickets and inventory... @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:1321
+[  295317ms] [LOG] === DEBUG: Technical Officer Ticket Filtering === @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:464
+[  295317ms] [LOG] Current user ID: 4 Type: number @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:465
+[  295317ms] [LOG] Total tickets received: 10 @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:466
+[  295317ms] [LOG] Ticket MBD-004: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  295317ms] [LOG] Ticket VBD-004: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  295317ms] [LOG] Ticket MBD-003: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  295317ms] [LOG] Ticket RBD-002: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  295317ms] [LOG] Ticket VBD-002: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  295317ms] [LOG] Ticket RBD-001: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  295317ms] [LOG] Ticket VBD-001: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  295317ms] [LOG] Ticket MBD-002: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  295317ms] [LOG] Ticket MBD-001: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  295317ms] [LOG] Filtered tickets for current user: 9 @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:485
+[  295317ms] [WARNING] renderTickets fallback aborted: #allTicketsList not found and to-tickets component API unavailable. @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:538
+[  295317ms] [LOG] Tickets and inventory loaded @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:1325
+[  376770ms] [LOG] Technical Officer Dashboard - User loaded: {id: 4, employee_id: LITRO-TECHOFFICER-001, role: Technical Officer, full_name: Technical Officer One, exp: 1775760158} @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:1306
+[  376770ms] [LOG] Loading tickets and inventory... @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:1321
+[  376792ms] [LOG] === DEBUG: Technical Officer Ticket Filtering === @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:464
+[  376792ms] [LOG] Current user ID: 4 Type: number @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:465
+[  376792ms] [LOG] Total tickets received: 10 @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:466
+[  376792ms] [LOG] Ticket MBD-004: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  376792ms] [LOG] Ticket VBD-004: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  376792ms] [LOG] Ticket MBD-003: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  376792ms] [LOG] Ticket RBD-002: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  376792ms] [LOG] Ticket VBD-002: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  376792ms] [LOG] Ticket RBD-001: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  376792ms] [LOG] Ticket VBD-001: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  376792ms] [LOG] Ticket MBD-002: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  376793ms] [LOG] Ticket MBD-001: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[  376793ms] [LOG] Filtered tickets for current user: 9 @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:485
+[  376817ms] [LOG] Tickets and inventory loaded @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:1325
+[ 1236396ms] [LOG] Login result: {success: true, user: Object, forcePasswordChange: false, message: Login successful} @ http://127.0.0.1:3000/auth/login.html:536
+[ 1236396ms] [LOG] Login successful, redirecting user: {id: 1, employee_id: LITRO-ADMIN-001, full_name: Admin User, role: Admin, technical_expertise: null} @ http://127.0.0.1:3000/auth/login.html:551
+[ 1236396ms] [LOG] Redirecting user: {id: 1, employee_id: LITRO-ADMIN-001, full_name: Admin User, role: Admin, technical_expertise: null} @ http://127.0.0.1:3000/js/auth.js:171
+[ 1236396ms] [LOG] Role: Admin -> Normalized: ADMIN @ http://127.0.0.1:3000/js/auth.js:172
+[ 1236396ms] [LOG] Dashboard URL: /dashboard/sysadministration/index.html @ http://127.0.0.1:3000/js/auth.js:173
+[ 1317058ms] [LOG] Opening modal: createUserModal @ http://127.0.0.1:3000/dashboard/sysadministration/script.js:1105
+[ 1318604ms] [LOG] Opening modal: setPettyCashLimitModal @ http://127.0.0.1:3000/dashboard/sysadministration/script.js:1105
+[ 1319857ms] [LOG] Previewing template: TPL-001 @ http://127.0.0.1:3000/dashboard/sysadministration/script.js:1525
+[ 1398126ms] [LOG] Login result: {success: true, user: Object, forcePasswordChange: false, message: Login successful} @ http://127.0.0.1:3000/auth/login.html:536
+[ 1398127ms] [LOG] Login successful, redirecting user: {id: 1, employee_id: LITRO-ADMIN-001, full_name: Admin User, role: Admin, technical_expertise: null} @ http://127.0.0.1:3000/auth/login.html:551
+[ 1398127ms] [LOG] Redirecting user: {id: 1, employee_id: LITRO-ADMIN-001, full_name: Admin User, role: Admin, technical_expertise: null} @ http://127.0.0.1:3000/js/auth.js:171
+[ 1398127ms] [LOG] Role: Admin -> Normalized: ADMIN @ http://127.0.0.1:3000/js/auth.js:172
+[ 1398127ms] [LOG] Dashboard URL: /dashboard/sysadministration/index.html @ http://127.0.0.1:3000/js/auth.js:173
+[ 1458038ms] [LOG] Opening modal: createUserModal @ http://127.0.0.1:3000/dashboard/sysadministration/script.js:1105
+[ 1459304ms] [LOG] Opening modal: setPettyCashLimitModal @ http://127.0.0.1:3000/dashboard/sysadministration/script.js:1105
+[ 1460571ms] [LOG] Opening modal: createTemplateModal @ http://127.0.0.1:3000/dashboard/sysadministration/script.js:1105
+[ 1462669ms] [LOG] Viewing user session for: EMP-001 @ http://127.0.0.1:3000/dashboard/sysadministration/script.js:1828
+[ 1861974ms] [LOG] Login result: {success: true, user: Object, forcePasswordChange: false, message: Login successful} @ http://127.0.0.1:3000/auth/login.html:536
+[ 1861974ms] [LOG] Login successful, redirecting user: {id: 4, employee_id: LITRO-TECHOFFICER-001, full_name: Technical Officer One, role: Technical Officer, technical_expertise: General} @ http://127.0.0.1:3000/auth/login.html:551
+[ 1861974ms] [LOG] Redirecting user: {id: 4, employee_id: LITRO-TECHOFFICER-001, full_name: Technical Officer One, role: Technical Officer, technical_expertise: General} @ http://127.0.0.1:3000/js/auth.js:171
+[ 1861974ms] [LOG] Role: Technical Officer -> Normalized: TECHNICAL_OFFICER @ http://127.0.0.1:3000/js/auth.js:172
+[ 1861974ms] [LOG] Dashboard URL: /dashboard/technical-officer/index.html @ http://127.0.0.1:3000/js/auth.js:173
+[ 1862029ms] [LOG] Technical Officer Dashboard - User loaded: {id: 4, employee_id: LITRO-TECHOFFICER-001, role: Technical Officer, full_name: Technical Officer One, exp: 1775761894} @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:1306
+[ 1862029ms] [LOG] Loading tickets and inventory... @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:1321
+[ 1862050ms] [LOG] === DEBUG: Technical Officer Ticket Filtering === @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:464
+[ 1862050ms] [LOG] Current user ID: 4 Type: number @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:465
+[ 1862050ms] [LOG] Total tickets received: 10 @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:466
+[ 1862050ms] [LOG] Ticket MBD-004: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 1862050ms] [LOG] Ticket VBD-004: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 1862050ms] [LOG] Ticket MBD-003: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 1862050ms] [LOG] Ticket RBD-002: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 1862050ms] [LOG] Ticket VBD-002: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 1862050ms] [LOG] Ticket RBD-001: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 1862050ms] [LOG] Ticket VBD-001: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 1862050ms] [LOG] Ticket MBD-002: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 1862050ms] [LOG] Ticket MBD-001: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 1862050ms] [LOG] Filtered tickets for current user: 9 @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:485
+[ 1862075ms] [LOG] Tickets and inventory loaded @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:1325
+[ 2051833ms] [LOG] Technical Officer Dashboard - User loaded: {id: 4, employee_id: LITRO-TECHOFFICER-001, role: Technical Officer, full_name: Technical Officer One, exp: 1775761894} @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:1306
+[ 2051833ms] [LOG] Loading tickets and inventory... @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:1321
+[ 2051864ms] [LOG] === DEBUG: Technical Officer Ticket Filtering === @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:464
+[ 2051864ms] [LOG] Current user ID: 4 Type: number @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:465
+[ 2051864ms] [LOG] Total tickets received: 10 @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:466
+[ 2051864ms] [LOG] Ticket MBD-004: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 2051864ms] [LOG] Ticket VBD-004: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 2051864ms] [LOG] Ticket MBD-003: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 2051864ms] [LOG] Ticket RBD-002: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 2051864ms] [LOG] Ticket VBD-002: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 2051864ms] [LOG] Ticket RBD-001: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 2051864ms] [LOG] Ticket VBD-001: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 2051864ms] [LOG] Ticket MBD-002: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 2051864ms] [LOG] Ticket MBD-001: assignment.assigned_to=4 (number) vs currentUser.id=4 (number) => MATCH @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:476
+[ 2051864ms] [LOG] Filtered tickets for current user: 9 @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:485
+[ 2051888ms] [LOG] Tickets and inventory loaded @ http://127.0.0.1:3000/dashboard/technical-officer/script.js:1325
+[ 2061640ms] [LOG] Login result: {success: true, user: Object, forcePasswordChange: false, message: Login successful} @ http://127.0.0.1:3000/auth/login.html:536
+[ 2061640ms] [LOG] Login successful, redirecting user: {id: 1, employee_id: LITRO-ADMIN-001, full_name: Admin User, role: Admin, technical_expertise: null} @ http://127.0.0.1:3000/auth/login.html:551
+[ 2061640ms] [LOG] Redirecting user: {id: 1, employee_id: LITRO-ADMIN-001, full_name: Admin User, role: Admin, technical_expertise: null} @ http://127.0.0.1:3000/js/auth.js:171
+[ 2061640ms] [LOG] Role: Admin -> Normalized: ADMIN @ http://127.0.0.1:3000/js/auth.js:172
+[ 2061640ms] [LOG] Dashboard URL: /dashboard/sysadministration/index.html @ http://127.0.0.1:3000/js/auth.js:173

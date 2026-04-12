@@ -1,0 +1,5 @@
+[   19411ms] [LOG] Login result: {success: true, user: Object, forcePasswordChange: false, message: Login successful} @ http://127.0.0.1:3000/auth/login.html:536
+[   19411ms] [LOG] Login successful, redirecting user: {id: 5, employee_id: LITRO-SUPERVISOR-001, full_name: Supervisor One, role: Supervisor, technical_expertise: null} @ http://127.0.0.1:3000/auth/login.html:551
+[   19411ms] [LOG] Redirecting user: {id: 5, employee_id: LITRO-SUPERVISOR-001, full_name: Supervisor One, role: Supervisor, technical_expertise: null} @ http://127.0.0.1:3000/js/auth.js:171
+[   19411ms] [LOG] Role: Supervisor -> Normalized: SUPERVISOR @ http://127.0.0.1:3000/js/auth.js:172
+[   19411ms] [LOG] Dashboard URL: /dashboard/supervisor/index.html @ http://127.0.0.1:3000/js/auth.js:173
