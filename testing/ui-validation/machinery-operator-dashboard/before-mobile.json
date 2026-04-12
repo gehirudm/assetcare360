@@ -1,0 +1,23 @@
+{
+  "stage": "before",
+  "viewport": "mobile",
+  "url": "http://127.0.0.1:3000/dashboard/machinery-operator/index.html",
+  "title": "Machinery Operator Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \"Notifications\" [level=1]\n  - paragraph: Supervisor approvals and repair updates\n  - text:  Recent Notifications\n  - strong:  Ticket Approved\n  - text: MBD-001 approved by Supervisor John - Technical Officer Mike assigned Aug 22, 8:45 AM\n  - strong:  Repair Update\n  - text: MBD-001 - Parts ordered, repair scheduled for tomorrow Aug 22, 9:00 AM\n  - strong:  Weekly Check Report Approved\n  - text: \"UPD-005 for Excavator #045 reviewed and approved by Supervisor John Aug 22, 5:15 PM\"\n  - strong:  Service Reminder\n  - text: \"Excavator #045 service due in 2 days (153 hours remaining) Aug 22, 6:00 AM\"\n  - strong:  Ticket Resolved\n  - text: \"MBD-002 completed successfully - Loader #128 back in service Aug 21, 3:30 PM\"",
+    "snapshotLength": 744
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "activeSection": "notifications",
+    "visibleFaultCards": 2,
+    "visibleUpdateCards": 2,
+    "visibleTicketCards": 2,
+    "notificationsCount": 5,
+    "modalStates": {
+      "reportFaultOpen": false,
+      "conditionUpdateOpen": false
+    }
+  }
+}
