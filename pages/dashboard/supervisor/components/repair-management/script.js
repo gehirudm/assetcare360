@@ -107,7 +107,7 @@ class SupervisorRepairManagement extends HTMLElement {
                             </div>
                             <div class="item-meta">
                                 <span class="status-text status-urgent">URGENT</span> |
-                                <i class="fas fa-dollar-sign"></i> Est. Cost: $2,500
+                                <i class="fas fa-dollar-sign"></i> Est. Cost: LKR 2,500
                             </div>
                         </div>
                         <div class="item-actions">
@@ -143,7 +143,7 @@ class SupervisorRepairManagement extends HTMLElement {
                             </div>
                             <div class="item-meta">
                                 <span class="status-text status-normal">NORMAL</span> |
-                                <i class="fas fa-dollar-sign"></i> Est. Cost: $1,800
+                                <i class="fas fa-dollar-sign"></i> Est. Cost: LKR 1,800
                             </div>
                         </div>
                         <div class="item-actions">

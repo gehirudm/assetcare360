@@ -1419,25 +1419,25 @@ function viewPettyCashHistory(employeeId) {
                 <tbody>
                     <tr>
                         <td>Oct 18, 2025</td>
-                        <td>$150</td>
+                        <td>LKR 150</td>
                         <td>Vehicle parts procurement</td>
                         <td><span class="status-text status-completed">Approved</span></td>
                     </tr>
                     <tr>
                         <td>Oct 15, 2025</td>
-                        <td>$85</td>
+                        <td>LKR 85</td>
                         <td>Tool maintenance</td>
                         <td><span class="status-text status-completed">Approved</span></td>
                     </tr>
                     <tr>
                         <td>Oct 12, 2025</td>
-                        <td>$220</td>
+                        <td>LKR 220</td>
                         <td>Emergency repairs</td>
                         <td><span class="status-text status-pending">Pending</span></td>
                     </tr>
                     <tr>
                         <td>Oct 10, 2025</td>
-                        <td>$95</td>
+                        <td>LKR 95</td>
                         <td>Fuel expenses</td>
                         <td><span class="status-text status-completed">Approved</span></td>
                     </tr>
@@ -1445,9 +1445,9 @@ function viewPettyCashHistory(employeeId) {
             </table>
             <div style="margin-top: 20px; padding: 15px; background: var(--light-bg); border-radius: 8px;">
                 <strong>Summary:</strong><br>
-                Total Spent This Month: $550<br>
-                Remaining Limit: $1,450<br>
-                Pending Approvals: $220
+                Total Spent This Month: LKR 550<br>
+                Remaining Limit: LKR 1,450<br>
+                Pending Approvals: LKR 220
             </div>
         </div>
         <div style="text-align: right; margin-top: 20px;">
@@ -1474,10 +1474,10 @@ function adjustLimit(employeeId) {
                 <h5>Individual Limit Adjustment</h5>
                 <div class="form-group">
                     <label class="form-label">Current Monthly Limit</label>
-                    <input type="text" class="form-input" value="$2,000" readonly disabled>
+                    <input type="text" class="form-input" value="LKR 2,000" readonly disabled>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">New Monthly Limit ($)</label>
+                    <label class="form-label">New Monthly Limit (LKR)</label>
                     <input type="number" class="form-input" placeholder="e.g., 3000" required>
                 </div>
                 <div class="form-group">

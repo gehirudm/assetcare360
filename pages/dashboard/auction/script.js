@@ -132,13 +132,13 @@ function viewAuctionDetails(id) {
             </div>
             <div class="form-section">
                 <h5><i class="fas fa-money-bill-wave"></i> Bidding Information</h5>
-                <div><strong>Reserve Price:</strong> $18,000</div>
-                <div><strong>Starting Bid:</strong> $18,000</div>
-                <div><strong>Current Bid:</strong> $18,500</div>
+                <div><strong>Reserve Price:</strong> LKR 18,000</div>
+                <div><strong>Starting Bid:</strong> LKR 18,000</div>
+                <div><strong>Current Bid:</strong> LKR 18,500</div>
                 <div><strong>Above Reserve:</strong> 2.8%</div>
                 <div><strong>Total Bidders:</strong> 12</div>
                 <div><strong>Total Bids:</strong> 27</div>
-                <div><strong>Bid Increment:</strong> $100</div>
+                <div><strong>Bid Increment:</strong> LKR 100</div>
             </div>
             <div class="form-section">
                 <h5><i class="fas fa-truck"></i> Asset Details</h5>
@@ -152,10 +152,10 @@ function viewAuctionDetails(id) {
                 <h5><i class="fas fa-chart-bar"></i> Bidding Activity</h5>
                 <div style="margin-bottom: 8px;">
                     <strong>Recent Bids:</strong><br>
-                    $18,500 - BID-032 (M. Jayasekara) - 5 min ago<br>
-                    $18,400 - BID-014 (Next Motors) - 12 min ago<br>
-                    $18,300 - BID-032 (M. Jayasekara) - 25 min ago<br>
-                    $18,200 - BID-045 (R. Fernando) - 1 hour ago
+                    LKR 18,500 - BID-032 (M. Jayasekara) - 5 min ago<br>
+                    LKR 18,400 - BID-014 (Next Motors) - 12 min ago<br>
+                    LKR 18,300 - BID-032 (M. Jayasekara) - 25 min ago<br>
+                    LKR 18,200 - BID-045 (R. Fernando) - 1 hour ago
                 </div>
             </div>
             <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Close</button>
@@ -176,11 +176,11 @@ function viewBidders(auctionId) {
                 <div style="margin-bottom: 8px;">
                     <strong>Active Bidders:</strong><br><br>
                     <strong>BID-032</strong> - M. Jayasekara | Individual<br>
-                    Last Bid: $18,500 (5 min ago) | Total Bids: 8<br><br>
+                    Last Bid: LKR 18,500 (5 min ago) | Total Bids: 8<br><br>
                     <strong>BID-014</strong> - Next Motors (Pvt) | Company<br>
-                    Last Bid: $18,400 (12 min ago) | Total Bids: 6<br><br>
+                    Last Bid: LKR 18,400 (12 min ago) | Total Bids: 6<br><br>
                     <strong>BID-045</strong> - R. Fernando | Individual<br>
-                    Last Bid: $18,200 (1 hour ago) | Total Bids: 5
+                    Last Bid: LKR 18,200 (1 hour ago) | Total Bids: 5
                 </div>
             </div>
             <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Close</button>
