@@ -1,0 +1,25 @@
+{
+  "stage": "before",
+  "viewport": "mobile",
+  "url": "http://127.0.0.1:3000/dashboard/auction/index.html",
+  "title": "Auction Officer Dashboard",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \"Auction Reports\" [level=1]\n  - paragraph: Generate and analyze auction performance data\n  - text: Report Filters Date Range\n  - combobox:\n    - option \"Today\" [selected]\n    - option \"This Week\"\n    - option \"This Month\"\n    - option \"Custom\"\n  - text: Status\n  - combobox:\n    - option \"All\" [selected]\n    - option \"Active\"\n    - option \"Ended\"\n    - option \"Scheduled\"\n  - button \"Apply Filters\"\n  - button \"Export CSV\"\n  - button \"All Reports\"\n  - button \"Active\"\n  - button \"Ended\"\n  - button \"Scheduled\"\n  - text: Auction Report Results 3 results\n  - strong: AUC-2024-003 - V2L LX-B-486 (2020)\n  - text: \"15 Registered | Reserve: LKR 12,000 Starts in: 5h Starting Soon\"\n  - button \"View\"",
+    "snapshotLength": 714
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "activeSection": "reports",
+    "visibleAuctions": 1,
+    "visibleAssets": 1,
+    "visibleBidders": 2,
+    "visibleSchedule": 3,
+    "visibleReports": 1,
+    "modalStates": {
+      "createAuctionOpen": false,
+      "registerBidderOpen": false,
+      "scheduleAuctionOpen": false
+    }
+  }
+}
