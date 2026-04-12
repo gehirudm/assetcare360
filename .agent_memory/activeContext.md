@@ -1,7 +1,31 @@
 # Active Context
 
 ## Current Focus
-Dashboard Web Components refactor execution — TASK007 is now complete after supervisor daily-check extraction; next pending dashboard decomposition work is TASK009/TASK010/TASK011/TASK012/TASK013/TASK014. Event architecture execution has moved from program setup (TASK018) into implementation slices (TASK019+).
+Dashboard Web Components refactor execution — TASK007 and TASK013 are now complete; next pending dashboard decomposition work is TASK009/TASK010/TASK011/TASK012/TASK014. Event architecture execution has moved from program setup (TASK018) into implementation slices (TASK019+).
+
+### Auction dashboard componentization completed (April 12, 2026)
+- Completed full Auction dashboard section extraction into dashboard-scoped components under `pages/dashboard/auction/components/`:
+	- `dashboard-overview.js`
+	- `active-auctions.js`
+	- `assets.js`
+	- `bidders.js`
+	- `schedule.js`
+	- `reports.js`
+- Completed one-modal-per-component decomposition under `pages/dashboard/auction/components/page-modals/`:
+	- `create-auction-modal.js`
+	- `register-bidder-modal.js`
+	- `schedule-auction-modal.js`
+	- `auction-details-modal.js`
+	- `auction-bidders-modal.js`
+- Replaced inline section and modal markup in `pages/dashboard/auction/index.html` with component hosts and direct section shells for `<ac-layout>`.
+- Reduced `pages/dashboard/auction/script.js` to orchestration-only logic (auth/bootstrap, section navigation bridge, toast bridge, modal bridge wiring).
+- Added dedicated validation script `testing/ui-validation/auction-dashboard/validate-auction-dashboard.spec.js` with stage-based artifact output (`VAL_STAGE=before` and `VAL_STAGE=after`).
+- Validation evidence:
+	- Before run: `VAL_STAGE=before` passed (2/2)
+	- After run: `VAL_STAGE=after` passed (2/2)
+	- Console warnings/errors: none (desktop + mobile)
+	- Failed network requests: none (desktop + mobile)
+	- Interaction summary parity preserved (`activeSection=reports`, modal states closed, section-visible counts unchanged)
 
 ### Dashboard decomposition instruction hardening (April 9, 2026)
 - Updated `.github/instructions/component-decomposition-completeness.instructions.md` with mandatory dashboard refactor rules:
