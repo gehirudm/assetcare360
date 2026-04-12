@@ -248,6 +248,9 @@
 ## What's Left / Known Issues
 - ⏳ Migration `047` run/confirmation remains blocked in current sandbox due DB connection refusal
 - ⏳ Frontend budget-submission form should validate `total_amount > 0` before POSTing
+- ⏳ Technical Officer dashboard still contains residual monolithic modal/ticket logic and local detail-page routing assumptions (tracked in TASK035)
+- ⏳ Canonical fault ticket detail page (`pages/view-ticket`) still needs full refactor for inline handler removal and modular ownership (tracked in TASK034)
+- ⏳ Supervisor dashboard still has inline modal blocks and a monolithic parent script with duplicate function declarations (tracked in TASK036)
 - ⏳ Dashboard Web Components refactor backlog created (agent-memory TASK004–TASK016 + Beads epic/children) and ready for staged execution
 - ⏳ Verify migration 048 and event consumers against a live RabbitMQ + database environment
 

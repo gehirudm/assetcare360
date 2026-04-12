@@ -4,6 +4,9 @@
 - [TASK003] Run migration 047 and update OpenAPI spec — OpenAPI updates completed; migration confirmation blocked by DB connection refusal in sandbox
 
 ## Pending
+- [TASK036] Supervisor residual modal and monolith cleanup — Extract remaining create/assign/view ticket modals, move ticket rendering/actions into components, and reduce parent script to orchestration-only
+- [TASK035] Technical Officer fault ticket detail migration and page removal — Remove dashboard-local TO detail page and repoint TO ticket links to canonical fault ticket detail page
+- [TASK034] Shared fault ticket detail page refactor — Decompose `pages/view-ticket` monolith, remove inline handlers, and validate before/after desktop+mobile behavior
 - [TASK033] Add Transportation Manager Role to User Creation — Add the missing role option to user creation/edit modals and filter tabs
 - [TASK032] Budget-flow notification routing scope — Temporary broad notifications to all supervisors + maintenance managers; later narrow to controlling supervisor only
 
