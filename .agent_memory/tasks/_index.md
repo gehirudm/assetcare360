@@ -13,12 +13,13 @@
 - [TASK014] Inline events to component events migration — Remove inline handlers and adopt custom-event contracts
 - [TASK016] Transportation Manager dashboard bootstrap — Define and scaffold empty dashboard before componentization
 - [TASK003] Run migration 047 and update OpenAPI spec — migration not confirmed run; openapi.yaml needs update for budget/work-update changes
+- [TASK032] Budget-flow notification routing scope — Temporary broad notifications to all supervisors + maintenance managers; later narrow to controlling supervisor only
 
 ## Completed
 - [TASK005] Technical Officer shell and navigation migration — TO dashboard moved to `<ac-layout>` and shared DashboardInit/bootstrap/navigation contracts — Completed April 7, 2026
 - [TASK006] Technical Officer section componentization — All major TO sections fully componentized; ticket list/filter/action UI moved to `<to-tickets>` with parent event bridges — Completed April 7, 2026
 - [TASK008] Inventory Manager dashboard componentization — All 8 sections extracted to dashboard-scoped components; monolith reduced from 3580 to 2672 lines — Completed April 7, 2026
-- [TASK017] Completed-dashboard refactor quality cleanup — removed `-model` naming, componentized Inventory Manager popups, and migrated section modal/CRUD logic from monolith script — Completed April 7, 2026
+- [TASK017] Completed-dashboard refactor quality cleanup — removed `-model` naming, componentized Inventory Manager popups, migrated section modal/CRUD logic from monolith script, followed up with one-modal-per-component split plus modal-logic co-location, and extracted remaining machine/vehicle modal workflows into dedicated scripts — Completed April 7, 2026 (updated April 9, 2026)
 - [TASK015] Dashboard script bootstrap normalization — Core include order normalized, duplicate config include removed, and auth redirect paths standardized — Completed April 7, 2026
 - [TASK018] RabbitMQ event architecture program — Event contract, publisher, emitters, consumers, service-due producer, notifications API/UI, and reliability controls delivered — Completed April 7, 2026
 - [TASK019] Define event envelope and domain catalog — DomainEvents catalog and EventEnvelope validation implemented — Completed April 7, 2026
@@ -35,6 +36,10 @@
 - [TASK018] RabbitMQ event architecture program — Program decomposition and dependency mapping completed; execution delegated to TASK019–TASK027 — Completed April 7, 2026
 - [TASK001] Technical Officer fault-ticket-detail page — Full dashboard shell, step flow, breadcrumb nav, style fixes — Completed April 6, 2026
 - [TASK002] Budget step correctness — Zero-amount rejection, pending-budget gate, UI dash display — Completed April 6, 2026
+- [TASK028] Fault-ticket budget + spare workflow correctness — Centralized status sync, concurrent optional request flow, approval-gated transitions, FK fix migration, and API E2E validation completed — Completed April 9, 2026
+- [TASK029] Supervisor + Maintenance budget approval integration — Supervisor component and maintenance approvals wired to real budget APIs with review actions — Completed April 9, 2026
+- [TASK030] Currency normalization to LKR across dashboards — Dashboard currency strings normalized from $, Rs., and ₹ to LKR formats — Completed April 9, 2026
+- [TASK031] Shared fault-ticket detail template/component — Shared detail template helper added and integrated into TO detail + view-ticket entrypoint — Completed April 9, 2026
 
 ## Abandoned
 _(none)_

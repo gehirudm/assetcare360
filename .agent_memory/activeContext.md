@@ -3,6 +3,32 @@
 ## Current Focus
 Dashboard Web Components refactor execution — TASK007 remains active; TASK016 baseline bootstrap is now complete. Event architecture execution has moved from program setup (TASK018) into implementation slices (TASK019+).
 
+### Dashboard decomposition instruction hardening (April 9, 2026)
+- Updated `.github/instructions/component-decomposition-completeness.instructions.md` with mandatory dashboard refactor rules:
+  - extract all sections with logic into components
+  - extract all modals one-modal-per-component with logic co-location
+  - clear main dashboard scripts to orchestration-only after extraction
+  - enforce shared-first component decisions before dashboard-specific extraction
+  - enforce component placement paths for shared styles/components and dashboard-specific components/modals
+
+### Inventory Manager sidebar notification badge styling fix (April 9, 2026)
+- Resolved unstyled Notifications badge in Inventory Manager sidebar by adding shared badge CSS injection in `pages/components/shared/ac-sidebar.js`.
+- Root cause: badge markup existed in `<ac-sidebar>` but no shared `.nav-badge` styles were provided outside Technical Officer page-specific stylesheet.
+- Verified with Playwright MCP after login:
+	- badge rendered with red pill styling (background `rgb(239, 68, 68)`, white text, 20px pill size)
+	- no console errors/warnings during validation
+
+### Inventory Manager post-refactor MCP regression fix (April 9, 2026)
+- Ran Playwright MCP validation on Inventory Manager dashboard and resolved three regressions:
+	- Added `window.API = API` compatibility mapping in `pages/js/api.js` to support extracted components that still reference `window.API`.
+	- Added missing `pages/dashboard/inventory-manager/components/notifications/style.css` to remove notifications stylesheet 404.
+	- Added idempotent event binding guard in `pages/dashboard/inventory-manager/components/catalog/script.js` to prevent duplicate View modal openings.
+- Post-fix MCP validation confirmed:
+	- No console errors/warnings
+	- No notifications stylesheet 404
+	- No "API client is not available" banners in usage-tracking/notifications
+	- Single details modal opens per catalog View click
+
 ### TO dashboard section visibility regression fix (April 9, 2026)
 - Resolved a Technical Officer dashboard regression where sidebar rendered but all content sections were missing.
 - Root cause: `ac-layout` `attributeChangedCallback` executed during custom-element upgrade and re-rendered before first mount, clearing light-DOM `<section class="content-section">` children.
@@ -18,6 +44,17 @@ Dashboard Web Components refactor execution — TASK007 remains active; TASK016 
 	- Added shared, prefixed `ac-header` dropdown styles injected once into `document.head`.
 	- Standardized trigger/avatar/panel/item styles and panel positioning (`position:absolute`, fixed width, elevated z-index).
 - Verified with browser testing in SysAdministration and Technical Officer dashboards: dropdown now renders as a styled floating panel consistently.
+
+### Shared header profile hydration fix (April 9, 2026)
+- Resolved profile dropdown placeholder issue where many dashboards showed `Loading...` with empty role/employee ID.
+- Root cause: some dashboards relied on page-specific bootstrap and did not consistently call user header update paths.
+- Fix applied in `pages/components/shared/ac-header.js`:
+	- Added component-level user hydration from Auth/localStorage with fallback live auth check.
+	- Persisted hydrated user state across header rerenders.
+	- Hardened dropdown listener lifecycle to avoid repeated global listener buildup.
+- Verified with browser testing:
+	- Technical Officer shows `Technical Officer One / Technical Officer / LITRO-TECHOFFICER-001`.
+	- SysAdministration shows `Admin User / Admin / LITRO-ADMIN-001`.
 
 ## Recent Changes (April 6, 2026)
 
@@ -51,6 +88,7 @@ Dashboard Web Components refactor execution — TASK007 remains active; TASK016 
 ## Active Decisions
 - Budget `approved`/`rejected` both move ticket back to `Assigned` (intentional — technician proceeds from assigned state after review)
 - `petty_cash_limit` is a `SystemSetting` value (seeded at 50000.00); drives `approval_level` (supervisor / maintenance_manager)
+- Budget-flow notifications are deferred for now with interim routing to all supervisors and maintenance managers; future routing should target only the supervisor responsible for the assigned Technical Officer (tracked in TASK032)
 
 ### TO Dashboard UI Polish (latest session)
 - Removed **Recent Activities** section from dashboard
@@ -231,6 +269,9 @@ Dashboard Web Components refactor execution — TASK007 remains active; TASK016 
 - Renamed completed section component folders, custom-element tags, and bridge helper names to remove `-model` suffixes in Inventory Manager and TO create-ticket.
 - Added `pages/dashboard/inventory-manager/components/page-modals/script.js` and moved popup modal HTML out of `inventory-manager/index.html` into `<inventory-page-modals>`.
 - Migrated large catalog and sparepart-addition modal/action logic block from `inventory-manager/script.js` into `components/page-modals/script.js` to reduce section-specific monolith code.
+- Follow-up decomposition completed: replaced monolithic `<inventory-page-modals>` with one-modal-per-component hosts and added dedicated modal component files for add/edit/delete/reorder/add-stock.
+- Follow-up compliance pass completed: moved spare-part modal handlers/feature logic from shared `components/page-modals/script.js` into the matching per-modal component files so UI and behavior are co-located.
+- Additional decomposition completed: extracted remaining machine/vehicle modal workflows from shared `components/page-modals/script.js` into dedicated scripts (`machine-form`, `machine-details`, `vehicle-form`, `vehicle-details`, `vehicle-mileage`).
 - Verified dashboard codebase has no remaining `*-model` component/tag usage (`pages/dashboard/**`).
 - Ran diagnostics and syntax checks on touched Inventory Manager and TO files; no errors.
 

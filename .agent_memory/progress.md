@@ -94,6 +94,7 @@
   - Replaced inline notifications section markup with `<inventory-notifications>`
   - Removed notification helpers from monolithic `inventory-manager/script.js`
   - Added event bridge for sidebar badge updates and cross-section actions
+  - Follow-up fix: restored missing `components/notifications/style.css` file after post-refactor regression testing
 - ✅ Inventory Manager dashboard overview extraction
   - Added `components/dashboard-overview/script.js` + `style.css`
   - Replaced inline dashboard section markup with `<inventory-dashboard-overview>`
@@ -128,6 +129,10 @@
   - Migrated catalog/sparepart-addition modal and CRUD handlers out of `inventory-manager/script.js` into `components/page-modals/script.js`
   - Cleared remaining `*-model` usage from `pages/dashboard/**`
   - Syntax/diagnostic validation passed for all touched files
+  - Post-cleanup MCP fixes applied in Inventory Manager:
+    - `pages/js/api.js` now exports `window.API = API` for component compatibility
+    - catalog component now guards duplicate event binding across reconnects
+    - end-to-end MCP retest passed with no console/network regressions for tested flows
 - ✅ Dashboard bootstrap/load-order normalization (TASK015)
   - Normalized core include order in `machinery-operator/index.html` to `config → api → auth → utils`
   - Removed duplicate `config.js` include from `maintenance/index.html`
@@ -172,3 +177,8 @@
 - Zero-amount budget could be submitted (`total_amount = 0` was accepted)
 - Technical Officer dashboard could render sidebar with empty main content due `ac-layout` pre-mount attribute rerender; fixed by guarding attribute updates until first mount and retrying initial section capture.
 - Profile dropdown in shared dashboard header rendered unstyled in multiple dashboards; fixed by moving dropdown presentation rules into shared `ac-header` styles injected once for all dashboards.
+- Profile section in shared dashboard header could remain on `Loading...` without account details; fixed by adding self-hydration from stored/auth session data in `ac-header` and preserving hydrated state across rerenders.
+- Inventory Manager Notifications sidebar badge could appear unstyled because shared sidebar rendered badge markup without shared badge CSS; fixed by adding shared `.nav-badge` styles in `pages/components/shared/ac-sidebar.js`.
+- Inventory Manager notifications component could request missing stylesheet (`components/notifications/style.css`) causing 404; fixed by adding the component stylesheet.
+- Inventory Manager extracted components could show "API client is not available" due `window.API` compatibility gap; fixed by exposing API helper on `window`.
+- Inventory Manager catalog View action could open duplicate details modals after reconnect/bind cycles; fixed by preventing duplicate event-listener registration in catalog component.
