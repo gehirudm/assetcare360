@@ -1,7 +1,42 @@
 # Active Context
 
 ## Current Focus
-Dashboard Web Components refactor execution — TASK007 and TASK013 are now complete; next pending dashboard decomposition work is TASK009/TASK010/TASK011/TASK012/TASK014. Event architecture execution has moved from program setup (TASK018) into implementation slices (TASK019+).
+Dashboard Web Components refactor execution — TASK007, TASK012, and TASK013 are now complete; next pending dashboard decomposition work is TASK009/TASK010/TASK011/TASK014. Event architecture execution has moved from program setup (TASK018) into implementation slices (TASK019+).
+
+### SysAdministration componentization completed (April 12, 2026)
+- Extracted the remaining inline SysAdministration sections into dashboard-scoped components under `pages/dashboard/sysadministration/components/`:
+	- `sa-petty-cash-config.js`
+	- `sa-notifications-config.js`
+	- `sa-system-logs.js`
+	- `sa-activity-tracking.js`
+- Replaced the corresponding inline section markup in `pages/dashboard/sysadministration/index.html` with component hosts.
+- Added script includes for the four new components and added a parent bridge in `pages/dashboard/sysadministration/script.js` for `sa-ui:toast` events.
+- Added dedicated validation script `testing/ui-validation/sysadmin-dashboard/validate-sysadmin-dashboard.spec.js`.
+- Validation evidence:
+	- Before run: `VAL_STAGE=before` passed (2/2)
+	- After run: `VAL_STAGE=after` passed (2/2)
+	- Console warnings/errors: none (desktop + mobile)
+	- Failed network requests: none (desktop + mobile)
+	- Interaction summary parity preserved (`activeSection=activity-tracking`, `visibleLogs=1`, `visibleActiveUsers=1`)
+- Performed follow-up root-script cleanup pass: removed obsolete globals for petty cash, notifications templates, system logs, and activity tracking from `pages/dashboard/sysadministration/script.js` after section extraction.
+- Re-validated after cleanup with `VAL_STAGE=after` (2/2 passed; console warnings/errors: 0; failed requests: 0).
+- Completed one-modal-per-component page modal extraction for SysAdministration by replacing inline modal blocks with modal component hosts and dedicated files under `pages/dashboard/sysadministration/components/page-modals/`.
+- Added a dedicated `sa-edit-user-modal` component and removed dynamic edit-modal construction from parent script.
+- Updated `sa-user-accounts` + `sa-service-config` to component-local event handling and removed inline handlers from section markup and dynamic user-row rendering.
+- Removed obsolete user dropdown/filter/service global handlers from parent script and retained shared orchestration bridges (`sa-ui:toast`, modal utilities, user detail bridge).
+- Validation evidence for this pass:
+	- Before run: `VAL_STAGE=before` passed (2/2)
+	- After run: `VAL_STAGE=after` passed (2/2)
+	- Console warnings/errors: none (desktop + mobile)
+	- Failed network requests: none (desktop + mobile)
+	- Interaction summary parity unchanged (`activeSection=activity-tracking`, `visibleLogs=1`, `visibleActiveUsers=1`)
+- Completed final TASK012 root-script decomposition by moving user-management API/edit/reset/delete/detail flows from parent script into `sa-user-accounts`.
+- Parent SysAdministration script is now orchestration-only (toast bridge, modal helpers, overview navigation bridge, compatibility user-details fallback).
+- Final validation evidence for completion pass:
+	- `VAL_STAGE=after` passed (2/2 desktop + mobile)
+	- Console warnings/errors: none
+	- Failed network requests: none
+	- Interaction summary parity unchanged (`activeSection=activity-tracking`, `visibleLogs=1`, `visibleActiveUsers=1`)
 
 ### Auction dashboard componentization completed (April 12, 2026)
 - Completed full Auction dashboard section extraction into dashboard-scoped components under `pages/dashboard/auction/components/`:

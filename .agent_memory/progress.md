@@ -101,6 +101,19 @@
   - Reduced `pages/dashboard/auction/script.js` to orchestration-only wiring (auth/bootstrap, section bridge, toast bridge, modal bridges)
   - Added validation spec `testing/ui-validation/auction-dashboard/validate-auction-dashboard.spec.js`
   - Validation before/after passed (`2/2` desktop+mobile each stage) with no console warnings/errors and no failed network requests
+- ✅ SysAdministration dashboard componentization completed (TASK012)
+  - Added remaining dashboard-scoped section components in `pages/dashboard/sysadministration/components/` (`sa-petty-cash-config`, `sa-notifications-config`, `sa-system-logs`, `sa-activity-tracking`)
+  - Replaced remaining inline section markup in `pages/dashboard/sysadministration/index.html` with component hosts
+  - Added `sa-ui:toast` custom-event bridge in `pages/dashboard/sysadministration/script.js` for shared toast orchestration
+  - Removed obsolete extracted-section globals from `pages/dashboard/sysadministration/script.js` (petty cash, notifications templates, system logs, activity tracking)
+  - Added one-modal-per-component page modals under `pages/dashboard/sysadministration/components/page-modals/` and replaced inline modal blocks in page HTML with modal hosts
+  - Added dedicated `sa-edit-user-modal` and removed dynamic edit-user modal creation from parent script
+  - Updated `sa-user-accounts` + `sa-service-config` to component-local action/filter handlers and removed remaining inline onclick usage in SysAdministration scope
+  - Migrated remaining user-management API/edit/reset/delete/detail flows into `sa-user-accounts` and removed parent `UserManagement` class/bootstrap
+  - Reduced parent SysAdministration script to orchestration-only bridges (toast, modal helpers, overview navigation, compatibility user-details fallback)
+  - Added validation spec `testing/ui-validation/sysadmin-dashboard/validate-sysadmin-dashboard.spec.js`
+  - Validation before/after passed (`2/2` desktop+mobile each stage) with no console warnings/errors and no failed network requests
+  - Post-cleanup validation rerun (`VAL_STAGE=after`) also passed (`2/2`) with no console warnings/errors and no failed network requests
 - ✅ Inventory Manager notifications extraction
   - Added `components/notifications/script.js` + `style.css`
   - Replaced inline notifications section markup with `<inventory-notifications>`
@@ -178,7 +191,7 @@
 ## What's Left / Known Issues
 - ⏳ Migration `047` run/confirmation remains blocked in current sandbox due DB connection refusal
 - ⏳ Frontend budget-submission form should validate `total_amount > 0` before POSTing
-- ⏳ Remaining role dashboards still pending decomposition (driver, machinery operator, maintenance, sysadministration)
+- ⏳ Remaining role dashboards still pending decomposition (driver, machinery operator, maintenance)
 - ⏳ Dashboard Web Components refactor backlog created (agent-memory TASK004–TASK016 + Beads epic/children) and ready for staged execution
 - ⏳ Verify migration 048 and event consumers against a live RabbitMQ + database environment
 
