@@ -36,6 +36,9 @@ function showError(message) {
 
 // Format date
 function formatDate(dateString) {
+    if (window.FaultTicketDetailTemplate?.formatDateTime) {
+        return window.FaultTicketDetailTemplate.formatDateTime(dateString);
+    }
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -114,7 +117,9 @@ function displayTicketDetails(ticket) {
     document.getElementById('mainContent').style.display = 'block';
 
     // Ticket ID Badge
-    const ticketIdFormatted = ticket.ticket_id || ('MBD-' + String(ticket.id).padStart(3, '0'));
+    const ticketIdFormatted = window.FaultTicketDetailTemplate?.formatTicketDisplayId
+        ? window.FaultTicketDetailTemplate.formatTicketDisplayId(ticket)
+        : (ticket.ticket_id || ('MBD-' + String(ticket.id).padStart(3, '0')));
     document.getElementById('ticketIdBadge').textContent = ticketIdFormatted;
     document.getElementById('ticketId').textContent = ticketIdFormatted;
 
@@ -125,14 +130,18 @@ function displayTicketDetails(ticket) {
     document.getElementById('ticketDescription').textContent = ticket.description || 'No description provided';
 
     // Priority Badge
-    const priority = (ticket.priority || 'Medium').toLowerCase();
+    const priority = window.FaultTicketDetailTemplate?.toPriorityClass
+        ? window.FaultTicketDetailTemplate.toPriorityClass(ticket.priority || 'Medium')
+        : (ticket.priority || 'Medium').toLowerCase();
     const priorityBadge = `<span class="status-badge priority-${priority}">
                 <i class="fas fa-exclamation-circle"></i> ${ticket.priority || 'Medium'}
             </span>`;
     document.getElementById('ticketPriority').innerHTML = priorityBadge;
 
     // Status Badge
-    const status = (ticket.status || 'New').toLowerCase().replace(/\s+/g, '-');
+    const status = window.FaultTicketDetailTemplate?.toStatusClass
+        ? window.FaultTicketDetailTemplate.toStatusClass(ticket.status || 'New')
+        : (ticket.status || 'New').toLowerCase().replace(/\s+/g, '-');
     const statusBadge = `<span class="status-badge status-${status}">
                 <i class="fas fa-circle"></i> ${ticket.status || 'New'}
             </span>`;

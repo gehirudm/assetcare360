@@ -14,6 +14,9 @@ function getTicketId() {
 }
 
 function fmtDate(str) {
+    if (window.FaultTicketDetailTemplate?.formatDateTime) {
+        return window.FaultTicketDetailTemplate.formatDateTime(str);
+    }
     if (!str) return 'N/A';
     return new Date(str).toLocaleDateString('en-US', {
         year: 'numeric', month: 'short', day: 'numeric',
@@ -22,6 +25,9 @@ function fmtDate(str) {
 }
 
 function fmtDateShort(str) {
+    if (window.FaultTicketDetailTemplate?.formatDateShort) {
+        return window.FaultTicketDetailTemplate.formatDateShort(str);
+    }
     if (!str) return 'N/A';
     return new Date(str).toLocaleDateString('en-US', {
         year: 'numeric', month: 'short', day: 'numeric'
@@ -133,9 +139,29 @@ async function loadAll() {
         }
 
         ticketData        = ticketResp.data;
-        budgetReport      = (budgetResp && budgetResp.status === 'success') ? budgetResp.data : null;
+        budgetReport      = (budgetResp && budgetResp.status === 'success')
+            ? (budgetResp.data?.report || budgetResp.data || null)
+            : null;
         sparePartRequests = (partsResp  && partsResp.status  === 'success') ? (partsResp.data  || []) : [];
         workUpdates       = (updatesResp && updatesResp.status === 'success') ? (updatesResp.data || []) : [];
+
+        const workflow = ticketData.workflow || {};
+        if (!budgetReport && workflow.has_budget_report) {
+            budgetReport = {
+                id: workflow.budget_report_id || null,
+                status: workflow.budget_report_status || 'pending',
+                approval_level: workflow.budget_approval_level || 'supervisor'
+            };
+        }
+
+        if (sparePartRequests.length === 0 && workflow.has_spare_part_request) {
+            sparePartRequests = [{
+                id: workflow.spare_part_request_id || null,
+                request_id: workflow.spare_part_request_id ? `SPR-${String(workflow.spare_part_request_id).padStart(3, '0')}` : 'SPR',
+                status: workflow.spare_part_request_status || 'Pending',
+                items: []
+            }];
+        }
 
         renderPage();
 
@@ -153,7 +179,9 @@ function renderPage() {
 
     const ticket = ticketData;
     const status = normaliseStatus(ticket.status);
-    const ticketIdFormatted = ticket.breakdown_report_id || ticket.ticket_id || `#${ticket.id}`;
+    const ticketIdFormatted = window.FaultTicketDetailTemplate?.formatTicketDisplayId
+        ? window.FaultTicketDetailTemplate.formatTicketDisplayId(ticket)
+        : (ticket.breakdown_report_id || ticket.ticket_id || `#${ticket.id}`);
 
     // Header badge
     document.getElementById('ticketIdBadge').textContent = ticketIdFormatted;
@@ -171,14 +199,23 @@ function renderOverview(ticket, ticketIdFormatted) {
     document.getElementById('ovDate').textContent     = fmtDateShort(ticket.created_at);
     document.getElementById('ovDescription').textContent = ticket.description || 'No description provided.';
 
-    document.getElementById('ovEquipment').textContent =
-        ticket.machine_model_number || ticket.machine_name || (ticket.machine_id ? `Machine #${ticket.machine_id}` : 'N/A');
+    document.getElementById('ovEquipment').textContent = window.FaultTicketDetailTemplate?.formatEquipmentLabel
+        ? window.FaultTicketDetailTemplate.formatEquipmentLabel(ticket)
+        : (ticket.machine_model_number || ticket.machine_name || (ticket.machine_id ? `Machine #${ticket.machine_id}` : 'N/A'));
+
+    const statusClass = window.FaultTicketDetailTemplate?.toStatusClass
+        ? window.FaultTicketDetailTemplate.toStatusClass(ticket.status)
+        : status.replace(/\s+/g, '-');
+
+    const priorityClass = window.FaultTicketDetailTemplate?.toPriorityClass
+        ? window.FaultTicketDetailTemplate.toPriorityClass(ticket.priority)
+        : priority;
 
     document.getElementById('ovStatus').innerHTML =
-        `<span class="badge badge-${status.replace(/\s+/g, '-')}">${ticket.status || 'Unknown'}</span>`;
+        `<span class="badge badge-${statusClass}">${ticket.status || 'Unknown'}</span>`;
 
     document.getElementById('ovPriority').innerHTML =
-        `<span class="badge badge-priority-${priority}">${ticket.priority || 'Medium'}</span>`;
+        `<span class="badge badge-priority-${priorityClass}">${ticket.priority || 'Medium'}</span>`;
 }
 
 function renderFlow(ticket, ticketIdFormatted) {
@@ -257,7 +294,9 @@ function renderBudgetStep(ticket, status) {
         // Amount
         const amount = parseFloat(budgetReport.total_amount || 0);
         document.getElementById('budget-amount').textContent = amount > 0
-            ? `LKR ${amount.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`
+            ? (window.FaultTicketDetailTemplate?.formatLkrCurrency
+                ? window.FaultTicketDetailTemplate.formatLkrCurrency(amount)
+                : `LKR ${amount.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`)
             : '—';
 
         // Approval level
@@ -480,7 +519,9 @@ function renderClosedStep(ticket, status) {
 
 function openBudgetModal() {
     const ticket = ticketData;
-    const ticketIdFormatted = ticket.breakdown_report_id || ticket.ticket_id || `#${ticket.id}`;
+    const ticketIdFormatted = window.FaultTicketDetailTemplate?.formatTicketDisplayId
+        ? window.FaultTicketDetailTemplate.formatTicketDisplayId(ticket)
+        : (ticket.breakdown_report_id || ticket.ticket_id || `#${ticket.id}`);
     document.getElementById('budgetTicketDisplay').value = ticketIdFormatted;
     document.getElementById('budgetTotalAmount').value = '';
     document.getElementById('budgetQuotation').value = '';
