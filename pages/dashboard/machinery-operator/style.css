@@ -834,6 +834,71 @@ body {
     align-items: center;
 }
 
+/* Dropdown menu used by fault report "more actions" controls */
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-trigger {
+    padding: 8px 12px;
+    min-width: auto;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 5px;
+    background: #fff;
+    border: 1px solid var(--stone-200);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.dropdown-menu.active,
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-item {
+    width: 100%;
+    padding: 10px 14px;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-700);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: var(--stone-100);
+    color: var(--royal-blue);
+}
+
+.dropdown-item.danger {
+    color: var(--danger);
+}
+
+.dropdown-item.danger:hover {
+    background: #fee;
+    color: var(--danger);
+}
+
+.dropdown-item i {
+    width: 16px;
+    text-align: center;
+}
+
 /* ==================== FILTERS ==================== */
 
 .filter-controls {

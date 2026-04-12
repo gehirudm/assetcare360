@@ -1416,6 +1416,7 @@ function closeTicketMenu(ticketId) {
 // Close dropdowns when clicking outside
 document.addEventListener('click', function () {
     document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.classList.remove('active', 'show');
         menu.style.display = 'none';
     });
 });
