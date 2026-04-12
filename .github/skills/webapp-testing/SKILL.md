@@ -47,6 +47,71 @@ Use this skill when you need to:
 - Timeout failure: wait for route/state transitions explicitly.
 - Assertion failure: capture artifacts and isolate state assumptions.
 
+## Playwright MCP Quickstart
+
+Use this sequence first when MCP browser tools are available:
+
+1. Initialize MCP browser tools
+- Activate browser interaction tools.
+- Activate page capture tools.
+- Optionally activate browser logs and network capture tools when available.
+
+2. Open target page in MCP context
+- Navigate using MCP browser navigate tool (for example `http://127.0.0.1:3000/auth/login.html`).
+- If needed, create/select a tab and retry navigation.
+
+3. Validate MCP session is alive
+- Take an accessibility snapshot.
+- Capture console messages (error/warning levels).
+- Capture failed network requests.
+
+4. Continue test flow
+- Interact with page elements.
+- Capture screenshots for key states.
+- Record pass/fail outcomes with artifacts.
+
+## MCP Startup Troubleshooting
+
+If MCP operations fail with an error similar to:
+- `browserBackend.callTool: Target page, context or browser has been closed`
+
+Follow this recovery order:
+1. Re-initialize MCP browser interaction and capture tools.
+2. Create/select a fresh browser tab, then retry navigation.
+3. Verify editor setting `workbench.browser.enableChatTools` is enabled.
+4. If content access is still unavailable, use local Node Playwright scripts as fallback and document that MCP context could not be attached.
+
+## Verified MCP Operation Pattern
+
+The following pattern is confirmed working in this project session:
+
+1. Reset stale MCP context
+- Run browser close first. If the result says no open tabs, continue.
+
+2. Create active page context
+- Navigate directly to a URL (for example `https://example.com`) to force a fresh page.
+- Confirm success by checking returned page URL/title and snapshot output.
+
+3. Operate live on target app
+- Navigate to app URL (for example `http://127.0.0.1:3000/auth/login.html`).
+- Capture snapshot.
+- Perform interactions (type, click, filters/navigation actions).
+- Capture another snapshot and screenshot for before/after proof.
+
+4. Capture diagnostics in the same MCP session
+- Read console messages.
+- Export network requests.
+- Attach artifact paths in test report.
+
+## Live MCP Validation Checklist
+
+Treat MCP control as valid only when all checks pass:
+- Navigation returns updated page URL and title.
+- Snapshot reflects the current page state.
+- At least one user action (click/type/select) changes page state.
+- Screenshot artifact is written successfully.
+- Console/network logs are retrievable in-session.
+
 ## Procedure
 
 1. Preflight
