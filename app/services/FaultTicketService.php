@@ -3,12 +3,18 @@
 require_once __DIR__ . '/../models/FaultTicket.php';
 require_once __DIR__ . '/../models/FaultTicketImage.php';
 require_once __DIR__ . '/../models/FaultTicketAssignment.php';
+require_once __DIR__ . '/../models/BudgetReport.php';
+require_once __DIR__ . '/../models/SparePartRequest.php';
+require_once __DIR__ . '/FaultTicketWorkflowService.php';
 require_once __DIR__ . '/../../config/Database.php';
 
 class FaultTicketService {
     private $faultTicketModel;
     private $imageModel;
     private $assignmentModel;
+    private $budgetReportModel;
+    private $sparePartRequestModel;
+    private $workflowService;
     
     // Constants for validation
     const MAX_IMAGES = 5;
@@ -21,6 +27,9 @@ class FaultTicketService {
         $this->faultTicketModel = new FaultTicket();
         $this->imageModel = new FaultTicketImage();
         $this->assignmentModel = new FaultTicketAssignment();
+        $this->budgetReportModel = new BudgetReport();
+        $this->sparePartRequestModel = new SparePartRequest();
+        $this->workflowService = new FaultTicketWorkflowService();
     }
     
     /**
@@ -324,7 +333,9 @@ class FaultTicketService {
         $ticket = $this->faultTicketModel->getTicketById($id);
         
         if ($ticket) {
-            return $this->formatTicket($ticket);
+            $formatted = $this->formatTicket($ticket);
+            $formatted['workflow'] = $this->workflowService->getWorkflowIndicators((int) $ticket['id']);
+            return $formatted;
         }
         
         return $ticket;
@@ -430,6 +441,31 @@ class FaultTicketService {
             $isValidStatusTransition = $isStatusChangeOnly && 
                 isset($allowedTransitions[$ticket['status']]) && 
                 in_array($data['status'], $allowedTransitions[$ticket['status']]);
+
+            if ($isStatusChangeOnly && isset($data['status']) && $data['status'] === FaultTicket::STATUS_IN_PROGRESS) {
+                $latestBudget = $this->budgetReportModel->getLatestByTicketId($id);
+                if (!empty($latestBudget)) {
+                    $budgetStatus = strtolower(trim($latestBudget['status'] ?? ''));
+                    if (in_array($budgetStatus, ['pending', 'revised'], true)) {
+                        return [
+                            'success' => false,
+                            'message' => 'Cannot start work while budget approval is pending. Please wait for approval or update the budget report.'
+                        ];
+                    }
+                }
+
+                $requests = $this->sparePartRequestModel->getByFaultTicket($id);
+                if (!empty($requests)) {
+                    $latestRequest = $requests[0];
+                    $partsStatus = strtolower(trim($latestRequest['status'] ?? ''));
+                    if ($partsStatus === 'pending') {
+                        return [
+                            'success' => false,
+                            'message' => 'Cannot start work while spare part requests are pending approval.'
+                        ];
+                    }
+                }
+            }
             
             // Only allow full editing if status is Open (Pending), but allow status transitions
             if (!$isValidStatusTransition && $ticket['status'] !== 'Open') {
@@ -620,6 +656,7 @@ class FaultTicketService {
                 
                 // Update ticket status back to "Open" (unassigned)
                 $this->faultTicketModel->updateTicket($ticketId, ['status' => 'Open']);
+                $this->workflowService->syncTicketStatus((int) $ticketId);
                 
                 return [
                     'success' => true,
@@ -644,6 +681,7 @@ class FaultTicketService {
             
             // Update ticket status to "Assigned"
             $this->faultTicketModel->updateTicket($ticketId, ['status' => 'Assigned']);
+            $this->workflowService->syncTicketStatus((int) $ticketId);
             
             // Update linked breakdown report status if exists
             $this->updateBreakdownReportStatus($ticket, 'Assigned');

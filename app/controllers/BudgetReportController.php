@@ -5,6 +5,7 @@ require_once __DIR__ . '/../models/FaultTicket.php';
 require_once __DIR__ . '/../models/SystemSetting.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 require_once __DIR__ . '/../services/EventEmitter.php';
+require_once __DIR__ . '/../services/FaultTicketWorkflowService.php';
 require_once __DIR__ . '/../events/DomainEvents.php';
 
 class BudgetReportController {
@@ -12,12 +13,14 @@ class BudgetReportController {
     private $faultTicketModel;
     private $settingModel;
     private $eventEmitter;
+    private $workflowService;
     
     public function __construct() {
         $this->budgetReportModel = new BudgetReport();
         $this->faultTicketModel = new FaultTicket();
         $this->settingModel = new SystemSetting();
         $this->eventEmitter = new EventEmitter();
+        $this->workflowService = new FaultTicketWorkflowService();
     }
     
     /**
@@ -73,7 +76,7 @@ class BudgetReportController {
             }
             
             // Check if ticket is in a pre-work status (budget can be submitted/resubmitted)
-            $allowedStatuses = ['Open', 'Assigned', 'Waiting for Budget Approval'];
+            $allowedStatuses = ['Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts', 'Parts Approved'];
             if (!in_array($ticket['status'], $allowedStatuses)) {
                 http_response_code(400);
                 echo json_encode([
@@ -110,10 +113,8 @@ class BudgetReportController {
             $reportId = $this->budgetReportModel->create($reportData);
             
             if ($reportId) {
-                // Update ticket status to "Waiting for Budget Approval"
-                $this->faultTicketModel->update($data['fault_ticket_id'], [
-                    'status' => 'Waiting for Budget Approval'
-                ]);
+                // Recompute ticket state from combined budget + spare-part workflow.
+                $this->workflowService->syncTicketStatus((int) $data['fault_ticket_id']);
                 
                 $report = $this->budgetReportModel->findById($reportId);
                 
@@ -335,7 +336,7 @@ class BudgetReportController {
             
             // Only allow edits if ticket hasn't reached "In Progress" status yet
             // Allowed: Open, Assigned, Waiting for Budget Approval, Waiting for Spare Parts
-            $allowedStatuses = ['Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts'];
+            $allowedStatuses = ['Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts', 'Parts Approved'];
             if (!in_array($ticket['status'], $allowedStatuses)) {
                 http_response_code(400);
                 echo json_encode([
@@ -366,20 +367,26 @@ class BudgetReportController {
             if ($success) {
                 $report = $this->budgetReportModel->findById($id);
 
-                $this->eventEmitter->emit(
-                    DomainEvents::BUDGET_REPORT_REVIEWED,
-                    [
-                        'report_id' => (int) $id,
-                        'fault_ticket_id' => (int) $existingReport['fault_ticket_id'],
-                        'status' => $data['status'],
-                        'reviewed_by' => (int) $user['id'],
-                        'submitted_by' => (int) ($existingReport['submitted_by'] ?? 0),
-                    ],
-                    [
-                        'user_id' => $user['id'] ?? null,
-                        'role' => $user['role'] ?? null,
-                    ]
-                );
+                if (isset($data['status'])) {
+                    $this->workflowService->syncTicketStatus((int) $existingReport['fault_ticket_id']);
+                }
+
+                if (isset($data['status'])) {
+                    $this->eventEmitter->emit(
+                        DomainEvents::BUDGET_REPORT_REVIEWED,
+                        [
+                            'report_id' => (int) $id,
+                            'fault_ticket_id' => (int) $existingReport['fault_ticket_id'],
+                            'status' => $data['status'],
+                            'reviewed_by' => (int) $user['id'],
+                            'submitted_by' => (int) ($existingReport['submitted_by'] ?? 0),
+                        ],
+                        [
+                            'user_id' => $user['id'] ?? null,
+                            'role' => $user['role'] ?? null,
+                        ]
+                    );
+                }
                 
                 echo json_encode([
                     'status' => 'success',
@@ -489,19 +496,7 @@ class BudgetReportController {
             );
             
             if ($success) {
-                // Update fault ticket status based on review outcome
-                if ($data['status'] === 'approved') {
-                    // Budget approved — move ticket back to Assigned so work can proceed
-                    $this->faultTicketModel->update($existingReport['fault_ticket_id'], [
-                        'status' => 'Assigned'
-                    ]);
-                } elseif ($data['status'] === 'rejected') {
-                    // Budget rejected — move ticket back to Assigned for resubmission
-                    $this->faultTicketModel->update($existingReport['fault_ticket_id'], [
-                        'status' => 'Assigned'
-                    ]);
-                }
-                // 'revised' status keeps ticket in Waiting for Budget Approval
+                $this->workflowService->syncTicketStatus((int) $existingReport['fault_ticket_id']);
                 
                 $report = $this->budgetReportModel->findById($id);
                 
@@ -599,7 +594,7 @@ class BudgetReportController {
             }
             
             // Only allow deletion if ticket hasn't reached "In Progress" status yet
-            $allowedStatuses = ['Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts'];
+            $allowedStatuses = ['Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts', 'Parts Approved'];
             if (!in_array($ticket['status'], $allowedStatuses)) {
                 http_response_code(400);
                 echo json_encode([
@@ -612,23 +607,7 @@ class BudgetReportController {
             $success = $this->budgetReportModel->delete($id);
             
             if ($success) {
-                // Revert ticket status based on current state
-                // If currently "Waiting for Budget Approval", revert to "Assigned" if there are assignments, else "Open"
-                $newStatus = 'Open';
-                if ($ticket['status'] === 'Waiting for Budget Approval') {
-                    // Check if there are active assignments
-                    require_once __DIR__ . '/../models/FaultTicketAssignment.php';
-                    $assignmentModel = new FaultTicketAssignment();
-                    $assignments = $assignmentModel->getTicketAssignments($ticket['id']);
-                    
-                    if (!empty($assignments)) {
-                        $newStatus = 'Assigned';
-                    }
-                }
-                
-                $this->faultTicketModel->update($existingReport['fault_ticket_id'], [
-                    'status' => $newStatus
-                ]);
+                $this->workflowService->syncTicketStatus((int) $existingReport['fault_ticket_id']);
                 
                 echo json_encode([
                     'status' => 'success',
@@ -677,15 +656,12 @@ class BudgetReportController {
                 return;
             }
             
-            // Filter by approval level based on role
-            // Supervisors see only supervisor-level reports
-            // Maintenance Managers see only maintenance_manager-level reports
-            // Admins see all
+            // Filter by approval level based on role.
+            // Supervisors can approve only supervisor-level requests.
+            // Maintenance Managers and Admins can approve all requests.
             $approvalLevel = null;
             if ($user['role'] === 'Supervisor') {
                 $approvalLevel = 'supervisor';
-            } elseif ($user['role'] === 'Maintenance Manager') {
-                $approvalLevel = 'maintenance_manager';
             }
             
             $reports = $this->budgetReportModel->getPendingReports($approvalLevel);

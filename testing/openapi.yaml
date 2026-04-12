@@ -2544,7 +2544,7 @@ components:
       tags:
         - Fault Tickets
       summary: Get fault ticket by ID
-      description: Retrieve a single fault ticket with its images
+      description: Retrieve a single fault ticket with its images and workflow indicators
       security:
         - bearerAuth: []
         - cookieAuth: []
@@ -2567,10 +2567,7 @@ components:
                     type: string
                     example: success
                   data:
-                    type: object
-                    properties:
-                      ticket:
-                        $ref: '#/components/schemas/FaultTicketWithImages'
+                    $ref: '#/components/schemas/FaultTicketWithImages'
         '404':
           description: Fault ticket not found
           content:
@@ -2640,7 +2637,7 @@ components:
                   type: string
                 status:
                   type: string
-                  enum: [Open, In Progress, Resolved, Closed]
+                  enum: [Open, Assigned, Waiting for Budget Approval, Waiting for Spare Parts, Parts Approved, In Progress, Resolved, Closed]
       responses:
         '200':
           description: Fault ticket updated successfully
@@ -3025,7 +3022,7 @@ components:
       description: |
         Retrieve pending budget reports filtered by the caller's role:
         - **Supervisor**: sees only supervisor-level reports (within petty cash limit)
-        - **Maintenance Manager**: sees only maintenance_manager-level reports (exceeding petty cash limit)
+        - **Maintenance Manager**: sees all pending reports
         - **Admin**: sees all pending reports
       security:
         - bearerAuth: []
@@ -3664,13 +3661,39 @@ components:
           type: string
         status:
           type: string
-          enum: [Open, In Progress, Resolved, Closed]
+          enum: [Open, Assigned, Waiting for Budget Approval, Waiting for Spare Parts, Parts Approved, In Progress, Resolved, Closed]
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
+
+    FaultTicketWorkflow:
+      type: object
+      properties:
+        has_budget_report:
+          type: boolean
+        budget_report_status:
+          type: string
+          nullable: true
+          enum: [pending, approved, rejected, revised]
+        budget_report_id:
+          type: integer
+          nullable: true
+        budget_approval_level:
+          type: string
+          nullable: true
+          enum: [supervisor, maintenance_manager]
+        has_spare_part_request:
+          type: boolean
+        spare_part_request_status:
+          type: string
+          nullable: true
+          enum: [Pending, Approved, Rejected, Issued]
+        spare_part_request_id:
+          type: integer
+          nullable: true
     
     FaultTicketWithImages:
       allOf:
@@ -3681,6 +3704,8 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/FaultTicketImage'
+            workflow:
+              $ref: '#/components/schemas/FaultTicketWorkflow'
     
     FaultTicketImage:
       type: object

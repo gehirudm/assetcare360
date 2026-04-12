@@ -39,7 +39,7 @@ class FaultTicket extends BaseModel {
             'description' => 'TEXT NOT NULL',
             'priority' => "ENUM('Low', 'Medium', 'High', 'Critical') NOT NULL DEFAULT 'Medium'",
             'location' => 'VARCHAR(255) NOT NULL',
-            'status' => "ENUM('Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts', 'In Progress', 'Resolved', 'Closed') NOT NULL DEFAULT 'Open'",
+            'status' => "ENUM('Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts', 'Parts Approved', 'In Progress', 'Resolved', 'Closed') NOT NULL DEFAULT 'Open'",
             'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
             'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
         ];

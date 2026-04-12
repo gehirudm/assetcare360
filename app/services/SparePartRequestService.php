@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../models/SparePartRequest.php';
 require_once __DIR__ . '/../models/SparePartRequestItem.php';
 require_once __DIR__ . '/../models/FaultTicket.php';
+require_once __DIR__ . '/FaultTicketWorkflowService.php';
 require_once __DIR__ . '/../../config/Database.php';
 
 /**
@@ -13,11 +14,13 @@ class SparePartRequestService {
     private $requestModel;
     private $itemModel;
     private $faultTicketModel;
+    private $workflowService;
 
     public function __construct() {
         $this->requestModel = new SparePartRequest();
         $this->itemModel = new SparePartRequestItem();
         $this->faultTicketModel = new FaultTicket();
+        $this->workflowService = new FaultTicketWorkflowService();
     }
 
     /**
@@ -30,6 +33,26 @@ class SparePartRequestService {
         }
         if (empty($data['items']) || !is_array($data['items']) || count($data['items']) === 0) {
             return ['status' => 'error', 'message' => 'At least one spare part item is required'];
+        }
+
+        $ticket = $this->faultTicketModel->findById($data['fault_ticket_id']);
+        if (!$ticket) {
+            return ['status' => 'error', 'message' => 'Fault ticket not found'];
+        }
+
+        $allowedStatuses = [
+            FaultTicket::STATUS_OPEN,
+            FaultTicket::STATUS_ASSIGNED,
+            FaultTicket::STATUS_WAITING_BUDGET,
+            FaultTicket::STATUS_WAITING_PARTS,
+            FaultTicket::STATUS_PARTS_APPROVED,
+        ];
+
+        if (!in_array($ticket['status'], $allowedStatuses, true)) {
+            return [
+                'status' => 'error',
+                'message' => 'Spare part requests can only be submitted before work starts. Current status: ' . $ticket['status']
+            ];
         }
 
         try {
@@ -63,6 +86,8 @@ class SparePartRequestService {
             $this->itemModel->createBulk($id, $data['items']);
 
             $db->commit();
+
+            $this->workflowService->syncTicketStatus((int) $data['fault_ticket_id']);
 
             return [
                 'status' => 'success',
@@ -171,11 +196,7 @@ class SparePartRequestService {
                 'reviewed_at' => date('Y-m-d H:i:s')
             ]);
 
-            // Update the linked fault ticket status to "Parts Approved"
-            $faultTicketId = $request['fault_ticket_id'];
-            $this->faultTicketModel->update($faultTicketId, [
-                'status' => 'Parts Approved'
-            ]);
+            $this->workflowService->syncTicketStatus((int) $request['fault_ticket_id']);
 
             $db->commit();
 
@@ -183,7 +204,7 @@ class SparePartRequestService {
 
             return [
                 'status' => 'success',
-                'message' => 'Spare part request approved. Fault ticket updated to Parts Approved.',
+                'message' => 'Spare part request approved successfully.',
                 'data' => [
                     'id' => (int) $id,
                     'request_id' => $updated['request_id'] ?? null,
@@ -221,6 +242,8 @@ class SparePartRequestService {
                 'review_notes' => $notes,
                 'reviewed_at' => date('Y-m-d H:i:s')
             ]);
+
+            $this->workflowService->syncTicketStatus((int) $request['fault_ticket_id']);
 
             $updated = $this->requestModel->getRequestById($id);
 
