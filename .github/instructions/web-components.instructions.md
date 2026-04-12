@@ -450,6 +450,11 @@ When building or refactoring dashboard forms in modals, use the shared form comp
 | `shared/ac-input-group.js` | `<ac-input-group>` | **shadow** | shared | Standard form-group wrapper with encapsulated label/help styling |
 | `shared/ac-form-control.js` | `<ac-form-control>` | **shadow** | shared | Attribute-driven control renderer; native form control remains slotted for form semantics |
 | `shared/confirm-dialog.js` | `<confirm-dialog>` | **shadow** | shared | Confirmation/alert modal |
+| `inventory-manager/components/page-modals/add-part-modal/script.js` | `<inventory-add-part-modal>` | light | inventory-manager | Dedicated add-spare-part modal host |
+| `inventory-manager/components/page-modals/edit-part-modal/script.js` | `<inventory-edit-part-modal>` | light | inventory-manager | Dedicated edit-spare-part modal host |
+| `inventory-manager/components/page-modals/delete-modal/script.js` | `<inventory-delete-modal>` | light | inventory-manager | Dedicated delete confirmation modal host |
+| `inventory-manager/components/page-modals/reorder-modal/script.js` | `<inventory-reorder-modal>` | light | inventory-manager | Dedicated reorder request modal host |
+| `inventory-manager/components/page-modals/add-stock-modal/script.js` | `<inventory-add-stock-modal>` | light | inventory-manager | Dedicated stock-addition modal host |
 | `technical-officer/to-shell-header.js` | `<to-shell-header>` | light | technical-officer | TO-specific header (kept until migrated to `<ac-header>`) |
 | `technical-officer/to-shell-sidebar.js` | `<to-shell-sidebar>` | light | technical-officer | TO-specific sidebar (kept until migrated to `<ac-layout>`) |
 
