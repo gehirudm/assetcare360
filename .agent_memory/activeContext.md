@@ -1,7 +1,55 @@
 # Active Context
 
 ## Current Focus
-Dashboard Web Components refactor execution — TASK007, TASK012, and TASK013 are now complete; next pending dashboard decomposition work is TASK009/TASK010/TASK011/TASK014. Event architecture execution has moved from program setup (TASK018) into implementation slices (TASK019+).
+Dashboard Web Components refactor execution — TASK007, TASK011, TASK012, and TASK013 are now complete; next pending dashboard decomposition work is TASK009/TASK010/TASK014. Event architecture execution has moved from program setup (TASK018) into implementation slices (TASK019+).
+
+### Maintenance dashboard componentization completed (April 12, 2026)
+- Started TASK011 execution with focused Maintenance slices for `cost-approvals` and `service-reports`.
+- Extracted cost-approvals section into `pages/dashboard/maintenance/components/maintenance-cost-approvals.js` with component-owned filter state, pending/approved/rejected rendering, budget approval API mapping/loading, and review actions.
+- Extracted cost-approval modals into dashboard-scoped one-modal-per-component files under `pages/dashboard/maintenance/components/page-modals/`:
+	- `maintenance-approve-cost-modal.js`
+	- `maintenance-reject-cost-modal.js`
+	- `maintenance-cost-details-modal.js`
+- Replaced inline cost-approvals section and legacy approve/reject/details modal blocks in `pages/dashboard/maintenance/index.html` with component hosts.
+- Reduced `pages/dashboard/maintenance/script.js` for this scope to orchestration wrappers (`refreshMaintenanceCostApprovals`, `approveCost`, `rejectCost`, `viewCostDetails`) and added `maintenance-ui:toast` bridge.
+- Validation evidence (`testing/ui-validation/maintenance-cost-approvals/validate-maintenance-cost-approvals.spec.js`):
+	- Before run: `VAL_STAGE=before` passed (2/2 desktop + mobile)
+	- After run: `VAL_STAGE=after` passed (2/2 desktop + mobile)
+	- Console warnings/errors: none
+	- Failed network requests: none
+	- Interaction path checks passed for filters, details modal, approve modal submit, reject modal submit
+- Extracted service-reports section into `pages/dashboard/maintenance/components/maintenance-service-reports.js` with component-owned filter/actions, report rendering, and approval transition behavior.
+- Extracted report details modal into `pages/dashboard/maintenance/components/page-modals/maintenance-report-details-modal.js` and replaced inline report-details modal block with component host.
+- Reduced root script ownership for service-reports to orchestration wrappers (`filterServiceReports`, `viewReportDetails`, `approveReport`, `reviewReport`).
+- Validation evidence (`testing/ui-validation/maintenance-service-reports/validate-maintenance-service-reports.spec.js`):
+	- Before run: `VAL_STAGE=before` passed (2/2 desktop + mobile)
+	- After run: `VAL_STAGE=after` passed (2/2 desktop + mobile)
+	- Console warnings/errors: none
+	- Failed network requests: none
+	- Interaction path checks passed for filters, report detail modal, and approve transition
+- Regression guard: reran maintenance cost-approvals `VAL_STAGE=after` after service-reports extraction (2/2 desktop + mobile pass).
+- Completed remaining section extraction by adding dashboard-scoped components:
+	- `maintenance-dashboard-overview`
+	- `maintenance-fault-tickets`
+	- `maintenance-service-records`
+	- `maintenance-service-warranty`
+	- `maintenance-notifications`
+- Completed remaining modal extraction one-modal-per-component:
+	- `maintenance-ticket-details-modal`
+	- `maintenance-warranty-details-modal`
+	- `maintenance-service-schedule-modal`
+	- `maintenance-add-service-record-modal`
+- Replaced all remaining inline section/modal markup in `pages/dashboard/maintenance/index.html` with component hosts and script includes.
+- Reduced `pages/dashboard/maintenance/script.js` to orchestration-only delegates, modal helpers, toast bridge, and bootstrap.
+- Validation evidence (`testing/ui-validation/maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js`):
+	- Before run: `VAL_STAGE=before` passed (2/2 desktop + mobile)
+	- After run: `VAL_STAGE=after` passed (2/2 desktop + mobile)
+	- Console warnings/errors: none
+	- Failed network requests: none
+	- Interaction path checks passed for fault-ticket filters/modal, service-record tabs, service-warranty filters/modal, add-service flow, and notifications filters/actions
+- Post-completion regression guards:
+	- `maintenance-cost-approvals` `VAL_STAGE=after`: 2/2 passed (desktop + mobile)
+	- `maintenance-service-reports` `VAL_STAGE=after`: 2/2 passed (desktop + mobile)
 
 ### SysAdministration componentization completed (April 12, 2026)
 - Extracted the remaining inline SysAdministration sections into dashboard-scoped components under `pages/dashboard/sysadministration/components/`:

@@ -18,15 +18,15 @@ All active dashboards still have significant inline handlers (`onclick`, `onchan
 
 ## Progress Tracking
 
-**Overall Status:** In Progress - 65%
+**Overall Status:** In Progress - 92%
 
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
 |----|-------------|--------|---------|-------|
-| 14.1 | Inline handler inventory | In Progress | Apr 12, 2026 | SysAdministration audited; extracted sections now handler-local |
-| 14.2 | Convert handlers in extracted components | In Progress | Apr 12, 2026 | Converted SysAdministration user/service sections to component-local handlers; moved user-management API/edit/reset/delete/detail logic into `sa-user-accounts` |
-| 14.3 | Introduce custom-event contracts | In Progress | Apr 12, 2026 | Added `sa-ui:toast` event bridge for component-to-parent messaging |
-| 14.4 | Remove obsolete global handlers | In Progress | Apr 12, 2026 | Removed SysAdministration filter/dropdown/service globals and parent `UserManagement` class/bootstrap; cross-dashboard cleanup still pending |
+| 14.1 | Inline handler inventory | In Progress | Apr 12, 2026 | Maintenance audit complete with zero inline handlers remaining in `pages/dashboard/maintenance/**`; outstanding inventory is Driver + Machinery Operator |
+| 14.2 | Convert handlers in extracted components | In Progress | Apr 12, 2026 | SysAdministration and all Maintenance sections/modals now use component-local delegated handlers (`data-action` patterns) |
+| 14.3 | Introduce custom-event contracts | In Progress | Apr 12, 2026 | Added `sa-ui:toast`, `maintenance-ui:toast`, and maintenance modal/service custom-event contracts; cross-dashboard completion still pending |
+| 14.4 | Remove obsolete global handlers | In Progress | Apr 12, 2026 | Maintenance root script now orchestration-only delegates/modals/toast; remaining global cleanup is in pending dashboards |
 
 ## Progress Log
 ### April 7, 2026
@@ -54,3 +54,27 @@ All active dashboards still have significant inline handlers (`onclick`, `onchan
 - Migrated remaining user-management feature APIs and modal workflows into `pages/dashboard/sysadministration/components/sa-user-accounts.js`.
 - Confirmed SysAdministration scope has no inline `onclick`/`onchange`/`oninput`/`onkeyup` attributes and no parent `UserManagement` runtime coupling.
 - Re-ran SysAdministration validation (`VAL_STAGE=after`) for desktop + mobile: 2/2 passed, console warnings/errors = 0, failed network requests = 0.
+
+### April 12, 2026 (Maintenance Cost-Approvals Inline Event Migration Slice)
+- Replaced inline cost-approvals section handlers in `pages/dashboard/maintenance/index.html` by extracting the section into `maintenance-cost-approvals` with component-local event delegation and state ownership.
+- Extracted cost-approval modals into dedicated modal components (`maintenance-approve-cost-modal`, `maintenance-reject-cost-modal`, `maintenance-cost-details-modal`) and moved modal submit/close behavior into those components.
+- Added parent bridge `maintenance-ui:toast` handling in `pages/dashboard/maintenance/script.js` and converted global cost-approval actions to orchestration wrappers that call component methods.
+- Validated before/after behavior with `testing/ui-validation/maintenance-cost-approvals/validate-maintenance-cost-approvals.spec.js` (`VAL_STAGE=before` and `VAL_STAGE=after`: 2/2 desktop+mobile, no console/network regressions).
+
+### April 12, 2026 (Maintenance Service-Reports Inline Event Migration Slice)
+- Replaced inline service-report filter/action handlers by extracting `service-reports` into `maintenance-service-reports` with component-local delegated events (`data-action` patterns for filter/approve/view).
+- Extracted report details modal into `maintenance-report-details-modal` and removed inline modal close handlers from page HTML.
+- Reduced root maintenance script for this feature path to orchestration wrappers (`filterServiceReports`, `viewReportDetails`, `approveReport`, `reviewReport`) delegating to component methods.
+- Validated before/after behavior with `testing/ui-validation/maintenance-service-reports/validate-maintenance-service-reports.spec.js` (`VAL_STAGE=before` and `VAL_STAGE=after`: 2/2 desktop+mobile, no console/network regressions).
+
+### April 12, 2026 (Maintenance Remaining Sections Inline Event Migration Slice)
+- Removed all remaining inline handlers from `pages/dashboard/maintenance/index.html` by extracting dashboard/fault-tickets/service-records/service-warranty/notifications into dedicated section components.
+- Replaced inline maintenance modal blocks and close handlers with one-modal-per-component files (`maintenance-ticket-details-modal`, `maintenance-warranty-details-modal`, `maintenance-service-schedule-modal`, `maintenance-add-service-record-modal`) using component-local event handling.
+- Converted remaining maintenance interaction flows to delegated `data-action` listeners and component method/event calls; no `onclick`/`onchange`/`oninput`/`onkeyup` attributes remain in `pages/dashboard/maintenance/**`.
+- Reduced maintenance parent script to orchestration-only delegates, global modal utilities, and toast bridge.
+- Validation evidence:
+	- `maintenance-remaining-sections` `VAL_STAGE=before`: 2/2 passed (desktop + mobile)
+	- `maintenance-remaining-sections` `VAL_STAGE=after`: 2/2 passed (desktop + mobile)
+	- Regression reruns: `maintenance-cost-approvals` `VAL_STAGE=after` 2/2, `maintenance-service-reports` `VAL_STAGE=after` 2/2
+	- Console warnings/errors: none
+	- Failed network requests: none

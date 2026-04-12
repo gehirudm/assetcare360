@@ -2,16 +2,16 @@
 
 ## In Progress
 - [TASK003] Run migration 047 and update OpenAPI spec — OpenAPI updates completed; migration confirmation blocked by DB connection refusal in sandbox
-- [TASK014] Inline events to component events migration — SysAdministration inline handlers removed and parent-script globals reduced; cross-dashboard cleanup still pending
+- [TASK014] Inline events to component events migration — SysAdministration and Maintenance inline handlers removed with orchestration-only parent scripts; cross-dashboard cleanup still pending
 
 ## Pending
 - [TASK033] Add Transportation Manager Role to User Creation — Add the missing role option to user creation/edit modals and filter tabs
 - [TASK009] Driver dashboard componentization — Decompose high-complexity script and modal-heavy sections
 - [TASK010] Machinery Operator dashboard componentization — Extract section components and badge/event flows
-- [TASK011] Maintenance dashboard componentization — Componentize sections and clean include-order issues
 - [TASK032] Budget-flow notification routing scope — Temporary broad notifications to all supervisors + maintenance managers; later narrow to controlling supervisor only
 
 ## Completed
+- [TASK011] Maintenance dashboard componentization — all maintenance sections and page modals extracted into dashboard-scoped components with orchestration-only parent script; before/after Playwright validation passed for remaining scope plus cost/service regression reruns on desktop + mobile — Completed April 12, 2026
 - [TASK012] SysAdministration dashboard componentization — all sections and page modals extracted into dashboard-scoped components; user-management API/edit flows migrated into `sa-user-accounts`; parent script reduced to orchestration-only bridges; before/after Playwright validation passed on desktop + mobile — Completed April 12, 2026
 - [TASK013] Auction dashboard componentization — all auction sections extracted into dashboard-scoped components with one-modal-per-component modal decomposition and orchestration-only parent script; before/after Playwright validation passed on desktop + mobile — Completed April 12, 2026
 - [TASK007] Supervisor dashboard componentization — all supervisor sections extracted to dashboard components with one-modal-per-component daily-check modals and orchestration-only parent bridges — Completed April 12, 2026
