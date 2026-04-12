@@ -18,15 +18,15 @@ All active dashboards still have significant inline handlers (`onclick`, `onchan
 
 ## Progress Tracking
 
-**Overall Status:** In Progress - 92%
+**Overall Status:** In Progress - 97%
 
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
 |----|-------------|--------|---------|-------|
-| 14.1 | Inline handler inventory | In Progress | Apr 12, 2026 | Maintenance audit complete with zero inline handlers remaining in `pages/dashboard/maintenance/**`; outstanding inventory is Driver + Machinery Operator |
-| 14.2 | Convert handlers in extracted components | In Progress | Apr 12, 2026 | SysAdministration and all Maintenance sections/modals now use component-local delegated handlers (`data-action` patterns) |
-| 14.3 | Introduce custom-event contracts | In Progress | Apr 12, 2026 | Added `sa-ui:toast`, `maintenance-ui:toast`, and maintenance modal/service custom-event contracts; cross-dashboard completion still pending |
-| 14.4 | Remove obsolete global handlers | In Progress | Apr 12, 2026 | Maintenance root script now orchestration-only delegates/modals/toast; remaining global cleanup is in pending dashboards |
+| 14.1 | Inline handler inventory | In Progress | Apr 12, 2026 | Maintenance + Machinery Operator audits complete with zero inline handlers in page HTML; outstanding inventory is Driver dashboard |
+| 14.2 | Convert handlers in extracted components | In Progress | Apr 12, 2026 | SysAdministration, Maintenance, and Machinery Operator section/modal interactions now use component-local delegated handlers (`data-action` patterns) |
+| 14.3 | Introduce custom-event contracts | In Progress | Apr 12, 2026 | Added `sa-ui:toast`, `maintenance-ui:toast`, and `mo:*` custom-event contracts for toast/modal/refresh orchestration; Driver scope still pending |
+| 14.4 | Remove obsolete global handlers | In Progress | Apr 12, 2026 | Maintenance and Machinery Operator roots are orchestration-only; remaining global cleanup is in Driver dashboard |
 
 ## Progress Log
 ### April 7, 2026
@@ -78,3 +78,26 @@ All active dashboards still have significant inline handlers (`onclick`, `onchan
 	- Regression reruns: `maintenance-cost-approvals` `VAL_STAGE=after` 2/2, `maintenance-service-reports` `VAL_STAGE=after` 2/2
 	- Console warnings/errors: none
 	- Failed network requests: none
+
+### April 12, 2026 (Machinery Operator Inline Event Migration Slice)
+- Removed inline handlers from `pages/dashboard/machinery-operator/index.html` by replacing inline section and modal markup with dashboard-scoped component hosts.
+- Moved section interactions into component-local delegated events in:
+	- `mo-dashboard-overview`
+	- `mo-fault-reporting`
+	- `mo-condition-updates`
+	- `mo-ticket-tracking`
+	- `mo-notifications`
+- Replaced page modal handlers with one-modal-per-component files and modal-local logic:
+	- `mo-report-fault-modal`
+	- `mo-edit-fault-modal`
+	- `mo-condition-update-modal`
+	- `mo-machine-details-modal`
+	- `mo-machine-breakdown-details-modal`
+	- `mo-weekly-check-details-modal`
+- Added event contracts for component-to-parent orchestration (`mo-ui:toast`, `mo:open-*`, `mo:fault-created`, `mo:fault-updated`, `mo:weekly-check-submitted`, `mo:notifications-count`).
+- Reduced `pages/dashboard/machinery-operator/script.js` to orchestration-only responsibilities (auth/bootstrap, section refresh routing, modal bridges, toast/badge wiring).
+- Validation evidence (`testing/ui-validation/machinery-operator-dashboard/validate-machinery-operator-dashboard.spec.js`):
+	- `VAL_STAGE=before`: 2/2 passed (desktop + mobile)
+	- `VAL_STAGE=after`: 2/2 passed (desktop + mobile)
+	- Console warnings/errors: none in final after artifacts
+	- Failed network requests: none in final after artifacts
