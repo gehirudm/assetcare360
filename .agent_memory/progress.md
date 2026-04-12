@@ -101,6 +101,24 @@
   - Reduced `pages/dashboard/maintenance/script.js` to orchestration-only responsibilities (component delegates, modal utilities, toast bridge, bootstrap)
   - Validation passed for remaining scope via `testing/ui-validation/maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js` (`VAL_STAGE=before` and `VAL_STAGE=after`: 2/2 desktop+mobile each stage; console/network regressions: none)
   - Regression guards rerun passed: `maintenance-cost-approvals` `VAL_STAGE=after` 2/2 and `maintenance-service-reports` `VAL_STAGE=after` 2/2 (desktop+mobile)
+- ✅ Machinery Operator dashboard componentization completed (TASK010)
+  - Added section components under `pages/dashboard/machinery-operator/components/`:
+    - `mo-dashboard-overview.js`
+    - `mo-fault-reporting.js`
+    - `mo-condition-updates.js`
+    - `mo-ticket-tracking.js`
+    - `mo-notifications.js`
+  - Added one-modal-per-component files under `pages/dashboard/machinery-operator/components/page-modals/`:
+    - `mo-report-fault-modal.js`
+    - `mo-edit-fault-modal.js`
+    - `mo-condition-update-modal.js`
+    - `mo-machine-details-modal.js`
+    - `mo-machine-breakdown-details-modal.js`
+    - `mo-weekly-check-details-modal.js`
+  - Replaced inline section/modal markup in `pages/dashboard/machinery-operator/index.html` with component hosts and removed inline handler attributes from the page HTML
+  - Replaced `pages/dashboard/machinery-operator/script.js` monolith with orchestration-only bridges (auth/bootstrap, section refresh routing, cross-component modal events, toast and sidebar badge wiring)
+  - Added `pages/dashboard/machinery-operator/components/mo-utils.js` as shared utility helper for status/date/toast behavior reused across section and modal components
+  - Validation passed for full Machinery Operator scope via `testing/ui-validation/machinery-operator-dashboard/validate-machinery-operator-dashboard.spec.js` (`VAL_STAGE=before` and `VAL_STAGE=after`: 2/2 desktop+mobile each stage; console/network regressions: none)
 - ✅ Supervisor componentization completed (TASK007)
   - Added `components/asset-status/script.js` with `<supervisor-asset-status>`
   - Replaced inline asset-status section markup with component host in supervisor dashboard HTML
@@ -220,7 +238,7 @@
 ## What's Left / Known Issues
 - ⏳ Migration `047` run/confirmation remains blocked in current sandbox due DB connection refusal
 - ⏳ Frontend budget-submission form should validate `total_amount > 0` before POSTing
-- ⏳ Remaining role dashboards still pending decomposition (driver, machinery operator)
+- ⏳ Remaining role dashboards still pending decomposition (driver)
 - ⏳ Dashboard Web Components refactor backlog created (agent-memory TASK004–TASK016 + Beads epic/children) and ready for staged execution
 - ⏳ Verify migration 048 and event consumers against a live RabbitMQ + database environment
 

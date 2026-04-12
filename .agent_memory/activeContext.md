@@ -1,7 +1,30 @@
 # Active Context
 
 ## Current Focus
-Dashboard Web Components refactor execution — TASK007, TASK011, TASK012, and TASK013 are now complete; next pending dashboard decomposition work is TASK009/TASK010/TASK014. Event architecture execution has moved from program setup (TASK018) into implementation slices (TASK019+).
+Dashboard Web Components refactor execution — TASK007, TASK010, TASK011, TASK012, and TASK013 are now complete; next pending dashboard decomposition work is TASK009/TASK014. Event architecture execution has moved from program setup (TASK018) into implementation slices (TASK019+).
+
+### Machinery Operator dashboard componentization completed (April 12, 2026)
+- Extracted all Machinery Operator sections into dashboard-scoped components under `pages/dashboard/machinery-operator/components/`:
+	- `mo-dashboard-overview`
+	- `mo-fault-reporting`
+	- `mo-condition-updates`
+	- `mo-ticket-tracking`
+	- `mo-notifications`
+- Extracted all Machinery Operator page modals one-modal-per-component under `pages/dashboard/machinery-operator/components/page-modals/`:
+	- `mo-report-fault-modal`
+	- `mo-edit-fault-modal`
+	- `mo-condition-update-modal`
+	- `mo-machine-details-modal`
+	- `mo-machine-breakdown-details-modal`
+	- `mo-weekly-check-details-modal`
+- Replaced inline section and modal markup in `pages/dashboard/machinery-operator/index.html` with component hosts and component script includes.
+- Replaced `pages/dashboard/machinery-operator/script.js` monolith with orchestration-only bridges (auth/bootstrap, section refresh routing, modal orchestration, toast and sidebar notification badge wiring).
+- Added dashboard utility module `pages/dashboard/machinery-operator/components/mo-utils.js` for shared status/date/toast helpers across section and modal components.
+- Validation evidence (`testing/ui-validation/machinery-operator-dashboard/validate-machinery-operator-dashboard.spec.js`):
+	- Before run: `VAL_STAGE=before` passed (2/2 desktop + mobile)
+	- After run: `VAL_STAGE=after` passed (2/2 desktop + mobile)
+	- Console warnings/errors: none in final after artifacts
+	- Failed network requests: none in final after artifacts
 
 ### Maintenance dashboard componentization completed (April 12, 2026)
 - Started TASK011 execution with focused Maintenance slices for `cost-approvals` and `service-reports`.
