@@ -72,6 +72,35 @@
   - Updated `loadTickets()` / `renderTickets()` orchestration to call tickets component APIs (`setLoading`, `setEmpty`, `setError`, `renderTickets`)
   - Removed duplicate parent filter wiring so filter state is component-owned
   - Syntax and diagnostics validation passed for touched TO files
+- ✅ Maintenance cost-approvals extraction slice (TASK011 in progress)
+  - Added `pages/dashboard/maintenance/components/maintenance-cost-approvals.js` with `<maintenance-cost-approvals>` and moved cost approval loading/filtering/review workflows into component-owned logic
+  - Added one-modal-per-component cost modals under `pages/dashboard/maintenance/components/page-modals/` (`maintenance-approve-cost-modal`, `maintenance-reject-cost-modal`, `maintenance-cost-details-modal`)
+  - Replaced inline cost-approvals section and cost approval modal blocks in `pages/dashboard/maintenance/index.html` with component hosts
+  - Reduced root `pages/dashboard/maintenance/script.js` for this scope to orchestration wrappers and custom-event toast bridge (`maintenance-ui:toast`)
+  - Validation before/after passed (`2/2` desktop+mobile each stage) via `testing/ui-validation/maintenance-cost-approvals/validate-maintenance-cost-approvals.spec.js` with no console warnings/errors and no failed network requests
+- ✅ Maintenance service-reports extraction slice (TASK011 in progress)
+  - Added `pages/dashboard/maintenance/components/maintenance-service-reports.js` with `<maintenance-service-reports>` and moved report filtering/approve/view flows into component-owned logic
+  - Added one-modal-per-component report details modal under `pages/dashboard/maintenance/components/page-modals/maintenance-report-details-modal.js`
+  - Replaced inline service-reports section and report-details modal in `pages/dashboard/maintenance/index.html` with component hosts
+  - Reduced root `pages/dashboard/maintenance/script.js` for this scope to orchestration wrappers (`filterServiceReports`, `viewReportDetails`, `approveReport`, `reviewReport`)
+  - Validation before/after passed (`2/2` desktop+mobile each stage) via `testing/ui-validation/maintenance-service-reports/validate-maintenance-service-reports.spec.js` with no console warnings/errors and no failed network requests
+  - Cross-phase regression guard: maintenance cost-approvals after-state validation rerun passed (`2/2` desktop+mobile)
+- ✅ Maintenance dashboard componentization completed (TASK011)
+  - Added remaining dashboard-scoped section components in `pages/dashboard/maintenance/components/`:
+    - `maintenance-dashboard-overview.js`
+    - `maintenance-fault-tickets.js`
+    - `maintenance-service-records.js`
+    - `maintenance-service-warranty.js`
+    - `maintenance-notifications.js`
+  - Added remaining one-modal-per-component files in `pages/dashboard/maintenance/components/page-modals/`:
+    - `maintenance-ticket-details-modal.js`
+    - `maintenance-warranty-details-modal.js`
+    - `maintenance-service-schedule-modal.js`
+    - `maintenance-add-service-record-modal.js`
+  - Replaced all remaining inline section/modal markup in maintenance dashboard HTML with component hosts and removed inline event attributes from `pages/dashboard/maintenance/**`
+  - Reduced `pages/dashboard/maintenance/script.js` to orchestration-only responsibilities (component delegates, modal utilities, toast bridge, bootstrap)
+  - Validation passed for remaining scope via `testing/ui-validation/maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js` (`VAL_STAGE=before` and `VAL_STAGE=after`: 2/2 desktop+mobile each stage; console/network regressions: none)
+  - Regression guards rerun passed: `maintenance-cost-approvals` `VAL_STAGE=after` 2/2 and `maintenance-service-reports` `VAL_STAGE=after` 2/2 (desktop+mobile)
 - ✅ Supervisor componentization completed (TASK007)
   - Added `components/asset-status/script.js` with `<supervisor-asset-status>`
   - Replaced inline asset-status section markup with component host in supervisor dashboard HTML
@@ -191,7 +220,7 @@
 ## What's Left / Known Issues
 - ⏳ Migration `047` run/confirmation remains blocked in current sandbox due DB connection refusal
 - ⏳ Frontend budget-submission form should validate `total_amount > 0` before POSTing
-- ⏳ Remaining role dashboards still pending decomposition (driver, machinery operator, maintenance)
+- ⏳ Remaining role dashboards still pending decomposition (driver, machinery operator)
 - ⏳ Dashboard Web Components refactor backlog created (agent-memory TASK004–TASK016 + Beads epic/children) and ready for staged execution
 - ⏳ Verify migration 048 and event consumers against a live RabbitMQ + database environment
 
