@@ -1,8 +1,8 @@
 # TASK007 - Supervisor Dashboard Componentization
 
-**Status:** In Progress  
+**Status:** Completed  
 **Added:** April 7, 2026  
-**Updated:** April 7, 2026
+**Updated:** April 12, 2026
 
 ## Original Request
 Create all dashboard refactor tasks from analysis.
@@ -20,22 +20,22 @@ Supervisor runs on `<ac-layout>` but still has a very large script and many inli
 Section-level extraction is needed to break down script ownership and remove global UI handling.
 
 ## Implementation Plan
-- [ ] Extract each supervisor section into dashboard-scoped component folders
-- [ ] Move section API calls and render logic into component classes
-- [ ] Convert inline event handlers to internal listeners + custom events
-- [ ] Keep existing status/action behavior unchanged
+- [x] Extract each supervisor section into dashboard-scoped component folders
+- [x] Move section API calls and render logic into component classes
+- [x] Convert inline event handlers to internal listeners + custom events
+- [x] Keep existing status/action behavior unchanged
 
 ## Progress Tracking
 
-**Overall Status:** In Progress - 84%
+**Overall Status:** Completed - 100%
 
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
 |----|-------------|--------|---------|-------|
 | 7.1 | Extract dashboard summary component | Complete | Apr 7, 2026 | Added `<supervisor-dashboard-overview>` with summary cards + activity feed and section-navigation events |
-| 7.2 | Extract checks/tickets/repair components | In Progress | Apr 7, 2026 | Repair-management and fault-tickets extracted; daily-check-reports still pending |
+| 7.2 | Extract checks/tickets/repair components | Complete | Apr 12, 2026 | Added `<supervisor-daily-check-reports>` and extracted report/rejection modals into page-modals components |
 | 7.3 | Extract budget/assets/technicians components | Complete | Apr 7, 2026 | Asset-status, technicians, and budget extracted as components |
-| 7.4 | Remove section logic from monolith script | In Progress | Apr 7, 2026 | Parent now bridges dashboard-overview, fault-tickets, asset-status, repair-management, technicians, and budget components |
+| 7.4 | Remove section logic from monolith script | Complete | Apr 12, 2026 | Parent script now keeps daily-check orchestration-only bridges (`bindSupervisorDailyCheckReports`, `refreshSupervisorDailyCheckReports`) |
 
 ## Progress Log
 ### April 7, 2026
@@ -94,3 +94,13 @@ Section-level extraction is needed to break down script ownership and remove glo
 - Updated `loadSectionData('fault-tickets')` to use component refresh bridge and hardened fault-ticket loading/error rendering to use component APIs when available.
 - Refactored `filterTicketsByStatus` / `filterTicketsBySource` to remove implicit `event` dependency and support component-driven calls.
 - Validation: `node --check` and diagnostics passed for touched supervisor files.
+
+### April 12, 2026 (Execution Update - Daily Check Reports Slice)
+- Added `pages/dashboard/supervisor/components/daily-check-reports/script.js` with `<supervisor-daily-check-reports>` and moved weekly-check loading/filtering/view/approve/reject logic into the section component.
+- Added one-modal-per-component implementations:
+	- `pages/dashboard/supervisor/components/page-modals/report-details-modal/script.js`
+	- `pages/dashboard/supervisor/components/page-modals/rejection-reason-modal/script.js`
+- Replaced inline daily-check section and extracted modal markup in `pages/dashboard/supervisor/index.html` with component hosts and script includes.
+- Updated parent orchestration in `pages/dashboard/supervisor/script.js` to bind and refresh the daily-check component via `bindSupervisorDailyCheckReports()` and `refreshSupervisorDailyCheckReports()`.
+- Removed legacy daily-check modal/report handlers from the parent script so the extracted section owns its feature behavior.
+- Validation evidence (desktop + mobile): ran `VAL_STAGE=after npx playwright test testing/ui-validation/supervisor-daily-check-reports/validate-daily-check.spec.js --reporter=line` with passing results (2/2), zero console warnings/errors, zero failed requests, and successful modal interaction in both viewports.
