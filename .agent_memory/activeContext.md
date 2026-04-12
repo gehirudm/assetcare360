@@ -3,6 +3,11 @@
 ## Current Focus
 Dashboard Web Components refactor execution — TASK007, TASK009, TASK010, TASK011, TASK012, TASK013, and TASK014 are now complete for active role scopes. Remaining active engineering work is non-dashboard backlog (migration verification and notification-routing narrowing).
 
+### Newly identified follow-up refactor backlog (April 12, 2026)
+- Added TASK034 to refactor the canonical shared fault ticket detail page (`pages/view-ticket/`) which still has inline handlers and monolithic script ownership.
+- Added TASK035 to migrate Technical Officer ticket detail routing to the canonical page and remove the dashboard-local duplicate detail page under `pages/dashboard/technical-officer/fault-ticket-detail/`.
+- Added TASK036 to complete Supervisor residual modal extraction and monolithic script cleanup where create/assign/view ticket modal flows and inline action templates still live in parent scope.
+
 ### Driver dashboard componentization + inline-events migration completed (April 12, 2026)
 - Extracted all Driver sections into dashboard-scoped components under `pages/dashboard/driver/components/`:
 	- `driver-dashboard-overview`
