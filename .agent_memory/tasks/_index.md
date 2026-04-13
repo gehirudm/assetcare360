@@ -4,13 +4,14 @@
 - [TASK003] Run migration 047 and update OpenAPI spec — OpenAPI updates completed; migration confirmation blocked by DB connection refusal in sandbox
 
 ## Pending
-- [TASK036] Supervisor residual modal and monolith cleanup — Extract remaining create/assign/view ticket modals, move ticket rendering/actions into components, and reduce parent script to orchestration-only
-- [TASK035] Technical Officer fault ticket detail migration and page removal — Remove dashboard-local TO detail page and repoint TO ticket links to canonical fault ticket detail page
-- [TASK034] Shared fault ticket detail page refactor — Decompose `pages/view-ticket` monolith, remove inline handlers, and validate before/after desktop+mobile behavior
-- [TASK033] Add Transportation Manager Role to User Creation — Add the missing role option to user creation/edit modals and filter tabs
-- [TASK032] Budget-flow notification routing scope — Temporary broad notifications to all supervisors + maintenance managers; later narrow to controlling supervisor only
+_(none)_
 
 ## Completed
+- [TASK032] Budget-flow notification routing scope — Notification consumer now targets controlling supervisor user IDs for supervisor-level budget review events using active ticket-assignment ownership with safe fallback role broadcast; maintenance-manager routing preserved; before/after desktop+mobile validation passed — Completed April 13, 2026
+- [TASK033] Add Transportation Manager Role to User Creation — Transportation Manager option added to SysAdmin create/edit user modal components and user filter tabs; backend role validation/hierarchy aligned; OpenAPI role enums updated; before/after desktop+mobile validation passed — Completed April 12, 2026
+- [TASK036] Supervisor residual modal and monolith cleanup — create/assign/view modal business logic fully co-located into modal components, parent script reduced to orchestration-only modal bridges, duplicate modal helpers removed, and before/after desktop+mobile validation passed — Completed April 12, 2026
+- [TASK035] Technical Officer fault ticket detail migration and page removal — TO ticket navigation repointed to canonical `pages/view-ticket`, local TO detail folder removed, and before/after desktop+mobile routing validation passed — Completed April 12, 2026
+- [TASK034] Shared fault ticket detail page refactor — Inline handlers removed, shared detail logic modularized, duplicate handlers cleaned, and before/after desktop+mobile validation passed — Completed April 12, 2026
 - [TASK009] Driver dashboard componentization — all Driver sections extracted into dashboard-scoped components; one-modal-per-component decomposition completed; parent script reduced to orchestration-only; before/after Playwright validation passed on desktop + mobile — Completed April 12, 2026
 - [TASK014] Inline events to component events migration — inline handlers removed across active dashboard scopes, including Driver closure with component-local handlers and custom-event orchestration contracts; before/after validation passed on desktop + mobile — Completed April 12, 2026
 - [TASK010] Machinery Operator dashboard componentization — all sections and page modals extracted into dashboard-scoped components; parent script reduced to orchestration-only bridges; before/after Playwright validation passed on desktop + mobile — Completed April 12, 2026

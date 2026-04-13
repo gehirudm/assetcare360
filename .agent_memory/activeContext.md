@@ -1,12 +1,54 @@
 # Active Context
 
 ## Current Focus
-Dashboard Web Components refactor execution — TASK007, TASK009, TASK010, TASK011, TASK012, TASK013, and TASK014 are now complete for active role scopes. Remaining active engineering work is non-dashboard backlog (migration verification and notification-routing narrowing).
+Dashboard Web Components refactor execution for the active Supervisor residual slice is now complete: TASK034, TASK035, and TASK036 are all completed with validation evidence. TASK033 is now also completed for Transportation Manager role creation support in SysAdministration user management. TASK032 is now completed for budget-flow notification routing refinement. Remaining non-dashboard backlog primarily includes migration verification.
+
+### Budget-flow notification routing refinement completed (April 13, 2026)
+- Implemented targeted supervisor routing for `BUDGET_REPORT_CREATED` events in `services/consume_notification_events.php`.
+- For supervisor-level approvals, recipient resolution now uses active ticket assignment ownership:
+	- First pass: match `(fault_ticket_id, submitted_by Technical Officer)` to `assigned_by` Supervisor.
+	- Fallback pass: match active assignments by `(fault_ticket_id)` to `assigned_by` Supervisor.
+	- Safety fallback: role broadcast to `Supervisor` when ownership cannot be resolved.
+- Preserved maintenance manager routing for maintenance-manager approval events.
+- Validation evidence (`testing/ui-validation/budget-notification-routing/validate-budget-notification-routing.spec.js`):
+	- `VAL_STAGE=before`: passed (2/2 desktop + mobile)
+	- `VAL_STAGE=after`: passed (2/2 desktop + mobile)
+	- Console warnings/errors: none
+	- Failed network requests: none
+
+### Transportation Manager role creation support completed (April 12, 2026)
+- Completed TASK033 by adding `Transportation Manager` in SysAdministration user-management create/edit modal role selectors and user role filter tabs:
+	- `pages/dashboard/sysadministration/components/page-modals/sa-create-user-modal.js`
+	- `pages/dashboard/sysadministration/components/page-modals/sa-edit-user-modal.js`
+	- `pages/dashboard/sysadministration/components/sa-user-accounts.js`
+- Aligned backend role acceptance so create/edit flows succeed end-to-end:
+	- `app/services/UserService.php` valid role list includes Transportation Manager
+	- `app/middleware/RoleMiddleware.php` hierarchy includes Transportation Manager
+	- `app/models/User.php` schema enum includes Transportation Manager for model/schema parity
+- Updated `testing/openapi.yaml` to include Transportation Manager in Users role enums and role documentation.
+- Added and executed dedicated validation scope:
+	- `testing/ui-validation/sysadmin-transportation-manager-role/validate-sysadmin-transportation-manager-role.spec.js`
+	- `VAL_STAGE=before`: passed (2/2 desktop + mobile)
+	- `VAL_STAGE=after`: passed (2/2 desktop + mobile)
+	- Console warnings/errors: none
+	- Failed network requests: none
 
 ### Newly identified follow-up refactor backlog (April 12, 2026)
-- Added TASK034 to refactor the canonical shared fault ticket detail page (`pages/view-ticket/`) which still has inline handlers and monolithic script ownership.
-- Added TASK035 to migrate Technical Officer ticket detail routing to the canonical page and remove the dashboard-local duplicate detail page under `pages/dashboard/technical-officer/fault-ticket-detail/`.
-- Added TASK036 to complete Supervisor residual modal extraction and monolithic script cleanup where create/assign/view ticket modal flows and inline action templates still live in parent scope.
+- TASK034 completed: canonical shared fault-ticket detail page (`pages/view-ticket/`) was refactored to modular scripts with inline-handler removal and before/after desktop+mobile validation.
+- TASK035 completed: Technical Officer detail routing now targets canonical `pages/view-ticket/`; dashboard-local TO detail page folder was removed and navigation/back flow was validated.
+- TASK036 completed: Supervisor create/assign/view modal business logic was co-located into modal components, parent modal internals were removed from `pages/dashboard/supervisor/script.js`, and before/after desktop+mobile validation passed.
+
+### Supervisor residual cleanup progress (April 12, 2026)
+- `pages/dashboard/supervisor/components/fault-tickets/script.js` now owns ticket/breakdown list rendering and delegated `data-action` handling with local dropdown state.
+- `pages/dashboard/supervisor/script.js` fault-ticket rendering templates with inline `onclick` strings were removed; parent now consumes component action events and routes to orchestration handlers.
+- `pages/dashboard/supervisor/components/page-modals/{create-ticket-modal,assign-ticket-modal,view-ticket-modal}` now own modal-local open/close flow, API operations, and modal rendering behavior.
+- Removed large dead legacy reports block, duplicate modal helper declarations, and stale global modal/dropdown listeners from supervisor parent script.
+- Removed remaining inline handler strings from supervisor scope (`pages/dashboard/supervisor/**`).
+- Validation evidence (`testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js`):
+	- `VAL_STAGE=before` rerun passed (2/2 desktop + mobile)
+	- `VAL_STAGE=after` rerun passed (2/2 desktop + mobile)
+	- Console warnings/errors: none
+	- Failed network requests: none
 
 ### Driver dashboard componentization + inline-events migration completed (April 12, 2026)
 - Extracted all Driver sections into dashboard-scoped components under `pages/dashboard/driver/components/`:
@@ -242,7 +284,7 @@ Dashboard Web Components refactor execution — TASK007, TASK009, TASK010, TASK0
 ## Active Decisions
 - Budget `approved`/`rejected` both move ticket back to `Assigned` (intentional — technician proceeds from assigned state after review)
 - `petty_cash_limit` is a `SystemSetting` value (seeded at 50000.00); drives `approval_level` (supervisor / maintenance_manager)
-- Budget-flow notifications are deferred for now with interim routing to all supervisors and maintenance managers; future routing should target only the supervisor responsible for the assigned Technical Officer (tracked in TASK032)
+- Budget-flow notifications now use assignment ownership for supervisor-level budget events and retain safe role-broadcast fallback when ownership resolution is unavailable.
 
 ### TO Dashboard UI Polish (latest session)
 - Removed **Recent Activities** section from dashboard

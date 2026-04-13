@@ -2,7 +2,7 @@
 
 ## What Works
 - ✅ JWT auth with HTTP-only cookies; login/logout flow
-- ✅ Role-based access control (7 roles)
+- ✅ Role-based access control (8 roles, including Transportation Manager)
 - ✅ API request logging with analytics (Admin)
 - ✅ User management (CRUD, search, filters, force-password-change)
 - ✅ Machine & vehicle inventory management
@@ -236,6 +236,42 @@
   - Replaced empty dashboard files with baseline `<ac-layout>` shell and section map
   - Added auth bootstrap and section routing orchestration in page script
   - Added initial role-scoped component scaffold: `<transport-overview>`
+- ✅ Shared fault-ticket detail page refactor (TASK034)
+  - Removed inline handlers from `pages/view-ticket/index.html`
+  - Modularized detail behavior into `pages/view-ticket/modules/navigation.js`, `pages/view-ticket/modules/budget-report.js`, and orchestration-focused `pages/view-ticket/script.js`
+  - Added/ran stage-based validation `testing/ui-validation/fault-ticket-detail/validate-fault-ticket-detail.spec.js` with before/after desktop+mobile pass and no console/network regressions
+- ✅ Technical Officer detail migration and local page removal (TASK035)
+  - Updated TO ticket routing to canonical `pages/view-ticket` with return-context contract
+  - Removed duplicate local TO detail folder `pages/dashboard/technical-officer/fault-ticket-detail/`
+  - Added/ran routing validation `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js` with before/after desktop+mobile pass and no console/network regressions
+- ✅ Supervisor residual cleanup (TASK036)
+  - Co-located create/assign/view modal logic into `supervisor-create-ticket-modal`, `supervisor-assign-ticket-modal`, and `supervisor-view-ticket-modal`
+  - Reduced `pages/dashboard/supervisor/script.js` modal pathways to orchestration-only bridges and removed duplicate/stale modal helper code
+  - Removed legacy global modal/dropdown listeners from parent script and confirmed no inline `on*` handlers in `pages/dashboard/supervisor/**`
+  - Re-ran `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js` with `VAL_STAGE=before` and `VAL_STAGE=after` (both 2/2 desktop+mobile; console/network regressions: none)
+- ✅ Transportation Manager role creation support (TASK033)
+  - Added `Transportation Manager` role options to SysAdmin user create/edit modal components:
+    - `pages/dashboard/sysadministration/components/page-modals/sa-create-user-modal.js`
+    - `pages/dashboard/sysadministration/components/page-modals/sa-edit-user-modal.js`
+  - Added `Transportation Manager` user filter tab in `pages/dashboard/sysadministration/components/sa-user-accounts.js`
+  - Aligned backend acceptance (`app/services/UserService.php`, `app/middleware/RoleMiddleware.php`, `app/models/User.php`) so the role is valid end-to-end
+  - Updated `testing/openapi.yaml` Users role enums and role documentation to include Transportation Manager
+  - Added and executed scope validation `testing/ui-validation/sysadmin-transportation-manager-role/validate-sysadmin-transportation-manager-role.spec.js`
+  - Validation passed for both stages (desktop + mobile):
+    - `VAL_STAGE=before`: 2/2
+    - `VAL_STAGE=after`: 2/2
+    - Console warnings/errors: none
+    - Failed network requests: none
+- ✅ Budget-flow notification routing refinement (TASK032)
+  - Updated `services/consume_notification_events.php` so `BUDGET_REPORT_CREATED` with supervisor-level approval targets controlling supervisor user IDs derived from active `fault_ticket_assignments` ownership (`assigned_to` -> `assigned_by`).
+  - Added fallback ownership lookup by ticket-level active assignments and a safe fallback role broadcast (`target_role=Supervisor`) when ownership cannot be resolved.
+  - Preserved maintenance manager routing behavior for maintenance-manager approval events.
+  - Added validation script `testing/ui-validation/budget-notification-routing/validate-budget-notification-routing.spec.js`.
+  - Validation passed for both stages (desktop + mobile):
+    - `VAL_STAGE=before`: 2/2
+    - `VAL_STAGE=after`: 2/2
+    - Console warnings/errors: none
+    - Failed network requests: none
 - ✅ Dashboard web-components refactor program orchestration (TASK004)
   - Sequencing/acceptance/checkpoint standards finalized and synchronized with child tasks
 - ✅ RabbitMQ event architecture program orchestration (TASK018)
@@ -248,10 +284,6 @@
 ## What's Left / Known Issues
 - ⏳ Migration `047` run/confirmation remains blocked in current sandbox due DB connection refusal
 - ⏳ Frontend budget-submission form should validate `total_amount > 0` before POSTing
-- ⏳ Technical Officer dashboard still contains residual monolithic modal/ticket logic and local detail-page routing assumptions (tracked in TASK035)
-- ⏳ Canonical fault ticket detail page (`pages/view-ticket`) still needs full refactor for inline handler removal and modular ownership (tracked in TASK034)
-- ⏳ Supervisor dashboard still has inline modal blocks and a monolithic parent script with duplicate function declarations (tracked in TASK036)
-- ⏳ Dashboard Web Components refactor backlog created (agent-memory TASK004–TASK016 + Beads epic/children) and ready for staged execution
 - ⏳ Verify migration 048 and event consumers against a live RabbitMQ + database environment
 
 ## Known Bugs Fixed (this session)
@@ -266,3 +298,4 @@
 - Inventory Manager notifications component could request missing stylesheet (`components/notifications/style.css`) causing 404; fixed by adding the component stylesheet.
 - Inventory Manager extracted components could show "API client is not available" due `window.API` compatibility gap; fixed by exposing API helper on `window`.
 - Inventory Manager catalog View action could open duplicate details modals after reconnect/bind cycles; fixed by preventing duplicate event-listener registration in catalog component.
+- SysAdmin could not create/update Transportation Manager users because role options and backend validation/hierarchy were incomplete; fixed by adding role options in modal components, adding user filter tab, and aligning backend role acceptance/documentation.
