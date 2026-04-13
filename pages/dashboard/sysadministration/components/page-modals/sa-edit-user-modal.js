@@ -48,6 +48,7 @@ class SAEditUserModal extends HTMLElement {
                             <select class="form-select" name="role" required>
                                 <option value="Admin">Admin</option>
                                 <option value="Maintenance Manager">Maintenance Manager</option>
+                                <option value="Transportation Manager">Transportation Manager</option>
                                 <option value="Technical Officer">Technical Officer</option>
                                 <option value="Supervisor">Supervisor</option>
                                 <option value="Inventory Manager">Inventory Manager</option>

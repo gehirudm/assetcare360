@@ -21,6 +21,7 @@ info:
     - **Admin**: Full system access including user management
     - **Maintenance Manager**: Manage maintenance operations and schedules
     - **Inventory Manager**: Inventory operations
+    - **Transportation Manager**: Transportation operations and logistics
     - **Technical Officer**: Technical support and equipment management
     - **Supervisor**: Supervisory access
     - **Driver**: Driver-specific operations
@@ -542,7 +543,7 @@ paths:
           description: Filter by user role
           schema:
             type: string
-            enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
+            enum: [Admin, Maintenance Manager, Inventory Manager, Transportation Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
         - name: status
           in: query
           description: Filter by active status
@@ -630,7 +631,7 @@ paths:
                   minLength: 2
                 role:
                   type: string
-                  enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
+                  enum: [Admin, Maintenance Manager, Inventory Manager, Transportation Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
                   example: "Inventory Manager"
                 technical_expertise:
                   type: string
@@ -744,7 +745,7 @@ paths:
                   minLength: 2
                 role:
                   type: string
-                  enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
+                  enum: [Admin, Maintenance Manager, Inventory Manager, Transportation Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
                 technical_expertise:
                   type: string
                   nullable: true
@@ -1677,7 +1678,7 @@ components:
           example: "Admin User"
         role:
           type: string
-          enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
+          enum: [Admin, Maintenance Manager, Inventory Manager, Transportation Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
           example: "Admin"
         technical_expertise:
           type: string

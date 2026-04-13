@@ -1,0 +1,22 @@
+{
+  "stage": "after",
+  "viewport": "mobile",
+  "startUrl": "http://127.0.0.1:3000/dashboard/sysadministration/index.html",
+  "finalUrl": "http://127.0.0.1:3000/dashboard/sysadministration/index.html",
+  "title": "System Administration Dashboard",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \"User Management\" [level=1]\n  - paragraph: Manage user accounts and access\n  - button \"Create New User\"\n  - button \"All Users\"\n  - button \"Admin\"\n  - button \"Maintenance Manager\"\n  - button \"Inventory Manager\"\n  - button \"Transportation Manager\"\n  - button \"Technical Officer\"\n  - button \"Supervisor\"\n  - button \"Machinary Operator\"\n  - button \"Driver\"\n  - button \"Auction Officer\"\n  - textbox \"Search by name, email, or employee ID...\"\n  - combobox:\n    - option \"All Status\" [selected]\n    - option \"Active\"\n    - option \"Inactive\"\n  - text: User Accounts 1 user\n  - strong: Transport Manager One\n  - text: LITRO-TRANSPORT-001 | Transportation Manager Active | tm1@assetcare360.test\n  - button \"VIEW\"\n  - button",
+    "snapshotLength": 733
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "destinationPath": "/dashboard/sysadministration/index.html",
+    "filterHasTransportation": true,
+    "createHasTransportation": true,
+    "editHasTransportation": true,
+    "visibleUsersAfterFilter": 1,
+    "createRoleOptionsCount": 10,
+    "editRoleOptionsCount": 9
+  }
+}
