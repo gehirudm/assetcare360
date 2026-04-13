@@ -1,0 +1,19 @@
+{
+  "stage": "after",
+  "viewport": "desktop",
+  "startUrl": "http://127.0.0.1:3000/dashboard/supervisor/index.html?section=fault-tickets",
+  "finalUrl": "http://127.0.0.1:3000/dashboard/supervisor/index.html?section=fault-tickets",
+  "title": "Supervisor Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- text: AssetCare360\n- heading \"Supervisor Dashboard\" [level=1]\n- button \"SO\"\n- navigation: Dashboard Weekly Check Reports Fault Tickets Repair Management Budget Approval Asset Status Technicians\n- main:\n  - heading \"Fault Ticket Management\" [level=2]\n  - paragraph: Assign and track fault tickets\n  - button \"All\"\n  - button \"Unassigned\"\n  - button \"Assigned\"\n  - button \"In Progress\"\n  - button \"Completed\"\n  - button \"All Sources\"\n  - button \"Driver\"\n  - button \"Operator\"\n  - button \"System\"\n  - button \"Create New Ticket\"\n  - text: Unassigned Tickets & Breakdown Reports\n  - strong: VBD-077 Vehicle\n  - text: ABC-1234 | Driver One Brake response delay MEDIUM | Apr 10, 2026 02:30 PM\n  - button \"VIEW\"\n  - button\n  - strong: TKT-102\n  - text: CAT-950H | Operator Two Intermittent steering lock under load MEDIUM | Apr 12, 2026 03:30 PM\n  - button \"VIEW\"\n  - button\n  - text: Assigned Tickets\n  - strong: TKT-101\n  - text: CAT-320D | Technician One Hydraulic leak near pump housing HIGH | ASSIGNED\n  - button \"VIEW\"\n  - button\n  - text: Resolved / Finished Tickets\n  - paragraph: No resolved tickets",
+    "snapshotLength": 1102
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "createModalOpened": true,
+    "assignModalOpened": true,
+    "viewModalOpened": true,
+    "componentActionFlowVerified": true
+  }
+}
