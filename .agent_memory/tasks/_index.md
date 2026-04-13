@@ -4,7 +4,8 @@
 - [TASK003] Run Migration 047 and Update OpenAPI Spec
 
 ## Pending
-_(none)_
+- [TASK037] Supervisor Script Monolith Final Decomposition - Move remaining section/modal business logic out of parent script and enforce orchestration-only ownership
+- [TASK038] Technical Officer Script Monolith Final Decomposition - Remove legacy modal/fallback parent ownership and complete component-owned ticket workflows
 
 ## Completed
 _(none)_
