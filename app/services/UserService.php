@@ -296,6 +296,7 @@ class UserService {
                 'Admin',
                 'Maintenance Manager',
                 'Inventory Manager',
+                'Transportation Manager',
                 'Technical Officer',
                 'Supervisor',
                 'Machinary Operator',

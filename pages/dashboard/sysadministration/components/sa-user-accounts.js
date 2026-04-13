@@ -44,6 +44,7 @@ class SAUserAccounts extends HTMLElement {
                 <button class="filter-btn" type="button" data-role-filter="Admin">Admin</button>
                 <button class="filter-btn" type="button" data-role-filter="Maintenance Manager">Maintenance Manager</button>
                 <button class="filter-btn" type="button" data-role-filter="Inventory Manager">Inventory Manager</button>
+                <button class="filter-btn" type="button" data-role-filter="Transportation Manager">Transportation Manager</button>
                 <button class="filter-btn" type="button" data-role-filter="Technical Officer">Technical Officer</button>
                 <button class="filter-btn" type="button" data-role-filter="Supervisor">Supervisor</button>
                 <button class="filter-btn" type="button" data-role-filter="Machinary Operator">Machinary Operator</button>

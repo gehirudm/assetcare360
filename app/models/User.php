@@ -18,7 +18,7 @@ class User extends BaseModel {
             'employee_id' => 'VARCHAR(100) UNIQUE NOT NULL',
             'password' => 'VARCHAR(255) NOT NULL',
             'full_name' => 'VARCHAR(255) NOT NULL',
-            'role' => "ENUM('Admin', 'Maintenance Manager', 'Inventory Manager', 'Technical Officer', 'Supervisor', 'Machinary Operator', 'Driver', 'Auction Officer') NOT NULL",
+            'role' => "ENUM('Admin', 'Maintenance Manager', 'Inventory Manager', 'Transportation Manager', 'Technical Officer', 'Supervisor', 'Machinary Operator', 'Driver', 'Auction Officer') NOT NULL",
             'technical_expertise' => 'VARCHAR(100) NULL',
             'department' => 'VARCHAR(100) NULL',
             'email' => 'VARCHAR(255) NULL',
