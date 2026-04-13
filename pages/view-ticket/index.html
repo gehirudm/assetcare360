@@ -36,7 +36,7 @@
                         </div>
                     </div>
                 </div>
-                <button class="logout-btn" onclick="handleLogout()">
+                <button type="button" class="logout-btn" data-action="logout-open">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </button>
@@ -55,7 +55,7 @@
                 <i class="fas fa-exclamation-triangle"></i>
                 <h3>Error Loading Ticket</h3>
                 <p id="errorMessage">Unable to load ticket details. Please try again.</p>
-                <button class="btn btn-primary" onclick="location.reload()" style="margin-top: 15px;">
+                <button type="button" class="btn btn-primary" data-action="retry-load" style="margin-top: 15px;">
                     <i class="fas fa-redo"></i> Retry
                 </button>
             </div>
@@ -223,7 +223,7 @@
                                 <span>
                                     <i class="fas fa-history"></i> Prior Tickets for This Asset
                                 </span>
-                                <button class="btn-view-all" id="viewAllTicketsBtn" onclick="openAllTicketsModal()" style="display: none;">
+                                <button type="button" class="btn-view-all" id="viewAllTicketsBtn" data-action="open-all-tickets" style="display: none;">
                                     <i class="fas fa-list"></i> View All
                                 </button>
                             </div>
@@ -250,10 +250,10 @@
                 Are you sure you want to logout? Any unsaved changes will be lost.
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeLogoutModal()">
+                <button type="button" class="btn btn-secondary" data-action="logout-close">
                     <i class="fas fa-times"></i> Cancel
                 </button>
-                <button class="btn btn-danger" onclick="confirmLogout()">
+                <button type="button" class="btn btn-danger" data-action="logout-confirm">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
@@ -268,7 +268,7 @@
                     <i class="fas fa-history"></i>
                     All Tickets for <span id="modalAssetName">Asset</span>
                 </span>
-                <button class="modal-close" onclick="closeAllTicketsModal()">
+                <button type="button" class="modal-close" data-action="close-all-tickets">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -283,9 +283,9 @@
     </div>
 
     <!-- Image Viewer Modal -->
-    <div id="imageViewerModal" class="modal" onclick="closeImageViewer()">
-        <div class="modal-content modal-image" onclick="event.stopPropagation()">
-            <button class="modal-close" onclick="closeImageViewer()">
+    <div id="imageViewerModal" class="modal">
+        <div class="modal-content modal-image">
+            <button type="button" class="modal-close" data-action="close-image-viewer">
                 <i class="fas fa-times"></i>
             </button>
             <img id="viewerImage" src="" alt="Ticket Image" style="width: 100%; height: auto; max-height: 80vh; object-fit: contain;">
@@ -300,11 +300,11 @@
                     <i class="fas fa-file-invoice-dollar"></i>
                     <span id="budgetModalTitle">Submit Budget Report</span>
                 </span>
-                <button class="modal-close" onclick="closeBudgetReportModal()">
+                <button type="button" class="modal-close" data-action="budget-close-modal">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form id="budgetReportForm" onsubmit="submitBudgetReport(event)">
+            <form id="budgetReportForm">
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="quotationInput">
@@ -348,7 +348,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeBudgetReportModal()">
+                    <button type="button" class="btn btn-secondary" data-action="budget-close-modal">
                         <i class="fas fa-times"></i> Cancel
                     </button>
                     <button type="submit" class="btn btn-primary">
@@ -370,6 +370,8 @@
     <script src="../../js/api.js"></script>
     <script src="../../js/auth.js"></script>
     <script src="../../js/fault-ticket-detail-template.js"></script>
+    <script src="./modules/navigation.js"></script>
+    <script src="./modules/budget-report.js"></script>
 
     <script src="./script.js"></script>
 </body>
