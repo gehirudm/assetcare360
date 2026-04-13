@@ -49,6 +49,27 @@ $notificationInsert = $db->prepare(
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
 );
 
+$supervisorsBySubmittedTechStmt = $db->prepare(
+        "SELECT DISTINCT fta.assigned_by
+         FROM fault_ticket_assignments fta
+         INNER JOIN users supervisor ON supervisor.id = fta.assigned_by
+         WHERE fta.fault_ticket_id = ?
+             AND fta.assigned_to = ?
+             AND fta.status = 'Active'
+             AND supervisor.role = 'Supervisor'
+         ORDER BY fta.assigned_at DESC"
+);
+
+$supervisorsByTicketStmt = $db->prepare(
+        "SELECT DISTINCT fta.assigned_by
+         FROM fault_ticket_assignments fta
+         INNER JOIN users supervisor ON supervisor.id = fta.assigned_by
+         WHERE fta.fault_ticket_id = ?
+             AND fta.status = 'Active'
+             AND supervisor.role = 'Supervisor'
+         ORDER BY fta.assigned_at DESC"
+);
+
 $processedInsert = $db->prepare('INSERT INTO processed_events (consumer_name, event_uuid) VALUES (?, ?)');
 $processedCheck = $db->prepare('SELECT COUNT(*) FROM processed_events WHERE consumer_name = ? AND event_uuid = ?');
 
@@ -64,7 +85,7 @@ function deterministicUuid(string $seed): string {
     );
 }
 
-$buildRecords = function (array $event): array {
+$buildRecords = function (array $event) use ($supervisorsBySubmittedTechStmt, $supervisorsByTicketStmt): array {
     $data = $event['data'];
     $records = [];
 
@@ -87,9 +108,68 @@ $buildRecords = function (array $event): array {
             break;
 
         case DomainEvents::BUDGET_REPORT_CREATED:
+            $approvalRole = strtolower(str_replace(' ', '_', trim((string)($data['approval_role'] ?? 'Supervisor'))));
+            $targetRole = $approvalRole === 'maintenance_manager' ? 'Maintenance Manager' : 'Supervisor';
+
+            if ($approvalRole === 'supervisor') {
+                $ticketId = isset($data['fault_ticket_id']) ? (int)$data['fault_ticket_id'] : 0;
+                $submittedBy = isset($data['submitted_by']) ? (int)$data['submitted_by'] : null;
+                $supervisorIds = [];
+
+                try {
+                    if ($ticketId > 0 && $submittedBy !== null && $submittedBy > 0) {
+                        $supervisorsBySubmittedTechStmt->execute([$ticketId, $submittedBy]);
+                        $supervisorIds = array_values(array_unique(array_map(
+                            static fn(array $row): int => (int)$row['assigned_by'],
+                            $supervisorsBySubmittedTechStmt->fetchAll(PDO::FETCH_ASSOC)
+                        )));
+                    }
+
+                    if ($ticketId > 0 && empty($supervisorIds)) {
+                        $supervisorsByTicketStmt->execute([$ticketId]);
+                        $supervisorIds = array_values(array_unique(array_map(
+                            static fn(array $row): int => (int)$row['assigned_by'],
+                            $supervisorsByTicketStmt->fetchAll(PDO::FETCH_ASSOC)
+                        )));
+                    }
+                } catch (Throwable $routingError) {
+                    error_log('[notifications] Supervisor routing lookup failed: ' . $routingError->getMessage());
+                    $supervisorIds = [];
+                }
+
+                foreach ($supervisorIds as $supervisorId) {
+                    if ($supervisorId <= 0) {
+                        continue;
+                    }
+
+                    $records[] = [
+                        'user_id' => $supervisorId,
+                        'target_role' => null,
+                        'title' => 'Budget review required',
+                        'message' => 'A budget report is waiting for your approval.',
+                        'type' => 'warning',
+                        'source_event_id' => (string)($data['report_id'] ?? ''),
+                    ];
+                }
+
+                // Safety fallback for legacy tickets with missing assignment ownership mapping.
+                if (empty($records)) {
+                    $records[] = [
+                        'user_id' => null,
+                        'target_role' => 'Supervisor',
+                        'title' => 'Budget review required',
+                        'message' => 'A budget report is waiting for your approval.',
+                        'type' => 'warning',
+                        'source_event_id' => (string)($data['report_id'] ?? ''),
+                    ];
+                }
+
+                break;
+            }
+
             $records[] = [
                 'user_id' => null,
-                'target_role' => ($data['approval_role'] ?? 'Supervisor'),
+                'target_role' => $targetRole,
                 'title' => 'Budget review required',
                 'message' => 'A budget report is waiting for your approval.',
                 'type' => 'warning',
