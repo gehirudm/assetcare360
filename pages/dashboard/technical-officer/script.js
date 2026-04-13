@@ -669,15 +669,28 @@ function updateDashboardCounts(tickets) {
     if (dashCompleteCount) dashCompleteCount.textContent = completedToday;
 }
 
+function buildTechnicalOfficerTicketsReturnPath() {
+    const dashboardUrl = new URL('./index.html', window.location.href);
+    dashboardUrl.searchParams.set('section', 'tickets');
+    return `${dashboardUrl.pathname}${dashboardUrl.search}`;
+}
+
+function buildCanonicalTicketDetailUrl(ticketId) {
+    const detailUrl = new URL('../../view-ticket/index.html', window.location.href);
+    detailUrl.searchParams.set('id', ticketId);
+    detailUrl.searchParams.set('return_to', buildTechnicalOfficerTicketsReturnPath());
+    return detailUrl.toString();
+}
+
 // View ticket details — navigate to the dedicated detail page
 function viewTicket(ticketId) {
-    window.location.href = `fault-ticket-detail/?id=${ticketId}`;
+    window.location.href = buildCanonicalTicketDetailUrl(ticketId);
 }
 
 // Request spare parts for a ticket — now handled in the detail page;
 // this stub is kept for backward compatibility with action buttons in the list.
 function requestSparePartsForTicket(ticketId) {
-    window.location.href = `fault-ticket-detail/?id=${ticketId}`;
+    window.location.href = buildCanonicalTicketDetailUrl(ticketId);
 }
 
 
