@@ -20,6 +20,26 @@
   - Nearby garage approval now makes technician assignment optional in UI, and backend assignment endpoint rejects technician assignment updates when garage workflow is active.
   - Driver garage modal now shows only the approved garage once assigned.
   - OpenAPI updated to document `/fault-tickets/{id}/assign` and its garage-workflow blocked-assignment response.
+- ✅ Fuel logging + TM fleet details enhancement (TASK040)
+  - Added migration `053_add_fuel_source_and_nullable_total_cost.php` to add `fuel_source`, backfill missing values, make `total_cost` nullable, and add index `idx_fuel_source`.
+  - Updated backend fuel validation/normalization (`FuelLogService`) to derive `fuel_type` from vehicle and enforce source-aware rules (`external` requires cost + receipt).
+  - Updated fuel log persistence and upload handling (`FuelLog`, `FuelLogController`) for `fuel_source`, nullable costs, and safer bill upload error handling.
+  - Updated Driver and TM fuel UI flows to remove manual fuel-type selection and apply internal/external conditional behavior.
+  - Replaced TM fleet modal detail flow with dedicated `fleet-details` dashboard section including metrics, Chart.js trend chart, and driver/fuel history.
+  - Updated `testing/openapi.yaml` with fuel-log endpoints and schemas reflecting source-aware rules.
+  - Validation: migration executed successfully, PHP syntax checks passed, touched-file diagnostics clean, Playwright `VAL_STAGE=after` passed.
+- ✅ Vehicle government fuel QR image flow (TASK041)
+  - Added migration `054_add_government_fuel_qr_image_to_vehicles.php` and applied it successfully.
+  - Added backend QR upload flow for vehicles (`VehicleController::uploadFuelQrImage`, `VehicleService::updateFuelQrImage`, route `POST /vehicles/:id/fuel-qr`).
+  - Added vehicle schema support for `government_fuel_qr_image` and persistent storage under `uploads/vehicle-fuel-qr/`.
+  - Follow-up fix: QR uploads now persist under publicly served `public/uploads/vehicle-fuel-qr/` while preserving DB path compatibility (`uploads/vehicle-fuel-qr/...`).
+  - Follow-up fix: legacy QR files in repository-root uploads are auto-copied into public storage on read to prevent render-time 404 for existing records.
+  - Follow-up fix: QR URL resolution in TM/Driver prefers API-origin asset URLs for `uploads/...` paths to avoid split-host render failures.
+  - Updated TM fleet-details UI to upload/replace and preview the vehicle QR image.
+  - Follow-up UX adjustment: TM vehicle details now places the Government Fuel QR section immediately above Recent Fuel Records.
+  - Updated Driver dashboard overview to display the assigned vehicle QR image and open a full-size view.
+  - Updated `testing/openapi.yaml` with the new endpoint and `Vehicle`/`VehicleInput` field documentation.
+  - Validation: diagnostics clean, PHP lint + JS syntax checks passed, migrations status shows zero pending.
 - ✅ TecFaultRepairTicket — TO's own repair record per ticket
 - ✅ Trip & vehicle check logs (Driver role)
 - ✅ Machine weekly checks
