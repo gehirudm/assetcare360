@@ -24,14 +24,63 @@ DashboardInit.init('Supervisor', {
 
 // ==================== NAVIGATION ====================
 
+const SUPERVISOR_SECTIONS = new Set([
+    'dashboard',
+    'daily-check-reports',
+    'fault-ticket-tracking',
+    'fault-tickets',
+    'repair-management',
+    'budget-approval',
+    'asset-status',
+    'technicians',
+    'technician-assignments'
+]);
+
+function normalizeSupervisorSection(sectionId) {
+    if (sectionId === 'technician-assignments') {
+        return 'fault-tickets';
+    }
+
+    return SUPERVISOR_SECTIONS.has(sectionId) ? sectionId : 'dashboard';
+}
+
+function getInitialSupervisorSection() {
+    const sectionFromUrl = new URLSearchParams(window.location.search).get('section');
+    return normalizeSupervisorSection(sectionFromUrl);
+}
+
+function syncSupervisorSectionInUrl(sectionId) {
+    const normalized = normalizeSupervisorSection(sectionId);
+    const url = new URL(window.location.href);
+
+    if (url.searchParams.get('section') === normalized) {
+        return;
+    }
+
+    url.searchParams.set('section', normalized);
+    window.history.replaceState({}, '', `${url.pathname}${url.search}`);
+}
+
 document.querySelector('ac-layout')
-    ?.addEventListener('section-change', e => loadSectionData(e.detail.section));
+    ?.addEventListener('section-change', (event) => {
+        const section = normalizeSupervisorSection(event.detail?.section);
+        syncSupervisorSectionInUrl(section);
+        loadSectionData(section);
+    });
 
 // ==================== DATA LOADING ====================
 
 function loadDashboardData() {
-    // Load summary data for dashboard
-    loadSectionData('dashboard');
+    const initialSection = getInitialSupervisorSection();
+    const layout = document.querySelector('ac-layout');
+
+    if (layout && typeof layout.navigateTo === 'function') {
+        layout.navigateTo(initialSection);
+        return;
+    }
+
+    syncSupervisorSectionInUrl(initialSection);
+    loadSectionData(initialSection);
 }
 
 function loadSectionData(sectionId) {
@@ -149,7 +198,7 @@ function bindSupervisorFaultTickets() {
                 break;
             case 'view-machine-breakdown':
                 if (!detail.ticketId) return;
-                viewMachineBreakdownInSupervisor(detail.ticketId);
+                viewTicketDetails(detail.ticketId);
                 break;
             case 'view-ticket':
                 if (!detail.ticketId) return;
@@ -739,14 +788,24 @@ function closeAssignTicketModal() {
     modal?.close?.();
 }
 
-async function viewTicketDetails(ticketId) {
-    const modal = document.querySelector('supervisor-view-ticket-modal');
-    if (!modal || typeof modal.openTicket !== 'function') {
-        showToast('Ticket details modal is not available', 'error');
+function viewTicketDetails(ticketId) {
+    const numericTicketId = Number(ticketId);
+    if (!Number.isFinite(numericTicketId) || numericTicketId <= 0) {
+        showToast('Invalid ticket ID', 'error');
         return;
     }
 
-    await modal.openTicket(ticketId);
+    const currentUrl = new URL(window.location.href);
+    const currentSection = currentUrl.searchParams.get('section') || 'fault-tickets';
+
+    const returnUrl = new URL(CONFIG.ROUTES.DASHBOARD.SUPERVISOR, window.location.origin);
+    returnUrl.searchParams.set('section', currentSection);
+
+    const viewTicketUrl = new URL('/view-ticket/index.html', window.location.origin);
+    viewTicketUrl.searchParams.set('id', String(numericTicketId));
+    viewTicketUrl.searchParams.set('return_to', `${returnUrl.pathname}${returnUrl.search}`);
+
+    window.location.href = `${viewTicketUrl.pathname}${viewTicketUrl.search}`;
 }
 
 function closeViewTicketModal() {

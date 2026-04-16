@@ -188,15 +188,16 @@ class SupervisorFaultTickets extends HTMLElement {
         const isRoute = report.type === 'route_breakdown';
         const isMachine = report.type === 'machine_breakdown';
         const reportId = report.breakdown_id || `BD-${report.id}`;
-        const description = report.description || 'No description';
-        const shortDesc = this.escapeHtml((description.split('\n')[0] || description));
         const severity = (report.severity || 'Medium').toLowerCase();
         const createdDate = new Date(report.created_at || report.breakdown_date);
-        const formattedDate = createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        const formattedTime = createdDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const formattedDate = Number.isNaN(createdDate.getTime())
+            ? 'N/A'
+            : createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         const assetName = isMachine ? (report.machine_model || 'Unknown Machine') : (report.number_plate || 'Unknown Vehicle');
-        const reporterName = isMachine ? (report.operator_name || 'Unknown Operator') : (report.driver_name || 'Unknown');
         const assetIcon = isMachine ? 'fas fa-cogs' : 'fas fa-wrench';
+        const faultType = isMachine
+            ? (report.breakdown_type || 'Machine Fault')
+            : (report.breakdown_type || (isRoute ? 'Route Breakdown' : 'Vehicle Breakdown'));
         const sourceLabel = isMachine ? 'Machine' : (isRoute ? 'Route' : 'Vehicle');
         const sourceColor = isMachine ? '#7c3aed' : '#2563eb';
         const dropdownId = `breakdown-${report.type}-${report.id}`;
@@ -206,14 +207,12 @@ class SupervisorFaultTickets extends HTMLElement {
                 <div class="item-details">
                     <strong><i class="fas fa-ticket-alt"></i> ${this.escapeHtml(reportId)} <span style="font-size: 10px; background: ${sourceColor}; color: white; padding: 1px 6px; border-radius: 4px; margin-left: 6px;">${sourceLabel}</span></strong>
                     <div class="item-meta">
-                        <i class="${assetIcon}"></i> ${this.escapeHtml(assetName)} |
-                        <i class="fas fa-user"></i> ${this.escapeHtml(reporterName)}
+                        <i class="${assetIcon}"></i> ${this.escapeHtml(assetName)}
                     </div>
-                    <div class="item-description">${shortDesc}</div>
                     <div class="item-meta">
+                        <i class="fas fa-tools"></i> ${this.escapeHtml(faultType)} |
                         <span class="status-text status-${this.escapeHtml(severity)}">${this.escapeHtml(severity.toUpperCase())}</span> |
-                        ${isMachine ? `<i class="fas fa-tools"></i> ${this.escapeHtml(report.breakdown_type || 'Machine Fault')} |` : ''}
-                        <i class="fas fa-calendar"></i> ${this.escapeHtml(formattedDate)} ${this.escapeHtml(formattedTime)}
+                        <i class="fas fa-calendar"></i> ${this.escapeHtml(formattedDate)}
                     </div>
                 </div>
                 <div class="item-actions">
@@ -238,13 +237,12 @@ class SupervisorFaultTickets extends HTMLElement {
     renderUnassignedTicket(ticket) {
         const isMachineBreakdown = ticket.is_machine_breakdown === true;
         const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
-        const description = ticket.description || 'No description';
         const reporterName = ticket.reported_by_name || ticket.reporter_full_name || 'Unknown';
         const createdDate = new Date(ticket.created_at);
-        const formattedDate = createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        const formattedTime = createdDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const formattedDate = Number.isNaN(createdDate.getTime())
+            ? 'N/A'
+            : createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         const priority = (ticket.priority || 'Medium').toLowerCase();
-        const shortDesc = description.split('\n')[0] || description;
         const displayTicketId = (ticket.breakdown_type === 'machine_breakdown' && ticket.breakdown_report_id)
             ? ticket.breakdown_report_id
             : (ticket.ticket_id || ('MBD-' + String(ticket.id).padStart(3, '0')));
@@ -259,24 +257,23 @@ class SupervisorFaultTickets extends HTMLElement {
                 <div class="item-details">
                     <strong><i class="fas fa-ticket-alt"></i> ${this.escapeHtml(displayTicketId)} ${sourceTag}</strong>
                     <div class="item-meta">
-                        <i class="${assetIcon}"></i> ${this.escapeHtml(assetName)} |
-                        <i class="fas fa-user"></i> ${this.escapeHtml(reporterName)}
+                        <i class="${assetIcon}"></i> ${this.escapeHtml(assetName)}
                     </div>
-                    <div class="item-description">${this.escapeHtml(shortDesc)}</div>
                     <div class="item-meta">
+                        <i class="fas fa-user"></i> ${this.escapeHtml(reporterName)} |
                         <span class="status-text status-${this.escapeHtml(priority)}">${this.escapeHtml(priority.toUpperCase())}</span> |
-                        <i class="fas fa-calendar"></i> ${this.escapeHtml(formattedDate)} ${this.escapeHtml(formattedTime)}
+                        <i class="fas fa-calendar"></i> ${this.escapeHtml(formattedDate)}
                     </div>
                 </div>
                 <div class="item-actions">
                     <div class="action-buttons">
-                        <button class="btn btn-primary btn-small" type="button" data-action="${isMachineBreakdown ? 'view-machine-breakdown' : 'view-ticket'}" data-ticket-id="${Number(ticket.id)}"><i class="fas fa-eye"></i> VIEW</button>
+                        <button class="btn btn-primary btn-small" type="button" data-action="view-ticket" data-ticket-id="${Number(ticket.id)}"><i class="fas fa-eye"></i> VIEW</button>
                         <div class="dropdown-container">
                             <button class="btn btn-small btn-secondary dropdown-trigger" type="button" data-dropdown-id="${this.escapeHtml(dropdownId)}">
                                 <i class="fas fa-ellipsis-v"></i>
                             </button>
                             <div class="dropdown-menu" id="dropdown-${this.escapeHtml(dropdownId)}">
-                                <button class="dropdown-item" type="button" data-action="${isMachineBreakdown ? 'assign-breakdown' : 'assign-ticket'}" data-ticket-id="${Number(ticket.id)}" data-report-type="machine_breakdown" data-report-id="${Number(ticket.id)}">
+                                <button class="dropdown-item" type="button" data-action="assign-ticket" data-ticket-id="${Number(ticket.id)}">
                                     <i class="fas fa-user-plus"></i> Assign Technician
                                 </button>
                                 ${!isMachineBreakdown ? `
@@ -297,11 +294,15 @@ class SupervisorFaultTickets extends HTMLElement {
 
     renderAssignedTicket(ticket) {
         const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
-        const description = ticket.description || 'No description';
-        const shortDesc = description.split('\n')[0] || description;
         const assignedTo = ticket.assignments && ticket.assignments.length > 0
             ? ticket.assignments.map(a => a.technician_name).join(', ')
             : 'Unassigned';
+        const primaryAssignment = Array.isArray(ticket.assignments) && ticket.assignments.length > 0
+            ? ticket.assignments[0]
+            : null;
+        const expectedCompletionDate = primaryAssignment?.expected_completion_date
+            ? new Date(primaryAssignment.expected_completion_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            : null;
         const priority = (ticket.priority || 'Medium').toLowerCase();
         const status = (ticket.status || 'open').toLowerCase().replace(' ', '-');
         const displayTicketId = (ticket.breakdown_type === 'machine_breakdown' && ticket.breakdown_report_id)
@@ -317,7 +318,7 @@ class SupervisorFaultTickets extends HTMLElement {
                         <i class="fas fa-wrench"></i> ${this.escapeHtml(assetName)} |
                         <i class="fas fa-user-cog"></i> ${this.escapeHtml(assignedTo)}
                     </div>
-                    <div class="item-description">${this.escapeHtml(shortDesc)}</div>
+                    ${expectedCompletionDate ? `<div class="item-meta"><i class="fas fa-calendar-check"></i> Expected: ${this.escapeHtml(expectedCompletionDate)}</div>` : ''}
                     <div class="item-meta">
                         <span class="status-text status-${this.escapeHtml(priority)}">${this.escapeHtml((ticket.priority || 'MEDIUM').toUpperCase())}</span> |
                         <span class="status-text status-${this.escapeHtml(status)}">${this.escapeHtml((ticket.status || 'OPEN').toUpperCase().replace('-', ' '))}</span>
@@ -356,18 +357,16 @@ class SupervisorFaultTickets extends HTMLElement {
 
     renderResolvedTicket(ticket) {
         const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
-        const description = ticket.description || 'No description';
-        const shortDesc = description.split('\n')[0] || description;
         const assignedTo = ticket.assignments && ticket.assignments.length > 0
             ? ticket.assignments.map(a => a.technician_name).join(', ')
             : 'Unassigned';
+        const resolvedDate = ticket.updated_at
+            ? new Date(ticket.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            : null;
         const priority = (ticket.priority || 'Medium').toLowerCase();
         const displayTicketId = (ticket.breakdown_type === 'machine_breakdown' && ticket.breakdown_report_id)
             ? ticket.breakdown_report_id
             : (ticket.ticket_id || ('MBD-' + String(ticket.id).padStart(3, '0')));
-        const resolutionNotes = ticket.resolution_notes
-            ? `<br><i class="fas fa-clipboard-check" style="color: #10b981;"></i> <span style="color: #6b7280; font-size: 12px;">${this.escapeHtml(ticket.resolution_notes)}</span>`
-            : '';
 
         return `
             <div class="inventory-item" style="border-left: 4px solid #10b981;">
@@ -377,11 +376,10 @@ class SupervisorFaultTickets extends HTMLElement {
                         <i class="fas fa-wrench"></i> ${this.escapeHtml(assetName)} |
                         <i class="fas fa-user-cog"></i> ${this.escapeHtml(assignedTo)}
                     </div>
-                    <div class="item-description">${this.escapeHtml(shortDesc)}</div>
+                    ${resolvedDate ? `<div class="item-meta"><i class="fas fa-calendar-check"></i> Resolved: ${this.escapeHtml(resolvedDate)}</div>` : ''}
                     <div class="item-meta">
                         <span class="status-text status-${this.escapeHtml(priority)}">${this.escapeHtml((ticket.priority || 'MEDIUM').toUpperCase())}</span> |
                         <span class="status-badge" style="background: #10b981; color: white; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;"><i class="fas fa-check-circle"></i> FINISHED</span>
-                        ${resolutionNotes}
                     </div>
                 </div>
                 <div class="item-actions">

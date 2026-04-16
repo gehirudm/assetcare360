@@ -332,14 +332,28 @@ class SupervisorFaultTicketTracking extends HTMLElement {
             return;
         }
 
-        const modal = document.querySelector('supervisor-view-ticket-modal');
-        if (!modal) {
-            this.emitToast('Ticket details modal is unavailable.', 'error');
+        if (breakdown.faultTicketId) {
+            if (typeof window.viewTicketDetails === 'function') {
+                window.viewTicketDetails(breakdown.faultTicketId);
+                return;
+            }
+
+            const currentUrl = new URL(window.location.href);
+            const currentSection = currentUrl.searchParams.get('section') || 'fault-ticket-tracking';
+            const returnUrl = new URL('/dashboard/supervisor/index.html', window.location.origin);
+            returnUrl.searchParams.set('section', currentSection);
+
+            const viewTicketUrl = new URL('/view-ticket/index.html', window.location.origin);
+            viewTicketUrl.searchParams.set('id', String(breakdown.faultTicketId));
+            viewTicketUrl.searchParams.set('return_to', `${returnUrl.pathname}${returnUrl.search}`);
+
+            window.location.href = `${viewTicketUrl.pathname}${viewTicketUrl.search}`;
             return;
         }
 
-        if (breakdown.faultTicketId && typeof modal.openTicket === 'function') {
-            await modal.openTicket(breakdown.faultTicketId);
+        const modal = document.querySelector('supervisor-view-ticket-modal');
+        if (!modal) {
+            this.emitToast('Ticket details modal is unavailable.', 'error');
             return;
         }
 
