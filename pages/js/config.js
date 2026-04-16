@@ -31,8 +31,8 @@ const CONFIG = {
             SUPERVISOR: '/dashboard/supervisor/index.html',
             DRIVER: '/dashboard/driver/index.html',
             AUCTION_OFFICER: '/dashboard/auction/index.html',
-            MACHINARY_OPERATOR: '/dashboard/machinery-operator/index.html'  // Matches DB typo: 'Machinary Operator'
-            // MACHINARY_OPERATOR: '/dashboard/machop.html'  // Matches DB typo: 'Machinary Operator'
+            MACHINARY_OPERATOR: '/dashboard/machinery-operator/index.html',  // Matches DB typo: 'Machinary Operator'
+            TRANSPORTATION_MANAGER: '/dashboard/transportation-manager/index.html'
         }
     },
     
