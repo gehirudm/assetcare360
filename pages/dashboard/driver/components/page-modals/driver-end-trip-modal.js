@@ -87,15 +87,29 @@ class DriverEndTripModal extends HTMLElement {
         });
     }
 
-    open(payload) {
+    async open(payload) {
         const form = this.querySelector('#endTripForm');
         const trip = payload?.trip || null;
 
         form.querySelector('#endTripId').value = trip?.trip_id || '';
         const odometerInput = form.querySelector('#endTripOdometer');
-        const minimum = Number.parseInt(payload?.minimumOdometer || trip?.starting_odometer || 0, 10);
+        
+        // Get minimum from starting odometer
+        let minimum = Number.parseInt(payload?.minimumOdometer || trip?.starting_odometer || 0, 10);
+        
+        // Also fetch vehicle's current mileage and use the higher value
+        try {
+            const vehicleResponse = await DriverUtils.apiGet('/vehicles/my-vehicle');
+            if (vehicleResponse && vehicleResponse.status === 'success' && vehicleResponse.data) {
+                const currentMileage = parseInt(vehicleResponse.data.current_mileage, 10) || 0;
+                minimum = Math.max(minimum, currentMileage);
+            }
+        } catch (error) {
+            console.error('Failed to fetch vehicle mileage:', error);
+        }
+        
         odometerInput.min = Number.isFinite(minimum) ? minimum : 0;
-        odometerInput.placeholder = `Must be greater than ${odometerInput.min}`;
+        odometerInput.placeholder = `Must be greater than ${odometerInput.min.toLocaleString()}`;
 
         DriverUtils.setModalState(this.querySelector('#endTripModal'), true);
     }
