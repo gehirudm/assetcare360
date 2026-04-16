@@ -26,11 +26,13 @@
             Open: { label: 'Pending', class: 'status-pending', text: 'Pending' },
             Pending: { label: 'Pending', class: 'status-pending', text: 'Pending' },
             Assigned: { label: 'Assigned', class: 'status-assigned', text: 'Assigned' },
+            'Waiting for Budget Approval': { label: 'Awaiting Approval', class: 'status-in-progress', text: 'Awaiting Approval' },
             'Waiting for Spare Parts': { label: 'Awaiting Parts', class: 'status-in-progress', text: 'Awaiting Parts' },
             'Parts Approved': { label: 'Parts Approved', class: 'status-assigned', text: 'Parts Approved' },
+            'Parts Rejected': { label: 'Parts Rejected', class: 'status-rejected', text: 'Parts Rejected' },
             'In Progress': { label: 'In Progress', class: 'status-in-progress', text: 'In Progress' },
-            Resolved: { label: 'Finished', class: 'status-resolved', text: 'Finished' },
-            Closed: { label: 'Finished', class: 'status-resolved', text: 'Finished' },
+            Resolved: { label: 'Resolved', class: 'status-resolved', text: 'Resolved' },
+            Closed: { label: 'Closed', class: 'status-resolved', text: 'Closed' },
         };
 
         return statusMap[status] || { label: status || 'Pending', class: 'status-pending', text: status || 'Pending' };
@@ -41,8 +43,10 @@
             Open: 'Awaiting supervisor review',
             Pending: 'Awaiting supervisor review',
             Assigned: 'Technician assigned to this ticket',
+            'Waiting for Budget Approval': 'Budget report submitted and awaiting approval',
             'Waiting for Spare Parts': 'Waiting for spare parts to be approved',
             'Parts Approved': 'Spare parts approved, repair to begin soon',
+            'Parts Rejected': 'Spare parts request was rejected and needs revision',
             'In Progress': 'Being investigated and repaired',
             Resolved: 'Work completed and ticket resolved',
             Closed: 'Ticket closed',
