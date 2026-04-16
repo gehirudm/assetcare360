@@ -10,9 +10,17 @@ class DriverVehicleCheck extends HTMLElement {
         this.render();
         this.bindEvents();
         this.refresh();
+        this._cleanupOverflowAutoClose = DriverUtils.registerOverflowAutoClose(this);
 
         this._onChecksChanged = () => this.refresh();
         DriverUtils.on('driver:data-checks-changed', this._onChecksChanged);
+    }
+
+    disconnectedCallback() {
+        if (typeof this._cleanupOverflowAutoClose === 'function') {
+            this._cleanupOverflowAutoClose();
+            this._cleanupOverflowAutoClose = null;
+        }
     }
 
     render() {
@@ -62,12 +70,20 @@ class DriverVehicleCheck extends HTMLElement {
         this.addEventListener('click', (event) => {
             const actionEl = event.target.closest('[data-action]');
             if (!actionEl) {
+                DriverUtils.closeOverflowMenus(this);
                 return;
             }
 
             const action = actionEl.dataset.action;
 
+            if (action === 'toggle-actions-menu') {
+                event.stopPropagation();
+                DriverUtils.toggleOverflowMenu(actionEl, this);
+                return;
+            }
+
             if (action === 'open-weekly-check') {
+                DriverUtils.closeOverflowMenus(this);
                 DriverUtils.openModal('dailyCheckModal');
                 return;
             }
@@ -76,6 +92,8 @@ class DriverVehicleCheck extends HTMLElement {
                 this.applyFilter(actionEl.dataset.filter);
                 return;
             }
+
+            DriverUtils.closeOverflowMenus(this);
 
             const checkId = actionEl.dataset.checkId;
             const check = this.checks.find((item) => item.check_id === checkId) || null;
@@ -162,6 +180,38 @@ class DriverVehicleCheck extends HTMLElement {
         const weekStart = new Date(check.week_start_date || check.week_end_date || Date.now());
         const weekEnd = new Date(check.week_end_date || check.week_start_date || Date.now());
         const weekLabel = `Week of ${DriverUtils.formatDate(weekStart)} - ${DriverUtils.formatDate(weekEnd)}`;
+        const menuItems = [];
+
+        if (check.status === 'rejected') {
+            menuItems.push(`
+                <button class="dropdown-item danger" type="button" data-action="resubmit-check" data-check-id="${check.check_id}">
+                    <i class="fas fa-redo"></i> Resubmit
+                </button>
+            `);
+        }
+
+        menuItems.push(`
+            <button class="dropdown-item" type="button" data-action="print-check" data-check-id="${check.check_id}">
+                <i class="fas fa-print"></i> Print
+            </button>
+        `);
+
+        menuItems.push(`
+            <button class="dropdown-item" type="button" data-action="export-check" data-check-id="${check.check_id}">
+                <i class="fas fa-download"></i> Export
+            </button>
+        `);
+
+        const overflowMenu = `
+            <div class="dropdown-container">
+                <button class="btn btn-small btn-secondary dropdown-trigger" type="button" data-action="toggle-actions-menu" aria-label="More actions">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div class="dropdown-menu">
+                    ${menuItems.join('')}
+                </div>
+            </div>
+        `;
 
         return `
             <div class="inventory-item" data-check-id="${check.check_id}" data-status="${check.status}">
@@ -175,17 +225,7 @@ class DriverVehicleCheck extends HTMLElement {
                         <button class="btn btn-small btn-primary" type="button" data-action="view-check" data-check-id="${check.check_id}">
                             <i class="fas fa-eye"></i> VIEW
                         </button>
-                        ${check.status === 'rejected' ? `
-                            <button class="btn btn-small" style="background:#e74c3c;color:#fff;" type="button" data-action="resubmit-check" data-check-id="${check.check_id}">
-                                <i class="fas fa-redo"></i> RESUBMIT
-                            </button>
-                        ` : ''}
-                        <button class="btn btn-small btn-secondary" type="button" data-action="print-check" data-check-id="${check.check_id}">
-                            <i class="fas fa-print"></i> PRINT
-                        </button>
-                        <button class="btn btn-small btn-secondary" type="button" data-action="export-check" data-check-id="${check.check_id}">
-                            <i class="fas fa-download"></i> EXPORT
-                        </button>
+                        ${overflowMenu}
                     </div>
                 </div>
             </div>

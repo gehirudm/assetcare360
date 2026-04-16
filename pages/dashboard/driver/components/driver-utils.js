@@ -293,6 +293,48 @@
         });
     }
 
+    function closeOverflowMenus(root = document) {
+        if (!root || typeof root.querySelectorAll !== 'function') {
+            return;
+        }
+
+        root.querySelectorAll('.dropdown-menu.show').forEach((menu) => {
+            menu.classList.remove('show');
+        });
+    }
+
+    function toggleOverflowMenu(triggerEl, root = document) {
+        const container = triggerEl?.closest('.dropdown-container');
+        const menu = container?.querySelector('.dropdown-menu');
+
+        if (!menu) {
+            return;
+        }
+
+        const shouldOpen = !menu.classList.contains('show');
+        closeOverflowMenus(root);
+
+        if (shouldOpen) {
+            menu.classList.add('show');
+        }
+    }
+
+    function registerOverflowAutoClose(root) {
+        const handler = (event) => {
+            if (!root || root.contains(event.target)) {
+                return;
+            }
+
+            closeOverflowMenus(root);
+        };
+
+        document.addEventListener('click', handler);
+
+        return () => {
+            document.removeEventListener('click', handler);
+        };
+    }
+
     window.DriverUtils = {
         store,
         emit,
@@ -317,5 +359,8 @@
         formatDate,
         formatDateTime,
         ensureTodayDefaults,
+        closeOverflowMenus,
+        toggleOverflowMenu,
+        registerOverflowAutoClose,
     };
 })();
