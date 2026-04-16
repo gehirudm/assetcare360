@@ -311,44 +311,172 @@ class InventoryOrdersApprovals extends HTMLElement {
             return;
         }
 
-        const partsText = (order.items || []).map(i => `${i.part_name} (×${i.quantity})`).join(', ');
-
         const title = this.querySelector('#orderActionTitle');
         const content = this.querySelector('#orderActionContent');
 
         title.innerHTML = '<i class="fas fa-check-circle" style="color: #10b981;"></i> Approve Spare Parts Request';
         content.innerHTML = `
-            <form id="approvalForm">
-                <div class="form-section">
-                    <p>Are you sure you want to approve request <strong>${order.request_id}</strong>?</p>
-                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; margin: 10px 0;">
-                        <p style="margin: 4px 0;"><strong>Ticket:</strong> ${order.ticket_id_formatted || '-'}</p>
-                        <p style="margin: 4px 0;"><strong>Equipment:</strong> ${order.equipment_name || '-'}</p>
-                        <p style="margin: 4px 0;"><strong>Parts:</strong> ${partsText || '-'}</p>
-                        <p style="margin: 4px 0;"><strong>Requested By:</strong> ${order.requested_by_name || '-'}</p>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Approval Notes (Optional)</label>
-                        <textarea class="form-textarea" id="approvalNotes" placeholder="Add any notes for this approval..."></textarea>
-                    </div>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Confirm Approval</button>
-                    <button type="button" class="btn btn-secondary" id="cancelApproval"><i class="fas fa-times"></i> Cancel</button>
-                </div>
-            </form>
+            <div style="text-align: center; padding: 40px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--tang-blue);"></i>
+                <p style="margin-top: 10px; color: #6b7280;">Checking stock availability...</p>
+            </div>
         `;
 
-        const form = content.querySelector('#approvalForm');
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.confirmApproval(orderId);
-        });
-
-        const cancelBtn = content.querySelector('#cancelApproval');
-        cancelBtn.addEventListener('click', () => this.closeActionModal());
-
         this.openActionModal();
+        this.checkAvailabilityAndShowApprovalForm(order);
+    }
+
+    async checkAvailabilityAndShowApprovalForm(order) {
+        const content = this.querySelector('#orderActionContent');
+        
+        try {
+            // Build items for availability check
+            const itemsToCheck = (order.items || []).map(item => ({
+                part_code: item.part_code,
+                quantity: item.quantity
+            }));
+
+            // Call availability API
+            const availResponse = await API.post('/spare-part-requests/check-availability', {
+                items: itemsToCheck
+            });
+
+            let availabilityData = [];
+            if (availResponse.status === 'success' && availResponse.data?.items) {
+                availabilityData = availResponse.data.items;
+            }
+
+            // Merge availability data with order items
+            const itemsWithAvailability = (order.items || []).map(item => {
+                const avail = availabilityData.find(a => a.part_code === item.part_code) || {
+                    status: 'unknown',
+                    available_qty: 0,
+                    message: 'Could not check availability'
+                };
+                return { ...item, availability: avail };
+            });
+
+            // Check if all items are available
+            const unavailableItems = itemsWithAvailability.filter(i => 
+                i.availability.status === 'not_found' || 
+                i.availability.status === 'out_of_stock' ||
+                i.availability.status === 'insufficient'
+            );
+            const canApprove = unavailableItems.length === 0;
+
+            // Build availability summary per item (simple text)
+            const getStatusText = (avail, requestedQty) => {
+                switch (avail.status) {
+                    case 'available':    return `Requested: ${requestedQty} | In Stock: ${avail.available_qty} — Available`;
+                    case 'insufficient': return `Requested: ${requestedQty} | In Stock: ${avail.available_qty} — Insufficient stock`;
+                    case 'out_of_stock': return `Requested: ${requestedQty} | In Stock: 0 — Out of stock`;
+                    case 'not_found':    return `Requested: ${requestedQty} | Not found in catalog`;
+                    default:             return `Requested: ${requestedQty} | Status unknown`;
+                }
+            };
+
+            const partsHTML = itemsWithAvailability.map(item => `
+                <div class="form-group">
+                    <label class="form-label">${item.part_name}${item.part_code ? ' (' + item.part_code + ')' : ''}</label>
+                    <input type="text" class="form-input" value="${getStatusText(item.availability, item.quantity)}" readonly
+                        style="color: ${['out_of_stock','not_found','insufficient'].includes(item.availability.status) ? '#dc2626' : '#16a34a'}; font-weight: 500;">
+                </div>
+            `).join('');
+
+            // Simple warning if items unavailable
+            const warningHTML = !canApprove
+                ? `<p class="form-warning-text"><i class="fas fa-exclamation-triangle"></i> Some parts are unavailable or not in the catalog. Please add stock through <strong>Spare Part Addition</strong> before approving.</p>`
+                : '';
+
+            content.innerHTML = `
+                <form id="approvalForm">
+                    <div class="form-section">
+                        <h5><i class="fas fa-info-circle"></i> Request Details</h5>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Request ID</label>
+                                <input type="text" class="form-input" value="${order.request_id}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Ticket</label>
+                                <input type="text" class="form-input" value="${order.ticket_id_formatted || '-'}" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Equipment</label>
+                                <input type="text" class="form-input" value="${order.equipment_name || '-'}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Requested By</label>
+                                <input type="text" class="form-input" value="${order.requested_by_name || '-'}" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h5><i class="fas fa-box"></i> Requested Parts</h5>
+                        ${partsHTML}
+                    </div>
+
+                    ${warningHTML}
+
+                    ${canApprove ? `
+                    <div class="form-section">
+                        <div class="form-group">
+                            <label class="form-label">Approval Notes (Optional)</label>
+                            <textarea class="form-textarea" id="approvalNotes" rows="3" placeholder="Add any notes for this approval..."></textarea>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <div class="modal-actions">
+                        ${canApprove ? `
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check"></i> Confirm Approval
+                        </button>
+                        ` : `
+                        <button type="button" class="btn btn-secondary" disabled style="cursor: not-allowed;">
+                            <i class="fas fa-ban"></i> Cannot Approve
+                        </button>
+                        `}
+                        <button type="button" class="btn btn-secondary" id="cancelApproval">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                </form>
+            `;
+
+            // Bind form events
+            const form = content.querySelector('#approvalForm');
+            if (canApprove) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.confirmApproval(order.id);
+                });
+            }
+
+            const cancelBtn = content.querySelector('#cancelApproval');
+            cancelBtn.addEventListener('click', () => this.closeActionModal());
+
+        } catch (error) {
+            console.error('Error checking availability:', error);
+            content.innerHTML = `
+                <div class="approval-warning">
+                    <div class="warning-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="warning-content">
+                        <strong>Error Checking Availability</strong>
+                        <p>Could not verify stock availability. Please try again.</p>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelApproval">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            `;
+            content.querySelector('#cancelApproval').addEventListener('click', () => this.closeActionModal());
+        }
     }
 
     rejectOrder(orderId) {
@@ -358,8 +486,6 @@ class InventoryOrdersApprovals extends HTMLElement {
             return;
         }
 
-        const partsText = (order.items || []).map(i => `${i.part_name} (×${i.quantity})`).join(', ');
-
         const title = this.querySelector('#orderActionTitle');
         const content = this.querySelector('#orderActionContent');
 
@@ -367,14 +493,32 @@ class InventoryOrdersApprovals extends HTMLElement {
         content.innerHTML = `
             <form id="rejectionForm">
                 <div class="form-section">
-                    <p>Please provide a reason for rejecting request <strong>${order.request_id}</strong>:</p>
-                    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; margin: 10px 0;">
-                        <p style="margin: 4px 0;"><strong>Ticket:</strong> ${order.ticket_id_formatted || '-'}</p>
-                        <p style="margin: 4px 0;"><strong>Equipment:</strong> ${order.equipment_name || '-'}</p>
-                        <p style="margin: 4px 0;"><strong>Parts:</strong> ${partsText || '-'}</p>
+                    <h5><i class="fas fa-info-circle"></i> Request Details</h5>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Request ID</label>
+                            <input type="text" class="form-input" value="${order.request_id}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ticket</label>
+                            <input type="text" class="form-input" value="${order.ticket_id_formatted || '-'}" readonly>
+                        </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Equipment</label>
+                            <input type="text" class="form-input" value="${order.equipment_name || '-'}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Parts Requested</label>
+                            <input type="text" class="form-input" value="${(order.items || []).map(i => i.part_name).join(', ') || '-'}" readonly>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h5><i class="fas fa-ban"></i> Rejection Details</h5>
                     <div class="form-group">
-                        <label class="form-label">Rejection Reason</label>
+                        <label class="form-label">Rejection Reason <span style="color: #ef4444;">*</span></label>
                         <select class="form-select" id="rejectionReason" required>
                             <option value="">Select Reason</option>
                             <option value="Out of Stock">Item Out of Stock</option>
@@ -385,13 +529,13 @@ class InventoryOrdersApprovals extends HTMLElement {
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Additional Comments</label>
-                        <textarea class="form-textarea" id="rejectionComments" placeholder="Provide detailed reason for rejection..." required></textarea>
+                        <label class="form-label">Additional Comments <span style="color: #ef4444;">*</span></label>
+                        <textarea class="form-textarea" id="rejectionComments" rows="3" placeholder="Provide detailed reason for rejection..." required></textarea>
                     </div>
                 </div>
-                <div style="display: flex; gap: 10px;">
+                <div class="modal-actions">
                     <button type="submit" class="btn btn-danger"><i class="fas fa-times"></i> Confirm Rejection</button>
-                    <button type="button" class="btn btn-secondary" id="cancelRejection">Cancel</button>
+                    <button type="button" class="btn btn-secondary" id="cancelRejection"><i class="fas fa-arrow-left"></i> Cancel</button>
                 </div>
             </form>
         `;
