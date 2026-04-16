@@ -1,5 +1,6 @@
 let currentUser = null;
 let refreshIntervalId = null;
+let currentFleetVehicleId = null;
 
 function getComponent(selector) {
     return document.querySelector(selector);
@@ -71,6 +72,20 @@ async function refreshFleet() {
     if (section && typeof section.refresh === 'function') {
         await section.refresh();
     }
+}
+
+async function refreshFleetDetails() {
+    const section = getComponent('tm-fleet-details');
+    if (!section || typeof section.refresh !== 'function') {
+        return;
+    }
+
+    if (currentFleetVehicleId && typeof section.open === 'function') {
+        await section.open(currentFleetVehicleId);
+        return;
+    }
+
+    await section.refresh();
 }
 
 async function refreshDriverAssignment() {
@@ -235,10 +250,23 @@ function setupFleetEvents() {
         const vehicleId = event.detail?.vehicleId;
         if (!vehicleId) return;
 
-        const modal = getComponent('tm-view-vehicle-modal');
-        if (modal && typeof modal.open === 'function') {
-            modal.open(vehicleId);
+        currentFleetVehicleId = vehicleId;
+        navigateToSection('fleet-details');
+
+        const details = getComponent('tm-fleet-details');
+        if (details && typeof details.open === 'function') {
+            details.open(vehicleId);
         }
+    });
+}
+
+function setupFleetDetailsEvents() {
+    const details = getComponent('tm-fleet-details');
+    if (!details || details._eventsBound) return;
+    details._eventsBound = true;
+
+    details.addEventListener('tm-fleet-details:back', () => {
+        navigateToSection('fleet');
     });
 }
 
@@ -323,6 +351,11 @@ function setupModalEvents() {
     document.addEventListener('section-change', async (event) => {
         if (event.detail?.section === 'fuel-log') {
             await refreshFuelLog();
+            return;
+        }
+
+        if (event.detail?.section === 'fleet-details') {
+            await refreshFleetDetails();
         }
     });
 
@@ -346,6 +379,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         setupFuelLogEvents();
         setupTripLogEvents();
         setupFleetEvents();
+        setupFleetDetailsEvents();
         setupDriverAssignmentEvents();
         setupModalEvents();
 

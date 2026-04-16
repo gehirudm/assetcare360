@@ -43,6 +43,10 @@
         <section class="content-section" id="fleet">
             <tm-fleet></tm-fleet>
         </section>
+
+        <section class="content-section" id="fleet-details">
+            <tm-fleet-details></tm-fleet-details>
+        </section>
     </ac-layout>
 
     <tm-assign-trip-modal></tm-assign-trip-modal>
@@ -52,7 +56,6 @@
     <tm-add-fuel-log-modal></tm-add-fuel-log-modal>
     <tm-view-trip-modal></tm-view-trip-modal>
     <tm-view-fuel-modal></tm-view-fuel-modal>
-    <tm-view-vehicle-modal></tm-view-vehicle-modal>
 
     <div id="toast" class="toast"></div>
 
@@ -68,6 +71,7 @@
     <script src="../../components/styles/buttons.js"></script>
     <script src="../../components/styles/icons.js"></script>
     <script src="../../components/shared/confirm-dialog.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
     <script src="./components/tm-utils.js"></script>
     <script src="./components/page-modals/tm-assign-trip-modal.js"></script>
@@ -77,12 +81,12 @@
     <script src="./components/page-modals/tm-add-fuel-log-modal.js"></script>
     <script src="./components/page-modals/tm-view-trip-modal.js"></script>
     <script src="./components/page-modals/tm-view-fuel-modal.js"></script>
-    <script src="./components/page-modals/tm-view-vehicle-modal.js"></script>
     <script src="./components/dashboard-overview/script.js"></script>
     <script src="./components/trips/script.js"></script>
     <script src="./components/trip-log/script.js"></script>
     <script src="./components/fuel-log/script.js"></script>
     <script src="./components/fleet/script.js"></script>
+    <script src="./components/fleet-details/script.js"></script>
     <script src="./components/driver-assignment/script.js"></script>
 
     <script src="../../js/dashboard-init.js"></script>
