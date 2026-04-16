@@ -10,9 +10,17 @@ class DriverTripLog extends HTMLElement {
         this.render();
         this.bindEvents();
         this.refresh();
+        this._cleanupOverflowAutoClose = DriverUtils.registerOverflowAutoClose(this);
 
         this._onTripsChanged = () => this.refresh();
         DriverUtils.on('driver:data-trips-changed', this._onTripsChanged);
+    }
+
+    disconnectedCallback() {
+        if (typeof this._cleanupOverflowAutoClose === 'function') {
+            this._cleanupOverflowAutoClose();
+            this._cleanupOverflowAutoClose = null;
+        }
     }
 
     render() {
@@ -38,16 +46,25 @@ class DriverTripLog extends HTMLElement {
         this.addEventListener('click', async (event) => {
             const actionEl = event.target.closest('[data-action]');
             if (!actionEl) {
+                DriverUtils.closeOverflowMenus(this);
                 return;
             }
 
             const action = actionEl.dataset.action;
             const tripId = actionEl.dataset.tripId;
 
+            if (action === 'toggle-actions-menu') {
+                event.stopPropagation();
+                DriverUtils.toggleOverflowMenu(actionEl, this);
+                return;
+            }
+
             if (action === 'set-trip-filter') {
                 this.applyFilter(actionEl.dataset.filter);
                 return;
             }
+
+            DriverUtils.closeOverflowMenus(this);
 
             if (action === 'accept-trip') {
                 await this.acceptTrip(tripId);
@@ -175,55 +192,55 @@ class DriverTripLog extends HTMLElement {
         const tripDate = DriverUtils.formatDate(trip.created_at || trip.date);
         const route = `${trip.origin || 'N/A'} → ${trip.destination || 'N/A'}`;
 
-        let actions = '';
+        const viewButton = `
+            <button class="btn btn-small btn-primary" type="button" data-action="view-trip" data-trip-id="${trip.trip_id}">
+                <i class="fas fa-eye"></i> View
+            </button>
+        `;
+        const menuItems = [];
 
         // Pending trips: Accept or Reject
         if (filterStatus === 'pending') {
-            actions = `
-                <button class="btn btn-small btn-success" type="button" data-action="accept-trip" data-trip-id="${trip.trip_id}">
+            menuItems.push(`
+                <button class="dropdown-item" type="button" data-action="accept-trip" data-trip-id="${trip.trip_id}">
                     <i class="fas fa-check"></i> Accept
                 </button>
-                <button class="btn btn-small btn-danger" type="button" data-action="reject-trip" data-trip-id="${trip.trip_id}">
+            `);
+            menuItems.push(`
+                <button class="dropdown-item danger" type="button" data-action="reject-trip" data-trip-id="${trip.trip_id}">
                     <i class="fas fa-times"></i> Reject
                 </button>
-                <button class="btn btn-small btn-primary" type="button" data-action="view-trip" data-trip-id="${trip.trip_id}">
-                    <i class="fas fa-eye"></i> View
-                </button>
-            `;
+            `);
         }
 
         // Accepted trips: Start
         if (filterStatus === 'accepted') {
-            actions = `
-                <button class="btn btn-small btn-success" type="button" data-action="start-trip" data-trip-id="${trip.trip_id}">
-                    <i class="fas fa-play"></i> Start
+            menuItems.push(`
+                <button class="dropdown-item" type="button" data-action="start-trip" data-trip-id="${trip.trip_id}">
+                    <i class="fas fa-play"></i> Start Trip
                 </button>
-                <button class="btn btn-small btn-primary" type="button" data-action="view-trip" data-trip-id="${trip.trip_id}">
-                    <i class="fas fa-eye"></i> View
-                </button>
-            `;
+            `);
         }
 
         // In Progress trips: End
         if (filterStatus === 'in-progress') {
-            actions = `
-                <button class="btn btn-small btn-danger" type="button" data-action="end-trip" data-trip-id="${trip.trip_id}">
-                    <i class="fas fa-flag-checkered"></i> End
+            menuItems.push(`
+                <button class="dropdown-item danger" type="button" data-action="end-trip" data-trip-id="${trip.trip_id}">
+                    <i class="fas fa-flag-checkered"></i> End Trip
                 </button>
-                <button class="btn btn-small btn-primary" type="button" data-action="view-trip" data-trip-id="${trip.trip_id}">
-                    <i class="fas fa-eye"></i> View
-                </button>
-            `;
+            `);
         }
 
-        // Completed/Cancelled/Rejected: View only
-        if (filterStatus === 'completed' || filterStatus === 'cancelled' || filterStatus === 'rejected') {
-            actions = `
-                <button class="btn btn-small btn-primary" type="button" data-action="view-trip" data-trip-id="${trip.trip_id}">
-                    <i class="fas fa-eye"></i> View
+        const overflowMenu = menuItems.length ? `
+            <div class="dropdown-container">
+                <button class="btn btn-small btn-secondary dropdown-trigger" type="button" data-action="toggle-actions-menu" aria-label="More actions">
+                    <i class="fas fa-ellipsis-v"></i>
                 </button>
-            `;
-        }
+                <div class="dropdown-menu">
+                    ${menuItems.join('')}
+                </div>
+            </div>
+        ` : '';
 
         // Show rejection reason if rejected
         const rejectionInfo = filterStatus === 'rejected' && trip.rejection_reason
@@ -247,7 +264,7 @@ class DriverTripLog extends HTMLElement {
                     ${rejectionInfo}
                 </div>
                 <div class="item-actions">
-                    <div class="action-buttons">${actions}</div>
+                    <div class="action-buttons">${viewButton}${overflowMenu}</div>
                 </div>
             </div>
         `;
