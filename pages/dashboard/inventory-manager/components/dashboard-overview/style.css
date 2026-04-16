@@ -46,64 +46,107 @@
 
 .summary-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px;
     margin-bottom: 22px;
 }
 
 .summary-card {
-    border: 1px solid var(--stone-200, #eef1f4);
+    border: none;
     background: linear-gradient(135deg, var(--royal-blue, #2563eb), var(--tang-blue, #1d4ed8));
-    border-radius: 14px;
+    border-radius: 18px;
     color: #fff;
-    padding: 16px;
+    padding: 35px 30px;
     text-align: left;
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.3s ease;
     box-shadow: var(--shadow, 0 4px 12px rgba(0, 0, 0, 0.08));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    min-height: 180px;
+}
+
+.summary-card.clickable::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.summary-card.clickable:hover::before {
+    opacity: 1;
 }
 
 .summary-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 24px rgba(29, 78, 216, 0.25);
+    transform: translateY(-5px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
 }
 
-.summary-top {
+.summary-card-content {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    gap: 25px;
+    flex: 1;
 }
 
 .summary-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.24);
-    display: inline-flex;
+    width: 75px;
+    height: 75px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
-    font-weight: 700;
+    font-size: 2.2rem;
+    flex-shrink: 0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-.summary-value {
-    font-size: 2.1rem;
-    font-weight: 800;
-    margin: 8px 0 4px;
-    line-height: 1;
+.summary-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .summary-title {
-    font-size: 0.88rem;
+    font-size: 1rem;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.45px;
+    letter-spacing: 0.8px;
     opacity: 0.9;
 }
 
+.summary-number {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
 .summary-description {
-    font-size: 0.9rem;
-    opacity: 0.95;
+    font-size: 0.95rem;
+    opacity: 0.9;
+    line-height: 1.5;
+}
+
+.summary-arrow {
+    font-size: 1.8rem;
+    opacity: 0.6;
+    transition: all 0.3s ease;
+    margin-left: 20px;
+}
+
+.summary-card:hover .summary-arrow {
+    opacity: 1;
+    transform: translateX(5px);
 }
 
 .activities-card {
