@@ -73,14 +73,19 @@ class DriverFuelMileage extends HTMLElement {
                 const date = log.log_datetime ? DriverUtils.formatDateTime(log.log_datetime) : '—';
                 const station = log.station_name ? `<i class="fas fa-map-marker-alt"></i> ${log.station_name}` : '';
                 const efficiency = log.fuel_efficiency ? ` | Efficiency: ${log.fuel_efficiency} km/L` : '';
+                const source = (log.fuel_source || 'external').toLowerCase() === 'internal' ? 'Internal' : 'External';
+                const totalCostText = log.total_cost !== null && log.total_cost !== undefined && log.total_cost !== ''
+                    ? `Rs ${parseFloat(log.total_cost).toLocaleString()}`
+                    : 'N/A (Internal)';
                 return `
                     <div class="inventory-item">
                         <div class="item-details">
                             <strong><i class="fas fa-gas-pump"></i> ${log.fuel_log_id}</strong>
                             <div class="item-meta"><i class="fas fa-calendar"></i> ${date}${station ? ' | ' + station : ''}</div>
                             <div class="item-description">
+                                <i class="fas fa-industry"></i> ${source} |
                                 <i class="fas fa-fill-drip"></i> ${parseFloat(log.fuel_volume).toFixed(1)} L |
-                                <i class="fas fa-money-bill-wave"></i> Rs ${parseFloat(log.total_cost).toLocaleString()} |
+                                <i class="fas fa-money-bill-wave"></i> ${totalCostText} |
                                 <i class="fas fa-tachometer-alt"></i> ${parseInt(log.odometer_reading).toLocaleString()} km${efficiency}
                             </div>
                         </div>

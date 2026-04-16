@@ -1,0 +1,254 @@
+tm-fleet-details {
+    display: block;
+}
+
+.fleet-details-subheader {
+    padding: 16px 0 20px;
+    margin-bottom: 20px;
+}
+
+.fleet-details-header-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.back-icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1.5px solid var(--stone-200);
+    background: var(--card);
+    color: var(--text-700);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.back-icon-btn:hover {
+    background: var(--stone-200);
+    color: var(--text-900);
+    transform: translateX(-2px);
+}
+
+.fleet-details-title h2 {
+    margin: 0;
+    color: var(--tang-blue);
+    font-size: 1.6rem;
+}
+
+.fleet-details-title p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.875rem;
+    margin-bottom: 12px;
+}
+
+.breadcrumb-item {
+    color: var(--muted);
+    text-decoration: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.breadcrumb-item:hover {
+    color: var(--royal-blue);
+}
+
+.breadcrumb-current {
+    color: var(--text-900);
+    font-weight: 600;
+    cursor: default;
+}
+
+.breadcrumb-sep {
+    font-size: 0.65rem;
+    color: var(--muted);
+}
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.metric-card {
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    padding: 14px;
+    background: var(--card);
+}
+
+.metric-label {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.metric-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-900);
+}
+
+.split-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.chart-shell {
+    min-height: 320px;
+    position: relative;
+}
+
+.chart-shell canvas {
+    width: 100%;
+    max-height: 300px;
+}
+
+.driver-history-list,
+.fuel-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.driver-history-item,
+.fuel-history-item {
+    border: 1px solid var(--stone-200);
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: var(--card);
+}
+
+.driver-history-item strong,
+.fuel-history-item strong {
+    color: var(--text-900);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.driver-history-meta,
+.fuel-history-meta {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.fuel-source-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.fleet-qr-description {
+    margin: 0 0 12px;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.fleet-qr-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 14px;
+    align-items: start;
+}
+
+.fleet-qr-preview {
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    background: var(--card);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.fleet-qr-preview.is-empty {
+    min-height: 210px;
+    justify-content: center;
+}
+
+.fleet-qr-image {
+    width: min(100%, 260px);
+    height: 260px;
+    object-fit: contain;
+    image-rendering: crisp-edges;
+    border-radius: 8px;
+    border: 1px solid var(--stone-200);
+    background: #fff;
+}
+
+.fleet-qr-form {
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    background: var(--card);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.fleet-qr-label {
+    font-weight: 600;
+    color: var(--text-900);
+}
+
+.fleet-qr-form input[type="file"] {
+    width: 100%;
+}
+
+.fleet-qr-hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+@media (max-width: 1100px) {
+    .analytics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .split-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .fleet-qr-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .fleet-details-header-row {
+        align-items: center;
+    }
+
+    .fleet-details-title h2 {
+        font-size: 1.25rem;
+    }
+
+    .analytics-grid {
+        grid-template-columns: 1fr;
+    }
+}

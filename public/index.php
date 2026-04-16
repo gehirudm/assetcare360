@@ -152,6 +152,7 @@ $router->post('/vehicles', 'VehicleController', 'store');
 $router->get('/vehicles/:numberPlate/with-driver', 'VehicleController', 'getVehicleWithDriver');
 $router->get('/vehicles/:id', 'VehicleController', 'show');
 $router->put('/vehicles/:id', 'VehicleController', 'update');
+$router->post('/vehicles/:id/fuel-qr', 'VehicleController', 'uploadFuelQrImage');
 $router->patch('/vehicles/:id/mileage', 'VehicleController', 'updateMileage');
 $router->post('/vehicles/:id/assign-driver', 'VehicleController', 'assignDriver');
 $router->post('/vehicles/:id/unassign-driver', 'VehicleController', 'unassignDriver');

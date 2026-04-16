@@ -16,6 +16,7 @@ class FuelLog extends BaseModel {
         'station_name',
         'bill_image',
         'fuel_type',
+        'fuel_source',
         'distance_since_last',
         'fuel_efficiency',
     ];
@@ -28,11 +29,12 @@ class FuelLog extends BaseModel {
             'driver_id'           => 'INT(11) DEFAULT NULL',
             'log_datetime'        => 'DATETIME NOT NULL',
             'fuel_volume'         => 'DECIMAL(10,2) NOT NULL',
-            'total_cost'          => 'DECIMAL(12,2) NOT NULL',
+            'total_cost'          => 'DECIMAL(12,2) DEFAULT NULL',
             'odometer_reading'    => 'INT(11) NOT NULL',
             'station_name'        => 'VARCHAR(255) DEFAULT NULL',
             'bill_image'          => 'VARCHAR(500) DEFAULT NULL',
             'fuel_type'           => 'VARCHAR(50) NOT NULL',
+            'fuel_source'         => "ENUM('internal','external') NOT NULL DEFAULT 'external'",
             'distance_since_last' => 'DECIMAL(10,2) DEFAULT NULL',
             'fuel_efficiency'     => 'DECIMAL(10,2) DEFAULT NULL',
             'created_at'          => 'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP',
@@ -99,11 +101,11 @@ class FuelLog extends BaseModel {
         $query = "INSERT INTO {$this->table}
                   (fuel_log_id, vehicle_registration, driver_id, log_datetime,
                    fuel_volume, total_cost, odometer_reading, station_name,
-                   fuel_type, distance_since_last, fuel_efficiency)
+                   bill_image, fuel_type, fuel_source, distance_since_last, fuel_efficiency)
                   VALUES
                   (:fuel_log_id, :vehicle_registration, :driver_id, :log_datetime,
                    :fuel_volume, :total_cost, :odometer_reading, :station_name,
-                   :fuel_type, :distance_since_last, :fuel_efficiency)";
+                   :bill_image, :fuel_type, :fuel_source, :distance_since_last, :fuel_efficiency)";
 
         $stmt = $this->db->prepare($query);
         $stmt->execute([
@@ -115,7 +117,9 @@ class FuelLog extends BaseModel {
             ':total_cost'           => $data['total_cost'],
             ':odometer_reading'     => $data['odometer_reading'],
             ':station_name'         => $data['station_name'] ?? null,
+            ':bill_image'           => $data['bill_image'] ?? null,
             ':fuel_type'            => $data['fuel_type'],
+            ':fuel_source'          => $data['fuel_source'] ?? 'external',
             ':distance_since_last'  => $data['distance_since_last'] ?? null,
             ':fuel_efficiency'      => $data['fuel_efficiency'] ?? null,
         ]);
@@ -132,7 +136,9 @@ class FuelLog extends BaseModel {
                   total_cost           = :total_cost,
                   odometer_reading     = :odometer_reading,
                   station_name         = :station_name,
+                  bill_image           = :bill_image,
                   fuel_type            = :fuel_type,
+                  fuel_source          = :fuel_source,
                   distance_since_last  = :distance_since_last,
                   fuel_efficiency      = :fuel_efficiency
                   WHERE fuel_log_id = :fuel_log_id";
@@ -147,7 +153,9 @@ class FuelLog extends BaseModel {
             ':total_cost'           => $data['total_cost'],
             ':odometer_reading'     => $data['odometer_reading'],
             ':station_name'         => $data['station_name'] ?? null,
+            ':bill_image'           => $data['bill_image'] ?? null,
             ':fuel_type'            => $data['fuel_type'],
+            ':fuel_source'          => $data['fuel_source'] ?? 'external',
             ':distance_since_last'  => $data['distance_since_last'] ?? null,
             ':fuel_efficiency'      => $data['fuel_efficiency'] ?? null,
         ]);

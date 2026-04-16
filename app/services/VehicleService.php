@@ -76,7 +76,8 @@ class VehicleService {
             throw new Exception("Failed to create vehicle");
         }
         
-        return $this->vehicleModel->findById($id);
+        $createdVehicle = $this->vehicleModel->findById($id);
+        return $this->ensureFuelQrImageIsPubliclyServed($createdVehicle);
     }
     
     /**
@@ -131,7 +132,89 @@ class VehicleService {
             throw new Exception("Failed to update vehicle");
         }
         
-        return $this->vehicleModel->findById($id);
+        $updatedVehicle = $this->vehicleModel->findById($id);
+        return $this->ensureFuelQrImageIsPubliclyServed($updatedVehicle);
+    }
+
+    /**
+     * Upload and update government fuel QR image for a vehicle
+     */
+    public function updateFuelQrImage($id, $file, $userId) {
+        $vehicle = $this->vehicleModel->findById($id);
+        if (!$vehicle) {
+            throw new Exception('Vehicle not found');
+        }
+
+        if (!is_array($file) || !isset($file['error'])) {
+            throw new Exception('Fuel QR image file is required');
+        }
+
+        if ((int)$file['error'] !== UPLOAD_ERR_OK) {
+            throw new Exception('Failed to upload fuel QR image');
+        }
+
+        if (empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+            throw new Exception('Invalid uploaded file');
+        }
+
+        $maxSize = 5 * 1024 * 1024; // 5MB
+        if ((int)($file['size'] ?? 0) > $maxSize) {
+            throw new Exception('Fuel QR image must be 5MB or smaller');
+        }
+
+        $imageInfo = @getimagesize($file['tmp_name']);
+        if (!$imageInfo || empty($imageInfo['mime'])) {
+            throw new Exception('Fuel QR image must be a valid image file');
+        }
+
+        $allowedMimes = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+        ];
+
+        $mime = strtolower((string)$imageInfo['mime']);
+        if (!isset($allowedMimes[$mime])) {
+            throw new Exception('Only JPG, PNG, or WEBP images are allowed');
+        }
+
+        $uploadDir = __DIR__ . '/../../public/uploads/vehicle-fuel-qr/';
+        if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
+            throw new Exception('Unable to create upload directory');
+        }
+
+        $suffix = uniqid();
+        if (function_exists('random_bytes')) {
+            try {
+                $suffix = bin2hex(random_bytes(4));
+            } catch (Exception $ignored) {
+                $suffix = uniqid();
+            }
+        }
+        $filename = 'vehicle_fuel_qr_' . $id . '_' . time() . '_' . $suffix . '.' . $allowedMimes[$mime];
+        $absolutePath = $uploadDir . $filename;
+        $relativePath = 'uploads/vehicle-fuel-qr/' . $filename;
+
+        if (!move_uploaded_file($file['tmp_name'], $absolutePath)) {
+            throw new Exception('Unable to store fuel QR image');
+        }
+
+        $previousPath = $vehicle['government_fuel_qr_image'] ?? null;
+
+        $success = $this->vehicleModel->updateVehicle($id, [
+            'government_fuel_qr_image' => $relativePath,
+            'updated_by' => $userId,
+        ]);
+
+        if (!$success) {
+            @unlink($absolutePath);
+            throw new Exception('Failed to update vehicle fuel QR image');
+        }
+
+        $this->deleteExistingFuelQrImage($previousPath, $relativePath);
+
+        $updatedVehicle = $this->vehicleModel->findById($id);
+        return $this->ensureFuelQrImageIsPubliclyServed($updatedVehicle);
     }
     
     /**
@@ -161,7 +244,7 @@ class VehicleService {
             throw new Exception("Vehicle not found");
         }
         
-        return $vehicle;
+        return $this->ensureFuelQrImageIsPubliclyServed($vehicle);
     }
     
     /**
@@ -172,6 +255,7 @@ class VehicleService {
         
         $vehicles = $this->vehicleModel->getAllVehicles($filters, $search, $orderBy, $perPage, $offset);
         $total = $this->vehicleModel->getVehicleCount($filters, $search);
+        $vehicles = $this->ensureFuelQrImageListIsPubliclyServed($vehicles);
         
         return [
             'data' => $vehicles,
@@ -203,7 +287,8 @@ class VehicleService {
             throw new Exception("Failed to update mileage");
         }
         
-        return $this->vehicleModel->findById($id);
+        $updatedVehicle = $this->vehicleModel->findById($id);
+        return $this->ensureFuelQrImageIsPubliclyServed($updatedVehicle);
     }
     
     /**
@@ -268,6 +353,7 @@ class VehicleService {
         
         // Return updated vehicle with driver info
         $updatedVehicle = $this->vehicleModel->getVehicleWithDriverByNumberPlate($vehicle['number_plate']);
+        $updatedVehicle = $this->ensureFuelQrImageIsPubliclyServed($updatedVehicle);
         
         return [
             'vehicle' => $updatedVehicle,
@@ -303,14 +389,16 @@ class VehicleService {
             throw new Exception("Failed to unassign driver from vehicle");
         }
         
-        return $this->vehicleModel->findById($vehicleId);
+        $updatedVehicle = $this->vehicleModel->findById($vehicleId);
+        return $this->ensureFuelQrImageIsPubliclyServed($updatedVehicle);
     }
     
     /**
      * Get all vehicles with driver assignments
      */
     public function getVehiclesWithDriverAssignments($filters = [], $search = null) {
-        return $this->vehicleModel->getAllVehiclesWithDrivers($filters, $search);
+        $vehicles = $this->vehicleModel->getAllVehiclesWithDrivers($filters, $search);
+        return $this->ensureFuelQrImageListIsPubliclyServed($vehicles);
     }
     
     /**
@@ -321,7 +409,7 @@ class VehicleService {
         if (!$vehicle) {
             throw new Exception("Vehicle not found");
         }
-        return $vehicle;
+        return $this->ensureFuelQrImageIsPubliclyServed($vehicle);
     }
     
     /**
@@ -329,6 +417,79 @@ class VehicleService {
      * Returns null if no vehicle is assigned
      */
     public function getVehicleAssignedToDriver($driverId) {
-        return $this->vehicleModel->getVehicleByAssignedDriver($driverId);
+        $vehicle = $this->vehicleModel->getVehicleByAssignedDriver($driverId);
+        return $this->ensureFuelQrImageIsPubliclyServed($vehicle);
+    }
+
+    private function deleteExistingFuelQrImage($previousPath, $currentPath) {
+        if (!$previousPath || $previousPath === $currentPath) {
+            return;
+        }
+
+        $normalized = ltrim((string)$previousPath, '/');
+        if (strpos($normalized, 'uploads/vehicle-fuel-qr/') !== 0) {
+            return;
+        }
+
+        $publicAbsolute = __DIR__ . '/../../public/' . $normalized;
+        if (is_file($publicAbsolute)) {
+            @unlink($publicAbsolute);
+        }
+
+        $legacyAbsolute = __DIR__ . '/../../' . $normalized;
+        if (is_file($legacyAbsolute)) {
+            @unlink($legacyAbsolute);
+        }
+    }
+
+    private function ensureFuelQrImageIsPubliclyServed($vehicle) {
+        if (!is_array($vehicle)) {
+            return $vehicle;
+        }
+
+        $path = $vehicle['government_fuel_qr_image'] ?? null;
+        if (!$path || !is_string($path)) {
+            return $vehicle;
+        }
+
+        $normalized = ltrim(str_replace('\\', '/', trim($path)), '/');
+        if (strpos($normalized, 'uploads/vehicle-fuel-qr/') !== 0) {
+            return $vehicle;
+        }
+
+        $publicAbsolute = __DIR__ . '/../../public/' . $normalized;
+        if (is_file($publicAbsolute)) {
+            return $vehicle;
+        }
+
+        $legacyAbsolute = __DIR__ . '/../../' . $normalized;
+        if (!is_file($legacyAbsolute)) {
+            return $vehicle;
+        }
+
+        $publicDirectory = dirname($publicAbsolute);
+        if (!is_dir($publicDirectory)) {
+            @mkdir($publicDirectory, 0755, true);
+        }
+
+        if (is_dir($publicDirectory) && !is_file($publicAbsolute)) {
+            @copy($legacyAbsolute, $publicAbsolute);
+        }
+
+        return $vehicle;
+    }
+
+    private function ensureFuelQrImageListIsPubliclyServed($vehicles) {
+        if (!is_array($vehicles)) {
+            return $vehicles;
+        }
+
+        foreach ($vehicles as $index => $vehicle) {
+            if (is_array($vehicle)) {
+                $vehicles[$index] = $this->ensureFuelQrImageIsPubliclyServed($vehicle);
+            }
+        }
+
+        return $vehicles;
     }
 }

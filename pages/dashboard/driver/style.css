@@ -1600,6 +1600,41 @@ body {
     background: rgb(249, 115, 22);
 }
 
+.assigned-vehicle-qr-box {
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.assigned-vehicle-qr-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 10px;
+}
+
+.assigned-vehicle-qr-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.assigned-vehicle-qr-image {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.95);
+    image-rendering: crisp-edges;
+}
+
 /* Empty and Loading States */
 .assigned-vehicle-card.assigned-vehicle-empty,
 .assigned-vehicle-card.assigned-vehicle-loading {
@@ -1646,6 +1681,11 @@ body {
 
     .assigned-vehicle-detail {
         font-size: 13px;
+    }
+
+    .assigned-vehicle-qr-image {
+        width: 92px;
+        height: 92px;
     }
 
     .driver-flow-step {

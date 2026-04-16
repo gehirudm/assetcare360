@@ -23,6 +23,70 @@ class DriverDashboardOverview extends HTMLElement {
         return div.innerHTML;
     }
 
+    _resolveImageUrl(imagePath) {
+        const urls = this._resolveImageUrls(imagePath);
+        return urls[0] || null;
+    }
+
+    _resolveImageUrls(imagePath) {
+        if (!imagePath || typeof imagePath !== 'string') {
+            return [];
+        }
+
+        const trimmedPath = imagePath.trim();
+        if (!trimmedPath) {
+            return [];
+        }
+
+        if (/^https?:\/\//i.test(trimmedPath)) {
+            return [trimmedPath];
+        }
+
+        const normalizedPath = trimmedPath
+            .replace(/\\/g, '/')
+            .replace(/^(\.\/)+/, '')
+            .replace(/^\/+/, '');
+
+        if (!normalizedPath) {
+            return [];
+        }
+
+        const apiOrigin = this._getApiOrigin();
+        const primaryOrigin = window.location.origin;
+        const shouldPreferApiOrigin = normalizedPath.indexOf('uploads/') === 0;
+        const urls = [];
+
+        if (shouldPreferApiOrigin && apiOrigin) {
+            urls.push(`${apiOrigin}/${normalizedPath}`);
+            if (primaryOrigin && primaryOrigin !== apiOrigin) {
+                urls.push(`${primaryOrigin}/${normalizedPath}`);
+            }
+            return urls;
+        }
+
+        if (primaryOrigin) {
+            urls.push(`${primaryOrigin}/${normalizedPath}`);
+        }
+
+        if (apiOrigin && apiOrigin !== primaryOrigin) {
+            urls.push(`${apiOrigin}/${normalizedPath}`);
+        }
+
+        return urls;
+    }
+
+    _getApiOrigin() {
+        if (typeof CONFIG === 'undefined' || !CONFIG.API_BASE_URL) {
+            return null;
+        }
+
+        try {
+            return new URL(CONFIG.API_BASE_URL, window.location.origin).origin;
+        } catch (error) {
+            return null;
+        }
+    }
+
     async _fetchAssignedVehicle() {
         try {
             const response = await DriverUtils.apiGet('/vehicles/my-vehicle');
@@ -44,6 +108,9 @@ class DriverDashboardOverview extends HTMLElement {
 
         if (this._assignedVehicle) {
             const vehicle = this._assignedVehicle;
+            const qrImageUrls = this._resolveImageUrls(vehicle.government_fuel_qr_image);
+            const qrImageUrl = qrImageUrls[0] || null;
+            const qrImageFallbackUrl = qrImageUrls[1] || '';
             container.innerHTML = `
                 <div class="assigned-vehicle-card">
                     <div class="assigned-vehicle-header">
@@ -68,12 +135,27 @@ class DriverDashboardOverview extends HTMLElement {
                             </div>
                             <div class="assigned-vehicle-detail">
                                 <i class="fas fa-tachometer-alt"></i>
-                                <span>${vehicle.odometer ? vehicle.odometer.toLocaleString() + ' KM' : '-'}</span>
+                                <span>${vehicle.current_mileage ? Number(vehicle.current_mileage).toLocaleString() + ' KM' : '-'}</span>
                             </div>
                             <div class="assigned-vehicle-detail">
                                 <span class="status-badge status-${(vehicle.status || '').toLowerCase()}">${this._escapeHtml(vehicle.status || '-')}</span>
                             </div>
                         </div>
+
+                        ${qrImageUrl ? `
+                            <div class="assigned-vehicle-qr-box">
+                                <div class="assigned-vehicle-qr-title">
+                                    <i class="fas fa-qrcode"></i>
+                                    <span>Government Fuel QR</span>
+                                </div>
+                                <div class="assigned-vehicle-qr-content">
+                                    <img src="${qrImageUrl}" data-fallback-src="${qrImageFallbackUrl}" alt="Government fuel QR code" class="assigned-vehicle-qr-image">
+                                    <button type="button" class="btn btn-secondary btn-small" data-action="open-fuel-qr" data-image-url="${qrImageUrl}">
+                                        <i class="fas fa-up-right-from-square"></i> Open Full QR
+                                    </button>
+                                </div>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -194,13 +276,49 @@ class DriverDashboardOverview extends HTMLElement {
 
     bindEvents() {
         this.addEventListener('click', (event) => {
-            const actionEl = event.target.closest('[data-action="navigate"]');
+            const actionEl = event.target.closest('[data-action]');
             if (!actionEl) {
                 return;
             }
 
-            DriverUtils.navigateTo(actionEl.dataset.section);
+            const action = actionEl.dataset.action;
+            if (action === 'navigate') {
+                DriverUtils.navigateTo(actionEl.dataset.section);
+                return;
+            }
+
+            if (action === 'open-fuel-qr') {
+                const previewImage = actionEl.closest('.assigned-vehicle-qr-content')?.querySelector('.assigned-vehicle-qr-image');
+                const imageUrl = previewImage?.currentSrc || previewImage?.getAttribute('src') || actionEl.dataset.imageUrl;
+                if (imageUrl) {
+                    window.open(imageUrl, '_blank', 'noopener');
+                }
+            }
         });
+
+        this.addEventListener('error', (event) => {
+            const imageEl = event.target;
+            if (!(imageEl instanceof HTMLImageElement) || !imageEl.classList.contains('assigned-vehicle-qr-image')) {
+                return;
+            }
+
+            const fallbackSrc = imageEl.dataset.fallbackSrc;
+            if (fallbackSrc && imageEl.src !== fallbackSrc && !imageEl.dataset.fallbackApplied) {
+                imageEl.dataset.fallbackApplied = '1';
+                imageEl.src = fallbackSrc;
+
+                const openButton = imageEl.closest('.assigned-vehicle-qr-content')?.querySelector('[data-action="open-fuel-qr"]');
+                if (openButton) {
+                    openButton.dataset.imageUrl = fallbackSrc;
+                }
+                return;
+            }
+
+            if (!imageEl.dataset.errorNotified) {
+                imageEl.dataset.errorNotified = '1';
+                DriverUtils.showToast('Unable to load the vehicle fuel QR image.', 'warning');
+            }
+        }, true);
     }
 
     refresh() {
