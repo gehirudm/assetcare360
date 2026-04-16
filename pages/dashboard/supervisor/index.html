@@ -21,7 +21,8 @@
         nav='[
             {"section":"dashboard","icon":"fas fa-chart-line","label":"Dashboard"},
             {"section":"daily-check-reports","icon":"fas fa-clipboard-check","label":"Weekly Check Reports"},
-            {"section":"fault-tickets","icon":"fas fa-exclamation-triangle","label":"Fault Tickets"},
+            {"section":"fault-ticket-tracking","icon":"fas fa-ticket-alt","label":"Fault Tickets"},
+            {"section":"fault-tickets","icon":"fas fa-user-cog","label":"Technician Assignment"},
             {"section":"repair-management","icon":"fas fa-tools","label":"Repair Management"},
             {"section":"budget-approval","icon":"fas fa-dollar-sign","label":"Budget Approval"},
             {"section":"asset-status","icon":"fas fa-truck","label":"Asset Status"},
@@ -37,6 +38,11 @@
                 </section>
 
                 <!-- Fault Tickets Section -->
+                <section class="content-section" id="fault-ticket-tracking">
+                    <supervisor-fault-ticket-tracking></supervisor-fault-ticket-tracking>
+                </section>
+
+                <!-- Technician Assignment Section -->
                 <section class="content-section" id="fault-tickets">
                     <supervisor-fault-tickets></supervisor-fault-tickets>
                 </section>
@@ -85,6 +91,7 @@
     <script src="../../js/dashboard-init.js"></script>
     <script src="./components/dashboard-overview/script.js"></script>
     <script src="./components/asset-status/script.js"></script>
+    <script src="./components/fault-ticket-tracking/script.js"></script>
     <script src="./components/fault-tickets/script.js"></script>
     <script src="./components/repair-management/script.js"></script>
     <script src="./components/budget-approval/script.js"></script>
