@@ -84,7 +84,6 @@ class InventoryCatalog extends HTMLElement {
             searchInput.addEventListener('input', () => this.applyFilters());
         }
 
-        // Add new
         // Refresh
         const refreshBtn = this.querySelector('#catalogRefreshBtn');
         if (refreshBtn) {
@@ -120,36 +119,45 @@ class InventoryCatalog extends HTMLElement {
             const button = event.target.closest('button[data-action]');
             if (!button) return;
 
+            event.stopPropagation();
+
             const action = button.dataset.action;
             const sparepartId = button.dataset.id;
             if (!sparepartId) return;
 
-            if (action === 'view') {
-                this.dispatchEvent(new CustomEvent('inventory-catalog:view', {
-                    bubbles: true,
-                    detail: { sparepartId }
-                }));
-            }
-
-            if (action === 'edit') {
-                this.dispatchEvent(new CustomEvent('inventory-catalog:edit', {
-                    bubbles: true,
-                    detail: { sparepartId }
-                }));
-            }
-
-            if (action === 'delete') {
-                this.dispatchEvent(new CustomEvent('inventory-catalog:delete', {
-                    bubbles: true,
-                    detail: { sparepartId }
-                }));
-            }
-
-            if (action === 'reorder') {
-                this.dispatchEvent(new CustomEvent('inventory-catalog:reorder', {
-                    bubbles: true,
-                    detail: { sparepartId }
-                }));
+            switch (action) {
+                case 'view':
+                    this.dispatchEvent(new CustomEvent('inventory-catalog:view', {
+                        bubbles: true,
+                        detail: { sparepartId }
+                    }));
+                    break;
+                case 'edit':
+                    this.closeAllActionMenus();
+                    this.dispatchEvent(new CustomEvent('inventory-catalog:edit', {
+                        bubbles: true,
+                        detail: { sparepartId }
+                    }));
+                    break;
+                case 'delete':
+                    this.closeAllActionMenus();
+                    this.dispatchEvent(new CustomEvent('inventory-catalog:delete', {
+                        bubbles: true,
+                        detail: { sparepartId }
+                    }));
+                    break;
+                case 'reorder':
+                    this.closeAllActionMenus();
+                    this.dispatchEvent(new CustomEvent('inventory-catalog:reorder', {
+                        bubbles: true,
+                        detail: { sparepartId }
+                    }));
+                    break;
+                case 'toggle-menu':
+                    this.toggleActionMenu(sparepartId);
+                    break;
+                default:
+                    break;
             }
         });
     }
@@ -227,6 +235,9 @@ class InventoryCatalog extends HTMLElement {
             const category = (product.category || 'Unknown');
             const categoryText = category.charAt(0).toUpperCase() + category.slice(1);
             const escapedPartId = this.escapeAttr(partId);
+            const reorderActionHtml = quantity <= 10
+                ? `<button type="button" class="dropdown-item" data-action="reorder" data-id="${escapedPartId}"><i class="fas fa-sync"></i> Reorder</button>`
+                : '';
 
             return `
                 <div class="inventory-item catalog-item" data-id="${escapedPartId}">
@@ -243,25 +254,48 @@ class InventoryCatalog extends HTMLElement {
                     </div>
                     <div class="item-actions">
                         <div class="catalog-action-buttons">
-                            <button class="btn btn-primary btn-small" data-action="view" data-id="${escapedPartId}">
+                            <button type="button" class="btn btn-primary btn-small" data-action="view" data-id="${escapedPartId}">
                                 <i class="fas fa-eye"></i> VIEW
                             </button>
-                            <button class="btn btn-secondary btn-small" data-action="edit" data-id="${escapedPartId}">
-                                <i class="fas fa-edit"></i> EDIT
-                            </button>
-                            ${quantity <= 10 ? `
-                                <button class="btn btn-secondary btn-small" data-action="reorder" data-id="${escapedPartId}">
-                                    <i class="fas fa-sync"></i> REORDER
+                            <div class="dropdown-container">
+                                <button type="button" class="btn btn-secondary btn-small dropdown-trigger" data-action="toggle-menu" data-id="${escapedPartId}" aria-label="Open spare part actions">
+                                    <i class="fas fa-ellipsis-v"></i>
                                 </button>
-                            ` : ''}
-                            <button class="btn btn-danger btn-small" data-action="delete" data-id="${escapedPartId}">
-                                <i class="fas fa-trash"></i> DELETE
-                            </button>
+                                <div class="dropdown-menu" id="dropdown-catalog-${escapedPartId}">
+                                    <button type="button" class="dropdown-item" data-action="edit" data-id="${escapedPartId}">
+                                        <i class="fas fa-edit"></i> Edit Part
+                                    </button>
+                                    ${reorderActionHtml}
+                                    <button type="button" class="dropdown-item danger" data-action="delete" data-id="${escapedPartId}">
+                                        <i class="fas fa-trash"></i> Delete Part
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             `;
         }).join('');
+    }
+
+    toggleActionMenu(sparepartId) {
+        const selector = typeof CSS !== 'undefined' && CSS.escape
+            ? `#${CSS.escape(`dropdown-catalog-${sparepartId}`)}`
+            : `#dropdown-catalog-${sparepartId}`;
+        const menu = this.querySelector(selector);
+        if (!menu) return;
+
+        const shouldOpen = !menu.classList.contains('active');
+        this.closeAllActionMenus();
+        if (shouldOpen) {
+            menu.classList.add('active');
+        }
+    }
+
+    closeAllActionMenus() {
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            menu.classList.remove('active');
+        });
     }
 
     updateCount(count) {

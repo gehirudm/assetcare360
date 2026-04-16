@@ -240,20 +240,27 @@ class InventoryOrdersApprovals extends HTMLElement {
             if (order.status === 'Pending') {
                 actionButtons = `
                     <div class="action-buttons">
-                        <button class="btn btn-small btn-primary" data-action="view" data-id="${order.id}">
+                        <button type="button" class="btn btn-small btn-primary" data-action="view" data-id="${order.id}">
                             <i class="fas fa-eye"></i> VIEW
                         </button>
-                        <button class="btn btn-small" style="background: #10b981; color: white;" data-action="approve" data-id="${order.id}">
-                            <i class="fas fa-check"></i> APPROVE
-                        </button>
-                        <button class="btn btn-small" style="background: #ef4444; color: white;" data-action="reject" data-id="${order.id}">
-                            <i class="fas fa-times"></i> REJECT
-                        </button>
+                        <div class="dropdown-container">
+                            <button type="button" class="btn btn-small btn-secondary dropdown-trigger" data-action="toggle-menu" data-id="${order.id}" aria-label="Open request actions">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div class="dropdown-menu" id="dropdown-order-${order.id}">
+                                <button type="button" class="dropdown-item" data-action="approve" data-id="${order.id}">
+                                    <i class="fas fa-check"></i> Approve Request
+                                </button>
+                                <button type="button" class="dropdown-item danger" data-action="reject" data-id="${order.id}">
+                                    <i class="fas fa-times"></i> Reject Request
+                                </button>
+                            </div>
+                        </div>
                     </div>`;
             } else {
                 actionButtons = `
                     <div class="action-buttons">
-                        <button class="btn btn-small btn-primary" data-action="view" data-id="${order.id}">
+                        <button type="button" class="btn btn-small btn-primary" data-action="view" data-id="${order.id}">
                             <i class="fas fa-eye"></i> VIEW
                         </button>
                     </div>`;
@@ -284,14 +291,32 @@ class InventoryOrdersApprovals extends HTMLElement {
         }).join('');
 
         // Bind action button events
-        container.querySelectorAll('.action-buttons button').forEach(btn => {
+        container.querySelectorAll('[data-action]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
+
                 const action = btn.dataset.action;
-                const orderId = parseInt(btn.dataset.id);
-                if (action === 'view') this.viewOrderDetails(orderId);
-                else if (action === 'approve') this.approveOrder(orderId);
-                else if (action === 'reject') this.rejectOrder(orderId);
+                const orderId = parseInt(btn.dataset.id, 10);
+                if (!Number.isFinite(orderId)) return;
+
+                switch (action) {
+                    case 'view':
+                        this.viewOrderDetails(orderId);
+                        break;
+                    case 'approve':
+                        this.closeAllActionMenus();
+                        this.approveOrder(orderId);
+                        break;
+                    case 'reject':
+                        this.closeAllActionMenus();
+                        this.rejectOrder(orderId);
+                        break;
+                    case 'toggle-menu':
+                        this.toggleActionMenu(orderId);
+                        break;
+                    default:
+                        break;
+                }
             });
         });
 
@@ -750,6 +775,23 @@ class InventoryOrdersApprovals extends HTMLElement {
                 this.rejectOrder(parseInt(rejectBtn.dataset.id));
             });
         }
+    }
+
+    toggleActionMenu(orderId) {
+        const menu = this.querySelector(`#dropdown-order-${orderId}`);
+        if (!menu) return;
+
+        const shouldOpen = !menu.classList.contains('active');
+        this.closeAllActionMenus();
+        if (shouldOpen) {
+            menu.classList.add('active');
+        }
+    }
+
+    closeAllActionMenus() {
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            menu.classList.remove('active');
+        });
     }
 
     openActionModal() {

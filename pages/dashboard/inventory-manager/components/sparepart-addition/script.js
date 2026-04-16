@@ -98,6 +98,8 @@ class InventorySparepartAddition extends HTMLElement {
             const actionButton = event.target.closest('button[data-action]');
             if (!actionButton) return;
 
+            event.stopPropagation();
+
             const action = actionButton.dataset.action;
             const additionId = actionButton.dataset.id;
             if (!additionId) return;
@@ -105,25 +107,32 @@ class InventorySparepartAddition extends HTMLElement {
             const addition = this.additions.find(item => String(item.id) === String(additionId));
             const eventDetail = { additionId: Number(additionId), addition: addition || null };
 
-            if (action === 'view') {
-                this.dispatchEvent(new CustomEvent('inventory-sparepart-addition:view', {
-                    bubbles: true,
-                    detail: eventDetail
-                }));
-            }
-
-            if (action === 'edit') {
-                this.dispatchEvent(new CustomEvent('inventory-sparepart-addition:edit', {
-                    bubbles: true,
-                    detail: eventDetail
-                }));
-            }
-
-            if (action === 'delete') {
-                this.dispatchEvent(new CustomEvent('inventory-sparepart-addition:delete', {
-                    bubbles: true,
-                    detail: eventDetail
-                }));
+            switch (action) {
+                case 'view':
+                    this.dispatchEvent(new CustomEvent('inventory-sparepart-addition:view', {
+                        bubbles: true,
+                        detail: eventDetail
+                    }));
+                    break;
+                case 'edit':
+                    this.closeAllActionMenus();
+                    this.dispatchEvent(new CustomEvent('inventory-sparepart-addition:edit', {
+                        bubbles: true,
+                        detail: eventDetail
+                    }));
+                    break;
+                case 'delete':
+                    this.closeAllActionMenus();
+                    this.dispatchEvent(new CustomEvent('inventory-sparepart-addition:delete', {
+                        bubbles: true,
+                        detail: eventDetail
+                    }));
+                    break;
+                case 'toggle-menu':
+                    this.toggleActionMenu(additionId);
+                    break;
+                default:
+                    break;
             }
         });
     }
@@ -244,20 +253,47 @@ class InventorySparepartAddition extends HTMLElement {
                     </div>
                     <div class="item-actions">
                         <div class="addition-action-buttons">
-                            <button class="btn btn-primary btn-small" data-action="view" data-id="${additionId}">
+                            <button type="button" class="btn btn-primary btn-small" data-action="view" data-id="${additionId}">
                                 <i class="fas fa-eye"></i> VIEW
                             </button>
-                            <button class="btn btn-secondary btn-small" data-action="edit" data-id="${additionId}">
-                                <i class="fas fa-edit"></i> EDIT
-                            </button>
-                            <button class="btn btn-danger btn-small" data-action="delete" data-id="${additionId}">
-                                <i class="fas fa-trash"></i> DELETE
-                            </button>
+                            <div class="dropdown-container">
+                                <button type="button" class="btn btn-secondary btn-small dropdown-trigger" data-action="toggle-menu" data-id="${additionId}" aria-label="Open addition actions">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <div class="dropdown-menu" id="dropdown-addition-${additionId}">
+                                    <button type="button" class="dropdown-item" data-action="edit" data-id="${additionId}">
+                                        <i class="fas fa-edit"></i> Edit Addition
+                                    </button>
+                                    <button type="button" class="dropdown-item danger" data-action="delete" data-id="${additionId}">
+                                        <i class="fas fa-trash"></i> Delete Addition
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             `;
         }).join('');
+    }
+
+    toggleActionMenu(additionId) {
+        const selector = typeof CSS !== 'undefined' && CSS.escape
+            ? `#${CSS.escape(`dropdown-addition-${additionId}`)}`
+            : `#dropdown-addition-${additionId}`;
+        const menu = this.querySelector(selector);
+        if (!menu) return;
+
+        const shouldOpen = !menu.classList.contains('active');
+        this.closeAllActionMenus();
+        if (shouldOpen) {
+            menu.classList.add('active');
+        }
+    }
+
+    closeAllActionMenus() {
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            menu.classList.remove('active');
+        });
     }
 
     updateCount(count) {
