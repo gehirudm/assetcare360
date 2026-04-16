@@ -173,15 +173,52 @@ class SupervisorFaultTickets extends HTMLElement {
             return;
         }
 
-        const breakdownHtml = unassignedBreakdowns.map(report => this.renderBreakdownItem(report)).join('');
-        const unassignedTicketHtml = unassignedTickets.map(ticket => this.renderUnassignedTicket(ticket)).join('');
-        const assignedTicketHtml = assignedTickets.map(ticket => this.renderAssignedTicket(ticket)).join('');
-        const resolvedTicketHtml = resolvedTickets.map(ticket => this.renderResolvedTicket(ticket)).join('');
+        const combinedUnassigned = [
+            ...this.sortByNewest(unassignedBreakdowns, ['created_at', 'breakdown_datetime', 'breakdown_date', 'updated_at'])
+                .map((report) => ({ type: 'breakdown', payload: report })),
+            ...this.sortByNewest(unassignedTickets, ['created_at', 'breakdown_datetime', 'breakdown_date', 'updated_at'])
+                .map((ticket) => ({ type: 'ticket', payload: ticket })),
+        ].sort((first, second) => this.getSortTimestamp(second.payload, ['created_at', 'breakdown_datetime', 'breakdown_date', 'updated_at']) - this.getSortTimestamp(first.payload, ['created_at', 'breakdown_datetime', 'breakdown_date', 'updated_at']));
 
-        const combinedUnassigned = breakdownHtml + unassignedTicketHtml;
-        unassignedList.innerHTML = combinedUnassigned || '<p style="text-align: center; color: var(--muted); padding: 20px;">No unassigned tickets or breakdown reports match the current filters</p>';
+        const combinedUnassignedHtml = combinedUnassigned
+            .map((entry) => (entry.type === 'breakdown' ? this.renderBreakdownItem(entry.payload) : this.renderUnassignedTicket(entry.payload)))
+            .join('');
+
+        const assignedTicketHtml = this.sortByNewest(assignedTickets, ['created_at', 'breakdown_datetime', 'breakdown_date', 'updated_at'])
+            .map(ticket => this.renderAssignedTicket(ticket)).join('');
+        const resolvedTicketHtml = this.sortByNewest(resolvedTickets, ['updated_at', 'created_at', 'breakdown_datetime', 'breakdown_date'])
+            .map(ticket => this.renderResolvedTicket(ticket)).join('');
+
+        unassignedList.innerHTML = combinedUnassignedHtml || '<p style="text-align: center; color: var(--muted); padding: 20px;">No unassigned tickets or breakdown reports match the current filters</p>';
         activeList.innerHTML = assignedTicketHtml || '<p style="text-align: center; color: var(--muted); padding: 20px;">No assigned tickets match the current filters</p>';
         resolvedList.innerHTML = resolvedTicketHtml || '<p style="text-align: center; color: var(--muted); padding: 20px;">No resolved tickets</p>';
+    }
+
+    sortByNewest(items = [], dateFields = ['created_at', 'updated_at']) {
+        if (!Array.isArray(items)) {
+            return [];
+        }
+
+        return [...items].sort((first, second) => {
+            return this.getSortTimestamp(second, dateFields) - this.getSortTimestamp(first, dateFields);
+        });
+    }
+
+    getSortTimestamp(item, dateFields = ['created_at', 'updated_at']) {
+        for (const field of dateFields) {
+            const rawValue = item?.[field];
+            if (!rawValue) {
+                continue;
+            }
+
+            const timestamp = new Date(rawValue).getTime();
+            if (Number.isFinite(timestamp)) {
+                return timestamp;
+            }
+        }
+
+        const numericId = Number(item?.id ?? 0);
+        return Number.isFinite(numericId) ? numericId : 0;
     }
 
     renderBreakdownItem(report) {

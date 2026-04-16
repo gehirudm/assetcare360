@@ -541,9 +541,15 @@ function getDisplayTicketId(ticket) {
 
 // Render tickets
 function renderTickets(tickets) {
+    const sortedTickets = [...(Array.isArray(tickets) ? tickets : [])].sort((first, second) => {
+        const firstTime = new Date(first?.created_at || first?.updated_at || first?.breakdown_datetime || first?.breakdown_date || 0).getTime();
+        const secondTime = new Date(second?.created_at || second?.updated_at || second?.breakdown_datetime || second?.breakdown_date || 0).getTime();
+        return secondTime - firstTime;
+    });
+
     const ticketsComponent = document.querySelector('to-tickets');
     if (ticketsComponent && typeof ticketsComponent.renderTickets === 'function') {
-        ticketsComponent.renderTickets(tickets);
+        ticketsComponent.renderTickets(sortedTickets);
         return;
     }
 
@@ -553,12 +559,12 @@ function renderTickets(tickets) {
         return;
     }
 
-    if (tickets.length === 0) {
+    if (sortedTickets.length === 0) {
         ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px;"></i><p>No tickets found</p></div>';
         return;
     }
 
-    ticketsList.innerHTML = tickets.map(ticket => {
+    ticketsList.innerHTML = sortedTickets.map(ticket => {
         const ticketIdFormatted = getDisplayTicketId(ticket);
 
         // Map Open/Assigned to Pending for display, keep others as-is

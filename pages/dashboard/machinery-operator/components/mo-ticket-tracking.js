@@ -81,15 +81,21 @@ class MOTicketTracking extends HTMLElement {
                 return item.operator_id === this.currentUser.id || item.operator_name === this.currentUser.full_name;
             });
 
-            if (!filteredReports.length) {
+            const sortedReports = [...filteredReports].sort((first, second) => {
+                const firstTime = new Date(first.created_at || first.breakdown_date || 0).getTime();
+                const secondTime = new Date(second.created_at || second.breakdown_date || 0).getTime();
+                return secondTime - firstTime;
+            });
+
+            if (!sortedReports.length) {
                 list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--stone-400);">No breakdown reports found</div>';
                 this.updateSummary([]);
                 return;
             }
 
-            list.innerHTML = filteredReports.map((breakdown) => this.renderTicketCard(breakdown)).join('');
+            list.innerHTML = sortedReports.map((breakdown) => this.renderTicketCard(breakdown)).join('');
             this.applyFilter(this.currentFilter);
-            this.updateSummary(filteredReports);
+            this.updateSummary(sortedReports);
         } catch (error) {
             console.error('Error loading machine breakdowns:', error);
             list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--red-500);">Error loading breakdown reports. Please try again.</div>';
