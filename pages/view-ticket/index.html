@@ -46,6 +46,11 @@
             color: var(--muted);
         }
 
+        .assign-tech-item input[type="radio"],
+        .assign-tech-item input[type="checkbox"] {
+            margin-top: 2px;
+        }
+
         .assign-warning {
             margin-top: 8px;
             font-size: 0.8rem;
@@ -196,7 +201,7 @@
                     </div>
                     <div class="step-content">
                         <div class="step-header">
-                            <div class="step-title">Assigned to Technician</div>
+                            <div class="step-title" id="step2-title">Assigned to Technician</div>
                             <div class="step-badge">Step 2</div>
                         </div>
                         <div class="step-body">
@@ -209,7 +214,7 @@
                                 <div class="participant-chip">
                                     <i class="fas fa-hard-hat"></i>
                                     <span id="step2-technician">-</span>
-                                    <span class="chip-role">Technical Officer</span>
+                                    <span class="chip-role" id="step2-assignee-role">Technical Officer</span>
                                 </div>
                             </div>
                             <p class="step-description" id="step2-desc">Ticket assigned to you for resolution.</p>
@@ -218,6 +223,10 @@
                                 <button class="btn btn-action" id="assignTicketBtn" onclick="openAssignModal()">
                                     <i class="fas fa-user-plus"></i> Assign Technician
                                 </button>
+                                <button class="btn btn-action" id="approveGarageBtn" onclick="openGarageApprovalModal()" style="display:none; margin-left:8px;">
+                                    <i class="fas fa-warehouse"></i> Approve Nearby Garage
+                                </button>
+                                <div id="step2-garage-hint" class="step-hint" style="display:none; margin-top:8px;"></div>
                             </div>
                         </div>
                     </div>
@@ -605,6 +614,46 @@
                         <button type="button" class="btn btn-secondary" onclick="closeAssignModal()">Cancel</button>
                         <button type="submit" class="btn btn-primary" id="assignSubmitBtn">
                             <i class="fas fa-user-check"></i> Save Assignment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================
+         APPROVE NEARBY GARAGE MODAL
+    ============================= -->
+    <div class="modal-overlay" id="garageApprovalModal">
+        <div class="modal modal-wide">
+            <div class="modal-header">
+                <h3><i class="fas fa-warehouse"></i> Approve Nearby Garage</h3>
+                <button class="modal-close" onclick="closeGarageApprovalModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="garageApprovalForm" onsubmit="submitGarageApproval(event)">
+                    <div class="form-group">
+                        <label class="form-label">Route Breakdown</label>
+                        <input type="text" class="form-input" id="garageApprovalRouteCode" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Select Nearby Garage <span class="required">*</span></label>
+                        <div id="garageApprovalList" class="assign-tech-list"></div>
+                        <div id="garageApprovalSelectionWarning" class="assign-warning" style="display:none;">
+                            Please select one nearby garage to approve.
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Approval Notes</label>
+                        <textarea class="form-textarea" id="garageApprovalNotes" rows="3" placeholder="Optional instructions for the driver"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeGarageApprovalModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="garageApprovalSubmitBtn">
+                            <i class="fas fa-warehouse"></i> Approve Nearby Garage
                         </button>
                     </div>
                 </form>

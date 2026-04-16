@@ -155,12 +155,6 @@ class DriverNearbyGaragesModal extends HTMLElement {
         try {
             const response = await DriverUtils.apiGet('/garages');
             this.garages = DriverUtils.normalizeApiList(response, 'garages');
-
-            if (!this.garages.length) {
-                listEl.innerHTML = '<div style="padding: 10px; color: var(--muted);">No garages available right now.</div>';
-                return;
-            }
-
             const breakdown = this.currentPayload.breakdown || {};
             const approvedGarageId = Number(
                 breakdown?.garage_workflow?.approved_garage?.id
@@ -170,7 +164,27 @@ class DriverNearbyGaragesModal extends HTMLElement {
             );
             const mode = this.currentPayload.mode || 'browse';
 
-            listEl.innerHTML = this.garages.map((garage) => {
+            let garagesToRender = Array.isArray(this.garages) ? [...this.garages] : [];
+
+            if (approvedGarageId > 0) {
+                const approvedGarageFromList = garagesToRender.find((garage) => Number(garage.id) === approvedGarageId);
+                const approvedGarageFallback = {
+                    id: approvedGarageId,
+                    name: breakdown?.garage_workflow?.approved_garage?.name || breakdown.approved_garage_name || `Garage #${approvedGarageId}`,
+                    address: breakdown?.garage_workflow?.approved_garage?.address || breakdown.approved_garage_address || 'Address unavailable',
+                    phone: breakdown?.garage_workflow?.approved_garage?.phone || breakdown.approved_garage_phone || '',
+                    city: '',
+                };
+
+                garagesToRender = [approvedGarageFromList || approvedGarageFallback];
+            }
+
+            if (!garagesToRender.length) {
+                listEl.innerHTML = '<div style="padding: 10px; color: var(--muted);">No garages available right now.</div>';
+                return;
+            }
+
+            listEl.innerHTML = garagesToRender.map((garage) => {
                 const isApproved = approvedGarageId > 0 && Number(garage.id) === approvedGarageId;
                 const cardStyle = isApproved
                     ? 'border: 1px solid #0ea5e9; background: #eff6ff;'
