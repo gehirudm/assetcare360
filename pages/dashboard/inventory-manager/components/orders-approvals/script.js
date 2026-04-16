@@ -58,9 +58,6 @@ class InventoryOrdersApprovals extends HTMLElement {
             <!-- Search Bar -->
             <div class="search-bar">
                 <input type="text" id="orderSearch" class="search-input" placeholder="Search by request ID, ticket, equipment, or parts...">
-                <button class="btn btn-secondary" id="ordersRefreshBtn">
-                    <i class="fas fa-sync"></i> Refresh
-                </button>
             </div>
 
             <!-- Filter Tabs -->
@@ -107,12 +104,6 @@ class InventoryOrdersApprovals extends HTMLElement {
         const searchInput = this.querySelector('#orderSearch');
         if (searchInput) {
             searchInput.addEventListener('input', () => this.applyFilters());
-        }
-
-        // Refresh button
-        const refreshBtn = this.querySelector('#ordersRefreshBtn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.loadOrders());
         }
 
         // Modal close

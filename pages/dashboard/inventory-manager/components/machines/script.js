@@ -39,9 +39,6 @@ class InventoryMachines extends HTMLElement {
                 <button class="btn btn-primary" id="addMachineBtn">
                     <i class="fas fa-plus"></i> Add New Machine
                 </button>
-                <button class="btn btn-secondary" id="refreshMachinesBtn">
-                    <i class="fas fa-sync"></i> Refresh
-                </button>
             </div>
 
             <div class="filter-controls" id="machineFilters">
@@ -83,11 +80,6 @@ class InventoryMachines extends HTMLElement {
             });
         }
 
-        // Refresh button
-        const refreshBtn = this.querySelector('#refreshMachinesBtn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.loadMachines());
-        }
     }
 
     async loadMachines() {
