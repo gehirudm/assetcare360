@@ -41,9 +41,6 @@ class InventoryCatalog extends HTMLElement {
 
             <div class="search-bar">
                 <input type="text" id="catalogSearch" class="search-input" placeholder="Search by sparepart name, number, or category...">
-                <button class="btn btn-primary" id="catalogAddBtn">
-                    <i class="fas fa-plus"></i> Add New Sparepart
-                </button>
                 <button class="btn btn-secondary" id="catalogRefreshBtn">
                     <i class="fas fa-sync"></i> Refresh
                 </button>
@@ -88,13 +85,6 @@ class InventoryCatalog extends HTMLElement {
         }
 
         // Add new
-        const addBtn = this.querySelector('#catalogAddBtn');
-        if (addBtn) {
-            addBtn.addEventListener('click', () => {
-                this.dispatchEvent(new CustomEvent('inventory-catalog:add', { bubbles: true }));
-            });
-        }
-
         // Refresh
         const refreshBtn = this.querySelector('#catalogRefreshBtn');
         if (refreshBtn) {

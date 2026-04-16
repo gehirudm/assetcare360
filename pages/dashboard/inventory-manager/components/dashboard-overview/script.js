@@ -31,6 +31,7 @@ class InventoryDashboardOverview extends HTMLElement {
         this._adoptSharedStyles();
 
         this.shadowRoot.innerHTML = `
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
             <style>${css}</style>
             ${this._template()}
         `;
@@ -249,28 +250,28 @@ class InventoryDashboardOverview extends HTMLElement {
     _renderSummaryCards(metrics) {
         const cards = [
             {
-                code: 'SP',
+                icon: 'fas fa-boxes',
                 title: 'Spare Parts',
                 value: metrics.totalParts,
                 description: 'Total parts in catalog',
                 section: 'catalog'
             },
             {
-                code: 'OS',
+                icon: 'fas fa-exclamation-circle',
                 title: 'Out of Stock',
                 value: metrics.outOfStock,
                 description: 'Items requiring restock',
                 section: 'catalog'
             },
             {
-                code: 'LS',
+                icon: 'fas fa-bell',
                 title: 'Low Stock Alerts',
                 value: metrics.lowStock,
                 description: 'Items below threshold',
                 section: 'notifications'
             },
             {
-                code: 'AS',
+                icon: 'fas fa-layer-group',
                 title: 'Total Assets',
                 value: metrics.totalAssets,
                 description: 'Vehicles and machines managed',
@@ -279,14 +280,16 @@ class InventoryDashboardOverview extends HTMLElement {
         ];
 
         return cards.map(card => `
-            <button type="button" class="summary-card" data-target="${this._escapeAttr(card.section)}">
-                <div class="summary-top">
-                    <span class="summary-icon">${this._escape(card.code)}</span>
-                    <span>${this._escape(card.title)}</span>
+            <button type="button" class="summary-card clickable" data-target="${this._escapeAttr(card.section)}">
+                <div class="summary-card-content">
+                    <div class="summary-icon"><i class="${this._escapeAttr(card.icon)}"></i></div>
+                    <div class="summary-details">
+                        <div class="summary-title">${this._escape(card.title)}</div>
+                        <div class="summary-number">${card.value}</div>
+                        <div class="summary-description">${this._escape(card.description)}</div>
+                    </div>
                 </div>
-                <div class="summary-value">${card.value}</div>
-                <div class="summary-title">${this._escape(card.title)}</div>
-                <div class="summary-description">${this._escape(card.description)}</div>
+                <div class="summary-arrow"><i class="fas fa-chevron-right"></i></div>
             </button>
         `).join('');
     }
