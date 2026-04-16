@@ -7,6 +7,7 @@ class SACreateUserModal extends HTMLElement {
         this._mounted = true;
         this.render();
         this.bindEvents();
+        this.prepareForOpen();
     }
 
     render() {
@@ -82,7 +83,7 @@ class SACreateUserModal extends HTMLElement {
                             <h5><i class="fas fa-lock"></i> Account Settings</h5>
                             <div class="form-group">
                                 <label class="form-label">Temporary Password *</label>
-                                <input type="text" class="form-input" name="password" placeholder="Auto-generated" required>
+                                <input type="text" class="form-input" name="password" placeholder="Auto-generated" autocomplete="off" readonly required>
                                 <small style="color: var(--muted);">This will be auto-generated. User will be required to change it on first login.</small>
                             </div>
                         </div>
@@ -99,12 +100,56 @@ class SACreateUserModal extends HTMLElement {
 
     bindEvents() {
         const modal = this.querySelector('#createUserModal');
+        const form = this.querySelector('#createUserForm');
 
         this.addEventListener('click', (event) => {
             if (event.target === modal || event.target.closest('[data-close-modal]')) {
                 this.close();
             }
         });
+
+        form?.addEventListener('submit', () => {
+            this.ensurePasswordValue();
+        });
+    }
+
+    prepareForOpen() {
+        this.ensurePasswordValue(true);
+    }
+
+    ensurePasswordValue(forceRegenerate = false) {
+        const passwordInput = this.querySelector('#createUserForm [name="password"]');
+        if (!passwordInput) {
+            return '';
+        }
+
+        if (!forceRegenerate && passwordInput.value) {
+            return passwordInput.value;
+        }
+
+        const generatedPassword = this.generateTemporaryPassword();
+        passwordInput.value = generatedPassword;
+        return generatedPassword;
+    }
+
+    generateTemporaryPassword(length = 12) {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+        const randomValues = new Uint32Array(length);
+        const hasCrypto = typeof window !== 'undefined' && window.crypto && typeof window.crypto.getRandomValues === 'function';
+
+        if (hasCrypto) {
+            window.crypto.getRandomValues(randomValues);
+        }
+
+        let password = '';
+        for (let index = 0; index < length; index += 1) {
+            const randomIndex = hasCrypto
+                ? randomValues[index] % chars.length
+                : Math.floor(Math.random() * chars.length);
+            password += chars.charAt(randomIndex);
+        }
+
+        return password;
     }
 
     close() {

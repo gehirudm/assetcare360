@@ -14,6 +14,12 @@
   - Spare-part request workflow
   - Ticket work-update record (TO marks work done)
   - Breakdown report linking
+- ✅ Route-breakdown garage workflow alignment across Supervisor, shared ticket detail, Driver, and backend assignment rules (TASK039)
+  - Supervisor pending route-breakdown VIEW now routes to shared `pages/view-ticket/` flow.
+  - Shared detail page supports Supervisor dual step-2 actions for route tickets: assign technician or approve nearby garage.
+  - Nearby garage approval now makes technician assignment optional in UI, and backend assignment endpoint rejects technician assignment updates when garage workflow is active.
+  - Driver garage modal now shows only the approved garage once assigned.
+  - OpenAPI updated to document `/fault-tickets/{id}/assign` and its garage-workflow blocked-assignment response.
 - ✅ TecFaultRepairTicket — TO's own repair record per ticket
 - ✅ Trip & vehicle check logs (Driver role)
 - ✅ Machine weekly checks
