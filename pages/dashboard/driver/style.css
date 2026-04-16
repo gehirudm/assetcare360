@@ -361,47 +361,48 @@ body {
     letter-spacing: 0.5px;
 }
 
-.status-submitted {
+.status-badge.status-submitted {
     background: var(--royal-blue);
     color: #fff;
 }
 
-.status-pending {
+.status-badge.status-pending {
     background: var(--warn);
     color: #000;
 }
 
-.status-approved {
+.status-badge.status-approved {
     background: var(--ok);
     color: #fff;
 }
 
-.status-rejected {
+.status-badge.status-rejected {
     background: var(--danger);
     color: #fff;
 }
 
-.status-in-progress {
+.status-badge.status-in-progress {
     background: var(--royal-blue-2);
     color: #fff;
 }
 
-.status-assigned {
+.status-badge.status-assigned {
     background: #2563eb;
     color: #fff;
 }
 
-.status-resolved {
+.status-badge.status-resolved {
     background: var(--kelly-green);
     color: #fff;
 }
 
-.status-closed {
+.status-badge.status-closed {
     background: #6b7280;
     color: #fff;
 }
 
-.status-complete {
+.status-badge.status-complete,
+.status-badge.status-completed {
     background: var(--kelly-green);
     color: #fff;
 }
@@ -450,6 +451,37 @@ body {
 
 .btn-danger:hover {
     background: #b91c1c;
+    transform: translateY(-1px);
+}
+
+.btn-success {
+    background: var(--kelly-green);
+    color: white;
+}
+
+.btn-success:hover {
+    background: #16a34a;
+    transform: translateY(-1px);
+}
+
+.btn-warning {
+    background: var(--warn);
+    color: #1f2937;
+}
+
+.btn-warning:hover {
+    background: #f59e0b;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.btn-info {
+    background: #0ea5e9;
+    color: white;
+}
+
+.btn-info:hover {
+    background: #0284c7;
     transform: translateY(-1px);
 }
 
