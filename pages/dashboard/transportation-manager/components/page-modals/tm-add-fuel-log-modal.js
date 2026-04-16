@@ -48,13 +48,10 @@ class TMAddFuelLogModal extends HTMLElement {
                                     <input type="datetime-local" class="form-input" id="fuelDatetime" name="log_datetime" required>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">Fuel Type *</label>
-                                    <select class="form-select" id="fuelType" name="fuel_type" required>
-                                        <option value="">Select type...</option>
-                                        <option value="diesel">Diesel</option>
-                                        <option value="petrol">Petrol</option>
-                                        <option value="super diesel">Super Diesel</option>
-                                        <option value="super petrol">Super Petrol</option>
+                                    <label class="form-label">Fuel Source *</label>
+                                    <select class="form-select" id="fuelSource" name="fuel_source" required>
+                                        <option value="external" selected>External Fuel Station</option>
+                                        <option value="internal">Internal Depot</option>
                                     </select>
                                 </div>
                             </div>
@@ -64,8 +61,8 @@ class TMAddFuelLogModal extends HTMLElement {
                                     <input type="number" class="form-input" id="fuelVolume" name="fuel_volume" 
                                            min="0" step="0.01" placeholder="e.g. 45.50" required>
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label">Total Cost (Rs) *</label>
+                                <div class="form-group" id="fuelTotalCostGroup">
+                                    <label class="form-label">Total Cost (Rs) <span id="fuelTotalCostRequiredMark">*</span></label>
                                     <input type="number" class="form-input" id="fuelTotalCost" name="total_cost" 
                                            min="0" step="0.01" placeholder="e.g. 7500.00" required>
                                 </div>
@@ -81,6 +78,19 @@ class TMAddFuelLogModal extends HTMLElement {
                                     <label class="form-label">Station Name</label>
                                     <input type="text" class="form-input" id="fuelStation" name="station_name" 
                                            placeholder="e.g. IOC Colombo">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Fuel Type (From Vehicle)</label>
+                                    <input type="text" class="form-input" id="fuelTypeDisplay" readonly placeholder="Select a vehicle" style="background: #f5f5f5; cursor: not-allowed;">
+                                </div>
+                                <div class="form-group" id="billImageGroup">
+                                    <label class="form-label">Bill/Receipt <span id="billImageRequiredMark">*</span></label>
+                                    <input type="file" class="form-input" id="fuelBillImage" accept="image/*">
+                                    <small id="billImageHint" class="form-hint" style="color: #666; margin-top: 4px; display: block;">
+                                        Required for external fueling.
+                                    </small>
                                 </div>
                             </div>
                         </div>
@@ -125,12 +135,18 @@ class TMAddFuelLogModal extends HTMLElement {
         if (vehicleSelect) {
             vehicleSelect.addEventListener('change', () => this._onVehicleChange());
         }
+
+        const fuelSourceSelect = this.querySelector('#fuelSource');
+        if (fuelSourceSelect) {
+            fuelSourceSelect.addEventListener('change', () => this._onFuelSourceChange());
+        }
     }
 
     _onVehicleChange() {
         const vehicleSelect = this.querySelector('#fuelVehicle');
         const odometerInput = this.querySelector('#fuelOdometer');
         const odometerHint = this.querySelector('#odometerHint');
+        const fuelTypeDisplay = this.querySelector('#fuelTypeDisplay');
 
         const vehicle = this._vehicles?.find(v => v.number_plate === vehicleSelect.value);
         if (vehicle) {
@@ -138,9 +154,58 @@ class TMAddFuelLogModal extends HTMLElement {
             odometerInput.min = currentMileage;
             odometerHint.textContent = `Must be ≥ ${currentMileage.toLocaleString()} km (current reading)`;
             odometerHint.style.display = 'block';
+            if (fuelTypeDisplay) {
+                fuelTypeDisplay.value = vehicle.fuel_type || 'Not set';
+            }
         } else {
             odometerInput.min = 0;
             odometerHint.style.display = 'none';
+            if (fuelTypeDisplay) {
+                fuelTypeDisplay.value = '';
+            }
+        }
+    }
+
+    _onFuelSourceChange() {
+        const source = this.querySelector('#fuelSource')?.value || 'external';
+        const isExternal = source === 'external';
+
+        const costGroup = this.querySelector('#fuelTotalCostGroup');
+        const costInput = this.querySelector('#fuelTotalCost');
+        const costRequiredMark = this.querySelector('#fuelTotalCostRequiredMark');
+
+        const billGroup = this.querySelector('#billImageGroup');
+        const billInput = this.querySelector('#fuelBillImage');
+        const billRequiredMark = this.querySelector('#billImageRequiredMark');
+        const billHint = this.querySelector('#billImageHint');
+
+        if (costGroup) {
+            costGroup.style.display = isExternal ? '' : 'none';
+        }
+        if (costInput) {
+            costInput.required = isExternal;
+            if (!isExternal) {
+                costInput.value = '';
+            }
+        }
+        if (costRequiredMark) {
+            costRequiredMark.style.display = isExternal ? '' : 'none';
+        }
+
+        if (billGroup) {
+            billGroup.style.display = isExternal ? '' : 'none';
+        }
+        if (billRequiredMark) {
+            billRequiredMark.style.display = isExternal ? '' : 'none';
+        }
+        if (billHint) {
+            billHint.textContent = isExternal
+                ? 'Required for external fueling.'
+                : 'Not required for internal fueling.';
+        }
+
+        if (!isExternal && billInput) {
+            billInput.value = '';
         }
     }
 
@@ -158,6 +223,12 @@ class TMAddFuelLogModal extends HTMLElement {
         if (dtField) {
             dtField.value = now.toISOString().slice(0, 16);
         }
+
+        const sourceField = this.querySelector('#fuelSource');
+        if (sourceField) {
+            sourceField.value = 'external';
+            this._onFuelSourceChange();
+        }
         
         if (modal) {
             modal.classList.add('active');
@@ -166,6 +237,7 @@ class TMAddFuelLogModal extends HTMLElement {
 
         await this._loadVehicles();
         await this._loadDrivers();
+        this._onVehicleChange();
     }
 
     close() {
@@ -232,18 +304,27 @@ class TMAddFuelLogModal extends HTMLElement {
         const vehicle_registration = this.querySelector('#fuelVehicle')?.value;
         const driver_id = this.querySelector('#fuelDriver')?.value;
         const log_datetime = this.querySelector('#fuelDatetime')?.value;
-        const fuel_type = this.querySelector('#fuelType')?.value;
+        const fuel_source = this.querySelector('#fuelSource')?.value;
         const fuel_volume = this.querySelector('#fuelVolume')?.value;
         const total_cost = this.querySelector('#fuelTotalCost')?.value;
         const odometer_reading = this.querySelector('#fuelOdometer')?.value;
         const station_name = this.querySelector('#fuelStation')?.value.trim();
+        const bill_image = this.querySelector('#fuelBillImage')?.files?.[0] || null;
 
         if (!vehicle_registration) return this._showErrors('Please select a vehicle.');
         if (!log_datetime) return this._showErrors('Date & time is required.');
-        if (!fuel_type) return this._showErrors('Please select fuel type.');
+        if (!fuel_source) return this._showErrors('Fuel source is required.');
         if (!fuel_volume || parseFloat(fuel_volume) <= 0) return this._showErrors('Fuel volume must be greater than zero.');
-        if (!total_cost || parseFloat(total_cost) <= 0) return this._showErrors('Total cost must be greater than zero.');
         if (!odometer_reading) return this._showErrors('Odometer reading is required.');
+
+        if (fuel_source === 'external') {
+            if (!total_cost || parseFloat(total_cost) <= 0) {
+                return this._showErrors('Total cost must be greater than zero for external fueling.');
+            }
+            if (!bill_image) {
+                return this._showErrors('Bill/receipt image is required for external fueling.');
+            }
+        }
 
         // Validate odometer against vehicle's current mileage
         const vehicle = this._vehicles?.find(v => v.number_plate === vehicle_registration);
@@ -259,16 +340,34 @@ class TMAddFuelLogModal extends HTMLElement {
         }
 
         try {
-            await API.post('/fuel-logs', {
-                vehicle_registration,
-                driver_id: driver_id ? parseInt(driver_id) : null,
-                log_datetime: log_datetime.replace('T', ' ') + ':00',
-                fuel_type,
-                fuel_volume: parseFloat(fuel_volume),
-                total_cost: parseFloat(total_cost),
-                odometer_reading: parseInt(odometer_reading),
-                station_name: station_name || null,
-            });
+            const formData = new FormData();
+            formData.append('vehicle_registration', vehicle_registration);
+            formData.append('log_datetime', log_datetime.replace('T', ' ') + ':00');
+            formData.append('fuel_source', fuel_source);
+            formData.append('fuel_volume', String(parseFloat(fuel_volume)));
+            formData.append('odometer_reading', String(parseInt(odometer_reading, 10)));
+
+            if (driver_id) {
+                formData.append('driver_id', String(parseInt(driver_id, 10)));
+            }
+
+            if (station_name) {
+                formData.append('station_name', station_name);
+            }
+
+            if (fuel_source === 'external') {
+                formData.append('total_cost', String(parseFloat(total_cost)));
+            }
+
+            if (bill_image) {
+                formData.append('bill_image', bill_image);
+            }
+
+            const response = await API.postFormData('/fuel-logs', formData);
+            if (!(response && (response.success || response.status === 'success'))) {
+                this._showErrors(response?.message || 'Failed to save fuel entry.');
+                return;
+            }
 
             this.close();
             TMUtils.emitToast('Fuel entry saved successfully', 'success');

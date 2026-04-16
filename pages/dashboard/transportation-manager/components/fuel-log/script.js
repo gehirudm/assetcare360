@@ -111,7 +111,7 @@ class TMFuelLog extends HTMLElement {
         if (!this._searchQuery) return this._allLogs;
 
         return this._allLogs.filter(log => {
-            const searchText = `${log.vehicle_registration || ''} ${log.driver_name || ''} ${log.station_name || ''} ${log.fuel_type || ''}`.toLowerCase();
+            const searchText = `${log.vehicle_registration || ''} ${log.driver_name || ''} ${log.station_name || ''} ${log.fuel_type || ''} ${log.fuel_source || ''}`.toLowerCase();
             return searchText.includes(this._searchQuery);
         });
     }
@@ -141,6 +141,11 @@ class TMFuelLog extends HTMLElement {
 
         const items = logs.map(log => {
             const driverName = log.driver_name || (log.driver_id ? `Driver #${log.driver_id}` : '—');
+            const fuelSource = (log.fuel_source || 'external').toLowerCase();
+            const sourceLabel = fuelSource === 'internal' ? 'Internal' : 'External';
+            const costText = log.total_cost !== null && log.total_cost !== undefined && log.total_cost !== ''
+                ? TMUtils.formatCurrency(log.total_cost)
+                : 'N/A (Internal)';
 
             return `
                 <div class="inventory-item" data-id="${log.fuel_log_id}">
@@ -156,8 +161,12 @@ class TMFuelLog extends HTMLElement {
                         </div>
                         <div class="item-description">
                             <span class="status-badge badge-blue"><i class="fas fa-fire"></i> ${log.fuel_type || 'N/A'}</span>
+                            <span class="status-badge ${fuelSource === 'internal' ? 'badge-ok' : 'badge-warn'}" style="margin-left: 8px;">${sourceLabel}</span>
                             <span class="status-text status-normal" style="margin-left: 10px;">
                                 <i class="fas fa-tachometer-alt"></i> ${TMUtils.formatOdometer(log.odometer_reading)}
+                            </span>
+                            <span class="status-text status-normal" style="margin-left: 10px;">
+                                <i class="fas fa-money-bill-wave"></i> ${costText}
                             </span>
                         </div>
                     </div>
