@@ -143,9 +143,15 @@ document.addEventListener('inventory-machines:view', (e) => {
 document.addEventListener('inventory-machines:edit', (e) => {
     editMachine(e.detail.machineId);
 });
-document.addEventListener('inventory-machines:more', (e) => {
-    // Handle more actions (delete, auction, etc.)
-    console.log('More actions for machine:', e.detail.machineId);
+document.addEventListener('inventory-machines:mark-auction', (e) => {
+    markForAuction(e.detail.machineId, 'machine');
+});
+document.addEventListener('inventory-machines:remove-auction', (e) => {
+    removeFromAuction(e.detail.machineId, 'machine');
+});
+document.addEventListener('inventory-machines:delete', (e) => {
+    const machineName = getAssetNameFromComponent('machine', e.detail.machineId);
+    confirmDelete(e.detail.machineId, 'machine', machineName);
 });
 
 // Vehicles component event bridge
@@ -158,9 +164,15 @@ document.addEventListener('inventory-vehicles:view', (e) => {
 document.addEventListener('inventory-vehicles:edit', (e) => {
     editVehicle(e.detail.vehicleId);
 });
-document.addEventListener('inventory-vehicles:more', (e) => {
-    // Handle more actions (delete, auction, etc.)
-    console.log('More actions for vehicle:', e.detail.vehicleId);
+document.addEventListener('inventory-vehicles:mark-auction', (e) => {
+    markForAuction(e.detail.vehicleId, 'vehicle');
+});
+document.addEventListener('inventory-vehicles:remove-auction', (e) => {
+    removeFromAuction(e.detail.vehicleId, 'vehicle');
+});
+document.addEventListener('inventory-vehicles:delete', (e) => {
+    const vehicleName = getAssetNameFromComponent('vehicle', e.detail.vehicleId);
+    confirmDelete(e.detail.vehicleId, 'vehicle', vehicleName);
 });
 
 function bindDashboardOverview() {

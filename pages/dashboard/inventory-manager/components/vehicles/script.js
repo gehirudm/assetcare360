@@ -150,60 +150,118 @@ class InventoryVehicles extends HTMLElement {
             return;
         }
 
-        vehiclesList.innerHTML = vehicleList.map(vehicle => `
-            <div class="inventory-item" data-id="${vehicle.id}" data-status="${vehicle.status}">
-                <div class="item-details">
-                    <strong><i class="fas fa-truck"></i> ${vehicle.vehicle_name}</strong>
-                    <div class="item-meta">
-                        <i class="fas fa-hashtag"></i> ${vehicle.model_number} | 
-                        <i class="fas fa-barcode"></i> ${vehicle.vehicle_id} | 
-                        <i class="fas fa-id-card"></i> ${vehicle.registration_number}
+        vehiclesList.innerHTML = vehicleList.map(vehicle => {
+            const isForAuction = vehicle.status === 'For Auction';
+            const auctionActionHtml = isForAuction
+                ? `<button type="button" class="dropdown-item" data-action="remove-auction" data-id="${vehicle.id}"><i class="fas fa-undo"></i> Remove from Auction</button>`
+                : `<button type="button" class="dropdown-item" data-action="mark-auction" data-id="${vehicle.id}"><i class="fas fa-gavel"></i> Mark for Auction</button>`;
+
+            return `
+                <div class="inventory-item" data-id="${vehicle.id}" data-status="${vehicle.status}">
+                    <div class="item-details">
+                        <strong><i class="fas fa-truck"></i> ${vehicle.vehicle_name}</strong>
+                        <div class="item-meta">
+                            <i class="fas fa-hashtag"></i> ${vehicle.model_number} |
+                            <i class="fas fa-barcode"></i> ${vehicle.vehicle_id} |
+                            <i class="fas fa-id-card"></i> ${vehicle.registration_number}
+                        </div>
+                        <div class="item-description">
+                            <span class="status-text ${this.getStatusClass(vehicle.status)}">${vehicle.status}</span> |
+                            <i class="fas fa-tachometer-alt"></i> ${vehicle.mileage || 0} km
+                        </div>
                     </div>
-                    <div class="item-description">
-                        <span class="status-text ${this.getStatusClass(vehicle.status)}">${vehicle.status}</span> | 
-                        <i class="fas fa-tachometer-alt"></i> ${vehicle.mileage || 0} km
+                    <div class="item-actions">
+                        <div class="action-buttons">
+                            <button type="button" class="btn btn-small btn-primary" data-action="view" data-id="${vehicle.id}">
+                                <i class="fas fa-eye"></i> VIEW
+                            </button>
+                            <div class="dropdown-container">
+                                <button type="button" class="btn btn-small btn-secondary dropdown-trigger" data-action="toggle-menu" data-id="${vehicle.id}" aria-label="Open vehicle actions">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <div class="dropdown-menu" id="dropdown-vehicle-${vehicle.id}">
+                                    <button type="button" class="dropdown-item" data-action="edit" data-id="${vehicle.id}">
+                                        <i class="fas fa-edit"></i> Edit Vehicle
+                                    </button>
+                                    ${auctionActionHtml}
+                                    <button type="button" class="dropdown-item danger" data-action="delete" data-id="${vehicle.id}">
+                                        <i class="fas fa-trash"></i> Delete Vehicle
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="item-actions">
-                    <div class="action-buttons">
-                        <button class="btn btn-small btn-primary" data-action="view" data-id="${vehicle.id}">
-                            <i class="fas fa-eye"></i> VIEW
-                        </button>
-                        <button class="btn btn-small btn-secondary" data-action="edit" data-id="${vehicle.id}">
-                            <i class="fas fa-edit"></i> EDIT
-                        </button>
-                        <button class="btn btn-small btn-secondary" data-action="more" data-id="${vehicle.id}">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
 
         // Bind action buttons
-        vehiclesList.querySelectorAll('.action-buttons button').forEach(btn => {
+        vehiclesList.querySelectorAll('[data-action]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
+
                 const action = btn.dataset.action;
-                const vehicleId = parseInt(btn.dataset.id);
-                
-                if (action === 'view') {
-                    this.dispatchEvent(new CustomEvent('inventory-vehicles:view', { 
-                        bubbles: true, 
-                        detail: { vehicleId } 
-                    }));
-                } else if (action === 'edit') {
-                    this.dispatchEvent(new CustomEvent('inventory-vehicles:edit', { 
-                        bubbles: true, 
-                        detail: { vehicleId } 
-                    }));
-                } else if (action === 'more') {
-                    this.dispatchEvent(new CustomEvent('inventory-vehicles:more', { 
-                        bubbles: true, 
-                        detail: { vehicleId } 
-                    }));
+                const vehicleId = Number.parseInt(btn.dataset.id, 10);
+                if (!Number.isFinite(vehicleId)) return;
+
+                switch (action) {
+                    case 'view':
+                        this.dispatchEvent(new CustomEvent('inventory-vehicles:view', {
+                            bubbles: true,
+                            detail: { vehicleId }
+                        }));
+                        break;
+                    case 'edit':
+                        this.dispatchEvent(new CustomEvent('inventory-vehicles:edit', {
+                            bubbles: true,
+                            detail: { vehicleId }
+                        }));
+                        break;
+                    case 'toggle-menu':
+                        this.toggleActionMenu(vehicleId);
+                        break;
+                    case 'mark-auction':
+                        this.closeAllActionMenus();
+                        this.dispatchEvent(new CustomEvent('inventory-vehicles:mark-auction', {
+                            bubbles: true,
+                            detail: { vehicleId }
+                        }));
+                        break;
+                    case 'remove-auction':
+                        this.closeAllActionMenus();
+                        this.dispatchEvent(new CustomEvent('inventory-vehicles:remove-auction', {
+                            bubbles: true,
+                            detail: { vehicleId }
+                        }));
+                        break;
+                    case 'delete':
+                        this.closeAllActionMenus();
+                        this.dispatchEvent(new CustomEvent('inventory-vehicles:delete', {
+                            bubbles: true,
+                            detail: { vehicleId }
+                        }));
+                        break;
+                    default:
+                        break;
                 }
             });
+        });
+    }
+
+    toggleActionMenu(vehicleId) {
+        const menu = this.querySelector(`#dropdown-vehicle-${vehicleId}`);
+        if (!menu) return;
+
+        const shouldOpen = !menu.classList.contains('active');
+        this.closeAllActionMenus();
+        if (shouldOpen) {
+            menu.classList.add('active');
+        }
+    }
+
+    closeAllActionMenus() {
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            menu.classList.remove('active');
         });
     }
 
