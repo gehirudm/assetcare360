@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../models/Trip.php';
 require_once __DIR__ . '/../models/Vehicle.php';
+require_once __DIR__ . '/../../config/Database.php';
 
 class TripService {
     private $tripModel;
@@ -53,6 +54,13 @@ class TripService {
         $vehicle = $this->vehicleModel->findByNumberPlate($data['vehicle_registration']);
         if (!$vehicle) {
             throw new Exception("Vehicle not found");
+        }
+
+        // Do not allow trip assignment while the vehicle has an ongoing breakdown ticket.
+        $ongoingTicket = $this->getOngoingFaultTicketForVehicle((int)$vehicle['id']);
+        if ($ongoingTicket) {
+            $ticketId = $ongoingTicket['ticket_id'] ?? ('#' . $ongoingTicket['id']);
+            throw new Exception("Cannot create trip. Vehicle has an ongoing breakdown ticket ({$ticketId}).");
         }
         
         // If driver_id not provided, use vehicle's assigned driver
@@ -191,5 +199,21 @@ class TripService {
     
     public function getActiveTripCount($driver_id = null) {
         return $this->tripModel->getActiveTripCount($driver_id);
+    }
+
+    private function getOngoingFaultTicketForVehicle($vehicleId) {
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->prepare(
+            "SELECT id, ticket_id, status
+             FROM fault_tickets
+             WHERE vehicle_id = ?
+               AND status NOT IN ('Resolved', 'Closed')
+             ORDER BY updated_at DESC
+             LIMIT 1"
+        );
+        $stmt->execute([$vehicleId]);
+        $ticket = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $ticket ?: null;
     }
 }
