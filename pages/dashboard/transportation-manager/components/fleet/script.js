@@ -176,9 +176,10 @@ class TMFleet extends HTMLElement {
             const statusClass = this._getStatusClass(vehicle.status);
             const numberPlate = vehicle.number_plate || vehicle.vehicle_registration || '—';
             const vehicleName = vehicle.vehicle_name || vehicle.make || '—';
+            const vehicleId = vehicle.id || vehicle.vehicle_id;
 
             return `
-                <div class="inventory-item ${statusClass}" data-id="${vehicle.vehicle_id}">
+                <div class="inventory-item ${statusClass}" data-id="${vehicleId}">
                     <div class="item-details">
                         <strong><i class="fas fa-truck"></i> ${numberPlate}</strong>
                         <div class="item-meta">
@@ -192,8 +193,8 @@ class TMFleet extends HTMLElement {
                         </div>
                     </div>
                     <div class="item-actions">
-                        <button class="btn btn-primary btn-small" data-action="view" data-vehicle-id="${vehicle.vehicle_id}">
-                            <i class="fas fa-eye"></i> View
+                        <button class="btn btn-primary btn-small" data-action="view" data-vehicle-id="${vehicleId}">
+                            <i class="fas fa-eye"></i> View Details
                         </button>
                     </div>
                 </div>
