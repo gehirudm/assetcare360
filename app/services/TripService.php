@@ -7,6 +7,7 @@ require_once __DIR__ . '/../../config/Database.php';
 class TripService {
     private $tripModel;
     private $vehicleModel;
+    private array $schemaCheckCache = [];
     
     public function __construct() {
         $this->tripModel = new Trip();
@@ -25,7 +26,7 @@ class TripService {
         return $trip;
     }
     
-    public function createTrip($data) {
+    public function createTrip($data, $actor = null) {
         // Generate trip ID
         $lastTrip = $this->tripModel->getAllTrips(['limit' => 1]);
         $counter = 1;
@@ -46,15 +47,34 @@ class TripService {
             throw new Exception("Missing required fields: origin and destination are required");
         }
         
-        if (empty($data['vehicle_registration'])) {
-            throw new Exception("Vehicle registration is required");
+        if (empty($data['vehicle_registration']) && empty($data['vehicle_id'])) {
+            throw new Exception("Vehicle registration or vehicle ID is required");
         }
-        
-        // Fetch vehicle info
-        $vehicle = $this->vehicleModel->findByNumberPlate($data['vehicle_registration']);
-        if (!$vehicle) {
-            throw new Exception("Vehicle not found");
+
+        // Resolve vehicle by registration first, then by ID fallback.
+        $vehicle = null;
+        if (!empty($data['vehicle_registration'])) {
+            $vehicle = $this->vehicleModel->findByNumberPlate($data['vehicle_registration']);
+            if (!$vehicle) {
+                throw new Exception("Vehicle not found");
+            }
+        } elseif (!empty($data['vehicle_id'])) {
+            $vehicle = $this->vehicleModel->findById((int)$data['vehicle_id']);
+            if (!$vehicle) {
+                throw new Exception("Vehicle not found");
+            }
+            $data['vehicle_registration'] = $vehicle['number_plate'] ?? null;
+            if (empty($data['vehicle_registration'])) {
+                throw new Exception("Selected vehicle does not have a valid registration number");
+            }
         }
+
+        if (!empty($data['vehicle_id']) && !empty($vehicle['id']) && intval($data['vehicle_id']) !== intval($vehicle['id'])) {
+            throw new Exception("Vehicle ID does not match the selected vehicle registration");
+        }
+
+        $actorId = isset($actor['id']) ? intval($actor['id']) : null;
+        $actorRole = strtolower((string)($actor['role'] ?? ''));
 
         // Do not allow trip assignment while the vehicle has an ongoing breakdown ticket.
         $ongoingTicket = $this->getOngoingFaultTicketForVehicle((int)$vehicle['id']);
@@ -63,8 +83,19 @@ class TripService {
             throw new Exception("Cannot create trip. Vehicle has an ongoing breakdown ticket ({$ticketId}).");
         }
         
-        // If driver_id not provided, use vehicle's assigned driver
-        if (empty($data['driver_id'])) {
+        // Driver-created transport tickets always belong to the authenticated driver.
+        if ($actorRole === 'driver' && $actorId > 0) {
+            if (!empty($vehicle['assigned_driver_id']) && intval($vehicle['assigned_driver_id']) !== $actorId) {
+                throw new Exception("Selected vehicle is assigned to another driver.");
+            }
+
+            if (!empty($data['driver_id']) && intval($data['driver_id']) !== $actorId) {
+                throw new Exception("Drivers can only create trips for themselves.");
+            }
+
+            $data['driver_id'] = $actorId;
+        } elseif (empty($data['driver_id'])) {
+            // Transportation Manager/Admin flow defaults to vehicle assignment.
             if (empty($vehicle['assigned_driver_id'])) {
                 throw new Exception("No driver assigned to this vehicle. Please assign a driver first in the Driver Assignment section.");
             }
@@ -203,17 +234,124 @@ class TripService {
 
     private function getOngoingFaultTicketForVehicle($vehicleId) {
         $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare(
-            "SELECT id, ticket_id, status
-             FROM fault_tickets
-             WHERE vehicle_id = ?
-               AND status NOT IN ('Resolved', 'Closed')
-             ORDER BY updated_at DESC
-             LIMIT 1"
-        );
-        $stmt->execute([$vehicleId]);
-        $ticket = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        return $ticket ?: null;
+        // 1) Preferred path for schemas that still keep vehicle_id on fault_tickets.
+        if ($this->columnExists($db, 'fault_tickets', 'vehicle_id')) {
+            $stmt = $db->prepare(
+                "SELECT id, ticket_id, status
+                 FROM fault_tickets
+                 WHERE vehicle_id = ?
+                   AND status NOT IN ('Resolved', 'Closed')
+                 ORDER BY updated_at DESC
+                 LIMIT 1"
+            );
+            $stmt->execute([$vehicleId]);
+            $ticket = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($ticket) {
+                return $ticket;
+            }
+        }
+
+        // 2) Fallback path for machine-only fault_tickets schemas using breakdown link fields.
+        if (
+            !$this->columnExists($db, 'fault_tickets', 'breakdown_report_id')
+            || !$this->columnExists($db, 'fault_tickets', 'breakdown_type')
+        ) {
+            return null;
+        }
+
+        // Check vehicle breakdown linked tickets.
+        if (
+            $this->tableExists($db, 'vehicle_breakdown')
+            && $this->columnExists($db, 'vehicle_breakdown', 'breakdown_id')
+            && $this->columnExists($db, 'vehicle_breakdown', 'vehicle_id')
+        ) {
+            $stmt = $db->prepare(
+                "SELECT ft.id, ft.ticket_id, ft.status
+                 FROM fault_tickets ft
+                 INNER JOIN vehicle_breakdown vb
+                     ON ft.breakdown_type = 'vehicle_breakdown'
+                    AND ft.breakdown_report_id = vb.breakdown_id
+                 WHERE vb.vehicle_id = ?
+                   AND ft.status NOT IN ('Resolved', 'Closed')
+                 ORDER BY ft.updated_at DESC
+                 LIMIT 1"
+            );
+            $stmt->execute([$vehicleId]);
+            $ticket = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($ticket) {
+                return $ticket;
+            }
+        }
+
+        // Check route breakdown linked tickets.
+        if (
+            $this->tableExists($db, 'vehicle_breakdown_inroute')
+            && $this->columnExists($db, 'vehicle_breakdown_inroute', 'route_breakdown_id')
+            && $this->columnExists($db, 'vehicle_breakdown_inroute', 'vehicle_id')
+        ) {
+            $stmt = $db->prepare(
+                "SELECT ft.id, ft.ticket_id, ft.status
+                 FROM fault_tickets ft
+                 INNER JOIN vehicle_breakdown_inroute rb
+                     ON ft.breakdown_type = 'route_breakdown'
+                    AND ft.breakdown_report_id = rb.route_breakdown_id
+                 WHERE rb.vehicle_id = ?
+                   AND ft.status NOT IN ('Resolved', 'Closed')
+                 ORDER BY ft.updated_at DESC
+                 LIMIT 1"
+            );
+            $stmt->execute([$vehicleId]);
+            $ticket = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($ticket) {
+                return $ticket;
+            }
+        }
+
+        return null;
+    }
+
+    private function tableExists(PDO $db, string $table): bool {
+        $cacheKey = "table:{$table}";
+        if (array_key_exists($cacheKey, $this->schemaCheckCache)) {
+            return $this->schemaCheckCache[$cacheKey];
+        }
+
+        $stmt = $db->prepare(
+            'SELECT COUNT(*)
+             FROM information_schema.tables
+             WHERE table_schema = DATABASE()
+               AND table_name = ?'
+        );
+        $stmt->execute([$table]);
+        $exists = ((int) $stmt->fetchColumn()) > 0;
+        $this->schemaCheckCache[$cacheKey] = $exists;
+
+        return $exists;
+    }
+
+    private function columnExists(PDO $db, string $table, string $column): bool {
+        $cacheKey = "column:{$table}.{$column}";
+        if (array_key_exists($cacheKey, $this->schemaCheckCache)) {
+            return $this->schemaCheckCache[$cacheKey];
+        }
+
+        if (!$this->tableExists($db, $table)) {
+            $this->schemaCheckCache[$cacheKey] = false;
+            return false;
+        }
+
+        $stmt = $db->prepare(
+            'SELECT COUNT(*)
+             FROM information_schema.columns
+             WHERE table_schema = DATABASE()
+               AND table_name = ?
+               AND column_name = ?'
+        );
+        $stmt->execute([$table, $column]);
+        $exists = ((int) $stmt->fetchColumn()) > 0;
+        $this->schemaCheckCache[$cacheKey] = $exists;
+
+        return $exists;
     }
 }

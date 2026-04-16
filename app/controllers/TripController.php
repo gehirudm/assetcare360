@@ -63,7 +63,8 @@ class TripController {
                 return;
             }
             
-            $trip = $this->tripService->createTrip($data);
+            $user = RoleMiddleware::getCurrentUser();
+            $trip = $this->tripService->createTrip($data, $user);
             
             Response::json([
                 'success' => true,
