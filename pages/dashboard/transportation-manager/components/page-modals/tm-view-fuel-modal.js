@@ -44,6 +44,14 @@ class TMViewFuelModal extends HTMLElement {
 
             if (actionEl && actionEl.dataset.action === 'close') {
                 this.close();
+                return;
+            }
+
+            if (actionEl && actionEl.dataset.action === 'open-bill') {
+                const imageUrl = actionEl.dataset.imageUrl;
+                if (imageUrl) {
+                    window.open(imageUrl, '_blank', 'noopener');
+                }
             }
         });
     }
@@ -94,15 +102,19 @@ class TMViewFuelModal extends HTMLElement {
         }
 
         const driverName = log.driver_name || (log.driver_id ? `Driver #${log.driver_id}` : '—');
-        const costPerL = log.fuel_volume > 0
+        const fuelSource = (log.fuel_source || 'external').toLowerCase();
+        const sourceLabel = fuelSource === 'internal' ? 'Internal Depot' : 'External Station';
+        const costPerL = log.total_cost && parseFloat(log.fuel_volume) > 0
             ? (parseFloat(log.total_cost) / parseFloat(log.fuel_volume)).toFixed(2)
             : '—';
+        const billImageUrl = this.resolveImageUrl(log.bill_image);
 
         content.innerHTML = `
             <div class="detail-view">
                 <div class="detail-header">
                     <span class="id-badge" style="font-size: 1.2rem;">${log.fuel_log_id}</span>
                     <span class="status-badge badge-blue"><i class="fas fa-fire"></i> ${log.fuel_type || 'N/A'}</span>
+                    <span class="status-badge ${fuelSource === 'internal' ? 'badge-ok' : 'badge-warn'}" style="margin-left: 8px;">${sourceLabel}</span>
                 </div>
 
                 <div class="form-section">
@@ -135,6 +147,7 @@ class TMViewFuelModal extends HTMLElement {
 
                 <div class="form-section">
                     <h5><i class="fas fa-money-bill-wave"></i> Cost Details</h5>
+                    ${fuelSource === 'external' ? `
                     <div class="detail-grid">
                         <div class="detail-item">
                             <span class="detail-label">Total Cost</span>
@@ -145,6 +158,9 @@ class TMViewFuelModal extends HTMLElement {
                             <span class="detail-value">Rs ${costPerL}</span>
                         </div>
                     </div>
+                    ` : `
+                    <p class="detail-text" style="margin: 0;">This entry was recorded as internal fueling. Cost and receipt are not required.</p>
+                    `}
                 </div>
 
                 <div class="form-section">
@@ -186,17 +202,33 @@ class TMViewFuelModal extends HTMLElement {
                 </div>
                 ` : ''}
 
-                ${log.bill_image ? `
+                ${billImageUrl ? `
                 <div class="form-section">
                     <h5><i class="fas fa-receipt"></i> Bill/Receipt</h5>
                     <div style="text-align: center;">
-                        <img src="${log.bill_image}" alt="Fuel Bill" style="max-width: 100%; max-height: 300px; border-radius: 8px; cursor: pointer;" onclick="window.open('${log.bill_image}', '_blank')">
-                        <p style="margin-top: 8px; color: #666; font-size: 0.85rem;">Click image to view full size</p>
+                        <button type="button" class="btn btn-secondary btn-small" data-action="open-bill" data-image-url="${billImageUrl}" style="margin-bottom: 10px;">
+                            <i class="fas fa-up-right-from-square"></i> Open Full Image
+                        </button>
+                        <img src="${billImageUrl}" alt="Fuel Bill" style="max-width: 100%; max-height: 300px; border-radius: 8px;">
+                        <p style="margin-top: 8px; color: #666; font-size: 0.85rem;">Use the button above to open the full-size image.</p>
                     </div>
                 </div>
                 ` : ''}
             </div>
         `;
+    }
+
+    resolveImageUrl(imagePath) {
+        if (!imagePath || typeof imagePath !== 'string') {
+            return null;
+        }
+
+        if (/^https?:\/\//i.test(imagePath)) {
+            return imagePath;
+        }
+
+        const normalizedPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+        return `${window.location.origin}/${normalizedPath}`;
     }
 
     close() {

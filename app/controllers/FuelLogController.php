@@ -65,17 +65,25 @@ class FuelLogController {
                 $files = $_FILES;
                 
                 // Handle bill image upload
-                if (!empty($files['bill_image']) && $files['bill_image']['error'] === UPLOAD_ERR_OK) {
-                    $uploadDir = __DIR__ . '/../../uploads/fuel-bills/';
-                    if (!is_dir($uploadDir)) {
-                        mkdir($uploadDir, 0755, true);
-                    }
-                    
-                    $extension = pathinfo($files['bill_image']['name'], PATHINFO_EXTENSION);
-                    $filename = 'bill_' . uniqid() . '_' . time() . '.' . $extension;
-                    $filePath = $uploadDir . $filename;
-                    
-                    if (move_uploaded_file($files['bill_image']['tmp_name'], $filePath)) {
+                if (!empty($files['bill_image']) && isset($files['bill_image']['error'])) {
+                    if ($files['bill_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+                        if ($files['bill_image']['error'] !== UPLOAD_ERR_OK) {
+                            throw new Exception('Failed to upload bill image');
+                        }
+
+                        $uploadDir = __DIR__ . '/../../uploads/fuel-bills/';
+                        if (!is_dir($uploadDir)) {
+                            mkdir($uploadDir, 0755, true);
+                        }
+
+                        $extension = pathinfo($files['bill_image']['name'], PATHINFO_EXTENSION);
+                        $filename = 'bill_' . uniqid() . '_' . time() . '.' . $extension;
+                        $filePath = $uploadDir . $filename;
+
+                        if (!move_uploaded_file($files['bill_image']['tmp_name'], $filePath)) {
+                            throw new Exception('Unable to store bill image');
+                        }
+
                         $data['bill_image'] = 'uploads/fuel-bills/' . $filename;
                     }
                 }

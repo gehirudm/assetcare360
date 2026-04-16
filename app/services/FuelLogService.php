@@ -25,30 +25,7 @@ class FuelLogService {
     }
 
     public function createLog($data) {
-        // Validate required fields
-        $required = ['vehicle_registration', 'log_datetime', 'fuel_volume', 'total_cost', 'odometer_reading', 'fuel_type'];
-        foreach ($required as $field) {
-            if (empty($data[$field])) {
-                throw new Exception("Missing required field: {$field}");
-            }
-        }
-
-        // Validate numeric values
-        if ($data['fuel_volume'] <= 0) {
-            throw new Exception("Fuel volume must be greater than zero");
-        }
-        if ($data['total_cost'] <= 0) {
-            throw new Exception("Total cost must be greater than zero");
-        }
-        if ($data['odometer_reading'] <= 0) {
-            throw new Exception("Odometer reading must be greater than zero");
-        }
-        
-        // Validate odometer against vehicle's current mileage
-        $vehicle = $this->vehicleModel->findByNumberPlate($data['vehicle_registration']);
-        if ($vehicle && intval($data['odometer_reading']) < intval($vehicle['current_mileage'])) {
-            throw new Exception("Odometer reading ({$data['odometer_reading']}) cannot be less than vehicle's current mileage ({$vehicle['current_mileage']})");
-        }
+        $vehicle = $this->validateAndPreparePayload($data);
 
         // Generate fuel_log_id
         $lastId = $this->fuelLogModel->getLastFuelLogId();
@@ -87,20 +64,15 @@ class FuelLogService {
     }
 
     public function updateLog($fuel_log_id, $data) {
-        // Ensure log exists
-        $this->getLogById($fuel_log_id);
+        $existingLog = $this->getLogById($fuel_log_id);
+        $vehicle = $this->validateAndPreparePayload($data, $existingLog);
 
-        $required = ['vehicle_registration', 'log_datetime', 'fuel_volume', 'total_cost', 'odometer_reading', 'fuel_type'];
-        foreach ($required as $field) {
-            if (empty($data[$field])) {
-                throw new Exception("Missing required field: {$field}");
-            }
+        if (!array_key_exists('distance_since_last', $data)) {
+            $data['distance_since_last'] = $existingLog['distance_since_last'] ?? null;
         }
-        
-        // Validate odometer against vehicle's current mileage
-        $vehicle = $this->vehicleModel->findByNumberPlate($data['vehicle_registration']);
-        if ($vehicle && intval($data['odometer_reading']) < intval($vehicle['current_mileage'])) {
-            throw new Exception("Odometer reading ({$data['odometer_reading']}) cannot be less than vehicle's current mileage ({$vehicle['current_mileage']})");
+
+        if (!array_key_exists('fuel_efficiency', $data)) {
+            $data['fuel_efficiency'] = $existingLog['fuel_efficiency'] ?? null;
         }
 
         $log = $this->fuelLogModel->updateLog($fuel_log_id, $data);
@@ -122,5 +94,87 @@ class FuelLogService {
             throw new Exception("Failed to delete fuel log");
         }
         return true;
+    }
+
+    private function validateAndPreparePayload(array &$data, $existingLog = null) {
+        $required = ['vehicle_registration', 'log_datetime', 'fuel_volume', 'odometer_reading', 'fuel_source'];
+        foreach ($required as $field) {
+            if (!isset($data[$field]) || trim((string)$data[$field]) === '') {
+                throw new Exception("Missing required field: {$field}");
+            }
+        }
+
+        $vehicle = $this->vehicleModel->findByNumberPlate($data['vehicle_registration']);
+        if (!$vehicle) {
+            throw new Exception("Vehicle not found for registration: {$data['vehicle_registration']}");
+        }
+
+        $vehicleFuelType = $vehicle['fuel_type'] ?? null;
+        if (!$vehicleFuelType) {
+            throw new Exception('Vehicle fuel type is not configured');
+        }
+        $data['fuel_type'] = $vehicleFuelType;
+
+        $data['fuel_source'] = strtolower(trim((string)$data['fuel_source']));
+        if (!in_array($data['fuel_source'], ['internal', 'external'], true)) {
+            throw new Exception('Fuel source must be either internal or external');
+        }
+
+        $data['fuel_volume'] = (float)$data['fuel_volume'];
+        if ($data['fuel_volume'] <= 0) {
+            throw new Exception('Fuel volume must be greater than zero');
+        }
+
+        $data['odometer_reading'] = (int)$data['odometer_reading'];
+        if ($data['odometer_reading'] <= 0) {
+            throw new Exception('Odometer reading must be greater than zero');
+        }
+
+        if ($data['odometer_reading'] < (int)$vehicle['current_mileage']) {
+            throw new Exception("Odometer reading ({$data['odometer_reading']}) cannot be less than vehicle's current mileage ({$vehicle['current_mileage']})");
+        }
+
+        if (!empty($data['driver_id']) || $data['driver_id'] === '0') {
+            $data['driver_id'] = (int)$data['driver_id'];
+        } else {
+            $data['driver_id'] = null;
+        }
+
+        $data['station_name'] = isset($data['station_name']) && trim((string)$data['station_name']) !== ''
+            ? trim((string)$data['station_name'])
+            : null;
+
+        if ($data['fuel_source'] === 'external') {
+            if (!isset($data['total_cost']) || trim((string)$data['total_cost']) === '') {
+                throw new Exception('Total cost is required for external fueling');
+            }
+
+            $data['total_cost'] = (float)$data['total_cost'];
+            if ($data['total_cost'] <= 0) {
+                throw new Exception('Total cost must be greater than zero for external fueling');
+            }
+
+            $existingBill = $existingLog['bill_image'] ?? null;
+            $effectiveBill = $data['bill_image'] ?? $existingBill;
+            if (!$effectiveBill) {
+                throw new Exception('Bill/receipt image is required for external fueling');
+            }
+            $data['bill_image'] = $effectiveBill;
+        } else {
+            if (isset($data['total_cost']) && trim((string)$data['total_cost']) !== '') {
+                $data['total_cost'] = (float)$data['total_cost'];
+                if ($data['total_cost'] < 0) {
+                    throw new Exception('Total cost cannot be negative');
+                }
+            } else {
+                $data['total_cost'] = null;
+            }
+
+            if (!array_key_exists('bill_image', $data)) {
+                $data['bill_image'] = null;
+            }
+        }
+
+        return $vehicle;
     }
 }
