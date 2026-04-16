@@ -1,8 +1,6 @@
 
 // Store ticket data
 let allTickets = [];
-let allInventory = [];
-let currentInventoryFilter = 'all';
 let currentUser = null;
 
 // Store requested spare parts per ticket (keyed by ticket numeric id)
@@ -11,34 +9,93 @@ let requestedPartsMap = {};
 // Track the current ticket being updated in the update work modal
 let currentUpdateTicketId = null;
 
-// Navigation functionality
-function navigateTo(sectionId) {
-    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-    document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+// Navigation is handled by <ac-layout>; this keeps query-param deep links in sync.
+let isHistoryNavigation = false;
 
-    const targetNav = document.querySelector(`.nav-item[data-section="${sectionId}"]`);
-    if (targetNav) {
-        targetNav.classList.add('active');
+function handleSectionActivation(sectionId) {
+    if (sectionId === 'notifications') {
+        refreshTONotifications().catch(error => {
+            console.error('Failed to refresh notifications section:', error);
+        });
     }
 
-    const targetSection = document.getElementById(sectionId);
-    if (targetSection) {
-        targetSection.classList.add('active');
+    if (sectionId === 'inventory') {
+        refreshTOInventory().catch(error => {
+            console.error('Failed to refresh inventory section:', error);
+        });
+    }
+
+    if (sectionId === 'spare-parts') {
+        refreshTOSpareParts();
     }
 }
 
-document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', function () {
-        const sectionId = this.getAttribute('data-section');
-        navigateTo(sectionId);
-    });
+function navigateToSection(sectionId) {
+    const layout = document.querySelector('ac-layout');
+    if (!layout || typeof layout.navigateTo !== 'function') return;
+
+    layout.navigateTo(sectionId);
+}
+
+function syncSectionInUrl(sectionId, replace = false) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('section', sectionId);
+
+    if (replace) {
+        history.replaceState({ section: sectionId }, '', url.toString());
+        return;
+    }
+
+    history.pushState({ section: sectionId }, '', url.toString());
+}
+
+// Restore section from query param on load / browser back-forward
+function restoreSectionFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const section = params.get('section') || 'dashboard';
+
+    const layout = document.querySelector('ac-layout');
+    if (!layout || typeof layout.navigateTo !== 'function') return;
+
+    isHistoryNavigation = true;
+    layout.navigateTo(section);
+    syncSectionInUrl(section, true);
+}
+
+window.addEventListener('popstate', (e) => {
+    const section = (e.state && e.state.section)
+        || new URLSearchParams(window.location.search).get('section')
+        || 'dashboard';
+
+    const layout = document.querySelector('ac-layout');
+    if (!layout || typeof layout.navigateTo !== 'function') return;
+
+    isHistoryNavigation = true;
+    layout.navigateTo(section);
+});
+
+document.querySelector('ac-layout')?.addEventListener('section-change', (event) => {
+    const section = event.detail?.section;
+    if (!section) return;
+
+    if (isHistoryNavigation) {
+        isHistoryNavigation = false;
+    } else {
+        syncSectionInUrl(section);
+    }
+
+    handleSectionActivation(section);
 });
 
 // Modal functionality
 function openModal(modalId, ticketId = '') {
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.classList.add('active');
+        if (typeof modal.open === 'function') {
+            modal.open();
+        } else {
+            modal.classList.add('active');
+        }
 
         if (ticketId) {
             if (modalId === 'processTicketModal') {
@@ -48,7 +105,7 @@ function openModal(modalId, ticketId = '') {
             } else if (modalId === 'markDoneModal') {
                 document.getElementById('doneTicketId').value = ticketId;
             } else if (modalId === 'viewDetailsModal') {
-                showTicketDetails(ticketId);
+                viewTicket(ticketId);
             }
         }
     }
@@ -57,7 +114,11 @@ function openModal(modalId, ticketId = '') {
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.classList.remove('active');
+        if (typeof modal.close === 'function') {
+            modal.close();
+        } else {
+            modal.classList.remove('active');
+        }
         // Remove dynamically created modals from DOM after transition
         if (modalId.startsWith('detailsModal_')) {
             setTimeout(() => modal.remove(), 300);
@@ -65,38 +126,15 @@ function closeModal(modalId) {
     }
 }
 
-// Add another spare part field dynamically
+// Add another spare part field dynamically (reuses options already loaded when modal opened)
 function addPartField() {
     const container = document.getElementById('sparePartsContainer');
-    const newPartItem = document.createElement('div');
-    newPartItem.className = 'spare-part-item';
-    newPartItem.style.cssText = 'background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 10px; position: relative;';
-    newPartItem.innerHTML = `
-                <button type="button" onclick="this.parentElement.remove()" style="position: absolute; top: 10px; right: 10px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-size: 14px;">×</button>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label class="form-label">Part Name</label>
-                        <select class="form-select" required>
-                            <option value="">Select Part</option>
-                            <option value="BP-001">Brake Pads - BP-001</option>
-                            <option value="OF-205">Oil Filter - OF-205</option>
-                            <option value="HYD-250">Hydraulic Pump - HYD-250</option>
-                            <option value="ENG-301">Engine Oil - ENG-301</option>
-                            <option value="TYR-150">Tyres - TYR-150</option>
-                            <option value="BAT-200">Battery - BAT-200</option>
-                            <option value="GAS-400">Gas Cylinder - GAS-400</option>
-                            <option value="VAL-350">Pressure Valve - VAL-350</option>
-                            <option value="FIL-180">Air Filter - FIL-180</option>
-                            <option value="BEL-220">Belt - BEL-220</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Quantity</label>
-                        <input type="number" class="form-input" min="1" placeholder="Qty" required>
-                    </div>
-                </div>
-            `;
-    container.appendChild(newPartItem);
+    if (!container) return;
+    const noPartsChecked = document.getElementById('noSparePartsNeeded')?.checked || false;
+    const rowHtml = _buildSparePartRow(true, !noPartsChecked);
+    container.insertAdjacentHTML('beforeend', rowHtml);
+    // Attach availability listeners to the new row
+    _attachAvailabilityListeners(container);
 }
 
 // Toast notification
@@ -123,7 +161,13 @@ function showToast(message, type = 'success') {
 }
 
 // Filter tickets by status
-function filterTicketsByStatus(status) {
+function filterTicketsByStatus(status, clickedButton = null) {
+    const ticketsComponent = document.querySelector('to-tickets');
+    if (ticketsComponent && typeof ticketsComponent.applyFilter === 'function') {
+        ticketsComponent.applyFilter(status, clickedButton);
+        return;
+    }
+
     const tickets = document.querySelectorAll('#allTicketsList .ticket-item');
     const noTicketsMessage = document.getElementById('noTicketsMessage');
     const ticketCount = document.getElementById('ticketCount');
@@ -136,8 +180,10 @@ function filterTicketsByStatus(status) {
     });
 
     // Find and activate the clicked button
-    const clickedButton = event ? event.target : filterButtons[0];
-    clickedButton.classList.add('active');
+    const targetButton = clickedButton || filterButtons[0];
+    if (targetButton) {
+        targetButton.classList.add('active');
+    }
 
     // Filter tickets
     tickets.forEach(ticket => {
@@ -161,13 +207,267 @@ function filterTicketsByStatus(status) {
     ticketCount.textContent = `${visibleCount} ticket${visibleCount !== 1 ? 's' : ''}`;
 }
 
+// ==================== NOTIFICATIONS ====================
+
+/**
+ * Loads notifications from backend notification APIs.
+ */
+async function loadNotifications() {
+    const list = document.getElementById('notificationsList');
+    const empty = document.getElementById('notifEmpty');
+    if (!list) return;
+
+    try {
+        const response = await API.get('/notifications?limit=50');
+        if (!response || response.status !== 'success') {
+            throw new Error(response?.message || 'Failed to load notifications');
+        }
+
+        const notifications = (response.data && response.data.notifications) || [];
+        const unreadCount = Number(response?.data?.unread_count || 0);
+        const sidebar = document.querySelector('to-shell-sidebar');
+        if (sidebar && typeof sidebar.setNotifBadge === 'function') {
+            sidebar.setNotifBadge(unreadCount);
+        }
+
+        list.querySelectorAll('.notif-card').forEach(el => el.remove());
+
+        if (!Array.isArray(notifications) || notifications.length === 0) {
+            empty.style.display = 'block';
+            return;
+        }
+
+        empty.style.display = 'none';
+        notifications.forEach(n => {
+            const card = document.createElement('div');
+            const type = n.type || 'info';
+            const title = n.title || 'Notification';
+            const desc = n.message || 'No details available.';
+            const iconMap = {
+                success: 'fa-check-circle',
+                warning: 'fa-exclamation-triangle',
+                error: 'fa-times-circle',
+                info: 'fa-bell'
+            };
+            const icon = iconMap[type] || iconMap.info;
+            const readClass = Number(n.is_read) === 1 ? 'notif-read' : '';
+
+            card.className = `notif-card notif-${type} ${readClass}`.trim();
+            card.innerHTML = `
+                <div class="notif-icon"><i class="fas ${icon}"></i></div>
+                <div class="notif-body">
+                    <div class="notif-title">${title}</div>
+                    <div class="notif-desc">${desc}</div>
+                    <div class="notif-action">
+                        ${Number(n.is_read) === 1
+                            ? '<span class="badge-success">Read</span>'
+                            : `<button class="btn btn-small btn-secondary" onclick="markNotificationAsRead('${n.notification_id}')">Mark as Read</button>`}
+                    </div>
+                </div>`;
+            list.appendChild(card);
+        });
+    } catch (err) {
+        console.error('loadNotifications error:', err);
+        list.querySelectorAll('.notif-card').forEach(el => el.remove());
+        const errEl = document.createElement('div');
+        errEl.className = 'notif-card notif-danger';
+        errEl.innerHTML = `<div class="notif-icon"><i class="fas fa-exclamation-circle"></i></div><div class="notif-body"><div class="notif-title">Failed to load notifications</div><div class="notif-desc">Please refresh the page and try again.</div></div>`;
+        list.appendChild(errEl);
+    }
+}
+
+async function markNotificationAsRead(notificationId) {
+    if (!notificationId) return;
+    try {
+        const response = await API.post('/notifications/read', { notification_id: notificationId });
+        if (!response || response.status !== 'success') {
+            throw new Error(response?.message || 'Failed to update notification');
+        }
+        await loadNotifications();
+    } catch (err) {
+        console.error('markNotificationAsRead error:', err);
+        if (window.Utils && typeof window.Utils.showToast === 'function') {
+            window.Utils.showToast('Failed to mark notification as read', 'error');
+        }
+    }
+}
+
+function bindTONotifications() {
+    const notificationsComponent = document.querySelector('to-notifications');
+    if (!notificationsComponent || notificationsComponent.dataset.bound === 'true') return;
+
+    notificationsComponent.dataset.bound = 'true';
+    notificationsComponent.addEventListener('technical-officer-notifications:navigate', (event) => {
+        const section = event.detail?.section;
+        if (!section) return;
+        navigateToSection(section);
+    });
+}
+
+function bindTOTickets() {
+    const ticketsComponent = document.querySelector('to-tickets');
+    if (!ticketsComponent || ticketsComponent.dataset.bound === 'true') return;
+
+    ticketsComponent.dataset.bound = 'true';
+
+    ticketsComponent.addEventListener('technical-officer-tickets:view-ticket', (event) => {
+        const ticketId = Number(event.detail?.ticketId);
+        if (!ticketId) return;
+        viewTicket(ticketId);
+    });
+
+    ticketsComponent.addEventListener('technical-officer-tickets:request-spare-parts', (event) => {
+        const ticketId = Number(event.detail?.ticketId);
+        if (!ticketId) return;
+        requestSparePartsForTicket(ticketId);
+    });
+
+    ticketsComponent.addEventListener('technical-officer-tickets:start-work', (event) => {
+        const ticketId = Number(event.detail?.ticketId);
+        if (!ticketId) return;
+        startTicketWork(ticketId);
+    });
+
+    ticketsComponent.addEventListener('technical-officer-tickets:update-work', (event) => {
+        const ticketId = Number(event.detail?.ticketId);
+        if (!ticketId) return;
+        updateWork(ticketId);
+    });
+
+    ticketsComponent.addEventListener('technical-officer-tickets:add-budget', (event) => {
+        const ticketId = Number(event.detail?.ticketId);
+        if (!ticketId) return;
+        const url = buildCanonicalTicketDetailUrl(ticketId) + '#budgetReportCard';
+        window.location.href = url;
+    });
+}
+
+async function refreshTONotifications() {
+    const notificationsComponent = document.querySelector('to-notifications');
+    if (!notificationsComponent) return;
+
+    if (typeof notificationsComponent.setCurrentUser === 'function') {
+        notificationsComponent.setCurrentUser(currentUser);
+    }
+
+    if (typeof notificationsComponent.refresh === 'function') {
+        await notificationsComponent.refresh();
+    }
+}
+
+function bindTOInventory() {
+    const inventoryComponent = document.querySelector('to-inventory');
+    if (!inventoryComponent || inventoryComponent.dataset.bound === 'true') return;
+
+    inventoryComponent.dataset.bound = 'true';
+    inventoryComponent.addEventListener('technical-officer-inventory:error', (event) => {
+        const message = event.detail?.message;
+        if (!message) return;
+        showToast(message, 'error');
+    });
+}
+
+async function refreshTOInventory() {
+    const inventoryComponent = document.querySelector('to-inventory');
+    if (!inventoryComponent) return;
+
+    if (typeof inventoryComponent.refresh === 'function') {
+        await inventoryComponent.refresh();
+    }
+}
+
+function bindTOFeedback() {
+    const feedbackComponent = document.querySelector('to-feedback');
+    if (!feedbackComponent || feedbackComponent.dataset.bound === 'true') return;
+
+    feedbackComponent.dataset.bound = 'true';
+    feedbackComponent.addEventListener('technical-officer-feedback:submitted', (event) => {
+        const message = event.detail?.message || 'Feedback submitted successfully! Shared with Supervisor & Maintenance Manager.';
+        showToast(message, 'success');
+    });
+}
+
+function bindTOSpareParts() {
+    const sparePartsComponent = document.querySelector('to-spare-parts');
+    if (!sparePartsComponent || sparePartsComponent.dataset.bound === 'true') return;
+
+    sparePartsComponent.dataset.bound = 'true';
+    sparePartsComponent.addEventListener('technical-officer-spare-parts:open-request-modal', () => {
+        openModal('requestPartsModal');
+    });
+    sparePartsComponent.addEventListener('technical-officer-spare-parts:re-request', (event) => {
+        const ticketId = Number(event.detail?.ticketId);
+        if (!ticketId) return;
+        requestSparePartsForTicket(ticketId);
+    });
+    sparePartsComponent.addEventListener('technical-officer-spare-parts:view', (event) => {
+        const requestId = Number(event.detail?.requestId);
+        const req = sparePartsComponent._allRequests.find(r => r.id === requestId);
+        if (!req) return;
+        const items = Array.isArray(req.items) ? req.items : [];
+        const isRejected = (req.status || '').toLowerCase() === 'rejected';
+        const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
+        document.getElementById('partRequestDetailsContent').innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                <div><label style="font-size:12px;color:var(--muted);">Request ID</label><p>${req.request_id || '—'}</p></div>
+                <div><label style="font-size:12px;color:var(--muted);">Ticket</label><p>${req.fault_ticket_code || req.ticket_id_formatted || '—'}</p></div>
+                <div><label style="font-size:12px;color:var(--muted);">Equipment</label><p>${req.equipment_name || 'N/A'}</p></div>
+                <div><label style="font-size:12px;color:var(--muted);">Location</label><p>${req.location || 'N/A'}</p></div>
+                <div><label style="font-size:12px;color:var(--muted);">Status</label><p>${req.status || 'Pending'}</p></div>
+                <div><label style="font-size:12px;color:var(--muted);">Submitted</label><p>${fmtDate(req.created_at)}</p></div>
+            </div>
+            <h4 style="margin-bottom:8px;"><i class="fas fa-box-open"></i> Parts Requested</h4>
+            ${items.length > 0 ? `<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="background:#f3f4f6;"><th style="padding:8px;text-align:left;">#</th><th style="padding:8px;text-align:left;">Code</th><th style="padding:8px;text-align:left;">Name</th><th style="padding:8px;text-align:right;">Qty</th></tr></thead><tbody>${items.map((it, i) => `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:8px;">${i + 1}</td><td style="padding:8px;">${it.part_code || '—'}</td><td style="padding:8px;">${it.part_name || it.part_code || '—'}</td><td style="padding:8px;text-align:right;">${it.quantity}</td></tr>`).join('')}</tbody></table>` : '<p style="color:var(--muted);font-size:13px;">No items recorded</p>'}
+            ${req.additional_notes ? `<h4 style="margin:12px 0 6px;"><i class="fas fa-sticky-note"></i> Additional Notes</h4><p style="font-size:13px;">${req.additional_notes}</p>` : ''}
+            ${isRejected ? `<div style="margin-top:14px;padding:12px 16px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;"><p style="margin:0;font-weight:600;color:#dc2626;font-size:13px;"><i class="fas fa-times-circle"></i> Rejected</p>${req.review_notes ? `<p style="margin:6px 0 0;font-size:13px;color:#7f1d1d;">${req.review_notes}</p>` : ''}${req.reviewed_by_name ? `<p style="margin:4px 0 0;font-size:12px;color:var(--muted);">By: ${req.reviewed_by_name}</p>` : ''}</div>` : ''}
+            ${!isRejected && req.reviewed_by_name ? `<div style="margin-top:12px;padding:10px 12px;background:#f0fdf4;border-left:3px solid #10b981;border-radius:6px;font-size:13px;"><strong>Reviewed by:</strong> ${req.reviewed_by_name}${req.review_notes ? ` — "${req.review_notes}"` : ''}</div>` : ''}
+        `;
+        openModal('viewPartRequestModal');
+    });
+}
+
+function refreshTOSpareParts() {
+    const sparePartsComponent = document.querySelector('to-spare-parts');
+    if (!sparePartsComponent) return;
+
+    if (typeof sparePartsComponent.refresh === 'function') {
+        sparePartsComponent.refresh();
+    }
+}
+
+function bindTOServiceWarranty() {
+    const serviceWarrantyComponent = document.querySelector('to-service-warranty');
+    if (!serviceWarrantyComponent || serviceWarrantyComponent.dataset.bound === 'true') return;
+
+    serviceWarrantyComponent.dataset.bound = 'true';
+    serviceWarrantyComponent.addEventListener('technical-officer-service-warranty:submitted', (event) => {
+        const message = event.detail?.message || 'Warranty claim submitted to Inventory Manager!';
+        showToast(message, 'success');
+    });
+}
+
 // Load tickets from backend
 async function loadTickets() {
+    let ticketsComponent = document.querySelector('to-tickets');
     const ticketsList = document.getElementById('allTicketsList');
     const ticketCount = document.getElementById('ticketCount');
 
+    // Ensure custom element upgrades before relying on component methods.
+    if (ticketsComponent && typeof ticketsComponent.renderTickets !== 'function') {
+        try {
+            await customElements.whenDefined('to-tickets');
+            ticketsComponent = document.querySelector('to-tickets');
+        } catch (error) {
+            console.warn('to-tickets component was not ready in time:', error);
+        }
+    }
+
     // Show loading state
-    ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-spinner fa-spin" style="font-size: 2rem;"></i><p style="margin-top: 15px;">Loading tickets...</p></div>';
+    if (ticketsComponent && typeof ticketsComponent.setLoading === 'function') {
+        ticketsComponent.setLoading();
+    } else if (ticketsList) {
+        ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-spinner fa-spin" style="font-size: 2rem;"></i><p style="margin-top: 15px;">Loading tickets...</p></div>';
+    }
 
     try {
         const response = await API.get('/fault-tickets');
@@ -200,20 +500,31 @@ async function loadTickets() {
 
             if (allTickets.length > 0) {
                 renderTickets(allTickets);
-                ticketCount.textContent = `${allTickets.length} ticket${allTickets.length !== 1 ? 's' : ''}`;
-
-                // Update dashboard counts
-                updateDashboardCounts(allTickets);
             } else {
-                ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px;"></i><p>No tickets assigned to you yet</p></div>';
-                ticketCount.textContent = '0 tickets';
+                if (ticketsComponent && typeof ticketsComponent.setEmpty === 'function') {
+                    ticketsComponent.setEmpty('No tickets assigned to you yet');
+                } else {
+                    if (ticketsList) {
+                        ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px;"></i><p>No tickets assigned to you yet</p></div>';
+                    }
+                    if (ticketCount) {
+                        ticketCount.textContent = '0 tickets';
+                    }
+                }
             }
+
+            // Update dashboard counts
+            updateDashboardCounts(allTickets);
         } else {
             throw new Error(response.message || 'Failed to load tickets');
         }
     } catch (error) {
         console.error('Error loading tickets:', error);
-        ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 15px;"></i><p>Error loading tickets. Please try again.</p></div>';
+        if (ticketsComponent && typeof ticketsComponent.setError === 'function') {
+            ticketsComponent.setError('Error loading tickets. Please try again.');
+        } else if (ticketsList) {
+            ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 15px;"></i><p>Error loading tickets. Please try again.</p></div>';
+        }
     }
 }
 
@@ -230,14 +541,30 @@ function getDisplayTicketId(ticket) {
 
 // Render tickets
 function renderTickets(tickets) {
-    const ticketsList = document.getElementById('allTicketsList');
+    const sortedTickets = [...(Array.isArray(tickets) ? tickets : [])].sort((first, second) => {
+        const firstTime = new Date(first?.created_at || first?.updated_at || first?.breakdown_datetime || first?.breakdown_date || 0).getTime();
+        const secondTime = new Date(second?.created_at || second?.updated_at || second?.breakdown_datetime || second?.breakdown_date || 0).getTime();
+        return secondTime - firstTime;
+    });
 
-    if (tickets.length === 0) {
+    const ticketsComponent = document.querySelector('to-tickets');
+    if (ticketsComponent && typeof ticketsComponent.renderTickets === 'function') {
+        ticketsComponent.renderTickets(sortedTickets);
+        return;
+    }
+
+    const ticketsList = document.getElementById('allTicketsList');
+    if (!ticketsList) {
+        console.warn('renderTickets fallback aborted: #allTicketsList not found and to-tickets component API unavailable.');
+        return;
+    }
+
+    if (sortedTickets.length === 0) {
         ticketsList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px;"></i><p>No tickets found</p></div>';
         return;
     }
 
-    ticketsList.innerHTML = tickets.map(ticket => {
+    ticketsList.innerHTML = sortedTickets.map(ticket => {
         const ticketIdFormatted = getDisplayTicketId(ticket);
 
         // Map Open/Assigned to Pending for display, keep others as-is
@@ -265,11 +592,8 @@ function renderTickets(tickets) {
         if (status === 'pending') {
             // Pending → Request Spare Parts
             actionButtons = `
-                <button class="btn btn-mini" onclick="requestSparePartsForTicket(${ticket.id})" style="background: var(--tang-blue); color: white;">
+                <button class="btn btn-mini" onclick="event.stopPropagation(); requestSparePartsForTicket(${ticket.id})" style="background: var(--tang-blue); color: white;">
                     <i class="fas fa-tools"></i> Request Spare Parts
-                </button>
-                <button class="btn btn-primary btn-mini" onclick="viewTicket(${ticket.id})">
-                    <i class="fas fa-eye"></i> VIEW
                 </button>
             `;
         } else if (status === 'waiting-for-spare-parts') {
@@ -278,50 +602,32 @@ function renderTickets(tickets) {
                 <span class="btn btn-mini" style="background: #f59e0b; color: #000; cursor: default;">
                     <i class="fas fa-hourglass-half"></i> Awaiting Approval
                 </span>
-                <button class="btn btn-primary btn-mini" onclick="viewTicket(${ticket.id})">
-                    <i class="fas fa-eye"></i> VIEW
-                </button>
             `;
         } else if (status === 'parts-approved') {
             // Parts Approved → START button
             actionButtons = `
-                <button class="btn btn-mini" onclick="startTicketWork(${ticket.id})" style="background: var(--kelly-green); color: white;">
+                <button class="btn btn-mini" onclick="event.stopPropagation(); startTicketWork(${ticket.id})" style="background: var(--kelly-green); color: white;">
                     <i class="fas fa-play"></i> START
-                </button>
-                <button class="btn btn-primary btn-mini" onclick="viewTicket(${ticket.id})">
-                    <i class="fas fa-eye"></i> VIEW
                 </button>
             `;
         } else if (status === 'in-progress') {
             // In Progress → UPDATE button
             actionButtons = `
-                <button class="btn btn-warning btn-mini" onclick="updateWork(${ticket.id})">
+                <button class="btn btn-warning btn-mini" onclick="event.stopPropagation(); updateWork(${ticket.id})">
                     <i class="fas fa-edit"></i> UPDATE
-                </button>
-                <button class="btn btn-primary btn-mini" onclick="viewTicket(${ticket.id})">
-                    <i class="fas fa-eye"></i> VIEW
                 </button>
             `;
         } else if (status === 'resolved' || status === 'completed' || status === 'closed') {
-            // Resolved/Completed/Closed → show done badge + VIEW
+            // Resolved/Completed/Closed → show done badge
             actionButtons = `
                 <span class="btn btn-mini" style="background: #10b981; color: white; cursor: default;">
                     <i class="fas fa-check-circle"></i> Done
                 </span>
-                <button class="btn btn-primary btn-mini" onclick="viewTicket(${ticket.id})">
-                    <i class="fas fa-eye"></i> VIEW
-                </button>
-            `;
-        } else {
-            actionButtons = `
-                <button class="btn btn-primary btn-mini" onclick="viewTicket(${ticket.id})">
-                    <i class="fas fa-eye"></i> VIEW
-                </button>
             `;
         }
 
         return `
-            <div class="ticket-item" data-status="${status}">
+            <div class="ticket-item" data-status="${status}" onclick="viewTicket(${ticket.id})" style="cursor:pointer;">
                 <div class="ticket-details">
                     <strong>${ticketIdFormatted}</strong>
                     <div class="ticket-meta">
@@ -382,185 +688,233 @@ function updateDashboardCounts(tickets) {
     if (dashCompleteCount) dashCompleteCount.textContent = completedToday;
 }
 
-// View ticket details
-async function viewTicket(ticketId) {
+function buildTechnicalOfficerTicketsReturnPath() {
+    const dashboardUrl = new URL('./index.html', window.location.href);
+    dashboardUrl.searchParams.set('section', 'tickets');
+    return `${dashboardUrl.pathname}${dashboardUrl.search}`;
+}
+
+function buildCanonicalTicketDetailUrl(ticketId) {
+    const detailUrl = new URL('../../view-ticket/index.html', window.location.href);
+    detailUrl.searchParams.set('id', ticketId);
+    detailUrl.searchParams.set('return_to', buildTechnicalOfficerTicketsReturnPath());
+    return detailUrl.toString();
+}
+
+// View ticket details — navigate to the dedicated detail page
+function viewTicket(ticketId) {
+    window.location.href = buildCanonicalTicketDetailUrl(ticketId);
+}
+
+// Cached options HTML for spare parts dropdowns (loaded once per modal open)
+let _cachedSparePartOptionsHtml = '';
+
+// Request spare parts for a ticket — opens the requestPartsModal and pre-populates it.
+async function requestSparePartsForTicket(ticketId) {
     const ticket = allTickets.find(t => t.id === ticketId);
-    if (!ticket) {
-        showToast('Ticket not found', 'error');
-        return;
-    }
 
-    const ticketIdFormatted = getDisplayTicketId(ticket);
-    const status = (ticket.status || 'Open').toLowerCase().replace(/\s+/g, '-');
-    const statusDisplay = (ticket.status || 'Open').toUpperCase();
-    const priority = (ticket.priority || 'Medium').toLowerCase();
-    const priorityDisplay = (ticket.priority || 'Medium').toUpperCase();
-    const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
-    const reporterName = ticket.reported_by_name || ticket.reporter_full_name || 'Unknown';
-    const description = ticket.description || 'No description';
-    const createdDate = new Date(ticket.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const updatedDate = ticket.updated_at ? new Date(ticket.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+    // --- Pre-populate ticket info fields ---
+    const requestingTicketIdField = document.getElementById('requestingTicketId');
+    const relatedTicketIdField    = document.getElementById('relatedTicketId');
+    const equipmentInput          = document.getElementById('equipmentInput');
+    const locationInput           = document.getElementById('locationInput');
+    const reportedByInput         = document.getElementById('reportedByInput');
+    const reportedDateInput       = document.getElementById('reportedDateInput');
+    const originalIssueTextarea   = document.getElementById('originalIssueTextarea');
+    const prioritySelect          = document.getElementById('prioritySelect');
 
-    const assignment = ticket.assignments && ticket.assignments.length > 0 ? ticket.assignments[0] : null;
-    const assignedBy = assignment ? (assignment.assigned_by_name || 'Supervisor') : 'N/A';
-    const assignedDate = assignment ? new Date(assignment.assigned_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+    if (requestingTicketIdField) requestingTicketIdField.value = ticketId;
 
-    // Fetch spare part requests for this ticket to get approval/rejection notes
-    let sparePartsSection = '';
-    try {
-        const sparePartsResponse = await API.get(`/spare-part-requests/ticket/${ticketId}`);
-        if (sparePartsResponse.status === 'success' && sparePartsResponse.data && sparePartsResponse.data.length > 0) {
-            const requests = sparePartsResponse.data;
-            sparePartsSection = requests.map(request => {
-                const statusClass = request.status === 'Approved' ? 'success' : request.status === 'Rejected' ? 'danger' : 'warning';
-                const statusIcon = request.status === 'Approved' ? 'check-circle' : request.status === 'Rejected' ? 'times-circle' : 'clock';
-                const reviewedDate = request.reviewed_at ? new Date(request.reviewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+    if (ticket) {
+        const ticketIdFormatted = getDisplayTicketId(ticket);
+        if (relatedTicketIdField)  relatedTicketIdField.value  = ticketIdFormatted;
 
-                return `
-                    <div class="form-section" style="background-color: ${request.status === 'Approved' ? '#f0fdf4' : request.status === 'Rejected' ? '#fef2f2' : '#fefce8'}; border-left: 4px solid ${request.status === 'Approved' ? '#10b981' : request.status === 'Rejected' ? '#ef4444' : '#f59e0b'}; padding: 12px; margin-bottom: 10px;">
-                        <h5><i class="fas fa-${statusIcon}" style="color: ${request.status === 'Approved' ? '#10b981' : request.status === 'Rejected' ? '#ef4444' : '#f59e0b'};"></i> Spare Parts Request - <span class="status-text status-${statusClass}">${request.status.toUpperCase()}</span></h5>
-                        ${request.review_notes ? `
-                            <p><strong>${request.status === 'Approved' ? 'Approval' : 'Rejection'} Notes:</strong></p>
-                            <p style="background: white; padding: 10px; border-radius: 6px; margin-top: 8px; font-style: italic; color: #374151;">${request.review_notes}</p>
-                        ` : ''}
-                        ${request.reviewed_by_name ? `<p style="margin-top: 8px;"><strong>Reviewed By:</strong> ${request.reviewed_by_name} (Inventory Manager)</p>` : ''}
-                        ${request.reviewed_at ? `<p><strong>Review Date:</strong> ${reviewedDate}</p>` : ''}
-                    </div>
-                `;
-            }).join('');
+        const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
+        if (equipmentInput) {
+            equipmentInput.value = assetName;
+            equipmentInput.readOnly = true;
+            equipmentInput.style.backgroundColor = '#f0f0f0';
         }
-    } catch (error) {
-        console.error('Error fetching spare parts info:', error);
+        if (locationInput)           locationInput.value           = ticket.location || '';
+        if (reportedByInput)         reportedByInput.value         = ticket.reported_by_name || ticket.reporter_full_name || 'Unknown';
+        if (reportedDateInput)       reportedDateInput.value       = ticket.created_at
+            ? new Date(ticket.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+            : '';
+        if (originalIssueTextarea)   originalIssueTextarea.value   = ticket.description || '';
+        if (prioritySelect)          prioritySelect.value          = (ticket.priority || '').toLowerCase();
     }
 
-    const modal = createDetailsModal('Ticket Details', `
-        <div class="form-section">
-            <h5><i class="fas fa-ticket-alt"></i> Ticket Information</h5>
-            <p><strong>Ticket ID:</strong> ${ticketIdFormatted}</p>
-            <p><strong>Priority:</strong> <span class="status-text status-${priority}">${priorityDisplay}</span></p>
-            <p><strong>Status:</strong> <span class="status-text status-${status}">${statusDisplay}</span></p>
-            <p><strong>Created Date:</strong> ${createdDate}</p>
-            <p><strong>Last Updated:</strong> ${updatedDate}</p>
-        </div>
-        <div class="form-section">
-            <h5><i class="fas fa-cogs"></i> Equipment & Issue Details</h5>
-            <p><strong>Equipment/Asset:</strong> ${assetName}</p>
-            <p><strong>Machine ID:</strong> ${ticket.machine_id || 'N/A'}</p>
-            <p><strong>Reported By:</strong> ${reporterName}</p>
-            <p><strong>Issue Description:</strong> ${description}</p>
-        </div>
-        <div class="form-section">
-            <h5><i class="fas fa-user-tag"></i> Assignment Details</h5>
-            <p><strong>Assigned By:</strong> ${assignedBy}</p>
-            <p><strong>Assigned Date:</strong> ${assignedDate}</p>
-            ${assignment && assignment.notes ? `<p><strong>Assignment Notes:</strong> ${assignment.notes}</p>` : ''}
-        </div>
-        ${sparePartsSection}
-        ${ticket.resolution_notes || ticket.work_done ? `
-            <div class="form-section">
-                <h5><i class="fas fa-check-circle"></i> Work Progress / Resolution</h5>
-                <p>${ticket.resolution_notes || ticket.work_done}</p>
-            </div>
-        ` : ''}
-    `);
-
-    document.body.appendChild(modal);
-    modal.classList.add('active');
-}
-
-// Process ticket (start work)
-function processTicket(ticketId) {
-    openModal('processTicketModal', ticketId);
-}
-
-// Request spare parts for a ticket - opens the request parts form
-function requestSparePartsForTicket(ticketId) {
-    const ticket = allTickets.find(t => t.id === ticketId);
-    if (!ticket) {
-        showToast('Ticket not found', 'error');
-        return;
-    }
-
-    const ticketIdFormatted = getDisplayTicketId(ticket);
-    const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
-    const priority = ticket.priority || 'Medium';
-    const description = ticket.description || 'No description provided';
-    const location = ticket.location || 'Not specified';
-    const reporterName = ticket.reported_by_name || ticket.reporter_full_name || 'Unknown';
-    const createdDate = ticket.created_at ? new Date(ticket.created_at).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    }) : 'Unknown';
-
-    // Pre-fill the request parts form with ticket data
-    document.getElementById('relatedTicketId').value = ticketIdFormatted;
-    document.getElementById('requestingTicketId').value = ticketId;
-
-    // Pre-fill equipment field
-    const equipmentInput = document.getElementById('equipmentInput');
-    if (equipmentInput) {
-        equipmentInput.value = assetName;
-        equipmentInput.readOnly = true;
-        equipmentInput.style.backgroundColor = '#f0f0f0';
-    }
-
-    // Pre-fill location field
-    const locationInput = document.getElementById('locationInput');
-    if (locationInput) {
-        locationInput.value = location;
-    }
-
-    // Pre-fill priority
-    const prioritySelect = document.getElementById('prioritySelect');
-    if (prioritySelect) {
-        prioritySelect.value = priority.toLowerCase();
-    }
-
-    // Pre-fill reported by field
-    const reportedByInput = document.getElementById('reportedByInput');
-    if (reportedByInput) {
-        reportedByInput.value = reporterName;
-    }
-
-    // Pre-fill reported date field
-    const reportedDateInput = document.getElementById('reportedDateInput');
-    if (reportedDateInput) {
-        reportedDateInput.value = createdDate;
-    }
-
-    // Pre-fill original issue description
-    const originalIssueTextarea = document.getElementById('originalIssueTextarea');
-    if (originalIssueTextarea) {
-        originalIssueTextarea.value = description;
-    }
-
-    // Clear additional notes
-    const additionalNotesTextarea = document.getElementById('additionalNotesTextarea');
-    if (additionalNotesTextarea) {
-        additionalNotesTextarea.value = '';
-    }
-
-    // Reset "No Spare Parts Needed" checkbox
+    // --- Reset 'No spare parts' checkbox ---
     const noPartsCheckbox = document.getElementById('noSparePartsNeeded');
     if (noPartsCheckbox) {
         noPartsCheckbox.checked = false;
         toggleSparePartsSection(false);
     }
 
-    // Open request parts modal
+    // --- Load spare parts from API and build a single blank row ---
+    const sparePartsContainer = document.getElementById('sparePartsContainer');
+    if (sparePartsContainer) {
+        try {
+            const productsRes = await API.get('/products');
+            const products = (productsRes.status === 'success' && Array.isArray(productsRes.data?.products))
+                ? productsRes.data.products
+                : [];
+
+            _cachedSparePartOptionsHtml = products.length > 0
+                ? products.map(p => `<option value="${p.sparepart_id}">${p.name} — ${p.sparepart_id}</option>`).join('')
+                : '';
+        } catch (err) {
+            console.error('Could not load spare parts list from API:', err);
+            _cachedSparePartOptionsHtml = '';
+        }
+
+        sparePartsContainer.innerHTML = _buildSparePartRow(false);
+        _attachAvailabilityListeners(sparePartsContainer);
+    }
+
     openModal('requestPartsModal');
 }
 
-// Toggle spare parts section visibility
-function toggleSparePartsSection(hide) {
-    const sparePartsSection = document.getElementById('sparePartsSection');
-    if (sparePartsSection) {
-        sparePartsSection.style.display = hide ? 'none' : 'block';
+// Check availability of spare parts via API
+async function _checkSparePartAvailability(partCode, quantity) {
+    try {
+        const response = await API.post('/spare-part-requests/check-availability', {
+            items: [{ part_code: partCode, quantity: quantity }]
+        });
+        if (response.status === 'success' && response.data?.items?.length > 0) {
+            return response.data.items[0];
+        }
+        return null;
+    } catch (err) {
+        console.error('Availability check failed:', err);
+        return null;
     }
 }
+
+// Update the availability status badge in a spare part row
+function _updateAvailabilityBadge(row, result) {
+    let badge = row.querySelector('.availability-badge');
+    if (!badge) return;
+
+    if (!result) {
+        badge.innerHTML = '';
+        badge.className = 'availability-badge';
+        return;
+    }
+
+    let badgeClass = '';
+    let badgeText = '';
+    let icon = '';
+
+    switch (result.status) {
+        case 'available':
+            badgeClass = 'badge-success';
+            icon = '✓';
+            badgeText = `In Stock (${result.available_qty} available)`;
+            break;
+        case 'insufficient':
+            badgeClass = 'badge-warning';
+            icon = '⚠';
+            badgeText = `Low Stock (${result.available_qty} available, ${result.requested_qty} requested)`;
+            break;
+        case 'out_of_stock':
+            badgeClass = 'badge-danger';
+            icon = '✗';
+            badgeText = 'Out of Stock';
+            break;
+        case 'not_found':
+            badgeClass = 'badge-danger';
+            icon = '✗';
+            badgeText = 'Not in Catalog';
+            break;
+        default:
+            badge.innerHTML = '';
+            badge.className = 'availability-badge';
+            return;
+    }
+
+    badge.className = `availability-badge ${badgeClass}`;
+    badge.innerHTML = `<span class="badge-icon">${icon}</span> ${badgeText}`;
+}
+
+// Attach change/input listeners for availability checking to a row
+function _attachAvailabilityListeners(container) {
+    const rows = container.querySelectorAll('.spare-part-item');
+    rows.forEach(row => {
+        const select = row.querySelector('.form-select');
+        const qtyInput = row.querySelector('input[type="number"]');
+        
+        if (select && !select.dataset.availabilityBound) {
+            select.dataset.availabilityBound = 'true';
+            select.addEventListener('change', async () => {
+                const partCode = select.value;
+                const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
+                if (partCode) {
+                    const result = await _checkSparePartAvailability(partCode, qty);
+                    _updateAvailabilityBadge(row, result);
+                } else {
+                    _updateAvailabilityBadge(row, null);
+                }
+            });
+        }
+        
+        if (qtyInput && !qtyInput.dataset.availabilityBound) {
+            qtyInput.dataset.availabilityBound = 'true';
+            let debounceTimer = null;
+            qtyInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(async () => {
+                    const partCode = select ? select.value : '';
+                    const qty = parseInt(qtyInput.value) || 1;
+                    if (partCode) {
+                        const result = await _checkSparePartAvailability(partCode, qty);
+                        _updateAvailabilityBadge(row, result);
+                    }
+                }, 300);
+            });
+        }
+    });
+}
+
+// Build a single spare-part row HTML (first row has no remove button)
+function _buildSparePartRow(removable = false, required = true) {
+    const removeBtn = removable
+        ? `<button type="button" onclick="this.parentElement.remove()" style="position:absolute;top:10px;right:10px;background:var(--danger);color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;font-size:14px;">×</button>`
+        : '';
+    const reqAttr = required ? ' required' : '';
+    return `
+        <div class="spare-part-item" style="background:#f8f9fa;border-radius:8px;padding:15px;margin-bottom:10px;position:relative;">
+            ${removeBtn}
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Part Name</label>
+                    <select class="form-select"${reqAttr}>
+                        <option value="">Select Part</option>
+                        ${_cachedSparePartOptionsHtml}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Quantity</label>
+                    <input type="number" class="form-input" min="1" placeholder="Qty" value="1"${reqAttr}>
+                </div>
+            </div>
+            <div class="availability-badge" style="margin-top:8px;font-size:0.85rem;"></div>
+        </div>
+    `;
+}
+
+// Toggle the spare-parts-required section visibility (called from the checkbox in the modal)
+function toggleSparePartsSection(isChecked) {
+    const section = document.getElementById('sparePartsSection');
+    if (!section) return;
+    section.style.display = isChecked ? 'none' : 'block';
+    // Toggle required on all selects/inputs in the section
+    section.querySelectorAll('select, input').forEach(el => {
+        el.required = !isChecked;
+    });
+}
+
+
 
 // Update work progress
 async function updateWork(ticketId) {
@@ -676,125 +1030,25 @@ function markDone(ticketId) {
     completeTicketWork();
 }
 
-// Filter parts requests by status
-function filterPartsByStatus(status) {
-    const requests = document.querySelectorAll('#allPartsRequests .request-item');
-    const noPartsMessage = document.getElementById('noPartsMessage');
-    const partsCount = document.getElementById('partsCount');
-    const filterButtons = document.querySelectorAll('#partsFilterTabs .filter-btn');
-    let visibleCount = 0;
+// Bind create-fault-ticket child events to parent-level dashboard orchestration.
+function bindCreateFaultTicket() {
+    const model = document.querySelector('create-fault-ticket');
+    if (!model || model.dataset.bound === 'true') return;
 
-    // Update active button styling
-    filterButtons.forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
+    model.dataset.bound = 'true';
+    model.addEventListener('create-fault-ticket-created', (event) => {
+        const ticketData = event.detail?.ticketData;
+        const successMessage = event.detail?.successMessage;
 
-    // Filter requests
-    requests.forEach(request => {
-        const requestStatus = request.getAttribute('data-status');
-        if (status === 'all' || requestStatus === status) {
-            request.style.display = 'block';
-            visibleCount++;
-        } else {
-            request.style.display = 'none';
+        if (ticketData) {
+            addTicketToList(ticketData);
+        }
+
+        if (successMessage) {
+            showToast(successMessage);
         }
     });
-
-    // Show/hide no requests message
-    if (visibleCount === 0) {
-        noPartsMessage.style.display = 'block';
-    } else {
-        noPartsMessage.style.display = 'none';
-    }
-
-    // Update parts count
-    partsCount.textContent = `${visibleCount} request${visibleCount !== 1 ? 's' : ''}`;
 }
-
-// Toggle outsourced fields based on repair type selection
-function toggleOutsourcedFields() {
-    const repairType = document.getElementById('repairType').value;
-    const internalFields = document.getElementById('internalRepairFields');
-    const outsourcedFields = document.getElementById('outsourcedRepairFields');
-
-    if (repairType === 'internal') {
-        internalFields.style.display = 'block';
-        outsourcedFields.style.display = 'none';
-        // Remove required from outsourced fields
-        document.getElementById('serviceProvider').removeAttribute('required');
-    } else if (repairType === 'outsourced') {
-        internalFields.style.display = 'none';
-        outsourcedFields.style.display = 'block';
-        // Add required to service provider
-        document.getElementById('serviceProvider').setAttribute('required', 'required');
-    } else {
-        internalFields.style.display = 'none';
-        outsourcedFields.style.display = 'none';
-    }
-}
-
-// Create Repair Ticket Form Submission
-document.getElementById('createRepairTicketForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-
-    const assetType = document.getElementById('assetType').value;
-    const assetId = document.getElementById('assetId').value;
-    const assetName = document.getElementById('assetName').value;
-    const faultCategory = document.getElementById('faultCategory').value;
-    const faultDescription = document.getElementById('faultDescription').value;
-    const reportedBy = document.getElementById('reportedBy').value;
-    const priority = document.getElementById('repairPriority').value;
-    const repairType = document.getElementById('repairType').value;
-
-    // Generate new ticket ID
-    const ticketId = 'MBD-' + String(Math.floor(Math.random() * 900) + 100);
-
-    // Create ticket object
-    const ticketData = {
-        ticketId: ticketId,
-        assetType: assetType,
-        assetId: assetId,
-        assetName: assetName,
-        faultCategory: faultCategory,
-        faultDescription: faultDescription,
-        reportedBy: reportedBy,
-        priority: priority,
-        repairType: repairType,
-        createdBy: 'Technical Officer',
-        status: 'pending-supervisor-approval',
-        createdDate: new Date().toISOString()
-    };
-
-    // Add type-specific details
-    if (repairType === 'internal') {
-        ticketData.estimatedCompletion = document.getElementById('estimatedCompletion').value;
-        ticketData.requiredParts = document.getElementById('requiredParts').value;
-    } else if (repairType === 'outsourced') {
-        ticketData.serviceProvider = document.getElementById('serviceProvider').value;
-        ticketData.serviceContact = document.getElementById('serviceContact').value;
-        ticketData.serviceAddress = document.getElementById('serviceAddress').value;
-        ticketData.estimatedCost = document.getElementById('estimatedCost').value;
-    }
-
-    ticketData.additionalNotes = document.getElementById('additionalNotes').value;
-
-    // In a real application, this would send data to the server
-    console.log('New Repair Ticket Created:', ticketData);
-
-    // Show success message
-    const repairTypeText = repairType === 'internal' ? 'Internal Repair (To be resolved by you)' : 'Outsourced Repair';
-    showToast(`Repair Ticket ${ticketId} created successfully!\nType: ${repairTypeText}\nAsset: ${assetId}\nSent to supervisor for approval and management.`);
-
-    // Close modal and reset form
-    closeModal('createRepairTicketModal');
-    this.reset();
-    document.getElementById('internalRepairFields').style.display = 'none';
-    document.getElementById('outsourcedRepairFields').style.display = 'none';
-
-    // Optionally add the ticket to the list (for demonstration)
-    addTicketToList(ticketData);
-});
 
 // Add newly created ticket to the list
 function addTicketToList(ticketData) {
@@ -989,320 +1243,6 @@ function viewPartRequestDetails(requestId) {
     modal.classList.add('active');
 }
 
-// Filter warranty claims by status
-function filterWarrantyByStatus(status) {
-    const claims = document.querySelectorAll('#allWarrantyClaims .request-item');
-    const noWarrantyMessage = document.getElementById('noWarrantyMessage');
-    const warrantyCount = document.getElementById('warrantyCount');
-    const filterButtons = document.querySelectorAll('#warrantyFilterTabs .filter-btn');
-    let visibleCount = 0;
-
-    // Update active button styling
-    filterButtons.forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
-
-    // Filter warranty claims
-    claims.forEach(claim => {
-        const claimStatus = claim.getAttribute('data-status');
-        if (status === 'all' || claimStatus === status) {
-            claim.style.display = '';
-            visibleCount++;
-        } else {
-            claim.style.display = 'none';
-        }
-    });
-
-    // Show/hide no claims message
-    if (visibleCount === 0) {
-        noWarrantyMessage.style.display = 'block';
-    } else {
-        noWarrantyMessage.style.display = 'none';
-    }
-
-    // Update warranty count
-    warrantyCount.textContent = `${visibleCount} claim${visibleCount !== 1 ? 's' : ''}`;
-}
-
-// ==================== INVENTORY MANAGEMENT FUNCTIONS ====================
-
-// Load inventory (vehicles and machines)
-async function loadInventory() {
-    const inventoryList = document.getElementById('allInventoryList');
-    const inventoryCount = document.getElementById('inventoryCount');
-
-    if (!inventoryList) return;
-
-    // Show loading state
-    inventoryList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-spinner fa-spin" style="font-size: 2rem;"></i><p style="margin-top: 15px;">Loading inventory...</p></div>';
-
-    try {
-        // Fetch both vehicles and machines
-        const [vehiclesResponse, machinesResponse] = await Promise.all([
-            API.get('/vehicles'),
-            API.get('/machines')
-        ]);
-
-        allInventory = [];
-
-        // Process vehicles
-        if (vehiclesResponse.success && vehiclesResponse.data) {
-            const vehicles = Array.isArray(vehiclesResponse.data) ? vehiclesResponse.data : [vehiclesResponse.data];
-            vehicles.forEach(vehicle => {
-                allInventory.push({
-                    ...vehicle,
-                    type: 'vehicle',
-                    id: vehicle.vehicle_id,
-                    name: vehicle.vehicle_name || vehicle.registration_number || 'Unknown Vehicle',
-                    identifier: vehicle.registration_number || vehicle.vehicle_id
-                });
-            });
-        }
-
-        // Process machines
-        if (machinesResponse.success && machinesResponse.data) {
-            const machines = Array.isArray(machinesResponse.data) ? machinesResponse.data : [machinesResponse.data];
-            machines.forEach(machine => {
-                allInventory.push({
-                    ...machine,
-                    type: 'machine',
-                    id: machine.machine_id,
-                    name: machine.machine_name || machine.model_number || 'Unknown Machine',
-                    identifier: machine.model_number || machine.serial_number || machine.machine_id
-                });
-            });
-        }
-
-        if (allInventory.length > 0) {
-            renderInventory(allInventory);
-            inventoryCount.textContent = `${allInventory.length} item${allInventory.length !== 1 ? 's' : ''}`;
-        } else {
-            inventoryList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px;"></i><p>No inventory items found</p></div>';
-            inventoryCount.textContent = '0 items';
-        }
-    } catch (error) {
-        console.error('Error loading inventory:', error);
-        inventoryList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 15px;"></i><p>Error loading inventory. Please try again.</p></div>';
-    }
-}
-
-// Render inventory items
-function renderInventory(items) {
-    const inventoryList = document.getElementById('allInventoryList');
-
-    if (!inventoryList || items.length === 0) {
-        inventoryList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px;"></i><p>No inventory items found</p></div>';
-        return;
-    }
-
-    inventoryList.innerHTML = items.map(item => {
-        const isVehicle = item.type === 'vehicle';
-        const icon = isVehicle ? 'fa-car' : 'fa-cogs';
-        const typeLabel = isVehicle ? 'Vehicle' : 'Machine';
-        const status = item.status || 'Active';
-        const statusClass = status.toLowerCase().replace(/\s+/g, '-');
-        const manufacturer = item.manufacturer || 'N/A';
-        const model = item.model || item.model_number || 'N/A';
-
-        return `
-            <div class="inventory-item" data-type="${item.type}" data-status="${statusClass}">
-                <div class="item-details">
-                    <strong><i class="fas ${icon}"></i> ${item.name}</strong>
-                    <div class="item-meta">
-                        <i class="fas fa-hashtag"></i> ${item.identifier} | 
-                        <i class="fas fa-tag"></i> ${typeLabel} |
-                        <i class="fas fa-industry"></i> ${manufacturer}
-                    </div>
-                    <div class="item-meta">
-                        <i class="fas fa-cubes"></i> Model: ${model} |
-                        <span class="status-badge status-${statusClass}">${status}</span>
-                    </div>
-                </div>
-                <div class="item-actions">
-                    <div class="action-buttons">
-                        <button class="btn btn-primary btn-small" onclick="viewInventoryItem('${item.type}', '${item.id}')">
-                            <i class="fas fa-eye"></i> VIEW
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-// Filter inventory by type
-function filterInventoryByType(type) {
-    const items = document.querySelectorAll('#allInventoryList .inventory-item');
-    const noInventoryMessage = document.getElementById('noInventoryMessage');
-    const inventoryCount = document.getElementById('inventoryCount');
-    const filterButtons = document.querySelectorAll('#inventoryFilterTabs .filter-btn');
-    let visibleCount = 0;
-
-    // Update active button styling
-    filterButtons.forEach(btn => {
-        btn.classList.remove('active');
-    });
-
-    // Find and activate the clicked button
-    const clickedButton = Array.from(filterButtons).find(btn => {
-        const onclickAttr = btn.getAttribute('onclick');
-        return onclickAttr && onclickAttr.includes(`'${type}'`);
-    });
-
-    if (clickedButton) {
-        clickedButton.classList.add('active');
-    }
-
-    currentInventoryFilter = type;
-
-    // Filter items
-    items.forEach(item => {
-        const itemType = item.getAttribute('data-type');
-        if (type === 'all' || itemType === type) {
-            item.style.display = '';
-            visibleCount++;
-        } else {
-            item.style.display = 'none';
-        }
-    });
-
-    // Show/hide no items message
-    if (noInventoryMessage) {
-        if (visibleCount === 0) {
-            noInventoryMessage.style.display = 'block';
-        } else {
-            noInventoryMessage.style.display = 'none';
-        }
-    }
-
-    // Update inventory count
-    if (inventoryCount) {
-        inventoryCount.textContent = `${visibleCount} item${visibleCount !== 1 ? 's' : ''}`;
-    }
-}
-
-// View inventory item details
-function viewInventoryItem(type, id) {
-    const item = allInventory.find(i => i.type === type && String(i.id) === String(id));
-    if (!item) {
-        showToast('Item not found', 'error');
-        return;
-    }
-
-    const isVehicle = item.type === 'vehicle';
-    const status = item.status || 'Active';
-    const statusClass = status.toLowerCase().replace(/\s+/g, '-');
-
-    let content = '';
-
-    if (isVehicle) {
-        content = `
-            <div class="form-section">
-                <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
-                <p><strong>Vehicle ID:</strong> ${item.vehicle_id || 'N/A'}</p>
-                <p><strong>Vehicle Name:</strong> ${item.vehicle_name || 'N/A'}</p>
-                <p><strong>Number Plate:</strong> ${item.registration_number || item.number_plate || 'N/A'}</p>
-                <p><strong>Chassis Number:</strong> ${item.chassis_number || 'N/A'}</p>
-                <p><strong>Vehicle Type:</strong> ${item.vehicle_type || 'N/A'}</p>
-                <p><strong>Fuel Type:</strong> ${item.fuel_type || 'N/A'}</p>
-                <p><strong>Current Mileage:</strong> ${item.current_mileage ? item.current_mileage + ' km' : 'N/A'}</p>
-                <p><strong>Status:</strong> <span class="status-text status-${statusClass}">${status}</span></p>
-            </div>
-            <div class="form-section">
-                <h5><i class="fas fa-truck"></i> Supplier Information</h5>
-                <p><strong>Supplier:</strong> ${item.supplier_name || 'N/A'}</p>
-                ${item.supplier_contact ? `<p><strong>Contact:</strong> ${item.supplier_contact}</p>` : ''}
-            </div>
-            <div class="form-section">
-                <h5><i class="fas fa-calendar-alt"></i> Service & Warranty</h5>
-                ${item.last_service_date ? `<p><strong>Last Service:</strong> ${new Date(item.last_service_date).toLocaleDateString()}</p>` : ''}
-                ${item.next_service_date ? `<p><strong>Next Service:</strong> ${new Date(item.next_service_date).toLocaleDateString()}</p>` : ''}
-                ${item.warranty_expiry ? `<p><strong>Warranty Expiry:</strong> ${new Date(item.warranty_expiry).toLocaleDateString()}</p>` : ''}
-                ${item.warranty_provider ? `<p><strong>Warranty Provider:</strong> ${item.warranty_provider}</p>` : ''}
-            </div>
-            ${item.notes ? `
-                <div class="form-section">
-                    <h5><i class="fas fa-sticky-note"></i> Notes</h5>
-                    <p>${item.notes}</p>
-                </div>
-            ` : ''}
-        `;
-    } else {
-        content = `
-            <div class="form-section">
-                <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
-                <p><strong>Machine ID:</strong> ${item.machine_id || 'N/A'}</p>
-                <p><strong>Machine Name:</strong> ${item.machine_name || 'N/A'}</p>
-                <p><strong>Model Number:</strong> ${item.model_number || 'N/A'}</p>
-                <p><strong>Serial Number:</strong> ${item.serial_number || 'N/A'}</p>
-                <p><strong>Machine Type:</strong> ${item.machine_type || 'N/A'}</p>
-                <p><strong>Manufacturer:</strong> ${item.manufacturer || 'N/A'}</p>
-                <p><strong>Status:</strong> <span class="status-text status-${statusClass}">${status}</span></p>
-            </div>
-            ${item.specifications ? `
-                <div class="form-section">
-                    <h5><i class="fas fa-wrench"></i> Technical Specifications</h5>
-                    <p><strong>Specifications:</strong> ${item.specifications}</p>
-                </div>
-            ` : ''}
-            <div class="form-section">
-                <h5><i class="fas fa-calendar-alt"></i> Purchase & Warranty</h5>
-                ${item.purchase_date ? `<p><strong>Purchase Date:</strong> ${new Date(item.purchase_date).toLocaleDateString()}</p>` : ''}
-                ${item.warranty_expiry ? `<p><strong>Warranty Expiry:</strong> ${new Date(item.warranty_expiry).toLocaleDateString()}</p>` : ''}
-            </div>
-            ${item.notes ? `
-                <div class="form-section">
-                    <h5><i class="fas fa-sticky-note"></i> Notes</h5>
-                    <p>${item.notes}</p>
-                </div>
-            ` : ''}
-        `;
-    }
-
-    const title = isVehicle ? 'Vehicle Details' : 'Machine Details';
-    const modal = createDetailsModal(title, content);
-    document.body.appendChild(modal);
-    modal.classList.add('active');
-}
-
-function showTicketDetails(ticketId) {
-    viewTicket(ticketId);
-}
-
-// Create details modal - same format as inventory manager
-function createDetailsModal(title, content) {
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.id = 'detailsModal_' + Date.now();
-
-    modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-info-circle"></i> ${title}</h2>
-                <button class="btn-close" onclick="closeModal('${modal.id}')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div style="padding: 20px 30px;">
-                ${content}
-            </div>
-            <div style="padding: 0 30px 20px 30px;">
-                <button class="btn btn-secondary" onclick="closeModal('${modal.id}')"><i class="fas fa-times"></i> Close</button>
-            </div>
-        </div>
-    `;
-
-    // Close when clicking outside
-    modal.addEventListener('click', function (e) {
-        if (e.target === modal) {
-            closeModal(modal.id);
-        }
-    });
-
-    return modal;
-}
-
 // Start ticket work - changes status from Parts Approved to In Progress
 async function startTicketWork(ticketId) {
     const ticket = allTickets.find(t => t.id === ticketId);
@@ -1456,13 +1396,44 @@ function initializeForms() {
         }
 
         if (ticketId) {
-            // If no spare parts needed → set status to "In Progress" directly
-            // If spare parts requested → set status to "Waiting for Spare Parts" until approved
-            const newStatus = noSparePartsNeeded ? 'In Progress' : 'Waiting for Spare Parts';
-
             try {
-                // If spare parts are requested, POST the request to the backend first
-                if (!noSparePartsNeeded && sparePartItems.length > 0) {
+                if (!noSparePartsNeeded) {
+                    // Spare parts requested path
+                    // Validation: at least one part must be selected
+                    if (sparePartItems.length === 0) {
+                        showToast('Please select at least one spare part, or check "No Spare Parts Needed".', 'error');
+                        return;
+                    }
+
+                    // Availability check before submission
+                    try {
+                        const availResponse = await API.post('/spare-part-requests/check-availability', {
+                            items: sparePartItems.map(item => ({ part_code: item.part_code, quantity: item.quantity }))
+                        });
+                        
+                        if (availResponse.status === 'success' && availResponse.data?.items) {
+                            const unavailableItems = availResponse.data.items.filter(i => i.status === 'not_found');
+                            const lowStockItems = availResponse.data.items.filter(i => i.status === 'insufficient' || i.status === 'out_of_stock');
+                            
+                            // Block submission if any parts are not in catalog
+                            if (unavailableItems.length > 0) {
+                                const partNames = unavailableItems.map(i => i.part_code).join(', ');
+                                showToast(`Cannot submit: Parts not found in catalog: ${partNames}`, 'error');
+                                return;
+                            }
+                            
+                            // Warn about low/out of stock but allow submission
+                            if (lowStockItems.length > 0) {
+                                const warnings = lowStockItems.map(i => `${i.part_code}: ${i.message}`).join('; ');
+                                console.warn('Low stock warning:', warnings);
+                                // Continue submission with warning logged - IM will see availability when approving
+                            }
+                        }
+                    } catch (availErr) {
+                        console.warn('Availability check failed, proceeding with request:', availErr);
+                        // Continue even if availability check fails
+                    }
+
                     const ticket = allTickets.find(t => t.id == ticketId);
                     const ticketIdFormatted = ticket ? getDisplayTicketId(ticket) : '';
                     const equipmentName = document.getElementById('equipmentInput')?.value || '';
@@ -1482,36 +1453,47 @@ function initializeForms() {
 
                     const spareResponse = await API.post('/spare-part-requests', requestPayload);
                     if (spareResponse.status !== 'success') {
-                        console.error('Failed to save spare part request:', spareResponse);
+                        showToast(spareResponse.message || 'Failed to submit spare parts request.', 'error');
+                        return;
                     }
-                }
 
-                const response = await API.put(`/fault-tickets/${ticketId}`, {
-                    status: newStatus
-                });
-
-                if (response.status === 'success') {
-                    // Update the ticket in local array
+                    // Backend's syncTicketStatus() already set the ticket to
+                    // "Waiting for Spare Parts" — update local state directly,
+                    // no duplicate PUT needed.
                     const ticketIndex = allTickets.findIndex(t => t.id == ticketId);
                     if (ticketIndex !== -1) {
-                        allTickets[ticketIndex].status = newStatus;
+                        allTickets[ticketIndex].status = 'Waiting for Spare Parts';
                     }
 
-                    // Re-render tickets to reflect the status change
                     renderTickets(allTickets);
                     updateDashboardCounts(allTickets);
+                    showToast('Spare parts request submitted to Inventory Manager. Waiting for approval.', 'success');
+                    refreshTOSpareParts();
 
-                    if (noSparePartsNeeded) {
+                } else {
+                    // No spare parts needed → PUT to move ticket directly to In Progress
+                    const response = await API.put(`/fault-tickets/${ticketId}`, {
+                        status: 'In Progress'
+                    });
+
+                    if (response.status === 'success') {
+                        const ticketIndex = allTickets.findIndex(t => t.id == ticketId);
+                        if (ticketIndex !== -1) {
+                            allTickets[ticketIndex].status = 'In Progress';
+                        }
+
+                        renderTickets(allTickets);
+                        updateDashboardCounts(allTickets);
                         showToast('No spare parts needed. Work started! Status changed to In Progress.', 'success');
                     } else {
-                        showToast('Spare parts request submitted to Inventory Manager. Waiting for approval.', 'success');
+                        showToast(response.message || 'Status update failed. Please try again.', 'error');
+                        return;
                     }
-                } else {
-                    showToast('Request submitted but status update failed.', 'warning');
                 }
             } catch (error) {
-                console.error('Error updating ticket status:', error);
-                showToast('Request submitted but status update failed.', 'warning');
+                console.error('Error submitting spare parts request:', error);
+                showToast(error.message || 'Failed to submit request. Please try again.', 'error');
+                return;
             }
         } else {
             showToast('Parts request submitted to Inventory Manager!', 'success');
@@ -1545,89 +1527,21 @@ function initializeForms() {
         if (additionalNotesTextarea) additionalNotesTextarea.value = '';
     });
 
-    // Warranty Claim Form
-    document.getElementById('warrantyClaimForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-        showToast('Warranty claim submitted to Inventory Manager!');
-        closeModal('warrantyClaimModal');
-        this.reset();
-    });
-
-    // Asset Feedback Form
-    document.getElementById('assetFeedbackForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-        showToast('Feedback submitted successfully! Shared with Supervisor & Maintenance Manager.');
-        closeModal('feedbackModal');
-        this.reset();
-    });
 }
 
 // logout(), createConfirmationDialog(), closeConfirmation(), confirmAction()
 // are now provided by shared dashboard-init.js
-
-// ==================== INVENTORY MANAGEMENT ====================
-// (Inventory loading is handled by the loadInventory function earlier in the file)
-
-function renderInventory(items) {
-    const inventoryList = document.getElementById('allInventoryList');
-
-    if (items.length === 0) {
-        inventoryList.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px;"></i><p>No inventory items found</p></div>';
-        return;
-    }
-
-    inventoryList.innerHTML = items.map(item => {
-        const isVehicle = item.type === 'vehicle';
-        const icon = isVehicle ? 'fa-car' : 'fa-cogs';
-        const status = item.status || 'Active';
-        const statusClass = status.toLowerCase().replace(/\s+/g, '-');
-
-        return `
-            <div class="inventory-item" data-type="${item.type}">
-                <div class="item-details">
-                    <strong><i class="fas ${icon}"></i> ${item.name}</strong>
-                    <div class="item-meta">
-                        <i class="fas fa-hashtag"></i> ${item.identifier || 'N/A'} | 
-                        <i class="fas fa-tag"></i> ${isVehicle ? 'Vehicle' : 'Machine'}
-                        ${item.model ? ` | <i class="fas fa-box"></i> ${item.model}` : ''}
-                    </div>
-                    ${item.manufacturer ? `<div class="item-meta"><i class="fas fa-industry"></i> ${item.manufacturer}</div>` : ''}
-                </div>
-                <div class="item-actions">
-                    <span class="status-badge status-${statusClass}">${status}</span>
-                    <div class="action-buttons">
-                        <button class="btn btn-primary btn-mini" onclick="viewInventoryItem(${item.id}, '${item.type}')">
-                            <i class="fas fa-eye"></i> View
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-function filterInventoryByType(type) {
-    const buttons = document.querySelectorAll('#inventoryFilterTabs .filter-btn');
-    buttons.forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
-
-    let filteredItems = allInventoryItems;
-    if (type !== 'all') {
-        filteredItems = allInventoryItems.filter(item => item.type === type);
-    }
-
-    renderInventory(filteredItems);
-
-    const inventoryCount = document.getElementById('inventoryCount');
-    inventoryCount.textContent = `${filteredItems.length} asset${filteredItems.length !== 1 ? 's' : ''}`;
-}
 
 // ==================== NAVIGATION & SECTION SWITCHING ====================
 
 // Close modal when clicking outside
 document.addEventListener('click', function (e) {
     if (e.target.classList.contains('modal')) {
-        e.target.classList.remove('active');
+        if (typeof e.target.close === 'function') {
+            e.target.close();
+        } else {
+            e.target.classList.remove('active');
+        }
     }
 });
 
@@ -1636,7 +1550,11 @@ document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
         const activeModal = document.querySelector('.modal.active');
         if (activeModal) {
-            activeModal.classList.remove('active');
+            if (typeof activeModal.close === 'function') {
+                activeModal.close();
+            } else {
+                activeModal.classList.remove('active');
+            }
         }
     }
 });
@@ -1652,55 +1570,36 @@ function toggleSidebar() {
 // Check authorization on page load
 (async function initializeDashboard() {
     try {
-        // Require Technical Officer role
-        const authorized = await Auth.requireRole('Technical Officer');
+        const user = await DashboardInit.init('Technical Officer', {
+            updateUserDisplay: true
+        });
 
-        if (!authorized) {
-            console.error('Authorization failed');
-            return; // Auth.requireRole will handle redirection
+        if (!user) {
+            console.error('No authorized user data received for Technical Officer dashboard');
+            return;
         }
 
-        // Load user data
-        const user = await Auth.checkAuth();
+        currentUser = user;
         console.log('Technical Officer Dashboard - User loaded:', user);
 
-        if (user) {
-            currentUser = user; // Store for ticket filtering
-            console.log('currentUser set to:', currentUser);
-
-            // Update user name
-            const fullName = user.full_name || user.name || 'Technical Officer';
-            const userNameElement = document.getElementById('userName');
-            if (userNameElement) {
-                userNameElement.textContent = fullName;
-            }
-
-            // Update user avatar with first letter of name
-            const avatar = document.getElementById('userAvatar');
-            if (avatar) {
-                avatar.textContent = fullName.charAt(0).toUpperCase();
-            }
-
-            // Update employee ID
-            const employeeIdElement = document.getElementById('userEmployeeId');
-            if (employeeIdElement && user.employee_id) {
-                employeeIdElement.textContent = `ID: ${user.employee_id}`;
-            }
-
-            // Update role
-            const roleElement = document.getElementById('userRole');
-            if (roleElement && user.role) {
-                roleElement.textContent = user.role;
-            }
-
-            // Load tickets and inventory after user data is loaded
-            console.log('Loading tickets and inventory...');
-            await loadTickets();
-            await loadInventory();
-            console.log('Tickets and inventory loaded');
-        } else {
-            console.error('No user data received');
+        const shellSidebar = document.querySelector('to-shell-sidebar');
+        if (shellSidebar && typeof shellSidebar.refreshNotificationBadge === 'function') {
+            await shellSidebar.refreshNotificationBadge();
         }
+
+        bindTOInventory();
+        bindTONotifications();
+        bindTOFeedback();
+        bindTOTickets();
+        bindTOSpareParts();
+        bindTOServiceWarranty();
+
+        // Load tickets and inventory after user data is loaded
+        console.log('Loading tickets and inventory...');
+        await loadTickets();
+        await refreshTOInventory();
+        await refreshTONotifications();
+        console.log('Tickets and inventory loaded');
     } catch (error) {
         console.error('Error initializing dashboard:', error);
     }
@@ -1709,6 +1608,13 @@ function toggleSidebar() {
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', function () {
     initializeForms();
+    bindCreateFaultTicket();
+    bindTOTickets();
+    bindTOInventory();
+    bindTONotifications();
+    bindTOFeedback();
+    bindTOSpareParts();
+    bindTOServiceWarranty();
 
     // Set today's date as default for date inputs
     const today = new Date().toISOString().split('T')[0];
@@ -1749,4 +1655,7 @@ document.addEventListener('DOMContentLoaded', function () {
         menuBtn.onclick = toggleSidebar;
         document.body.appendChild(menuBtn);
     }
+
+    // Restore the active section from ?section= query param (or default to 'dashboard')
+    restoreSectionFromUrl();
 });

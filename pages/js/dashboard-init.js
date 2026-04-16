@@ -52,11 +52,29 @@ const DashboardInit = {
     },
 
     /**
-     * Update user information in the dashboard header
-     * Supports both old and new header structures
+     * Update user information in the dashboard header.
+     * Delegates to whichever header component is present on the page,
+     * checked in priority order:
+     *   1. <ac-header>      — unified shared header (all dashboards)
+     *   2. <to-shell-header> — legacy TO-specific header
+     *   3. Direct DOM queries — fallback for any remaining legacy HTML
      */
     updateUserInfo(user) {
-        // New header structure (Supervisor/Admin style)
+        // 1. Unified shared header
+        const acHeader = document.querySelector('ac-header');
+        if (acHeader && typeof acHeader.updateUser === 'function') {
+            acHeader.updateUser(user);
+            return;
+        }
+
+        // 2. TO-specific header (still in use for TO dashboard)
+        const shellHeader = document.querySelector('to-shell-header');
+        if (shellHeader && typeof shellHeader.updateUser === 'function') {
+            shellHeader.updateUser(user);
+            return;
+        }
+
+        // Legacy fallback: direct DOM queries for dashboards not yet using the component
         const userNameElement = document.getElementById('userName');
         const userEmployeeIdElement = document.getElementById('userEmployeeId');
         const userRoleElement = document.getElementById('userRole');
@@ -77,6 +95,10 @@ const DashboardInit = {
         if (userAvatarElement) {
             const initials = this.getInitials(user.full_name || user.role);
             userAvatarElement.textContent = initials;
+
+            // Sync the larger avatar inside the profile dropdown panel
+            const menuAvatarElement = document.getElementById('profileMenuAvatar');
+            if (menuAvatarElement) menuAvatarElement.textContent = initials;
         }
 
         // Fallback: Old header structure (legacy dashboards)
@@ -132,64 +154,46 @@ const DashboardInit = {
 // ==================== CONFIRMATION DIALOG FUNCTIONS ====================
 
 /**
- * Create a styled confirmation dialog modal
- * @param {string} title - Dialog title
- * @param {string} message - Dialog message (supports HTML)
- * @param {Function} onConfirm - Callback when user confirms
- * @param {string} type - Dialog type: 'danger', 'warning', or 'primary'
+ * Returns the <confirm-dialog> element, auto-creating it if absent.
+ * Dashboards that include confirm-dialog.js and declare <confirm-dialog>
+ * in their HTML will get the real element; others get a lazily-created one.
+ */
+function _getConfirmDialog() {
+    let el = document.querySelector('confirm-dialog');
+    if (!el) {
+        el = document.createElement('confirm-dialog');
+        document.body.appendChild(el);
+    }
+    return el;
+}
+
+/**
+ * Open the confirmation dialog.
+ * Kept as a global function so all existing call-sites continue to work
+ * without modification.
+ *
+ * @param {string}   title
+ * @param {string}   message    — supports HTML
+ * @param {Function} onConfirm
+ * @param {string}   [type]     — 'danger' | 'warning' | 'primary' | 'info'
  */
 function createConfirmationDialog(title, message, onConfirm, type = 'danger') {
-    const modal = document.createElement('div');
-    modal.className = 'modal confirmation-modal';
-    modal.id = 'confirmationModal';
-
-    modal.innerHTML = `
-        <div class="modal-content confirmation-content">
-            <div class="confirmation-header ${type}">
-                <i class="fas fa-${type === 'danger' ? 'exclamation-triangle' : 'question-circle'}"></i>
-                <h4>${title}</h4>
-            </div>
-            <div class="confirmation-body">
-                <p>${message}</p>
-            </div>
-            <div class="confirmation-actions">
-                <button class="btn btn-secondary" onclick="closeConfirmation()">
-                    <i class="fas fa-times"></i> Cancel
-                </button>
-                <button class="btn btn-${type}" onclick="confirmAction()">
-                    <i class="fas fa-check"></i> Confirm
-                </button>
-            </div>
-        </div>
-    `;
-
-    // Store the confirmation action
-    window.pendingConfirmAction = onConfirm;
-
-    document.body.appendChild(modal);
-    setTimeout(() => modal.classList.add('active'), 10);
+    _getConfirmDialog().show({ title, message, type, onConfirm });
 }
 
 /**
- * Close the confirmation dialog
+ * Close the confirmation dialog (kept for any external callers).
  */
 function closeConfirmation() {
-    const modal = document.getElementById('confirmationModal');
-    if (modal) {
-        modal.classList.remove('active');
-        setTimeout(() => modal.remove(), 300);
-    }
-    window.pendingConfirmAction = null;
+    _getConfirmDialog().close();
 }
 
 /**
- * Execute the pending confirmation action
+ * @deprecated — the component handles confirm clicks internally.
+ * Kept only for backward compatibility with any existing onclick handlers.
  */
 async function confirmAction() {
-    if (window.pendingConfirmAction) {
-        await window.pendingConfirmAction();
-        closeConfirmation();
-    }
+    // No-op: <confirm-dialog> handles the Confirm button internally.
 }
 
 /**

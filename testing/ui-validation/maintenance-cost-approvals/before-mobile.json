@@ -1,0 +1,22 @@
+{
+  "stage": "before",
+  "viewport": "mobile",
+  "url": "http://127.0.0.1:3000/dashboard/maintenance/index.html",
+  "title": "Maintenance Manager Dashboard",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \"Cost Approvals\" [level=1]\n  - paragraph: Approve/Reject repair costs beyond petty cash\n  - button \"All Requests\"\n  - button \"Pending\"\n  - button \"Approved\"\n  - button \"Rejected\"\n  - text: Rejected Requests\n  - table:\n    - rowgroup:\n      - row \"Request ID Supervisor Description Amount Rejected Date Reason Actions\":\n        - columnheader \"Request ID\"\n        - columnheader \"Supervisor\"\n        - columnheader \"Description\"\n        - columnheader \"Amount\"\n        - columnheader \"Rejected Date\"\n        - columnheader \"Reason\"\n        - columnheader \"Actions\"\n    - rowgroup:\n      - 'row \"BUD-102 Supervisor Mike Hydraulic leak on Machine #205 LKR 28,300.00 4/12/2026, 8:31:35 PM Rejected by Maintenance Manager View\"':\n        - cell \"BUD-102\"\n        - cell \"Supervisor Mike\"\n        - 'cell \"Hydraulic leak on Machine #205\"'\n        - cell \"LKR 28,300.00\"\n        - cell \"4/12/2026, 8:31:35 PM\"\n        - cell \"Rejected by Maintenance Manager\"\n        - cell \"View\":\n          - button \"View\"",
+    "snapshotLength": 1020
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "activeSection": "cost-approvals",
+    "pendingCount": 0,
+    "approvedRows": 1,
+    "rejectedRows": 1,
+    "activeFilter": "Rejected",
+    "modalStates": {
+      "costDetailsOpen": false
+    }
+  }
+}

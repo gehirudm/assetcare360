@@ -1,0 +1,31 @@
+{
+  "stage": "after",
+  "viewport": "mobile",
+  "title": "Driver Dashboard - AssetCare360",
+  "console": [],
+  "failedRequests": [],
+  "driver": {
+    "url": "http://127.0.0.1:3000/dashboard/driver/index.html",
+    "actions": {
+      "entryCalls": 1,
+      "progressCalls": 1,
+      "completeCalls": 1
+    },
+    "ui": {
+      "activeSection": "ticket-tracking",
+      "ticketRows": 3,
+      "openModalCount": 0
+    }
+  },
+  "supervisor": {
+    "url": "http://127.0.0.1:3000/dashboard/supervisor/index.html",
+    "actions": {
+      "approvalCalls": 1
+    },
+    "ui": {
+      "activeSection": "fault-ticket-tracking",
+      "ticketRows": 1,
+      "modalVisible": false
+    }
+  }
+}

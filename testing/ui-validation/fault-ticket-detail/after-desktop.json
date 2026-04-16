@@ -1,0 +1,20 @@
+{
+  "stage": "after",
+  "viewport": "desktop",
+  "startUrl": "http://127.0.0.1:3000/view-ticket/index.html?id=501&return_to=%2Fdashboard%2Ftechnical-officer%2Findex.html%3Fsection%3Dtickets",
+  "finalUrl": "http://127.0.0.1:3000/view-ticket/index.html?id=501&return_to=%2Fdashboard%2Ftechnical-officer%2Findex.html%3Fsection%3Dtickets",
+  "title": "Ticket Details - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- banner:\n  - button \"Back to Dashboard\"\n  - heading \"Ticket Details\" [level=1]\n  - text: \"T Technical Officer One ID: LITRO-TECHOFFICER-001 • Technical Officer\"\n  - button \"Logout\"\n- main:\n  - heading \"Fault Ticket Details\" [level=1]\n  - paragraph: Complete information about this maintenance ticket\n  - text: TKT-501 Ticket Information Ticket ID TKT-501 Priority High Status Open Created Date Apr 12, 2026, 01:30 PM Reported By Supervisor One Location North Yard Issue Description Hydraulic pressure drop under load Attached Photos\n  - img \"Ticket photo 1\"\n  - text: View\n  - img \"Ticket photo 2\"\n  - text: \"View Assigned Technicians T Technical Officer One tech.officer@example.com +94-11-123-4567 Assigned: Apr 12, 2026, 02:00 PM Expected: Apr 15, 2026, 05:30 PM Budget Report\"\n  - paragraph: No budget report submitted yet\n  - button \"Submit Budget Report\"\n  - text: Asset Information Asset ID 11 Model CAT-320D Name Excavator 320D Type Excavator Prior Tickets for This Asset\n  - button \"View All\"\n  - text: TKT-502 Resolved Engine overheating at idle Mar 20, 2026, 03:30 PM High TKT-503 Completed Hydraulic hose leakage Feb 10, 2026, 03:30 PM High",
+    "snapshotLength": 1153
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "ticketId": 501,
+    "allTicketsModalOpened": true,
+    "imageViewerOpened": true,
+    "budgetModalOpened": true,
+    "priorTicketsLoaded": 3
+  }
+}

@@ -20,6 +20,7 @@ A PHP-based backend for an inventory management system with role-based access co
 - ✅ Machine and vehicle inventory management
 - ✅ Fault ticket system with image uploads (max 5 images per report)
 - ✅ UUID-based image storage for fault reports  
+- ✅ RabbitMQ event pipeline (publisher + audit/notification consumers + service-due producer)
 
 ## Project Structure
 
@@ -114,13 +115,53 @@ The easiest way to set up the project is using the automated setup script:
    php scripts/migrate.php migrate
    ```
 
+4. **(Optional) Enable event pipeline**
+   ```bash
+   composer install
+   # update .env with RabbitMQ settings and set EVENTS_ENABLED=true
+   php services/consume_audit_events.php
+   php services/consume_notification_events.php
+   php services/consume_email_events.php
+   php services/check_service_due.php
+   ```
+
+   `check_service_due.php` now runs as a continuous service loop.
+   Set `SERVICE_DUE_POLL_INTERVAL_SECONDS` in `.env` to control the loop interval (default: `600`).
+
    For existing databases that already have historical changes applied manually, baseline old migrations first, then run new ones:
    ```bash
    php scripts/migrate.php baseline --until=41
    php scripts/migrate.php migrate
    ```
 
-4. **Start the development server**
+5. **Start/stop services with scripts (CLI or interactive menu)**
+   ```bash
+   # list supported services
+   ./start.sh --list
+
+   # start one service
+   ./start.sh backend
+   ./start.sh frontend
+   ./start.sh audit-consumer
+   ./start.sh notification-consumer
+   ./start.sh email-consumer
+   ./start.sh service-due-producer
+
+   # start all services
+   ./start.sh all
+
+   # interactive menu mode
+   ./start.sh --gui
+
+   # stop one/all services
+   ./stop.sh backend
+   ./stop.sh all
+   ./stop.sh --gui
+   ```
+
+   Service runtime PID and log files are stored in `/tmp/assetcare360-services`.
+
+6. **Start the development server**
    ```bash
    cd public
    php -S localhost:8000
@@ -204,6 +245,25 @@ MailHog is a local SMTP server that captures emails for testing without actually
    **Note:** Replace `~` with your actual home directory path if needed (e.g., `/Users/yourusername/go/bin/mhsendmail`)
 
 5. **Restart PHP** (if using PHP-FPM or Apache, restart the service)
+
+6. **Configure `.env` for MailHog SMTP consumer delivery**
+   ```env
+   MAILHOG_SMTP_HOST=127.0.0.1
+   MAILHOG_SMTP_PORT=1025
+   MAILHOG_FROM_EMAIL=noreply@assetcare360.local
+   MAILHOG_FROM_NAME=AssetCare360
+   MAILHOG_HELO_DOMAIN=assetcare360.local
+   MAILHOG_TIMEOUT_SECONDS=10
+   ```
+
+7. **Run the RabbitMQ email consumer**
+   ```bash
+   php services/consume_email_events.php
+   # or
+   ./start.sh email-consumer
+   ```
+
+   This consumer listens to RabbitMQ events and sends notification emails via MailHog SMTP.
 
 ### Usage
 

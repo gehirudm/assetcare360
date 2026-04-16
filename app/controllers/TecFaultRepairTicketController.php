@@ -101,7 +101,7 @@ class TecFaultRepairTicketController {
             $id = $_GET['id'] ?? null;
             
             if (!$id) {
-                return Response::badRequest('Repair ticket ID is required');
+                return Response::error('Repair ticket ID is required', 400);
             }
             
             $ticket = $this->model->findById($id);
@@ -126,7 +126,7 @@ class TecFaultRepairTicketController {
             $id = $_GET['id'] ?? null;
             
             if (!$id) {
-                return Response::badRequest('Repair ticket ID is required');
+                return Response::error('Repair ticket ID is required', 400);
             }
             
             $user = RoleMiddleware::getCurrentUser();
@@ -173,7 +173,7 @@ class TecFaultRepairTicketController {
                 $updatedTicket = $this->model->findById($id);
                 return Response::success($updatedTicket, 'Repair ticket updated successfully');
             } else {
-                return Response::badRequest('No changes made or update failed');
+                return Response::error('No changes made or update failed', 400);
             }
         } catch (Exception $e) {
             error_log("Error updating repair ticket: " . $e->getMessage());
@@ -190,7 +190,7 @@ class TecFaultRepairTicketController {
             $id = $_GET['id'] ?? null;
             
             if (!$id) {
-                return Response::badRequest('Repair ticket ID is required');
+                return Response::error('Repair ticket ID is required', 400);
             }
             
             $user = RoleMiddleware::getCurrentUser();
@@ -211,7 +211,7 @@ class TecFaultRepairTicketController {
             $data = json_decode(file_get_contents('php://input'), true);
             
             if (!isset($data['status'])) {
-                return Response::badRequest('Status is required');
+                return Response::error('Status is required', 400);
             }
             
             $result = $this->model->updateStatus($id, $data['status']);
@@ -236,7 +236,7 @@ class TecFaultRepairTicketController {
             $status = $_GET['status'] ?? null;
             
             if (!$status) {
-                return Response::badRequest('Status is required');
+                return Response::error('Status is required', 400);
             }
             
             $tickets = $this->model->getByStatus($status);

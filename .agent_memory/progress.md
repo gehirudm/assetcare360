@@ -1,0 +1,327 @@
+# Progress
+
+## What Works
+- ✅ JWT auth with HTTP-only cookies; login/logout flow
+- ✅ Role-based access control (8 roles, including Transportation Manager)
+- ✅ API request logging with analytics (Admin)
+- ✅ User management (CRUD, search, filters, force-password-change)
+- ✅ Machine & vehicle inventory management
+- ✅ Spare-parts inventory (additions, usage tracking)
+- ✅ Fault ticket system — full lifecycle (Open → Closed)
+  - Image uploads (up to 5 per ticket, UUID filenames)
+  - Assignment to Technical Officers
+  - Budget report submission & approval workflow (petty-cash routing)
+  - Spare-part request workflow
+  - Ticket work-update record (TO marks work done)
+  - Breakdown report linking
+- ✅ Route-breakdown garage workflow alignment across Supervisor, shared ticket detail, Driver, and backend assignment rules (TASK039)
+  - Supervisor pending route-breakdown VIEW now routes to shared `pages/view-ticket/` flow.
+  - Shared detail page supports Supervisor dual step-2 actions for route tickets: assign technician or approve nearby garage.
+  - Nearby garage approval now makes technician assignment optional in UI, and backend assignment endpoint rejects technician assignment updates when garage workflow is active.
+  - Driver garage modal now shows only the approved garage once assigned.
+  - OpenAPI updated to document `/fault-tickets/{id}/assign` and its garage-workflow blocked-assignment response.
+- ✅ Fuel logging + TM fleet details enhancement (TASK040)
+  - Added migration `053_add_fuel_source_and_nullable_total_cost.php` to add `fuel_source`, backfill missing values, make `total_cost` nullable, and add index `idx_fuel_source`.
+  - Updated backend fuel validation/normalization (`FuelLogService`) to derive `fuel_type` from vehicle and enforce source-aware rules (`external` requires cost + receipt).
+  - Updated fuel log persistence and upload handling (`FuelLog`, `FuelLogController`) for `fuel_source`, nullable costs, and safer bill upload error handling.
+  - Updated Driver and TM fuel UI flows to remove manual fuel-type selection and apply internal/external conditional behavior.
+  - Replaced TM fleet modal detail flow with dedicated `fleet-details` dashboard section including metrics, Chart.js trend chart, and driver/fuel history.
+  - Updated `testing/openapi.yaml` with fuel-log endpoints and schemas reflecting source-aware rules.
+  - Validation: migration executed successfully, PHP syntax checks passed, touched-file diagnostics clean, Playwright `VAL_STAGE=after` passed.
+- ✅ Vehicle government fuel QR image flow (TASK041)
+  - Added migration `054_add_government_fuel_qr_image_to_vehicles.php` and applied it successfully.
+  - Added backend QR upload flow for vehicles (`VehicleController::uploadFuelQrImage`, `VehicleService::updateFuelQrImage`, route `POST /vehicles/:id/fuel-qr`).
+  - Added vehicle schema support for `government_fuel_qr_image` and persistent storage under `uploads/vehicle-fuel-qr/`.
+  - Follow-up fix: QR uploads now persist under publicly served `public/uploads/vehicle-fuel-qr/` while preserving DB path compatibility (`uploads/vehicle-fuel-qr/...`).
+  - Follow-up fix: legacy QR files in repository-root uploads are auto-copied into public storage on read to prevent render-time 404 for existing records.
+  - Follow-up fix: QR URL resolution in TM/Driver prefers API-origin asset URLs for `uploads/...` paths to avoid split-host render failures.
+  - Updated TM fleet-details UI to upload/replace and preview the vehicle QR image.
+  - Follow-up UX adjustment: TM vehicle details now places the Government Fuel QR section immediately above Recent Fuel Records.
+  - Updated Driver dashboard overview to display the assigned vehicle QR image and open a full-size view.
+  - Updated `testing/openapi.yaml` with the new endpoint and `Vehicle`/`VehicleInput` field documentation.
+  - Validation: diagnostics clean, PHP lint + JS syntax checks passed, migrations status shows zero pending.
+- ✅ TecFaultRepairTicket — TO's own repair record per ticket
+- ✅ Trip & vehicle check logs (Driver role)
+- ✅ Machine weekly checks
+- ✅ SystemSetting model + controller (petty_cash_limit, etc.)
+- ✅ Technical Officer dashboard (query-param navigation, fault-ticket-detail page)
+  - Full dashboard shell (header + sidebar) on detail page
+  - Step-by-step ticket flow visualisation (7 steps)
+  - Breadcrumb sub-header with icon back-button
+- ✅ Technical Officer main dashboard shell/navigation migration (TASK005)
+  - Migrated main TO dashboard page shell from `to-shell-header`/`to-shell-sidebar` to shared `<ac-layout>` + shared header/sidebar components
+  - Replaced manual nav activation with `<ac-layout>` `section-change` orchestration and URL query-param synchronization for deep-link compatibility
+  - Aligned auth/bootstrap with `DashboardInit.init('Technical Officer')` and shared `<ac-header>` user rendering
+  - Updated notifications badge bridge to write through `ac-layout ac-sidebar`
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Shared modal/form components (`ac-modal`, `ac-input-group`, `ac-form-control`)
+  - TO "Create New Repair Ticket" modal refactored to component-based structure
+  - Component styles encapsulated in shadow DOM (constructable stylesheets), not page stylesheet
+- ✅ Technical Officer first component extraction to dashboard component structure
+  - Added `components/create-fault-ticket/script.js` + `style.css`
+  - Removed create-ticket modal-specific logic from monolithic TO script
+  - Parent/child communication now event-driven (`create-fault-ticket-created`)
+- ✅ Technical Officer notifications extraction
+  - Added `components/notifications/script.js` with `<to-notifications>`
+  - Replaced inline notifications markup in TO dashboard page
+  - Removed inline notifications loader logic from parent TO script
+  - Added parent bridge methods for notifications refresh and navigation event wiring
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Technical Officer inventory extraction
+  - Added `components/inventory/script.js` with `<to-inventory>`
+  - Replaced inline inventory markup in TO dashboard page
+  - Added parent bridge methods for inventory refresh/error orchestration
+  - Removed legacy and duplicate inventory helper functions from parent TO script
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Technical Officer feedback extraction
+  - Added `components/feedback/script.js` with `<to-feedback>`
+  - Replaced inline feedback section markup and removed page-level feedback modal HTML
+  - Added parent bridge method for feedback submission event handling (`bindTOFeedback`)
+  - Removed legacy parent `assetFeedbackForm` listener
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Technical Officer service-warranty extraction
+  - Added `components/service-warranty/script.js` with `<to-service-warranty>`
+  - Replaced inline service-warranty section markup and removed page-level warranty modal HTML
+  - Added parent bridge method for warranty submit event handling (`bindTOServiceWarranty`)
+  - Removed legacy `filterWarrantyByStatus` function and parent `warrantyClaimForm` listener
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Technical Officer spare-parts extraction
+  - Added `components/spare-parts/script.js` with `<to-spare-parts>`
+  - Replaced inline spare-parts section markup in TO dashboard page
+  - Added parent bridge methods (`bindTOSpareParts`, `refreshTOSpareParts`) to preserve existing request modal flow
+  - Removed legacy parent section filter handler (`filterPartsByStatus`)
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Technical Officer tickets extraction and UI decoupling
+  - Added `components/tickets/script.js` with `<to-tickets>`
+  - Replaced inline tickets section markup and moved ticket list rendering/filtering into `<to-tickets>` methods
+  - Added component-dispatched action events for view/request/start/update flows with parent bridge handlers
+  - Updated `loadTickets()` / `renderTickets()` orchestration to call tickets component APIs (`setLoading`, `setEmpty`, `setError`, `renderTickets`)
+  - Removed duplicate parent filter wiring so filter state is component-owned
+  - Syntax and diagnostics validation passed for touched TO files
+- ✅ Maintenance cost-approvals extraction slice (TASK011 in progress)
+  - Added `pages/dashboard/maintenance/components/maintenance-cost-approvals.js` with `<maintenance-cost-approvals>` and moved cost approval loading/filtering/review workflows into component-owned logic
+  - Added one-modal-per-component cost modals under `pages/dashboard/maintenance/components/page-modals/` (`maintenance-approve-cost-modal`, `maintenance-reject-cost-modal`, `maintenance-cost-details-modal`)
+  - Replaced inline cost-approvals section and cost approval modal blocks in `pages/dashboard/maintenance/index.html` with component hosts
+  - Reduced root `pages/dashboard/maintenance/script.js` for this scope to orchestration wrappers and custom-event toast bridge (`maintenance-ui:toast`)
+  - Validation before/after passed (`2/2` desktop+mobile each stage) via `testing/ui-validation/maintenance-cost-approvals/validate-maintenance-cost-approvals.spec.js` with no console warnings/errors and no failed network requests
+- ✅ Maintenance service-reports extraction slice (TASK011 in progress)
+  - Added `pages/dashboard/maintenance/components/maintenance-service-reports.js` with `<maintenance-service-reports>` and moved report filtering/approve/view flows into component-owned logic
+  - Added one-modal-per-component report details modal under `pages/dashboard/maintenance/components/page-modals/maintenance-report-details-modal.js`
+  - Replaced inline service-reports section and report-details modal in `pages/dashboard/maintenance/index.html` with component hosts
+  - Reduced root `pages/dashboard/maintenance/script.js` for this scope to orchestration wrappers (`filterServiceReports`, `viewReportDetails`, `approveReport`, `reviewReport`)
+  - Validation before/after passed (`2/2` desktop+mobile each stage) via `testing/ui-validation/maintenance-service-reports/validate-maintenance-service-reports.spec.js` with no console warnings/errors and no failed network requests
+  - Cross-phase regression guard: maintenance cost-approvals after-state validation rerun passed (`2/2` desktop+mobile)
+- ✅ Maintenance dashboard componentization completed (TASK011)
+  - Added remaining dashboard-scoped section components in `pages/dashboard/maintenance/components/`:
+    - `maintenance-dashboard-overview.js`
+    - `maintenance-fault-tickets.js`
+    - `maintenance-service-records.js`
+    - `maintenance-service-warranty.js`
+    - `maintenance-notifications.js`
+  - Added remaining one-modal-per-component files in `pages/dashboard/maintenance/components/page-modals/`:
+    - `maintenance-ticket-details-modal.js`
+    - `maintenance-warranty-details-modal.js`
+    - `maintenance-service-schedule-modal.js`
+    - `maintenance-add-service-record-modal.js`
+  - Replaced all remaining inline section/modal markup in maintenance dashboard HTML with component hosts and removed inline event attributes from `pages/dashboard/maintenance/**`
+  - Reduced `pages/dashboard/maintenance/script.js` to orchestration-only responsibilities (component delegates, modal utilities, toast bridge, bootstrap)
+  - Validation passed for remaining scope via `testing/ui-validation/maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js` (`VAL_STAGE=before` and `VAL_STAGE=after`: 2/2 desktop+mobile each stage; console/network regressions: none)
+  - Regression guards rerun passed: `maintenance-cost-approvals` `VAL_STAGE=after` 2/2 and `maintenance-service-reports` `VAL_STAGE=after` 2/2 (desktop+mobile)
+- ✅ Machinery Operator dashboard componentization completed (TASK010)
+  - Added section components under `pages/dashboard/machinery-operator/components/`:
+    - `mo-dashboard-overview.js`
+    - `mo-fault-reporting.js`
+    - `mo-condition-updates.js`
+    - `mo-ticket-tracking.js`
+    - `mo-notifications.js`
+  - Added one-modal-per-component files under `pages/dashboard/machinery-operator/components/page-modals/`:
+    - `mo-report-fault-modal.js`
+    - `mo-edit-fault-modal.js`
+    - `mo-condition-update-modal.js`
+    - `mo-machine-details-modal.js`
+    - `mo-machine-breakdown-details-modal.js`
+    - `mo-weekly-check-details-modal.js`
+  - Replaced inline section/modal markup in `pages/dashboard/machinery-operator/index.html` with component hosts and removed inline handler attributes from the page HTML
+  - Replaced `pages/dashboard/machinery-operator/script.js` monolith with orchestration-only bridges (auth/bootstrap, section refresh routing, cross-component modal events, toast and sidebar badge wiring)
+  - Added `pages/dashboard/machinery-operator/components/mo-utils.js` as shared utility helper for status/date/toast behavior reused across section and modal components
+  - Validation passed for full Machinery Operator scope via `testing/ui-validation/machinery-operator-dashboard/validate-machinery-operator-dashboard.spec.js` (`VAL_STAGE=before` and `VAL_STAGE=after`: 2/2 desktop+mobile each stage; console/network regressions: none)
+- ✅ Driver dashboard componentization completed (TASK009)
+  - Added dashboard-scoped section components under `pages/dashboard/driver/components/` (`driver-dashboard-overview`, `driver-trip-log`, `driver-vehicle-check`, `driver-breakdown`, `driver-fuel-mileage`, `driver-transport-ticket`, `driver-garages`) and shared `driver-utils.js`
+  - Added one-modal-per-component files under `pages/dashboard/driver/components/page-modals/` for trip, check, breakdown, fuel/mileage, and ticket flows
+  - Replaced inline section/modal markup in `pages/dashboard/driver/index.html` with component hosts and removed inline handler attributes from `pages/dashboard/driver/**`
+  - Reduced `pages/dashboard/driver/script.js` to orchestration-only responsibilities (auth/bootstrap, refresh routing, toast bridge, modal bridge, periodic refresh)
+  - Validation passed via `testing/ui-validation/driver-dashboard/validate-driver-dashboard.spec.js` (`VAL_STAGE=before` and `VAL_STAGE=after`: 2/2 desktop+mobile each stage; console/network regressions: none)
+- ✅ Inline events to component events migration completed (TASK014)
+  - Completed migration of inline handler usage to component-local event handling across active dashboard scopes (SysAdministration, Maintenance, Machinery Operator, Driver)
+  - Standardized custom-event orchestration contracts so parent dashboard scripts remain orchestration-only
+  - Final Driver closure validated with stage-based before/after Playwright evidence (desktop + mobile) and zero console/network regressions
+- ✅ Supervisor componentization completed (TASK007)
+  - Added `components/asset-status/script.js` with `<supervisor-asset-status>`
+  - Replaced inline asset-status section markup with component host in supervisor dashboard HTML
+  - Added parent bridge wiring for component events (`view`, `update`, `filter`) and section refresh integration
+  - Added `components/repair-management/script.js` with `<supervisor-repair-management>`
+  - Replaced inline repair-management section markup with component host and bridged repair action events in parent script
+  - Updated repair section activation flow to use component bridge and fixed stale `loadRepairs()` DOM selector mismatch
+  - Added `components/fault-tickets/script.js` with `<supervisor-fault-tickets>`
+  - Replaced inline fault-tickets section markup with component host and bridged status/source filters + create-ticket actions in parent script
+  - Updated fault-ticket section activation to use component refresh bridge and removed implicit `event` dependency in ticket filter handlers
+  - Added `components/technicians/script.js` with `<supervisor-technicians>`
+  - Replaced inline technicians section markup with component host and bridged `supervisor-technicians:view` events in parent script
+  - Updated `loadTechnicians()` to render list/loading/error states via component APIs instead of inline markup/handlers
+  - Added `components/budget-approval/script.js` with `<supervisor-budget-approval>`
+  - Replaced inline budget-approval section markup with component host and bridged view/filter/status-change events in parent script
+  - Updated budget section activation flow to refresh component state and added null guard for stale legacy budget DOM IDs
+  - Added `components/daily-check-reports/script.js` with `<supervisor-daily-check-reports>` and moved weekly-check loading/filtering/view/approve/reject behavior into the section component
+  - Added one-modal-per-component daily-check modal components under `components/page-modals/` (`report-details-modal` and `rejection-reason-modal`)
+  - Replaced inline daily-check + modal markup in supervisor page with component hosts and script includes
+  - Reduced parent supervisor script daily-check path to orchestration-only bridges (`bindSupervisorDailyCheckReports`, `refreshSupervisorDailyCheckReports`) and removed legacy section/modal handlers
+  - Validation (desktop + mobile) passed via Playwright flow replay with no console errors/warnings and no failed network requests; after-state artifacts captured in `testing/ui-validation/supervisor-daily-check-reports/after-*.json`
+  - Syntax and diagnostics validation passed for touched supervisor files
+- ✅ Auction dashboard componentization completed (TASK013)
+  - Added dashboard-scoped section components under `pages/dashboard/auction/components/` (`dashboard-overview`, `active-auctions`, `assets`, `bidders`, `schedule`, `reports`)
+  - Added one-modal-per-component decomposition under `pages/dashboard/auction/components/page-modals/` (`create-auction-modal`, `register-bidder-modal`, `schedule-auction-modal`, `auction-details-modal`, `auction-bidders-modal`)
+  - Replaced inline section/modal markup in `pages/dashboard/auction/index.html` with component hosts and direct section shells for `<ac-layout>` compatibility
+  - Reduced `pages/dashboard/auction/script.js` to orchestration-only wiring (auth/bootstrap, section bridge, toast bridge, modal bridges)
+  - Added validation spec `testing/ui-validation/auction-dashboard/validate-auction-dashboard.spec.js`
+  - Validation before/after passed (`2/2` desktop+mobile each stage) with no console warnings/errors and no failed network requests
+- ✅ SysAdministration dashboard componentization completed (TASK012)
+  - Added remaining dashboard-scoped section components in `pages/dashboard/sysadministration/components/` (`sa-petty-cash-config`, `sa-notifications-config`, `sa-system-logs`, `sa-activity-tracking`)
+  - Replaced remaining inline section markup in `pages/dashboard/sysadministration/index.html` with component hosts
+  - Added `sa-ui:toast` custom-event bridge in `pages/dashboard/sysadministration/script.js` for shared toast orchestration
+  - Removed obsolete extracted-section globals from `pages/dashboard/sysadministration/script.js` (petty cash, notifications templates, system logs, activity tracking)
+  - Added one-modal-per-component page modals under `pages/dashboard/sysadministration/components/page-modals/` and replaced inline modal blocks in page HTML with modal hosts
+  - Added dedicated `sa-edit-user-modal` and removed dynamic edit-user modal creation from parent script
+  - Updated `sa-user-accounts` + `sa-service-config` to component-local action/filter handlers and removed remaining inline onclick usage in SysAdministration scope
+  - Migrated remaining user-management API/edit/reset/delete/detail flows into `sa-user-accounts` and removed parent `UserManagement` class/bootstrap
+  - Reduced parent SysAdministration script to orchestration-only bridges (toast, modal helpers, overview navigation, compatibility user-details fallback)
+  - Added validation spec `testing/ui-validation/sysadmin-dashboard/validate-sysadmin-dashboard.spec.js`
+  - Validation before/after passed (`2/2` desktop+mobile each stage) with no console warnings/errors and no failed network requests
+  - Post-cleanup validation rerun (`VAL_STAGE=after`) also passed (`2/2`) with no console warnings/errors and no failed network requests
+- ✅ Inventory Manager notifications extraction
+  - Added `components/notifications/script.js` + `style.css`
+  - Replaced inline notifications section markup with `<inventory-notifications>`
+  - Removed notification helpers from monolithic `inventory-manager/script.js`
+  - Added event bridge for sidebar badge updates and cross-section actions
+  - Follow-up fix: restored missing `components/notifications/style.css` file after post-refactor regression testing
+- ✅ Inventory Manager dashboard overview extraction
+  - Added `components/dashboard-overview/script.js` + `style.css`
+  - Replaced inline dashboard section markup with `<inventory-dashboard-overview>`
+  - Added parent event bridge for dashboard section navigation + refresh
+  - Removed legacy dashboard functions from monolithic `inventory-manager/script.js`
+- ✅ Inventory Manager usage tracking extraction
+  - Added `components/usage-tracking/script.js` + `style.css`
+  - Replaced inline usage section markup with `<inventory-usage-tracking>`
+  - Added parent refresh bridge (`refreshUsageTracking`) for section loading
+  - Removed legacy usage handlers/listeners from monolithic `inventory-manager/script.js`
+- ✅ Inventory Manager orders and approvals extraction
+  - Added `components/orders-approvals/script.js` + `style.css`
+  - Replaced inline orders section markup with `<inventory-orders-approvals>`
+  - Removed legacy orderActionModal from page HTML (now component-internal)
+  - Added `refreshOrdersApprovals()` parent bridge with currentUser injection
+  - Fixed notification-to-orders navigation to use component `viewOrderDetails()` method
+  - Removed 15 order management functions (470 lines) and 2 global state variables
+- ✅ Inventory Manager catalog extraction
+  - Added `components/catalog/script.js` + `style.css`
+  - Replaced inline catalog section markup with `<inventory-catalog>`
+  - Added parent action/refresh bridge (`bindCatalog`, `refreshCatalog`)
+  - Removed legacy catalog load/render/filter functions from monolithic `inventory-manager/script.js`
+- ✅ Inventory Manager sparepart-addition extraction
+  - Added `components/sparepart-addition/script.js` + `style.css`
+  - Replaced inline addition section markup with `<inventory-sparepart-addition>`
+  - Added parent action/refresh bridge (`bindSparepartAddition`, `refreshSparepartAddition`)
+  - Removed legacy addition load/render/filter functions from monolithic `inventory-manager/script.js`
+  - Monolithic script reduced from 3580 → 2672 lines (~25% reduction)
+- ✅ Completed-dashboard quality cleanup (TASK017)
+  - Removed `-model` naming from completed Inventory Manager and TO create-ticket component folders, custom tags, and parent bridge helpers
+  - Componentized remaining Inventory Manager popup markup via `components/page-modals/script.js` + `<inventory-page-modals>` host in page HTML
+  - Migrated catalog/sparepart-addition modal and CRUD handlers out of `inventory-manager/script.js` into `components/page-modals/script.js`
+  - Cleared remaining `*-model` usage from `pages/dashboard/**`
+  - Syntax/diagnostic validation passed for all touched files
+  - Post-cleanup MCP fixes applied in Inventory Manager:
+    - `pages/js/api.js` now exports `window.API = API` for component compatibility
+    - catalog component now guards duplicate event binding across reconnects
+    - end-to-end MCP retest passed with no console/network regressions for tested flows
+- ✅ Dashboard bootstrap/load-order normalization (TASK015)
+  - Normalized core include order in `machinery-operator/index.html` to `config → api → auth → utils`
+  - Removed duplicate `config.js` include from `maintenance/index.html`
+  - Ensured style modules load before `create-fault-ticket` in `technical-officer/index.html`
+  - Standardized auth redirects to `CONFIG.ROUTES.LOGIN` in Inventory Manager and TO fault-ticket-detail scripts
+  - Syntax/diagnostic validation passed for all touched files
+- ✅ RabbitMQ event-architecture backlog setup
+  - Created memory tasks `TASK018` through `TASK027` for practical implementation slices
+  - Created Beads epic `assetcare-backend-new-lm7` and child issues for event contract, publisher, emitters, consumers, scheduler, API, frontend, and hardening
+  - Added dependency links in Beads to establish execution order
+- ✅ RabbitMQ event architecture implementation (TASK018–TASK027)
+  - Added event contract/catalog (`DomainEvents`, `EventEnvelope`), publisher (`EventPublisher`), and fail-safe emitter (`EventEmitter`)
+  - Added migration `048` with `event_audit_logs`, `notifications`, `processed_events`, and `service_due_event_locks`
+  - Added audit and notification consumers with manual ack/nack, idempotency, and DLQ binding
+  - Added service-due cron producer script with duplicate suppression
+  - Added notifications API endpoints and OpenAPI documentation
+  - Integrated Technical Officer notification UI with backend notifications API and mark-as-read flow
+- ✅ Transportation Manager dashboard bootstrap (TASK016)
+  - Replaced empty dashboard files with baseline `<ac-layout>` shell and section map
+  - Added auth bootstrap and section routing orchestration in page script
+  - Added initial role-scoped component scaffold: `<transport-overview>`
+- ✅ Shared fault-ticket detail page refactor (TASK034)
+  - Removed inline handlers from `pages/view-ticket/index.html`
+  - Modularized detail behavior into `pages/view-ticket/modules/navigation.js`, `pages/view-ticket/modules/budget-report.js`, and orchestration-focused `pages/view-ticket/script.js`
+  - Added/ran stage-based validation `testing/ui-validation/fault-ticket-detail/validate-fault-ticket-detail.spec.js` with before/after desktop+mobile pass and no console/network regressions
+- ✅ Technical Officer detail migration and local page removal (TASK035)
+  - Updated TO ticket routing to canonical `pages/view-ticket` with return-context contract
+  - Removed duplicate local TO detail folder `pages/dashboard/technical-officer/fault-ticket-detail/`
+  - Added/ran routing validation `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js` with before/after desktop+mobile pass and no console/network regressions
+- ✅ Supervisor residual cleanup (TASK036)
+  - Co-located create/assign/view modal logic into `supervisor-create-ticket-modal`, `supervisor-assign-ticket-modal`, and `supervisor-view-ticket-modal`
+  - Reduced `pages/dashboard/supervisor/script.js` modal pathways to orchestration-only bridges and removed duplicate/stale modal helper code
+  - Removed legacy global modal/dropdown listeners from parent script and confirmed no inline `on*` handlers in `pages/dashboard/supervisor/**`
+  - Re-ran `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js` with `VAL_STAGE=before` and `VAL_STAGE=after` (both 2/2 desktop+mobile; console/network regressions: none)
+- ✅ Transportation Manager role creation support (TASK033)
+  - Added `Transportation Manager` role options to SysAdmin user create/edit modal components:
+    - `pages/dashboard/sysadministration/components/page-modals/sa-create-user-modal.js`
+    - `pages/dashboard/sysadministration/components/page-modals/sa-edit-user-modal.js`
+  - Added `Transportation Manager` user filter tab in `pages/dashboard/sysadministration/components/sa-user-accounts.js`
+  - Aligned backend acceptance (`app/services/UserService.php`, `app/middleware/RoleMiddleware.php`, `app/models/User.php`) so the role is valid end-to-end
+  - Updated `testing/openapi.yaml` Users role enums and role documentation to include Transportation Manager
+  - Added and executed scope validation `testing/ui-validation/sysadmin-transportation-manager-role/validate-sysadmin-transportation-manager-role.spec.js`
+  - Validation passed for both stages (desktop + mobile):
+    - `VAL_STAGE=before`: 2/2
+    - `VAL_STAGE=after`: 2/2
+    - Console warnings/errors: none
+    - Failed network requests: none
+- ✅ Budget-flow notification routing refinement (TASK032)
+  - Updated `services/consume_notification_events.php` so `BUDGET_REPORT_CREATED` with supervisor-level approval targets controlling supervisor user IDs derived from active `fault_ticket_assignments` ownership (`assigned_to` -> `assigned_by`).
+  - Added fallback ownership lookup by ticket-level active assignments and a safe fallback role broadcast (`target_role=Supervisor`) when ownership cannot be resolved.
+  - Preserved maintenance manager routing behavior for maintenance-manager approval events.
+  - Added validation script `testing/ui-validation/budget-notification-routing/validate-budget-notification-routing.spec.js`.
+  - Validation passed for both stages (desktop + mobile):
+    - `VAL_STAGE=before`: 2/2
+    - `VAL_STAGE=after`: 2/2
+    - Console warnings/errors: none
+    - Failed network requests: none
+- ✅ Dashboard web-components refactor program orchestration (TASK004)
+  - Sequencing/acceptance/checkpoint standards finalized and synchronized with child tasks
+- ✅ RabbitMQ event architecture program orchestration (TASK018)
+  - Program-level decomposition complete; execution now tracked in TASK019–TASK027
+- ✅ OpenAPI coverage expanded for budget/work-update constraints (TASK003 partial)
+  - Added explicit `total_amount > 0` payload constraints (`minimum: 0.01`)
+  - Added Ticket Work Updates endpoints and pending-budget 400 error example
+- ✅ 47 database migrations applied
+
+## What's Left / Known Issues
+- ⏳ Migration `047` run/confirmation remains blocked in current sandbox due DB connection refusal
+- ⏳ Frontend budget-submission form should validate `total_amount > 0` before POSTing
+- ⏳ Verify migration 048 and event consumers against a live RabbitMQ + database environment
+
+## Known Bugs Fixed (this session)
+- `Response::badRequest()` used in `TecFaultRepairTicketController` — doesn't exist; replaced with `Response::error('…', 400)`
+- Budget step showing `LKR 0.00` when no amount provided
+- No backend gate preventing work-update while budget is pending
+- Zero-amount budget could be submitted (`total_amount = 0` was accepted)
+- Technical Officer dashboard could render sidebar with empty main content due `ac-layout` pre-mount attribute rerender; fixed by guarding attribute updates until first mount and retrying initial section capture.
+- Profile dropdown in shared dashboard header rendered unstyled in multiple dashboards; fixed by moving dropdown presentation rules into shared `ac-header` styles injected once for all dashboards.
+- Profile section in shared dashboard header could remain on `Loading...` without account details; fixed by adding self-hydration from stored/auth session data in `ac-header` and preserving hydrated state across rerenders.
+- Inventory Manager Notifications sidebar badge could appear unstyled because shared sidebar rendered badge markup without shared badge CSS; fixed by adding shared `.nav-badge` styles in `pages/components/shared/ac-sidebar.js`.
+- Inventory Manager notifications component could request missing stylesheet (`components/notifications/style.css`) causing 404; fixed by adding the component stylesheet.
+- Inventory Manager extracted components could show "API client is not available" due `window.API` compatibility gap; fixed by exposing API helper on `window`.
+- Inventory Manager catalog View action could open duplicate details modals after reconnect/bind cycles; fixed by preventing duplicate event-listener registration in catalog component.
+- SysAdmin could not create/update Transportation Manager users because role options and backend validation/hierarchy were incomplete; fixed by adding role options in modal components, adding user filter tab, and aligning backend role acceptance/documentation.

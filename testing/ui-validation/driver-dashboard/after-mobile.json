@@ -1,0 +1,19 @@
+{
+  "stage": "after",
+  "viewport": "mobile",
+  "url": "http://127.0.0.1:3000/dashboard/driver/index.html",
+  "title": "Driver Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- text: AssetCare360\n- heading \"Driver Dashboard\" [level=1]\n- button \"DO\"\n- navigation: Dashboard Trip Log Vehicle Check Breakdown Report Fuel & Mileage Transport Ticket Nearby Garages\n- main:\n  - heading \"Transport Ticket\" [level=2]\n  - paragraph: Create and manage cargo transport documentation\n  - button \"Create Transport Ticket\"\n  - text: My Transport Tickets\n  - strong: TT-001\n  - text: \"Colombo → Kandy | Aug 25, 2024 COMPLETED | Spare parts crates (350 kg) | Trip: TRP-001\"\n  - button \"VIEW\"\n  - button \"PRINT\"\n  - button \"EXPORT\"\n  - strong: TT-002\n  - text: \"Kandy → Galle | Aug 25, 2024 IN TRANSIT | Machinery components (500 kg) | Trip: TRP-002\"\n  - button \"VIEW\"\n  - button \"PRINT\"\n  - button \"UPDATE\"",
+    "snapshotLength": 715
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "activeSection": "transport-ticket",
+    "openModalCount": 0,
+    "tripRows": 2,
+    "checkRows": 2,
+    "breakdownRows": 2
+  }
+}

@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../models/TicketWorkUpdate.php';
+require_once __DIR__ . '/../models/BudgetReport.php';
 require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 
@@ -10,9 +11,11 @@ require_once __DIR__ . '/../middleware/RoleMiddleware.php';
  */
 class TicketWorkUpdateController {
     private $workUpdateModel;
+    private $budgetReportModel;
     
     public function __construct() {
         $this->workUpdateModel = new TicketWorkUpdate();
+        $this->budgetReportModel = new BudgetReport();
     }
     
     /**
@@ -70,6 +73,14 @@ class TicketWorkUpdateController {
             if ($this->workUpdateModel->hasWorkUpdate($input['ticket_id'])) {
                 error_log('TicketWorkUpdate create: Ticket already has a work completion record');
                 Response::error('This ticket already has a work completion record', 400);
+                return;
+            }
+
+            // Block work update submission if there is a pending budget report
+            $latestBudgetReport = $this->budgetReportModel->getLatestByTicketId($input['ticket_id']);
+            if ($latestBudgetReport && strtolower($latestBudgetReport['status']) === 'pending') {
+                error_log('TicketWorkUpdate create: Cannot submit work update — budget report is still pending approval');
+                Response::error('Cannot submit work update: the budget report for this ticket is still pending approval. Please wait for approval before starting work.', 400);
                 return;
             }
             

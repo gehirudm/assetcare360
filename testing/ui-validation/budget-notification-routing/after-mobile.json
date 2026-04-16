@@ -1,0 +1,19 @@
+{
+  "stage": "after",
+  "viewport": "mobile",
+  "startUrl": "http://127.0.0.1:3000/dashboard/technical-officer/index.html?section=notifications",
+  "finalUrl": "http://127.0.0.1:3000/dashboard/technical-officer/index.html?section=notifications",
+  "title": "Technical Officer Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- text: AssetCare360\n- heading \"Technical Officer Dashboard\" [level=1]\n- button \"TO\"\n- navigation: Dashboard Fault & Repair Tickets Spare Part Management Inventory Management Service & Warranty Asset Feedback Notifications\n- main:\n  - heading \"Notifications\" [level=2]\n  - paragraph: Tickets and updates that require your attention\n  - text: Budget pending approval - TKT-601 Budget report for Hydraulic Excavator is awaiting supervisor review. New ticket assigned - TKT-602 Rear drum vibration anomaly | Compactor\n  - button \"View Ticket\"\n- button \"☰\"",
+    "snapshotLength": 552
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "notificationsVisible": true,
+    "ticketSectionVisibleAfterAction": true,
+    "budgetCardCount": 1,
+    "actionableButtonCount": 1
+  }
+}

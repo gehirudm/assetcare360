@@ -1,697 +1,1438 @@
+'use strict';
 
 let ticketData = null;
 let currentUser = null;
+let budgetReport = null;
+let sparePartRequests = [];
+let workUpdates = [];
+let currentRoleContext = null;
+let routeBreakdownContext = null;
+let availableRouteGarages = [];
 
-// Get ticket ID from URL
-function getTicketIdFromUrl() {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('id');
+const STATUS_ORDER = [
+    'open',
+    'assigned',
+    'waiting for budget approval',
+    'waiting for spare parts',
+    'parts approved',
+    'in progress',
+    'resolved',
+    'closed'
+];
+
+const PRE_WORK_STATUSES = [
+    'open',
+    'assigned',
+    'waiting for budget approval',
+    'waiting for spare parts',
+    'parts approved'
+];
+
+const SUPERVISOR_NAV_ITEMS = [
+    { section: 'dashboard', icon: 'fas fa-chart-line', label: 'Dashboard' },
+    { section: 'daily-check-reports', icon: 'fas fa-clipboard-check', label: 'Weekly Check Reports' },
+    { section: 'fault-ticket-tracking', icon: 'fas fa-ticket-alt', label: 'Fault Tickets' },
+    { section: 'fault-tickets', icon: 'fas fa-user-cog', label: 'Technician Assignment' },
+    { section: 'repair-management', icon: 'fas fa-tools', label: 'Repair Management' },
+    { section: 'budget-approval', icon: 'fas fa-dollar-sign', label: 'Budget Approval' },
+    { section: 'asset-status', icon: 'fas fa-truck', label: 'Asset Status' },
+    { section: 'technicians', icon: 'fas fa-user-cog', label: 'Technicians' }
+];
+
+function getTicketId() {
+    return new URLSearchParams(window.location.search).get('id');
 }
 
-// Show toast notification
-function showToast(message, isError = false) {
-    const toast = document.getElementById('toast');
-    const toastMessage = document.getElementById('toastMessage');
-    toastMessage.textContent = message;
-
-    toast.classList.remove('error');
-    if (isError) {
-        toast.classList.add('error');
-    }
-
-    toast.classList.add('show');
-
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3000);
+function toRoleKey(roleName) {
+    return String(roleName || '').trim().toUpperCase().replace(/\s+/g, '_');
 }
 
-// Show error state
-function showError(message) {
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'none';
-    document.getElementById('errorState').style.display = 'block';
-    document.getElementById('errorMessage').textContent = message;
+function normaliseStatus(status) {
+    return String(status || '').toLowerCase().trim();
 }
 
-// Format date
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+function statusIndex(status) {
+    const idx = STATUS_ORDER.indexOf(normaliseStatus(status));
+    return idx === -1 ? 0 : idx;
 }
 
-// Load user data
-async function loadUserData() {
-    try {
-        currentUser = await Auth.checkAuth();
-        if (currentUser) {
-            const fullName = currentUser.full_name || currentUser.name || 'User';
-            document.getElementById('userName').textContent = fullName;
-            document.getElementById('userAvatar').textContent = fullName.charAt(0).toUpperCase();
-
-            if (currentUser.employee_id) {
-                document.getElementById('userEmployeeId').textContent = `ID: ${currentUser.employee_id}`;
-            }
-
-            if (currentUser.role) {
-                document.getElementById('userRole').textContent = currentUser.role;
-            }
-        }
-    } catch (error) {
-        console.error('Error loading user data:', error);
-    }
+function statusAtOrPast(ticketStatus, targetStatus) {
+    return statusIndex(ticketStatus) >= statusIndex(targetStatus);
 }
 
-// Setup back button
-function setupBackButton() {
-    const backButton = document.getElementById('backButton');
-    backButton.addEventListener('click', () => {
-        if (currentUser && currentUser.role) {
-            const role = currentUser.role.toLowerCase().replace(/\s+/g, '-');
-            window.location.href = `/dashboard/${role}/`;
-        } else {
-            window.history.back();
-        }
-    });
+function isPreWork(status) {
+    return PRE_WORK_STATUSES.includes(normaliseStatus(status));
 }
 
-// Load ticket details
-async function loadTicketDetails() {
-    const ticketId = getTicketIdFromUrl();
+function isTechnicalOfficer() {
+    return toRoleKey(currentUser?.role) === 'TECHNICAL_OFFICER';
+}
 
-    if (!ticketId) {
-        showError('No ticket ID provided in the URL');
+function isSupervisorLike() {
+    const roleKey = toRoleKey(currentUser?.role);
+    return roleKey === 'SUPERVISOR' || roleKey === 'ADMIN';
+}
+
+function isRouteBreakdownTicket() {
+    return normaliseStatus(ticketData?.breakdown_type) === 'route_breakdown';
+}
+
+function getRouteGarageWorkflowStatus() {
+    return normaliseStatus(
+        routeBreakdownContext?.garage_workflow_status
+        || routeBreakdownContext?.garage_workflow?.status
+        || ticketData?.route_garage_workflow_status
+    );
+}
+
+function hasRouteGarageAssignment() {
+    const status = getRouteGarageWorkflowStatus();
+    return ['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(status);
+}
+
+function getApprovedRouteGarageName() {
+    return routeBreakdownContext?.approved_garage_name
+        || routeBreakdownContext?.garage_workflow?.approved_garage?.name
+        || ticketData?.route_approved_garage_name
+        || null;
+}
+
+function getRouteBreakdownNumericId() {
+    const id = Number(routeBreakdownContext?.id || routeBreakdownContext?.route_breakdown_id_numeric || 0);
+    return Number.isFinite(id) && id > 0 ? id : 0;
+}
+
+async function loadRouteBreakdownContext() {
+    routeBreakdownContext = null;
+
+    if (!isRouteBreakdownTicket()) {
         return;
     }
 
     try {
-        const response = await API.get(`/fault-tickets/${ticketId}`);
+        const response = await API.get('/route-breakdowns');
+        const list = Array.isArray(response?.data?.breakdowns)
+            ? response.data.breakdowns
+            : (Array.isArray(response?.data) ? response.data : []);
 
-        if (response.status === 'success' && response.data) {
-            ticketData = response.data;
-            displayTicketDetails(ticketData);
-            loadPriorTickets(ticketData.machine_id);
-        } else {
-            showError(response.message || 'Failed to load ticket details');
+        if (!list.length) {
+            return;
         }
+
+        const ticketId = Number(ticketData?.id || 0);
+        const reportId = String(ticketData?.breakdown_report_id || '').trim().toLowerCase();
+
+        routeBreakdownContext = list.find((item) => Number(item?.fault_ticket_id || 0) === ticketId)
+            || list.find((item) => String(item?.route_breakdown_id || '').trim().toLowerCase() === reportId)
+            || null;
     } catch (error) {
-        console.error('Error loading ticket:', error);
-        showError('An error occurred while loading the ticket. Please try again.');
+        console.warn('Unable to load route breakdown context for ticket detail page:', error);
     }
 }
 
-// Display ticket details
-function displayTicketDetails(ticket) {
-    // Hide loading, show content
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'block';
-
-    // Ticket ID Badge
-    const ticketIdFormatted = ticket.ticket_id || ('MBD-' + String(ticket.id).padStart(3, '0'));
-    document.getElementById('ticketIdBadge').textContent = ticketIdFormatted;
-    document.getElementById('ticketId').textContent = ticketIdFormatted;
-
-    // Basic Info
-    document.getElementById('ticketCreatedDate').textContent = formatDate(ticket.created_at);
-    document.getElementById('ticketReporter').textContent = ticket.reported_by_name || ticket.reporter_full_name || 'Unknown';
-    document.getElementById('ticketLocation').textContent = ticket.location || 'Not specified';
-    document.getElementById('ticketDescription').textContent = ticket.description || 'No description provided';
-
-    // Priority Badge
-    const priority = (ticket.priority || 'Medium').toLowerCase();
-    const priorityBadge = `<span class="status-badge priority-${priority}">
-                <i class="fas fa-exclamation-circle"></i> ${ticket.priority || 'Medium'}
-            </span>`;
-    document.getElementById('ticketPriority').innerHTML = priorityBadge;
-
-    // Status Badge
-    const status = (ticket.status || 'New').toLowerCase().replace(/\s+/g, '-');
-    const statusBadge = `<span class="status-badge status-${status}">
-                <i class="fas fa-circle"></i> ${ticket.status || 'New'}
-            </span>`;
-    document.getElementById('ticketStatus').innerHTML = statusBadge;
-
-    // Machine/Asset Info
-    document.getElementById('machineId').textContent = ticket.machine_id || 'N/A';
-    document.getElementById('machineModel').textContent = ticket.machine_model_number || 'N/A';
-    document.getElementById('machineName').textContent = ticket.machine_name || 'N/A';
-    document.getElementById('machineType').textContent = ticket.machine_type || 'N/A';
-
-    // Display Photos if available
-    if (ticket.photos && ticket.photos.length > 0) {
-        document.getElementById('photosSection').style.display = 'block';
-        const photosContainer = document.getElementById('ticketPhotos');
-        photosContainer.className = 'photo-gallery';
-        photosContainer.innerHTML = ticket.photos.map((photo, index) => `
-            <div class="photo-gallery-item" onclick="openImageViewer('${photo.url}')">
-                <img src="${photo.url}" alt="Ticket photo ${index + 1}">
-                <div class="photo-overlay">
-                    <i class="fas fa-search-plus"></i> View
-                </div>
-            </div>
-        `).join('');
+function fmtDate(value) {
+    if (window.FaultTicketDetailTemplate?.formatDateTime) {
+        return window.FaultTicketDetailTemplate.formatDateTime(value);
     }
 
-    // Display Assignments if available
-    if (ticket.assignments && ticket.assignments.length > 0) {
-        document.getElementById('assignmentsCard').style.display = 'block';
-        const assignmentsList = document.getElementById('assignmentsList');
-        assignmentsList.innerHTML = ticket.assignments.map(assignment => {
-            const name = assignment.technician_name || 'Unknown';
-            const avatar = name.charAt(0).toUpperCase();
-            const assignedDate = formatDate(assignment.assigned_at);
-            const expectedDate = assignment.expected_completion_date ? formatDate(assignment.expected_completion_date) : 'Not set';
+    if (!value) return 'N/A';
+
+    return new Date(value).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+}
+
+function fmtDateShort(value) {
+    if (window.FaultTicketDetailTemplate?.formatDateShort) {
+        return window.FaultTicketDetailTemplate.formatDateShort(value);
+    }
+
+    if (!value) return 'N/A';
+
+    return new Date(value).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric'
+    });
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const msg = document.getElementById('toastMessage');
+    if (!toast || !msg) return;
+
+    toast.classList.remove('toast-success', 'toast-warning', 'toast-error', 'show');
+    if (type === 'warning') toast.classList.add('toast-warning');
+    else if (type === 'error' || type === 'danger') toast.classList.add('toast-error');
+    else toast.classList.add('toast-success');
+
+    msg.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
+function showError(message) {
+    const loading = document.getElementById('loadingState');
+    const content = document.getElementById('mainContent');
+    const errorState = document.getElementById('errorState');
+    const errorMessage = document.getElementById('errorMessage');
+
+    if (loading) loading.style.display = 'none';
+    if (content) content.style.display = 'none';
+    if (errorState) errorState.style.display = 'flex';
+    if (errorMessage) errorMessage.textContent = message;
+}
+
+function markStep(stepId, state) {
+    const el = document.getElementById(stepId);
+    if (!el) return;
+
+    el.classList.remove('step-completed', 'step-active', 'step-pending', 'step-warning', 'step-danger');
+    el.classList.add(`step-${state}`);
+}
+
+function getSafeReturnToPath() {
+    const raw = new URLSearchParams(window.location.search).get('return_to');
+    if (!raw) return null;
+
+    try {
+        const resolved = new URL(raw, window.location.origin);
+        if (resolved.origin !== window.location.origin) return null;
+        return `${resolved.pathname}${resolved.search}`;
+    } catch (_error) {
+        return null;
+    }
+}
+
+function resolveRoleContext(user) {
+    const roleKey = toRoleKey(user?.role);
+    const dashboardPath = CONFIG?.ROUTES?.DASHBOARD?.[roleKey]
+        || CONFIG?.ROUTES?.DASHBOARD?.TECHNICAL_OFFICER
+        || '/dashboard/technical-officer/index.html';
+
+    const defaultSection = roleKey === 'SUPERVISOR' ? 'fault-tickets'
+        : roleKey === 'TECHNICAL_OFFICER' ? 'tickets'
+            : 'dashboard';
+
+    const title = roleKey === 'SUPERVISOR' ? 'Supervisor Dashboard'
+        : roleKey === 'TECHNICAL_OFFICER' ? 'Technical Officer Dashboard'
+            : `${user?.role || 'User'} Dashboard`;
+
+    return {
+        roleKey,
+        dashboardPath,
+        defaultSection,
+        title,
+        navItems: roleKey === 'SUPERVISOR' ? SUPERVISOR_NAV_ITEMS : null
+    };
+}
+
+function buildDashboardUrl(section = 'dashboard') {
+    if (!currentRoleContext) return '#';
+
+    const url = new URL(currentRoleContext.dashboardPath, window.location.origin);
+    if (section) url.searchParams.set('section', section);
+    return `${url.pathname}${url.search}`;
+}
+
+function applyRoleShellAndNavigation() {
+    if (!currentRoleContext) return;
+
+    const header = document.querySelector('to-shell-header');
+    if (header) {
+        header.setAttribute('title', currentRoleContext.title);
+        header.setAttribute('icon', currentRoleContext.roleKey === 'SUPERVISOR' ? 'fa-user-tie' : 'fa-tools');
+    }
+
+    const sidebar = document.querySelector('to-shell-sidebar');
+    if (sidebar) {
+        sidebar.setAttribute('mode', 'subpage');
+        sidebar.setAttribute('active-section', currentRoleContext.defaultSection);
+        sidebar.setAttribute('base-path', currentRoleContext.dashboardPath);
+
+        if (currentRoleContext.navItems) sidebar.setAttribute('nav', JSON.stringify(currentRoleContext.navItems));
+        else sidebar.removeAttribute('nav');
+    }
+
+    const returnToPath = getSafeReturnToPath();
+    const ticketsPath = returnToPath || buildDashboardUrl(currentRoleContext.defaultSection);
+    const dashboardPath = buildDashboardUrl('dashboard');
+
+    const dashboardCrumb = document.getElementById('dashboardCrumbLink');
+    const ticketsCrumb = document.getElementById('ticketsCrumbLink');
+    const backButton = document.getElementById('backButton');
+    const errorBackButton = document.getElementById('errorBackButton');
+
+    if (dashboardCrumb) dashboardCrumb.href = dashboardPath;
+
+    if (ticketsCrumb) {
+        ticketsCrumb.href = ticketsPath;
+        ticketsCrumb.textContent = currentRoleContext.roleKey === 'SUPERVISOR'
+            ? 'Technician Assignment'
+            : 'Fault & Repair Tickets';
+    }
+
+    const navigateBack = () => {
+        window.location.href = ticketsPath;
+    };
+
+    if (backButton) backButton.addEventListener('click', navigateBack);
+    if (errorBackButton) errorBackButton.addEventListener('click', navigateBack);
+}
+
+async function loadAll() {
+    const ticketId = getTicketId();
+    if (!ticketId) {
+        showError('No ticket ID supplied in the URL.');
+        return;
+    }
+
+    try {
+        const [ticketResp, budgetResp, partsResp] = await Promise.all([
+            API.get(`/fault-tickets/${ticketId}`),
+            API.get(`/budget-reports/ticket/${ticketId}/latest`).catch(() => null),
+            API.get(`/spare-part-requests/ticket/${ticketId}`).catch(() => null)
+        ]);
+
+        if (ticketResp.status !== 'success' || !ticketResp.data) {
+            showError(ticketResp.message || 'Failed to load ticket.');
+            return;
+        }
+
+        ticketData = ticketResp.data;
+        await loadRouteBreakdownContext();
+
+        const budgetPayload = (budgetResp && budgetResp.status === 'success')
+            ? budgetResp.data
+            : null;
+
+        if (budgetPayload && typeof budgetPayload === 'object' && Object.prototype.hasOwnProperty.call(budgetPayload, 'report')) {
+            budgetReport = (budgetPayload.report && typeof budgetPayload.report === 'object')
+                ? budgetPayload.report
+                : null;
+        } else {
+            budgetReport = (budgetPayload && typeof budgetPayload === 'object')
+                ? budgetPayload
+                : null;
+        }
+
+        sparePartRequests = (partsResp && partsResp.status === 'success') ? (partsResp.data || []) : [];
+        workUpdates = Array.isArray(ticketData.work_updates) ? ticketData.work_updates : [];
+
+        const workflow = ticketData.workflow || {};
+        if (!budgetReport && workflow.has_budget_report) {
+            budgetReport = {
+                id: workflow.budget_report_id || null,
+                status: workflow.budget_report_status || 'pending',
+                approval_level: workflow.budget_approval_level || 'supervisor'
+            };
+        }
+
+        if (sparePartRequests.length === 0 && workflow.has_spare_part_request) {
+            sparePartRequests = [{
+                id: workflow.spare_part_request_id || null,
+                request_id: workflow.spare_part_request_id
+                    ? `SPR-${String(workflow.spare_part_request_id).padStart(3, '0')}`
+                    : 'SPR',
+                status: workflow.spare_part_request_status || 'Pending',
+                items: []
+            }];
+        }
+
+        renderPage();
+    } catch (error) {
+        console.error('loadAll error:', error);
+        showError('An error occurred while loading the ticket.');
+    }
+}
+
+function renderPage() {
+    const loadingState = document.getElementById('loadingState');
+    const mainContent = document.getElementById('mainContent');
+
+    if (loadingState) loadingState.style.display = 'none';
+    if (mainContent) mainContent.style.display = 'flex';
+
+    const ticketIdFormatted = window.FaultTicketDetailTemplate?.formatTicketDisplayId
+        ? window.FaultTicketDetailTemplate.formatTicketDisplayId(ticketData)
+        : (ticketData.breakdown_report_id || ticketData.ticket_id || `#${ticketData.id}`);
+
+    const badge = document.getElementById('ticketIdBadge');
+    if (badge) badge.textContent = ticketIdFormatted;
+
+    renderOverview(ticketIdFormatted);
+    renderFlow();
+}
+
+function renderOverview(ticketIdFormatted) {
+    const status = normaliseStatus(ticketData.status);
+    const priority = String(ticketData.priority || 'Medium').toLowerCase();
+
+    document.getElementById('ovTicketId').textContent = ticketIdFormatted;
+    document.getElementById('ovLocation').textContent = ticketData.location || 'N/A';
+    document.getElementById('ovDate').textContent = fmtDateShort(ticketData.created_at);
+    document.getElementById('ovDescription').textContent = ticketData.description || 'No description provided.';
+
+    document.getElementById('ovEquipment').textContent = window.FaultTicketDetailTemplate?.formatEquipmentLabel
+        ? window.FaultTicketDetailTemplate.formatEquipmentLabel(ticketData)
+        : (ticketData.machine_model_number || ticketData.machine_name || (ticketData.machine_id ? `Machine #${ticketData.machine_id}` : 'N/A'));
+
+    const statusClass = window.FaultTicketDetailTemplate?.toStatusClass
+        ? window.FaultTicketDetailTemplate.toStatusClass(ticketData.status)
+        : status.replace(/\s+/g, '-');
+
+    const priorityClass = window.FaultTicketDetailTemplate?.toPriorityClass
+        ? window.FaultTicketDetailTemplate.toPriorityClass(ticketData.priority)
+        : priority;
+
+    document.getElementById('ovStatus').innerHTML = `<span class="badge badge-${statusClass}">${ticketData.status || 'Unknown'}</span>`;
+    document.getElementById('ovPriority').innerHTML = `<span class="badge badge-priority-${priorityClass}">${ticketData.priority || 'Medium'}</span>`;
+}
+
+function renderFlow() {
+    const status = normaliseStatus(ticketData.status);
+
+    markStep('step-reported', 'completed');
+    document.getElementById('step1-reporter').textContent = ticketData.reporter_full_name || ticketData.reported_by_name || 'Unknown';
+    document.getElementById('step1-date').textContent = fmtDateShort(ticketData.created_at);
+    document.getElementById('step1-desc').textContent = `Fault reported. Breakdown type: ${ticketData.breakdown_type || 'N/A'}.`;
+
+    const assignment = ticketData.assignments && ticketData.assignments.length > 0 ? ticketData.assignments[0] : null;
+    const hasGarageAssignment = hasRouteGarageAssignment();
+    const approvedGarageName = getApprovedRouteGarageName();
+    const assignmentTitle = document.getElementById('step2-title');
+    const assigneeRole = document.getElementById('step2-assignee-role');
+
+    if (assignmentTitle) {
+        assignmentTitle.textContent = hasGarageAssignment ? 'Assigned to Nearby Garage' : 'Assigned to Technician';
+    }
+
+    if (assigneeRole) {
+        assigneeRole.textContent = hasGarageAssignment ? 'Nearby Garage' : 'Technical Officer';
+    }
+
+    if (hasGarageAssignment) {
+        markStep('step-assigned', 'completed');
+        document.getElementById('step2-assignedBy').textContent = routeBreakdownContext?.approved_by_name || 'Supervisor';
+        document.getElementById('step2-technician').textContent = approvedGarageName || 'Approved Garage';
+        document.getElementById('step2-desc').textContent = `Nearby garage approved on ${fmtDateShort(routeBreakdownContext?.approved_at || routeBreakdownContext?.updated_at || ticketData.updated_at)}.`;
+
+        const notesEl = document.getElementById('step2-notes');
+        const approvalNotes = String(routeBreakdownContext?.approval_notes || '').trim();
+        if (approvalNotes) {
+            notesEl.textContent = approvalNotes;
+            notesEl.style.display = 'block';
+        } else {
+            notesEl.style.display = 'none';
+            notesEl.textContent = '';
+        }
+    } else if (assignment || statusAtOrPast(status, 'assigned')) {
+        markStep('step-assigned', 'completed');
+        document.getElementById('step2-assignedBy').textContent = assignment ? (assignment.assigned_by_name || 'Supervisor') : 'Supervisor';
+        document.getElementById('step2-technician').textContent = assignment ? (assignment.technician_name || 'Technical Officer') : 'Pending';
+        document.getElementById('step2-desc').textContent = `Assigned on ${fmtDateShort(assignment?.assigned_at || ticketData.updated_at)}.`;
+
+        const notesEl = document.getElementById('step2-notes');
+        if (assignment?.notes) {
+            notesEl.textContent = assignment.notes;
+            notesEl.style.display = 'block';
+        } else {
+            notesEl.style.display = 'none';
+            notesEl.textContent = '';
+        }
+    } else {
+        markStep('step-assigned', 'pending');
+        document.getElementById('step2-assignedBy').textContent = 'Pending';
+        document.getElementById('step2-technician').textContent = 'Pending';
+        const notesEl = document.getElementById('step2-notes');
+        notesEl.style.display = 'none';
+        notesEl.textContent = '';
+    }
+
+    renderAssignmentAction(status, assignment);
+    renderBudgetStep(status);
+    renderPartsStep(status);
+    renderInProgressStep(status);
+    renderResolvedStep(status);
+    renderClosedStep(status);
+}
+
+function renderAssignmentAction(status, assignment) {
+    const actionEl = document.getElementById('step2-action');
+    const assignButton = document.getElementById('assignTicketBtn');
+    const approveGarageButton = document.getElementById('approveGarageBtn');
+    const garageHint = document.getElementById('step2-garage-hint');
+    if (!actionEl || !assignButton || !approveGarageButton || !garageHint) return;
+
+    const routeTicket = isRouteBreakdownTicket();
+    const hasGarageAssignment = hasRouteGarageAssignment();
+
+    if (!isSupervisorLike() || statusAtOrPast(status, 'resolved')) {
+        actionEl.style.display = 'none';
+        return;
+    }
+
+    assignButton.innerHTML = assignment
+        ? '<i class="fas fa-user-cog"></i> Edit Assignment'
+        : '<i class="fas fa-user-plus"></i> Assign Technician';
+
+    assignButton.style.display = hasGarageAssignment ? 'none' : 'inline-flex';
+    approveGarageButton.style.display = (routeTicket && !hasGarageAssignment) ? 'inline-flex' : 'none';
+
+    if (routeTicket && hasGarageAssignment) {
+        const approvedGarageName = getApprovedRouteGarageName();
+        garageHint.textContent = approvedGarageName
+            ? `Nearby garage approved (${approvedGarageName}). Technician assignment is optional.`
+            : 'Nearby garage is already approved. Technician assignment is optional.';
+        garageHint.style.display = 'flex';
+    } else {
+        garageHint.style.display = 'none';
+        garageHint.textContent = '';
+    }
+
+    actionEl.style.display = 'block';
+}
+
+function renderBudgetStep(status) {
+    const currentIdx = statusIndex(status);
+    const budgetIdx = statusIndex('waiting for budget approval');
+
+    const noReportEl = document.getElementById('budget-no-report');
+    const reportInfoEl = document.getElementById('budget-report-info');
+    const budgetActionEl = document.getElementById('budget-action');
+    const reviewActionEl = document.getElementById('budget-review-action');
+    const reviewHintEl = document.getElementById('budget-review-hint');
+
+    if (reviewHintEl) {
+        reviewHintEl.style.display = 'none';
+        reviewHintEl.textContent = '';
+    }
+
+    if (budgetReport) {
+        noReportEl.style.display = 'none';
+        reportInfoEl.style.display = 'block';
+
+        document.getElementById('step3-submitter').textContent = budgetReport.submitted_by_name || 'Technical Officer';
+
+        const amount = Number.parseFloat(budgetReport.total_amount || 0);
+        document.getElementById('budget-amount').textContent = amount > 0
+            ? (window.FaultTicketDetailTemplate?.formatLkrCurrency
+                ? window.FaultTicketDetailTemplate.formatLkrCurrency(amount)
+                : `LKR ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
+            : '-';
+
+        const levelEl = document.getElementById('budget-level');
+        const approvalLevel = String(budgetReport.approval_level || 'supervisor').toLowerCase();
+
+        if (approvalLevel === 'maintenance_manager') {
+            levelEl.textContent = 'Maintenance Manager';
+            levelEl.style.background = '#ede9fe';
+            levelEl.style.color = '#5b21b6';
+        } else {
+            levelEl.textContent = 'Supervisor';
+            levelEl.style.background = 'var(--stone-200)';
+            levelEl.style.color = 'var(--text-700)';
+        }
+
+        const budgetStatus = String(budgetReport.status || 'pending').toLowerCase();
+        const statusBadge = document.getElementById('budget-status-badge');
+        statusBadge.textContent = budgetReport.status || 'Pending';
+        statusBadge.className = `budget-status-badge status-${budgetStatus}`;
+
+        const reviewerChip = document.getElementById('step3-reviewer-chip');
+        if (budgetReport.reviewed_by_name) {
+            reviewerChip.style.display = 'inline-flex';
+            document.getElementById('step3-reviewer').textContent = budgetReport.reviewed_by_name;
+            document.getElementById('step3-reviewer-role').textContent =
+                approvalLevel === 'maintenance_manager' ? 'Maintenance Manager' : 'Supervisor';
+        } else {
+            reviewerChip.style.display = 'none';
+            document.getElementById('step3-reviewer').textContent = '-';
+        }
+
+        const reviewNotesEl = document.getElementById('budget-review-notes');
+        if (budgetReport.review_notes) {
+            reviewNotesEl.textContent = budgetReport.review_notes;
+            reviewNotesEl.style.display = 'block';
+        } else {
+            reviewNotesEl.style.display = 'none';
+            reviewNotesEl.textContent = '';
+        }
+
+        if (budgetStatus === 'approved') markStep('step-budget', 'completed');
+        else if (budgetStatus === 'rejected') markStep('step-budget', 'danger');
+        else if (budgetStatus === 'revised') markStep('step-budget', 'warning');
+        else markStep('step-budget', 'active');
+
+        const canReviewAsSupervisor = isSupervisorLike()
+            && budgetStatus === 'pending'
+            && approvalLevel !== 'maintenance_manager';
+
+        if (reviewActionEl) {
+            reviewActionEl.style.display = canReviewAsSupervisor ? 'flex' : 'none';
+        }
+
+        if (isSupervisorLike() && budgetStatus === 'pending' && approvalLevel === 'maintenance_manager' && reviewHintEl) {
+            reviewHintEl.textContent = 'This request exceeds petty cash limit and requires Maintenance Manager approval.';
+            reviewHintEl.style.display = 'flex';
+        }
+    } else {
+        noReportEl.style.display = 'flex';
+        reportInfoEl.style.display = 'none';
+
+        if (currentIdx < budgetIdx) markStep('step-budget', 'pending');
+        else if (normaliseStatus(status) === 'waiting for budget approval') markStep('step-budget', 'active');
+        else markStep('step-budget', 'completed');
+
+        if (reviewActionEl) reviewActionEl.style.display = 'none';
+    }
+
+    const canSubmitBudget = isTechnicalOfficer()
+        && isPreWork(status)
+        && (!budgetReport || ['rejected', 'revised'].includes(String(budgetReport.status || '').toLowerCase()));
+
+    budgetActionEl.style.display = canSubmitBudget ? 'block' : 'none';
+}
+
+function renderPartsStep(status) {
+    const partsIdx = statusIndex('waiting for spare parts');
+    const currentIdx = statusIndex(status);
+
+    if (sparePartRequests.length > 0) {
+        document.getElementById('parts-no-request').style.display = 'none';
+        document.getElementById('parts-list-container').style.display = 'block';
+
+        const listEl = document.getElementById('parts-list');
+        listEl.innerHTML = sparePartRequests.map((request) => {
+            const reqStatus = String(request.status || 'Pending').toLowerCase();
+            let statusClass = 'status-pending';
+            if (reqStatus === 'approved' || reqStatus === 'issued') statusClass = 'status-approved';
+            else if (reqStatus === 'rejected') statusClass = 'status-rejected';
+
+            const items = (request.items || []).map((item) => (
+                `<div class="parts-item-row">${item.part_name}${item.quantity ? ` x ${item.quantity}` : ''}${item.unit ? ` (${item.unit})` : ''}</div>`
+            )).join('');
+
+            const reviewNote = request.review_notes
+                ? `<div class="parts-review-note"><i class="fas fa-comment-alt"></i> ${request.review_notes}</div>`
+                : '';
 
             return `
-                        <div class="assignment-item">
-                            <div class="assignment-avatar">${avatar}</div>
-                            <div class="assignment-details">
-                                <div class="assignment-name">${name}</div>
-                                <div class="assignment-meta">
-                                    <span><i class="fas fa-envelope"></i> ${assignment.technician_email || 'N/A'}</span>
-                                    <span><i class="fas fa-phone"></i> ${assignment.technician_phone || 'N/A'}</span>
-                                </div>
-                                <div class="assignment-meta">
-                                    <span><i class="fas fa-calendar-plus"></i> Assigned: ${assignedDate}</span>
-                                    <span><i class="fas fa-calendar-check"></i> Expected: ${expectedDate}</span>
-                                </div>
-                                ${assignment.notes ? `<div style="margin-top: 8px; font-size: 0.9rem; color: var(--text-600);"><i class="fas fa-sticky-note"></i> ${assignment.notes}</div>` : ''}
-                            </div>
-                        </div>
-                    `;
+                <div class="parts-request-card" style="margin-bottom:8px;">
+                    <div class="parts-request-header">
+                        <span class="parts-request-id">${request.request_id || `SPR-${request.id}`}</span>
+                        <span class="budget-status-badge ${statusClass}">${request.status || 'Pending'}</span>
+                    </div>
+                    <div class="parts-items">${items || '<em style="font-size:.8rem;color:var(--muted)">No items listed</em>'}</div>
+                    ${request.reviewed_by_name
+                        ? `<div class="work-update-meta"><i class="fas fa-user-check"></i> Reviewed by ${request.reviewed_by_name}</div>`
+                        : ''}
+                    ${reviewNote}
+                </div>`;
         }).join('');
-    }
 
-    // Add action buttons based on user role
-    displayActionButtons(ticket);
-}
+        const allApproved = sparePartRequests.every((item) => ['approved', 'issued'].includes(String(item.status || '').toLowerCase()));
+        const anyRejected = sparePartRequests.some((item) => String(item.status || '').toLowerCase() === 'rejected');
+        const anyApproved = sparePartRequests.some((item) => ['approved', 'issued'].includes(String(item.status || '').toLowerCase()));
 
-// Display action buttons based on role
-function displayActionButtons(ticket) {
-    const actionButtons = document.getElementById('actionButtons');
-    let buttons = '';
-
-    if (currentUser) {
-        const role = currentUser.role;
-
-        if (role === 'Technical Officer') {
-            if (ticket.status === 'New' || ticket.status === 'Pending') {
-                buttons += `
-                            <button class="btn btn-success" onclick="acceptTicket()">
-                                <i class="fas fa-check"></i> Accept Ticket
-                            </button>
-                        `;
-            }
-            if (ticket.status === 'In Progress') {
-                buttons += `
-                            <button class="btn btn-primary" onclick="updateProgress()">
-                                <i class="fas fa-tasks"></i> Update Progress
-                            </button>
-                            <button class="btn btn-success" onclick="markComplete()">
-                                <i class="fas fa-check-double"></i> Mark Complete
-                            </button>
-                        `;
-            }
-        } else if (role === 'Supervisor' || role === 'Admin') {
-            buttons += `
-                        <button class="btn btn-primary" onclick="editTicket()">
-                            <i class="fas fa-edit"></i> Edit Ticket
-                        </button>
-                        <button class="btn btn-primary" onclick="assignTechnicians()">
-                            <i class="fas fa-user-plus"></i> Assign Technicians
-                        </button>
-                    `;
-        }
-    }
-
-    if (buttons) {
-        actionButtons.innerHTML = buttons;
-    }
-}
-
-// Load prior tickets for the same machine
-async function loadPriorTickets(machineId) {
-    const priorTicketsList = document.getElementById('priorTicketsList');
-    const viewAllBtn = document.getElementById('viewAllTicketsBtn');
-
-    try {
-        const response = await API.get(`/fault-tickets?machine_id=${machineId}`);
-
-        if (response.status === 'success' && response.data) {
-            const tickets = response.data.tickets || response.data || [];
-            const currentTicketId = ticketData.id;
-
-            // Filter out current ticket and show only last 5
-            const priorTickets = tickets
-                .filter(t => t.id !== currentTicketId)
-                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                .slice(0, 5);
-
-            const totalPriorTickets = tickets.filter(t => t.id !== currentTicketId).length;
-
-            if (priorTickets.length > 0) {
-                // Show View All button if there are more than 5 tickets
-                if (totalPriorTickets > 5) {
-                    viewAllBtn.style.display = 'inline-flex';
-                }
-                
-                priorTicketsList.innerHTML = priorTickets.map(ticket => {
-                    const ticketIdFormatted = ticket.ticket_id || ('MBD-' + String(ticket.id).padStart(3, '0'));
-                    const status = (ticket.status || 'New').toLowerCase().replace(/\s+/g, '-');
-                    const priority = (ticket.priority || 'Medium').toLowerCase();
-
-                    return `
-                        <div class="ticket-history-item" onclick="viewTicket(${ticket.id})">
-                            <div class="ticket-history-header">
-                                <span class="ticket-history-id">${ticketIdFormatted}</span>
-                                <span class="status-badge status-${status}">${ticket.status || 'New'}</span>
-                            </div>
-                            <div class="ticket-history-desc">
-                                ${ticket.description || 'No description'}
-                            </div>
-                            <div class="ticket-history-meta">
-                                <span><i class="fas fa-calendar"></i> ${formatDate(ticket.created_at)}</span>
-                                <span><i class="fas fa-flag"></i> ${ticket.priority || 'Medium'}</span>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-                // Always show View All button if there are any prior tickets
-                if (totalPriorTickets > 0) {
-                    viewAllBtn.style.display = 'inline-flex';
-                    if (totalPriorTickets > 5) {
-                        viewAllBtn.innerHTML = `<i class="fas fa-list"></i> View All (${totalPriorTickets})`;
-                    }
-                }
-            } else {
-                priorTicketsList.innerHTML = `
-                    <p style="text-align: center; color: var(--muted); padding: 20px;">
-                        <i class="fas fa-info-circle"></i> No prior tickets found for this asset
-                    </p>
-                `;
-            }
-        }
-    } catch (error) {
-        console.error('Error loading prior tickets:', error);
-        priorTicketsList.innerHTML = `
-            <p style="text-align: center; color: var(--danger); padding: 20px;">
-                <i class="fas fa-exclamation-triangle"></i> Error loading ticket history
-                    </p>
-                `;
-    }
-}
-
-// View another ticket
-function viewTicket(ticketId) {
-    window.location.href = `/view-ticket/?id=${ticketId}`;
-}
-
-// Logout functions
-function handleLogout() {
-    document.getElementById('logoutModal').classList.add('active');
-}
-
-function closeLogoutModal() {
-    document.getElementById('logoutModal').classList.remove('active');
-}
-
-function confirmLogout() {
-    Auth.logout();
-}
-
-// Image viewer functions
-function openImageViewer(imageUrl) {
-    const modal = document.getElementById('imageViewerModal');
-    const img = document.getElementById('viewerImage');
-    img.src = imageUrl;
-    modal.classList.add('active');
-}
-
-function closeImageViewer() {
-    const modal = document.getElementById('imageViewerModal');
-    modal.classList.remove('active');
-}
-
-// All tickets modal functions
-let allMachineTickets = [];
-
-async function openAllTicketsModal() {
-    const modal = document.getElementById('allTicketsModal');
-    const content = document.getElementById('allTicketsContent');
-    const assetName = document.getElementById('modalAssetName');
-    
-    modal.classList.add('active');
-    
-    // Set asset name
-    if (ticketData) {
-        assetName.textContent = ticketData.machine_name || ticketData.machine_model_number || `Asset #${ticketData.machine_id}`;
-    }
-    
-    // Show loading
-    content.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 40px;"><i class="fas fa-spinner fa-spin"></i> Loading all tickets...</p>';
-    
-    try {
-        const response = await API.get(`/fault-tickets?machine_id=${ticketData.machine_id}`);
-        
-        if (response.status === 'success' && response.data) {
-            const tickets = response.data.tickets || response.data || [];
-            allMachineTickets = tickets.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-            
-            if (allMachineTickets.length > 0) {
-                renderAllTickets();
-            } else {
-                content.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 40px;"><i class="fas fa-info-circle"></i> No tickets found for this asset</p>';
-            }
-        } else {
-            content.innerHTML = '<p style="text-align: center; color: var(--danger); padding: 40px;"><i class="fas fa-exclamation-triangle"></i> Error loading tickets</p>';
-        }
-    } catch (error) {
-        console.error('Error loading all tickets:', error);
-        content.innerHTML = '<p style="text-align: center; color: var(--danger); padding: 40px;"><i class="fas fa-exclamation-triangle"></i> Error loading tickets</p>';
-    }
-}
-
-function closeAllTicketsModal() {
-    const modal = document.getElementById('allTicketsModal');
-    modal.classList.remove('active');
-}
-
-function renderAllTickets() {
-    const content = document.getElementById('allTicketsContent');
-    const currentTicketId = ticketData.id;
-    
-    content.innerHTML = allMachineTickets.map(ticket => {
-        const ticketIdFormatted = ticket.ticket_id || ('MBD-' + String(ticket.id).padStart(3, '0'));
-        const status = (ticket.status || 'New').toLowerCase().replace(/\s+/g, '-');
-        const priority = (ticket.priority || 'Medium').toLowerCase();
-        const isCurrent = ticket.id === currentTicketId;
-        
-        let photosHtml = '';
-        if (ticket.photos && ticket.photos.length > 0) {
-            photosHtml = `
-                <div class="modal-ticket-images">
-                    ${ticket.photos.slice(0, 4).map(photo => `
-                        <img src="${photo.url}" alt="Ticket image" onclick="event.stopPropagation(); openImageViewer('${photo.url}')">
-                    `).join('')}
-                    ${ticket.photos.length > 4 ? `<div style="display: flex; align-items: center; justify-content: center; background: var(--stone-200); color: var(--muted); font-weight: 600; border-radius: 6px;">+${ticket.photos.length - 4} more</div>` : ''}
-                </div>
-            `;
-        }
-        
-        return `
-            <div class="modal-ticket-item ${isCurrent ? 'current-ticket' : ''}" onclick="viewTicket(${ticket.id})" style="${isCurrent ? 'border-left-color: var(--kelly-green); background: #f0fdf4;' : ''}">
-                <div class="modal-ticket-header">
-                    <span class="modal-ticket-id">
-                        ${ticketIdFormatted}
-                        ${isCurrent ? '<span style="font-size: 0.75rem; background: var(--kelly-green); color: white; padding: 2px 8px; border-radius: 10px; margin-left: 8px; font-weight: 600;">CURRENT</span>' : ''}
-                    </span>
-                    <span class="status-badge status-${status}">
-                        <i class="fas fa-circle"></i> ${ticket.status || 'New'}
-                    </span>
-                </div>
-                <div class="modal-ticket-desc">
-                    ${ticket.description || 'No description'}
-                </div>
-                <div class="modal-ticket-meta">
-                    <span><i class="fas fa-calendar"></i> ${formatDate(ticket.created_at)}</span>
-                    <span><i class="fas fa-flag"></i> Priority: <strong style="color: var(--text-900);">${ticket.priority || 'Medium'}</strong></span>
-                    <span><i class="fas fa-user"></i> ${ticket.reported_by_name || ticket.reporter_full_name || 'Unknown'}</span>
-                    ${ticket.location ? `<span><i class="fas fa-map-marker-alt"></i> ${ticket.location}</span>` : ''}
-                </div>
-                ${photosHtml}
-                ${!isCurrent ? '<div style="margin-top: 10px; font-size: 0.85rem; color: var(--royal-blue); font-weight: 600;"><i class="fas fa-arrow-right"></i> Click to view details</div>' : ''}
-            </div>
-        `;
-    }).join('');
-}
-
-function viewTicket(ticketId) {
-    if (ticketId === ticketData.id) {
-        closeAllTicketsModal();
-        return;
-    }
-    window.location.href = `/view-ticket/?id=${ticketId}`;
-}
-
-// Action functions (placeholders)
-function acceptTicket() {
-    showToast('Ticket accepted! Redirecting to update page...');
-    // Implement accept ticket logic
-}
-
-function updateProgress() {
-    showToast('Opening progress update form...');
-    // Implement update progress logic
-}
-
-function markComplete() {
-    showToast('Opening completion form...');
-    // Implement mark complete logic
-}
-
-function editTicket() {
-    showToast('Opening edit form...');
-    // Implement edit logic
-}
-
-function assignTechnicians() {
-    showToast('Opening assignment form...');
-    // Implement assignment logic
-}
-
-// ==================== BUDGET REPORT FUNCTIONS ====================
-
-// Load budget report for the ticket
-async function loadBudgetReport() {
-    if (!currentUser || !ticketData) return;
-
-    // Only show budget report section for Technical Officers
-    if (currentUser.role !== 'Technical Officer') {
-        return;
-    }
-
-    const budgetReportCard = document.getElementById('budgetReportCard');
-    budgetReportCard.style.display = 'block';
-
-    try {
-        const response = await API.get(`/budget-reports/ticket/${ticketData.id}/latest`);
-        
-        if (response.status === 'success' && response.data.report) {
-            displayExistingBudgetReport(response.data.report);
-        } else {
-            displayNewBudgetReportForm();
-        }
-    } catch (error) {
-        console.error('Error loading budget report:', error);
-        displayNewBudgetReportForm();
-    }
-}
-
-// Display existing budget report
-function displayExistingBudgetReport(report) {
-    const content = document.getElementById('budgetReportContent');
-    const statusClass = report.status === 'approved' ? 'status-completed' : 
-                        report.status === 'rejected' ? 'status-urgent' : 
-                        report.status === 'revised' ? 'status-normal' : 'status-pending';
-    
-    const statusText = report.status.charAt(0).toUpperCase() + report.status.slice(1);
-    
-    // Check if budget can be edited (ticket status must be before "In Progress")
-    const allowedEditStatuses = ['Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts'];
-    const canEdit = allowedEditStatuses.includes(ticketData.status);
-    
-    content.innerHTML = `
-        <div class="budget-report-view">
-            <div class="budget-status-badge ${statusClass}">
-                <i class="fas ${report.status === 'approved' ? 'fa-check-circle' : 
-                                 report.status === 'rejected' ? 'fa-times-circle' : 
-                                 report.status === 'revised' ? 'fa-edit' : 'fa-clock'}"></i>
-                ${statusText}
-            </div>
-            
-            <div class="budget-section">
-                <h4><i class="fas fa-file-alt"></i> Quotation</h4>
-                <div class="budget-quotation">${report.quotation.replace(/\n/g, '<br>')}</div>
-            </div>
-            
-            <div class="budget-section">
-                <h4><i class="fas fa-rupee-sign"></i> Total Amount</h4>
-                <div class="budget-amount">LKR ${parseFloat(report.total_amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-            </div>
-            
-            <div class="budget-section">
-                <h4><i class="fas fa-comment-dots"></i> Justification</h4>
-                <div class="budget-justification">${report.justification.replace(/\n/g, '<br>')}</div>
-            </div>
-            
-            <div class="budget-meta">
-                <small><i class="fas fa-user"></i> Submitted by: ${report.submitted_by_name || 'Unknown'}</small>
-                <small><i class="fas fa-calendar"></i> ${formatDate(report.created_at)}</small>
-            </div>
-            
-            ${report.status !== 'pending' && report.reviewed_by_name ? `
-                <div class="budget-review">
-                    <h4><i class="fas fa-clipboard-check"></i> Review</h4>
-                    <p><strong>Reviewed by:</strong> ${report.reviewed_by_name}</p>
-                    <p><strong>Date:</strong> ${formatDate(report.reviewed_at)}</p>
-                    ${report.review_notes ? `<p><strong>Notes:</strong> ${report.review_notes}</p>` : ''}
-                </div>
-            ` : ''}
-            
-            ${canEdit && (report.status === 'pending' || report.status === 'revised') ? `
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button class="btn btn-primary" onclick="openBudgetReportModal(${JSON.stringify(report).replace(/"/g, '&quot;')})">
-                        <i class="fas fa-edit"></i> Edit Budget Report
-                    </button>
-                    ${report.status === 'pending' ? `
-                        <button class="btn btn-danger" onclick="deleteBudgetReport(${report.id})">
-                            <i class="fas fa-trash"></i> Delete Report
-                        </button>
-                    ` : ''}
-                </div>
-            ` : !canEdit ? `
-                <div style="margin-top: 15px; padding: 10px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 6px;">
-                    <small style="color: #92400e;">
-                        <i class="fas fa-info-circle"></i> 
-                        Budget report cannot be modified after work has started (status: ${ticketData.status})
-                    </small>
-                </div>
-            ` : ''}
-        </div>
-    `;
-}
-
-// Display new budget report form
-function displayNewBudgetReportForm() {
-    const content = document.getElementById('budgetReportContent');
-    
-    // Check if ticket is in Open or Assigned status (before In Progress)
-    const allowedStatuses = ['Open', 'Assigned'];
-    const canSubmitBudget = allowedStatuses.includes(ticketData.status);
-    
-    if (!canSubmitBudget) {
-        content.innerHTML = `
-            <div class="budget-report-empty">
-                <i class="fas fa-info-circle" style="font-size: 3rem; color: var(--muted); margin-bottom: 15px;"></i>
-                <p style="color: var(--muted); margin-bottom: 10px;"><strong>Budget reports can only be submitted before work begins</strong></p>
-                <p style="color: var(--muted); font-size: 0.9rem;">Allowed statuses: Open, Assigned<br>Current status: <strong>${ticketData.status}</strong></p>
-            </div>
-        `;
-        return;
-    }
-    
-    content.innerHTML = `
-        <div class="budget-report-empty">
-            <i class="fas fa-file-invoice-dollar" style="font-size: 3rem; color: var(--muted); margin-bottom: 15px;"></i>
-            <p style="color: var(--muted); margin-bottom: 20px;">No budget report submitted yet</p>
-            <button class="btn btn-primary" onclick="openBudgetReportModal()">
-                <i class="fas fa-plus"></i> Submit Budget Report
-            </button>
-        </div>
-    `;
-}
-
-// Open budget report modal
-function openBudgetReportModal(existingReport = null) {
-    const modal = document.getElementById('budgetReportModal');
-    const form = document.getElementById('budgetReportForm');
-    const title = document.getElementById('budgetModalTitle');
-    
-    if (existingReport) {
-        title.textContent = 'Edit Budget Report';
-        document.getElementById('quotationInput').value = existingReport.quotation;
-        document.getElementById('totalAmountInput').value = parseFloat(existingReport.total_amount).toFixed(2);
-        document.getElementById('justificationInput').value = existingReport.justification;
-        form.dataset.reportId = existingReport.id;
+        if (allApproved) markStep('step-parts', 'completed');
+        else if (anyRejected && !anyApproved) markStep('step-parts', 'danger');
+        else if (currentIdx >= partsIdx) markStep('step-parts', 'active');
+        else markStep('step-parts', 'pending');
     } else {
-        title.textContent = 'Submit Budget Report';
-        form.reset();
-        delete form.dataset.reportId;
+        document.getElementById('parts-no-request').style.display = 'flex';
+        document.getElementById('parts-list-container').style.display = 'none';
+
+        if (currentIdx >= statusIndex('parts approved')) markStep('step-parts', 'completed');
+        else if (normaliseStatus(status) === 'waiting for spare parts') markStep('step-parts', 'active');
+        else markStep('step-parts', 'pending');
     }
-    
-    modal.classList.add('active');
+
+    const partsActionEl = document.getElementById('parts-action');
+    partsActionEl.style.display = (isTechnicalOfficer() && isPreWork(status)) ? 'block' : 'none';
 }
 
-// Close budget report modal
-function closeBudgetReportModal() {
-    const modal = document.getElementById('budgetReportModal');
-    const form = document.getElementById('budgetReportForm');
-    modal.classList.remove('active');
-    form.reset();
-    delete form.dataset.reportId;
-}
+function renderInProgressStep(status) {
+    const currentIdx = statusIndex(status);
+    const inProgressIdx = statusIndex('in progress');
 
-// Submit budget report
-async function submitBudgetReport(event) {
-    event.preventDefault();
-    
-    const form = event.target;
-    const reportId = form.dataset.reportId;
-    
-    const budgetData = {
-        fault_ticket_id: ticketData.id,
-        quotation: document.getElementById('quotationInput').value.trim(),
-        total_amount: parseFloat(document.getElementById('totalAmountInput').value),
-        justification: document.getElementById('justificationInput').value.trim()
-    };
-    
-    try {
-        let response;
-        if (reportId) {
-            // Update existing report
-            response = await API.put(`/budget-reports/${reportId}`, budgetData);
+    if (currentIdx >= inProgressIdx) {
+        markStep('step-inprogress', statusAtOrPast(status, 'resolved') ? 'completed' : 'active');
+        document.getElementById('inprogress-hint').style.display = 'none';
+        document.getElementById('inprogress-info').style.display = 'block';
+
+        document.getElementById('step5-tech').textContent =
+            currentUser ? (currentUser.full_name || currentUser.name || 'Technical Officer') : 'Technical Officer';
+
+        const updatesEl = document.getElementById('work-updates-list');
+        if (workUpdates.length > 0) {
+            updatesEl.innerHTML = workUpdates.map((update) => `
+                <div class="work-update-item" style="margin-top:6px;">
+                    <div>${update.update_text || update.notes || 'Work update'}</div>
+                    <div class="work-update-meta">
+                        <i class="fas fa-clock"></i> ${fmtDate(update.created_at)}
+                        ${update.updated_by_name ? ` &bull; <i class="fas fa-user"></i> ${update.updated_by_name}` : ''}
+                    </div>
+                </div>
+            `).join('');
         } else {
-            // Create new report
-            response = await API.post('/budget-reports', budgetData);
+            updatesEl.innerHTML = '<p class="step-hint" style="margin-top:6px;"><i class="fas fa-info-circle"></i> No work updates yet.</p>';
         }
-        
-        if (response.status === 'success') {
-            showToast(reportId ? 'Budget report updated successfully!' : 'Budget report submitted successfully!');
-            closeBudgetReportModal();
-            await loadBudgetReport(); // Reload the budget report section
-        } else {
-            throw new Error(response.message || 'Failed to submit budget report');
-        }
-    } catch (error) {
-        console.error('Error submitting budget report:', error);
-        showToast(error.message || 'Failed to submit budget report. Please try again.', true);
+
+        const completeAction = document.getElementById('complete-action');
+        completeAction.style.display = (isTechnicalOfficer() && normaliseStatus(status) === 'in progress') ? 'block' : 'none';
+    } else {
+        markStep('step-inprogress', 'pending');
+        document.getElementById('inprogress-hint').style.display = 'flex';
+        document.getElementById('inprogress-info').style.display = 'none';
+        document.getElementById('complete-action').style.display = 'none';
     }
 }
 
-// Delete budget report
-async function deleteBudgetReport(reportId) {
-    if (!confirm('Are you sure you want to delete this budget report? This action cannot be undone and the ticket status will revert to "Open".')) {
+function renderResolvedStep(status) {
+    if (statusAtOrPast(status, 'resolved')) {
+        markStep('step-resolved', 'completed');
+        document.getElementById('resolved-hint').style.display = 'none';
+        document.getElementById('resolved-info').style.display = 'block';
+
+        document.getElementById('step6-resolver').textContent =
+            ticketData?.resolved_by_name || currentUser?.full_name || currentUser?.name || 'Technical Officer';
+
+        const resolutionText = document.getElementById('resolution-notes-text');
+        resolutionText.textContent = ticketData?.resolution_notes || 'No resolution notes were provided.';
+    } else {
+        markStep('step-resolved', 'pending');
+        document.getElementById('resolved-hint').style.display = 'flex';
+        document.getElementById('resolved-info').style.display = 'none';
+    }
+}
+
+function renderClosedStep(status) {
+    if (normaliseStatus(status) === 'closed') {
+        markStep('step-closed', 'completed');
+        document.getElementById('closed-hint').style.display = 'none';
+        document.getElementById('closed-info').style.display = 'block';
+        document.getElementById('closed-date').textContent = `Closed on ${fmtDateShort(ticketData.updated_at)}.`;
+    } else {
+        markStep('step-closed', 'pending');
+        document.getElementById('closed-hint').style.display = 'flex';
+        document.getElementById('closed-info').style.display = 'none';
+    }
+}
+
+function capitalise(value) {
+    const text = String(value || '');
+    return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
+}
+
+function openBudgetModal() {
+    if (!isTechnicalOfficer() || !ticketData) {
+        showToast('Only Technical Officers can submit budget reports from this page.', 'warning');
         return;
     }
-    
-    try {
-        const response = await API.delete(`/budget-reports/${reportId}`);
-        
-        if (response.status === 'success') {
-            showToast('Budget report deleted successfully!');
-            // Reload the page to reflect status change
-            location.reload();
-        } else {
-            throw new Error(response.message || 'Failed to delete budget report');
-        }
-    } catch (error) {
-        console.error('Error deleting budget report:', error);
-        showToast(error.message || 'Failed to delete budget report. Please try again.', true);
+
+    const ticketIdFormatted = window.FaultTicketDetailTemplate?.formatTicketDisplayId
+        ? window.FaultTicketDetailTemplate.formatTicketDisplayId(ticketData)
+        : (ticketData.breakdown_report_id || ticketData.ticket_id || `#${ticketData.id}`);
+
+    document.getElementById('budgetTicketDisplay').value = ticketIdFormatted;
+    document.getElementById('budgetTotalAmount').value = '';
+    document.getElementById('budgetQuotation').value = '';
+    document.getElementById('budgetJustification').value = '';
+    document.getElementById('pettyCashHint').textContent = '';
+
+    document.getElementById('budgetModal').classList.add('active');
+    document.getElementById('budgetTotalAmount').addEventListener('input', updatePettyCashHint);
+}
+
+function closeBudgetModal() {
+    document.getElementById('budgetModal').classList.remove('active');
+    document.getElementById('budgetTotalAmount').removeEventListener('input', updatePettyCashHint);
+}
+
+function updatePettyCashHint() {
+    const value = Number.parseFloat(document.getElementById('budgetTotalAmount').value) || 0;
+    const hintEl = document.getElementById('pettyCashHint');
+
+    if (value > 0) {
+        hintEl.textContent = 'Amounts above petty cash limit will require Maintenance Manager approval.';
+        hintEl.className = 'form-hint warn';
+    } else {
+        hintEl.textContent = '';
+        hintEl.className = 'form-hint';
     }
 }
 
-// Initialize on page load
-(async function initialize() {
-    await loadUserData();
-    setupBackButton();
-    await loadTicketDetails();
-    await loadBudgetReport(); // Load budget report if applicable
-})();
+async function submitBudget(event) {
+    event.preventDefault();
+
+    if (!isTechnicalOfficer()) {
+        showToast('Only Technical Officers can submit budget reports from this page.', 'warning');
+        return;
+    }
+
+    const submitButton = document.getElementById('budgetSubmitBtn');
+    const totalAmount = Number.parseFloat(document.getElementById('budgetTotalAmount').value);
+    const quotation = document.getElementById('budgetQuotation').value.trim();
+    const justification = document.getElementById('budgetJustification').value.trim();
+
+    if (!totalAmount || totalAmount <= 0 || !quotation || !justification) {
+        showToast('Please fill in all required fields.', 'error');
+        return;
+    }
+
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+    try {
+        const response = await API.post('/budget-reports', {
+            fault_ticket_id: ticketData.id,
+            total_amount: totalAmount,
+            quotation,
+            justification
+        });
+
+        if (response.status === 'success') {
+            showToast('Budget report submitted successfully.', 'success');
+            closeBudgetModal();
+            await loadAll();
+        } else {
+            showToast(response.message || 'Failed to submit budget report.', 'error');
+        }
+    } catch (error) {
+        console.error('submitBudget error:', error);
+        showToast('An error occurred while submitting the budget report.', 'error');
+    } finally {
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Report';
+    }
+}
+
+async function reviewBudget(status) {
+    const normalizedStatus = String(status || '').toLowerCase();
+
+    if (!isSupervisorLike()) {
+        showToast('Only Supervisors can review budget requests from this page.', 'warning');
+        return;
+    }
+
+    if (!budgetReport || !budgetReport.id) {
+        showToast('No budget report is available for review.', 'warning');
+        return;
+    }
+
+    if (!['approved', 'rejected'].includes(normalizedStatus)) {
+        showToast('Invalid budget review action.', 'error');
+        return;
+    }
+
+    const approvalLevel = String(budgetReport.approval_level || 'supervisor').toLowerCase();
+    if (approvalLevel === 'maintenance_manager') {
+        showToast('This request exceeds petty cash limit and requires Maintenance Manager approval.', 'warning');
+        return;
+    }
+
+    const currentBudgetStatus = String(budgetReport.status || '').toLowerCase();
+    if (currentBudgetStatus !== 'pending') {
+        showToast('Only pending budget requests can be reviewed.', 'warning');
+        return;
+    }
+
+    const actionLabel = normalizedStatus === 'approved' ? 'approve' : 'reject';
+    if (!window.confirm(`Are you sure you want to ${actionLabel} this budget request?`)) return;
+
+    let reviewNotes = normalizedStatus === 'approved' ? 'Approved by Supervisor' : 'Rejected by Supervisor';
+    if (normalizedStatus === 'rejected') {
+        const note = window.prompt('Optional rejection reason:', reviewNotes);
+        if (note && note.trim()) reviewNotes = note.trim();
+    }
+
+    const approveBtn = document.getElementById('approveBudgetBtn');
+    const rejectBtn = document.getElementById('rejectBudgetBtn');
+    if (approveBtn) approveBtn.disabled = true;
+    if (rejectBtn) rejectBtn.disabled = true;
+
+    try {
+        const response = await API.post(`/budget-reports/${budgetReport.id}/review`, {
+            status: normalizedStatus,
+            review_notes: reviewNotes
+        });
+
+        if (response.status === 'success') {
+            showToast(`Budget ${actionLabel}d successfully.`, normalizedStatus === 'approved' ? 'success' : 'warning');
+            await loadAll();
+        } else {
+            showToast(response.message || 'Failed to review budget request.', 'error');
+        }
+    } catch (error) {
+        console.error('reviewBudget error:', error);
+        showToast('An error occurred while reviewing the budget request.', 'error');
+    } finally {
+        if (approveBtn) approveBtn.disabled = false;
+        if (rejectBtn) rejectBtn.disabled = false;
+    }
+}
+
+function openPartsModal() {
+    if (!isTechnicalOfficer() || !ticketData) {
+        showToast('Only Technical Officers can request spare parts from this page.', 'warning');
+        return;
+    }
+
+    const ticketIdFormatted = ticketData.breakdown_report_id || ticketData.ticket_id || `#${ticketData.id}`;
+    document.getElementById('partsTicketDisplay').value = ticketIdFormatted;
+    document.getElementById('partsEquipment').value = ticketData.machine_model_number || ticketData.machine_name || '';
+    document.getElementById('partsLocation').value = ticketData.location || '';
+    document.getElementById('partsPriority').value = ticketData.priority || 'Medium';
+    document.getElementById('partsNotes').value = '';
+
+    const listEl = document.getElementById('partsItemsList');
+    listEl.innerHTML = '';
+    addHeaderRow();
+    addPartRow();
+
+    document.getElementById('partsModal').classList.add('active');
+}
+
+function closePartsModal() {
+    document.getElementById('partsModal').classList.remove('active');
+}
+
+function addHeaderRow() {
+    const listEl = document.getElementById('partsItemsList');
+    if (!listEl || listEl.querySelector('.part-row-header')) return;
+
+    const header = document.createElement('div');
+    header.className = 'part-row-header';
+    header.innerHTML = '<span>Part Name</span><span>Qty</span><span class="part-unit">Unit</span><span></span>';
+    listEl.insertBefore(header, listEl.firstChild);
+}
+
+function addPartRow() {
+    const listEl = document.getElementById('partsItemsList');
+    if (!listEl) return;
+
+    addHeaderRow();
+
+    const row = document.createElement('div');
+    row.className = 'part-row';
+    row.innerHTML = `
+        <input type="text" placeholder="e.g. Hydraulic Seal" class="part-name" required>
+        <input type="number" placeholder="1" class="part-qty" min="1" value="1">
+        <input type="text" placeholder="pcs" class="part-unit">
+        <button type="button" class="btn-remove-part" onclick="removePartRow(this)" title="Remove">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+
+    listEl.appendChild(row);
+}
+
+function removePartRow(button) {
+    const listEl = document.getElementById('partsItemsList');
+    if (!listEl) return;
+
+    const rows = listEl.querySelectorAll('.part-row');
+    if (rows.length <= 1) {
+        showToast('At least one spare part item is required.', 'warning');
+        return;
+    }
+
+    button.closest('.part-row')?.remove();
+}
+
+async function submitPartsRequest(event) {
+    event.preventDefault();
+
+    if (!isTechnicalOfficer()) {
+        showToast('Only Technical Officers can submit spare part requests from this page.', 'warning');
+        return;
+    }
+
+    const submitButton = document.getElementById('partsSubmitBtn');
+    const listEl = document.getElementById('partsItemsList');
+    const rows = listEl ? listEl.querySelectorAll('.part-row') : [];
+    const items = [];
+    let hasError = false;
+
+    rows.forEach((row) => {
+        const name = row.querySelector('.part-name')?.value.trim();
+        const quantity = Number.parseInt(row.querySelector('.part-qty')?.value || '1', 10) || 1;
+        const unit = row.querySelector('.part-unit')?.value.trim() || 'pcs';
+
+        if (!name) {
+            hasError = true;
+            return;
+        }
+
+        items.push({ part_name: name, quantity, unit });
+    });
+
+    if (hasError || items.length === 0) {
+        showToast('Please provide a valid part name for each row.', 'error');
+        return;
+    }
+
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+    try {
+        const response = await API.post('/spare-part-requests', {
+            fault_ticket_id: ticketData.id,
+            ticket_id_formatted: ticketData.breakdown_report_id || ticketData.ticket_id || null,
+            equipment_name: document.getElementById('partsEquipment').value.trim() || null,
+            location: document.getElementById('partsLocation').value.trim() || null,
+            priority: document.getElementById('partsPriority').value,
+            additional_notes: document.getElementById('partsNotes').value.trim() || null,
+            items
+        });
+
+        if (response.status === 'success') {
+            showToast('Spare parts request submitted successfully.', 'success');
+            closePartsModal();
+            await loadAll();
+        } else {
+            showToast(response.message || 'Failed to submit spare parts request.', 'error');
+        }
+    } catch (error) {
+        console.error('submitPartsRequest error:', error);
+        showToast('An error occurred while submitting the spare parts request.', 'error');
+    } finally {
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Request';
+    }
+}
+
+function openCompleteModal() {
+    if (!isTechnicalOfficer()) {
+        showToast('Only Technical Officers can resolve tickets from this page.', 'warning');
+        return;
+    }
+
+    document.getElementById('completeSummary').value = '';
+    document.getElementById('completeModal').classList.add('active');
+}
+
+function closeCompleteModal() {
+    document.getElementById('completeModal').classList.remove('active');
+}
+
+async function submitComplete(event) {
+    event.preventDefault();
+
+    if (!isTechnicalOfficer()) {
+        showToast('Only Technical Officers can resolve tickets from this page.', 'warning');
+        return;
+    }
+
+    const summary = document.getElementById('completeSummary').value.trim();
+    if (!summary) {
+        showToast('Please enter work summary / resolution notes.', 'error');
+        return;
+    }
+
+    const submitButton = document.getElementById('completeSubmitBtn');
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    try {
+        const response = await API.post(`/fault-tickets/${ticketData.id}/complete`, {
+            work_summary: summary
+        });
+
+        if (response.status === 'success') {
+            showToast('Ticket marked as resolved.', 'success');
+            closeCompleteModal();
+            await loadAll();
+        } else {
+            showToast(response.message || 'Failed to mark ticket as resolved.', 'error');
+        }
+    } catch (error) {
+        console.error('submitComplete error:', error);
+        showToast('An error occurred while resolving the ticket.', 'error');
+    } finally {
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<i class="fas fa-check"></i> Confirm Resolved';
+    }
+}
+
+async function openAssignModal() {
+    if (!isSupervisorLike()) {
+        showToast('Only Supervisors can assign technicians from this page.', 'warning');
+        return;
+    }
+
+    if (!ticketData?.id) {
+        showToast('Ticket data is not ready yet.', 'warning');
+        return;
+    }
+
+    if (isRouteBreakdownTicket() && hasRouteGarageAssignment()) {
+        showToast('Nearby garage is already approved. Technician assignment is not required.', 'warning');
+        return;
+    }
+
+    const ticketIdFormatted = window.FaultTicketDetailTemplate?.formatTicketDisplayId
+        ? window.FaultTicketDetailTemplate.formatTicketDisplayId(ticketData)
+        : (ticketData.breakdown_report_id || ticketData.ticket_id || `#${ticketData.id}`);
+
+    document.getElementById('assignTicketDisplay').value = ticketIdFormatted;
+    document.getElementById('assignPriority').value = String(ticketData.priority || 'Medium').toLowerCase();
+    document.getElementById('assignNotes').value = '';
+
+    const expectedDateInput = document.getElementById('assignExpectedCompletion');
+    const existingAssignment = Array.isArray(ticketData.assignments) && ticketData.assignments.length > 0
+        ? ticketData.assignments[0]
+        : null;
+
+    expectedDateInput.value = existingAssignment?.expected_completion_date || '';
+    if (existingAssignment?.notes) {
+        document.getElementById('assignNotes').value = existingAssignment.notes;
+    }
+
+    await loadTechniciansForAssignment();
+    updateAssignSelectionWarning();
+    document.getElementById('assignModal').classList.add('active');
+}
+
+function closeAssignModal() {
+    document.getElementById('assignModal').classList.remove('active');
+}
+
+async function openGarageApprovalModal() {
+    if (!isSupervisorLike()) {
+        showToast('Only Supervisors can approve nearby garages from this page.', 'warning');
+        return;
+    }
+
+    if (!ticketData?.id || !isRouteBreakdownTicket()) {
+        showToast('Nearby garage approval is only available for route breakdown tickets.', 'warning');
+        return;
+    }
+
+    await loadRouteBreakdownContext();
+
+    if (hasRouteGarageAssignment()) {
+        showToast('A nearby garage is already approved for this route breakdown.', 'warning');
+        return;
+    }
+
+    const routeBreakdownId = getRouteBreakdownNumericId();
+    if (!routeBreakdownId) {
+        showToast('Unable to resolve the route breakdown ID for garage approval.', 'error');
+        return;
+    }
+
+    const routeCodeField = document.getElementById('garageApprovalRouteCode');
+    const notesField = document.getElementById('garageApprovalNotes');
+    if (routeCodeField) {
+        routeCodeField.value = routeBreakdownContext?.route_breakdown_id || ticketData?.breakdown_report_id || `RBD-${routeBreakdownId}`;
+    }
+    if (notesField) {
+        notesField.value = '';
+    }
+
+    await loadGaragesForRouteApproval();
+    document.getElementById('garageApprovalModal').classList.add('active');
+}
+
+function closeGarageApprovalModal() {
+    const modal = document.getElementById('garageApprovalModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+
+    const warning = document.getElementById('garageApprovalSelectionWarning');
+    if (warning) {
+        warning.style.display = 'none';
+    }
+}
+
+async function loadGaragesForRouteApproval() {
+    const listEl = document.getElementById('garageApprovalList');
+    if (!listEl) {
+        return;
+    }
+
+    listEl.innerHTML = '<p class="step-hint"><i class="fas fa-spinner fa-spin"></i> Loading nearby garages...</p>';
+
+    try {
+        const response = await API.get('/route-breakdowns/garages');
+        availableRouteGarages = Array.isArray(response?.data?.garages)
+            ? response.data.garages
+            : (Array.isArray(response?.data) ? response.data : []);
+
+        if (!availableRouteGarages.length) {
+            listEl.innerHTML = '<p class="step-hint"><i class="fas fa-store-slash"></i> No active garages available right now.</p>';
+            return;
+        }
+
+        listEl.innerHTML = availableRouteGarages.map((garage) => {
+            const name = garage.name || `Garage #${garage.id}`;
+            const address = garage.address || 'Address not available';
+            const phone = garage.phone || 'No phone';
+            return `
+                <label class="assign-tech-item">
+                    <span><input type="radio" name="approveGarageChoice" value="${Number(garage.id)}"></span>
+                    <span style="flex:1; min-width:0;">
+                        <span class="assign-tech-name">${name}</span>
+                        <span class="assign-tech-meta"><i class="fas fa-map-marker-alt"></i> ${address}</span>
+                    </span>
+                    <span class="assign-tech-meta"><i class="fas fa-phone"></i> ${phone}</span>
+                </label>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('loadGaragesForRouteApproval error:', error);
+        listEl.innerHTML = '<p class="step-hint" style="color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Failed to load nearby garages.</p>';
+    }
+}
+
+function updateGarageApprovalSelectionWarning() {
+    const warning = document.getElementById('garageApprovalSelectionWarning');
+    if (!warning) {
+        return;
+    }
+
+    const selected = document.querySelector('input[name="approveGarageChoice"]:checked');
+    warning.style.display = selected ? 'none' : 'block';
+}
+
+async function submitGarageApproval(event) {
+    event.preventDefault();
+
+    if (!isSupervisorLike()) {
+        showToast('Only Supervisors can approve nearby garages from this page.', 'warning');
+        return;
+    }
+
+    if (!isRouteBreakdownTicket()) {
+        showToast('Nearby garage approval is only available for route breakdown tickets.', 'warning');
+        return;
+    }
+
+    if (hasRouteGarageAssignment()) {
+        showToast('A nearby garage is already approved for this route breakdown.', 'warning');
+        closeGarageApprovalModal();
+        return;
+    }
+
+    const routeBreakdownId = getRouteBreakdownNumericId();
+    if (!routeBreakdownId) {
+        showToast('Unable to resolve the route breakdown ID for garage approval.', 'error');
+        return;
+    }
+
+    const selectedInput = document.querySelector('input[name="approveGarageChoice"]:checked');
+    const selectedGarageId = Number(selectedInput?.value || 0);
+
+    if (!selectedGarageId) {
+        updateGarageApprovalSelectionWarning();
+        showToast('Please select a nearby garage to approve.', 'error');
+        return;
+    }
+
+    const submitButton = document.getElementById('garageApprovalSubmitBtn');
+    const approvalNotes = (document.getElementById('garageApprovalNotes')?.value || '').trim();
+
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Approving...';
+    }
+
+    try {
+        const response = await API.post(`/route-breakdowns/${routeBreakdownId}/garage-approval`, {
+            garage_id: selectedGarageId,
+            approval_notes: approvalNotes || null,
+        });
+
+        if (response?.status === 'success') {
+            showToast('Nearby garage approved successfully.', 'success');
+            closeGarageApprovalModal();
+            await loadAll();
+            return;
+        }
+
+        showToast(response?.message || 'Failed to approve nearby garage.', 'error');
+    } catch (error) {
+        console.error('submitGarageApproval error:', error);
+        showToast('An error occurred while approving the nearby garage.', 'error');
+    } finally {
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="fas fa-warehouse"></i> Approve Nearby Garage';
+        }
+    }
+}
+
+async function loadTechniciansForAssignment() {
+    const listEl = document.getElementById('assignTechniciansList');
+    if (!listEl) return;
+
+    listEl.innerHTML = '<p class="step-hint"><i class="fas fa-spinner fa-spin"></i> Loading technicians...</p>';
+
+    try {
+        const response = await API.get('/technicians');
+        const technicians = response?.data?.users || response?.data || [];
+
+        if (!Array.isArray(technicians) || technicians.length === 0) {
+            listEl.innerHTML = '<p class="step-hint"><i class="fas fa-user-slash"></i> No active technical officers available.</p>';
+            return;
+        }
+
+        const sorted = technicians
+            .map((tech) => ({
+                id: Number(tech.id),
+                full_name: tech.full_name || tech.username || `Technician #${tech.id}`,
+                technical_expertise: (tech.technical_expertise || 'General').trim() || 'General',
+                active_ticket_count: Number(tech.active_ticket_count || 0)
+            }))
+            .filter((tech) => Number.isFinite(tech.id) && tech.id > 0)
+            .sort((first, second) => {
+                if (first.active_ticket_count !== second.active_ticket_count) {
+                    return first.active_ticket_count - second.active_ticket_count;
+                }
+                return first.full_name.localeCompare(second.full_name);
+            });
+
+        const selectedIds = new Set(
+            (ticketData.assignments || [])
+                .map((assignment) => Number(assignment.assigned_to))
+                .filter((id) => Number.isFinite(id) && id > 0)
+        );
+
+        listEl.innerHTML = sorted.map((tech) => {
+            const checked = selectedIds.has(tech.id) ? 'checked' : '';
+            const workloadLabel = `${tech.active_ticket_count} active ticket${tech.active_ticket_count === 1 ? '' : 's'}`;
+            return `
+                <label class="assign-tech-item">
+                    <span><input type="checkbox" name="assignTechnicians" value="${tech.id}" ${checked}></span>
+                    <span style="flex:1; min-width:0;">
+                        <span class="assign-tech-name">${tech.full_name}</span>
+                        <span class="assign-tech-meta"><i class="fas fa-wrench"></i> ${tech.technical_expertise}</span>
+                    </span>
+                    <span class="assign-tech-meta">${workloadLabel}</span>
+                </label>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('loadTechniciansForAssignment error:', error);
+        listEl.innerHTML = '<p class="step-hint" style="color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Failed to load technicians.</p>';
+    }
+}
+
+function updateAssignSelectionWarning() {
+    const warningEl = document.getElementById('assignSelectionWarning');
+    if (!warningEl) return;
+
+    const selected = document.querySelectorAll('input[name="assignTechnicians"]:checked');
+    const hasExistingAssignment = Array.isArray(ticketData?.assignments) && ticketData.assignments.length > 0;
+    warningEl.style.display = (hasExistingAssignment && selected.length === 0) ? 'block' : 'none';
+}
+
+async function submitAssignment(event) {
+    event.preventDefault();
+
+    if (!isSupervisorLike()) {
+        showToast('Only Supervisors can assign technicians from this page.', 'warning');
+        return;
+    }
+
+    if (!ticketData?.id) {
+        showToast('Ticket context is missing for assignment.', 'error');
+        return;
+    }
+
+    if (isRouteBreakdownTicket() && hasRouteGarageAssignment()) {
+        showToast('Nearby garage is already approved. Technician assignment is not required.', 'warning');
+        closeAssignModal();
+        return;
+    }
+
+    const selectedIds = Array.from(document.querySelectorAll('input[name="assignTechnicians"]:checked'))
+        .map((input) => Number(input.value))
+        .filter((id) => Number.isFinite(id) && id > 0);
+
+    const hasExistingAssignment = Array.isArray(ticketData.assignments) && ticketData.assignments.length > 0;
+    if (!hasExistingAssignment && selectedIds.length === 0) {
+        showToast('Please select at least one technician.', 'error');
+        return;
+    }
+
+    const expectedCompletionDate = document.getElementById('assignExpectedCompletion').value;
+    if (!expectedCompletionDate) {
+        showToast('Expected completion date is required.', 'error');
+        return;
+    }
+
+    const payload = {
+        technician_ids: selectedIds,
+        priority: capitalise(document.getElementById('assignPriority').value || 'medium'),
+        expected_completion_date: expectedCompletionDate,
+        notes: document.getElementById('assignNotes').value.trim()
+    };
+
+    const submitButton = document.getElementById('assignSubmitBtn');
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    try {
+        const response = await API.post(`/fault-tickets/${ticketData.id}/assign`, payload);
+
+        if (response.status === 'success') {
+            showToast(selectedIds.length === 0 ? 'Ticket unassigned successfully.' : 'Ticket assignment updated successfully.', 'success');
+            closeAssignModal();
+            await loadAll();
+        } else {
+            showToast(response.message || 'Failed to update assignment.', 'error');
+        }
+    } catch (error) {
+        console.error('submitAssignment error:', error);
+        showToast('An error occurred while saving the assignment.', 'error');
+    } finally {
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<i class="fas fa-user-check"></i> Save Assignment';
+    }
+}
+
+document.addEventListener('click', (event) => {
+    if (event.target.classList.contains('modal-overlay')) {
+        event.target.classList.remove('active');
+    }
+});
+
+document.addEventListener('change', (event) => {
+    if (event.target.matches('input[name="assignTechnicians"]')) {
+        updateAssignSelectionWarning();
+        return;
+    }
+
+    if (event.target.matches('input[name="approveGarageChoice"]')) {
+        updateGarageApprovalSelectionWarning();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        currentUser = await Auth.checkAuth();
+        if (!currentUser) {
+            window.location.href = CONFIG.ROUTES.LOGIN;
+            return;
+        }
+    } catch (_error) {
+        window.location.href = CONFIG.ROUTES.LOGIN;
+        return;
+    }
+
+    currentRoleContext = resolveRoleContext(currentUser);
+    applyRoleShellAndNavigation();
+
+    if (window.DashboardInit?.updateUserInfo) {
+        window.DashboardInit.updateUserInfo(currentUser);
+    }
+
+    const shellSidebar = document.querySelector('to-shell-sidebar');
+    if (shellSidebar && typeof shellSidebar.refreshNotificationBadge === 'function') {
+        await shellSidebar.refreshNotificationBadge();
+    }
+
+    await loadAll();
+});

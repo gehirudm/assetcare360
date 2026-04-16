@@ -89,6 +89,11 @@ class EndpointRegistry {
             'category' => 'User Management',
             'description' => 'Retrieve active technical officers with workload information'
         ],
+        'GET:/api/drivers' => [
+            'action' => 'List Drivers',
+            'category' => 'User Management',
+            'description' => 'Retrieve active drivers with workload information (active trip count)'
+        ],
         
         // System Logs Endpoints
         'GET:/api/logs' => [

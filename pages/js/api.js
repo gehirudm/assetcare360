@@ -219,3 +219,8 @@ const API = {
         window.location.href = CONFIG.ROUTES.LOGIN;
     }
 };
+
+// Backward compatibility for components that access the API client via window.API.
+if (typeof window !== 'undefined') {
+    window.API = API;
+}

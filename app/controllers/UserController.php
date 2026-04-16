@@ -1,6 +1,8 @@
 <?php
 
 require_once __DIR__ . '/../services/UserService.php';
+require_once __DIR__ . '/../services/EventEmitter.php';
+require_once __DIR__ . '/../events/DomainEvents.php';
 require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 
@@ -10,9 +12,11 @@ require_once __DIR__ . '/../middleware/RoleMiddleware.php';
  */
 class UserController {
     private $userService;
+    private $eventEmitter;
     
     public function __construct() {
         $this->userService = new UserService();
+        $this->eventEmitter = new EventEmitter();
     }
     
     /**
@@ -96,6 +100,30 @@ class UserController {
         $result = $this->userService->createUser($input, $sendWelcomeEmail);
         
         if ($result['success']) {
+            $createdUser = $result['data'] ?? [];
+            $currentUser = RoleMiddleware::getCurrentUser();
+            $temporaryPassword = $result['temporary_password'] ?? null;
+            $loginUrl = rtrim(FRONTEND_BASE_URL, '/') . '/auth/login.html';
+
+            $this->eventEmitter->emit(
+                DomainEvents::USER_ACCOUNT_CREATED,
+                [
+                    'user_id' => $createdUser['id'] ?? null,
+                    'full_name' => $createdUser['full_name'] ?? null,
+                    'email' => $createdUser['email'] ?? null,
+                    'employee_id' => $createdUser['employee_id'] ?? null,
+                    'role' => $createdUser['role'] ?? null,
+                    'temporary_password' => $temporaryPassword,
+                    'force_password_change' => true,
+                    'login_url' => $loginUrl,
+                ],
+                [
+                    'source' => 'api:users.create',
+                    'created_by_user_id' => $currentUser['id'] ?? null,
+                    'created_by_employee_id' => $currentUser['employee_id'] ?? null,
+                ]
+            );
+
             Response::success($result['data'], $result['message'], 201);
         } else {
             if (isset($result['errors'])) {
@@ -267,6 +295,24 @@ class UserController {
         RoleMiddleware::requireRole(['Supervisor', 'Admin']);
 
         $result = $this->userService->getTechniciansWithWorkload();
+        
+        if ($result['success']) {
+            Response::success($result['data']);
+        } else {
+            Response::error($result['message'], 400);
+        }
+    }
+
+    /**
+     * Get drivers (for transportation managers to assign trips)
+     * GET /api/drivers
+     * Accessible by Transportation Manager and Admin
+     */
+    public function getDrivers() {
+        // Allow transportation managers and admins to view drivers
+        RoleMiddleware::requireRole(['Transportation Manager', 'Admin']);
+
+        $result = $this->userService->getDriversWithWorkload();
         
         if ($result['success']) {
             Response::success($result['data']);

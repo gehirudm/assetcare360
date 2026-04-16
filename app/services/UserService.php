@@ -45,13 +45,17 @@ class UserService {
             ];
         }
         
-        // Generate temporary password if not provided
-        $temporaryPassword = null;
-        if (empty($data['password'])) {
+        // Always track the temporary password for first-login onboarding email.
+        $temporaryPassword = isset($data['password']) ? trim((string) $data['password']) : '';
+        if ($temporaryPassword === '') {
             $temporaryPassword = $this->userModel->generateRandomPassword();
             $data['password'] = $temporaryPassword;
-            $data['force_password_change'] = 1; // Force password change on first login
+        } else {
+            $data['password'] = $temporaryPassword;
         }
+
+        // Admin-created accounts should always change password at first login.
+        $data['force_password_change'] = 1;
         
         // Create user
         $userId = $this->userModel->createUser($data);
@@ -71,10 +75,8 @@ class UserService {
             'data' => $user
         ];
         
-        // If temporary password was generated, include it in response
-        if ($temporaryPassword) {
-            $response['temporary_password'] = $temporaryPassword;
-        }
+        // Include the temporary password used so callers can relay it securely.
+        $response['temporary_password'] = $temporaryPassword;
         
         // TODO: Send welcome email if requested
         if ($sendWelcomeEmail && !empty($data['email'])) {
@@ -269,6 +271,27 @@ class UserService {
             ];
         }
     }
+
+    /**
+     * Get active drivers with workload information (active trip count)
+     */
+    public function getDriversWithWorkload() {
+        try {
+            $drivers = $this->userModel->getDriversWithWorkload(true);
+
+            return [
+                'success' => true,
+                'data' => [
+                    'users' => $drivers
+                ]
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Failed to load drivers: ' . $e->getMessage()
+            ];
+        }
+    }
     
     /**
      * Validate user data
@@ -296,6 +319,7 @@ class UserService {
                 'Admin',
                 'Maintenance Manager',
                 'Inventory Manager',
+                'Transportation Manager',
                 'Technical Officer',
                 'Supervisor',
                 'Machinary Operator',

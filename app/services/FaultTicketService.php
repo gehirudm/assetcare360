@@ -3,12 +3,18 @@
 require_once __DIR__ . '/../models/FaultTicket.php';
 require_once __DIR__ . '/../models/FaultTicketImage.php';
 require_once __DIR__ . '/../models/FaultTicketAssignment.php';
+require_once __DIR__ . '/../models/BudgetReport.php';
+require_once __DIR__ . '/../models/SparePartRequest.php';
+require_once __DIR__ . '/FaultTicketWorkflowService.php';
 require_once __DIR__ . '/../../config/Database.php';
 
 class FaultTicketService {
     private $faultTicketModel;
     private $imageModel;
     private $assignmentModel;
+    private $budgetReportModel;
+    private $sparePartRequestModel;
+    private $workflowService;
     
     // Constants for validation
     const MAX_IMAGES = 5;
@@ -21,6 +27,9 @@ class FaultTicketService {
         $this->faultTicketModel = new FaultTicket();
         $this->imageModel = new FaultTicketImage();
         $this->assignmentModel = new FaultTicketAssignment();
+        $this->budgetReportModel = new BudgetReport();
+        $this->sparePartRequestModel = new SparePartRequest();
+        $this->workflowService = new FaultTicketWorkflowService();
     }
     
     /**
@@ -324,7 +333,9 @@ class FaultTicketService {
         $ticket = $this->faultTicketModel->getTicketById($id);
         
         if ($ticket) {
-            return $this->formatTicket($ticket);
+            $formatted = $this->formatTicket($ticket);
+            $formatted['workflow'] = $this->workflowService->getWorkflowIndicators((int) $ticket['id']);
+            return $formatted;
         }
         
         return $ticket;
@@ -430,6 +441,31 @@ class FaultTicketService {
             $isValidStatusTransition = $isStatusChangeOnly && 
                 isset($allowedTransitions[$ticket['status']]) && 
                 in_array($data['status'], $allowedTransitions[$ticket['status']]);
+
+            if ($isStatusChangeOnly && isset($data['status']) && $data['status'] === FaultTicket::STATUS_IN_PROGRESS) {
+                $latestBudget = $this->budgetReportModel->getLatestByTicketId($id);
+                if (!empty($latestBudget)) {
+                    $budgetStatus = strtolower(trim($latestBudget['status'] ?? ''));
+                    if (in_array($budgetStatus, ['pending', 'revised'], true)) {
+                        return [
+                            'success' => false,
+                            'message' => 'Cannot start work while budget approval is pending. Please wait for approval or update the budget report.'
+                        ];
+                    }
+                }
+
+                $requests = $this->sparePartRequestModel->getByFaultTicket($id);
+                if (!empty($requests)) {
+                    $latestRequest = $requests[0];
+                    $partsStatus = strtolower(trim($latestRequest['status'] ?? ''));
+                    if ($partsStatus === 'pending') {
+                        return [
+                            'success' => false,
+                            'message' => 'Cannot start work while spare part requests are pending approval.'
+                        ];
+                    }
+                }
+            }
             
             // Only allow full editing if status is Open (Pending), but allow status transitions
             if (!$isValidStatusTransition && $ticket['status'] !== 'Open') {
@@ -572,6 +608,23 @@ class FaultTicketService {
                     'message' => 'You do not have permission to assign tickets'
                 ];
             }
+
+            $routeGarageWorkflow = $this->getRouteGarageWorkflowForTicket($ticket);
+            $routeGarageStatus = strtolower(trim((string)($routeGarageWorkflow['workflow_status'] ?? '')));
+            $garageHandledStatuses = ['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'];
+
+            if (in_array($routeGarageStatus, $garageHandledStatuses, true)) {
+                $garageName = trim((string)($routeGarageWorkflow['approved_garage_name'] ?? ''));
+                $message = 'Nearby garage workflow is already active for this route breakdown. Technician assignment is not required.';
+                if ($garageName !== '') {
+                    $message .= ' Approved garage: ' . $garageName . '.';
+                }
+
+                return [
+                    'success' => false,
+                    'message' => $message
+                ];
+            }
             
             // Check if ticket can be modified based on its current status
             $currentStatus = strtolower($ticket['status'] ?? 'open');
@@ -620,6 +673,7 @@ class FaultTicketService {
                 
                 // Update ticket status back to "Open" (unassigned)
                 $this->faultTicketModel->updateTicket($ticketId, ['status' => 'Open']);
+                $this->workflowService->syncTicketStatus((int) $ticketId);
                 
                 return [
                     'success' => true,
@@ -644,6 +698,7 @@ class FaultTicketService {
             
             // Update ticket status to "Assigned"
             $this->faultTicketModel->updateTicket($ticketId, ['status' => 'Assigned']);
+            $this->workflowService->syncTicketStatus((int) $ticketId);
             
             // Update linked breakdown report status if exists
             $this->updateBreakdownReportStatus($ticket, 'Assigned');
@@ -689,6 +744,64 @@ class FaultTicketService {
             $db->beginTransaction();
             
             try {
+                $approvedRequestsStmt = $db->prepare("SELECT id, request_id FROM spare_part_requests WHERE fault_ticket_id = ? AND status = 'Approved'");
+                $approvedRequestsStmt->execute([$id]);
+                $approvedRequests = $approvedRequestsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                if (!empty($approvedRequests)) {
+                    $itemsStmt = $db->prepare("SELECT part_code, part_name, quantity FROM spare_part_request_items WHERE request_id = ?");
+                    $insertUsageStmt = $db->prepare("
+                        INSERT INTO sparepart_usage (
+                            sparepart_id,
+                            sparepart_name,
+                            quantity_issued,
+                            issue_date,
+                            issued_by,
+                            machine_id,
+                            vehicle_id,
+                            notes
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ");
+
+                    $issueDate = date('Y-m-d');
+                    $issuedBy = is_array($user) && !empty($user['id']) ? (int)$user['id'] : null;
+                    $machineId = isset($ticket['machine_id']) ? (string)$ticket['machine_id'] : null;
+                    $vehicleId = isset($ticket['vehicle_id']) ? (string)$ticket['vehicle_id'] : null;
+                    $ticketCode = $ticket['ticket_id'] ?? ('#' . $id);
+
+                    foreach ($approvedRequests as $request) {
+                        $itemsStmt->execute([(int)$request['id']]);
+                        $items = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                        foreach ($items as $item) {
+                            $sparepartId = isset($item['part_code']) ? trim((string)$item['part_code']) : '';
+                            $quantityIssued = isset($item['quantity']) ? (int)$item['quantity'] : 0;
+
+                            if ($sparepartId === '' || $quantityIssued <= 0) {
+                                continue;
+                            }
+
+                            $sparepartName = !empty($item['part_name']) ? (string)$item['part_name'] : $sparepartId;
+                            $notes = sprintf(
+                                'Issued via fault ticket %s (%s)',
+                                $ticketCode,
+                                $request['request_id'] ?? ('Request #' . (int)$request['id'])
+                            );
+
+                            $insertUsageStmt->execute([
+                                $sparepartId,
+                                $sparepartName,
+                                $quantityIssued,
+                                $issueDate,
+                                $issuedBy,
+                                $machineId,
+                                $vehicleId,
+                                $notes
+                            ]);
+                        }
+                    }
+                }
+
                 // 1. Update fault_tickets → Resolved
                 $stmt = $db->prepare("UPDATE fault_tickets SET status = 'Resolved', resolved_at = NOW(), updated_at = NOW() WHERE id = ?");
                 $stmt->execute([$id]);
@@ -858,6 +971,31 @@ class FaultTicketService {
         } catch (\Exception $e) {
             error_log("Error creating repair tickets: " . $e->getMessage());
         }
+    }
+
+    private function getRouteGarageWorkflowForTicket($ticket) {
+        $breakdownType = strtolower(trim((string)($ticket['breakdown_type'] ?? '')));
+        $routeBreakdownCode = trim((string)($ticket['breakdown_report_id'] ?? ''));
+
+        if ($breakdownType !== 'route_breakdown' || $routeBreakdownCode === '') {
+            return null;
+        }
+
+        $conn = Database::getInstance()->getConnection();
+        $stmt = $conn->prepare(
+            "SELECT rgw.workflow_status,
+                    rgw.approved_garage_id,
+                    g.name as approved_garage_name
+             FROM vehicle_breakdown_inroute rb
+             LEFT JOIN route_breakdown_garage_workflow rgw ON rgw.route_breakdown_id = rb.id
+             LEFT JOIN garages g ON g.id = rgw.approved_garage_id
+             WHERE rb.route_breakdown_id = ?
+             LIMIT 1"
+        );
+        $stmt->execute([$routeBreakdownCode]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        return $row ?: null;
     }
     
     /**

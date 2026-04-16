@@ -65,6 +65,35 @@ define('COOKIE_DOMAIN', ''); // Leave empty for current domain
  */
 define('API_PREFIX', '/api');
 define('TIMEZONE', 'Asia/Colombo');
+define('FRONTEND_BASE_URL', env('FRONTEND_BASE_URL', 'http://127.0.0.1:3000'));
+
+/**
+ * Event Pipeline Configuration
+ */
+define('EVENTS_ENABLED', filter_var(env('EVENTS_ENABLED', 'false'), FILTER_VALIDATE_BOOLEAN));
+define('EVENTS_SCHEMA_VERSION', env('EVENTS_SCHEMA_VERSION', '1.0'));
+define('RABBITMQ_HOST', env('RABBITMQ_HOST', '127.0.0.1'));
+define('RABBITMQ_PORT', (int) env('RABBITMQ_PORT', 5672));
+define('RABBITMQ_USER', env('RABBITMQ_USER', 'guest'));
+define('RABBITMQ_PASS', env('RABBITMQ_PASS', 'guest'));
+define('RABBITMQ_VHOST', env('RABBITMQ_VHOST', '/'));
+define('RABBITMQ_EXCHANGE', env('RABBITMQ_EXCHANGE', 'events'));
+define('RABBITMQ_EXCHANGE_TYPE', env('RABBITMQ_EXCHANGE_TYPE', 'topic'));
+define('RABBITMQ_AUDIT_QUEUE', env('RABBITMQ_AUDIT_QUEUE', 'audit_queue'));
+define('RABBITMQ_NOTIFICATION_QUEUE', env('RABBITMQ_NOTIFICATION_QUEUE', 'notification_queue'));
+define('RABBITMQ_EMAIL_QUEUE', env('RABBITMQ_EMAIL_QUEUE', 'email_queue'));
+define('RABBITMQ_DLX_EXCHANGE', env('RABBITMQ_DLX_EXCHANGE', 'events.dlx'));
+define('RABBITMQ_DLQ_PREFIX', env('RABBITMQ_DLQ_PREFIX', 'events.dlq'));
+
+/**
+ * MailHog Email Delivery Configuration
+ */
+define('MAILHOG_SMTP_HOST', env('MAILHOG_SMTP_HOST', '127.0.0.1'));
+define('MAILHOG_SMTP_PORT', (int) env('MAILHOG_SMTP_PORT', 1025));
+define('MAILHOG_FROM_EMAIL', env('MAILHOG_FROM_EMAIL', 'noreply@assetcare360.local'));
+define('MAILHOG_FROM_NAME', env('MAILHOG_FROM_NAME', 'AssetCare360'));
+define('MAILHOG_HELO_DOMAIN', env('MAILHOG_HELO_DOMAIN', 'assetcare360.local'));
+define('MAILHOG_TIMEOUT_SECONDS', (int) env('MAILHOG_TIMEOUT_SECONDS', 10));
 
 /**
  * Logging Configuration

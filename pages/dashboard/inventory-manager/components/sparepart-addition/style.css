@@ -1,0 +1,40 @@
+:host {
+    display: block;
+}
+
+.addition-empty {
+    text-align: center;
+    padding: 40px;
+    color: #6b7280;
+}
+
+.addition-empty i {
+    font-size: 2em;
+    margin-bottom: 10px;
+}
+
+.addition-empty p {
+    margin: 0;
+}
+
+.addition-empty-error {
+    color: #dc2626;
+}
+
+.addition-action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.addition-item .item-description {
+    line-height: 1.8;
+}
+
+@media (max-width: 768px) {
+    .addition-action-buttons {
+        justify-content: flex-start;
+    }
+}

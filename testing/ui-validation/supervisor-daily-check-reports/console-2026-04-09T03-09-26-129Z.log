@@ -1,0 +1,27 @@
+[   16605ms] [LOG] Login result: {success: true, user: Object, forcePasswordChange: false, message: Login successful} @ http://127.0.0.1:3000/auth/login.html:536
+[   16607ms] [LOG] Login successful, redirecting user: {id: 3, employee_id: LITRO-INVMGR-001, full_name: Inventory Manager One, role: Inventory Manager, technical_expertise: null} @ http://127.0.0.1:3000/auth/login.html:551
+[   16607ms] [LOG] Redirecting user: {id: 3, employee_id: LITRO-INVMGR-001, full_name: Inventory Manager One, role: Inventory Manager, technical_expertise: null} @ http://127.0.0.1:3000/js/auth.js:171
+[   16607ms] [LOG] Role: Inventory Manager -> Normalized: INVENTORY_MANAGER @ http://127.0.0.1:3000/js/auth.js:172
+[   16607ms] [LOG] Dashboard URL: /dashboard/inventory-manager/index.html @ http://127.0.0.1:3000/js/auth.js:173
+[   17138ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:3000/dashboard/inventory-manager/components/notifications/style.css:0
+[   17138ms] [ERROR] Failed to load notifications styles: Error: Failed to load style.css (404)
+    at InventoryNotifications._loadStyles (http://127.0.0.1:3000/dashboard/inventory-manager/components/notifications/script.js:190:23)
+    at async InventoryNotifications.connectedCallback (http://127.0.0.1:3000/dashboard/inventory-manager/components/notifications/script.js:28:21) @ http://127.0.0.1:3000/dashboard/inventory-manager/components/notifications/script.js:193
+[  273539ms] [LOG] More actions for vehicle: 3 @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:162
+[  323072ms] [LOG] openModal called with modalId: addPartModal @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:468
+[  323072ms] [LOG] Modal opened successfully: addPartModal @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:473
+[  415238ms] [LOG] openModal called with modalId: editPartModal @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:468
+[  415238ms] [LOG] Modal opened successfully: editPartModal @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:473
+[  415238ms] [LOG] openModal called with modalId: editPartModal @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:468
+[  415238ms] [LOG] Modal opened successfully: editPartModal @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:473
+[  438254ms] [LOG] openModal called with modalId: reorderModal @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:468
+[  438255ms] [LOG] Modal opened successfully: reorderModal @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:473
+[  438255ms] [LOG] openModal called with modalId: reorderModal @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:468
+[  438255ms] [LOG] Modal opened successfully: reorderModal @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:473
+[  454554ms] [LOG] openModal called with modalId: deleteModal @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:468
+[  454554ms] [LOG] Modal opened successfully: deleteModal @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:473
+[  454554ms] [LOG] openModal called with modalId: deleteModal @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:468
+[  454554ms] [LOG] Modal opened successfully: deleteModal @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:473
+[  489969ms] [LOG] openModal called with modalId: addStockModal @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:468
+[  489969ms] [LOG] Modal opened successfully: addStockModal @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:473
+[  509486ms] [LOG] Orders pending count: 0 @ http://127.0.0.1:3000/dashboard/inventory-manager/script.js?v=1.7.0:132

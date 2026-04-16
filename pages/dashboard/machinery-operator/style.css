@@ -742,6 +742,147 @@ body {
     margin-right: 8px;
 }
 
+.mo-flow-section {
+    background: linear-gradient(135deg, #f7faff 0%, #eef4ff 100%);
+}
+
+.mo-ticket-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mo-flow-step {
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    gap: 12px;
+    position: relative;
+}
+
+.mo-flow-marker {
+    position: relative;
+    display: flex;
+    justify-content: center;
+}
+
+.mo-flow-step:not(.is-last) .mo-flow-marker::after {
+    content: '';
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    width: 2px;
+    height: calc(100% + 12px);
+    background: #c8d4ef;
+    transform: translateX(-50%);
+}
+
+.mo-flow-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 12px;
+    position: relative;
+    z-index: 1;
+}
+
+.mo-flow-dot-completed {
+    background: #1f9d67;
+}
+
+.mo-flow-dot-active {
+    background: #2f7ef7;
+}
+
+.mo-flow-dot-pending {
+    background: #94a3b8;
+}
+
+.mo-flow-dot-rejected {
+    background: #dc2626;
+}
+
+.mo-flow-content {
+    background: #fff;
+    border: 1px solid #d7e2f5;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.mo-flow-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.mo-flow-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-900);
+}
+
+.mo-flow-state {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.mo-flow-state-completed {
+    color: #0c6b44;
+    background: #d8f6e7;
+}
+
+.mo-flow-state-active {
+    color: #0d4fb8;
+    background: #dce9ff;
+}
+
+.mo-flow-state-pending {
+    color: #475569;
+    background: #e7edf5;
+}
+
+.mo-flow-state-rejected {
+    color: #9f1b1b;
+    background: #ffe2e2;
+}
+
+.mo-flow-date {
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #4b6280;
+    font-size: 12px;
+}
+
+.mo-flow-detail-list {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mo-flow-detail-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    color: #2a3f58;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.mo-flow-detail-item i {
+    color: var(--royal-blue);
+    margin-top: 2px;
+}
+
 .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -832,6 +973,71 @@ body {
     display: flex;
     gap: 8px;
     align-items: center;
+}
+
+/* Dropdown menu used by fault report "more actions" controls */
+.dropdown-container {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-trigger {
+    padding: 8px 12px;
+    min-width: auto;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 5px;
+    background: #fff;
+    border: 1px solid var(--stone-200);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.dropdown-menu.active,
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-item {
+    width: 100%;
+    padding: 10px 14px;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-700);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: var(--stone-100);
+    color: var(--royal-blue);
+}
+
+.dropdown-item.danger {
+    color: var(--danger);
+}
+
+.dropdown-item.danger:hover {
+    background: #fee;
+    color: var(--danger);
+}
+
+.dropdown-item i {
+    width: 16px;
+    text-align: center;
 }
 
 /* ==================== FILTERS ==================== */
@@ -1280,6 +1486,15 @@ body {
         width: 95%;
         max-height: 85vh;
     }
+
+    .mo-flow-head {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .form-section p strong {
+        min-width: 120px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1313,5 +1528,26 @@ body {
 
     .summary-number {
         font-size: 2.2rem;
+    }
+
+    .mo-flow-step {
+        grid-template-columns: 28px 1fr;
+        gap: 10px;
+    }
+
+    .mo-flow-dot {
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
+    }
+
+    .mo-flow-step:not(.is-last) .mo-flow-marker::after {
+        top: 26px;
+    }
+
+    .form-section p strong {
+        min-width: 0;
+        display: block;
+        margin-bottom: 2px;
     }
 }

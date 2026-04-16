@@ -21,6 +21,7 @@ info:
     - **Admin**: Full system access including user management
     - **Maintenance Manager**: Manage maintenance operations and schedules
     - **Inventory Manager**: Inventory operations
+    - **Transportation Manager**: Transportation operations and logistics
     - **Technical Officer**: Technical support and equipment management
     - **Supervisor**: Supervisory access
     - **Driver**: Driver-specific operations
@@ -47,7 +48,27 @@ tags:
   - name: Products
     description: Product/Inventory operations
   - name: Budget Reports
-    description: Budget report submission and management for fault tickets
+    description: Budget report submission and approval workflow for fault tickets. Budgets within petty cash limit are approved by Supervisors; amounts exceeding the limit require Maintenance Manager approval.
+  - name: Ticket Work Updates
+    description: Technical Officer work completion updates for fault tickets.
+  - name: System Settings
+    description: System-wide configuration settings (Admin only). Includes petty cash limit for budget approval routing.
+  - name: Trips
+    description: Trip management for Transportation Manager and Drivers. Includes trip assignment, acceptance/rejection workflow, and trip lifecycle management.
+  - name: Fuel Logs
+    description: Vehicle fuel entry tracking with source-aware validation (internal vs external).
+  - name: Notifications
+    description: User notification listing and read-state updates.
+  - name: Spare Part Requests
+    description: Spare part request workflow. Technical Officers create requests for fault tickets, Inventory Managers approve/reject.
+  - name: Sparepart Additions
+    description: Stock addition tracking. Auto-updates spare part catalog quantities and can auto-create new spare parts.
+  - name: Route Breakdowns
+    description: Route breakdown reporting and approved garage repair workflow.
+  - name: Garages
+    description: Registered garage directory used by route breakdown workflow.
+  - name: File Uploads
+    description: Uploaded image retrieval endpoints.
 
 security:
   - bearerAuth: []
@@ -536,7 +557,7 @@ paths:
           description: Filter by user role
           schema:
             type: string
-            enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
+            enum: [Admin, Maintenance Manager, Inventory Manager, Transportation Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
         - name: status
           in: query
           description: Filter by active status
@@ -624,7 +645,7 @@ paths:
                   minLength: 2
                 role:
                   type: string
-                  enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
+                  enum: [Admin, Maintenance Manager, Inventory Manager, Transportation Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
                   example: "Inventory Manager"
                 technical_expertise:
                   type: string
@@ -738,7 +759,7 @@ paths:
                   minLength: 2
                 role:
                   type: string
-                  enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
+                  enum: [Admin, Maintenance Manager, Inventory Manager, Transportation Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
                 technical_expertise:
                   type: string
                   nullable: true
@@ -1531,6 +1552,562 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /notifications:
+    get:
+      tags:
+        - Notifications
+      summary: List notifications for the current user
+      description: Returns notifications targeted to the authenticated user, role, or global broadcast notifications.
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: unread_only
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Notifications retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Success
+                  data:
+                    type: object
+                    properties:
+                      notifications:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Notification'
+                      pagination:
+                        type: object
+                        properties:
+                          page:
+                            type: integer
+                            example: 1
+                          limit:
+                            type: integer
+                            example: 20
+                          total:
+                            type: integer
+                            example: 52
+                          total_pages:
+                            type: integer
+                            example: 3
+                      unread_count:
+                        type: integer
+                        example: 3
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/read:
+    post:
+      tags:
+        - Notifications
+      summary: Mark a notification as read
+      description: Marks a specific notification as read, or all visible notifications when mark_all=true.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notification_id:
+                  type: string
+                  example: "3f0fb3fc-91a5-462c-9fcf-a282218da9d4"
+                mark_all:
+                  type: boolean
+                  example: false
+      responses:
+        '200':
+          description: Read state updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Notification read state updated
+                  data:
+                    type: object
+                    properties:
+                      unread_count:
+                        type: integer
+                        example: 2
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== SPARE PART REQUESTS ====================
+  /spare-part-requests/check-availability:
+    post:
+      tags:
+        - Spare Part Requests
+      summary: Check availability of spare parts
+      description: |
+        Check availability of multiple spare parts before creating a request.
+        Returns status for each part: available, insufficient, out_of_stock, or not_found.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - items
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - part_code
+                    properties:
+                      part_code:
+                        type: string
+                        example: "SPR-001"
+                      quantity:
+                        type: integer
+                        default: 1
+                        example: 5
+      responses:
+        '200':
+          description: Availability check results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            part_code:
+                              type: string
+                              example: "SPR-001"
+                            part_name:
+                              type: string
+                              nullable: true
+                              example: "Hydraulic Pump"
+                            status:
+                              type: string
+                              enum: [available, insufficient, out_of_stock, not_found]
+                              example: "available"
+                            available_qty:
+                              type: integer
+                              example: 50
+                            requested_qty:
+                              type: integer
+                              example: 5
+                            reorder_level:
+                              type: integer
+                              example: 10
+                            message:
+                              type: string
+                              example: "In stock (50 available)"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== SPAREPART ADDITIONS ====================
+  /additions:
+    post:
+      tags:
+        - Sparepart Additions
+      summary: Record a spare part addition
+      description: |
+        Records stock addition for a spare part. Automatically updates the spare part catalog quantity.
+        If the spare part doesn't exist in the catalog, it will be auto-created.
+        Sparepart IDs must be generated identifiers in the form `SPR-###`; malformed placeholder values are rejected.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sparepart_id
+                - sparepart_name
+                - quantity_added
+                - received_date
+              properties:
+                sparepart_id:
+                  type: string
+                  example: "SPR-001"
+                sparepart_name:
+                  type: string
+                  example: "Hydraulic Pump"
+                quantity_added:
+                  type: integer
+                  minimum: 1
+                  example: 10
+                received_date:
+                  type: string
+                  format: date
+                  example: "2026-04-15"
+                category:
+                  type: string
+                  example: "Hydraulics"
+                location:
+                  type: string
+                  example: "Warehouse A"
+                supplier:
+                  type: string
+                  example: "ABC Suppliers"
+                notes:
+                  type: string
+                  example: "Restocking order #1234"
+      responses:
+        '200':
+          description: Addition recorded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      message:
+                        type: string
+                        example: "Addition recorded successfully"
+                      previous_stock:
+                        type: integer
+                        example: 40
+                      new_stock:
+                        type: integer
+                        example: 50
+                      quantity_added:
+                        type: integer
+                        example: 10
+                      auto_created_part:
+                        type: boolean
+                        example: false
+                        description: "True if the spare part was auto-created in the catalog"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== GARAGES ====================
+  /garages:
+    get:
+      tags:
+        - Garages
+      summary: List available garages
+      description: Returns active garages. Supports optional search by `q` and filter by `city`.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: city
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Garages fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      garages:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            name:
+                              type: string
+                              example: AutoCare Service Center
+                            address:
+                              type: string
+                              example: 123 Galle Road, Colombo 03
+                            city:
+                              type: string
+                              nullable: true
+                              example: Colombo
+                            phone:
+                              type: string
+                              nullable: true
+                              example: +94 11 234 5678
+                            latitude:
+                              type: number
+                              format: float
+                              nullable: true
+                            longitude:
+                              type: number
+                              format: float
+                              nullable: true
+                            is_active:
+                              type: integer
+                              example: 1
+                      count:
+                        type: integer
+                        example: 5
+
+  /garages/{id}:
+    get:
+      tags:
+        - Garages
+      summary: Get garage by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Garage fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      garage:
+                        type: object
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ==================== ROUTE BREAKDOWN GARAGE WORKFLOW ====================
+  /route-breakdowns/{id}/garage-approval:
+    post:
+      tags:
+        - Route Breakdowns
+      summary: Supervisor approves garage for a route breakdown
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - garage_id
+              properties:
+                garage_id:
+                  type: integer
+                  example: 1
+                approval_notes:
+                  type: string
+                  nullable: true
+                  example: Proceed with this approved workshop.
+      responses:
+        '200':
+          description: Garage approved successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /route-breakdowns/{id}/garage-entry:
+    post:
+      tags:
+        - Route Breakdowns
+      summary: Driver logs entry to approved garage
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - entry_notes
+              properties:
+                entry_notes:
+                  type: string
+                  example: Arrived at garage and handed over vehicle.
+      responses:
+        '200':
+          description: Garage entry logged successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /route-breakdowns/{id}/garage-progress:
+    post:
+      tags:
+        - Route Breakdowns
+      summary: Add route breakdown garage progress update
+      description: Accepts multipart form data with progress note and up to 5 progress images.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - progress_note
+              properties:
+                progress_note:
+                  type: string
+                  example: Engine disassembled and damaged gasket identified.
+                progress_images:
+                  type: array
+                  maxItems: 5
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '200':
+          description: Progress update submitted successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /route-breakdowns/{id}/garage-complete:
+    post:
+      tags:
+        - Route Breakdowns
+      summary: Complete route breakdown with bill proof
+      description: Bill amount, bill image, and completion remarks are mandatory.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - bill_amount
+                - bill_image
+                - completion_remarks
+              properties:
+                bill_amount:
+                  type: number
+                  format: float
+                  example: 12500.00
+                bill_image:
+                  type: string
+                  format: binary
+                completion_remarks:
+                  type: string
+                  example: Repair completed and test run is successful.
+      responses:
+        '200':
+          description: Route breakdown completed successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # ==================== FILE UPLOADS ====================
+  /uploads/route-breakdowns/{folder}/{filename}:
+    get:
+      tags:
+        - File Uploads
+      summary: Retrieve route breakdown uploaded image
+      description: Serves uploaded route breakdown progress and bill images.
+      security: []
+      parameters:
+        - name: folder
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [progress, bills]
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Image binary response
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+
 # ==================== COMPONENTS ====================
 components:
   securitySchemes:
@@ -1560,7 +2137,7 @@ components:
           example: "Admin User"
         role:
           type: string
-          enum: [Admin, Maintenance Manager, Inventory Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
+          enum: [Admin, Maintenance Manager, Inventory Manager, Transportation Manager, Technical Officer, Supervisor, Driver, Machinary Operator, Auction Officer]
           example: "Admin"
         technical_expertise:
           type: string
@@ -1713,6 +2290,49 @@ components:
           type: string
           format: date-time
         updated_at:
+          type: string
+          format: date-time
+
+    Notification:
+      type: object
+      properties:
+        notification_id:
+          type: string
+          example: "3f0fb3fc-91a5-462c-9fcf-a282218da9d4"
+        user_id:
+          type: integer
+          nullable: true
+          example: 7
+        target_role:
+          type: string
+          nullable: true
+          example: "Inventory Manager"
+        title:
+          type: string
+          example: "Budget review required"
+        message:
+          type: string
+          example: "A budget report is waiting for your approval."
+        type:
+          type: string
+          enum: [info, success, warning, error]
+          example: warning
+        source_event:
+          type: string
+          example: "BUDGET_REPORT_CREATED"
+        source_event_id:
+          type: string
+          nullable: true
+          example: "BR-001"
+        is_read:
+          type: integer
+          enum: [0, 1]
+          example: 0
+        read_at:
+          type: string
+          nullable: true
+          format: date-time
+        created_at:
           type: string
           format: date-time
 
@@ -2209,6 +2829,55 @@ components:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /vehicles/{id}/fuel-qr:
+    post:
+      tags:
+        - Vehicles
+      summary: Upload government fuel QR image
+      description: Upload or replace the government-issued fuel QR image for a vehicle. Primarily used by Transportation Manager for external fuel station operations.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Vehicle ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - fuel_qr_image
+              properties:
+                fuel_qr_image:
+                  type: string
+                  format: binary
+                  description: Government-issued vehicle fuel QR image (JPG, PNG, WEBP; max 5MB)
+      responses:
+        '200':
+          description: Fuel QR image updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      vehicle:
+                        $ref: '#/components/schemas/Vehicle'
+        '400':
+          description: Invalid request, image validation failure, or vehicle not found
+
   /vehicles/due-service:
     get:
       tags:
@@ -2220,6 +2889,729 @@ components:
       responses:
         '200':
           description: Successfully retrieved vehicles due for service
+
+  /vehicles/with-drivers:
+    get:
+      tags:
+        - Vehicles
+      summary: Get all vehicles with driver assignments
+      description: Retrieve all vehicles including their assigned driver information. Used by Transportation Manager for driver assignment management.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Successfully retrieved vehicles with driver assignments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Success
+                  data:
+                    type: object
+                    properties:
+                      vehicles:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/Vehicle'
+                            - type: object
+                              properties:
+                                assigned_driver_id:
+                                  type: integer
+                                  nullable: true
+                                  description: ID of assigned driver (null if unassigned)
+                                driver_assigned_at:
+                                  type: string
+                                  format: date-time
+                                  nullable: true
+                                  description: Timestamp when driver was assigned
+                                driver_user_id:
+                                  type: integer
+                                  nullable: true
+                                  description: User ID of assigned driver
+                                driver_name:
+                                  type: string
+                                  nullable: true
+                                  description: Full name of assigned driver
+                                driver_employee_id:
+                                  type: string
+                                  nullable: true
+                                  description: Employee ID of assigned driver
+                                driver_phone:
+                                  type: string
+                                  nullable: true
+                                  description: Phone number of assigned driver
+        '401':
+          description: Unauthorized
+
+  /vehicles/{numberPlate}/with-driver:
+    get:
+      tags:
+        - Vehicles
+      summary: Get vehicle with driver by number plate
+      description: Retrieve a specific vehicle by number plate including its assigned driver information.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: numberPlate
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Vehicle number plate (e.g., lk-1234)
+      responses:
+        '200':
+          description: Successfully retrieved vehicle with driver
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      vehicle:
+                        allOf:
+                          - $ref: '#/components/schemas/Vehicle'
+                          - type: object
+                            properties:
+                              assigned_driver_id:
+                                type: integer
+                                nullable: true
+                              driver_assigned_at:
+                                type: string
+                                format: date-time
+                                nullable: true
+                              driver_user_id:
+                                type: integer
+                                nullable: true
+                              driver_name:
+                                type: string
+                                nullable: true
+                              driver_employee_id:
+                                type: string
+                                nullable: true
+                              driver_phone:
+                                type: string
+                                nullable: true
+        '404':
+          description: Vehicle not found
+
+  /vehicles/{id}/assign-driver:
+    post:
+      tags:
+        - Vehicles
+      summary: Assign driver to vehicle
+      description: |
+        Assign a driver to a vehicle. One driver can only be assigned to one vehicle at a time.
+        If the driver is already assigned to another vehicle, they will be automatically unassigned from the previous vehicle.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Vehicle ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - driver_id
+              properties:
+                driver_id:
+                  type: integer
+                  description: User ID of the driver to assign
+      responses:
+        '200':
+          description: Driver assigned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Driver assigned successfully
+                  data:
+                    type: object
+                    properties:
+                      vehicle:
+                        $ref: '#/components/schemas/Vehicle'
+        '400':
+          description: Invalid driver (not active, not a driver role, etc.)
+        '404':
+          description: Vehicle or driver not found
+
+  /vehicles/{id}/unassign-driver:
+    post:
+      tags:
+        - Vehicles
+      summary: Unassign driver from vehicle
+      description: Remove the currently assigned driver from a vehicle.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Vehicle ID
+      responses:
+        '200':
+          description: Driver unassigned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Driver unassigned successfully
+                  data:
+                    type: object
+                    properties:
+                      vehicle:
+                        $ref: '#/components/schemas/Vehicle'
+        '404':
+          description: Vehicle not found
+
+  # ==================== TRIPS ====================
+  /trips:
+    get:
+      tags:
+        - Trips
+      summary: Get all trips
+      description: Retrieve all trips with optional filtering by status and driver
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter by trip status
+          schema:
+            type: string
+            enum: [Pending, Accepted, Rejected, In Progress, Completed, Cancelled]
+        - name: driver_id
+          in: query
+          description: Filter by driver ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully retrieved trips
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      trips:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Trip'
+                  count:
+                    type: integer
+
+    post:
+      tags:
+        - Trips
+      summary: Create a new trip (assign trip to driver)
+      description: |
+        Creates a pending trip record. `driver_id` is optional:
+        - For Transportation Manager/Admin flows, if `driver_id` is omitted the backend uses the selected vehicle's assigned driver.
+        - For Driver flows, the backend binds the trip to the authenticated driver.
+        - Provide either `vehicle_registration` or `vehicle_id`.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - origin
+                - destination
+              properties:
+                origin:
+                  type: string
+                destination:
+                  type: string
+                vehicle_registration:
+                  type: string
+                  description: Vehicle number plate. Required when vehicle_id is not provided.
+                vehicle_id:
+                  type: integer
+                  description: Vehicle database ID. Required when vehicle_registration is not provided.
+                driver_id:
+                  type: integer
+                  description: Optional. If omitted, backend resolves the driver from context.
+                cargo_description:
+                  type: string
+      responses:
+        '201':
+          description: Trip created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      trip:
+                        $ref: '#/components/schemas/Trip'
+        '400':
+          description: Validation error (for example vehicle has ongoing breakdown ticket)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Cannot create trip. Vehicle has an ongoing breakdown ticket (VBD-012).
+
+  /trips/{tripId}:
+    get:
+      tags:
+        - Trips
+      summary: Get trip by ID
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully retrieved trip
+        '404':
+          description: Trip not found
+
+    put:
+      tags:
+        - Trips
+      summary: Update a trip (only pending trips)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                origin:
+                  type: string
+                destination:
+                  type: string
+                vehicle_registration:
+                  type: string
+                driver_id:
+                  type: integer
+                cargo_description:
+                  type: string
+      responses:
+        '200':
+          description: Trip updated successfully
+
+    delete:
+      tags:
+        - Trips
+      summary: Delete a trip
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Trip deleted successfully
+
+  /trips/{tripId}/accept:
+    post:
+      tags:
+        - Trips
+      summary: Accept a trip assignment (Driver)
+      description: Driver accepts a pending trip assignment. Changes status from Pending to Accepted.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Trip accepted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      trip:
+                        $ref: '#/components/schemas/Trip'
+        '400':
+          description: Bad request - Trip not in pending status
+
+  /trips/{tripId}/reject:
+    post:
+      tags:
+        - Trips
+      summary: Reject a trip assignment (Driver)
+      description: Driver rejects a pending trip assignment with a reason. Changes status from Pending to Rejected.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+                  description: Reason for rejecting the trip
+      responses:
+        '200':
+          description: Trip rejected successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      trip:
+                        $ref: '#/components/schemas/Trip'
+        '400':
+          description: Bad request - Trip not in pending status or missing reason
+
+  /trips/{tripId}/start:
+    post:
+      tags:
+        - Trips
+      summary: Start a trip (Driver)
+      description: Driver starts an accepted trip. Requires starting odometer reading. Optionally accepts assistant driver name.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                starting_odometer:
+                  type: integer
+                  description: Current odometer reading at trip start
+                assistant_driver_name:
+                  type: string
+                  description: Name of assistant driver (optional)
+      responses:
+        '200':
+          description: Trip started successfully
+        '400':
+          description: Bad request - Trip not in accepted status
+
+  /trips/{tripId}/end:
+    post:
+      tags:
+        - Trips
+      summary: End a trip (Driver)
+      description: Driver ends an in-progress trip with final odometer reading.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - final_odometer
+              properties:
+                final_odometer:
+                  type: integer
+                completion_notes:
+                  type: string
+      responses:
+        '200':
+          description: Trip ended successfully
+
+  /trips/{tripId}/cancel:
+    post:
+      tags:
+        - Trips
+      summary: Cancel a trip
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Trip cancelled successfully
+
+  # ==================== FUEL LOGS ====================
+  /fuel-logs:
+    get:
+      tags:
+        - Fuel Logs
+      summary: Get fuel logs
+      description: Retrieve fuel logs with optional vehicle and driver filters.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: vehicle_registration
+          in: query
+          description: Filter by vehicle number plate/registration
+          schema:
+            type: string
+        - name: driver_id
+          in: query
+          description: Filter by driver user ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully retrieved fuel logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      fuel_logs:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/FuelLog'
+                  count:
+                    type: integer
+
+    post:
+      tags:
+        - Fuel Logs
+      summary: Create fuel log
+      description: |
+        Create a fuel log entry.
+
+        Business rules:
+        - `fuel_type` is derived automatically from the selected vehicle (`vehicles.fuel_type`).
+        - `fuel_source` is required and must be `internal` or `external`.
+        - For `external` fuel source, `total_cost` and `bill_image` are required.
+        - For `internal` fuel source, `total_cost` and `bill_image` are optional.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FuelLogInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FuelLogMultipartInput'
+      responses:
+        '201':
+          description: Fuel log created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      fuel_log:
+                        $ref: '#/components/schemas/FuelLog'
+        '400':
+          description: Validation error (missing required fields, invalid source, or external fueling without cost/receipt)
+
+  /fuel-logs/{fuelLogId}:
+    get:
+      tags:
+        - Fuel Logs
+      summary: Get fuel log by ID
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: fuelLogId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully retrieved fuel log
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      fuel_log:
+                        $ref: '#/components/schemas/FuelLog'
+        '404':
+          description: Fuel log not found
+
+    put:
+      tags:
+        - Fuel Logs
+      summary: Update fuel log
+      description: |
+        Update fuel log details.
+
+        Business rules for `fuel_source` apply on update as well:
+        - `external`: requires positive `total_cost` and bill image path or existing stored bill image.
+        - `internal`: allows empty `total_cost` and no bill image.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: fuelLogId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FuelLogInput'
+      responses:
+        '200':
+          description: Fuel log updated successfully
+        '400':
+          description: Invalid request data or validation failure
+
+    delete:
+      tags:
+        - Fuel Logs
+      summary: Delete fuel log
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: fuelLogId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Fuel log deleted successfully
 
   # ==================== FAULT TICKETS ====================
   /fault-tickets:
@@ -2384,7 +3776,7 @@ components:
       tags:
         - Fault Tickets
       summary: Get fault ticket by ID
-      description: Retrieve a single fault ticket with its images
+      description: Retrieve a single fault ticket with its images and workflow indicators
       security:
         - bearerAuth: []
         - cookieAuth: []
@@ -2407,10 +3799,7 @@ components:
                     type: string
                     example: success
                   data:
-                    type: object
-                    properties:
-                      ticket:
-                        $ref: '#/components/schemas/FaultTicketWithImages'
+                    $ref: '#/components/schemas/FaultTicketWithImages'
         '404':
           description: Fault ticket not found
           content:
@@ -2480,7 +3869,7 @@ components:
                   type: string
                 status:
                   type: string
-                  enum: [Open, In Progress, Resolved, Closed]
+                  enum: [Open, Assigned, Waiting for Budget Approval, Waiting for Spare Parts, Parts Approved, In Progress, Resolved, Closed]
       responses:
         '200':
           description: Fault ticket updated successfully
@@ -2594,6 +3983,281 @@ components:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /fault-tickets/{id}/assign:
+    post:
+      tags:
+        - Fault Tickets
+      summary: Assign technicians to fault ticket
+      description: |
+        Assign one or more Technical Officers to a fault ticket.
+
+        **Rules:**
+        - Requires Supervisor or Admin role
+        - Ticket must be editable for assignment (`Open`, `Pending`, or `Assigned`)
+        - Route-breakdown tickets with active nearby-garage workflow
+          (`garage_approved`, `garage_entry_logged`, `repair_in_progress`, `completed`)
+          cannot be assigned to technicians
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Fault ticket ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - technician_ids
+              properties:
+                technician_ids:
+                  type: array
+                  description: Technical Officer user IDs. Use an empty array only for unassignment flows.
+                  items:
+                    type: integer
+                  example: [12, 17]
+                priority:
+                  type: string
+                  enum: [Low, Medium, High, Critical]
+                  example: High
+                expected_completion_date:
+                  type: string
+                  format: date
+                  nullable: true
+                  example: '2026-04-20'
+                notes:
+                  type: string
+                  nullable: true
+                  example: Prioritize roadside safety checks first.
+      responses:
+        '200':
+          description: Ticket assignment updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: 2 technician(s) assigned successfully
+        '400':
+          description: Assignment rejected due to validation or workflow rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                garageWorkflowActive:
+                  summary: Route breakdown is already in nearby-garage workflow
+                  value:
+                    status: error
+                    message: Nearby garage workflow is already active for this route breakdown. Technician assignment is not required.
+                invalidTechnicianPayload:
+                  summary: Invalid assignment payload
+                  value:
+                    status: error
+                    message: Invalid technician data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - only Supervisor/Admin can assign tickets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== TICKET WORK UPDATES ====================
+  /ticket-work-updates:
+    post:
+      tags:
+        - Ticket Work Updates
+      summary: Create work update
+      description: |
+        Submit a work completion update for a fault ticket (Technical Officer only).
+
+        **Requirements:**
+        - `ticket_id`, `time_spent`, and `machine_description` are required
+        - `time_spent` must be greater than 0
+        - Ticket must not already have a work completion record
+        - If the latest budget report for the ticket is `pending`, submission is blocked
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ticket_id
+                - time_spent
+                - machine_description
+              properties:
+                ticket_id:
+                  type: integer
+                  example: 1
+                parts_used:
+                  type: string
+                  nullable: true
+                  example: "Brake pads, hydraulic fluid"
+                time_spent:
+                  type: number
+                  format: float
+                  minimum: 0.01
+                  example: 3.5
+                machine_description:
+                  type: string
+                  example: "Replaced damaged line and verified system pressure stability."
+                work_status:
+                  type: string
+                  example: Completed
+      responses:
+        '201':
+          description: Work update created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Work update saved successfully
+                  data:
+                    type: object
+                    properties:
+                      work_update_id:
+                        type: integer
+                        example: 24
+                      message:
+                        type: string
+                        example: Work update saved successfully
+        '400':
+          description: Bad request (validation failure or pending budget approval)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                pendingBudgetApproval:
+                  summary: Budget report still pending
+                  value:
+                    status: error
+                    message: "Cannot submit work update: the budget report for this ticket is still pending approval. Please wait for approval before starting work."
+        '403':
+          description: Forbidden - only Technical Officers can submit work updates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ticket-work-updates/ticket/{id}:
+    get:
+      tags:
+        - Ticket Work Updates
+      summary: Get work updates for a ticket
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Fault ticket ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Work updates for ticket
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      updates:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TicketWorkUpdate'
+                      total_time:
+                        type: number
+                        format: float
+                        example: 5.5
+        '400':
+          description: Ticket ID missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /ticket-work-updates/latest/{id}:
+    get:
+      tags:
+        - Ticket Work Updates
+      summary: Get latest work update for a ticket
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Fault ticket ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Latest work update
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/TicketWorkUpdate'
+        '404':
+          description: No work updates found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   # ==================== BUDGET REPORTS ====================
   /budget-reports:
     post:
@@ -2602,6 +4266,10 @@ components:
       summary: Create budget report
       description: |
         Submit a new budget report for a fault ticket (Technical Officer only).
+        
+        **Budget Approval Routing:**
+        - If total_amount <= petty cash limit → approval_level = "supervisor" (Supervisor can approve)
+        - If total_amount > petty cash limit → approval_level = "maintenance_manager" (Maintenance Manager must approve)
         
         **Requirements:**
         - Ticket must be in "Open" or "Assigned" status (before work begins)
@@ -2633,6 +4301,7 @@ components:
                 total_amount:
                   type: number
                   format: decimal
+                  minimum: 0.01
                   example: 60000.00
       responses:
         '201':
@@ -2647,14 +4316,21 @@ components:
                     example: success
                   message:
                     type: string
-                    example: Budget report created successfully
+                    example: Budget report created. Awaiting Supervisor approval.
                   data:
                     type: object
                     properties:
                       report:
                         $ref: '#/components/schemas/BudgetReport'
+                      approval_level:
+                        type: string
+                        enum: [supervisor, maintenance_manager]
+                        example: supervisor
+                      petty_cash_limit:
+                        type: number
+                        example: 50000.00
         '400':
-          description: Bad request (missing fields or invalid data)
+          description: Bad request (missing fields or invalid data such as total_amount less than or equal to 0)
           content:
             application/json:
               schema:
@@ -2677,7 +4353,11 @@ components:
       tags:
         - Budget Reports
       summary: Get all pending budget reports
-      description: Retrieve all pending budget reports (Supervisor/Admin only)
+      description: |
+        Retrieve pending budget reports filtered by the caller's role:
+        - **Supervisor**: sees only supervisor-level reports (within petty cash limit)
+        - **Maintenance Manager**: sees all pending reports
+        - **Admin**: sees all pending reports
       security:
         - bearerAuth: []
         - cookieAuth: []
@@ -2803,6 +4483,7 @@ components:
                 total_amount:
                   type: number
                   format: decimal
+                  minimum: 0.01
       responses:
         '200':
           description: Budget report updated successfully
@@ -2864,7 +4545,17 @@ components:
       tags:
         - Budget Reports
       summary: Review budget report
-      description: Approve or reject a budget report (Supervisor/Admin only)
+      description: |
+        Approve or reject a budget report.
+        
+        **Role-based enforcement:**
+        - Reports with approval_level "supervisor" → Supervisor, Maintenance Manager, or Admin can approve
+        - Reports with approval_level "maintenance_manager" → only Maintenance Manager or Admin can approve
+        
+        **Status transitions on the fault ticket:**
+        - Approved → ticket moves to "Assigned"
+        - Rejected → ticket moves to "Assigned" (for resubmission)
+        - Revised → ticket stays in "Waiting for Budget Approval"
       security:
         - bearerAuth: []
         - cookieAuth: []
@@ -2910,6 +4601,145 @@ components:
                     properties:
                       report:
                         $ref: '#/components/schemas/BudgetReport'
+
+  # ==================== SYSTEM SETTINGS ====================
+  /system-settings:
+    get:
+      tags:
+        - System Settings
+      summary: Get all system settings
+      description: Retrieve all system settings (Admin only)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: List of system settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      settings:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/SystemSetting'
+        '403':
+          description: Forbidden - Admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /system-settings/{key}:
+    get:
+      tags:
+        - System Settings
+      summary: Get a system setting by key
+      description: Retrieve a single system setting by its key
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Setting key (e.g., petty_cash_limit)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: System setting
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      setting:
+                        $ref: '#/components/schemas/SystemSetting'
+        '404':
+          description: Setting not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - System Settings
+      summary: Update a system setting
+      description: Update the value of a system setting (Admin only). Value is validated against the setting's data_type.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Setting key (e.g., petty_cash_limit)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - value
+              properties:
+                value:
+                  description: The new value for the setting. Type must match the setting's data_type.
+                  example: 75000.00
+      responses:
+        '200':
+          description: Setting updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Setting updated successfully
+                  data:
+                    type: object
+                    properties:
+                      setting:
+                        $ref: '#/components/schemas/SystemSetting'
+        '400':
+          description: Invalid value for setting data type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Setting not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   schemas:
@@ -3020,6 +4850,10 @@ components:
         fuel_type:
           type: string
           enum: [Petrol, Diesel, Electric, Hybrid, LPG, CNG]
+        government_fuel_qr_image:
+          type: string
+          nullable: true
+          description: Path or URL to government-issued fuel QR image used at external fuel stations
         fuel_efficiency:
           type: number
           format: float
@@ -3094,6 +4928,10 @@ components:
         fuel_type:
           type: string
           enum: [Petrol, Diesel, Electric, Hybrid, LPG, CNG]
+        government_fuel_qr_image:
+          type: string
+          nullable: true
+          description: Existing path for government-issued fuel QR image (usually set via /vehicles/{id}/fuel-qr)
         fuel_efficiency:
           type: number
           format: float
@@ -3137,6 +4975,209 @@ components:
         notes:
           type: string
 
+    Trip:
+      type: object
+      properties:
+        id:
+          type: integer
+        trip_id:
+          type: string
+          example: "TRP-001"
+        origin:
+          type: string
+          example: "Colombo"
+        destination:
+          type: string
+          example: "Kandy"
+        vehicle_registration:
+          type: string
+          example: "ABC-1234"
+        driver_id:
+          type: integer
+        driver_name:
+          type: string
+          example: "John Doe"
+        assistant_driver_name:
+          type: string
+          nullable: true
+          description: Name of the assistant driver (optional)
+        starting_odometer:
+          type: integer
+          nullable: true
+          description: Set when driver starts the trip
+        final_odometer:
+          type: integer
+          nullable: true
+          description: Set when driver ends the trip
+        cargo_description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [Pending, Accepted, Rejected, In Progress, Completed, Cancelled]
+        rejection_reason:
+          type: string
+          nullable: true
+          description: Reason for rejection (only for rejected trips)
+        start_time:
+          type: string
+          format: date-time
+          nullable: true
+        end_time:
+          type: string
+          format: date-time
+          nullable: true
+        completion_notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    FuelLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        fuel_log_id:
+          type: string
+          example: FL-001
+        vehicle_registration:
+          type: string
+          example: WP-CAB-1001
+        driver_id:
+          type: integer
+          nullable: true
+        driver_name:
+          type: string
+          nullable: true
+        log_datetime:
+          type: string
+          format: date-time
+        fuel_volume:
+          type: number
+          format: float
+        total_cost:
+          type: number
+          format: float
+          nullable: true
+          description: Required for external fueling. Can be null for internal fueling.
+        odometer_reading:
+          type: integer
+        station_name:
+          type: string
+          nullable: true
+        bill_image:
+          type: string
+          nullable: true
+          description: Upload path of fuel bill image. Required for external fueling.
+        fuel_type:
+          type: string
+          description: Auto-derived from the selected vehicle's fuel type.
+          example: Diesel
+        fuel_source:
+          type: string
+          enum: [internal, external]
+        distance_since_last:
+          type: number
+          format: float
+          nullable: true
+        fuel_efficiency:
+          type: number
+          format: float
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    FuelLogInput:
+      type: object
+      required:
+        - vehicle_registration
+        - log_datetime
+        - fuel_source
+        - fuel_volume
+        - odometer_reading
+      properties:
+        vehicle_registration:
+          type: string
+        driver_id:
+          type: integer
+          nullable: true
+        log_datetime:
+          type: string
+          format: date-time
+        fuel_source:
+          type: string
+          enum: [internal, external]
+        fuel_volume:
+          type: number
+          format: float
+          minimum: 0.01
+        total_cost:
+          type: number
+          format: float
+          nullable: true
+          minimum: 0
+          description: Required and must be > 0 when fuel_source is external.
+        odometer_reading:
+          type: integer
+          minimum: 1
+        station_name:
+          type: string
+          nullable: true
+        bill_image:
+          type: string
+          nullable: true
+          description: Existing bill image path. Required for external fueling if no new upload is provided.
+
+    FuelLogMultipartInput:
+      type: object
+      required:
+        - vehicle_registration
+        - log_datetime
+        - fuel_source
+        - fuel_volume
+        - odometer_reading
+      properties:
+        vehicle_registration:
+          type: string
+        driver_id:
+          type: integer
+          nullable: true
+        log_datetime:
+          type: string
+          format: date-time
+        fuel_source:
+          type: string
+          enum: [internal, external]
+        fuel_volume:
+          type: number
+          format: float
+          minimum: 0.01
+        total_cost:
+          type: number
+          format: float
+          nullable: true
+          minimum: 0
+          description: Required and must be > 0 when fuel_source is external.
+        odometer_reading:
+          type: integer
+          minimum: 1
+        station_name:
+          type: string
+          nullable: true
+        bill_image:
+          type: string
+          format: binary
+          description: Required for external fueling.
+
     FaultTicket:
       type: object
       properties:
@@ -3165,13 +5206,39 @@ components:
           type: string
         status:
           type: string
-          enum: [Open, In Progress, Resolved, Closed]
+          enum: [Open, Assigned, Waiting for Budget Approval, Waiting for Spare Parts, Parts Approved, In Progress, Resolved, Closed]
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
+
+    FaultTicketWorkflow:
+      type: object
+      properties:
+        has_budget_report:
+          type: boolean
+        budget_report_status:
+          type: string
+          nullable: true
+          enum: [pending, approved, rejected, revised]
+        budget_report_id:
+          type: integer
+          nullable: true
+        budget_approval_level:
+          type: string
+          nullable: true
+          enum: [supervisor, maintenance_manager]
+        has_spare_part_request:
+          type: boolean
+        spare_part_request_status:
+          type: string
+          nullable: true
+          enum: [Pending, Approved, Rejected, Issued]
+        spare_part_request_id:
+          type: integer
+          nullable: true
     
     FaultTicketWithImages:
       allOf:
@@ -3182,6 +5249,8 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/FaultTicketImage'
+            workflow:
+              $ref: '#/components/schemas/FaultTicketWorkflow'
     
     FaultTicketImage:
       type: object
@@ -3234,6 +5303,11 @@ components:
         total_amount:
           type: string
           example: "60000.00"
+        approval_level:
+          type: string
+          enum: [supervisor, maintenance_manager]
+          description: "Determines who can approve: supervisor (within petty cash) or maintenance_manager (exceeds petty cash)"
+          example: supervisor
         status:
           type: string
           enum: [pending, approved, rejected, revised]
@@ -3267,6 +5341,40 @@ components:
           type: string
           format: date-time
           example: "2025-10-22T14:30:00Z"
+
+    TicketWorkUpdate:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 24
+        ticket_id:
+          type: integer
+          example: 1
+        technical_officer_id:
+          type: integer
+          example: 5
+        parts_used:
+          type: string
+          nullable: true
+          example: "Brake pads, hydraulic fluid"
+        time_spent:
+          type: string
+          example: "3.50"
+        machine_description:
+          type: string
+          example: "Replaced damaged line and verified system pressure stability."
+        work_status:
+          type: string
+          example: Completed
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-04-07 11:20:00"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-04-07 11:20:00"
     
     ErrorResponse:
       type: object
@@ -3281,7 +5389,42 @@ components:
           type: array
           items:
             type: string
-    
+
+    SystemSetting:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        setting_key:
+          type: string
+          example: petty_cash_limit
+        setting_value:
+          type: string
+          example: "50000.00"
+        data_type:
+          type: string
+          enum: [string, integer, decimal, boolean, json]
+          example: decimal
+        description:
+          type: string
+          nullable: true
+          example: "Maximum budget amount that a Supervisor can approve. Amounts exceeding this require Maintenance Manager approval."
+        updated_by:
+          type: integer
+          nullable: true
+          example: 1
+        updated_by_name:
+          type: string
+          nullable: true
+          example: "Admin User"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
     Pagination:
       type: object
       properties:
