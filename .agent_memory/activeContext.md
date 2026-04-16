@@ -1,7 +1,21 @@
 # Active Context
 
 ## Current Focus
-Dashboard Web Components refactor execution for the active Supervisor residual slice is now complete: TASK034, TASK035, and TASK036 are all completed with validation evidence. TASK033 is now also completed for Transportation Manager role creation support in SysAdministration user management. TASK032 is now completed for budget-flow notification routing refinement. Remaining non-dashboard backlog primarily includes migration verification.
+Dashboard Web Components refactor execution for the active Supervisor residual slice remains complete (TASK034, TASK035, TASK036). TASK033 and TASK032 are also complete. Latest active workflow correction for route-breakdown garage handling is now completed as TASK039. Remaining non-dashboard backlog primarily includes migration verification.
+
+### Route-breakdown garage workflow alignment completed (April 16, 2026)
+- Completed TASK039 across Supervisor, shared ticket detail, Driver ticket tracking/modals, and backend assignment enforcement.
+- `pages/dashboard/supervisor/script.js` now routes route-breakdown pending-stage VIEW actions to shared `pages/view-ticket/` flow.
+- `pages/view-ticket/script.js` + `pages/view-ticket/index.html` now support Supervisor dual assignment decision for route tickets:
+	- assign technical officer
+	- approve nearby garage via `/route-breakdowns/{id}/garage-approval`
+- Assignment step rendering in shared detail page now treats approved-garage workflows as fulfillment of step 2 and marks technician assignment optional.
+- `app/services/FaultTicketService.php` now blocks `assignTechnicians` updates for route tickets when garage workflow is active (`garage_approved`, `garage_entry_logged`, `repair_in_progress`, `completed`).
+- Updated `testing/openapi.yaml` to document `/fault-tickets/{id}/assign` and the new route-garage-workflow assignment-block response case.
+- Driver ticket/garage view updates:
+	- `pages/dashboard/driver/components/page-modals/driver-nearby-garages-modal.js` now shows only the approved garage when one is assigned.
+	- `pages/dashboard/driver/components/driver-ticket-tracking.js` suppresses technician-assignment badge when garage workflow is active.
+- Diagnostics: no new editor errors across touched files; PHP syntax check passed for `FaultTicketService.php`.
 
 ### Budget-flow notification routing refinement completed (April 13, 2026)
 - Implemented targeted supervisor routing for `BUDGET_REPORT_CREATED` events in `services/consume_notification_events.php`.
