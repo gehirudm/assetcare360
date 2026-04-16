@@ -126,38 +126,15 @@ function closeModal(modalId) {
     }
 }
 
-// Add another spare part field dynamically
+// Add another spare part field dynamically (reuses options already loaded when modal opened)
 function addPartField() {
     const container = document.getElementById('sparePartsContainer');
-    const newPartItem = document.createElement('div');
-    newPartItem.className = 'spare-part-item';
-    newPartItem.style.cssText = 'background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 10px; position: relative;';
-    newPartItem.innerHTML = `
-                <button type="button" onclick="this.parentElement.remove()" style="position: absolute; top: 10px; right: 10px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; font-size: 14px;">×</button>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label class="form-label">Part Name</label>
-                        <select class="form-select" required>
-                            <option value="">Select Part</option>
-                            <option value="BP-001">Brake Pads - BP-001</option>
-                            <option value="OF-205">Oil Filter - OF-205</option>
-                            <option value="HYD-250">Hydraulic Pump - HYD-250</option>
-                            <option value="ENG-301">Engine Oil - ENG-301</option>
-                            <option value="TYR-150">Tyres - TYR-150</option>
-                            <option value="BAT-200">Battery - BAT-200</option>
-                            <option value="GAS-400">Gas Cylinder - GAS-400</option>
-                            <option value="VAL-350">Pressure Valve - VAL-350</option>
-                            <option value="FIL-180">Air Filter - FIL-180</option>
-                            <option value="BEL-220">Belt - BEL-220</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Quantity</label>
-                        <input type="number" class="form-input" min="1" placeholder="Qty" required>
-                    </div>
-                </div>
-            `;
-    container.appendChild(newPartItem);
+    if (!container) return;
+    const noPartsChecked = document.getElementById('noSparePartsNeeded')?.checked || false;
+    const rowHtml = _buildSparePartRow(true, !noPartsChecked);
+    container.insertAdjacentHTML('beforeend', rowHtml);
+    // Attach availability listeners to the new row
+    _attachAvailabilityListeners(container);
 }
 
 // Toast notification
@@ -356,6 +333,13 @@ function bindTOTickets() {
         if (!ticketId) return;
         updateWork(ticketId);
     });
+
+    ticketsComponent.addEventListener('technical-officer-tickets:add-budget', (event) => {
+        const ticketId = Number(event.detail?.ticketId);
+        if (!ticketId) return;
+        const url = buildCanonicalTicketDetailUrl(ticketId) + '#budgetReportCard';
+        window.location.href = url;
+    });
 }
 
 async function refreshTONotifications() {
@@ -410,6 +394,35 @@ function bindTOSpareParts() {
     sparePartsComponent.dataset.bound = 'true';
     sparePartsComponent.addEventListener('technical-officer-spare-parts:open-request-modal', () => {
         openModal('requestPartsModal');
+    });
+    sparePartsComponent.addEventListener('technical-officer-spare-parts:re-request', (event) => {
+        const ticketId = Number(event.detail?.ticketId);
+        if (!ticketId) return;
+        requestSparePartsForTicket(ticketId);
+    });
+    sparePartsComponent.addEventListener('technical-officer-spare-parts:view', (event) => {
+        const requestId = Number(event.detail?.requestId);
+        const req = sparePartsComponent._allRequests.find(r => r.id === requestId);
+        if (!req) return;
+        const items = Array.isArray(req.items) ? req.items : [];
+        const isRejected = (req.status || '').toLowerCase() === 'rejected';
+        const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
+        document.getElementById('partRequestDetailsContent').innerHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                <div><label style="font-size:12px;color:var(--muted);">Request ID</label><p>${req.request_id || '—'}</p></div>
+                <div><label style="font-size:12px;color:var(--muted);">Ticket</label><p>${req.fault_ticket_code || req.ticket_id_formatted || '—'}</p></div>
+                <div><label style="font-size:12px;color:var(--muted);">Equipment</label><p>${req.equipment_name || 'N/A'}</p></div>
+                <div><label style="font-size:12px;color:var(--muted);">Location</label><p>${req.location || 'N/A'}</p></div>
+                <div><label style="font-size:12px;color:var(--muted);">Status</label><p>${req.status || 'Pending'}</p></div>
+                <div><label style="font-size:12px;color:var(--muted);">Submitted</label><p>${fmtDate(req.created_at)}</p></div>
+            </div>
+            <h4 style="margin-bottom:8px;"><i class="fas fa-box-open"></i> Parts Requested</h4>
+            ${items.length > 0 ? `<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr style="background:#f3f4f6;"><th style="padding:8px;text-align:left;">#</th><th style="padding:8px;text-align:left;">Code</th><th style="padding:8px;text-align:left;">Name</th><th style="padding:8px;text-align:right;">Qty</th></tr></thead><tbody>${items.map((it, i) => `<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:8px;">${i + 1}</td><td style="padding:8px;">${it.part_code || '—'}</td><td style="padding:8px;">${it.part_name || it.part_code || '—'}</td><td style="padding:8px;text-align:right;">${it.quantity}</td></tr>`).join('')}</tbody></table>` : '<p style="color:var(--muted);font-size:13px;">No items recorded</p>'}
+            ${req.additional_notes ? `<h4 style="margin:12px 0 6px;"><i class="fas fa-sticky-note"></i> Additional Notes</h4><p style="font-size:13px;">${req.additional_notes}</p>` : ''}
+            ${isRejected ? `<div style="margin-top:14px;padding:12px 16px;background:#fef2f2;border-left:4px solid #ef4444;border-radius:6px;"><p style="margin:0;font-weight:600;color:#dc2626;font-size:13px;"><i class="fas fa-times-circle"></i> Rejected</p>${req.review_notes ? `<p style="margin:6px 0 0;font-size:13px;color:#7f1d1d;">${req.review_notes}</p>` : ''}${req.reviewed_by_name ? `<p style="margin:4px 0 0;font-size:12px;color:var(--muted);">By: ${req.reviewed_by_name}</p>` : ''}</div>` : ''}
+            ${!isRejected && req.reviewed_by_name ? `<div style="margin-top:12px;padding:10px 12px;background:#f0fdf4;border-left:3px solid #10b981;border-radius:6px;font-size:13px;"><strong>Reviewed by:</strong> ${req.reviewed_by_name}${req.review_notes ? ` — "${req.review_notes}"` : ''}</div>` : ''}
+        `;
+        openModal('viewPartRequestModal');
     });
 }
 
@@ -687,10 +700,212 @@ function viewTicket(ticketId) {
     window.location.href = buildCanonicalTicketDetailUrl(ticketId);
 }
 
-// Request spare parts for a ticket — now handled in the detail page;
-// this stub is kept for backward compatibility with action buttons in the list.
-function requestSparePartsForTicket(ticketId) {
-    window.location.href = buildCanonicalTicketDetailUrl(ticketId);
+// Cached options HTML for spare parts dropdowns (loaded once per modal open)
+let _cachedSparePartOptionsHtml = '';
+
+// Request spare parts for a ticket — opens the requestPartsModal and pre-populates it.
+async function requestSparePartsForTicket(ticketId) {
+    const ticket = allTickets.find(t => t.id === ticketId);
+
+    // --- Pre-populate ticket info fields ---
+    const requestingTicketIdField = document.getElementById('requestingTicketId');
+    const relatedTicketIdField    = document.getElementById('relatedTicketId');
+    const equipmentInput          = document.getElementById('equipmentInput');
+    const locationInput           = document.getElementById('locationInput');
+    const reportedByInput         = document.getElementById('reportedByInput');
+    const reportedDateInput       = document.getElementById('reportedDateInput');
+    const originalIssueTextarea   = document.getElementById('originalIssueTextarea');
+    const prioritySelect          = document.getElementById('prioritySelect');
+
+    if (requestingTicketIdField) requestingTicketIdField.value = ticketId;
+
+    if (ticket) {
+        const ticketIdFormatted = getDisplayTicketId(ticket);
+        if (relatedTicketIdField)  relatedTicketIdField.value  = ticketIdFormatted;
+
+        const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
+        if (equipmentInput) {
+            equipmentInput.value = assetName;
+            equipmentInput.readOnly = true;
+            equipmentInput.style.backgroundColor = '#f0f0f0';
+        }
+        if (locationInput)           locationInput.value           = ticket.location || '';
+        if (reportedByInput)         reportedByInput.value         = ticket.reported_by_name || ticket.reporter_full_name || 'Unknown';
+        if (reportedDateInput)       reportedDateInput.value       = ticket.created_at
+            ? new Date(ticket.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+            : '';
+        if (originalIssueTextarea)   originalIssueTextarea.value   = ticket.description || '';
+        if (prioritySelect)          prioritySelect.value          = (ticket.priority || '').toLowerCase();
+    }
+
+    // --- Reset 'No spare parts' checkbox ---
+    const noPartsCheckbox = document.getElementById('noSparePartsNeeded');
+    if (noPartsCheckbox) {
+        noPartsCheckbox.checked = false;
+        toggleSparePartsSection(false);
+    }
+
+    // --- Load spare parts from API and build a single blank row ---
+    const sparePartsContainer = document.getElementById('sparePartsContainer');
+    if (sparePartsContainer) {
+        try {
+            const productsRes = await API.get('/products');
+            const products = (productsRes.status === 'success' && Array.isArray(productsRes.data?.products))
+                ? productsRes.data.products
+                : [];
+
+            _cachedSparePartOptionsHtml = products.length > 0
+                ? products.map(p => `<option value="${p.sparepart_id}">${p.name} — ${p.sparepart_id}</option>`).join('')
+                : '';
+        } catch (err) {
+            console.error('Could not load spare parts list from API:', err);
+            _cachedSparePartOptionsHtml = '';
+        }
+
+        sparePartsContainer.innerHTML = _buildSparePartRow(false);
+        _attachAvailabilityListeners(sparePartsContainer);
+    }
+
+    openModal('requestPartsModal');
+}
+
+// Check availability of spare parts via API
+async function _checkSparePartAvailability(partCode, quantity) {
+    try {
+        const response = await API.post('/spare-part-requests/check-availability', {
+            items: [{ part_code: partCode, quantity: quantity }]
+        });
+        if (response.status === 'success' && response.data?.items?.length > 0) {
+            return response.data.items[0];
+        }
+        return null;
+    } catch (err) {
+        console.error('Availability check failed:', err);
+        return null;
+    }
+}
+
+// Update the availability status badge in a spare part row
+function _updateAvailabilityBadge(row, result) {
+    let badge = row.querySelector('.availability-badge');
+    if (!badge) return;
+
+    if (!result) {
+        badge.innerHTML = '';
+        badge.className = 'availability-badge';
+        return;
+    }
+
+    let badgeClass = '';
+    let badgeText = '';
+    let icon = '';
+
+    switch (result.status) {
+        case 'available':
+            badgeClass = 'badge-success';
+            icon = '✓';
+            badgeText = `In Stock (${result.available_qty} available)`;
+            break;
+        case 'insufficient':
+            badgeClass = 'badge-warning';
+            icon = '⚠';
+            badgeText = `Low Stock (${result.available_qty} available, ${result.requested_qty} requested)`;
+            break;
+        case 'out_of_stock':
+            badgeClass = 'badge-danger';
+            icon = '✗';
+            badgeText = 'Out of Stock';
+            break;
+        case 'not_found':
+            badgeClass = 'badge-danger';
+            icon = '✗';
+            badgeText = 'Not in Catalog';
+            break;
+        default:
+            badge.innerHTML = '';
+            badge.className = 'availability-badge';
+            return;
+    }
+
+    badge.className = `availability-badge ${badgeClass}`;
+    badge.innerHTML = `<span class="badge-icon">${icon}</span> ${badgeText}`;
+}
+
+// Attach change/input listeners for availability checking to a row
+function _attachAvailabilityListeners(container) {
+    const rows = container.querySelectorAll('.spare-part-item');
+    rows.forEach(row => {
+        const select = row.querySelector('.form-select');
+        const qtyInput = row.querySelector('input[type="number"]');
+        
+        if (select && !select.dataset.availabilityBound) {
+            select.dataset.availabilityBound = 'true';
+            select.addEventListener('change', async () => {
+                const partCode = select.value;
+                const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
+                if (partCode) {
+                    const result = await _checkSparePartAvailability(partCode, qty);
+                    _updateAvailabilityBadge(row, result);
+                } else {
+                    _updateAvailabilityBadge(row, null);
+                }
+            });
+        }
+        
+        if (qtyInput && !qtyInput.dataset.availabilityBound) {
+            qtyInput.dataset.availabilityBound = 'true';
+            let debounceTimer = null;
+            qtyInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(async () => {
+                    const partCode = select ? select.value : '';
+                    const qty = parseInt(qtyInput.value) || 1;
+                    if (partCode) {
+                        const result = await _checkSparePartAvailability(partCode, qty);
+                        _updateAvailabilityBadge(row, result);
+                    }
+                }, 300);
+            });
+        }
+    });
+}
+
+// Build a single spare-part row HTML (first row has no remove button)
+function _buildSparePartRow(removable = false, required = true) {
+    const removeBtn = removable
+        ? `<button type="button" onclick="this.parentElement.remove()" style="position:absolute;top:10px;right:10px;background:var(--danger);color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;font-size:14px;">×</button>`
+        : '';
+    const reqAttr = required ? ' required' : '';
+    return `
+        <div class="spare-part-item" style="background:#f8f9fa;border-radius:8px;padding:15px;margin-bottom:10px;position:relative;">
+            ${removeBtn}
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Part Name</label>
+                    <select class="form-select"${reqAttr}>
+                        <option value="">Select Part</option>
+                        ${_cachedSparePartOptionsHtml}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Quantity</label>
+                    <input type="number" class="form-input" min="1" placeholder="Qty" value="1"${reqAttr}>
+                </div>
+            </div>
+            <div class="availability-badge" style="margin-top:8px;font-size:0.85rem;"></div>
+        </div>
+    `;
+}
+
+// Toggle the spare-parts-required section visibility (called from the checkbox in the modal)
+function toggleSparePartsSection(isChecked) {
+    const section = document.getElementById('sparePartsSection');
+    if (!section) return;
+    section.style.display = isChecked ? 'none' : 'block';
+    // Toggle required on all selects/inputs in the section
+    section.querySelectorAll('select, input').forEach(el => {
+        el.required = !isChecked;
+    });
 }
 
 
@@ -1175,13 +1390,44 @@ function initializeForms() {
         }
 
         if (ticketId) {
-            // If no spare parts needed → set status to "In Progress" directly
-            // If spare parts requested → set status to "Waiting for Spare Parts" until approved
-            const newStatus = noSparePartsNeeded ? 'In Progress' : 'Waiting for Spare Parts';
-
             try {
-                // If spare parts are requested, POST the request to the backend first
-                if (!noSparePartsNeeded && sparePartItems.length > 0) {
+                if (!noSparePartsNeeded) {
+                    // Spare parts requested path
+                    // Validation: at least one part must be selected
+                    if (sparePartItems.length === 0) {
+                        showToast('Please select at least one spare part, or check "No Spare Parts Needed".', 'error');
+                        return;
+                    }
+
+                    // Availability check before submission
+                    try {
+                        const availResponse = await API.post('/spare-part-requests/check-availability', {
+                            items: sparePartItems.map(item => ({ part_code: item.part_code, quantity: item.quantity }))
+                        });
+                        
+                        if (availResponse.status === 'success' && availResponse.data?.items) {
+                            const unavailableItems = availResponse.data.items.filter(i => i.status === 'not_found');
+                            const lowStockItems = availResponse.data.items.filter(i => i.status === 'insufficient' || i.status === 'out_of_stock');
+                            
+                            // Block submission if any parts are not in catalog
+                            if (unavailableItems.length > 0) {
+                                const partNames = unavailableItems.map(i => i.part_code).join(', ');
+                                showToast(`Cannot submit: Parts not found in catalog: ${partNames}`, 'error');
+                                return;
+                            }
+                            
+                            // Warn about low/out of stock but allow submission
+                            if (lowStockItems.length > 0) {
+                                const warnings = lowStockItems.map(i => `${i.part_code}: ${i.message}`).join('; ');
+                                console.warn('Low stock warning:', warnings);
+                                // Continue submission with warning logged - IM will see availability when approving
+                            }
+                        }
+                    } catch (availErr) {
+                        console.warn('Availability check failed, proceeding with request:', availErr);
+                        // Continue even if availability check fails
+                    }
+
                     const ticket = allTickets.find(t => t.id == ticketId);
                     const ticketIdFormatted = ticket ? getDisplayTicketId(ticket) : '';
                     const equipmentName = document.getElementById('equipmentInput')?.value || '';
@@ -1201,36 +1447,47 @@ function initializeForms() {
 
                     const spareResponse = await API.post('/spare-part-requests', requestPayload);
                     if (spareResponse.status !== 'success') {
-                        console.error('Failed to save spare part request:', spareResponse);
+                        showToast(spareResponse.message || 'Failed to submit spare parts request.', 'error');
+                        return;
                     }
-                }
 
-                const response = await API.put(`/fault-tickets/${ticketId}`, {
-                    status: newStatus
-                });
-
-                if (response.status === 'success') {
-                    // Update the ticket in local array
+                    // Backend's syncTicketStatus() already set the ticket to
+                    // "Waiting for Spare Parts" — update local state directly,
+                    // no duplicate PUT needed.
                     const ticketIndex = allTickets.findIndex(t => t.id == ticketId);
                     if (ticketIndex !== -1) {
-                        allTickets[ticketIndex].status = newStatus;
+                        allTickets[ticketIndex].status = 'Waiting for Spare Parts';
                     }
 
-                    // Re-render tickets to reflect the status change
                     renderTickets(allTickets);
                     updateDashboardCounts(allTickets);
+                    showToast('Spare parts request submitted to Inventory Manager. Waiting for approval.', 'success');
+                    refreshTOSpareParts();
 
-                    if (noSparePartsNeeded) {
+                } else {
+                    // No spare parts needed → PUT to move ticket directly to In Progress
+                    const response = await API.put(`/fault-tickets/${ticketId}`, {
+                        status: 'In Progress'
+                    });
+
+                    if (response.status === 'success') {
+                        const ticketIndex = allTickets.findIndex(t => t.id == ticketId);
+                        if (ticketIndex !== -1) {
+                            allTickets[ticketIndex].status = 'In Progress';
+                        }
+
+                        renderTickets(allTickets);
+                        updateDashboardCounts(allTickets);
                         showToast('No spare parts needed. Work started! Status changed to In Progress.', 'success');
                     } else {
-                        showToast('Spare parts request submitted to Inventory Manager. Waiting for approval.', 'success');
+                        showToast(response.message || 'Status update failed. Please try again.', 'error');
+                        return;
                     }
-                } else {
-                    showToast('Request submitted but status update failed.', 'warning');
                 }
             } catch (error) {
-                console.error('Error updating ticket status:', error);
-                showToast('Request submitted but status update failed.', 'warning');
+                console.error('Error submitting spare parts request:', error);
+                showToast(error.message || 'Failed to submit request. Please try again.', 'error');
+                return;
             }
         } else {
             showToast('Parts request submitted to Inventory Manager!', 'success');

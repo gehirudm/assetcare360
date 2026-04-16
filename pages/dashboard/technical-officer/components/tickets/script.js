@@ -230,6 +230,9 @@ class TOTickets extends HTMLElement {
                 <button type="button" class="btn btn-mini" data-ticket-action="request-spare-parts" data-ticket-id="${ticketId}" style="background: var(--tang-blue); color: white;">
                     <i class="fas fa-tools"></i> Request Spare Parts
                 </button>
+                <button type="button" class="btn btn-mini" data-ticket-action="add-budget" data-ticket-id="${ticketId}" style="background: var(--kelly-green); color: white;">
+                    <i class="fas fa-file-invoice-dollar"></i> Add Budget
+                </button>
             `;
         }
 
@@ -253,6 +256,14 @@ class TOTickets extends HTMLElement {
             return `
                 <button type="button" class="btn btn-warning btn-mini" data-ticket-action="update-work" data-ticket-id="${ticketId}">
                     <i class="fas fa-edit"></i> UPDATE
+                </button>
+            `;
+        }
+
+        if (status === 'parts-rejected') {
+            return `
+                <button type="button" class="btn btn-mini" data-ticket-action="request-spare-parts" data-ticket-id="${ticketId}" style="background: var(--tang-blue); color: white;">
+                    <i class="fas fa-redo"></i> Re-request Parts
                 </button>
             `;
         }
@@ -282,6 +293,7 @@ class TOTickets extends HTMLElement {
                 <button type="button" class="filter-btn" data-ticket-filter="pending">Pending</button>
                 <button type="button" class="filter-btn" data-ticket-filter="waiting-for-spare-parts">Waiting for Parts</button>
                 <button type="button" class="filter-btn" data-ticket-filter="parts-approved">Parts Approved</button>
+                <button type="button" class="filter-btn" data-ticket-filter="parts-rejected">Parts Rejected</button>
                 <button type="button" class="filter-btn" data-ticket-filter="in-progress">In Progress</button>
                 <button type="button" class="filter-btn" data-ticket-filter="completed">Completed</button>
             </div>
