@@ -1,0 +1,13 @@
+/**
+ * TM Trip Log Component Styles
+ */
+
+tm-trip-log {
+    display: block;
+}
+
+/* Component-specific overrides */
+tm-trip-log .inventory-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
