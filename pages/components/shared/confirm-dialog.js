@@ -171,10 +171,11 @@
 
         /**
          * Open the dialog.
-         * @param {{ title: string, message: string, type?: string, onConfirm: Function }} options
+         * @param {{ title: string, message: string, type?: string, onConfirm?: Function, confirmText?: string, cancelText?: string }} options
          *   type — 'danger' | 'warning' | 'primary' | 'info'  (default: 'danger')
+         * @returns {Promise<boolean>} Resolves true if confirmed, false if cancelled
          */
-        show({ title, message, type = 'danger', onConfirm }) {
+        show({ title, message, type = 'danger', onConfirm, confirmText = 'Confirm', cancelText = 'Cancel' }) {
             this._onConfirm = onConfirm;
 
             const root = this.shadowRoot;
@@ -183,22 +184,45 @@
             root.querySelector('#cdTitle').textContent = title;
             root.querySelector('#cdMessage').innerHTML = message;
             root.querySelector('#cdConfirm').className = `btn btn-${type}`;
+            root.querySelector('#cdConfirm').innerHTML = `<i class="fas fa-check"></i> ${confirmText}`;
+            root.querySelector('#cdCancel').innerHTML  = `<i class="fas fa-times"></i> ${cancelText}`;
 
             document.addEventListener('keydown', this._onEsc);
             setTimeout(() => this.classList.add('active'), 10);
+            
+            // Return a Promise so callers can await the result
+            return new Promise((resolve) => {
+                this._resolve = resolve;
+            });
         }
 
         close() {
             this.classList.remove('active');
             this._onConfirm = null;
+            if (this._resolve) {
+                this._resolve(false);
+                this._resolve = null;
+            }
             document.removeEventListener('keydown', this._onEsc);
         }
 
         async _confirm() {
-            if (this._onConfirm) {
-                await this._onConfirm();
+            const onConfirm = this._onConfirm;
+            const resolve = this._resolve;
+            
+            // Clear before calling callbacks to prevent double-execution
+            this._onConfirm = null;
+            this._resolve = null;
+            
+            if (onConfirm) {
+                await onConfirm();
             }
-            this.close();
+            if (resolve) {
+                resolve(true);
+            }
+            
+            this.classList.remove('active');
+            document.removeEventListener('keydown', this._onEsc);
         }
     }
 
