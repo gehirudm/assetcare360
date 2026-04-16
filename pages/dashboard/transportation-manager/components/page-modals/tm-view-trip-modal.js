@@ -1,0 +1,211 @@
+class TMViewTripModal extends HTMLElement {
+    connectedCallback() {
+        if (this._mounted) return;
+        this._mounted = true;
+        this._tripData = null;
+        this.render();
+        this.bindEvents();
+    }
+
+    render() {
+        this.innerHTML = `
+            <div id="viewTripModal" class="modal" aria-hidden="true">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-route"></i> Trip Details</h2>
+                        <button class="btn-close" type="button" data-action="close">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="viewTripContent">
+                        <div class="loading-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Loading trip details...</span>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" data-action="close">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    bindEvents() {
+        this.addEventListener('click', (event) => {
+            const actionEl = event.target.closest('[data-action]');
+            
+            if (event.target.id === 'viewTripModal') {
+                this.close();
+                return;
+            }
+
+            if (actionEl && actionEl.dataset.action === 'close') {
+                this.close();
+            }
+        });
+    }
+
+    async open(tripId) {
+        const modal = this.querySelector('#viewTripModal');
+        const content = this.querySelector('#viewTripContent');
+        
+        if (!modal) return;
+        
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
+
+        content.innerHTML = `
+            <div class="loading-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Loading trip details...</span>
+            </div>
+        `;
+
+        try {
+            const res = await API.get(`/trips/${tripId}`);
+            this._tripData = res.data?.trip || res.data;
+            this._renderDetails();
+        } catch (error) {
+            content.innerHTML = `
+                <div class="empty-state error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <h3>Failed to load trip details</h3>
+                    <p>${error.message || 'Please try again later'}</p>
+                </div>
+            `;
+        }
+    }
+
+    _renderDetails() {
+        const content = this.querySelector('#viewTripContent');
+        const trip = this._tripData;
+
+        if (!trip) {
+            content.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-route"></i>
+                    <h3>No trip data available</h3>
+                </div>
+            `;
+            return;
+        }
+
+        const statusInfo = TMUtils.getStatusInfo(trip.status);
+        const driverName = trip.driver_name || (trip.driver_id ? `Driver #${trip.driver_id}` : '—');
+        const distance = TMUtils.formatDistance(trip.starting_odometer, trip.final_odometer);
+
+        content.innerHTML = `
+            <div class="detail-view">
+                <div class="detail-header">
+                    <span class="id-badge" style="font-size: 1.2rem;">${trip.trip_id}</span>
+                    <span class="status-badge ${statusInfo.badge}">${statusInfo.label}</span>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-map-marker-alt"></i> Route Information</h5>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Origin</span>
+                            <span class="detail-value">${trip.origin || '—'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Destination</span>
+                            <span class="detail-value">${trip.destination || '—'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-truck"></i> Assignment Details</h5>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Vehicle</span>
+                            <span class="detail-value">${trip.vehicle_registration || '—'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Driver</span>
+                            <span class="detail-value">${driverName}</span>
+                        </div>
+                        ${trip.assistant_driver_name ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Assistant Driver</span>
+                            <span class="detail-value">${trip.assistant_driver_name}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+
+                ${trip.status === 'Rejected' && trip.rejection_reason ? `
+                <div class="form-section" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px;">
+                    <h5 style="color: #dc2626;"><i class="fas fa-times-circle"></i> Rejection Information</h5>
+                    <p class="detail-text" style="color: #dc2626;">${trip.rejection_reason}</p>
+                </div>
+                ` : ''}
+
+                <div class="form-section">
+                    <h5><i class="fas fa-tachometer-alt"></i> Odometer & Distance</h5>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Starting Odometer</span>
+                            <span class="detail-value">${TMUtils.formatOdometer(trip.starting_odometer)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Final Odometer</span>
+                            <span class="detail-value">${TMUtils.formatOdometer(trip.final_odometer)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Total Distance</span>
+                            <span class="detail-value" style="font-weight: 700; color: var(--tang-blue);">${distance}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-clock"></i> Timeline</h5>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Start Time</span>
+                            <span class="detail-value">${TMUtils.formatDateTime(trip.start_time)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">End Time</span>
+                            <span class="detail-value">${TMUtils.formatDateTime(trip.end_time)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Created At</span>
+                            <span class="detail-value">${TMUtils.formatDateTime(trip.created_at)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${trip.cargo_description ? `
+                <div class="form-section">
+                    <h5><i class="fas fa-box"></i> Cargo Information</h5>
+                    <p class="detail-text">${trip.cargo_description}</p>
+                </div>
+                ` : ''}
+
+                ${trip.completion_notes ? `
+                <div class="form-section">
+                    <h5><i class="fas fa-sticky-note"></i> Completion Notes</h5>
+                    <p class="detail-text">${trip.completion_notes}</p>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    close() {
+        const modal = this.querySelector('#viewTripModal');
+        if (modal) {
+            modal.classList.remove('active');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        this._tripData = null;
+    }
+}
+
+customElements.define('tm-view-trip-modal', TMViewTripModal);
