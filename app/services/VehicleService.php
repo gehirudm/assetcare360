@@ -230,6 +230,10 @@ class VehicleService {
         if (!$vehicle) {
             throw new Exception("Vehicle not found");
         }
+
+        if (!array_key_exists('assigned_driver_id', $vehicle)) {
+            throw new Exception("Driver assignment columns are not available. Please run the latest database migrations.");
+        }
         
         // Validate driver exists and is active
         $driver = $this->userModel->findById($driverId);
@@ -284,8 +288,12 @@ class VehicleService {
         if (!$vehicle) {
             throw new Exception("Vehicle not found");
         }
+
+        if (!array_key_exists('assigned_driver_id', $vehicle)) {
+            throw new Exception("Driver assignment columns are not available. Please run the latest database migrations.");
+        }
         
-        if (!$vehicle['assigned_driver_id']) {
+        if (empty($vehicle['assigned_driver_id'])) {
             throw new Exception("Vehicle has no assigned driver");
         }
         
