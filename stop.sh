@@ -2,7 +2,7 @@
 set -euo pipefail
 
 RUNTIME_DIR="/tmp/assetcare360-services"
-SERVICES=(backend frontend audit-consumer notification-consumer service-due-producer)
+SERVICES=(backend frontend audit-consumer notification-consumer email-consumer service-due-producer)
 
 usage() {
     cat <<USAGE
@@ -16,6 +16,7 @@ Services:
   frontend
   audit-consumer
   notification-consumer
+    email-consumer
   service-due-producer
 USAGE
 }
@@ -90,12 +91,13 @@ run_gui() {
     if command -v whiptail >/dev/null 2>&1; then
         local selection
         selection=$(whiptail --title "AssetCare360 Service Stopper" \
-            --menu "Select service to stop" 20 80 8 \
+            --menu "Select service to stop" 21 80 9 \
             all "Stop all services" \
             backend "Stop backend API server" \
             frontend "Stop frontend server" \
             audit-consumer "Stop audit consumer" \
             notification-consumer "Stop notification consumer" \
+            email-consumer "Stop email consumer" \
             service-due-producer "Stop service-due producer loop" \
             3>&1 1>&2 2>&3) || exit 0
 
@@ -113,8 +115,9 @@ run_gui() {
     echo "3) frontend"
     echo "4) audit-consumer"
     echo "5) notification-consumer"
-    echo "6) service-due-producer"
-    read -r -p "Select option [1-6]: " choice
+    echo "6) email-consumer"
+    echo "7) service-due-producer"
+    read -r -p "Select option [1-7]: " choice
 
     case "$choice" in
         1) stop_all ;;
@@ -122,7 +125,8 @@ run_gui() {
         3) stop_service frontend ;;
         4) stop_service audit-consumer ;;
         5) stop_service notification-consumer ;;
-        6) stop_service service-due-producer ;;
+        6) stop_service email-consumer ;;
+        7) stop_service service-due-producer ;;
         *) echo "Invalid selection"; exit 1 ;;
     esac
 }

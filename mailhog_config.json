@@ -1,11 +1,10 @@
 {
-    "gmail": {
-        "name": "gmail",
-        "host": "smtp.gmail.com",
-        "port": "587",
-        "email": "mail.assetcare360@gmail.com",
-        "username": "mail.assetcare360@gmail.com",
-        "password": "nkas ihjh olho foim",
-        "mechanism": "PLAIN"
+    "mailhog": {
+        "name": "mailhog",
+        "host": "127.0.0.1",
+        "smtp_port": 1025,
+        "web_ui": "http://127.0.0.1:8025",
+        "from_email": "noreply@assetcare360.local",
+        "from_name": "AssetCare360"
     }
 }
