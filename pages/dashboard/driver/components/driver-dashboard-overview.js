@@ -5,13 +5,91 @@ class DriverDashboardOverview extends HTMLElement {
         }
 
         this._mounted = true;
+        this._assignedVehicle = null;
         this.render();
         this.bindEvents();
         this.refresh();
+        this._fetchAssignedVehicle();
 
         DriverUtils.on('driver:data-trips-changed', () => this.refresh());
         DriverUtils.on('driver:data-checks-changed', () => this.refresh());
         DriverUtils.on('driver:data-breakdowns-changed', () => this.refresh());
+    }
+
+    _escapeHtml(str) {
+        if (str == null) return '';
+        const div = document.createElement('div');
+        div.textContent = String(str);
+        return div.innerHTML;
+    }
+
+    async _fetchAssignedVehicle() {
+        try {
+            const response = await DriverUtils.apiGet('/vehicles/my-vehicle');
+            if (response.status === 'success' && response.data) {
+                this._assignedVehicle = response.data;
+            } else {
+                this._assignedVehicle = null;
+            }
+        } catch (error) {
+            console.error('Failed to fetch assigned vehicle:', error);
+            this._assignedVehicle = null;
+        }
+        this._renderAssignedVehicle();
+    }
+
+    _renderAssignedVehicle() {
+        const container = this.querySelector('[data-assigned-vehicle]');
+        if (!container) return;
+
+        if (this._assignedVehicle) {
+            const vehicle = this._assignedVehicle;
+            container.innerHTML = `
+                <div class="assigned-vehicle-card">
+                    <div class="assigned-vehicle-header">
+                        <div class="assigned-vehicle-icon">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <div class="assigned-vehicle-badge">Assigned Vehicle</div>
+                    </div>
+                    <div class="assigned-vehicle-content">
+                        <div class="assigned-vehicle-primary">
+                            <span class="assigned-vehicle-plate">${this._escapeHtml(vehicle.number_plate || '-')}</span>
+                            <span class="assigned-vehicle-name">${this._escapeHtml(vehicle.vehicle_name || '')}</span>
+                        </div>
+                        <div class="assigned-vehicle-details">
+                            <div class="assigned-vehicle-detail">
+                                <i class="fas fa-id-badge"></i>
+                                <span>${this._escapeHtml(vehicle.vehicle_id || '-')}</span>
+                            </div>
+                            <div class="assigned-vehicle-detail">
+                                <i class="fas fa-car"></i>
+                                <span>${this._escapeHtml(vehicle.vehicle_type || '-')}</span>
+                            </div>
+                            <div class="assigned-vehicle-detail">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span>${vehicle.odometer ? vehicle.odometer.toLocaleString() + ' KM' : '-'}</span>
+                            </div>
+                            <div class="assigned-vehicle-detail">
+                                <span class="status-badge status-${(vehicle.status || '').toLowerCase()}">${this._escapeHtml(vehicle.status || '-')}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="assigned-vehicle-card assigned-vehicle-empty">
+                    <div class="assigned-vehicle-icon">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <div class="assigned-vehicle-empty-text">
+                        <span class="assigned-vehicle-empty-title">No Vehicle Assigned</span>
+                        <span class="assigned-vehicle-empty-desc">Contact your Transportation Manager for vehicle assignment</span>
+                    </div>
+                </div>
+            `;
+        }
     }
 
     render() {
@@ -19,6 +97,15 @@ class DriverDashboardOverview extends HTMLElement {
             <div class="page-header">
                 <h2 class="page-title"><i class="fas fa-tachometer-alt"></i> Dashboard Overview</h2>
                 <p class="page-subtitle">Welcome! Here's your daily summary</p>
+            </div>
+
+            <div class="assigned-vehicle-section" data-assigned-vehicle>
+                <div class="assigned-vehicle-card assigned-vehicle-loading">
+                    <div class="assigned-vehicle-icon">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                    <span>Loading assigned vehicle...</span>
+                </div>
             </div>
 
             <div class="grid">
