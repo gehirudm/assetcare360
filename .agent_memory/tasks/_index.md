@@ -8,6 +8,8 @@
 - [TASK038] Technical Officer Script Monolith Final Decomposition - Remove legacy modal/fallback parent ownership and complete component-owned ticket workflows
 
 ## Completed
+- [TASK041] Vehicle Government Fuel QR Image Flow - Completed on 2026-04-16
+- [TASK040] Fuel Logging and TM Fleet Detail Enhancements - Completed on 2026-04-16
 - [TASK039] Route Breakdown Garage Workflow Alignment - Completed on 2026-04-16
 
 ## Archived

@@ -3,6 +3,43 @@
 ## Current Focus
 Dashboard Web Components refactor execution for the active Supervisor residual slice remains complete (TASK034, TASK035, TASK036). TASK033 and TASK032 are also complete. Latest active workflow correction for route-breakdown garage handling is now completed as TASK039. Remaining non-dashboard backlog primarily includes migration verification.
 
+### Vehicle government fuel QR image flow completed (April 16, 2026)
+- Completed TASK041 for Sri Lanka external-fuel QR support across vehicle management, TM dashboard, and Driver dashboard.
+- Backend updates complete:
+	- Added migration `054_add_government_fuel_qr_image_to_vehicles.php` and applied it successfully.
+	- Added vehicle field `government_fuel_qr_image`.
+	- Added new upload endpoint `POST /vehicles/:id/fuel-qr` in `VehicleController` + `public/index.php` route registration.
+	- `VehicleService` now validates/stores QR images under publicly-served `public/uploads/vehicle-fuel-qr/`, keeps DB-relative path `uploads/vehicle-fuel-qr/...`, auto-recovers legacy root-stored QR files into public storage on read, and cleans old QR files from both public + legacy paths when replaced.
+- Frontend updates complete:
+	- `tm-fleet-details` now shows QR preview and supports upload/replace for the currently selected vehicle.
+	- Follow-up UX refinement applied: Government Fuel QR section is positioned directly above Recent Fuel Records in TM vehicle details.
+	- QR URL resolution now prefers API-origin asset URLs for `uploads/...` paths to avoid frontend-origin static 404 probes in split-host local setups.
+	- Driver dashboard overview now shows assigned-vehicle government QR image and allows opening full-size view.
+- OpenAPI updated in `testing/openapi.yaml`:
+	- Added `/vehicles/{id}/fuel-qr` multipart endpoint.
+	- Added `government_fuel_qr_image` on `Vehicle` and `VehicleInput` schemas.
+- Validation status:
+	- Editor diagnostics: no new errors in touched files.
+	- PHP lint and JS syntax checks passed for all touched files.
+	- Migration status confirms `054` applied and zero pending migrations.
+
+### Fuel logging + TM fleet detail enhancement completed (April 16, 2026)
+- Completed TASK040 end-to-end for fuel logging contract improvements and Transportation Manager fleet detail conversion.
+- Backend updates complete:
+	- Added migration `053_add_fuel_source_and_nullable_total_cost.php`.
+	- Fuel payload validation now derives `fuel_type` from vehicle and enforces `fuel_source` (`internal`/`external`) rules.
+	- External fueling now requires positive `total_cost` + bill image; internal fueling supports nullable cost.
+- Frontend updates complete:
+	- Driver and TM fuel modals now use source-aware UX and no longer require manual fuel type input.
+	- TM fuel list/view now display fuel source and handle internal entries without mandatory cost.
+	- TM fleet `View` action now routes to dedicated `fleet-details` section with metrics, Chart.js trend chart, and driver/fuel history.
+- OpenAPI updated in `testing/openapi.yaml` for fuel-log endpoints, schemas, and source-aware request rules.
+- Validation status:
+	- PHP syntax checks passed for all touched backend/migration files.
+	- Editor diagnostics reported no new errors in touched files.
+	- UI validation `VAL_STAGE=after` passed.
+	- `VAL_STAGE=before` assertions now fail as expected against post-change behavior (old modal/manual field expectations).
+
 ### Route-breakdown garage workflow alignment completed (April 16, 2026)
 - Completed TASK039 across Supervisor, shared ticket detail, Driver ticket tracking/modals, and backend assignment enforcement.
 - `pages/dashboard/supervisor/script.js` now routes route-breakdown pending-stage VIEW actions to shared `pages/view-ticket/` flow.
