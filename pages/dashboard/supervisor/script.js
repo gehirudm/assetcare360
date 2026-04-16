@@ -190,7 +190,11 @@ function bindSupervisorFaultTickets() {
         switch (action) {
             case 'view-breakdown':
                 if (!detail.reportType || !detail.reportId) return;
-                viewBreakdownDetails(detail.reportType, detail.reportId);
+                if (detail.reportType === 'route_breakdown') {
+                    viewRouteBreakdownTicket(detail.reportType, detail.reportId);
+                } else {
+                    viewBreakdownDetails(detail.reportType, detail.reportId);
+                }
                 break;
             case 'assign-breakdown':
                 if (!detail.reportType || !detail.reportId) return;
@@ -464,6 +468,19 @@ let currentTicketSourceFilter = 'all';
 let allTickets = []; // Store all tickets for filtering
 let allBreakdownItems = []; // Store breakdown reports for unassigned list
 
+function isRouteGarageWorkflowAssigned(status) {
+    const normalized = String(status || '').toLowerCase();
+    return ['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(normalized);
+}
+
+function isTicketCoveredByGarageWorkflow(ticket) {
+    if (!ticket || String(ticket.breakdown_type || '').toLowerCase() !== 'route_breakdown') {
+        return false;
+    }
+
+    return isRouteGarageWorkflowAssigned(ticket.route_garage_workflow_status);
+}
+
 async function loadFaultTickets() {
     try {
         const faultTickets = document.querySelector('supervisor-fault-tickets');
@@ -567,9 +584,20 @@ async function loadFaultTickets() {
             console.log('Loaded vehicle breakdowns:', breakdownResponse.data.reports.length);
         }
 
+        const routeWorkflowByReportId = new Map();
+
         // Process route breakdown reports
         if (routeResponse && routeResponse.status === 'success' && routeResponse.data && routeResponse.data.breakdowns) {
             routeResponse.data.breakdowns.forEach(breakdown => {
+                const reportKey = String(breakdown.route_breakdown_id || '').trim();
+                if (reportKey) {
+                    routeWorkflowByReportId.set(reportKey, {
+                        route_garage_workflow_status: breakdown?.garage_workflow?.status || breakdown.garage_workflow_status || null,
+                        route_approved_garage_name: breakdown?.garage_workflow?.approved_garage?.name || breakdown.approved_garage_name || null,
+                        route_breakdown_numeric_id: breakdown.id,
+                    });
+                }
+
                 // Skip if already linked to a fault ticket
                 if (linkedBreakdownIds.has(String(breakdown.route_breakdown_id)) || linkedBreakdownIds.has(String(breakdown.id))) return;
 
@@ -587,10 +615,33 @@ async function loadFaultTickets() {
                     breakdown_type: breakdown.breakdown_type || 'In-Route',
                     breakdown_location: breakdown.breakdown_location || '',
                     created_at: breakdown.breakdown_datetime || breakdown.created_at,
-                    source: 'driver'
+                    source: 'driver',
+                    fault_ticket_id: breakdown.fault_ticket_id ? Number(breakdown.fault_ticket_id) : null,
+                    garage_workflow_status: breakdown?.garage_workflow?.status || breakdown.garage_workflow_status || null,
+                    approved_garage_name: breakdown?.garage_workflow?.approved_garage?.name || breakdown.approved_garage_name || null,
                 });
             });
             console.log('Loaded route breakdowns:', routeResponse.data.breakdowns.length);
+        }
+
+        if (routeWorkflowByReportId.size > 0 && Array.isArray(allTickets)) {
+            allTickets = allTickets.map((ticket) => {
+                if (String(ticket.breakdown_type || '').toLowerCase() !== 'route_breakdown') {
+                    return ticket;
+                }
+
+                const workflowMeta = routeWorkflowByReportId.get(String(ticket.breakdown_report_id || '').trim());
+                if (!workflowMeta) {
+                    return ticket;
+                }
+
+                return {
+                    ...ticket,
+                    route_garage_workflow_status: workflowMeta.route_garage_workflow_status,
+                    route_approved_garage_name: workflowMeta.route_approved_garage_name,
+                    route_breakdown_numeric_id: workflowMeta.route_breakdown_numeric_id,
+                };
+            });
         }
 
         // Process machine breakdown reports (from machinery operators)
@@ -701,8 +752,17 @@ function displayFilteredTickets() {
     });
 
     // Separate into unassigned, assigned (active), and resolved
-    const unassignedTickets = filteredTickets.filter(t => !t.assignments || t.assignments.length === 0);
-    const assignedTickets = filteredTickets.filter(t => t.assignments && t.assignments.length > 0 && t.status !== 'Resolved' && t.status !== 'Closed');
+    const unassignedTickets = filteredTickets.filter((ticket) => {
+        const hasAssignments = ticket.assignments && ticket.assignments.length > 0;
+        return !hasAssignments && !isTicketCoveredByGarageWorkflow(ticket);
+    });
+
+    const assignedTickets = filteredTickets.filter((ticket) => {
+        const hasAssignments = ticket.assignments && ticket.assignments.length > 0;
+        const coveredByGarage = isTicketCoveredByGarageWorkflow(ticket);
+        return (hasAssignments || coveredByGarage) && ticket.status !== 'Resolved' && ticket.status !== 'Closed';
+    });
+
     const resolvedTickets = filteredTickets.filter(t => t.assignments && t.assignments.length > 0 && (t.status === 'Resolved' || t.status === 'Closed'));
 
     // Filter breakdown reports based on source filter
@@ -1030,6 +1090,100 @@ async function viewBreakdownDetails(type, id) {
     await modal.openBreakdownDetails(type, id);
 }
 
+function findFaultTicketForBreakdown(report) {
+    if (!report) return null;
+
+    const breakdownId = String(report.breakdown_id || '').trim();
+    const reportNumericId = Number(report.id || 0);
+
+    return allTickets.find((ticket) => {
+        if (!ticket || String(ticket.breakdown_type || '').toLowerCase() !== String(report.type || '').toLowerCase()) {
+            return false;
+        }
+
+        if (breakdownId && String(ticket.breakdown_report_id || '').trim() === breakdownId) {
+            return true;
+        }
+
+        if (reportNumericId > 0 && String(ticket.breakdown_report_id || '').trim() === String(reportNumericId)) {
+            return true;
+        }
+
+        return false;
+    }) || null;
+}
+
+async function createFaultTicketFromBreakdownReport(type, report) {
+    const isRoute = type === 'route_breakdown';
+    const isMachine = type === 'machine_breakdown';
+    const typeLabel = isMachine ? 'Machine Breakdown' : (isRoute ? 'Route Breakdown' : 'Vehicle Breakdown');
+
+    let description;
+    if (isMachine) {
+        description = `[${typeLabel}] Machine: ${report.machine_model || 'N/A'} | Operator: ${report.operator_name || 'N/A'}\nSeverity: ${report.severity} | Type: ${report.breakdown_type}\nDescription: ${report.description}`;
+    } else {
+        description = `[${typeLabel}] Vehicle: ${report.number_plate} | Driver: ${report.driver_name}\nSeverity: ${report.severity} | Type: ${report.breakdown_type}\n${report.breakdown_location ? 'Location: ' + report.breakdown_location + '\n' : ''}Description: ${report.description}`;
+    }
+
+    const severityMap = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' };
+    const priority = severityMap[(report.severity || 'medium').toLowerCase()] || 'Medium';
+
+    const formData = new FormData();
+    if (isMachine && report.machine_id) {
+        formData.append('machine_id', report.machine_id);
+    } else if (report.vehicle_id) {
+        formData.append('vehicle_id', report.vehicle_id);
+    }
+    formData.append('breakdown_report_id', report.breakdown_id || report.id);
+    formData.append('breakdown_type', type);
+    formData.append('description', description);
+    formData.append('priority', priority);
+
+    const response = await API.postFormData('/fault-tickets', formData);
+
+    if (response.status === 'success' && response.data && response.data.id) {
+        return Number(response.data.id);
+    }
+
+    const errorMsg = response.errors ? Object.values(response.errors).join(', ') : (response.message || 'Failed to create ticket');
+    throw new Error(errorMsg);
+}
+
+async function viewRouteBreakdownTicket(type, id) {
+    const report = allBreakdownItems.find((item) => item.type === type && item.id === id);
+    if (!report) {
+        showToast('Route breakdown report not found', 'error');
+        return;
+    }
+
+    if (report.fault_ticket_id) {
+        viewTicketDetails(report.fault_ticket_id);
+        return;
+    }
+
+    const existingTicket = findFaultTicketForBreakdown(report);
+    if (existingTicket && Number(existingTicket.id) > 0) {
+        viewTicketDetails(existingTicket.id);
+        return;
+    }
+
+    try {
+        showToast('Creating ticket details view for this route breakdown...', 'info');
+        const newTicketId = await createFaultTicketFromBreakdownReport(type, report);
+
+        if (!Number.isFinite(newTicketId) || newTicketId <= 0) {
+            throw new Error('Failed to create fault ticket');
+        }
+
+        await loadFaultTickets();
+        showToast('Fault ticket created. Opening details page...', 'success');
+        viewTicketDetails(newTicketId);
+    } catch (error) {
+        console.error('Error opening route breakdown in ticket page:', error);
+        showToast(error.message || 'Failed to open route breakdown ticket details', 'error');
+    }
+}
+
 // View machine breakdown details from allTickets
 function viewMachineBreakdownInSupervisor(breakdownId) {
     const ticket = allTickets.find(t => t.is_machine_breakdown && t.id === breakdownId);
@@ -1076,41 +1230,16 @@ async function assignBreakdownTicket(type, id) {
         return;
     }
 
+    if (type === 'route_breakdown' && isRouteGarageWorkflowAssigned(report.garage_workflow_status)) {
+        showToast('A nearby garage is already approved for this route breakdown. Technician assignment is not required.', 'warning');
+        return;
+    }
+
     try {
         showToast('Creating fault ticket from breakdown report...', 'info');
+        const newTicketId = await createFaultTicketFromBreakdownReport(type, report);
 
-        const isRoute = type === 'route_breakdown';
-        const isMachine = type === 'machine_breakdown';
-        const typeLabel = isMachine ? 'Machine Breakdown' : (isRoute ? 'Route Breakdown' : 'Vehicle Breakdown');
-
-        // Build description from breakdown data
-        let description;
-        if (isMachine) {
-            description = `[${typeLabel}] Machine: ${report.machine_model || 'N/A'} | Operator: ${report.operator_name || 'N/A'}\nSeverity: ${report.severity} | Type: ${report.breakdown_type}\nDescription: ${report.description}`;
-        } else {
-            description = `[${typeLabel}] Vehicle: ${report.number_plate} | Driver: ${report.driver_name}\nSeverity: ${report.severity} | Type: ${report.breakdown_type}\n${report.breakdown_location ? 'Location: ' + report.breakdown_location + '\n' : ''}Description: ${report.description}`;
-        }
-
-        // Map severity to priority
-        const severityMap = { 'critical': 'Critical', 'high': 'High', 'medium': 'Medium', 'low': 'Low' };
-        const priority = severityMap[(report.severity || 'medium').toLowerCase()] || 'Medium';
-
-        // Create the ticket via API using FormData
-        const formData = new FormData();
-        if (isMachine && report.machine_id) {
-            formData.append('machine_id', report.machine_id);
-        } else if (report.vehicle_id) {
-            formData.append('vehicle_id', report.vehicle_id);
-        }
-        formData.append('breakdown_report_id', report.breakdown_id || report.id);
-        formData.append('breakdown_type', type);
-        formData.append('description', description);
-        formData.append('priority', priority);
-
-        const response = await API.postFormData('/fault-tickets', formData);
-
-        if (response.status === 'success' && response.data && response.data.id) {
-            const newTicketId = response.data.id;
+        if (Number.isFinite(newTicketId) && newTicketId > 0) {
             showToast('Fault ticket created! Now assign a technician.', 'success');
 
             // Reload tickets so the new ticket appears in the system
@@ -1119,8 +1248,7 @@ async function assignBreakdownTicket(type, id) {
             // Open the assign modal for the newly created ticket
             assignTicket(newTicketId);
         } else {
-            const errorMsg = response.errors ? Object.values(response.errors).join(', ') : (response.message || 'Failed to create ticket');
-            showToast(errorMsg, 'error');
+            showToast('Failed to create ticket', 'error');
         }
     } catch (error) {
         console.error('Error creating ticket from breakdown:', error);

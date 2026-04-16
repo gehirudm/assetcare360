@@ -6,6 +6,8 @@ let budgetReport = null;
 let sparePartRequests = [];
 let workUpdates = [];
 let currentRoleContext = null;
+let routeBreakdownContext = null;
+let availableRouteGarages = [];
 
 const STATUS_ORDER = [
     'open',
@@ -69,6 +71,63 @@ function isTechnicalOfficer() {
 function isSupervisorLike() {
     const roleKey = toRoleKey(currentUser?.role);
     return roleKey === 'SUPERVISOR' || roleKey === 'ADMIN';
+}
+
+function isRouteBreakdownTicket() {
+    return normaliseStatus(ticketData?.breakdown_type) === 'route_breakdown';
+}
+
+function getRouteGarageWorkflowStatus() {
+    return normaliseStatus(
+        routeBreakdownContext?.garage_workflow_status
+        || routeBreakdownContext?.garage_workflow?.status
+        || ticketData?.route_garage_workflow_status
+    );
+}
+
+function hasRouteGarageAssignment() {
+    const status = getRouteGarageWorkflowStatus();
+    return ['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(status);
+}
+
+function getApprovedRouteGarageName() {
+    return routeBreakdownContext?.approved_garage_name
+        || routeBreakdownContext?.garage_workflow?.approved_garage?.name
+        || ticketData?.route_approved_garage_name
+        || null;
+}
+
+function getRouteBreakdownNumericId() {
+    const id = Number(routeBreakdownContext?.id || routeBreakdownContext?.route_breakdown_id_numeric || 0);
+    return Number.isFinite(id) && id > 0 ? id : 0;
+}
+
+async function loadRouteBreakdownContext() {
+    routeBreakdownContext = null;
+
+    if (!isRouteBreakdownTicket()) {
+        return;
+    }
+
+    try {
+        const response = await API.get('/route-breakdowns');
+        const list = Array.isArray(response?.data?.breakdowns)
+            ? response.data.breakdowns
+            : (Array.isArray(response?.data) ? response.data : []);
+
+        if (!list.length) {
+            return;
+        }
+
+        const ticketId = Number(ticketData?.id || 0);
+        const reportId = String(ticketData?.breakdown_report_id || '').trim().toLowerCase();
+
+        routeBreakdownContext = list.find((item) => Number(item?.fault_ticket_id || 0) === ticketId)
+            || list.find((item) => String(item?.route_breakdown_id || '').trim().toLowerCase() === reportId)
+            || null;
+    } catch (error) {
+        console.warn('Unable to load route breakdown context for ticket detail page:', error);
+    }
 }
 
 function fmtDate(value) {
@@ -239,6 +298,7 @@ async function loadAll() {
         }
 
         ticketData = ticketResp.data;
+        await loadRouteBreakdownContext();
 
         const budgetPayload = (budgetResp && budgetResp.status === 'success')
             ? budgetResp.data
@@ -336,8 +396,35 @@ function renderFlow() {
     document.getElementById('step1-desc').textContent = `Fault reported. Breakdown type: ${ticketData.breakdown_type || 'N/A'}.`;
 
     const assignment = ticketData.assignments && ticketData.assignments.length > 0 ? ticketData.assignments[0] : null;
+    const hasGarageAssignment = hasRouteGarageAssignment();
+    const approvedGarageName = getApprovedRouteGarageName();
+    const assignmentTitle = document.getElementById('step2-title');
+    const assigneeRole = document.getElementById('step2-assignee-role');
 
-    if (assignment || statusAtOrPast(status, 'assigned')) {
+    if (assignmentTitle) {
+        assignmentTitle.textContent = hasGarageAssignment ? 'Assigned to Nearby Garage' : 'Assigned to Technician';
+    }
+
+    if (assigneeRole) {
+        assigneeRole.textContent = hasGarageAssignment ? 'Nearby Garage' : 'Technical Officer';
+    }
+
+    if (hasGarageAssignment) {
+        markStep('step-assigned', 'completed');
+        document.getElementById('step2-assignedBy').textContent = routeBreakdownContext?.approved_by_name || 'Supervisor';
+        document.getElementById('step2-technician').textContent = approvedGarageName || 'Approved Garage';
+        document.getElementById('step2-desc').textContent = `Nearby garage approved on ${fmtDateShort(routeBreakdownContext?.approved_at || routeBreakdownContext?.updated_at || ticketData.updated_at)}.`;
+
+        const notesEl = document.getElementById('step2-notes');
+        const approvalNotes = String(routeBreakdownContext?.approval_notes || '').trim();
+        if (approvalNotes) {
+            notesEl.textContent = approvalNotes;
+            notesEl.style.display = 'block';
+        } else {
+            notesEl.style.display = 'none';
+            notesEl.textContent = '';
+        }
+    } else if (assignment || statusAtOrPast(status, 'assigned')) {
         markStep('step-assigned', 'completed');
         document.getElementById('step2-assignedBy').textContent = assignment ? (assignment.assigned_by_name || 'Supervisor') : 'Supervisor';
         document.getElementById('step2-technician').textContent = assignment ? (assignment.technician_name || 'Technical Officer') : 'Pending';
@@ -370,17 +457,37 @@ function renderFlow() {
 
 function renderAssignmentAction(status, assignment) {
     const actionEl = document.getElementById('step2-action');
-    const button = document.getElementById('assignTicketBtn');
-    if (!actionEl || !button) return;
+    const assignButton = document.getElementById('assignTicketBtn');
+    const approveGarageButton = document.getElementById('approveGarageBtn');
+    const garageHint = document.getElementById('step2-garage-hint');
+    if (!actionEl || !assignButton || !approveGarageButton || !garageHint) return;
+
+    const routeTicket = isRouteBreakdownTicket();
+    const hasGarageAssignment = hasRouteGarageAssignment();
 
     if (!isSupervisorLike() || statusAtOrPast(status, 'resolved')) {
         actionEl.style.display = 'none';
         return;
     }
 
-    button.innerHTML = assignment
+    assignButton.innerHTML = assignment
         ? '<i class="fas fa-user-cog"></i> Edit Assignment'
         : '<i class="fas fa-user-plus"></i> Assign Technician';
+
+    assignButton.style.display = hasGarageAssignment ? 'none' : 'inline-flex';
+    approveGarageButton.style.display = (routeTicket && !hasGarageAssignment) ? 'inline-flex' : 'none';
+
+    if (routeTicket && hasGarageAssignment) {
+        const approvedGarageName = getApprovedRouteGarageName();
+        garageHint.textContent = approvedGarageName
+            ? `Nearby garage approved (${approvedGarageName}). Technician assignment is optional.`
+            : 'Nearby garage is already approved. Technician assignment is optional.';
+        garageHint.style.display = 'flex';
+    } else {
+        garageHint.style.display = 'none';
+        garageHint.textContent = '';
+    }
+
     actionEl.style.display = 'block';
 }
 
@@ -958,6 +1065,11 @@ async function openAssignModal() {
         return;
     }
 
+    if (isRouteBreakdownTicket() && hasRouteGarageAssignment()) {
+        showToast('Nearby garage is already approved. Technician assignment is not required.', 'warning');
+        return;
+    }
+
     const ticketIdFormatted = window.FaultTicketDetailTemplate?.formatTicketDisplayId
         ? window.FaultTicketDetailTemplate.formatTicketDisplayId(ticketData)
         : (ticketData.breakdown_report_id || ticketData.ticket_id || `#${ticketData.id}`);
@@ -983,6 +1095,172 @@ async function openAssignModal() {
 
 function closeAssignModal() {
     document.getElementById('assignModal').classList.remove('active');
+}
+
+async function openGarageApprovalModal() {
+    if (!isSupervisorLike()) {
+        showToast('Only Supervisors can approve nearby garages from this page.', 'warning');
+        return;
+    }
+
+    if (!ticketData?.id || !isRouteBreakdownTicket()) {
+        showToast('Nearby garage approval is only available for route breakdown tickets.', 'warning');
+        return;
+    }
+
+    await loadRouteBreakdownContext();
+
+    if (hasRouteGarageAssignment()) {
+        showToast('A nearby garage is already approved for this route breakdown.', 'warning');
+        return;
+    }
+
+    const routeBreakdownId = getRouteBreakdownNumericId();
+    if (!routeBreakdownId) {
+        showToast('Unable to resolve the route breakdown ID for garage approval.', 'error');
+        return;
+    }
+
+    const routeCodeField = document.getElementById('garageApprovalRouteCode');
+    const notesField = document.getElementById('garageApprovalNotes');
+    if (routeCodeField) {
+        routeCodeField.value = routeBreakdownContext?.route_breakdown_id || ticketData?.breakdown_report_id || `RBD-${routeBreakdownId}`;
+    }
+    if (notesField) {
+        notesField.value = '';
+    }
+
+    await loadGaragesForRouteApproval();
+    document.getElementById('garageApprovalModal').classList.add('active');
+}
+
+function closeGarageApprovalModal() {
+    const modal = document.getElementById('garageApprovalModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+
+    const warning = document.getElementById('garageApprovalSelectionWarning');
+    if (warning) {
+        warning.style.display = 'none';
+    }
+}
+
+async function loadGaragesForRouteApproval() {
+    const listEl = document.getElementById('garageApprovalList');
+    if (!listEl) {
+        return;
+    }
+
+    listEl.innerHTML = '<p class="step-hint"><i class="fas fa-spinner fa-spin"></i> Loading nearby garages...</p>';
+
+    try {
+        const response = await API.get('/route-breakdowns/garages');
+        availableRouteGarages = Array.isArray(response?.data?.garages)
+            ? response.data.garages
+            : (Array.isArray(response?.data) ? response.data : []);
+
+        if (!availableRouteGarages.length) {
+            listEl.innerHTML = '<p class="step-hint"><i class="fas fa-store-slash"></i> No active garages available right now.</p>';
+            return;
+        }
+
+        listEl.innerHTML = availableRouteGarages.map((garage) => {
+            const name = garage.name || `Garage #${garage.id}`;
+            const address = garage.address || 'Address not available';
+            const phone = garage.phone || 'No phone';
+            return `
+                <label class="assign-tech-item">
+                    <span><input type="radio" name="approveGarageChoice" value="${Number(garage.id)}"></span>
+                    <span style="flex:1; min-width:0;">
+                        <span class="assign-tech-name">${name}</span>
+                        <span class="assign-tech-meta"><i class="fas fa-map-marker-alt"></i> ${address}</span>
+                    </span>
+                    <span class="assign-tech-meta"><i class="fas fa-phone"></i> ${phone}</span>
+                </label>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('loadGaragesForRouteApproval error:', error);
+        listEl.innerHTML = '<p class="step-hint" style="color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Failed to load nearby garages.</p>';
+    }
+}
+
+function updateGarageApprovalSelectionWarning() {
+    const warning = document.getElementById('garageApprovalSelectionWarning');
+    if (!warning) {
+        return;
+    }
+
+    const selected = document.querySelector('input[name="approveGarageChoice"]:checked');
+    warning.style.display = selected ? 'none' : 'block';
+}
+
+async function submitGarageApproval(event) {
+    event.preventDefault();
+
+    if (!isSupervisorLike()) {
+        showToast('Only Supervisors can approve nearby garages from this page.', 'warning');
+        return;
+    }
+
+    if (!isRouteBreakdownTicket()) {
+        showToast('Nearby garage approval is only available for route breakdown tickets.', 'warning');
+        return;
+    }
+
+    if (hasRouteGarageAssignment()) {
+        showToast('A nearby garage is already approved for this route breakdown.', 'warning');
+        closeGarageApprovalModal();
+        return;
+    }
+
+    const routeBreakdownId = getRouteBreakdownNumericId();
+    if (!routeBreakdownId) {
+        showToast('Unable to resolve the route breakdown ID for garage approval.', 'error');
+        return;
+    }
+
+    const selectedInput = document.querySelector('input[name="approveGarageChoice"]:checked');
+    const selectedGarageId = Number(selectedInput?.value || 0);
+
+    if (!selectedGarageId) {
+        updateGarageApprovalSelectionWarning();
+        showToast('Please select a nearby garage to approve.', 'error');
+        return;
+    }
+
+    const submitButton = document.getElementById('garageApprovalSubmitBtn');
+    const approvalNotes = (document.getElementById('garageApprovalNotes')?.value || '').trim();
+
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Approving...';
+    }
+
+    try {
+        const response = await API.post(`/route-breakdowns/${routeBreakdownId}/garage-approval`, {
+            garage_id: selectedGarageId,
+            approval_notes: approvalNotes || null,
+        });
+
+        if (response?.status === 'success') {
+            showToast('Nearby garage approved successfully.', 'success');
+            closeGarageApprovalModal();
+            await loadAll();
+            return;
+        }
+
+        showToast(response?.message || 'Failed to approve nearby garage.', 'error');
+    } catch (error) {
+        console.error('submitGarageApproval error:', error);
+        showToast('An error occurred while approving the nearby garage.', 'error');
+    } finally {
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="fas fa-warehouse"></i> Approve Nearby Garage';
+        }
+    }
 }
 
 async function loadTechniciansForAssignment() {
@@ -1063,6 +1341,12 @@ async function submitAssignment(event) {
         return;
     }
 
+    if (isRouteBreakdownTicket() && hasRouteGarageAssignment()) {
+        showToast('Nearby garage is already approved. Technician assignment is not required.', 'warning');
+        closeAssignModal();
+        return;
+    }
+
     const selectedIds = Array.from(document.querySelectorAll('input[name="assignTechnicians"]:checked'))
         .map((input) => Number(input.value))
         .filter((id) => Number.isFinite(id) && id > 0);
@@ -1118,6 +1402,11 @@ document.addEventListener('click', (event) => {
 document.addEventListener('change', (event) => {
     if (event.target.matches('input[name="assignTechnicians"]')) {
         updateAssignSelectionWarning();
+        return;
+    }
+
+    if (event.target.matches('input[name="approveGarageChoice"]')) {
+        updateGarageApprovalSelectionWarning();
     }
 });
 

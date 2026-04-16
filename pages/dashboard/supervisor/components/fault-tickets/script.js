@@ -236,6 +236,9 @@ class SupervisorFaultTickets extends HTMLElement {
 
     renderUnassignedTicket(ticket) {
         const isMachineBreakdown = ticket.is_machine_breakdown === true;
+        const isRouteBreakdown = String(ticket.breakdown_type || '').toLowerCase() === 'route_breakdown';
+        const routeGarageWorkflowStatus = String(ticket.route_garage_workflow_status || '').toLowerCase();
+        const hasGarageAssignment = isRouteBreakdown && ['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(routeGarageWorkflowStatus);
         const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
         const reporterName = ticket.reported_by_name || ticket.reporter_full_name || 'Unknown';
         const createdDate = new Date(ticket.created_at);
@@ -251,6 +254,17 @@ class SupervisorFaultTickets extends HTMLElement {
             : '';
         const assetIcon = isMachineBreakdown ? 'fas fa-cogs' : 'fas fa-wrench';
         const dropdownId = `ticket-${displayTicketId}`;
+        const garageMeta = hasGarageAssignment
+            ? `<div class="item-meta"><i class="fas fa-warehouse" style="color:#0f766e;"></i> <span style="color:#0f766e;font-weight:600;">Nearby Garage: ${this.escapeHtml(ticket.route_approved_garage_name || 'Approved')}</span></div>`
+            : '';
+        const assignActionHtml = hasGarageAssignment
+            ? ''
+            : `<button class="dropdown-item" type="button" data-action="assign-ticket" data-ticket-id="${Number(ticket.id)}">
+                                    <i class="fas fa-user-plus"></i> Assign Technician
+                                </button>`;
+        const garageHintHtml = hasGarageAssignment
+            ? `<div class="item-meta" style="margin-top:4px;color:#0f766e;font-weight:500;"><i class="fas fa-info-circle"></i> Technician assignment is not required after garage approval.</div>`
+            : '';
 
         return `
             <div class="inventory-item">
@@ -264,6 +278,8 @@ class SupervisorFaultTickets extends HTMLElement {
                         <span class="status-text status-${this.escapeHtml(priority)}">${this.escapeHtml(priority.toUpperCase())}</span> |
                         <i class="fas fa-calendar"></i> ${this.escapeHtml(formattedDate)}
                     </div>
+                    ${garageMeta}
+                    ${garageHintHtml}
                 </div>
                 <div class="item-actions">
                     <div class="action-buttons">
@@ -273,9 +289,7 @@ class SupervisorFaultTickets extends HTMLElement {
                                 <i class="fas fa-ellipsis-v"></i>
                             </button>
                             <div class="dropdown-menu" id="dropdown-${this.escapeHtml(dropdownId)}">
-                                <button class="dropdown-item" type="button" data-action="assign-ticket" data-ticket-id="${Number(ticket.id)}">
-                                    <i class="fas fa-user-plus"></i> Assign Technician
-                                </button>
+                                ${assignActionHtml}
                                 ${!isMachineBreakdown ? `
                                 <button class="dropdown-item" type="button" data-action="edit-ticket" data-ticket-id="${Number(ticket.id)}">
                                     <i class="fas fa-edit"></i> Edit Ticket
@@ -294,9 +308,12 @@ class SupervisorFaultTickets extends HTMLElement {
 
     renderAssignedTicket(ticket) {
         const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
+        const isRouteBreakdown = String(ticket.breakdown_type || '').toLowerCase() === 'route_breakdown';
+        const routeGarageWorkflowStatus = String(ticket.route_garage_workflow_status || '').toLowerCase();
+        const hasGarageAssignment = isRouteBreakdown && ['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(routeGarageWorkflowStatus);
         const assignedTo = ticket.assignments && ticket.assignments.length > 0
             ? ticket.assignments.map(a => a.technician_name).join(', ')
-            : 'Unassigned';
+            : (hasGarageAssignment ? (ticket.route_approved_garage_name || 'Nearby Garage') : 'Unassigned');
         const primaryAssignment = Array.isArray(ticket.assignments) && ticket.assignments.length > 0
             ? ticket.assignments[0]
             : null;
@@ -316,8 +333,9 @@ class SupervisorFaultTickets extends HTMLElement {
                     <strong><i class="fas fa-ticket-alt"></i> ${this.escapeHtml(displayTicketId)}</strong>
                     <div class="item-meta">
                         <i class="fas fa-wrench"></i> ${this.escapeHtml(assetName)} |
-                        <i class="fas fa-user-cog"></i> ${this.escapeHtml(assignedTo)}
+                        <i class="${hasGarageAssignment ? 'fas fa-warehouse' : 'fas fa-user-cog'}"></i> ${this.escapeHtml(assignedTo)}
                     </div>
+                    ${hasGarageAssignment ? `<div class="item-meta"><i class="fas fa-info-circle" style="color:#0f766e;"></i> <span style="color:#0f766e;font-weight:600;">Garage workflow is active; technician assignment is optional.</span></div>` : ''}
                     ${expectedCompletionDate ? `<div class="item-meta"><i class="fas fa-calendar-check"></i> Expected: ${this.escapeHtml(expectedCompletionDate)}</div>` : ''}
                     <div class="item-meta">
                         <span class="status-text status-${this.escapeHtml(priority)}">${this.escapeHtml((ticket.priority || 'MEDIUM').toUpperCase())}</span> |
@@ -332,12 +350,12 @@ class SupervisorFaultTickets extends HTMLElement {
                                 <i class="fas fa-ellipsis-v"></i>
                             </button>
                             <div class="dropdown-menu" id="dropdown-${this.escapeHtml(dropdownId)}">
-                                <button class="dropdown-item" type="button" data-action="edit-assignment" data-ticket-id="${Number(ticket.id)}">
+                                ${hasGarageAssignment ? '' : `<button class="dropdown-item" type="button" data-action="edit-assignment" data-ticket-id="${Number(ticket.id)}">
                                     <i class="fas fa-edit"></i> Edit Assignment
                                 </button>
                                 <button class="dropdown-item" type="button" data-action="reassign-ticket" data-ticket-id="${Number(ticket.id)}">
                                     <i class="fas fa-user-cog"></i> Reassign
-                                </button>
+                                </button>`}
                                 <button class="dropdown-item" type="button" data-action="mark-complete" data-ticket-id="${Number(ticket.id)}">
                                     <i class="fas fa-check-circle"></i> Mark Complete
                                 </button>
