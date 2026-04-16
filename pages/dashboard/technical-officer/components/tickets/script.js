@@ -122,7 +122,7 @@ class TOTickets extends HTMLElement {
     }
 
     renderTickets(tickets) {
-        this._tickets = Array.isArray(tickets) ? tickets : [];
+        this._tickets = this._sortByNewest(Array.isArray(tickets) ? tickets : []);
 
         const ticketsList = this.querySelector('#allTicketsList');
         if (!ticketsList) return;
@@ -177,6 +177,29 @@ class TOTickets extends HTMLElement {
         }).join('');
 
         this.applyFilter(this._activeFilter);
+    }
+
+    _sortByNewest(tickets) {
+        return [...tickets].sort((first, second) => this._getSortTimestamp(second) - this._getSortTimestamp(first));
+    }
+
+    _getSortTimestamp(ticket) {
+        const dateFields = ['created_at', 'updated_at', 'assigned_at', 'breakdown_datetime', 'breakdown_date'];
+
+        for (const field of dateFields) {
+            const value = ticket?.[field];
+            if (!value) {
+                continue;
+            }
+
+            const timestamp = new Date(value).getTime();
+            if (Number.isFinite(timestamp)) {
+                return timestamp;
+            }
+        }
+
+        const numericId = Number(ticket?.id ?? 0);
+        return Number.isFinite(numericId) ? numericId : 0;
     }
 
     applyFilter(status = 'all', clickedButton = null) {
