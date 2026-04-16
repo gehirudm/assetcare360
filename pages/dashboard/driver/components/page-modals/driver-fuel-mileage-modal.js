@@ -49,8 +49,11 @@ class DriverFuelMileageModal extends HTMLElement {
                                     <input type="number" class="form-input" id="fuelVolume" min="0" step="0.01" required>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">Total Cost (Rs) *</label>
-                                    <input type="number" class="form-input" id="fuelCost" min="0" step="0.01" required>
+                                    <label class="form-label">Fuel Source *</label>
+                                    <select class="form-input" id="fuelSource" required>
+                                        <option value="external" selected>External Fuel Station</option>
+                                        <option value="internal">Internal Depot</option>
+                                    </select>
                                 </div>
                             </div>
                             <div class="form-grid">
@@ -59,23 +62,23 @@ class DriverFuelMileageModal extends HTMLElement {
                                     <input type="datetime-local" class="form-input" id="fuelDateTime" required>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">Fuel Type *</label>
-                                    <select class="form-input" id="fuelType" required>
-                                        <option value="">Select fuel type</option>
-                                        <option value="Petrol">Petrol</option>
-                                        <option value="Diesel">Diesel</option>
-                                    </select>
+                                    <label class="form-label">Fuel Type (From Vehicle)</label>
+                                    <input type="text" class="form-input" id="fuelTypeDisplay" readonly placeholder="Select vehicle to derive fuel type" style="background: #f5f5f5; cursor: not-allowed;">
                                 </div>
+                            </div>
+                            <div class="form-group" id="fuelCostGroup">
+                                <label class="form-label">Total Cost (Rs) <span id="fuelCostRequiredMark">*</span></label>
+                                <input type="number" class="form-input" id="fuelCost" min="0" step="0.01" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Station Name</label>
                                 <input type="text" class="form-input" id="stationName" placeholder="Enter fuel station name (optional)">
                             </div>
-                            <div class="form-group">
-                                <label class="form-label"><i class="fas fa-receipt"></i> Attach Bill/Receipt</label>
+                            <div class="form-group" id="billUploadGroup">
+                                <label class="form-label"><i class="fas fa-receipt"></i> Attach Bill/Receipt <span id="billRequiredMark">*</span></label>
                                 <div class="bill-upload-area" data-action="open-bill-picker" style="border: 2px dashed #ccc; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; background: #f9f9f9;">
                                     <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: #666;"></i>
-                                    <p style="margin: 8px 0 0 0; color: #666;">Click to upload bill image</p>
+                                    <p style="margin: 8px 0 0 0; color: #666;" id="billUploadHint">Click to upload bill image</p>
                                     <input type="file" id="billImage" accept="image/*" style="display: none;">
                                 </div>
                                 <div id="billPreview" style="display: none; margin-top: 10px; position: relative;">
@@ -122,6 +125,13 @@ class DriverFuelMileageModal extends HTMLElement {
             }
         });
 
+        const fuelSourceSelect = this.querySelector('#fuelSource');
+        if (fuelSourceSelect) {
+            fuelSourceSelect.addEventListener('change', () => {
+                this.updateFuelRequirementUI(fuelSourceSelect.value);
+            });
+        }
+
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
             
@@ -136,16 +146,26 @@ class DriverFuelMileageModal extends HTMLElement {
             const formData = new FormData();
             formData.append('vehicle_registration', selectedVehicle.number_plate);
             formData.append('fuel_volume', parseFloat(form.querySelector('#fuelVolume').value));
-            formData.append('total_cost', parseFloat(form.querySelector('#fuelCost').value));
             formData.append('odometer_reading', parseInt(form.querySelector('#fuelOdometer').value, 10));
             // Convert datetime-local format to SQL datetime
             const logDateTime = form.querySelector('#fuelDateTime').value;
             formData.append('log_datetime', logDateTime.replace('T', ' ') + ':00');
-            formData.append('fuel_type', form.querySelector('#fuelType').value);
+            const fuelSource = form.querySelector('#fuelSource').value;
+            formData.append('fuel_source', fuelSource);
             const stationName = form.querySelector('#stationName').value.trim();
             if (stationName) {
                 formData.append('station_name', stationName);
             }
+
+            if (fuelSource === 'external') {
+                const totalCost = parseFloat(form.querySelector('#fuelCost').value);
+                if (!Number.isFinite(totalCost) || totalCost <= 0) {
+                    DriverUtils.showToast('Total cost is required for external fueling.', 'error');
+                    return;
+                }
+                formData.append('total_cost', totalCost);
+            }
+
             // Attach the logged-in driver's ID
             const driverId = DriverUtils.store.currentUser?.id;
             if (driverId) {
@@ -154,6 +174,10 @@ class DriverFuelMileageModal extends HTMLElement {
             
             // Add bill image if selected
             const billImageInput = this.querySelector('#billImage');
+            if (fuelSource === 'external' && (!billImageInput.files || !billImageInput.files[0])) {
+                DriverUtils.showToast('Bill/receipt image is required for external fueling.', 'error');
+                return;
+            }
             if (billImageInput.files && billImageInput.files[0]) {
                 formData.append('bill_image', billImageInput.files[0]);
             }
@@ -193,11 +217,17 @@ class DriverFuelMileageModal extends HTMLElement {
         const form = this.querySelector('#fuelMileageForm');
         const odometerInput = form.querySelector('#fuelOdometer');
         const vehicleFieldContainer = this.querySelector('#vehicleFieldContainer');
+        const fuelSourceSelect = form.querySelector('#fuelSource');
         
         form.reset();
         DriverUtils.ensureTodayDefaults(form);
         this.assignedVehicle = null;
         this.allVehicles = [];
+        if (fuelSourceSelect) {
+            fuelSourceSelect.value = 'external';
+            this.updateFuelRequirementUI('external');
+        }
+        this.updateFuelTypeDisplay(null);
         
         // Check for assigned vehicle first
         try {
@@ -208,6 +238,7 @@ class DriverFuelMileageModal extends HTMLElement {
                 odometerInput.min = currentMileage;
                 odometerInput.placeholder = `Must be at least ${currentMileage.toLocaleString()} km`;
                 odometerInput.value = currentMileage;
+                this.updateFuelTypeDisplay(this.assignedVehicle.fuel_type || null);
                 
                 // Show readonly input with assigned vehicle
                 vehicleFieldContainer.innerHTML = `
@@ -239,7 +270,7 @@ class DriverFuelMileageModal extends HTMLElement {
                     <select class="form-input" id="vehicleSelect" required>
                         <option value="">Select a vehicle</option>
                         ${this.allVehicles.map(v => `
-                            <option value="${v.number_plate}" data-mileage="${v.current_mileage || 0}">
+                            <option value="${v.number_plate}" data-mileage="${v.current_mileage || 0}" data-fuel-type="${v.fuel_type || ''}">
                                 ${v.number_plate} - ${v.vehicle_name || v.vehicle_type || 'Vehicle'}
                             </option>
                         `).join('')}
@@ -255,10 +286,12 @@ class DriverFuelMileageModal extends HTMLElement {
                         odometerInput.min = mileage;
                         odometerInput.placeholder = `Must be at least ${mileage.toLocaleString()} km`;
                         odometerInput.value = mileage;
+                        this.updateFuelTypeDisplay(selectedOption.dataset.fuelType || null);
                     } else {
                         odometerInput.min = 0;
                         odometerInput.placeholder = '';
                         odometerInput.value = '';
+                        this.updateFuelTypeDisplay(null);
                     }
                 });
             } else {
@@ -277,6 +310,61 @@ class DriverFuelMileageModal extends HTMLElement {
                     <i class="fas fa-exclamation-triangle"></i> Failed to load vehicles. Please try again.
                 </div>
             `;
+        }
+    }
+
+    updateFuelTypeDisplay(fuelType) {
+        const display = this.querySelector('#fuelTypeDisplay');
+        if (!display) {
+            return;
+        }
+
+        display.value = fuelType || 'Auto-derived when vehicle is selected';
+    }
+
+    updateFuelRequirementUI(source) {
+        const isExternal = source === 'external';
+        const fuelCostGroup = this.querySelector('#fuelCostGroup');
+        const fuelCostInput = this.querySelector('#fuelCost');
+        const fuelCostRequiredMark = this.querySelector('#fuelCostRequiredMark');
+        const billUploadGroup = this.querySelector('#billUploadGroup');
+        const billRequiredMark = this.querySelector('#billRequiredMark');
+        const billUploadHint = this.querySelector('#billUploadHint');
+
+        if (fuelCostGroup) {
+            fuelCostGroup.style.display = isExternal ? '' : 'none';
+        }
+        if (fuelCostInput) {
+            fuelCostInput.required = isExternal;
+            if (!isExternal) {
+                fuelCostInput.value = '';
+            }
+        }
+        if (fuelCostRequiredMark) {
+            fuelCostRequiredMark.style.display = isExternal ? '' : 'none';
+        }
+
+        if (billUploadGroup) {
+            billUploadGroup.style.display = isExternal ? '' : 'none';
+        }
+        if (billRequiredMark) {
+            billRequiredMark.style.display = isExternal ? '' : 'none';
+        }
+        if (billUploadHint) {
+            billUploadHint.textContent = isExternal
+                ? 'Click to upload bill image (required for external fueling)'
+                : 'Receipt is optional for internal fueling';
+        }
+
+        if (!isExternal) {
+            const billInput = this.querySelector('#billImage');
+            const billPreview = this.querySelector('#billPreview');
+            if (billInput) {
+                billInput.value = '';
+            }
+            if (billPreview) {
+                billPreview.style.display = 'none';
+            }
         }
     }
 

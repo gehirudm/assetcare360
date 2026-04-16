@@ -143,6 +143,36 @@ class VehicleController {
             Response::error($e->getMessage(), 400);
         }
     }
+
+    /**
+     * POST /api/vehicles/:id/fuel-qr
+     * Upload government fuel QR image for vehicle
+     */
+    public function uploadFuelQrImage() {
+        try {
+            RoleMiddleware::requireRole(['Transportation Manager', 'Inventory Manager', 'Admin']);
+
+            $id = $_GET['id'] ?? null;
+            if (!$id) {
+                Response::error('Vehicle ID is required', 400);
+                return;
+            }
+
+            if (!isset($_FILES['fuel_qr_image'])) {
+                Response::error('Fuel QR image file is required', 400);
+                return;
+            }
+
+            $user = RoleMiddleware::getCurrentUser();
+            $userId = $user['id'] ?? null;
+
+            $vehicle = $this->vehicleService->updateFuelQrImage($id, $_FILES['fuel_qr_image'], $userId);
+
+            Response::success(['vehicle' => $vehicle], 'Vehicle fuel QR image updated successfully');
+        } catch (Exception $e) {
+            Response::error($e->getMessage(), 400);
+        }
+    }
     
     /**
      * DELETE /api/vehicles/:id

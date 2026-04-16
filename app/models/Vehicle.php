@@ -23,6 +23,7 @@ class Vehicle extends BaseModel {
             'number_plate' => 'VARCHAR(20) UNIQUE NOT NULL',
             'vehicle_type' => "ENUM('Truck', 'Van', 'Car', 'Bus', 'Bike', 'Three-Wheeler', 'Lorry', 'Tanker', 'Other') NOT NULL",
             'fuel_type' => "ENUM('Petrol', 'Diesel', 'Electric', 'Hybrid', 'LPG', 'CNG') NOT NULL",
+            'government_fuel_qr_image' => 'VARCHAR(500) NULL COMMENT "Path to government-issued fuel QR image"',
             'warranty_expiry' => 'DATE NULL',
             'warranty_provider' => 'VARCHAR(255) NULL',
             'supplier_name' => 'VARCHAR(255) NOT NULL',
