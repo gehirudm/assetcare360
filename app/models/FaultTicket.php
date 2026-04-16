@@ -21,6 +21,7 @@ class FaultTicket extends BaseModel {
     const STATUS_WAITING_BUDGET = 'Waiting for Budget Approval';
     const STATUS_WAITING_PARTS = 'Waiting for Spare Parts';
     const STATUS_PARTS_APPROVED = 'Parts Approved';
+    const STATUS_PARTS_REJECTED = 'Parts Rejected';
     const STATUS_IN_PROGRESS = 'In Progress';
     const STATUS_RESOLVED = 'Resolved';
     const STATUS_CLOSED = 'Closed';
@@ -308,6 +309,7 @@ class FaultTicket extends BaseModel {
             self::STATUS_WAITING_BUDGET,
             self::STATUS_WAITING_PARTS,
             self::STATUS_PARTS_APPROVED,
+            self::STATUS_PARTS_REJECTED,
             self::STATUS_IN_PROGRESS,
             self::STATUS_RESOLVED,
             self::STATUS_CLOSED

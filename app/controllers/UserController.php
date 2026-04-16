@@ -274,4 +274,22 @@ class UserController {
             Response::error($result['message'], 400);
         }
     }
+
+    /**
+     * Get drivers (for transportation managers to assign trips)
+     * GET /api/drivers
+     * Accessible by Transportation Manager and Admin
+     */
+    public function getDrivers() {
+        // Allow transportation managers and admins to view drivers
+        RoleMiddleware::requireRole(['Transportation Manager', 'Admin']);
+
+        $result = $this->userService->getDriversWithWorkload();
+        
+        if ($result['success']) {
+            Response::success($result['data']);
+        } else {
+            Response::error($result['message'], 400);
+        }
+    }
 }

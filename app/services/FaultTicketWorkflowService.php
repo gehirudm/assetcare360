@@ -129,6 +129,11 @@ class FaultTicketWorkflowService {
             return FaultTicket::STATUS_PARTS_APPROVED;
         }
 
+        // If parts request was rejected, surface that clearly on the ticket.
+        if ($partsStatus === 'rejected') {
+            return FaultTicket::STATUS_PARTS_REJECTED;
+        }
+
         return $baseStatus;
     }
 

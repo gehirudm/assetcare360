@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../services/SparePartRequestService.php';
+require_once __DIR__ . '/../models/Product.php';
 require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 require_once __DIR__ . '/../services/EventEmitter.php';
@@ -15,10 +16,12 @@ require_once __DIR__ . '/../events/DomainEvents.php';
 class SparePartRequestController {
     private $service;
     private $eventEmitter;
+    private $productModel;
 
     public function __construct() {
         $this->service = new SparePartRequestService();
         $this->eventEmitter = new EventEmitter();
+        $this->productModel = new Product();
     }
 
     /**
@@ -234,6 +237,83 @@ class SparePartRequestController {
         } catch (Exception $e) {
             error_log("Error in SparePartRequestController::reject: " . $e->getMessage());
             return Response::json(['status' => 'error', 'message' => 'Failed to reject request'], 500);
+        }
+    }
+
+    /**
+     * POST /spare-part-requests/check-availability
+     * Check availability of spare parts before creating a request
+     * Request body: { "items": [{ "part_code": "SPR-001", "quantity": 5 }, ...] }
+     * Response: { "items": [{ "part_code": "SPR-001", "status": "available|insufficient|not_found", "available_qty": X, "requested_qty": Y }, ...] }
+     */
+    public function checkAvailability() {
+        try {
+            $data = json_decode(file_get_contents('php://input'), true);
+
+            if (!$data || !isset($data['items']) || !is_array($data['items'])) {
+                return Response::json(['status' => 'error', 'message' => 'Invalid request. Expected { "items": [...] }'], 400);
+            }
+
+            $results = [];
+            foreach ($data['items'] as $item) {
+                $partCode = $item['part_code'] ?? '';
+                $requestedQty = isset($item['quantity']) ? (int)$item['quantity'] : 1;
+
+                if (empty($partCode)) {
+                    $results[] = [
+                        'part_code' => $partCode,
+                        'status' => 'invalid',
+                        'available_qty' => 0,
+                        'requested_qty' => $requestedQty,
+                        'message' => 'Part code is required'
+                    ];
+                    continue;
+                }
+
+                // Look up the spare part in catalog
+                $product = $this->productModel->findOne(['sparepart_id' => $partCode, 'is_active' => 1]);
+
+                if (!$product) {
+                    $results[] = [
+                        'part_code' => $partCode,
+                        'part_name' => null,
+                        'status' => 'not_found',
+                        'available_qty' => 0,
+                        'requested_qty' => $requestedQty,
+                        'message' => 'Spare part not found in catalog'
+                    ];
+                } else {
+                    $availableQty = (int)$product['quantity'];
+                    $status = 'available';
+                    $message = "In stock ({$availableQty} available)";
+
+                    if ($availableQty === 0) {
+                        $status = 'out_of_stock';
+                        $message = 'Out of stock';
+                    } elseif ($availableQty < $requestedQty) {
+                        $status = 'insufficient';
+                        $message = "Low stock ({$availableQty} available, {$requestedQty} requested)";
+                    }
+
+                    $results[] = [
+                        'part_code' => $partCode,
+                        'part_name' => $product['name'],
+                        'status' => $status,
+                        'available_qty' => $availableQty,
+                        'requested_qty' => $requestedQty,
+                        'reorder_level' => (int)($product['reorder_level'] ?? 10),
+                        'message' => $message
+                    ];
+                }
+            }
+
+            return Response::json([
+                'status' => 'success',
+                'data' => ['items' => $results]
+            ]);
+        } catch (Exception $e) {
+            error_log("Error in SparePartRequestController::checkAvailability: " . $e->getMessage());
+            return Response::json(['status' => 'error', 'message' => 'Failed to check availability'], 500);
         }
     }
 }

@@ -1,12 +1,15 @@
 <?php
 
 require_once __DIR__ . '/../models/VehicleCheck.php';
+require_once __DIR__ . '/../models/Vehicle.php';
 
 class VehicleCheckService {
     private $vehicleCheckModel;
+    private $vehicleModel;
     
     public function __construct($db) {
         $this->vehicleCheckModel = new VehicleCheck($db);
+        $this->vehicleModel = new Vehicle();
     }
     
     /**
@@ -46,6 +49,12 @@ class VehicleCheckService {
             throw new Exception("Invalid odometer reading");
         }
         
+        // Validate odometer against vehicle's current mileage
+        $vehicle = $this->vehicleModel->findByNumberPlate($data['vehicle_registration']);
+        if ($vehicle && intval($data['odometer_reading']) < intval($vehicle['current_mileage'])) {
+            throw new Exception("Odometer reading ({$data['odometer_reading']}) cannot be less than vehicle's current mileage ({$vehicle['current_mileage']})");
+        }
+        
         // Calculate week start date (6 days before week end)
         $weekEndDate = new DateTime($data['week_end_date']);
         $weekStartDate = clone $weekEndDate;
@@ -79,6 +88,11 @@ class VehicleCheckService {
         
         if (!$check) {
             throw new Exception("Failed to create vehicle check");
+        }
+        
+        // Update vehicle mileage if the odometer reading is higher
+        if ($vehicle && intval($data['odometer_reading']) > intval($vehicle['current_mileage'])) {
+            $this->vehicleModel->updateMileage($vehicle['id'], intval($data['odometer_reading']));
         }
         
         return $check;
