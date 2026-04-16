@@ -79,9 +79,13 @@ class MaintenanceTicketDetailsModal extends HTMLElement {
         this.innerHTML = `
             <div id="ticketDetailsModal" class="modal" aria-hidden="true">
                 <div class="modal-content">
-                    <button class="close" type="button" data-action="close-modal">&times;</button>
-                    <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Ticket Details</h2>
+                    <div class="modal-header">
+                        <h4><i class="fas fa-ticket-alt"></i> Ticket Details</h4>
+                        <button class="btn-close" type="button" data-action="close-modal">&times;</button>
+                    </div>
+                    <div style="padding: 30px;">
                     <div id="ticketDetailsContent"></div>
+                    </div>
                 </div>
             </div>
         `;
@@ -100,6 +104,113 @@ class MaintenanceTicketDetailsModal extends HTMLElement {
             bubbles: true,
             detail: { message, type },
         }));
+    }
+
+    openWithBreakdown(breakdown) {
+        if (!breakdown) {
+            this.emitToast('Breakdown data unavailable.', 'warning');
+            return;
+        }
+
+        const content = this.querySelector('#ticketDetailsContent');
+        if (content) {
+            content.innerHTML = this.renderBreakdownContent(breakdown);
+        }
+
+        this.open();
+    }
+
+    renderBreakdownContent(b) {
+        const statusInfo = this._getStatusInfo(b.effectiveStatus);
+        const severityCls = 'status-' + String(b.severity || 'medium').toLowerCase();
+        const assignedTo = b.assignments && b.assignments.length
+            ? b.assignments.map(a => a.technician_name).filter(Boolean).join(', ')
+            : 'Unassigned';
+        const dateLabel = b._source === 'route' ? 'Reported' : 'Created';
+        const formattedDate = b.date ? new Date(b.date).toLocaleString() : 'N/A';
+        const sourceLabel = b._source === 'route' ? 'Route Breakdown' : 'Machine Breakdown';
+
+        return `
+            <div class="form-section">
+                <h5><i class="fas fa-exclamation-triangle"></i> ${sourceLabel}</h5>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px;">
+                    <div><strong>Report ID:</strong> ${b.breakdownId || '#' + b._id}</div>
+                    <div><strong>${b._source === 'route' ? 'Vehicle' : 'Machine'}:</strong> ${b.identifier}</div>
+                    <div><strong>Reported By:</strong> ${b.reportedBy} (${b.reporterType})</div>
+                    <div><strong>Type:</strong> ${b.type}</div>
+                    <div><strong>Severity:</strong> <span class="status-badge ${severityCls}">${String(b.severity || 'Medium').toUpperCase()}</span></div>
+                    <div><strong>Status:</strong> <span class="status-badge ${statusInfo.cls}">${statusInfo.label}</span></div>
+                    ${b.ticketNumber ? `<div><strong>Fault Ticket:</strong> ${b.ticketNumber}</div>` : ''}
+                    <div><strong>Assigned To:</strong> ${assignedTo}</div>
+                    <div><strong>${dateLabel}:</strong> ${formattedDate}</div>
+                </div>
+                <div style="margin-bottom:15px;">
+                    <strong>Description:</strong><br>
+                    ${b.description || 'No description provided.'}
+                </div>
+                ${b._raw && b._raw.breakdown_location ? `<div style="margin-bottom:15px;"><strong>Location:</strong> ${b._raw.breakdown_location}</div>` : ''}
+                ${b._raw && b._raw.resolution_notes ? `<div style="margin-bottom:15px;"><strong>Resolution Notes:</strong><br>${b._raw.resolution_notes}</div>` : ''}
+            </div>
+        `;
+    }
+
+    _getStatusInfo(status) {
+        const map = {
+            Open:     { label: 'Pending',          cls: 'status-pending' },
+            Pending:  { label: 'Pending',          cls: 'status-pending' },
+            Assigned: { label: 'Assigned',         cls: 'status-assigned' },
+            'Waiting for Spare Parts':     { label: 'Awaiting Parts',    cls: 'status-waiting-for-spare-parts' },
+            'Waiting for Budget Approval': { label: 'Awaiting Approval', cls: 'status-waiting-for-budget-approval' },
+            'Parts Approved':              { label: 'Parts Approved',    cls: 'status-parts-approved' },
+            'In Progress': { label: 'In Progress', cls: 'status-in-progress' },
+            Resolved:      { label: 'Resolved',    cls: 'status-resolved' },
+            Closed:        { label: 'Closed',      cls: 'status-closed' },
+        };
+
+        return map[status] || { label: status || 'Pending', cls: 'status-pending' };
+    }
+
+    openWithTicket(ticket) {
+        if (!ticket) {
+            this.emitToast('Ticket data unavailable.', 'warning');
+            return;
+        }
+
+        const content = this.querySelector('#ticketDetailsContent');
+        if (content) {
+            content.innerHTML = this.renderLiveContent(ticket);
+        }
+
+        this.open();
+    }
+
+    renderLiveContent(ticket) {
+        const statusClass = String(ticket.status || 'open').toLowerCase().replace(/\s+/g, '-');
+        const assignedTo = Array.isArray(ticket.assignments) && ticket.assignments.length
+            ? ticket.assignments.map(a => a.technician_name).filter(Boolean).join(', ')
+            : 'Unassigned';
+        const createdAt = ticket.created_at ? new Date(ticket.created_at).toLocaleString() : 'N/A';
+
+        return `
+            <div class="form-section">
+                <h5><i class="fas fa-ticket-alt"></i> Ticket Information</h5>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div><strong>Ticket ID:</strong> ${ticket.ticket_id || ticket.id}</div>
+                    <div><strong>Equipment:</strong> ${ticket.machine_name || 'N/A'}</div>
+                    <div><strong>Reporter:</strong> ${ticket.reporter_full_name || 'N/A'} (${ticket.reporter_role || 'N/A'})</div>
+                    <div><strong>Assigned To:</strong> ${assignedTo}</div>
+                    <div><strong>Priority:</strong> ${ticket.priority || 'N/A'}</div>
+                    <div><strong>Status:</strong> <span class="status-badge status-${statusClass}">${ticket.status || 'N/A'}</span></div>
+                    <div><strong>Location:</strong> ${ticket.location || 'N/A'}</div>
+                    <div><strong>Created:</strong> ${createdAt}</div>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong>Issue Description:</strong><br>
+                    ${ticket.description || 'No description provided.'}
+                </div>
+                ${ticket.resolution_notes ? `<div style="margin-bottom: 15px;"><strong>Resolution Notes:</strong><br>${ticket.resolution_notes}</div>` : ''}
+            </div>
+        `;
     }
 
     openById(ticketId) {
