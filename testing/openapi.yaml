@@ -61,6 +61,12 @@ tags:
     description: Spare part request workflow. Technical Officers create requests for fault tickets, Inventory Managers approve/reject.
   - name: Sparepart Additions
     description: Stock addition tracking. Auto-updates spare part catalog quantities and can auto-create new spare parts.
+  - name: Route Breakdowns
+    description: Route breakdown reporting and approved garage repair workflow.
+  - name: Garages
+    description: Registered garage directory used by route breakdown workflow.
+  - name: File Uploads
+    description: Uploaded image retrieval endpoints.
 
 security:
   - bearerAuth: []
@@ -1743,6 +1749,7 @@ paths:
       description: |
         Records stock addition for a spare part. Automatically updates the spare part catalog quantity.
         If the spare part doesn't exist in the catalog, it will be auto-created.
+        Sparepart IDs must be generated identifiers in the form `SPR-###`; malformed placeholder values are rejected.
       requestBody:
         required: true
         content:
@@ -1818,6 +1825,286 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+
+  # ==================== GARAGES ====================
+  /garages:
+    get:
+      tags:
+        - Garages
+      summary: List available garages
+      description: Returns active garages. Supports optional search by `q` and filter by `city`.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: city
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Garages fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      garages:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            name:
+                              type: string
+                              example: AutoCare Service Center
+                            address:
+                              type: string
+                              example: 123 Galle Road, Colombo 03
+                            city:
+                              type: string
+                              nullable: true
+                              example: Colombo
+                            phone:
+                              type: string
+                              nullable: true
+                              example: +94 11 234 5678
+                            latitude:
+                              type: number
+                              format: float
+                              nullable: true
+                            longitude:
+                              type: number
+                              format: float
+                              nullable: true
+                            is_active:
+                              type: integer
+                              example: 1
+                      count:
+                        type: integer
+                        example: 5
+
+  /garages/{id}:
+    get:
+      tags:
+        - Garages
+      summary: Get garage by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Garage fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      garage:
+                        type: object
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ==================== ROUTE BREAKDOWN GARAGE WORKFLOW ====================
+  /route-breakdowns/{id}/garage-approval:
+    post:
+      tags:
+        - Route Breakdowns
+      summary: Supervisor approves garage for a route breakdown
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - garage_id
+              properties:
+                garage_id:
+                  type: integer
+                  example: 1
+                approval_notes:
+                  type: string
+                  nullable: true
+                  example: Proceed with this approved workshop.
+      responses:
+        '200':
+          description: Garage approved successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /route-breakdowns/{id}/garage-entry:
+    post:
+      tags:
+        - Route Breakdowns
+      summary: Driver logs entry to approved garage
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - entry_notes
+              properties:
+                entry_notes:
+                  type: string
+                  example: Arrived at garage and handed over vehicle.
+      responses:
+        '200':
+          description: Garage entry logged successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /route-breakdowns/{id}/garage-progress:
+    post:
+      tags:
+        - Route Breakdowns
+      summary: Add route breakdown garage progress update
+      description: Accepts multipart form data with progress note and up to 5 progress images.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - progress_note
+              properties:
+                progress_note:
+                  type: string
+                  example: Engine disassembled and damaged gasket identified.
+                progress_images:
+                  type: array
+                  maxItems: 5
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '200':
+          description: Progress update submitted successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /route-breakdowns/{id}/garage-complete:
+    post:
+      tags:
+        - Route Breakdowns
+      summary: Complete route breakdown with bill proof
+      description: Bill amount, bill image, and completion remarks are mandatory.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - bill_amount
+                - bill_image
+                - completion_remarks
+              properties:
+                bill_amount:
+                  type: number
+                  format: float
+                  example: 12500.00
+                bill_image:
+                  type: string
+                  format: binary
+                completion_remarks:
+                  type: string
+                  example: Repair completed and test run is successful.
+      responses:
+        '200':
+          description: Route breakdown completed successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # ==================== FILE UPLOADS ====================
+  /uploads/route-breakdowns/{folder}/{filename}:
+    get:
+      tags:
+        - File Uploads
+      summary: Retrieve route breakdown uploaded image
+      description: Serves uploaded route breakdown progress and bill images.
+      security: []
+      parameters:
+        - name: folder
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [progress, bills]
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Image binary response
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
 
 # ==================== COMPONENTS ====================
 components:
@@ -2852,6 +3139,19 @@ components:
                     properties:
                       trip:
                         $ref: '#/components/schemas/Trip'
+        '400':
+          description: Validation error (for example vehicle has ongoing breakdown ticket)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Cannot create trip. Vehicle has an ongoing breakdown ticket (VBD-012).
 
   /trips/{tripId}:
     get:

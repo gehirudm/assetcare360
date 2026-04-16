@@ -19,7 +19,7 @@ class DriverTicketTracking extends HTMLElement {
         this.innerHTML = `
             <div class="page-header">
                 <h2 class="page-title"><i class="fas fa-ticket-alt"></i> Ticket Tracking</h2>
-                <p class="page-subtitle">Track lifecycle progress of your route breakdown fault tickets</p>
+                <p class="page-subtitle">Track route breakdown tickets and the approved garage repair workflow</p>
             </div>
 
             <div class="filter-controls" id="driverTicketTrackingFilterControls">
@@ -47,20 +47,55 @@ class DriverTicketTracking extends HTMLElement {
                 return;
             }
 
-            if (actionEl.dataset.action === 'set-filter') {
+            const action = actionEl.dataset.action;
+
+            if (action === 'set-filter') {
                 this.applyFilter(actionEl.dataset.filter);
                 return;
             }
 
-            if (actionEl.dataset.action === 'view-breakdown') {
-                const breakdownId = Number.parseInt(actionEl.dataset.breakdownId, 10);
-                if (!breakdownId) {
-                    return;
-                }
+            const breakdownId = Number.parseInt(actionEl.dataset.breakdownId, 10);
+            const breakdown = DriverUtils.store.breakdowns.routeBreakdowns.find((item) => Number(item.id) === breakdownId);
 
+            if (!breakdown) {
+                DriverUtils.showToast('Unable to find selected route breakdown.', 'warning');
+                return;
+            }
+
+            if (action === 'view-breakdown') {
                 DriverUtils.openModal('breakdownDetailsModal', {
                     breakdownId,
                     itemType: 'in-route',
+                });
+                return;
+            }
+
+            if (action === 'view-garages') {
+                DriverUtils.openModal('nearbyGaragesModal', {
+                    mode: 'browse',
+                    breakdown,
+                });
+                return;
+            }
+
+            if (action === 'log-garage-entry') {
+                DriverUtils.openModal('nearbyGaragesModal', {
+                    mode: 'entry',
+                    breakdown,
+                });
+                return;
+            }
+
+            if (action === 'add-garage-progress') {
+                DriverUtils.openModal('garageProgressModal', {
+                    breakdown,
+                });
+                return;
+            }
+
+            if (action === 'complete-garage-breakdown') {
+                DriverUtils.openModal('completeBreakdownModal', {
+                    breakdown,
                 });
             }
         });
@@ -115,6 +150,11 @@ class DriverTicketTracking extends HTMLElement {
         const severityClass = String(breakdown.severity || 'medium').toLowerCase();
         const breakdownDate = DriverUtils.formatDateTime(breakdown.breakdown_datetime || breakdown.created_at);
 
+        const workflowStatus = this.getGarageWorkflowStatus(breakdown);
+        const workflowLabel = this.getGarageWorkflowLabel(workflowStatus);
+        const workflowClass = this.getGarageWorkflowClass(workflowStatus);
+        const approvedGarageName = breakdown?.garage_workflow?.approved_garage?.name || breakdown.approved_garage_name || null;
+
         return `
             <div class="inventory-item" data-status="${normalized}">
                 <div class="item-details">
@@ -133,17 +173,78 @@ class DriverTicketTracking extends HTMLElement {
                     ${Array.isArray(breakdown.assigned_technicians) && breakdown.assigned_technicians.length
                         ? `<div class="item-meta" style="margin-top: 4px;"><i class="fas fa-user-cog" style="color: #2563eb;"></i> <span style="color: #2563eb; font-weight: 600;">Assigned to: ${breakdown.assigned_technicians.map((item) => item.technician_name).join(', ')}</span></div>`
                         : ''}
+                    <div class="item-meta" style="margin-top: 4px;">
+                        <i class="fas fa-warehouse" style="color: #0f766e;"></i>
+                        <span class="status-text ${workflowClass}">${workflowLabel}</span>
+                        ${approvedGarageName ? `| <span style="font-weight: 600; color: #0f766e;">${approvedGarageName}</span>` : ''}
+                    </div>
                     ${actualStatus !== 'Pending' && actualStatus !== 'Open'
                         ? `<div class="item-meta" style="margin-top: 4px; color: #059669; font-weight: 500;">${updateText}</div>`
                         : ''}
                 </div>
                 <div class="item-actions">
-                    <button class="btn btn-primary btn-small" type="button" data-action="view-breakdown" data-breakdown-id="${breakdown.id}">
-                        <i class="fas fa-eye"></i> VIEW
-                    </button>
+                    <div class="action-buttons" style="display: flex; flex-direction: column; gap: 8px;">
+                        ${this.renderActionButtons(breakdown, workflowStatus)}
+                    </div>
                 </div>
             </div>
         `;
+    }
+
+    renderActionButtons(breakdown, workflowStatus) {
+        const idAttr = `data-breakdown-id="${breakdown.id}"`;
+        const buttons = [
+            `<button class="btn btn-primary btn-small" type="button" data-action="view-breakdown" ${idAttr}><i class="fas fa-eye"></i> VIEW</button>`,
+            `<button class="btn btn-secondary btn-small" type="button" data-action="view-garages" ${idAttr}><i class="fas fa-map-marker-alt"></i> GARAGES</button>`,
+        ];
+
+        if (workflowStatus === 'garage_approved') {
+            buttons.push(`<button class="btn btn-warning btn-small" type="button" data-action="log-garage-entry" ${idAttr}><i class="fas fa-sign-in-alt"></i> LOG GARAGE ENTRY</button>`);
+        }
+
+        if (workflowStatus === 'garage_entry_logged' || workflowStatus === 'repair_in_progress') {
+            buttons.push(`<button class="btn btn-info btn-small" type="button" data-action="add-garage-progress" ${idAttr}><i class="fas fa-camera"></i> ADD PROGRESS</button>`);
+            buttons.push(`<button class="btn btn-success btn-small" type="button" data-action="complete-garage-breakdown" ${idAttr}><i class="fas fa-check-circle"></i> COMPLETE REPAIR</button>`);
+        }
+
+        return buttons.join('');
+    }
+
+    getGarageWorkflowStatus(breakdown) {
+        const status = breakdown?.garage_workflow?.status || breakdown?.garage_workflow_status || null;
+        if (status) {
+            return status;
+        }
+
+        if (breakdown?.completed_at) {
+            return 'completed';
+        }
+
+        return 'awaiting_supervisor_approval';
+    }
+
+    getGarageWorkflowLabel(status) {
+        const labels = {
+            awaiting_supervisor_approval: 'Awaiting Supervisor Approval',
+            garage_approved: 'Garage Approved',
+            garage_entry_logged: 'Garage Entry Logged',
+            repair_in_progress: 'Repair In Progress',
+            completed: 'Completed',
+        };
+
+        return labels[status] || String(status || 'Awaiting Supervisor Approval').replace(/_/g, ' ');
+    }
+
+    getGarageWorkflowClass(status) {
+        if (status === 'completed') {
+            return 'status-resolved';
+        }
+
+        if (status === 'garage_approved' || status === 'garage_entry_logged' || status === 'repair_in_progress') {
+            return 'status-in-progress';
+        }
+
+        return 'status-pending';
     }
 
     applyFilter(filter) {

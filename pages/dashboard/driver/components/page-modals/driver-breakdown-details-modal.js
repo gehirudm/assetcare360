@@ -210,6 +210,8 @@ class DriverBreakdownDetailsModal extends HTMLElement {
 
     renderDetailedView(context) {
         const breakdown = context.breakdown;
+        const garageWorkflowHtml = this.renderGarageWorkflowSection(breakdown);
+        const garageUpdatesHtml = this.renderGarageUpdatesSection(breakdown.garage_updates || []);
 
         const assignmentsHtml = context.assignments.length
             ? `
@@ -272,9 +274,125 @@ class DriverBreakdownDetailsModal extends HTMLElement {
                 </div>
             ` : ''}
 
+            ${garageWorkflowHtml}
+            ${garageUpdatesHtml}
+
             ${assignmentsHtml}
             ${workUpdatesHtml}
         `;
+    }
+
+    renderGarageWorkflowSection(breakdown) {
+        const workflow = breakdown?.garage_workflow;
+        if (!workflow) {
+            return '';
+        }
+
+        const approvedGarage = workflow.approved_garage;
+        const billImageUrl = this.resolveImageUrl(workflow.bill_image_path);
+
+        return `
+            <div class="form-section">
+                <h5><i class="fas fa-warehouse"></i> Garage Workflow</h5>
+                <p><strong>Status:</strong> ${this.escapeHtml(this.getGarageWorkflowLabel(workflow.status))}</p>
+                ${approvedGarage ? `<p><strong>Approved Garage:</strong> ${this.escapeHtml(approvedGarage.name || 'N/A')}</p>` : ''}
+                ${approvedGarage?.address ? `<p><strong>Garage Address:</strong> ${this.escapeHtml(approvedGarage.address)}</p>` : ''}
+                ${workflow.approved_at ? `<p><strong>Approved At:</strong> ${this.escapeHtml(this.formatDate(workflow.approved_at))}</p>` : ''}
+                ${workflow.approved_by ? `<p><strong>Approved By:</strong> ${this.escapeHtml(workflow.approved_by)}</p>` : ''}
+                ${workflow.garage_entry_at ? `<p><strong>Garage Entry At:</strong> ${this.escapeHtml(this.formatDate(workflow.garage_entry_at))}</p>` : ''}
+                ${workflow.bill_amount !== null && workflow.bill_amount !== undefined ? `<p><strong>Bill Amount:</strong> ${this.escapeHtml(this.formatCurrency(workflow.bill_amount))}</p>` : ''}
+                ${workflow.completion_remarks ? `<p><strong>Completion Remarks:</strong> ${this.escapeHtml(workflow.completion_remarks)}</p>` : ''}
+                ${billImageUrl ? `
+                    <div style="margin-top: 10px;">
+                        <strong>Bill Image:</strong>
+                        <div style="margin-top: 8px;">
+                            <a href="${this.escapeHtml(billImageUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;">
+                                <img src="${this.escapeHtml(billImageUrl)}" alt="Bill Image" style="max-width: 240px; border-radius: 8px; border: 1px solid #d1d5db;">
+                            </a>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    renderGarageUpdatesSection(updates) {
+        if (!Array.isArray(updates) || !updates.length) {
+            return '';
+        }
+
+        return `
+            <div class="form-section">
+                <h5><i class="fas fa-stream"></i> Garage Progress Updates</h5>
+                ${updates.map((update) => {
+                    const typeLabel = String(update.update_type || 'progress').replace(/_/g, ' ').toUpperCase();
+                    const imageHtml = this.renderGarageUpdateImages(update.progress_images || []);
+                    return `
+                        <div style="padding: 12px; border-radius: 8px; background: #f8fafc; border-left: 4px solid #0ea5e9; margin-bottom: 10px;">
+                            <p style="margin: 0 0 6px 0;"><strong>${this.escapeHtml(typeLabel)}</strong> | ${this.escapeHtml(this.formatDate(update.created_at))}</p>
+                            <p style="margin: 0 0 8px 0; color: #374151;"><strong>Updated By:</strong> ${this.escapeHtml(update.updated_by_name || 'N/A')}</p>
+                            <p style="margin: 0; color: #111827;">${this.escapeHtml(update.note || 'No note provided')}</p>
+                            ${imageHtml}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    renderGarageUpdateImages(images) {
+        if (!Array.isArray(images) || !images.length) {
+            return '';
+        }
+
+        return `
+            <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;">
+                ${images.map((path) => {
+                    const imageUrl = this.resolveImageUrl(path);
+                    if (!imageUrl) {
+                        return '';
+                    }
+
+                    return `
+                        <a href="${this.escapeHtml(imageUrl)}" target="_blank" rel="noopener noreferrer" style="display:block;">
+                            <img src="${this.escapeHtml(imageUrl)}" alt="Garage update image" style="width: 100%; height: 110px; object-fit: cover; border-radius: 6px; border: 1px solid #d1d5db;">
+                        </a>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    getGarageWorkflowLabel(status) {
+        const labels = {
+            awaiting_supervisor_approval: 'Awaiting Supervisor Approval',
+            garage_approved: 'Garage Approved',
+            garage_entry_logged: 'Garage Entry Logged',
+            repair_in_progress: 'Repair In Progress',
+            completed: 'Completed',
+        };
+
+        const key = String(status || 'awaiting_supervisor_approval');
+        return labels[key] || key.replace(/_/g, ' ');
+    }
+
+    resolveImageUrl(path) {
+        const rawPath = String(path || '').trim();
+        if (!rawPath) {
+            return '';
+        }
+
+        if (/^https?:\/\//i.test(rawPath)) {
+            return rawPath;
+        }
+
+        const normalizedPath = rawPath.replace(/^\/+/, '');
+        const apiBaseUrl = String(CONFIG?.API_BASE_URL || '').replace(/\/api\/?$/, '');
+        if (!apiBaseUrl) {
+            return '/' + normalizedPath;
+        }
+
+        return `${apiBaseUrl}/${normalizedPath}`;
     }
 
     renderWorkflowFlow(context) {
