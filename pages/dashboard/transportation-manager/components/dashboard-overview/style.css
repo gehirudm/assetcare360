@@ -1,0 +1,17 @@
+/**
+ * TM Dashboard Overview Component Styles
+ */
+
+tm-dashboard-overview {
+    display: block;
+}
+
+/* Component-specific overrides and enhancements */
+tm-dashboard-overview .summary-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+}
+
+tm-dashboard-overview .quick-action-btn:hover {
+    transform: translateY(-3px);
+}
