@@ -3097,6 +3097,11 @@ components:
       tags:
         - Trips
       summary: Create a new trip (assign trip to driver)
+      description: |
+        Creates a pending trip record. `driver_id` is optional:
+        - For Transportation Manager/Admin flows, if `driver_id` is omitted the backend uses the selected vehicle's assigned driver.
+        - For Driver flows, the backend binds the trip to the authenticated driver.
+        - Provide either `vehicle_registration` or `vehicle_id`.
       security:
         - bearerAuth: []
         - cookieAuth: []
@@ -3109,8 +3114,6 @@ components:
               required:
                 - origin
                 - destination
-                - vehicle_registration
-                - driver_id
               properties:
                 origin:
                   type: string
@@ -3118,8 +3121,13 @@ components:
                   type: string
                 vehicle_registration:
                   type: string
+                  description: Vehicle number plate. Required when vehicle_id is not provided.
+                vehicle_id:
+                  type: integer
+                  description: Vehicle database ID. Required when vehicle_registration is not provided.
                 driver_id:
                   type: integer
+                  description: Optional. If omitted, backend resolves the driver from context.
                 cargo_description:
                   type: string
       responses:
