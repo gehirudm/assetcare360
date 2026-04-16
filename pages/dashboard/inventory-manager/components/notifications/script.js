@@ -122,7 +122,6 @@ class InventoryNotifications extends HTMLElement {
 
         const disableBulkActions = this._bulkBusy || visiblePendingOrders.length === 0 || this.state.loading;
         this._approveAllButton.disabled = disableBulkActions;
-        this._refreshButton.disabled = this.state.loading || this._bulkBusy;
 
         this._emitCountChange(visibleLowStockAlerts.length, visiblePendingOrders.length);
     }
@@ -149,7 +148,6 @@ class InventoryNotifications extends HTMLElement {
                 <div class="card-header">
                     <h2 class="card-title">Pending Orders</h2>
                     <div>
-                        <button id="refreshButton" type="button" class="btn btn-secondary btn-small" data-action="refresh-notifications">Refresh</button>
                         <button id="approveAllButton" type="button" class="btn btn-success btn-small" data-action="approve-all">Approve All</button>
                     </div>
                 </div>
@@ -164,7 +162,6 @@ class InventoryNotifications extends HTMLElement {
         this._lowStockContainer = this.shadowRoot.getElementById('lowStockAlerts');
         this._pendingOrdersContainer = this.shadowRoot.getElementById('pendingOrders');
         this._approveAllButton = this.shadowRoot.getElementById('approveAllButton');
-        this._refreshButton = this.shadowRoot.getElementById('refreshButton');
     }
 
     _adoptSharedStyles() {
@@ -347,9 +344,6 @@ class InventoryNotifications extends HTMLElement {
         switch (action) {
             case 'configure-alerts':
                 this._configureAlerts();
-                break;
-            case 'refresh-notifications':
-                await this.refresh();
                 break;
             case 'reorder-part':
                 this._dispatch('inventory-notifications:reorder', {

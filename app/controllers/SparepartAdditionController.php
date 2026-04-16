@@ -52,6 +52,14 @@ class SparepartAdditionController {
             
             $sparepartId = $data['sparepart_id'];
             $quantityAdded = (int)$data['quantity_added'];
+
+            if (!preg_match('/^SPR-\d+$/', trim((string)$sparepartId))) {
+                Response::error('Invalid sparepart ID format', 400);
+                return;
+            }
+
+            $data['sparepart_id'] = trim((string)$sparepartId);
+            $data['sparepart_name'] = trim((string)$data['sparepart_name']);
             
             if ($quantityAdded <= 0) {
                 Response::error('Quantity added must be greater than 0', 400);

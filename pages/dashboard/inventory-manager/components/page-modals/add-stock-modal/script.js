@@ -113,6 +113,115 @@ if (!customElements.get('inventory-add-stock-modal')) {
     customElements.define('inventory-add-stock-modal', InventoryAddStockModal);
 }
 
+const addStockModalState = {
+    productsByCategory: new Map()
+};
+
+function normalizeAddStockLookupValue(value) {
+    return (value ?? '').toString().trim().toLowerCase();
+}
+
+function setAddStockSparepartIdDisplay(value, tone = 'neutral') {
+    const sparepartIdDisplay = document.getElementById('addStockSparepartIdDisplay');
+    if (!sparepartIdDisplay) {
+        return;
+    }
+
+    sparepartIdDisplay.value = value || '';
+
+    if (tone === 'existing') {
+        sparepartIdDisplay.style.background = '#dbeafe';
+        sparepartIdDisplay.style.color = '#1e40af';
+    } else if (tone === 'new') {
+        sparepartIdDisplay.style.background = '#dcfce7';
+        sparepartIdDisplay.style.color = '#166534';
+    } else if (tone === 'error') {
+        sparepartIdDisplay.style.background = '#fee2e2';
+        sparepartIdDisplay.style.color = '#991b1b';
+    } else {
+        sparepartIdDisplay.style.background = '#f3f4f6';
+        sparepartIdDisplay.style.color = '#374151';
+    }
+}
+
+async function refreshAddStockNextIdPreview() {
+    const response = await API.get('/products/next-id');
+    if (response.status === 'success' && response.data && response.data.next_id) {
+        setAddStockSparepartIdDisplay(response.data.next_id, 'new');
+        return response.data.next_id;
+    }
+
+    throw new Error('Failed to get next sparepart ID');
+}
+
+async function loadAddStockProducts(category, forceRefresh = false) {
+    const cacheKey = normalizeAddStockLookupValue(category) || 'all';
+
+    if (!forceRefresh && addStockModalState.productsByCategory.has(cacheKey)) {
+        return addStockModalState.productsByCategory.get(cacheKey);
+    }
+
+    const endpoint = category
+        ? `/products?category=${encodeURIComponent(category)}`
+        : '/products';
+
+    const response = await API.get(endpoint);
+    if (response.status !== 'success' || !response.data || !Array.isArray(response.data.products)) {
+        throw new Error(response.message || 'Failed to load spare part catalog');
+    }
+
+    addStockModalState.productsByCategory.set(cacheKey, response.data.products);
+    return response.data.products;
+}
+
+async function resolveAddStockSparepartSelection(category, sparepartName, options = {}) {
+    const normalizedCategory = normalizeAddStockLookupValue(category);
+    const normalizedName = normalizeAddStockLookupValue(sparepartName);
+
+    if (!normalizedCategory || !normalizedName) {
+        return null;
+    }
+
+    const products = await loadAddStockProducts(category, Boolean(options.forceRefresh));
+    const existingPart = products.find(product =>
+        Number(product.is_active) === 1 &&
+        normalizeAddStockLookupValue(product.category) === normalizedCategory &&
+        normalizeAddStockLookupValue(product.name) === normalizedName
+    );
+
+    if (existingPart && existingPart.sparepart_id) {
+        setAddStockSparepartIdDisplay(existingPart.sparepart_id, 'existing');
+        return {
+            mode: 'existing',
+            sparepartId: existingPart.sparepart_id,
+            product: existingPart,
+            products
+        };
+    }
+
+    if (options.preserveCurrentPreview) {
+        const sparepartIdDisplay = document.getElementById('addStockSparepartIdDisplay');
+        const currentPreviewId = sparepartIdDisplay?.value || '';
+        if (/^SPR-\d+$/.test(currentPreviewId)) {
+            setAddStockSparepartIdDisplay(currentPreviewId, 'new');
+            return {
+                mode: 'new',
+                sparepartId: currentPreviewId,
+                product: null,
+                products
+            };
+        }
+    }
+
+    const nextId = await refreshAddStockNextIdPreview();
+    return {
+        mode: 'new',
+        sparepartId: nextId,
+        product: null,
+        products
+    };
+}
+
 // Handle add stock form submission
 document.addEventListener('submit', async function (e) {
     if (!e.target || e.target.id !== 'addStockForm') {
@@ -121,7 +230,6 @@ document.addEventListener('submit', async function (e) {
 
     e.preventDefault();
 
-    const sparepartId = document.getElementById('addStockSparepartIdDisplay').value;
     const sparepartName = document.getElementById('addStockSparepartName').value;
     const category = document.getElementById('addStockCategory').value;
     const quantity = document.getElementById('addStockQuantity').value;
@@ -141,42 +249,61 @@ document.addEventListener('submit', async function (e) {
     const compatibleVehicles = Array.from(document.querySelectorAll('input[name="addStockCompatibleVehicles"]:checked'))
         .map(cb => cb.value);
 
-    // Check if we're in edit mode
-    if (window.editingAdditionId) {
-        // Update existing addition record
-        await updateAdditionRecord({
-            id: window.editingAdditionId,
-            sparepart_id: sparepartId,
-            sparepart_name: sparepartName,
-            category: category,
-            quantity_added: parseInt(quantity),
-            location: location,
-            supplier: supplier,
-            supplier_contact: supplierContact,
-            supplier_address: supplierAddress,
-            warranty_period: warrantyPeriod || null,
-            warranty_start: warrantyStart || null,
-            warranty_terms: warrantyTerms || null,
-            compatible_machines: JSON.stringify(compatibleMachines),
-            compatible_vehicles: JSON.stringify(compatibleVehicles)
-        });
-    } else {
-        // Save new spare part to database
-        await saveSparePartFromAddStock({
-            sparepart_id: sparepartId,
-            name: sparepartName,
-            category: category,
-            quantity: parseInt(quantity),
-            location: location,
-            supplier: supplier,
-            supplier_contact: supplierContact,
-            supplier_address: supplierAddress,
-            warranty_period: warrantyPeriod || null,
-            warranty_start: warrantyStart || null,
-            warranty_terms: warrantyTerms || null,
-            compatible_machines: JSON.stringify(compatibleMachines),
-            compatible_vehicles: JSON.stringify(compatibleVehicles)
-        });
+    if (!category || !sparepartName) {
+        Utils.showToast('Please select a category and sparepart name first', 'error');
+        return;
+    }
+
+    try {
+        const resolvedSelection = await resolveAddStockSparepartSelection(category, sparepartName, { forceRefresh: true, preserveCurrentPreview: true });
+
+        if (!resolvedSelection || !resolvedSelection.sparepartId) {
+            throw new Error('Unable to resolve a valid sparepart ID');
+        }
+
+        const resolvedSparepartId = resolvedSelection.sparepartId;
+        setAddStockSparepartIdDisplay(resolvedSparepartId, resolvedSelection.mode === 'existing' ? 'existing' : 'new');
+
+        // Check if we're in edit mode
+        if (window.editingAdditionId) {
+            // Update existing addition record
+            await updateAdditionRecord({
+                id: window.editingAdditionId,
+                sparepart_id: resolvedSparepartId,
+                sparepart_name: sparepartName,
+                category: category,
+                quantity_added: parseInt(quantity),
+                location: location,
+                supplier: supplier,
+                supplier_contact: supplierContact,
+                supplier_address: supplierAddress,
+                warranty_period: warrantyPeriod || null,
+                warranty_start: warrantyStart || null,
+                warranty_terms: warrantyTerms || null,
+                compatible_machines: JSON.stringify(compatibleMachines),
+                compatible_vehicles: JSON.stringify(compatibleVehicles)
+            });
+        } else {
+            // Save new spare part to database
+            await saveSparePartFromAddStock({
+                sparepart_id: resolvedSparepartId,
+                name: sparepartName,
+                category: category,
+                quantity: parseInt(quantity),
+                location: location,
+                supplier: supplier,
+                supplier_contact: supplierContact,
+                supplier_address: supplierAddress,
+                warranty_period: warrantyPeriod || null,
+                warranty_start: warrantyStart || null,
+                warranty_terms: warrantyTerms || null,
+                compatible_machines: JSON.stringify(compatibleMachines),
+                compatible_vehicles: JSON.stringify(compatibleVehicles)
+            }, resolvedSelection);
+        }
+    } catch (error) {
+        console.error('Failed to resolve sparepart selection:', error);
+        Utils.showToast(error.message || 'Failed to resolve sparepart ID', 'error');
     }
 });
 
@@ -239,20 +366,22 @@ async function updateAdditionRecord(data) {
     }
 }
 
-async function saveSparePartFromAddStock(data) {
+async function saveSparePartFromAddStock(data, resolvedSelection = null) {
     try {
         showLoading(true);
         console.log('Saving spare part from Add Stock:', data);
 
-        // Check if sparepart already exists
-        const checkResponse = await API.get('/products');
-        let existingPart = null;
-
-        if (checkResponse.status === 'success' && checkResponse.data && checkResponse.data.products) {
-            existingPart = checkResponse.data.products.find(p =>
-                p.sparepart_id === data.sparepart_id && p.is_active === 1
-            );
+        if (!data.category || !data.name || !data.sparepart_id) {
+            throw new Error('Please select a category, sparepart name, and valid sparepart ID before saving');
         }
+
+        // Check if sparepart already exists
+        const catalogProducts = resolvedSelection && Array.isArray(resolvedSelection.products)
+            ? resolvedSelection.products
+            : await loadAddStockProducts(data.category, true);
+        const existingPart = catalogProducts.find(p =>
+            p.sparepart_id === data.sparepart_id && Number(p.is_active) === 1
+        ) || null;
 
         let response;
 
@@ -360,41 +489,26 @@ document.addEventListener('change', async function (e) {
 
     const category = document.getElementById('addStockCategory').value;
     const sparepartName = e.target.value;
-    const sparepartIdDisplay = document.getElementById('addStockSparepartIdDisplay');
 
     if (!category || !sparepartName) {
         return;
     }
 
     try {
-        // Search for existing sparepart with this name and category
-        const response = await API.get('/products');
-        if (response.status === 'success' && response.data && response.data.products) {
-            const existingPart = response.data.products.find(p =>
-                p.name === sparepartName &&
-                p.category === category &&
-                p.is_active === 1
-            );
+        const resolvedSelection = await resolveAddStockSparepartSelection(category, sparepartName, { forceRefresh: false });
 
-            if (existingPart) {
-                // Found existing sparepart - use its ID
-                sparepartIdDisplay.value = existingPart.sparepart_id;
-                sparepartIdDisplay.style.background = '#dbeafe';
-                sparepartIdDisplay.style.color = '#1e40af';
-                Utils.showToast(`Found existing sparepart: ${existingPart.sparepart_id}`, 'info');
-            } else {
-                // No existing sparepart - will create new one
-                const nextIdResponse = await API.get('/products/next-id');
-                if (nextIdResponse.status === 'success' && nextIdResponse.data && nextIdResponse.data.next_id) {
-                    sparepartIdDisplay.value = nextIdResponse.data.next_id;
-                    sparepartIdDisplay.style.background = '#dcfce7';
-                    sparepartIdDisplay.style.color = '#166534';
-                    Utils.showToast(`New sparepart will be created: ${nextIdResponse.data.next_id}`, 'info');
-                }
-            }
+        if (!resolvedSelection || !resolvedSelection.sparepartId) {
+            return;
+        }
+
+        if (resolvedSelection.mode === 'existing') {
+            Utils.showToast(`Found existing sparepart: ${resolvedSelection.sparepartId}`, 'info');
+        } else {
+            Utils.showToast(`New sparepart will be created: ${resolvedSelection.sparepartId}`, 'info');
         }
     } catch (error) {
         console.error('Error fetching sparepart:', error);
+        Utils.showToast(error.message || 'Failed to resolve sparepart ID', 'error');
     }
 });
 
@@ -669,6 +783,7 @@ async function openAddStockModal() {
     try {
         // Clear any editing state
         window.editingAdditionId = null;
+        addStockModalState.productsByCategory.clear();
 
         // Reset modal title and button to add mode
         const modalTitle = document.querySelector('#addStockModal .modal-header h2');
@@ -695,18 +810,12 @@ async function openAddStockModal() {
         document.getElementById('addStockSparepartName').innerHTML = '<option value="">Select category first</option>';
 
         // Fetch next sparepart ID from backend
-        const response = await API.get('/products/next-id');
-        if (response.status === 'success' && response.data && response.data.next_id) {
-            document.getElementById('addStockSparepartIdDisplay').value = response.data.next_id;
-            document.getElementById('addStockSparepartIdDisplay').style.background = '#dcfce7';
-        } else {
-            throw new Error('Failed to get next sparepart ID');
-        }
+        await refreshAddStockNextIdPreview();
         openModal('addStockModal');
     } catch (error) {
         console.error('Failed to get next sparepart ID:', error);
         Utils.showToast('Failed to get next sparepart ID', 'error');
-        document.getElementById('addStockSparepartIdDisplay').value = 'SPR-###';
+        setAddStockSparepartIdDisplay('SPR-###', 'error');
         openModal('addStockModal');
     }
 }

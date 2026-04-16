@@ -5,8 +5,10 @@ class DriverGarages extends HTMLElement {
         }
 
         this._mounted = true;
+        this.garages = [];
         this.render();
         this.bindEvents();
+        this.refresh();
     }
 
     render() {
@@ -16,52 +18,23 @@ class DriverGarages extends HTMLElement {
                 <p class="page-subtitle">Find registered service centers for emergency support</p>
             </div>
 
-            <div class="grid">
-                <div class="card">
-                    <div class="card-header"><i class="fas fa-store"></i> AutoCare Service Center</div>
-                    <div style="margin-bottom: 10px;">
-                        <div style="margin-bottom: 5px;"><strong>Address:</strong> 123 Galle Road, Colombo 03</div>
-                        <div style="margin-bottom: 5px;"><strong>Distance:</strong> 2.5 km from your location</div>
-                        <div style="margin-bottom: 5px;"><strong>Contact:</strong> +94 11 234 5678</div>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn btn-primary btn-small" type="button" data-action="directions" data-garage="AutoCare">Get Directions</button>
-                        <button class="btn btn-secondary btn-small" type="button" data-action="call" data-phone="+94112345678">Call</button>
-                    </div>
+            <div class="card" style="margin-bottom: 16px;">
+                <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span><i class="fas fa-store"></i> Active Garages</span>
+                    <button class="btn btn-secondary btn-small" type="button" data-action="refresh"><i class="fas fa-sync-alt"></i> Refresh</button>
                 </div>
-
-                <div class="card">
-                    <div class="card-header"><i class="fas fa-wrench"></i> Reliable Motors</div>
-                    <div style="margin-bottom: 10px;">
-                        <div style="margin-bottom: 5px;"><strong>Address:</strong> 456 Kandy Road, Kadawatha</div>
-                        <div style="margin-bottom: 5px;"><strong>Distance:</strong> 8.2 km from your location</div>
-                        <div style="margin-bottom: 5px;"><strong>Contact:</strong> +94 11 345 6789</div>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn btn-primary btn-small" type="button" data-action="directions" data-garage="Reliable">Get Directions</button>
-                        <button class="btn btn-secondary btn-small" type="button" data-action="call" data-phone="+94113456789">Call</button>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header"><i class="fas fa-tools"></i> Quick Fix Auto</div>
-                    <div style="margin-bottom: 10px;">
-                        <div style="margin-bottom: 5px;"><strong>Address:</strong> 789 High Level Road, Nugegoda</div>
-                        <div style="margin-bottom: 5px;"><strong>Distance:</strong> 12.1 km from your location</div>
-                        <div style="margin-bottom: 5px;"><strong>Contact:</strong> +94 11 456 7890</div>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn btn-primary btn-small" type="button" data-action="directions" data-garage="QuickFix">Get Directions</button>
-                        <button class="btn btn-secondary btn-small" type="button" data-action="call" data-phone="+94114567890">Call</button>
-                    </div>
-                </div>
+                <div id="driverGaragesList" class="grid"></div>
             </div>
 
             <div class="card">
                 <div class="card-header">Emergency Support</div>
-                <p style="color: var(--muted); margin-bottom: 15px;">For emergency breakdowns, contact the nearest registered garage or call the company hotline: <strong style="color: var(--danger);">+94 11 999 0000</strong></p>
+                <p style="color: var(--muted); margin-bottom: 15px;">
+                    For emergency breakdowns, contact the nearest registered garage or call the company hotline:
+                    <strong style="color: var(--danger);">+94 11 999 0000</strong>
+                </p>
                 <div style="background: #fee; border: 1px solid #fca5a5; border-radius: 8px; padding: 15px;">
-                    <strong style="color: var(--danger);">Important:</strong> Always report breakdowns through the system and wait for supervisor approval before proceeding with repairs at external garages.
+                    <strong style="color: var(--danger);">Important:</strong>
+                    Always report breakdowns through the system and wait for supervisor approval before proceeding with repairs at external garages.
                 </div>
             </div>
         `;
@@ -74,19 +47,71 @@ class DriverGarages extends HTMLElement {
                 return;
             }
 
-            if (actionEl.dataset.action === 'directions') {
-                DriverUtils.showToast(`Opening directions to ${actionEl.dataset.garage}`);
+            const action = actionEl.dataset.action;
+
+            if (action === 'refresh') {
+                this.refresh();
                 return;
             }
 
-            if (actionEl.dataset.action === 'call') {
-                DriverUtils.showToast(`Calling ${actionEl.dataset.phone}`);
+            if (action === 'directions') {
+                const address = actionEl.dataset.address || actionEl.dataset.garage || '';
+                const query = encodeURIComponent(address);
+                window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank', 'noopener,noreferrer');
+                return;
+            }
+
+            if (action === 'call') {
+                const phone = actionEl.dataset.phone || '';
+                if (!phone) {
+                    DriverUtils.showToast('Phone number is unavailable.', 'warning');
+                    return;
+                }
+
+                window.location.href = `tel:${phone.replace(/\s+/g, '')}`;
             }
         });
     }
 
-    refresh() {
-        // Static section.
+    async refresh() {
+        const list = this.querySelector('#driverGaragesList');
+        if (!list) {
+            return;
+        }
+
+        list.innerHTML = '<div style="padding: 20px; color: var(--muted);">Loading garages...</div>';
+
+        try {
+            const response = await DriverUtils.apiGet('/garages');
+            this.garages = DriverUtils.normalizeApiList(response, 'garages');
+
+            if (!this.garages.length) {
+                list.innerHTML = '<div style="padding: 20px; color: var(--muted);">No garages available.</div>';
+                return;
+            }
+
+            list.innerHTML = this.garages.map((garage) => this.renderGarageCard(garage)).join('');
+        } catch (error) {
+            console.error('Failed to load garages:', error);
+            list.innerHTML = '<div style="padding: 20px; color: var(--danger);">Failed to load garages. Please try again.</div>';
+        }
+    }
+
+    renderGarageCard(garage) {
+        return `
+            <div class="card" style="margin: 0;">
+                <div class="card-header"><i class="fas fa-store"></i> ${garage.name}</div>
+                <div style="margin-bottom: 10px;">
+                    <div style="margin-bottom: 5px;"><strong>Address:</strong> ${garage.address || 'N/A'}</div>
+                    ${garage.city ? `<div style="margin-bottom: 5px;"><strong>City:</strong> ${garage.city}</div>` : ''}
+                    <div style="margin-bottom: 5px;"><strong>Contact:</strong> ${garage.phone || 'N/A'}</div>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap:wrap;">
+                    <button class="btn btn-primary btn-small" type="button" data-action="directions" data-garage="${garage.name}" data-address="${garage.address || ''}">Get Directions</button>
+                    <button class="btn btn-secondary btn-small" type="button" data-action="call" data-phone="${garage.phone || ''}">Call</button>
+                </div>
+            </div>
+        `;
     }
 }
 
