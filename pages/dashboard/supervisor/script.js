@@ -42,6 +42,9 @@ function loadSectionData(sectionId) {
         case 'daily-check-reports':
             refreshSupervisorDailyCheckReports();
             break;
+        case 'fault-ticket-tracking':
+            refreshSupervisorFaultTicketTracking();
+            break;
         case 'fault-tickets':
             refreshSupervisorFaultTickets();
             break;
@@ -97,6 +100,12 @@ function bindSupervisorDailyCheckReports() {
 
 function refreshSupervisorDailyCheckReports() {
     const component = document.querySelector('supervisor-daily-check-reports');
+    if (!component || typeof component.refresh !== 'function') return;
+    component.refresh();
+}
+
+function refreshSupervisorFaultTicketTracking() {
+    const component = document.querySelector('supervisor-fault-ticket-tracking');
     if (!component || typeof component.refresh !== 'function') return;
     component.refresh();
 }

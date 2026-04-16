@@ -409,8 +409,8 @@ class SupervisorFaultTickets extends HTMLElement {
     render() {
         this.innerHTML = `
             <div class="page-header">
-                <h2 class="page-title"><i class="fas fa-exclamation-triangle"></i> Fault Ticket Management</h2>
-                <p class="page-subtitle">Assign and track fault tickets</p>
+                <h2 class="page-title"><i class="fas fa-user-cog"></i> Technician Assignment for Fault Tickets</h2>
+                <p class="page-subtitle">Assign technicians and track fault ticket progress</p>
             </div>
 
             <div class="filter-controls" id="ticketStatusFilters">
