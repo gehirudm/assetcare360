@@ -1,0 +1,80 @@
+/**
+ * TM Trips Component Styles
+ */
+
+tm-trips {
+    display: block;
+}
+
+/* Component-specific overrides */
+tm-trips .inventory-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Actions dropdown menu */
+tm-trips .actions-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+tm-trips .actions-trigger {
+    background: transparent;
+    border: 1px solid var(--stone-200);
+    color: var(--muted);
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+tm-trips .actions-trigger:hover {
+    background: var(--stone-100);
+    color: var(--text-700);
+}
+
+tm-trips .actions-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid var(--stone-200);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 150px;
+    z-index: 1000;
+    display: none;
+    overflow: hidden;
+}
+
+tm-trips .actions-menu.active {
+    display: block;
+}
+
+tm-trips .actions-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 14px;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 13px;
+    color: var(--text-700);
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+tm-trips .actions-menu-item:hover {
+    background: var(--stone-100);
+}
+
+tm-trips .actions-menu-item.danger {
+    color: var(--danger);
+}
+
+tm-trips .actions-menu-item.danger:hover {
+    background: #fef2f2;
+}
