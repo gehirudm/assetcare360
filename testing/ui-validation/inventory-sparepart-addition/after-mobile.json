@@ -1,0 +1,28 @@
+{
+  "stage": "after",
+  "viewport": "mobile",
+  "url": "http://127.0.0.1:3000/pages/dashboard/inventory-manager/index.html",
+  "title": "Inventory Manager Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \" Sparepart Addition\" [level=2]\n  - paragraph: Add new stock to existing spareparts or record new stock arrivals\n  - textbox \"Search by sparepart name, ID, or supplier...\"\n  - button \"+ Add New Sparepart/Stock\"\n  - button \"All Categories\"\n  - button \"Vehicles\"\n  - button \"Machines\"\n  - text:  Stock Additions 1 item\n  - strong:  Hydraulic Pump Seal\n  - text: \"# SPR-200 |  Machines Parts |  Apr 13, 2026  +4 units |  SealWorks Ltd |  LOCATION 2\"\n  - button \" VIEW\"\n  - button \"Open addition actions\": ",
+    "snapshotLength": 532
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "existingResolvedId": "SPR-123",
+    "newResolvedId": "SPR-047",
+    "nextIdCalls": [
+      "SPR-045",
+      "SPR-046",
+      "SPR-047"
+    ],
+    "postedProducts": [
+      "SPR-047"
+    ],
+    "postedAdditions": [
+      "SPR-123",
+      "SPR-047"
+    ]
+  }
+}
