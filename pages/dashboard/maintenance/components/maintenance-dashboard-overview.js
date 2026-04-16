@@ -7,6 +7,7 @@ class MaintenanceDashboardOverview extends HTMLElement {
         this._mounted = true;
         this.render();
         this.bindEvents();
+        this.refresh();
     }
 
     render() {
@@ -16,18 +17,46 @@ class MaintenanceDashboardOverview extends HTMLElement {
                 <p class="page-subtitle">Maintenance Manager Overview</p>
             </div>
 
-            <div class="grid">
-                <div class="stats-card stats-urgent">
-                    <div class="stats-number">5</div>
-                    <div class="stats-label">Pending Cost Approvals</div>
+            <div class="summary-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:30px;">
+                <div class="summary-card clickable" data-action="navigate-section" data-section="cost-approvals">
+                    <div class="summary-card-content">
+                        <div class="summary-icon"><i class="fas fa-money-bill-wave"></i></div>
+                        <div class="summary-details">
+                            <div class="summary-title">Pending Approvals</div>
+                            <div class="summary-number" id="summaryPendingApprovals">—</div>
+                        </div>
+                    </div>
+                    <div class="summary-arrow"><i class="fas fa-chevron-right"></i></div>
                 </div>
-                <div class="stats-card stats-pending">
-                    <div class="stats-number">23</div>
-                    <div class="stats-label">Active Fault Tickets</div>
+                <div class="summary-card clickable" data-action="navigate-section" data-section="fault-tickets">
+                    <div class="summary-card-content">
+                        <div class="summary-icon"><i class="fas fa-ticket-alt"></i></div>
+                        <div class="summary-details">
+                            <div class="summary-title">Active Fault Tickets</div>
+                            <div class="summary-number" id="summaryActiveFaultTickets">—</div>
+                        </div>
+                    </div>
+                    <div class="summary-arrow"><i class="fas fa-chevron-right"></i></div>
                 </div>
-                <div class="stats-card stats-active">
-                    <div class="stats-number">3</div>
-                    <div class="stats-label">Reports Under Review</div>
+                <div class="summary-card clickable" data-action="navigate-section" data-section="service-reports">
+                    <div class="summary-card-content">
+                        <div class="summary-icon"><i class="fas fa-clipboard-list"></i></div>
+                        <div class="summary-details">
+                            <div class="summary-title">Reports Under Review</div>
+                            <div class="summary-number" id="summaryReportsUnderReview">—</div>
+                        </div>
+                    </div>
+                    <div class="summary-arrow"><i class="fas fa-chevron-right"></i></div>
+                </div>
+                <div class="summary-card clickable" data-action="navigate-section" data-section="fault-tickets">
+                    <div class="summary-card-content">
+                        <div class="summary-icon"><i class="fas fa-check-double"></i></div>
+                        <div class="summary-details">
+                            <div class="summary-title">Resolved Tickets</div>
+                            <div class="summary-number" id="summaryResolvedTickets">—</div>
+                        </div>
+                    </div>
+                    <div class="summary-arrow"><i class="fas fa-chevron-right"></i></div>
                 </div>
             </div>
 
@@ -105,40 +134,69 @@ class MaintenanceDashboardOverview extends HTMLElement {
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header"><i class="fas fa-file-alt"></i> Recent Activities</div>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Time</th>
-                            <th>Activity</th>
-                            <th>User</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>10:30 AM</td>
-                            <td>Cost approval request - Engine repair</td>
-                            <td>Supervisor John</td>
-                            <td><span class="status-badge status-pending">Pending</span></td>
-                        </tr>
-                        <tr>
-                            <td>09:15 AM</td>
-                            <td>Service report uploaded - Vehicle #089</td>
-                            <td>Technical Officer</td>
-                            <td><span class="status-badge status-under-review">Under Review</span></td>
-                        </tr>
-                        <tr>
-                            <td>08:45 AM</td>
-                            <td>Fault ticket created - Machine #205</td>
-                            <td>Operator Mike</td>
-                            <td><span class="status-badge status-in-progress">Active</span></td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="recent-activities">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fas fa-history"></i> Recent Activities</h2>
+                </div>
+                <div class="activities-list">
+                    <div class="activity-item">
+                        <div class="activity-content">
+                            <div class="activity-title">Cost Approval Request — Engine Repair</div>
+                            <div class="activity-meta">10:30 AM &nbsp;·&nbsp; Supervisor John</div>
+                            <div class="activity-description">Engine repair cost LKR 45,000 submitted for approval</div>
+                        </div>
+                        <div class="activity-status"><span class="status-badge status-pending">Pending</span></div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-content">
+                            <div class="activity-title">Service Report Uploaded — Vehicle #089</div>
+                            <div class="activity-meta">09:15 AM &nbsp;·&nbsp; Technical Officer</div>
+                            <div class="activity-description">Routine service report submitted for manager review</div>
+                        </div>
+                        <div class="activity-status"><span class="status-badge status-under-review">Under Review</span></div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-content">
+                            <div class="activity-title">Fault Ticket Created — Machine #205</div>
+                            <div class="activity-meta">08:45 AM &nbsp;·&nbsp; Operator Mike</div>
+                            <div class="activity-description">Hydraulic leak reported and ticket assigned to technical officer</div>
+                        </div>
+                        <div class="activity-status"><span class="status-badge status-in-progress">Active</span></div>
+                    </div>
+                </div>
             </div>
         `;
+    }
+
+    async refresh() {
+        try {
+            const [ticketsRes, approvalsRes] = await Promise.all([
+                API.get('/fault-tickets'),
+                API.get('/budget-reports/pending'),
+            ]);
+
+            const tickets = (ticketsRes && ticketsRes.tickets) ? ticketsRes.tickets : [];
+            const RESOLVED_STATUSES = ['Resolved', 'Closed'];
+            const activeCount = tickets.filter(t => !RESOLVED_STATUSES.includes(t.status)).length;
+            const resolvedCount = tickets.filter(t => RESOLVED_STATUSES.includes(t.status)).length;
+            const pendingCount = (approvalsRes && Array.isArray(approvalsRes.reports))
+                ? approvalsRes.reports.length
+                : (approvalsRes && typeof approvalsRes.count === 'number' ? approvalsRes.count : '—');
+
+            const setNum = (id, val) => {
+                const el = this.querySelector(`#${id}`);
+                if (el) {
+                    el.textContent = val;
+                }
+            };
+
+            setNum('summaryPendingApprovals', pendingCount);
+            setNum('summaryActiveFaultTickets', activeCount);
+            setNum('summaryReportsUnderReview', '—');
+            setNum('summaryResolvedTickets', resolvedCount);
+        } catch (err) {
+            // Non-critical — stat cards remain showing '—'
+        }
     }
 
     bindEvents() {
