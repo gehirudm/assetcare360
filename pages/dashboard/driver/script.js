@@ -120,6 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 refreshIntervalId = window.setInterval(() => {
                     refreshSection('trip-log');
+                    refreshSection('transport-ticket');
                     refreshSection('vehicle-check');
                     refreshSection('breakdown');
                     refreshSection('ticket-tracking');
