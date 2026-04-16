@@ -356,6 +356,59 @@ class User extends BaseModel {
             }, $users);
         }
     }
+
+    /**
+     * Get drivers with active workload counts (active trips)
+     */
+    public function getDriversWithWorkload($activeOnly = true) {
+        try {
+            $sql = "SELECT u.id,
+                           u.employee_id,
+                           u.full_name,
+                           u.role,
+                           u.department,
+                           u.email,
+                           u.phone,
+                           u.is_active,
+                           u.last_login,
+                           u.created_at,
+                           u.updated_at,
+                           COALESCE(workload.active_trip_count, 0) AS active_trip_count
+                    FROM `{$this->table}` u
+                    LEFT JOIN (
+                        SELECT t.driver_id,
+                               COUNT(*) AS active_trip_count
+                        FROM trips t
+                        WHERE t.status IN ('Pending', 'In Progress')
+                        GROUP BY t.driver_id
+                    ) workload ON workload.driver_id = u.id
+                    WHERE u.role = 'Driver'";
+
+            $params = [];
+            if ($activeOnly) {
+                $sql .= " AND u.is_active = ?";
+                $params[] = 1;
+            }
+
+            $sql .= " ORDER BY active_trip_count ASC, u.full_name ASC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll();
+        } catch (\Exception $e) {
+            $filters = ['role' => 'Driver'];
+            if ($activeOnly) {
+                $filters['is_active'] = 1;
+            }
+
+            $users = $this->getAllUsers($filters, null, 'full_name ASC');
+
+            return array_map(function($user) {
+                $user['active_trip_count'] = 0;
+                return $user;
+            }, $users);
+        }
+    }
     
     /**
      * Get user statistics

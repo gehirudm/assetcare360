@@ -9,10 +9,12 @@ class Trip extends BaseModel {
         'destination',
         'vehicle_registration',
         'driver_id',
+        'assistant_driver_name',
         'starting_odometer',
         'final_odometer',
         'cargo_description',
         'status',
+        'rejection_reason',
         'start_time',
         'end_time',
         'completion_notes'
@@ -26,10 +28,11 @@ class Trip extends BaseModel {
             'destination' => 'VARCHAR(255) NOT NULL',
             'vehicle_registration' => 'VARCHAR(50)',
             'driver_id' => 'INT',
-            'starting_odometer' => 'INT NOT NULL',
+            'starting_odometer' => 'INT DEFAULT NULL',
             'final_odometer' => 'INT',
             'cargo_description' => 'TEXT',
-            'status' => "ENUM('Pending', 'In Progress', 'Completed', 'Cancelled') DEFAULT 'Pending'",
+            'status' => "ENUM('Pending', 'Accepted', 'Rejected', 'In Progress', 'Completed', 'Cancelled') DEFAULT 'Pending'",
+            'rejection_reason' => 'TEXT',
             'start_time' => 'DATETIME',
             'end_time' => 'DATETIME',
             'completion_notes' => 'TEXT',
@@ -47,20 +50,23 @@ class Trip extends BaseModel {
     }
     
     public function getAllTrips($filters = []) {
-        $query = "SELECT * FROM {$this->table} WHERE 1=1";
+        $query = "SELECT t.*, u.full_name AS driver_name
+                  FROM {$this->table} t
+                  LEFT JOIN users u ON t.driver_id = u.id
+                  WHERE 1=1";
         $params = [];
         
         if (!empty($filters['status'])) {
-            $query .= " AND status = :status";
+            $query .= " AND t.status = :status";
             $params[':status'] = $filters['status'];
         }
         
         if (!empty($filters['driver_id'])) {
-            $query .= " AND driver_id = :driver_id";
+            $query .= " AND t.driver_id = :driver_id";
             $params[':driver_id'] = $filters['driver_id'];
         }
         
-        $query .= " ORDER BY created_at DESC";
+        $query .= " ORDER BY t.created_at DESC";
         
         $stmt = $this->db->prepare($query);
         $stmt->execute($params);
@@ -124,15 +130,56 @@ class Trip extends BaseModel {
         return false;
     }
     
-    public function startTrip($trip_id) {
+    public function acceptTrip($trip_id) {
         $query = "UPDATE {$this->table} 
-                  SET status = 'In Progress', start_time = NOW() 
+                  SET status = 'Accepted' 
                   WHERE trip_id = :trip_id AND status = 'Pending'";
         
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':trip_id', $trip_id);
         
         if ($stmt->execute() && $stmt->rowCount() > 0) {
+            return $this->getTripByTripId($trip_id);
+        }
+        return false;
+    }
+    
+    public function rejectTrip($trip_id, $reason) {
+        $query = "UPDATE {$this->table} 
+                  SET status = 'Rejected', rejection_reason = :reason 
+                  WHERE trip_id = :trip_id AND status = 'Pending'";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':trip_id', $trip_id);
+        $stmt->bindParam(':reason', $reason);
+        
+        if ($stmt->execute() && $stmt->rowCount() > 0) {
+            return $this->getTripByTripId($trip_id);
+        }
+        return false;
+    }
+    
+    public function startTrip($trip_id, $starting_odometer = null, $assistant_driver_name = null) {
+        $query = "UPDATE {$this->table} 
+                  SET status = 'In Progress', start_time = NOW()";
+        
+        $params = [':trip_id' => $trip_id];
+        
+        if ($starting_odometer !== null) {
+            $query .= ", starting_odometer = :starting_odometer";
+            $params[':starting_odometer'] = $starting_odometer;
+        }
+        
+        if ($assistant_driver_name !== null) {
+            $query .= ", assistant_driver_name = :assistant_driver_name";
+            $params[':assistant_driver_name'] = $assistant_driver_name;
+        }
+        
+        $query .= " WHERE trip_id = :trip_id AND status = 'Accepted'";
+        
+        $stmt = $this->db->prepare($query);
+        
+        if ($stmt->execute($params) && $stmt->rowCount() > 0) {
             return $this->getTripByTripId($trip_id);
         }
         return false;
@@ -177,7 +224,7 @@ class Trip extends BaseModel {
     
     public function getActiveTripCount($driver_id = null) {
         $query = "SELECT COUNT(*) as count FROM {$this->table} 
-                  WHERE status IN ('Pending', 'In Progress')";
+                  WHERE status IN ('Pending', 'Accepted', 'In Progress')";
         $params = [];
         
         if ($driver_id) {

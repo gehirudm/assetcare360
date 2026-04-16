@@ -61,6 +61,7 @@ require_once __DIR__ . '/../app/controllers/LogController.php';
 require_once __DIR__ . '/../app/controllers/MachineController.php';
 require_once __DIR__ . '/../app/controllers/VehicleController.php';
 require_once __DIR__ . '/../app/controllers/TripController.php';
+require_once __DIR__ . '/../app/controllers/FuelLogController.php';
 require_once __DIR__ . '/../app/controllers/ProductController.php';
 require_once __DIR__ . '/../app/controllers/SparepartUsageController.php';
 require_once __DIR__ . '/../app/controllers/SparepartAdditionController.php';
@@ -107,6 +108,9 @@ $router->delete('/auth/passkey/:id', 'AuthController', 'deletePasskey');
 // Technicians routes (Supervisor and Admin)
 $router->get('/technicians', 'UserController', 'getTechnicians');
 
+// Drivers routes (Transportation Manager and Admin)
+$router->get('/drivers', 'UserController', 'getDrivers');
+
 // User management routes (Admin only)
 $router->get('/users/stats', 'UserController', 'stats');
 $router->get('/users', 'UserController', 'index');
@@ -138,13 +142,18 @@ $router->put('/machines/:id', 'MachineController', 'update');
 $router->delete('/machines/:id', 'MachineController', 'delete');
 
 // Vehicle management routes (Inventory Manager and above)
+$router->get('/vehicles/my-vehicle', 'VehicleController', 'getMyVehicle');
 $router->get('/vehicles/next-id', 'VehicleController', 'getNextId');
 $router->get('/vehicles/due-service', 'VehicleController', 'dueForService');
+$router->get('/vehicles/with-drivers', 'VehicleController', 'getVehiclesWithDrivers');
 $router->get('/vehicles', 'VehicleController', 'index');
 $router->post('/vehicles', 'VehicleController', 'store');
+$router->get('/vehicles/:numberPlate/with-driver', 'VehicleController', 'getVehicleWithDriver');
 $router->get('/vehicles/:id', 'VehicleController', 'show');
 $router->put('/vehicles/:id', 'VehicleController', 'update');
 $router->patch('/vehicles/:id/mileage', 'VehicleController', 'updateMileage');
+$router->post('/vehicles/:id/assign-driver', 'VehicleController', 'assignDriver');
+$router->post('/vehicles/:id/unassign-driver', 'VehicleController', 'unassignDriver');
 $router->delete('/vehicles/:id', 'VehicleController', 'delete');
 
 // Trip management routes (Driver)
@@ -153,10 +162,19 @@ $router->get('/trips', 'TripController', 'getAllTrips');
 $router->post('/trips', 'TripController', 'createTrip');
 $router->get('/trips/:id', 'TripController', 'getTripById');
 $router->put('/trips/:id', 'TripController', 'updateTrip');
+$router->post('/trips/:id/accept', 'TripController', 'acceptTrip');
+$router->post('/trips/:id/reject', 'TripController', 'rejectTrip');
 $router->post('/trips/:id/start', 'TripController', 'startTrip');
 $router->post('/trips/:id/end', 'TripController', 'endTrip');
 $router->post('/trips/:id/cancel', 'TripController', 'cancelTrip');
 $router->delete('/trips/:id', 'TripController', 'deleteTrip');
+
+// Fuel log routes (Transportation Manager)
+$router->get('/fuel-logs', 'FuelLogController', 'index');
+$router->post('/fuel-logs', 'FuelLogController', 'create');
+$router->get('/fuel-logs/:id', 'FuelLogController', 'show');
+$router->put('/fuel-logs/:id', 'FuelLogController', 'update');
+$router->delete('/fuel-logs/:id', 'FuelLogController', 'delete');
 
 // Vehicle check routes (Driver, Supervisor)
 $router->get('/vehicle-checks/next-id', 'VehicleCheckController', 'nextId');
@@ -268,6 +286,7 @@ $router->patch('/tec-repair-tickets/:id/status', 'TecFaultRepairTicketController
 
 // Spare Part Request routes (Technical Officer → Inventory Manager)
 $router->get('/spare-part-requests/stats', 'SparePartRequestController', 'stats');
+$router->post('/spare-part-requests/check-availability', 'SparePartRequestController', 'checkAvailability');
 $router->get('/spare-part-requests/ticket/:id', 'SparePartRequestController', 'getByTicket');
 $router->get('/spare-part-requests', 'SparePartRequestController', 'index');
 $router->get('/spare-part-requests/:id', 'SparePartRequestController', 'show');

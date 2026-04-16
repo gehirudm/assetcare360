@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../models/Vehicle.php';
+require_once __DIR__ . '/../models/User.php';
 
 /**
  * Vehicle Service
@@ -8,9 +9,11 @@ require_once __DIR__ . '/../models/Vehicle.php';
  */
 class VehicleService {
     private $vehicleModel;
+    private $userModel;
     
     public function __construct() {
         $this->vehicleModel = new Vehicle();
+        $this->userModel = new User();
     }
     
     /**
@@ -215,5 +218,109 @@ class VehicleService {
      */
     public function getNextVehicleId() {
         return $this->vehicleModel->generateVehicleId();
+    }
+    
+    /**
+     * Assign driver to vehicle
+     * Enforces one-driver-per-vehicle and one-vehicle-per-driver rules
+     */
+    public function assignDriverToVehicle($vehicleId, $driverId) {
+        // Validate vehicle exists
+        $vehicle = $this->vehicleModel->findById($vehicleId);
+        if (!$vehicle) {
+            throw new Exception("Vehicle not found");
+        }
+        
+        // Validate driver exists and is active
+        $driver = $this->userModel->findById($driverId);
+        if (!$driver) {
+            throw new Exception("Driver not found");
+        }
+        
+        if (!$driver['is_active']) {
+            throw new Exception("Driver is not active");
+        }
+        
+        if ($driver['role'] !== 'Driver') {
+            throw new Exception("User is not a driver");
+        }
+        
+        // Check if driver is already assigned to another vehicle
+        $existingVehicle = $this->vehicleModel->getVehicleByAssignedDriver($driverId);
+        $previousVehicle = null;
+        
+        if ($existingVehicle && $existingVehicle['id'] !== $vehicleId) {
+            // Unassign from the previous vehicle (driver can only be assigned to one vehicle)
+            $previousVehicle = $existingVehicle;
+            $this->vehicleModel->unassignDriver($existingVehicle['id']);
+        }
+        
+        // Assign driver to the new vehicle
+        $success = $this->vehicleModel->assignDriver($vehicleId, $driverId);
+        
+        if (!$success) {
+            throw new Exception("Failed to assign driver to vehicle");
+        }
+        
+        // Return updated vehicle with driver info
+        $updatedVehicle = $this->vehicleModel->getVehicleWithDriverByNumberPlate($vehicle['number_plate']);
+        
+        return [
+            'vehicle' => $updatedVehicle,
+            'previous_vehicle' => $previousVehicle ? [
+                'id' => $previousVehicle['id'],
+                'vehicle_id' => $previousVehicle['vehicle_id'],
+                'vehicle_name' => $previousVehicle['vehicle_name'],
+                'number_plate' => $previousVehicle['number_plate']
+            ] : null
+        ];
+    }
+    
+    /**
+     * Unassign driver from vehicle
+     */
+    public function unassignDriverFromVehicle($vehicleId) {
+        $vehicle = $this->vehicleModel->findById($vehicleId);
+        if (!$vehicle) {
+            throw new Exception("Vehicle not found");
+        }
+        
+        if (!$vehicle['assigned_driver_id']) {
+            throw new Exception("Vehicle has no assigned driver");
+        }
+        
+        $success = $this->vehicleModel->unassignDriver($vehicleId);
+        
+        if (!$success) {
+            throw new Exception("Failed to unassign driver from vehicle");
+        }
+        
+        return $this->vehicleModel->findById($vehicleId);
+    }
+    
+    /**
+     * Get all vehicles with driver assignments
+     */
+    public function getVehiclesWithDriverAssignments($filters = [], $search = null) {
+        return $this->vehicleModel->getAllVehiclesWithDrivers($filters, $search);
+    }
+    
+    /**
+     * Get vehicle with driver info by number plate
+     */
+    public function getVehicleWithDriverByNumberPlate($numberPlate) {
+        $vehicle = $this->vehicleModel->getVehicleWithDriverByNumberPlate($numberPlate);
+        if (!$vehicle) {
+            throw new Exception("Vehicle not found");
+        }
+        return $vehicle;
+    }
+    
+    /**
+     * Get vehicle assigned to a specific driver
+     * Returns null if no vehicle is assigned
+     */
+    public function getVehicleAssignedToDriver($driverId) {
+        return $this->vehicleModel->getVehicleByAssignedDriver($driverId);
     }
 }

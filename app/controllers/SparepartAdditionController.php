@@ -1,13 +1,16 @@
 <?php
 
 require_once __DIR__ . '/../models/SparepartAddition.php';
+require_once __DIR__ . '/../models/Product.php';
 require_once __DIR__ . '/../helpers/Response.php';
 
 class SparepartAdditionController {
     private $model;
+    private $productModel;
     
     public function __construct() {
         $this->model = new SparepartAddition();
+        $this->productModel = new Product();
     }
     
     /**
@@ -32,18 +35,73 @@ class SparepartAdditionController {
     
     /**
      * Create a new addition record
+     * Also updates the spare part catalog quantity automatically
      */
     public function create() {
         try {
             $data = json_decode(file_get_contents('php://input'), true);
             
             // Validate required fields
-            $required = ['sparepart_id', 'sparepart_name', 'quantity_added', 'previous_stock', 'new_stock', 'received_date'];
+            $required = ['sparepart_id', 'sparepart_name', 'quantity_added', 'received_date'];
             foreach ($required as $field) {
                 if (!isset($data[$field])) {
                     Response::error("Missing required field: $field", 400);
                     return;
                 }
+            }
+            
+            $sparepartId = $data['sparepart_id'];
+            $quantityAdded = (int)$data['quantity_added'];
+            
+            if ($quantityAdded <= 0) {
+                Response::error('Quantity added must be greater than 0', 400);
+                return;
+            }
+            
+            // Check if spare part exists in catalog
+            $product = $this->productModel->findOne(['sparepart_id' => $sparepartId, 'is_active' => 1]);
+            
+            if (!$product) {
+                // Auto-create the spare part in catalog
+                $newSparepartData = [
+                    'sparepart_id' => $sparepartId,
+                    'name' => $data['sparepart_name'],
+                    'description' => $data['notes'] ?? null,
+                    'category' => $data['category'] ?? 'General',
+                    'quantity' => $quantityAdded,
+                    'unit_price' => 0.00,
+                    'reorder_level' => 10,
+                    'location' => $data['location'] ?? null,
+                    'is_active' => 1,
+                    'compatible_machines' => $data['compatible_machines'] ?? null,
+                    'compatible_vehicles' => $data['compatible_vehicles'] ?? null
+                ];
+                
+                $productDbId = $this->productModel->create($newSparepartData);
+                
+                if (!$productDbId) {
+                    Response::error('Failed to create spare part in catalog', 500);
+                    return;
+                }
+                
+                // Set previous and new stock for the addition record
+                $data['previous_stock'] = 0;
+                $data['new_stock'] = $quantityAdded;
+            } else {
+                // Update existing spare part quantity
+                $previousStock = (int)$product['quantity'];
+                $newStock = $previousStock + $quantityAdded;
+                
+                $updateResult = $this->productModel->updateQuantity($product['id'], $quantityAdded, 'add');
+                
+                if (!$updateResult) {
+                    Response::error('Failed to update spare part quantity in catalog', 500);
+                    return;
+                }
+                
+                // Set previous and new stock for the addition record
+                $data['previous_stock'] = $previousStock;
+                $data['new_stock'] = $newStock;
             }
             
             // Set added_by from session or default
@@ -52,7 +110,14 @@ class SparepartAdditionController {
             $id = $this->model->create($data);
             
             if ($id) {
-                Response::success(['id' => $id, 'message' => 'Addition recorded successfully']);
+                Response::success([
+                    'id' => $id, 
+                    'message' => 'Addition recorded successfully',
+                    'previous_stock' => $data['previous_stock'],
+                    'new_stock' => $data['new_stock'],
+                    'quantity_added' => $quantityAdded,
+                    'auto_created_part' => !$product
+                ]);
             } else {
                 Response::error('Failed to record addition');
             }

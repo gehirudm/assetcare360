@@ -103,6 +103,55 @@ class TripController {
         }
     }
     
+    public function acceptTrip() {
+        try {
+            $trip_id = $_GET['id'] ?? null;
+            
+            if (!$trip_id) {
+                Response::error('Trip ID is required', 400);
+                return;
+            }
+            
+            $trip = $this->tripService->acceptTrip($trip_id);
+            
+            Response::json([
+                'success' => true,
+                'message' => 'Trip accepted successfully',
+                'data' => ['trip' => $trip]
+            ]);
+        } catch (Exception $e) {
+            Response::error($e->getMessage(), 400);
+        }
+    }
+    
+    public function rejectTrip() {
+        try {
+            $trip_id = $_GET['id'] ?? null;
+            
+            if (!$trip_id) {
+                Response::error('Trip ID is required', 400);
+                return;
+            }
+            
+            $data = json_decode(file_get_contents('php://input'), true);
+            
+            if (!isset($data['reason']) || empty($data['reason'])) {
+                Response::error('Rejection reason is required', 400);
+                return;
+            }
+            
+            $trip = $this->tripService->rejectTrip($trip_id, $data['reason']);
+            
+            Response::json([
+                'success' => true,
+                'message' => 'Trip rejected successfully',
+                'data' => ['trip' => $trip]
+            ]);
+        } catch (Exception $e) {
+            Response::error($e->getMessage(), 400);
+        }
+    }
+    
     public function startTrip() {
         try {
             $trip_id = $_GET['id'] ?? null;
@@ -112,7 +161,12 @@ class TripController {
                 return;
             }
             
-            $trip = $this->tripService->startTrip($trip_id);
+            $data = json_decode(file_get_contents('php://input'), true) ?? [];
+            
+            $starting_odometer = $data['starting_odometer'] ?? null;
+            $assistant_driver_name = $data['assistant_driver_name'] ?? null;
+            
+            $trip = $this->tripService->startTrip($trip_id, $starting_odometer, $assistant_driver_name);
             
             Response::json([
                 'success' => true,

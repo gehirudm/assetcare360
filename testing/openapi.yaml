@@ -53,8 +53,14 @@ tags:
     description: Technical Officer work completion updates for fault tickets.
   - name: System Settings
     description: System-wide configuration settings (Admin only). Includes petty cash limit for budget approval routing.
+  - name: Trips
+    description: Trip management for Transportation Manager and Drivers. Includes trip assignment, acceptance/rejection workflow, and trip lifecycle management.
   - name: Notifications
     description: User notification listing and read-state updates.
+  - name: Spare Part Requests
+    description: Spare part request workflow. Technical Officers create requests for fault tickets, Inventory Managers approve/reject.
+  - name: Sparepart Additions
+    description: Stock addition tracking. Auto-updates spare part catalog quantities and can auto-create new spare parts.
 
 security:
   - bearerAuth: []
@@ -1649,6 +1655,170 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  # ==================== SPARE PART REQUESTS ====================
+  /spare-part-requests/check-availability:
+    post:
+      tags:
+        - Spare Part Requests
+      summary: Check availability of spare parts
+      description: |
+        Check availability of multiple spare parts before creating a request.
+        Returns status for each part: available, insufficient, out_of_stock, or not_found.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - items
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - part_code
+                    properties:
+                      part_code:
+                        type: string
+                        example: "SPR-001"
+                      quantity:
+                        type: integer
+                        default: 1
+                        example: 5
+      responses:
+        '200':
+          description: Availability check results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            part_code:
+                              type: string
+                              example: "SPR-001"
+                            part_name:
+                              type: string
+                              nullable: true
+                              example: "Hydraulic Pump"
+                            status:
+                              type: string
+                              enum: [available, insufficient, out_of_stock, not_found]
+                              example: "available"
+                            available_qty:
+                              type: integer
+                              example: 50
+                            requested_qty:
+                              type: integer
+                              example: 5
+                            reorder_level:
+                              type: integer
+                              example: 10
+                            message:
+                              type: string
+                              example: "In stock (50 available)"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== SPAREPART ADDITIONS ====================
+  /additions:
+    post:
+      tags:
+        - Sparepart Additions
+      summary: Record a spare part addition
+      description: |
+        Records stock addition for a spare part. Automatically updates the spare part catalog quantity.
+        If the spare part doesn't exist in the catalog, it will be auto-created.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sparepart_id
+                - sparepart_name
+                - quantity_added
+                - received_date
+              properties:
+                sparepart_id:
+                  type: string
+                  example: "SPR-001"
+                sparepart_name:
+                  type: string
+                  example: "Hydraulic Pump"
+                quantity_added:
+                  type: integer
+                  minimum: 1
+                  example: 10
+                received_date:
+                  type: string
+                  format: date
+                  example: "2026-04-15"
+                category:
+                  type: string
+                  example: "Hydraulics"
+                location:
+                  type: string
+                  example: "Warehouse A"
+                supplier:
+                  type: string
+                  example: "ABC Suppliers"
+                notes:
+                  type: string
+                  example: "Restocking order #1234"
+      responses:
+        '200':
+          description: Addition recorded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      message:
+                        type: string
+                        example: "Addition recorded successfully"
+                      previous_stock:
+                        type: integer
+                        example: 40
+                      new_stock:
+                        type: integer
+                        example: 50
+                      quantity_added:
+                        type: integer
+                        example: 10
+                      auto_created_part:
+                        type: boolean
+                        example: false
+                        description: "True if the spare part was auto-created in the catalog"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
 # ==================== COMPONENTS ====================
 components:
   securitySchemes:
@@ -2381,6 +2551,543 @@ components:
       responses:
         '200':
           description: Successfully retrieved vehicles due for service
+
+  /vehicles/with-drivers:
+    get:
+      tags:
+        - Vehicles
+      summary: Get all vehicles with driver assignments
+      description: Retrieve all vehicles including their assigned driver information. Used by Transportation Manager for driver assignment management.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Successfully retrieved vehicles with driver assignments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Success
+                  data:
+                    type: object
+                    properties:
+                      vehicles:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/Vehicle'
+                            - type: object
+                              properties:
+                                assigned_driver_id:
+                                  type: integer
+                                  nullable: true
+                                  description: ID of assigned driver (null if unassigned)
+                                driver_assigned_at:
+                                  type: string
+                                  format: date-time
+                                  nullable: true
+                                  description: Timestamp when driver was assigned
+                                driver_user_id:
+                                  type: integer
+                                  nullable: true
+                                  description: User ID of assigned driver
+                                driver_name:
+                                  type: string
+                                  nullable: true
+                                  description: Full name of assigned driver
+                                driver_employee_id:
+                                  type: string
+                                  nullable: true
+                                  description: Employee ID of assigned driver
+                                driver_phone:
+                                  type: string
+                                  nullable: true
+                                  description: Phone number of assigned driver
+        '401':
+          description: Unauthorized
+
+  /vehicles/{numberPlate}/with-driver:
+    get:
+      tags:
+        - Vehicles
+      summary: Get vehicle with driver by number plate
+      description: Retrieve a specific vehicle by number plate including its assigned driver information.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: numberPlate
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Vehicle number plate (e.g., lk-1234)
+      responses:
+        '200':
+          description: Successfully retrieved vehicle with driver
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      vehicle:
+                        allOf:
+                          - $ref: '#/components/schemas/Vehicle'
+                          - type: object
+                            properties:
+                              assigned_driver_id:
+                                type: integer
+                                nullable: true
+                              driver_assigned_at:
+                                type: string
+                                format: date-time
+                                nullable: true
+                              driver_user_id:
+                                type: integer
+                                nullable: true
+                              driver_name:
+                                type: string
+                                nullable: true
+                              driver_employee_id:
+                                type: string
+                                nullable: true
+                              driver_phone:
+                                type: string
+                                nullable: true
+        '404':
+          description: Vehicle not found
+
+  /vehicles/{id}/assign-driver:
+    post:
+      tags:
+        - Vehicles
+      summary: Assign driver to vehicle
+      description: |
+        Assign a driver to a vehicle. One driver can only be assigned to one vehicle at a time.
+        If the driver is already assigned to another vehicle, they will be automatically unassigned from the previous vehicle.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Vehicle ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - driver_id
+              properties:
+                driver_id:
+                  type: integer
+                  description: User ID of the driver to assign
+      responses:
+        '200':
+          description: Driver assigned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Driver assigned successfully
+                  data:
+                    type: object
+                    properties:
+                      vehicle:
+                        $ref: '#/components/schemas/Vehicle'
+        '400':
+          description: Invalid driver (not active, not a driver role, etc.)
+        '404':
+          description: Vehicle or driver not found
+
+  /vehicles/{id}/unassign-driver:
+    post:
+      tags:
+        - Vehicles
+      summary: Unassign driver from vehicle
+      description: Remove the currently assigned driver from a vehicle.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Vehicle ID
+      responses:
+        '200':
+          description: Driver unassigned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Driver unassigned successfully
+                  data:
+                    type: object
+                    properties:
+                      vehicle:
+                        $ref: '#/components/schemas/Vehicle'
+        '404':
+          description: Vehicle not found
+
+  # ==================== TRIPS ====================
+  /trips:
+    get:
+      tags:
+        - Trips
+      summary: Get all trips
+      description: Retrieve all trips with optional filtering by status and driver
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter by trip status
+          schema:
+            type: string
+            enum: [Pending, Accepted, Rejected, In Progress, Completed, Cancelled]
+        - name: driver_id
+          in: query
+          description: Filter by driver ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully retrieved trips
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      trips:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Trip'
+                  count:
+                    type: integer
+
+    post:
+      tags:
+        - Trips
+      summary: Create a new trip (assign trip to driver)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - origin
+                - destination
+                - vehicle_registration
+                - driver_id
+              properties:
+                origin:
+                  type: string
+                destination:
+                  type: string
+                vehicle_registration:
+                  type: string
+                driver_id:
+                  type: integer
+                cargo_description:
+                  type: string
+      responses:
+        '201':
+          description: Trip created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      trip:
+                        $ref: '#/components/schemas/Trip'
+
+  /trips/{tripId}:
+    get:
+      tags:
+        - Trips
+      summary: Get trip by ID
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully retrieved trip
+        '404':
+          description: Trip not found
+
+    put:
+      tags:
+        - Trips
+      summary: Update a trip (only pending trips)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                origin:
+                  type: string
+                destination:
+                  type: string
+                vehicle_registration:
+                  type: string
+                driver_id:
+                  type: integer
+                cargo_description:
+                  type: string
+      responses:
+        '200':
+          description: Trip updated successfully
+
+    delete:
+      tags:
+        - Trips
+      summary: Delete a trip
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Trip deleted successfully
+
+  /trips/{tripId}/accept:
+    post:
+      tags:
+        - Trips
+      summary: Accept a trip assignment (Driver)
+      description: Driver accepts a pending trip assignment. Changes status from Pending to Accepted.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Trip accepted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      trip:
+                        $ref: '#/components/schemas/Trip'
+        '400':
+          description: Bad request - Trip not in pending status
+
+  /trips/{tripId}/reject:
+    post:
+      tags:
+        - Trips
+      summary: Reject a trip assignment (Driver)
+      description: Driver rejects a pending trip assignment with a reason. Changes status from Pending to Rejected.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+                  description: Reason for rejecting the trip
+      responses:
+        '200':
+          description: Trip rejected successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      trip:
+                        $ref: '#/components/schemas/Trip'
+        '400':
+          description: Bad request - Trip not in pending status or missing reason
+
+  /trips/{tripId}/start:
+    post:
+      tags:
+        - Trips
+      summary: Start a trip (Driver)
+      description: Driver starts an accepted trip. Requires starting odometer reading. Optionally accepts assistant driver name.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                starting_odometer:
+                  type: integer
+                  description: Current odometer reading at trip start
+                assistant_driver_name:
+                  type: string
+                  description: Name of assistant driver (optional)
+      responses:
+        '200':
+          description: Trip started successfully
+        '400':
+          description: Bad request - Trip not in accepted status
+
+  /trips/{tripId}/end:
+    post:
+      tags:
+        - Trips
+      summary: End a trip (Driver)
+      description: Driver ends an in-progress trip with final odometer reading.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - final_odometer
+              properties:
+                final_odometer:
+                  type: integer
+                completion_notes:
+                  type: string
+      responses:
+        '200':
+          description: Trip ended successfully
+
+  /trips/{tripId}/cancel:
+    post:
+      tags:
+        - Trips
+      summary: Cancel a trip
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Trip cancelled successfully
 
   # ==================== FAULT TICKETS ====================
   /fault-tickets:
@@ -3633,6 +4340,68 @@ components:
           description: List of vehicle components
         notes:
           type: string
+
+    Trip:
+      type: object
+      properties:
+        id:
+          type: integer
+        trip_id:
+          type: string
+          example: "TRP-001"
+        origin:
+          type: string
+          example: "Colombo"
+        destination:
+          type: string
+          example: "Kandy"
+        vehicle_registration:
+          type: string
+          example: "ABC-1234"
+        driver_id:
+          type: integer
+        driver_name:
+          type: string
+          example: "John Doe"
+        assistant_driver_name:
+          type: string
+          nullable: true
+          description: Name of the assistant driver (optional)
+        starting_odometer:
+          type: integer
+          nullable: true
+          description: Set when driver starts the trip
+        final_odometer:
+          type: integer
+          nullable: true
+          description: Set when driver ends the trip
+        cargo_description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [Pending, Accepted, Rejected, In Progress, Completed, Cancelled]
+        rejection_reason:
+          type: string
+          nullable: true
+          description: Reason for rejection (only for rejected trips)
+        start_time:
+          type: string
+          format: date-time
+          nullable: true
+        end_time:
+          type: string
+          format: date-time
+          nullable: true
+        completion_notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
 
     FaultTicket:
       type: object

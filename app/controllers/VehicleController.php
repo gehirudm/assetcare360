@@ -222,4 +222,127 @@ class VehicleController {
             Response::error($e->getMessage(), 500);
         }
     }
+    
+    /**
+     * GET /api/vehicles/with-drivers
+     * Get all vehicles with their assigned driver info
+     */
+    public function getVehiclesWithDrivers() {
+        try {
+            $filters = [];
+            $search = isset($_GET['search']) ? $_GET['search'] : null;
+            
+            if (isset($_GET['status'])) {
+                $filters['status'] = $_GET['status'];
+            }
+            if (isset($_GET['vehicle_type'])) {
+                $filters['vehicle_type'] = $_GET['vehicle_type'];
+            }
+            if (isset($_GET['assignment_status'])) {
+                $filters['assignment_status'] = $_GET['assignment_status'];
+            }
+            
+            $vehicles = $this->vehicleService->getVehiclesWithDriverAssignments($filters, $search);
+            
+            Response::success(['vehicles' => $vehicles]);
+        } catch (Exception $e) {
+            Response::error($e->getMessage(), 500);
+        }
+    }
+    
+    /**
+     * GET /api/vehicles/:numberPlate/with-driver
+     * Get vehicle with driver info by number plate
+     */
+    public function getVehicleWithDriver() {
+        try {
+            $numberPlate = $_GET['numberPlate'] ?? null;
+            
+            if (!$numberPlate) {
+                Response::error('Number plate is required', 400);
+                return;
+            }
+            
+            $vehicle = $this->vehicleService->getVehicleWithDriverByNumberPlate($numberPlate);
+            
+            Response::success(['vehicle' => $vehicle]);
+        } catch (Exception $e) {
+            Response::error($e->getMessage(), 404);
+        }
+    }
+    
+    /**
+     * POST /api/vehicles/:id/assign-driver
+     * Assign a driver to a vehicle
+     */
+    public function assignDriver() {
+        try {
+            $vehicleId = $_GET['id'] ?? null;
+            
+            if (!$vehicleId) {
+                Response::error('Vehicle ID is required', 400);
+                return;
+            }
+            
+            $data = json_decode(file_get_contents('php://input'), true);
+            
+            if (!$data || !isset($data['driver_id'])) {
+                Response::error('Driver ID is required', 400);
+                return;
+            }
+            
+            $result = $this->vehicleService->assignDriverToVehicle($vehicleId, $data['driver_id']);
+            
+            $message = 'Driver assigned successfully';
+            if ($result['previous_vehicle']) {
+                $message .= '. Driver was unassigned from ' . $result['previous_vehicle']['number_plate'];
+            }
+            
+            Response::success($result, $message);
+        } catch (Exception $e) {
+            Response::error($e->getMessage(), 400);
+        }
+    }
+    
+    /**
+     * POST /api/vehicles/:id/unassign-driver
+     * Unassign driver from a vehicle
+     */
+    public function unassignDriver() {
+        try {
+            $vehicleId = $_GET['id'] ?? null;
+            
+            if (!$vehicleId) {
+                Response::error('Vehicle ID is required', 400);
+                return;
+            }
+            
+            $vehicle = $this->vehicleService->unassignDriverFromVehicle($vehicleId);
+            
+            Response::success(['vehicle' => $vehicle], 'Driver unassigned successfully');
+        } catch (Exception $e) {
+            Response::error($e->getMessage(), 400);
+        }
+    }
+    
+    /**
+     * GET /api/vehicles/my-vehicle
+     * Get the vehicle assigned to the current driver
+     */
+    public function getMyVehicle() {
+        try {
+            $user = RoleMiddleware::getCurrentUser();
+            
+            if (!$user || !isset($user['id'])) {
+                Response::error('Authentication required', 401);
+                return;
+            }
+            
+            $vehicle = $this->vehicleService->getVehicleAssignedToDriver($user['id']);
+            
+            Response::success($vehicle);
+        } catch (Exception $e) {
+            Response::error($e->getMessage(), 400);
+        }
+    }
 }

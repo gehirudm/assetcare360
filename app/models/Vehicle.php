@@ -289,4 +289,119 @@ class Vehicle extends BaseModel {
         
         return $vehicle;
     }
+    
+    /**
+     * Assign a driver to a vehicle
+     */
+    public function assignDriver($vehicleId, $driverId) {
+        $sql = "UPDATE `{$this->table}` SET assigned_driver_id = ?, driver_assigned_at = NOW() WHERE id = ?";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([$driverId, $vehicleId]);
+    }
+    
+    /**
+     * Unassign driver from a vehicle
+     */
+    public function unassignDriver($vehicleId) {
+        $sql = "UPDATE `{$this->table}` SET assigned_driver_id = NULL, driver_assigned_at = NULL WHERE id = ?";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([$vehicleId]);
+    }
+    
+    /**
+     * Unassign driver from any vehicle they're assigned to
+     */
+    public function unassignDriverFromAllVehicles($driverId) {
+        $sql = "UPDATE `{$this->table}` SET assigned_driver_id = NULL, driver_assigned_at = NULL WHERE assigned_driver_id = ?";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute([$driverId]);
+    }
+    
+    /**
+     * Get vehicle that a driver is currently assigned to
+     */
+    public function getVehicleByAssignedDriver($driverId) {
+        return $this->findOne(['assigned_driver_id' => $driverId]);
+    }
+    
+    /**
+     * Get all vehicles with their assigned driver info (joined with users table)
+     */
+    public function getAllVehiclesWithDrivers($filters = [], $search = null, $orderBy = 'vehicle_name ASC') {
+        $sql = "SELECT v.*, 
+                       u.id as driver_user_id, 
+                       u.full_name as driver_name, 
+                       u.employee_id as driver_employee_id,
+                       u.phone as driver_phone
+                FROM `{$this->table}` v
+                LEFT JOIN users u ON v.assigned_driver_id = u.id
+                WHERE 1=1";
+        $params = [];
+        
+        // Apply filters
+        if (!empty($filters['status'])) {
+            $sql .= " AND v.status = ?";
+            $params[] = $filters['status'];
+        }
+        
+        if (!empty($filters['vehicle_type'])) {
+            $sql .= " AND v.vehicle_type = ?";
+            $params[] = $filters['vehicle_type'];
+        }
+        
+        if (!empty($filters['assignment_status'])) {
+            if ($filters['assignment_status'] === 'assigned') {
+                $sql .= " AND v.assigned_driver_id IS NOT NULL";
+            } elseif ($filters['assignment_status'] === 'unassigned') {
+                $sql .= " AND v.assigned_driver_id IS NULL";
+            }
+        }
+        
+        // Apply search
+        if ($search) {
+            $sql .= " AND (v.vehicle_name LIKE ? OR v.number_plate LIKE ? OR u.full_name LIKE ?)";
+            $searchTerm = "%{$search}%";
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+        
+        $sql .= " ORDER BY {$orderBy}";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $vehicles = $stmt->fetchAll();
+        
+        // Decode components JSON
+        foreach ($vehicles as &$vehicle) {
+            if (isset($vehicle['components'])) {
+                $vehicle['components'] = json_decode($vehicle['components'], true) ?: [];
+            }
+        }
+        
+        return $vehicles;
+    }
+    
+    /**
+     * Get vehicle with driver info by number plate
+     */
+    public function getVehicleWithDriverByNumberPlate($numberPlate) {
+        $sql = "SELECT v.*, 
+                       u.id as driver_user_id, 
+                       u.full_name as driver_name, 
+                       u.employee_id as driver_employee_id,
+                       u.phone as driver_phone
+                FROM `{$this->table}` v
+                LEFT JOIN users u ON v.assigned_driver_id = u.id
+                WHERE v.number_plate = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$numberPlate]);
+        $vehicle = $stmt->fetch();
+        
+        if ($vehicle && isset($vehicle['components'])) {
+            $vehicle['components'] = json_decode($vehicle['components'], true) ?: [];
+        }
+        
+        return $vehicle ?: null;
+    }
 }

@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../models/SparePartRequest.php';
 require_once __DIR__ . '/../models/SparePartRequestItem.php';
 require_once __DIR__ . '/../models/FaultTicket.php';
+require_once __DIR__ . '/../models/Product.php';
 require_once __DIR__ . '/FaultTicketWorkflowService.php';
 require_once __DIR__ . '/../../config/Database.php';
 
@@ -15,12 +16,14 @@ class SparePartRequestService {
     private $itemModel;
     private $faultTicketModel;
     private $workflowService;
+    private $productModel;
 
     public function __construct() {
         $this->requestModel = new SparePartRequest();
         $this->itemModel = new SparePartRequestItem();
         $this->faultTicketModel = new FaultTicket();
         $this->workflowService = new FaultTicketWorkflowService();
+        $this->productModel = new Product();
     }
 
     /**
@@ -195,6 +198,27 @@ class SparePartRequestService {
                 'review_notes' => $notes,
                 'reviewed_at' => date('Y-m-d H:i:s')
             ]);
+
+            // Deduct stock for each approved item and update last_issue_date
+            $items = $this->itemModel->getByRequestId($id);
+            foreach ($items as $item) {
+                if (!empty($item['part_code'])) {
+                    $product = $this->productModel->findOne([
+                        'sparepart_id' => $item['part_code'],
+                        'is_active'    => 1
+                    ]);
+                    if ($product) {
+                        $this->productModel->updateQuantity(
+                            $product['id'],
+                            (int)$item['quantity'],
+                            'subtract'
+                        );
+                        $this->productModel->update($product['id'], [
+                            'last_issue_date' => date('Y-m-d')
+                        ]);
+                    }
+                }
+            }
 
             $this->workflowService->syncTicketStatus((int) $request['fault_ticket_id']);
 

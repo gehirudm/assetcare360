@@ -269,6 +269,27 @@ class UserService {
             ];
         }
     }
+
+    /**
+     * Get active drivers with workload information (active trip count)
+     */
+    public function getDriversWithWorkload() {
+        try {
+            $drivers = $this->userModel->getDriversWithWorkload(true);
+
+            return [
+                'success' => true,
+                'data' => [
+                    'users' => $drivers
+                ]
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Failed to load drivers: ' . $e->getMessage()
+            ];
+        }
+    }
     
     /**
      * Validate user data
