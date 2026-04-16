@@ -13,9 +13,13 @@ class MaintenanceServiceScheduleModal extends HTMLElement {
         this.innerHTML = `
             <div id="serviceScheduleModal" class="modal" aria-hidden="true">
                 <div class="modal-content">
-                    <button class="close" type="button" data-action="close-modal">&times;</button>
-                    <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Service Schedule Details</h2>
+                    <div class="modal-header">
+                        <h4><i class="fas fa-calendar-alt"></i> Service Schedule Details</h4>
+                        <button class="btn-close" type="button" data-action="close-modal">&times;</button>
+                    </div>
+                    <div style="padding: 30px;">
                     <div id="serviceScheduleContent"></div>
+                    </div>
                 </div>
             </div>
         `;

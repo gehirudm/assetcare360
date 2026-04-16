@@ -13,8 +13,10 @@ class MaintenanceApproveCostModal extends HTMLElement {
         this.innerHTML = `
             <div id="approveModal" class="modal" aria-hidden="true">
                 <div class="modal-content">
-                    <button class="close" type="button" data-action="close-modal">&times;</button>
-                    <h2 style="margin-bottom: 20px; color: var(--kelly-green);">Approve Cost Request</h2>
+                    <div class="modal-header">
+                        <h4><i class="fas fa-check-circle"></i> Approve Cost Request</h4>
+                        <button class="btn-close" type="button" data-action="close-modal">&times;</button>
+                    </div>
                     <form id="approveCostForm">
                         <div class="form-section">
                             <h5><i class="fas fa-check-circle"></i> Approval Details</h5>

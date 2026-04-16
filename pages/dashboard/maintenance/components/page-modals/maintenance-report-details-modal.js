@@ -13,10 +13,14 @@ class MaintenanceReportDetailsModal extends HTMLElement {
         this.innerHTML = `
             <div id="reportDetailsModal" class="modal" aria-hidden="true">
                 <div class="modal-content">
-                    <button class="close" type="button" data-action="close-modal">&times;</button>
-                    <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Service Report Details</h2>
+                    <div class="modal-header">
+                        <h4><i class="fas fa-clipboard-list"></i> Service Report Details</h4>
+                        <button class="btn-close" type="button" data-action="close-modal">&times;</button>
+                    </div>
+                    <div style="padding: 30px;">
                     <div id="reportDetailsContent">
                         <!-- Content will be populated by JavaScript -->
+                    </div>
                     </div>
                 </div>
             </div>

@@ -14,8 +14,10 @@ class MaintenanceAddServiceRecordModal extends HTMLElement {
         this.innerHTML = `
             <div id="addServiceModal" class="modal" aria-hidden="true">
                 <div class="modal-content">
-                    <button class="close" type="button" data-action="close-modal">&times;</button>
-                    <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Add Service Record</h2>
+                    <div class="modal-header">
+                        <h4><i class="fas fa-plus-circle"></i> Add Service Record</h4>
+                        <button class="btn-close" type="button" data-action="close-modal">&times;</button>
+                    </div>
                     <form id="addServiceForm">
                         <div class="form-section">
                             <h5><i class="fas fa-calendar-alt"></i> Service Schedule Information</h5>
