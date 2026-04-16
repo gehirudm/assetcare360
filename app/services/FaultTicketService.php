@@ -727,6 +727,64 @@ class FaultTicketService {
             $db->beginTransaction();
             
             try {
+                $approvedRequestsStmt = $db->prepare("SELECT id, request_id FROM spare_part_requests WHERE fault_ticket_id = ? AND status = 'Approved'");
+                $approvedRequestsStmt->execute([$id]);
+                $approvedRequests = $approvedRequestsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                if (!empty($approvedRequests)) {
+                    $itemsStmt = $db->prepare("SELECT part_code, part_name, quantity FROM spare_part_request_items WHERE request_id = ?");
+                    $insertUsageStmt = $db->prepare("
+                        INSERT INTO sparepart_usage (
+                            sparepart_id,
+                            sparepart_name,
+                            quantity_issued,
+                            issue_date,
+                            issued_by,
+                            machine_id,
+                            vehicle_id,
+                            notes
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ");
+
+                    $issueDate = date('Y-m-d');
+                    $issuedBy = is_array($user) && !empty($user['id']) ? (int)$user['id'] : null;
+                    $machineId = isset($ticket['machine_id']) ? (string)$ticket['machine_id'] : null;
+                    $vehicleId = isset($ticket['vehicle_id']) ? (string)$ticket['vehicle_id'] : null;
+                    $ticketCode = $ticket['ticket_id'] ?? ('#' . $id);
+
+                    foreach ($approvedRequests as $request) {
+                        $itemsStmt->execute([(int)$request['id']]);
+                        $items = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                        foreach ($items as $item) {
+                            $sparepartId = isset($item['part_code']) ? trim((string)$item['part_code']) : '';
+                            $quantityIssued = isset($item['quantity']) ? (int)$item['quantity'] : 0;
+
+                            if ($sparepartId === '' || $quantityIssued <= 0) {
+                                continue;
+                            }
+
+                            $sparepartName = !empty($item['part_name']) ? (string)$item['part_name'] : $sparepartId;
+                            $notes = sprintf(
+                                'Issued via fault ticket %s (%s)',
+                                $ticketCode,
+                                $request['request_id'] ?? ('Request #' . (int)$request['id'])
+                            );
+
+                            $insertUsageStmt->execute([
+                                $sparepartId,
+                                $sparepartName,
+                                $quantityIssued,
+                                $issueDate,
+                                $issuedBy,
+                                $machineId,
+                                $vehicleId,
+                                $notes
+                            ]);
+                        }
+                    }
+                }
+
                 // 1. Update fault_tickets → Resolved
                 $stmt = $db->prepare("UPDATE fault_tickets SET status = 'Resolved', resolved_at = NOW(), updated_at = NOW() WHERE id = ?");
                 $stmt->execute([$id]);
