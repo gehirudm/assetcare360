@@ -79,8 +79,7 @@
             const statusText = report.status.charAt(0).toUpperCase() + report.status.slice(1);
             const ticket = this._ticketData();
 
-            const allowedEditStatuses = ['Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts'];
-            const canEdit = allowedEditStatuses.includes(ticket.status);
+            const canEdit = true;
 
             content.innerHTML = `
                 <div class="budget-report-view">
@@ -118,7 +117,7 @@
                         </div>
                     ` : ''}
 
-                    ${canEdit && (report.status === 'pending' || report.status === 'revised') ? `
+                    ${(report.status === 'pending' || report.status === 'revised') ? `
                         <div style="display: flex; gap: 10px; margin-top: 15px;">
                             <button type="button" class="btn btn-primary" data-action="budget-open-edit" data-report-id="${report.id}">
                                 <i class="fas fa-edit"></i> Edit Budget Report
@@ -128,13 +127,6 @@
                                     <i class="fas fa-trash"></i> Delete Report
                                 </button>
                             ` : ''}
-                        </div>
-                    ` : !canEdit ? `
-                        <div style="margin-top: 15px; padding: 10px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 6px;">
-                            <small style="color: #92400e;">
-                                <i class="fas fa-info-circle"></i>
-                                Budget report cannot be modified after work has started (status: ${ticket.status})
-                            </small>
                         </div>
                     ` : ''}
                 </div>
@@ -146,20 +138,6 @@
             if (!content) return;
 
             const ticket = this._ticketData();
-
-            const allowedStatuses = ['Open', 'Assigned'];
-            const canSubmitBudget = allowedStatuses.includes(ticket.status);
-
-            if (!canSubmitBudget) {
-                content.innerHTML = `
-                    <div class="budget-report-empty">
-                        <i class="fas fa-info-circle" style="font-size: 3rem; color: var(--muted); margin-bottom: 15px;"></i>
-                        <p style="color: var(--muted); margin-bottom: 10px;"><strong>Budget reports can only be submitted before work begins</strong></p>
-                        <p style="color: var(--muted); font-size: 0.9rem;">Allowed statuses: Open, Assigned<br>Current status: <strong>${ticket.status}</strong></p>
-                    </div>
-                `;
-                return;
-            }
 
             content.innerHTML = `
                 <div class="budget-report-empty">

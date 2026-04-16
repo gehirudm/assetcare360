@@ -1099,9 +1099,9 @@ body {
 
 .action-buttons {
     display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
 }
 
 .filter-controls {
@@ -1426,5 +1426,164 @@ body {
     .action-buttons {
         flex-direction: column;
     }
+}
+
+/* ---- Inventory / Spare-part request list items ---- */
+.inventory-list { display: flex; flex-direction: column; gap: 0; }
+.inventory-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    padding: 14px 16px;
+    transition: all 0.2s ease;
+    border-bottom: none;
+}
+.inventory-item:first-child { border-radius: 8px 8px 0 0; }
+.inventory-item:last-child  { border-bottom: 1px solid #e5e7eb; border-radius: 0 0 8px 8px; }
+.inventory-item:only-child  { border-radius: 8px; border-bottom: 1px solid #e5e7eb; }
+.inventory-item:hover       { background: #f8faff; box-shadow: 0 4px 16px rgba(0,0,0,0.08); z-index: 1; position: relative; }
+.item-details               { flex: 1; min-width: 0; }
+.item-details strong        { color: var(--tang-blue); display: block; margin-bottom: 4px; font-size: 14px; }
+.item-meta                  { color: var(--muted); font-size: 12px; margin-bottom: 3px; line-height: 1.5; }
+.item-description           { margin-top: 6px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.item-actions               { text-align: right; white-space: nowrap; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; justify-content: center; min-width: 80px; }
+
+/* Approval trail */
+.approval-trail             { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 8px; padding: 6px 10px; background: #f8faff; border-radius: 6px; border-left: 3px solid #dbeafe; font-size: 11px; }
+.trail-step                 { display: inline-flex; align-items: center; gap: 4px; font-weight: 500; white-space: nowrap; }
+.trail-arrow                { color: var(--muted); font-size: 10px; padding: 0 2px; }
+.trail-done                 { color: #059669; }
+.trail-pending              { color: #d97706; }
+.trail-rejected             { color: #dc2626; }
+.trail-issued               { color: var(--royal-blue, #3b82f6); }
+
+/* ---- Spare-part requests table ---- */
+.sp-table-wrap {
+    overflow-x: auto;
+    border-radius: 8px;
+}
+
+.sp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.sp-table th,
+.sp-table td {
+    padding: 11px 14px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
+}
+
+.sp-table th {
+    background: #fafcff;
+    font-weight: 600;
+    color: var(--text-700);
+    white-space: nowrap;
+}
+
+.sp-table tr.sp-data-row {
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.sp-table tr.sp-data-row:hover td {
+    background: #f0f6ff;
+}
+
+.sp-table tr.sp-data-row.sp-row-expanded td {
+    background: #eef4ff;
+}
+
+.sp-table tr.sp-detail-row td {
+    padding: 0;
+    background: #f8faff;
+    border-bottom: 2px solid var(--tang-blue);
+}
+
+.sp-detail-panel {
+    padding: 16px 20px;
+}
+
+.sp-detail-panel h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-700);
+    margin-bottom: 10px;
+}
+
+.sp-parts-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-bottom: 12px;
+}
+
+.sp-parts-table th,
+.sp-parts-table td {
+    padding: 7px 10px;
+    border: 1px solid #e5e7eb;
+    text-align: left;
+}
+
+.sp-parts-table th {
+    background: #f3f4f6;
+    font-weight: 600;
+}
+
+.sp-expand-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--tang-blue);
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background 0.15s;
+}
+
+.sp-expand-btn:hover {
+    background: #dbeafe;
+}
+
+/* ==================== AVAILABILITY BADGES ==================== */
+.availability-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.availability-badge:empty {
+    display: none;
+}
+
+.availability-badge .badge-icon {
+    font-weight: bold;
+}
+
+.availability-badge.badge-success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #10b981;
+}
+
+.availability-badge.badge-warning {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #f59e0b;
+}
+
+.availability-badge.badge-danger {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #ef4444;
 }
     

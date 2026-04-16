@@ -613,4 +613,12 @@ window.confirmLogout = confirmLogout;
     setupBackButton();
     await loadTicketDetails();
     await budgetManager.loadBudgetReport();
+
+    // If arrived via "Add Budget" button, scroll budget section into view
+    if (window.location.hash === '#budgetReportCard') {
+        const card = document.getElementById('budgetReportCard');
+        if (card) {
+            setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+        }
+    }
 }());
