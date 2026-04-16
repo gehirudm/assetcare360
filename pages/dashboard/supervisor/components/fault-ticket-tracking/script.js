@@ -11,6 +11,15 @@ class SupervisorFaultTicketTracking extends HTMLElement {
         this.render();
         this.bindEvents();
         this.refresh();
+
+        this._onGarageApproved = () => this.refresh();
+        document.addEventListener('supervisor-garage-approval-modal:approved', this._onGarageApproved);
+    }
+
+    disconnectedCallback() {
+        if (this._onGarageApproved) {
+            document.removeEventListener('supervisor-garage-approval-modal:approved', this._onGarageApproved);
+        }
     }
 
     render() {
@@ -54,6 +63,11 @@ class SupervisorFaultTicketTracking extends HTMLElement {
 
             if (action === 'view-breakdown') {
                 this.openDetails(actionNode.dataset.breakdownIdx);
+                return;
+            }
+
+            if (action === 'approve-garage') {
+                this.openGarageApproval(actionNode.dataset.breakdownIdx);
             }
         });
     }
@@ -135,6 +149,8 @@ class SupervisorFaultTicketTracking extends HTMLElement {
             effectiveStatus: report.ticket_status || report.status || 'Pending',
             ticketNumber: report.fault_ticket_number || null,
             faultTicketId: report.fault_ticket_id ? Number(report.fault_ticket_id) : null,
+            garageWorkflowStatus: report?.garage_workflow?.status || report.garage_workflow_status || 'awaiting_supervisor_approval',
+            approvedGarageName: report?.garage_workflow?.approved_garage?.name || report.approved_garage_name || null,
             assignments: Array.isArray(report.assigned_technicians)
                 ? report.assigned_technicians.map((technician) => ({ technician_name: technician.technician_name }))
                 : [],
@@ -263,14 +279,19 @@ class SupervisorFaultTicketTracking extends HTMLElement {
         const statusInfo = this.getStatusInfo(breakdown.effectiveStatus);
         const severityInfo = this.getSeverityInfo(breakdown.severity);
         const sourceIcon = breakdown.source === 'route' ? 'fa-car' : 'fa-cogs';
+        const garageStatus = breakdown.source === 'route' ? this.getGarageWorkflowStatusInfo(breakdown.garageWorkflowStatus) : null;
         const ticketHtml = breakdown.ticketNumber
             ? `<div class="item-meta" style="margin-top:4px;color:#6b7280;"><i class="fas fa-ticket-alt"></i> Ticket: ${this.escapeHtml(breakdown.ticketNumber)}</div>`
             : '';
         const assignedHtml = breakdown.assignments.length
             ? `<div class="item-meta" style="margin-top:4px;"><i class="fas fa-user-cog" style="color:#2563eb;"></i> <span style="color:#2563eb;font-weight:600;">Assigned to: ${this.escapeHtml(breakdown.assignments.map((assignment) => assignment.technician_name).filter(Boolean).join(', '))}</span></div>`
             : '';
+        const garageWorkflowHtml = breakdown.source === 'route'
+            ? `<div class="item-meta" style="margin-top:4px;color:#0f766e;"><i class="fas fa-warehouse"></i> Garage Workflow: <span class="status-text ${garageStatus.className}">${this.escapeHtml(garageStatus.label)}</span>${breakdown.approvedGarageName ? ` | ${this.escapeHtml(breakdown.approvedGarageName)}` : ''}</div>`
+            : '';
         const updateText = this.getUpdateText(breakdown.effectiveStatus);
         const showUpdateText = breakdown.effectiveStatus !== 'Pending' && breakdown.effectiveStatus !== 'Open';
+        const showApproveGarageAction = breakdown.source === 'route' && (breakdown.garageWorkflowStatus === 'awaiting_supervisor_approval' || !breakdown.garageWorkflowStatus);
 
         return `
             <div class="inventory-item" data-status="${this.escapeHtml(this.normalizeFilterStatus(breakdown.effectiveStatus))}" data-breakdown-idx="${index}">
@@ -289,14 +310,38 @@ class SupervisorFaultTicketTracking extends HTMLElement {
                     </div>
                     ${ticketHtml}
                     ${assignedHtml}
+                    ${garageWorkflowHtml}
                     ${showUpdateText ? `<div class="item-meta" style="margin-top:4px;color:#059669;font-weight:500;">${this.escapeHtml(updateText)}</div>` : ''}
                 </div>
                 <div class="item-actions">
-                    <button class="btn btn-primary btn-small" type="button" data-action="view-breakdown" data-breakdown-idx="${index}">
-                        <i class="fas fa-eye"></i> VIEW
-                    </button>
+                    <div class="action-buttons" style="display:flex; flex-direction:column; gap:8px;">
+                        <button class="btn btn-primary btn-small" type="button" data-action="view-breakdown" data-breakdown-idx="${index}">
+                            <i class="fas fa-eye"></i> VIEW
+                        </button>
+                        ${showApproveGarageAction ? `
+                            <button class="btn btn-warning btn-small" type="button" data-action="approve-garage" data-breakdown-idx="${index}">
+                                <i class="fas fa-check-circle"></i> APPROVE GARAGE
+                            </button>
+                        ` : ''}
+                    </div>
                 </div>
             </div>`;
+    }
+
+    getGarageWorkflowStatusInfo(status) {
+        const normalized = String(status || 'awaiting_supervisor_approval').toLowerCase();
+        const statusMap = {
+            awaiting_supervisor_approval: { label: 'Awaiting Supervisor Approval', className: 'status-pending' },
+            garage_approved: { label: 'Garage Approved', className: 'status-in-progress' },
+            garage_entry_logged: { label: 'Garage Entry Logged', className: 'status-assigned' },
+            repair_in_progress: { label: 'Repair In Progress', className: 'status-in-progress' },
+            completed: { label: 'Completed', className: 'status-resolved' },
+        };
+
+        return statusMap[normalized] || {
+            label: normalized.replace(/_/g, ' '),
+            className: 'status-pending',
+        };
     }
 
     applyFilter(filter) {
@@ -354,6 +399,22 @@ class SupervisorFaultTicketTracking extends HTMLElement {
         }
 
         this.emitToast('No details available for this item.', 'warning');
+    }
+
+    openGarageApproval(index) {
+        const breakdown = this._allBreakdowns[Number(index)];
+        if (!breakdown || breakdown.source !== 'route') {
+            this.emitToast('Route breakdown details are unavailable.', 'warning');
+            return;
+        }
+
+        const modal = document.querySelector('supervisor-garage-approval-modal');
+        if (!modal || typeof modal.open !== 'function') {
+            this.emitToast('Garage approval modal is unavailable.', 'error');
+            return;
+        }
+
+        modal.open({ breakdown });
     }
 
     toMachineTicketPayload(breakdown) {
