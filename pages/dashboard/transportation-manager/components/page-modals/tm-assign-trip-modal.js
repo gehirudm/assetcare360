@@ -7,6 +7,7 @@ class TMAssignTripModal extends HTMLElement {
         this._mounted = true;
         this._selectedVehicle = null;
         this._vehicleTripCount = 0;
+        this._ongoingFaultTicket = null;
         this.render();
         this.bindEvents();
     }
@@ -112,6 +113,7 @@ class TMAssignTripModal extends HTMLElement {
         if (form) form.reset();
         this._selectedVehicle = null;
         this._vehicleTripCount = 0;
+        this._ongoingFaultTicket = null;
         this._hideErrors();
         this._hideVehicleDriverInfo();
         
@@ -130,6 +132,7 @@ class TMAssignTripModal extends HTMLElement {
             modal.setAttribute('aria-hidden', 'true');
         }
         this._selectedVehicle = null;
+        this._ongoingFaultTicket = null;
     }
 
     async _loadVehicles() {
@@ -165,6 +168,7 @@ class TMAssignTripModal extends HTMLElement {
         if (!numberPlate) {
             this._hideVehicleDriverInfo();
             this._vehicleTripCount = 0;
+            this._ongoingFaultTicket = null;
             if (submitBtn) submitBtn.disabled = false;
             return;
         }
@@ -180,10 +184,11 @@ class TMAssignTripModal extends HTMLElement {
         }
 
         try {
-            // Fetch vehicle with driver and trips in parallel
-            const [vehicleRes, tripsRes] = await Promise.all([
+            // Fetch vehicle details, active trips, and fault tickets for warning checks.
+            const [vehicleRes, tripsRes, ticketsRes] = await Promise.all([
                 API.get(`/vehicles/${encodeURIComponent(numberPlate)}/with-driver`),
-                API.get('/trips')
+                API.get('/trips'),
+                API.get('/fault-tickets')
             ]);
             
             this._selectedVehicle = vehicleRes.data?.vehicle;
@@ -194,6 +199,14 @@ class TMAssignTripModal extends HTMLElement {
             this._vehicleTripCount = allTrips.filter(t => 
                 t.vehicle_registration === numberPlate && activeStatuses.includes(t.status)
             ).length;
+
+            const allTickets = ticketsRes.data?.tickets || [];
+            const vehicleId = Number(this._selectedVehicle?.id);
+            this._ongoingFaultTicket = allTickets.find(ticket =>
+                Number(ticket.vehicle_id) === vehicleId &&
+                ticket.status !== 'Resolved' &&
+                ticket.status !== 'Closed'
+            ) || null;
             
             this._renderVehicleDriverInfo();
         } catch (error) {
@@ -218,6 +231,8 @@ class TMAssignTripModal extends HTMLElement {
         const v = this._selectedVehicle;
         const hasDriver = !!v.assigned_driver_id;
         const tripCount = this._vehicleTripCount || 0;
+        const ongoingFaultTicket = this._ongoingFaultTicket;
+        const hasOngoingFaultTicket = !!ongoingFaultTicket;
         
         // Trip count indicator
         const tripCountHtml = `
@@ -228,6 +243,20 @@ class TMAssignTripModal extends HTMLElement {
                 </span>
             </div>
         `;
+
+        const ongoingFaultTicketHtml = hasOngoingFaultTicket
+            ? `
+                <div class="driver-info-card warning" style="margin-top: 12px;">
+                    <div class="driver-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            <strong>Vehicle Under Breakdown</strong>
+                            <p>Trip assignment is blocked because this vehicle has an ongoing fault ticket <strong>${ongoingFaultTicket.ticket_id || '#' + ongoingFaultTicket.id}</strong> (${ongoingFaultTicket.status || 'Open'}).</p>
+                        </div>
+                    </div>
+                </div>
+            `
+            : '';
 
         if (hasDriver) {
             infoContainer.innerHTML = `
@@ -242,8 +271,9 @@ class TMAssignTripModal extends HTMLElement {
                     </div>
                 </div>
                 ${tripCountHtml}
+                ${ongoingFaultTicketHtml}
             `;
-            if (submitBtn) submitBtn.disabled = false;
+            if (submitBtn) submitBtn.disabled = hasOngoingFaultTicket;
         } else {
             infoContainer.innerHTML = `
                 <div class="driver-info-card warning">
@@ -256,6 +286,7 @@ class TMAssignTripModal extends HTMLElement {
                     </div>
                 </div>
                 ${tripCountHtml}
+                ${ongoingFaultTicketHtml}
             `;
             if (submitBtn) submitBtn.disabled = true;
         }
@@ -301,6 +332,11 @@ class TMAssignTripModal extends HTMLElement {
         // Verify vehicle has assigned driver
         if (!this._selectedVehicle || !this._selectedVehicle.assigned_driver_id) {
             return this._showErrors('Selected vehicle has no assigned driver. Please assign a driver first.');
+        }
+
+        if (this._ongoingFaultTicket) {
+            const ticketId = this._ongoingFaultTicket.ticket_id || ('#' + this._ongoingFaultTicket.id);
+            return this._showErrors(`Cannot assign trip. Vehicle has an ongoing breakdown ticket (${ticketId}).`);
         }
 
         const submitBtn = this.querySelector('#assignTripSubmit');
