@@ -19,102 +19,88 @@ class DriverTripLog extends HTMLElement {
         this.innerHTML = `
             <div class="page-header">
                 <h2 class="page-title"><i class="fas fa-route"></i> Trip Log</h2>
-                <p class="page-subtitle">Record and track your trips with details</p>
+                <p class="page-subtitle">View and manage your assigned trips</p>
             </div>
 
-            <div style="margin-bottom: 20px; display: flex; justify-content: flex-end; gap: 10px;">
-                <button id="startNewTripBtn" class="btn btn-primary" type="button" data-action="open-start-trip-modal">
-                    <i class="fas fa-plus"></i> Start New Trip
-                </button>
-                <button class="btn btn-secondary" type="button" data-action="refresh-trips">
-                    <i class="fas fa-sync"></i> Refresh
-                </button>
+            <div class="filter-section" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-small active" data-action="set-trip-filter" data-filter="all">All</button>
+                <button class="btn btn-small" data-action="set-trip-filter" data-filter="pending">Pending</button>
+                <button class="btn btn-small" data-action="set-trip-filter" data-filter="accepted">Accepted</button>
+                <button class="btn btn-small" data-action="set-trip-filter" data-filter="in-progress">In Progress</button>
+                <button class="btn btn-small" data-action="set-trip-filter" data-filter="completed">Completed</button>
             </div>
 
-            <div id="activeTripWarning" style="display: none; padding: 10px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-bottom: 15px; color: #856404;">
-                <i class="fas fa-info-circle"></i> You have an active trip. Please complete it before starting a new one.
-            </div>
-
-            <div class="filter-controls" id="tripFilters">
-                <button class="filter-btn active" type="button" data-action="set-trip-filter" data-filter="all">All</button>
-                <button class="filter-btn" type="button" data-action="set-trip-filter" data-filter="ready">Ready</button>
-                <button class="filter-btn" type="button" data-action="set-trip-filter" data-filter="in-progress">In Progress</button>
-                <button class="filter-btn" type="button" data-action="set-trip-filter" data-filter="completed">Completed</button>
-            </div>
-
-            <div id="driverTripsList"></div>
+            <div id="driverTripsList" class="inventory-list"></div>
         `;
     }
 
     bindEvents() {
-        this.addEventListener('click', (event) => {
+        this.addEventListener('click', async (event) => {
             const actionEl = event.target.closest('[data-action]');
             if (!actionEl) {
                 return;
             }
 
             const action = actionEl.dataset.action;
-            if (action === 'open-start-trip-modal') {
-                if (this.hasActiveTrip()) {
-                    DriverUtils.showToast('Please complete your active trip before starting a new one.', 'warning');
-                    return;
-                }
-
-                DriverUtils.openModal('startTripModal');
-                return;
-            }
-
-            if (action === 'refresh-trips') {
-                this.refresh();
-                return;
-            }
+            const tripId = actionEl.dataset.tripId;
 
             if (action === 'set-trip-filter') {
                 this.applyFilter(actionEl.dataset.filter);
                 return;
             }
 
-            const tripId = actionEl.dataset.tripId;
-            const trip = this.trips.find((item) => item.trip_id === tripId) || null;
-
-            if (action === 'view-trip' && trip) {
-                DriverUtils.openModal('viewTripModal', { trip });
+            if (action === 'accept-trip') {
+                await this.acceptTrip(tripId);
                 return;
             }
 
-            if (action === 'edit-trip' && trip) {
-                DriverUtils.openModal('editTripModal', { trip });
+            if (action === 'reject-trip') {
+                this.openRejectModal(tripId);
                 return;
             }
 
-            if (action === 'start-trip' && tripId) {
-                this.startTrip(tripId);
+            if (action === 'start-trip') {
+                this.openStartTripModal(tripId);
                 return;
             }
 
-            if (action === 'end-trip' && trip) {
-                DriverUtils.openModal('endTripModal', {
-                    trip,
-                    minimumOdometer: Number.parseInt(trip.starting_odometer || 0, 10),
-                });
+            if (action === 'end-trip') {
+                const trip = this.trips.find((t) => t.trip_id === tripId);
+                DriverUtils.emit('driver:modal-open', { id: 'endTripModal', payload: { trip } });
+                return;
+            }
+
+            if (action === 'view-trip') {
+                const trip = this.trips.find((t) => t.trip_id === tripId);
+                DriverUtils.emit('driver:modal-open', { id: 'viewTripModal', payload: { trip } });
+                return;
             }
         });
     }
 
-    async startTrip(tripId) {
+    async acceptTrip(tripId) {
         try {
-            const response = await DriverUtils.apiPost(`/trips/${encodeURIComponent(tripId)}/start`, {});
+            const response = await DriverUtils.apiPost(`/trips/${encodeURIComponent(tripId)}/accept`, {});
             if (response && (response.success || response.status === 'success')) {
-                DriverUtils.showToast(`Trip ${tripId} started successfully.`);
+                DriverUtils.showToast(`Trip ${tripId} accepted successfully.`);
                 DriverUtils.emit('driver:data-trips-changed');
                 return;
             }
 
-            DriverUtils.showToast(response?.message || `Failed to start trip ${tripId}.`, 'error');
+            DriverUtils.showToast(response?.message || `Failed to accept trip ${tripId}.`, 'error');
         } catch (error) {
-            console.error('Failed to start trip:', error);
-            DriverUtils.showToast('Failed to start trip. Please try again.', 'error');
+            console.error('Failed to accept trip:', error);
+            DriverUtils.showToast('Failed to accept trip. Please try again.', 'error');
         }
+    }
+
+    openRejectModal(tripId) {
+        DriverUtils.emit('driver:modal-open', { id: 'rejectTripModal', tripId });
+    }
+
+    openStartTripModal(tripId) {
+        const trip = this.trips.find((t) => t.trip_id === tripId);
+        DriverUtils.emit('driver:modal-open', { id: 'startAcceptedTripModal', tripId, trip });
     }
 
     applyFilter(filter) {
@@ -135,7 +121,11 @@ class DriverTripLog extends HTMLElement {
             const response = await DriverUtils.apiGet('/trips');
             const trips = DriverUtils.normalizeApiList(response, 'trips');
 
-            this.trips = (trips.length > 0 ? trips : this.getFallbackTrips()).map((trip) => {
+            // Filter trips for current driver only
+            const currentDriverId = DriverUtils.store.currentUser?.id;
+            this.trips = trips.filter((trip) => {
+                return !currentDriverId || trip.driver_id == currentDriverId;
+            }).map((trip) => {
                 const tripId = trip.trip_id || trip.id;
                 return {
                     ...trip,
@@ -149,72 +139,96 @@ class DriverTripLog extends HTMLElement {
             this.renderTrips();
         } catch (error) {
             console.error('Failed to load trips:', error);
-            this.trips = this.getFallbackTrips();
-            DriverUtils.store.trips = new Map(this.trips.map((trip) => [trip.trip_id, trip]));
+            this.trips = [];
             this.renderTrips();
-            DriverUtils.showToast('Unable to load trips from server. Showing local data.', 'warning');
+            DriverUtils.showToast('Unable to load trips from server.', 'warning');
         }
     }
 
     renderTrips() {
         const container = this.querySelector('#driverTripsList');
-        const filteredTrips = this.trips.filter((trip) => {
+        
+        const filtered = this.trips.filter((trip) => {
             if (this.currentFilter === 'all') {
                 return true;
             }
-
             return DriverUtils.getTripFilterStatus(trip.status) === this.currentFilter;
         });
 
-        if (filteredTrips.length === 0) {
-            container.innerHTML = '<div style="padding: 20px; color: var(--muted);">No trips found for the selected filter.</div>';
-            this.updateStartButtonState();
-            DriverUtils.emit('driver:data-summary-updated');
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state" style="padding: 40px; text-align: center; color: var(--muted);">
+                    <i class="fas fa-route" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i>
+                    <p>No trips found${this.currentFilter !== 'all' ? ' for this filter' : ''}.</p>
+                </div>
+            `;
             return;
         }
 
-        container.innerHTML = filteredTrips.map((trip) => this.renderTripItem(trip)).join('');
-        this.updateStartButtonState();
+        container.innerHTML = filtered.map((trip) => this.renderTripItem(trip)).join('');
         DriverUtils.emit('driver:data-summary-updated');
     }
 
     renderTripItem(trip) {
         const filterStatus = DriverUtils.getTripFilterStatus(trip.status);
         const statusColor = DriverUtils.getStatusColor(trip.status);
-        const odometer = trip.final_odometer || trip.finalOdometer || trip.starting_odometer || trip.odometer || 'N/A';
         const tripDate = DriverUtils.formatDate(trip.created_at || trip.date);
         const route = `${trip.origin || 'N/A'} → ${trip.destination || 'N/A'}`;
 
-        let actions = `
-            <button class="btn btn-small btn-primary" type="button" data-action="view-trip" data-trip-id="${trip.trip_id}">
-                <i class="fas fa-eye"></i> VIEW
-            </button>
-        `;
+        let actions = '';
 
-        if (filterStatus === 'ready') {
+        // Pending trips: Accept or Reject
+        if (filterStatus === 'pending') {
             actions = `
-                <button class="btn btn-small btn-success" type="button" data-action="start-trip" data-trip-id="${trip.trip_id}">
-                    <i class="fas fa-play"></i> START
+                <button class="btn btn-small btn-success" type="button" data-action="accept-trip" data-trip-id="${trip.trip_id}">
+                    <i class="fas fa-check"></i> Accept
+                </button>
+                <button class="btn btn-small btn-danger" type="button" data-action="reject-trip" data-trip-id="${trip.trip_id}">
+                    <i class="fas fa-times"></i> Reject
                 </button>
                 <button class="btn btn-small btn-primary" type="button" data-action="view-trip" data-trip-id="${trip.trip_id}">
-                    <i class="fas fa-eye"></i> VIEW
-                </button>
-                <button class="btn btn-small btn-secondary" type="button" data-action="edit-trip" data-trip-id="${trip.trip_id}">
-                    <i class="fas fa-edit"></i> EDIT
+                    <i class="fas fa-eye"></i> View
                 </button>
             `;
         }
 
+        // Accepted trips: Start
+        if (filterStatus === 'accepted') {
+            actions = `
+                <button class="btn btn-small btn-success" type="button" data-action="start-trip" data-trip-id="${trip.trip_id}">
+                    <i class="fas fa-play"></i> Start
+                </button>
+                <button class="btn btn-small btn-primary" type="button" data-action="view-trip" data-trip-id="${trip.trip_id}">
+                    <i class="fas fa-eye"></i> View
+                </button>
+            `;
+        }
+
+        // In Progress trips: End
         if (filterStatus === 'in-progress') {
             actions = `
                 <button class="btn btn-small btn-danger" type="button" data-action="end-trip" data-trip-id="${trip.trip_id}">
-                    <i class="fas fa-flag-checkered"></i> END
+                    <i class="fas fa-flag-checkered"></i> End
                 </button>
                 <button class="btn btn-small btn-primary" type="button" data-action="view-trip" data-trip-id="${trip.trip_id}">
-                    <i class="fas fa-eye"></i> VIEW
+                    <i class="fas fa-eye"></i> View
                 </button>
             `;
         }
+
+        // Completed/Cancelled/Rejected: View only
+        if (filterStatus === 'completed' || filterStatus === 'cancelled' || filterStatus === 'rejected') {
+            actions = `
+                <button class="btn btn-small btn-primary" type="button" data-action="view-trip" data-trip-id="${trip.trip_id}">
+                    <i class="fas fa-eye"></i> View
+                </button>
+            `;
+        }
+
+        // Show rejection reason if rejected
+        const rejectionInfo = filterStatus === 'rejected' && trip.rejection_reason
+            ? `<div class="item-rejection" style="color: #e74c3c; font-size: 12px; margin-top: 4px;"><i class="fas fa-exclamation-circle"></i> Reason: ${trip.rejection_reason}</div>`
+            : '';
 
         return `
             <div class="inventory-item" data-id="${trip.trip_id}" data-status="${filterStatus}">
@@ -223,9 +237,14 @@ class DriverTripLog extends HTMLElement {
                     <div class="item-meta">
                         <i class="fas fa-map-marker-alt"></i> ${route} | <i class="fas fa-calendar"></i> ${tripDate}
                     </div>
-                    <div class="item-description">
-                        <span class="status-text" style="color: ${statusColor};">${trip.status}</span> | <i class="fas fa-tachometer-alt"></i> ${odometer} km
+                    <div class="item-meta">
+                        <i class="fas fa-truck"></i> ${trip.vehicle_registration || 'No vehicle assigned'}
                     </div>
+                    <div class="item-description">
+                        <span class="status-badge" style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">${trip.status}</span>
+                        ${trip.cargo_description ? ` | <i class="fas fa-box"></i> ${trip.cargo_description}` : ''}
+                    </div>
+                    ${rejectionInfo}
                 </div>
                 <div class="item-actions">
                     <div class="action-buttons">${actions}</div>
@@ -237,49 +256,8 @@ class DriverTripLog extends HTMLElement {
     hasActiveTrip() {
         return this.trips.some((trip) => {
             const status = DriverUtils.getTripFilterStatus(trip.status);
-            return status === 'ready' || status === 'in-progress';
+            return status === 'pending' || status === 'accepted' || status === 'in-progress';
         });
-    }
-
-    updateStartButtonState() {
-        const button = this.querySelector('#startNewTripBtn');
-        const warning = this.querySelector('#activeTripWarning');
-        const hasActive = this.hasActiveTrip();
-
-        if (button) {
-            button.disabled = hasActive;
-            button.style.opacity = hasActive ? '0.5' : '1';
-            button.style.cursor = hasActive ? 'not-allowed' : 'pointer';
-        }
-
-        if (warning) {
-            warning.style.display = hasActive ? 'block' : 'none';
-        }
-    }
-
-    getFallbackTrips() {
-        return [
-            {
-                trip_id: 'TRP-001',
-                origin: 'Colombo',
-                destination: 'Kandy',
-                status: 'Completed',
-                starting_odometer: 45100,
-                final_odometer: 45220,
-                cargo_description: 'Spare parts crates',
-                created_at: '2026-04-10T08:00:00Z',
-            },
-            {
-                trip_id: 'TRP-002',
-                origin: 'Kandy',
-                destination: 'Galle',
-                status: 'In Progress',
-                starting_odometer: 45220,
-                final_odometer: null,
-                cargo_description: 'Machinery components',
-                created_at: '2026-04-11T09:10:00Z',
-            },
-        ];
     }
 }
 

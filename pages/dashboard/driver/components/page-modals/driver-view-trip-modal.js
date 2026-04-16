@@ -67,11 +67,19 @@ class DriverViewTripModal extends HTMLElement {
                     <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;"><strong>Trip ID:</strong><span>${trip.trip_id}</span></div>
                     <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;"><strong>Status:</strong><span style="color: ${statusColor}; font-weight: 700;">${trip.status}</span></div>
                     <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;"><strong>Route:</strong><span>${route}</span></div>
+                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;"><strong>Vehicle:</strong><span>${trip.vehicle_registration || 'Not assigned'}</span></div>
                     <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;"><strong>Date:</strong><span>${DriverUtils.formatDate(trip.created_at || trip.date)}</span></div>
                     <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;"><strong>Starting Odometer:</strong><span>${trip.starting_odometer || 'N/A'} km</span></div>
                     <div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;"><strong>Final Odometer:</strong><span>${trip.final_odometer || 'Not completed'}${trip.final_odometer ? ' km' : ''}</span></div>
+                    ${trip.assistant_driver_name ? `<div style="display: flex; justify-content: space-between; padding: 10px; background: #f8f9fa; border-radius: 6px;"><strong>Assistant Driver:</strong><span>${trip.assistant_driver_name}</span></div>` : ''}
                 </div>
             </div>
+            ${trip.status === 'Rejected' && trip.rejection_reason ? `
+            <div class="form-section" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px;">
+                <h5 style="color: #dc2626;"><i class="fas fa-times-circle"></i> Rejection Reason</h5>
+                <p style="color: #dc2626; margin: 0;">${trip.rejection_reason}</p>
+            </div>
+            ` : ''}
             <div class="form-section">
                 <h5><i class="fas fa-box"></i> Cargo</h5>
                 <div style="padding: 12px; background: #f8f9fa; border-radius: 6px;">${trip.cargo_description || 'No cargo description provided.'}</div>
