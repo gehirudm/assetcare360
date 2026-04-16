@@ -33,9 +33,9 @@ class DriverBreakdownInRouteModal extends HTMLElement {
                     <form id="breakdownInRouteForm">
                         <div class="form-section">
                             <div class="form-grid">
-                                <div class="form-group">
-                                    <label class="form-label">Vehicle Registration *</label>
-                                    <input type="text" id="routeBreakdownVehicle" class="form-input" value="LKA-1234" required>
+                                <div class="form-group" id="routeVehicleContainer">
+                                    <label class="form-label">Vehicle *</label>
+                                    <!-- Will be populated dynamically: readonly input if assigned, dropdown if not -->
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Urgency Level *</label>
@@ -99,8 +99,14 @@ class DriverBreakdownInRouteModal extends HTMLElement {
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
 
+            const selectedVehicle = this.getSelectedVehicle();
+            if (!selectedVehicle) {
+                DriverUtils.showToast('Please select a vehicle.', 'error');
+                return;
+            }
+
             const payload = {
-                vehicle_id: 1,
+                vehicle_id: selectedVehicle.id,
                 severity: form.querySelector('#routeBreakdownSeverity').value,
                 breakdown_type: form.querySelector('#routeBreakdownType').value,
                 breakdown_location: form.querySelector('#routeBreakdownLocation').value.trim(),
@@ -130,14 +136,47 @@ class DriverBreakdownInRouteModal extends HTMLElement {
         });
     }
 
-    open(payload) {
+    getSelectedVehicle() {
+        if (this.assignedVehicle) {
+            return this.assignedVehicle;
+        }
+        const select = this.querySelector('#vehicleSelect');
+        if (select && select.value) {
+            return this.allVehicles?.find(v => v.number_plate === select.value) || null;
+        }
+        return null;
+    }
+
+    async open(payload) {
         const form = this.querySelector('#breakdownInRouteForm');
         const title = this.querySelector('#routeBreakdownTitle');
         const submit = this.querySelector('#routeBreakdownSubmit');
+        const vehicleFieldContainer = this.querySelector('#routeVehicleContainer');
         const editItem = payload?.editItem || null;
 
         form.reset();
         DriverUtils.ensureTodayDefaults(form);
+        this.assignedVehicle = null;
+        this.allVehicles = [];
+
+        // Check for assigned vehicle first
+        try {
+            const vehicleResponse = await DriverUtils.apiGet('/vehicles/my-vehicle');
+            if (vehicleResponse && vehicleResponse.status === 'success' && vehicleResponse.data) {
+                this.assignedVehicle = vehicleResponse.data;
+                vehicleFieldContainer.innerHTML = `
+                    <label class="form-label">Vehicle * <span style="color: #4caf50; font-size: 12px;">(Assigned)</span></label>
+                    <input type="text" class="form-input" id="vehicleDisplay" 
+                           value="${this.assignedVehicle.number_plate} - ${this.assignedVehicle.vehicle_name || this.assignedVehicle.vehicle_type || 'Vehicle'}" 
+                           readonly style="background: #f5f5f5; cursor: not-allowed;">
+                `;
+            } else {
+                await this.loadVehicleDropdown(vehicleFieldContainer);
+            }
+        } catch (error) {
+            console.error('Failed to fetch assigned vehicle:', error);
+            await this.loadVehicleDropdown(vehicleFieldContainer);
+        }
 
         if (editItem) {
             this.editingId = editItem.id;
@@ -159,6 +198,41 @@ class DriverBreakdownInRouteModal extends HTMLElement {
         }
 
         DriverUtils.setModalState(this.querySelector('#breakdownInRouteModal'), true);
+    }
+
+    async loadVehicleDropdown(container) {
+        try {
+            const response = await DriverUtils.apiGet('/vehicles');
+            if (response && response.status === 'success' && response.data?.vehicles) {
+                this.allVehicles = response.data.vehicles;
+                container.innerHTML = `
+                    <label class="form-label">Vehicle * <span style="color: #ff9800; font-size: 12px;">(Select from list)</span></label>
+                    <select class="form-input" id="vehicleSelect" required>
+                        <option value="">Select a vehicle</option>
+                        ${this.allVehicles.map(v => `
+                            <option value="${v.number_plate}">
+                                ${v.number_plate} - ${v.vehicle_name || v.vehicle_type || 'Vehicle'}
+                            </option>
+                        `).join('')}
+                    </select>
+                `;
+            } else {
+                container.innerHTML = `
+                    <label class="form-label">Vehicle *</label>
+                    <div style="padding: 10px; background: #fff3e0; border: 1px solid #ff9800; border-radius: 4px; color: #e65100;">
+                        <i class="fas fa-exclamation-triangle"></i> Failed to load vehicles. Please try again.
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Failed to load vehicles:', error);
+            container.innerHTML = `
+                <label class="form-label">Vehicle *</label>
+                <div style="padding: 10px; background: #fff3e0; border: 1px solid #ff9800; border-radius: 4px; color: #e65100;">
+                    <i class="fas fa-exclamation-triangle"></i> Failed to load vehicles. Please try again.
+                </div>
+            `;
+        }
     }
 
     close() {
