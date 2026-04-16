@@ -3,92 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fault Ticket Detail - AssetCare360</title>
+    <title>Fault Ticket Detail — AssetCare360</title>
 
     <!-- FontAwesome -->
     <script src="https://kit.fontawesome.com/a422e631ad.js" crossorigin="anonymous"></script>
 
     <!-- Dashboard shell styles first, then detail overrides -->
-    <link rel="stylesheet" href="../dashboard/technical-officer/style.css">
-    <link rel="stylesheet" href="../dashboard/technical-officer/view-ticket/style.css">
-    <style>
-        .assign-tech-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            max-height: 240px;
-            overflow-y: auto;
-            border: 1px solid var(--stone-200);
-            border-radius: var(--radius-sm);
-            background: #fff;
-            padding: 10px;
-        }
-
-        .assign-tech-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            padding: 8px 10px;
-            border: 1px solid var(--stone-200);
-            border-radius: 8px;
-            background: #fff;
-            font-size: 0.85rem;
-        }
-
-        .assign-tech-name {
-            font-weight: 600;
-            color: var(--text-900);
-        }
-
-        .assign-tech-meta {
-            font-size: 0.75rem;
-            color: var(--muted);
-        }
-
-        .assign-tech-item input[type="radio"],
-        .assign-tech-item input[type="checkbox"] {
-            margin-top: 2px;
-        }
-
-        .assign-warning {
-            margin-top: 8px;
-            font-size: 0.8rem;
-            color: #b45309;
-            background: #fffbeb;
-            border: 1px solid #fde68a;
-            border-radius: 8px;
-            padding: 8px 10px;
-        }
-    </style>
+    <link rel="stylesheet" href="../style.css">
+    <link rel="stylesheet" href="./style.css">
 </head>
 <body>
 <div class="container">
 
-    <!-- Header -->
+    <!-- ── Header ──────────────────────────────────────────────────────── -->
     <to-shell-header></to-shell-header>
 
     <div class="main-wrapper">
 
-        <!-- Sidebar -->
-        <to-shell-sidebar mode="subpage" active-section="tickets" base-path="../dashboard/technical-officer/"></to-shell-sidebar>
+        <!-- ── Sidebar ─────────────────────────────────────────────────── -->
+        <to-shell-sidebar mode="subpage" active-section="tickets" base-path="../"></to-shell-sidebar>
 
-        <!-- Main Content -->
+        <!-- ── Main Content ────────────────────────────────────────────── -->
         <main class="main-content detail-page-content">
 
             <!-- Sub-header: ticket identity -->
             <div class="detail-subheader" id="detailSubheader">
                 <div class="detail-subheader-inner">
-                    <button class="back-icon-btn" id="backButton" aria-label="Back to Fault &amp; Repair Tickets">
+                    <button class="back-icon-btn" id="backButton"
+                        onclick="window.location.href='../?section=tickets'"
+                        aria-label="Back to Fault &amp; Repair Tickets">
                         <i class="fas fa-arrow-left"></i>
                     </button>
                     <div class="detail-title-block">
                         <nav class="breadcrumb" aria-label="Breadcrumb">
-                            <a class="breadcrumb-item" id="dashboardCrumbLink" href="#">
+                            <a class="breadcrumb-item" href="../?section=dashboard">
                                 <i class="fas fa-chart-line"></i> Dashboard
                             </a>
                             <i class="breadcrumb-sep fas fa-chevron-right"></i>
-                            <a class="breadcrumb-item" id="ticketsCrumbLink" href="#">
+                            <a class="breadcrumb-item" href="../?section=tickets">
                                 Fault &amp; Repair Tickets
                             </a>
                             <i class="breadcrumb-sep fas fa-chevron-right"></i>
@@ -115,7 +67,7 @@
                 <i class="fas fa-exclamation-circle"></i>
                 <h3>Unable to load ticket</h3>
                 <p id="errorMessage">An error occurred.</p>
-                <button class="btn btn-primary" id="errorBackButton" type="button">
+                <button class="btn btn-primary" onclick="window.location.href='../?section=tickets'">
                     <i class="fas fa-arrow-left"></i> Back to Tickets
                 </button>
             </div>
@@ -128,32 +80,32 @@
             <div class="overview-grid">
                 <div class="overview-block">
                     <div class="overview-label"><i class="fas fa-hashtag"></i> Ticket ID</div>
-                    <div class="overview-value" id="ovTicketId">-</div>
+                    <div class="overview-value" id="ovTicketId">—</div>
                 </div>
                 <div class="overview-block">
                     <div class="overview-label"><i class="fas fa-circle-dot"></i> Status</div>
-                    <div class="overview-value" id="ovStatus">-</div>
+                    <div class="overview-value" id="ovStatus">—</div>
                 </div>
                 <div class="overview-block">
                     <div class="overview-label"><i class="fas fa-flag"></i> Priority</div>
-                    <div class="overview-value" id="ovPriority">-</div>
+                    <div class="overview-value" id="ovPriority">—</div>
                 </div>
                 <div class="overview-block">
                     <div class="overview-label"><i class="fas fa-cogs"></i> Equipment</div>
-                    <div class="overview-value" id="ovEquipment">-</div>
+                    <div class="overview-value" id="ovEquipment">—</div>
                 </div>
                 <div class="overview-block">
                     <div class="overview-label"><i class="fas fa-map-marker-alt"></i> Location</div>
-                    <div class="overview-value" id="ovLocation">-</div>
+                    <div class="overview-value" id="ovLocation">—</div>
                 </div>
                 <div class="overview-block">
                     <div class="overview-label"><i class="fas fa-calendar-alt"></i> Reported</div>
-                    <div class="overview-value" id="ovDate">-</div>
+                    <div class="overview-value" id="ovDate">—</div>
                 </div>
             </div>
             <div class="overview-description">
                 <div class="overview-label"><i class="fas fa-align-left"></i> Issue Description</div>
-                <p id="ovDescription">-</p>
+                <p id="ovDescription">—</p>
             </div>
         </section>
 
@@ -179,11 +131,11 @@
                             <div class="step-participants" id="step1-participants">
                                 <div class="participant-chip">
                                     <i class="fas fa-user"></i>
-                                    <span id="step1-reporter">-</span>
+                                    <span id="step1-reporter">—</span>
                                 </div>
                                 <div class="participant-chip muted">
                                     <i class="fas fa-calendar"></i>
-                                    <span id="step1-date">-</span>
+                                    <span id="step1-date">—</span>
                                 </div>
                             </div>
                             <p class="step-description" id="step1-desc">Fault reported by asset operator.</p>
@@ -201,33 +153,24 @@
                     </div>
                     <div class="step-content">
                         <div class="step-header">
-                            <div class="step-title" id="step2-title">Assigned to Technician</div>
+                            <div class="step-title">Assigned to Technician</div>
                             <div class="step-badge">Step 2</div>
                         </div>
                         <div class="step-body">
                             <div class="step-participants" id="step2-participants">
                                 <div class="participant-chip">
                                     <i class="fas fa-user-tie"></i>
-                                    <span id="step2-assignedBy">-</span>
+                                    <span id="step2-assignedBy">—</span>
                                     <span class="chip-role">Supervisor</span>
                                 </div>
                                 <div class="participant-chip">
                                     <i class="fas fa-hard-hat"></i>
-                                    <span id="step2-technician">-</span>
-                                    <span class="chip-role" id="step2-assignee-role">Technical Officer</span>
+                                    <span id="step2-technician">—</span>
+                                    <span class="chip-role">Technical Officer</span>
                                 </div>
                             </div>
                             <p class="step-description" id="step2-desc">Ticket assigned to you for resolution.</p>
                             <div class="step-notes" id="step2-notes" style="display:none;"></div>
-                            <div id="step2-action" style="display:none;">
-                                <button class="btn btn-action" id="assignTicketBtn" onclick="openAssignModal()">
-                                    <i class="fas fa-user-plus"></i> Assign Technician
-                                </button>
-                                <button class="btn btn-action" id="approveGarageBtn" onclick="openGarageApprovalModal()" style="display:none; margin-left:8px;">
-                                    <i class="fas fa-warehouse"></i> Approve Nearby Garage
-                                </button>
-                                <div id="step2-garage-hint" class="step-hint" style="display:none; margin-top:8px;"></div>
-                            </div>
                         </div>
                     </div>
                     <div class="step-connector step-connector-right"></div>
@@ -253,27 +196,27 @@
                                 <div class="step-participants" id="step3-participants">
                                     <div class="participant-chip">
                                         <i class="fas fa-hard-hat"></i>
-                                        <span id="step3-submitter">-</span>
+                                        <span id="step3-submitter">—</span>
                                         <span class="chip-role">Submitted by</span>
                                     </div>
                                     <div class="participant-chip" id="step3-reviewer-chip" style="display:none;">
                                         <i class="fas fa-user-check"></i>
-                                        <span id="step3-reviewer">-</span>
+                                        <span id="step3-reviewer">—</span>
                                         <span class="chip-role" id="step3-reviewer-role">Reviewer</span>
                                     </div>
                                 </div>
                                 <div class="budget-summary" id="budget-summary">
                                     <div class="budget-row">
                                         <span>Total Amount</span>
-                                        <strong id="budget-amount">-</strong>
+                                        <strong id="budget-amount">—</strong>
                                     </div>
                                     <div class="budget-row">
                                         <span>Approval Level</span>
-                                        <span class="budget-level" id="budget-level">-</span>
+                                        <span class="budget-level" id="budget-level">—</span>
                                     </div>
                                     <div class="budget-row">
                                         <span>Status</span>
-                                        <span class="budget-status-badge" id="budget-status-badge">-</span>
+                                        <span class="budget-status-badge" id="budget-status-badge">—</span>
                                     </div>
                                 </div>
                                 <div id="budget-review-notes" class="step-notes" style="display:none;"></div>
@@ -284,15 +227,6 @@
                                     <i class="fas fa-file-invoice-dollar"></i> Submit Budget Report
                                 </button>
                             </div>
-                            <div id="budget-review-action" style="display:none; gap:8px; align-items:center; flex-wrap:wrap;">
-                                <button class="btn btn-action btn-success" id="approveBudgetBtn" onclick="reviewBudget('approved')">
-                                    <i class="fas fa-check"></i> Approve Budget
-                                </button>
-                                <button class="btn btn-secondary" id="rejectBudgetBtn" type="button" onclick="reviewBudget('rejected')">
-                                    <i class="fas fa-times"></i> Reject Budget
-                                </button>
-                            </div>
-                            <div id="budget-review-hint" class="step-hint" style="display:none;"></div>
                         </div>
                     </div>
                     <div class="step-connector step-connector-right"></div>
@@ -385,13 +319,13 @@
                                 <div class="step-participants">
                                     <div class="participant-chip success">
                                         <i class="fas fa-check"></i>
-                                        <span id="step6-resolver">-</span>
+                                        <span id="step6-resolver">—</span>
                                         <span class="chip-role">Technical Officer</span>
                                     </div>
                                 </div>
                                 <div class="resolution-box" id="resolution-notes-box">
                                     <div class="resolution-label"><i class="fas fa-clipboard-check"></i> Resolution Notes</div>
-                                    <p id="resolution-notes-text">-</p>
+                                    <p id="resolution-notes-text">—</p>
                                 </div>
                             </div>
                         </div>
@@ -420,13 +354,13 @@
                                     <i class="fas fa-lock"></i>
                                     <span>Ticket Closed</span>
                                 </div>
-                                <p class="step-description" id="closed-date">-</p>
+                                <p class="step-description" id="closed-date">—</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                </div>
+            </div>
         </section>
 
             </div><!-- /#mainContent -->
@@ -564,103 +498,6 @@
         </div>
     </div>
 
-    <!-- ============================
-         ASSIGN TECHNICIAN MODAL
-    ============================= -->
-    <div class="modal-overlay" id="assignModal">
-        <div class="modal modal-wide">
-            <div class="modal-header">
-                <h3><i class="fas fa-user-plus"></i> Assign Ticket to Technician(s)</h3>
-                <button class="modal-close" onclick="closeAssignModal()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body">
-                <form id="assignForm" onsubmit="submitAssignment(event)">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Fault Ticket</label>
-                            <input type="text" class="form-input" id="assignTicketDisplay" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Priority</label>
-                            <select class="form-input" id="assignPriority" required>
-                                <option value="low">Low</option>
-                                <option value="medium" selected>Medium</option>
-                                <option value="high">High</option>
-                                <option value="critical">Critical</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Select Technician(s)</label>
-                        <div id="assignTechniciansList" class="assign-tech-list"></div>
-                        <div id="assignSelectionWarning" class="assign-warning" style="display:none;">
-                            No technicians selected. This will unassign the ticket.
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Expected Completion Date <span class="required">*</span></label>
-                            <input type="date" class="form-input" id="assignExpectedCompletion" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Notes</label>
-                            <input type="text" class="form-input" id="assignNotes" placeholder="Optional instructions">
-                        </div>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closeAssignModal()">Cancel</button>
-                        <button type="submit" class="btn btn-primary" id="assignSubmitBtn">
-                            <i class="fas fa-user-check"></i> Save Assignment
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- ============================
-         APPROVE NEARBY GARAGE MODAL
-    ============================= -->
-    <div class="modal-overlay" id="garageApprovalModal">
-        <div class="modal modal-wide">
-            <div class="modal-header">
-                <h3><i class="fas fa-warehouse"></i> Approve Nearby Garage</h3>
-                <button class="modal-close" onclick="closeGarageApprovalModal()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body">
-                <form id="garageApprovalForm" onsubmit="submitGarageApproval(event)">
-                    <div class="form-group">
-                        <label class="form-label">Route Breakdown</label>
-                        <input type="text" class="form-input" id="garageApprovalRouteCode" readonly>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Select Nearby Garage <span class="required">*</span></label>
-                        <div id="garageApprovalList" class="assign-tech-list"></div>
-                        <div id="garageApprovalSelectionWarning" class="assign-warning" style="display:none;">
-                            Please select one nearby garage to approve.
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Approval Notes</label>
-                        <textarea class="form-textarea" id="garageApprovalNotes" rows="3" placeholder="Optional instructions for the driver"></textarea>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closeGarageApprovalModal()">Cancel</button>
-                        <button type="submit" class="btn btn-primary" id="garageApprovalSubmitBtn">
-                            <i class="fas fa-warehouse"></i> Approve Nearby Garage
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <!-- Toast Notification -->
     <div class="toast" id="toast">
         <span id="toastMessage"></span>
@@ -669,18 +506,18 @@
     <!-- Shared Components -->
     <confirm-dialog></confirm-dialog>
 
-    <script src="../js/config.js"></script>
-    <script src="../js/api.js"></script>
-    <script src="../js/auth.js"></script>
-    <script src="../components/shared/ac-header.js"></script>
-    <script src="../components/shared/ac-sidebar.js"></script>
-    <script src="../dashboard/technical-officer/components/layout/header/script.js"></script>
-    <script src="../dashboard/technical-officer/components/layout/sidebar/script.js"></script>
-    <script src="../components/styles/buttons.js"></script>
-    <script src="../components/styles/icons.js"></script>
-    <script src="../components/shared/confirm-dialog.js"></script>
-    <script src="../js/dashboard-init.js"></script>
-    <script src="../js/fault-ticket-detail-template.js"></script>
-    <script src="./script.js"></script>
+    <script src="../../../js/config.js"></script>
+    <script src="../../../js/api.js"></script>
+    <script src="../../../js/auth.js"></script>
+    <script src="../../../components/shared/ac-header.js"></script>
+    <script src="../../../components/shared/ac-sidebar.js"></script>
+    <script src="../components/layout/header/script.js"></script>
+    <script src="../components/layout/sidebar/script.js"></script>
+    <script src="../../../components/styles/buttons.js"></script>
+    <script src="../../../components/styles/icons.js"></script>
+    <script src="../../../components/shared/confirm-dialog.js"></script>
+    <script src="../../../js/dashboard-init.js"></script>
+    <script src="../../../js/fault-ticket-detail-template.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

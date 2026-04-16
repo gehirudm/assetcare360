@@ -121,13 +121,12 @@ The easiest way to set up the project is using the automated setup script:
    # update .env with RabbitMQ settings and set EVENTS_ENABLED=true
    php services/consume_audit_events.php
    php services/consume_notification_events.php
+   php services/consume_email_events.php
    php services/check_service_due.php
    ```
 
-   Suggested cron for service-due producer:
-   ```cron
-   */10 * * * * /usr/bin/php /path/to/assetcare360/services/check_service_due.php >> /var/log/assetcare360-service-due.log 2>&1
-   ```
+   `check_service_due.php` now runs as a continuous service loop.
+   Set `SERVICE_DUE_POLL_INTERVAL_SECONDS` in `.env` to control the loop interval (default: `600`).
 
    For existing databases that already have historical changes applied manually, baseline old migrations first, then run new ones:
    ```bash
@@ -145,6 +144,7 @@ The easiest way to set up the project is using the automated setup script:
    ./start.sh frontend
    ./start.sh audit-consumer
    ./start.sh notification-consumer
+   ./start.sh email-consumer
    ./start.sh service-due-producer
 
    # start all services
@@ -245,6 +245,25 @@ MailHog is a local SMTP server that captures emails for testing without actually
    **Note:** Replace `~` with your actual home directory path if needed (e.g., `/Users/yourusername/go/bin/mhsendmail`)
 
 5. **Restart PHP** (if using PHP-FPM or Apache, restart the service)
+
+6. **Configure `.env` for MailHog SMTP consumer delivery**
+   ```env
+   MAILHOG_SMTP_HOST=127.0.0.1
+   MAILHOG_SMTP_PORT=1025
+   MAILHOG_FROM_EMAIL=noreply@assetcare360.local
+   MAILHOG_FROM_NAME=AssetCare360
+   MAILHOG_HELO_DOMAIN=assetcare360.local
+   MAILHOG_TIMEOUT_SECONDS=10
+   ```
+
+7. **Run the RabbitMQ email consumer**
+   ```bash
+   php services/consume_email_events.php
+   # or
+   ./start.sh email-consumer
+   ```
+
+   This consumer listens to RabbitMQ events and sends notification emails via MailHog SMTP.
 
 ### Usage
 

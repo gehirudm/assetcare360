@@ -608,6 +608,23 @@ class FaultTicketService {
                     'message' => 'You do not have permission to assign tickets'
                 ];
             }
+
+            $routeGarageWorkflow = $this->getRouteGarageWorkflowForTicket($ticket);
+            $routeGarageStatus = strtolower(trim((string)($routeGarageWorkflow['workflow_status'] ?? '')));
+            $garageHandledStatuses = ['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'];
+
+            if (in_array($routeGarageStatus, $garageHandledStatuses, true)) {
+                $garageName = trim((string)($routeGarageWorkflow['approved_garage_name'] ?? ''));
+                $message = 'Nearby garage workflow is already active for this route breakdown. Technician assignment is not required.';
+                if ($garageName !== '') {
+                    $message .= ' Approved garage: ' . $garageName . '.';
+                }
+
+                return [
+                    'success' => false,
+                    'message' => $message
+                ];
+            }
             
             // Check if ticket can be modified based on its current status
             $currentStatus = strtolower($ticket['status'] ?? 'open');
@@ -954,6 +971,31 @@ class FaultTicketService {
         } catch (\Exception $e) {
             error_log("Error creating repair tickets: " . $e->getMessage());
         }
+    }
+
+    private function getRouteGarageWorkflowForTicket($ticket) {
+        $breakdownType = strtolower(trim((string)($ticket['breakdown_type'] ?? '')));
+        $routeBreakdownCode = trim((string)($ticket['breakdown_report_id'] ?? ''));
+
+        if ($breakdownType !== 'route_breakdown' || $routeBreakdownCode === '') {
+            return null;
+        }
+
+        $conn = Database::getInstance()->getConnection();
+        $stmt = $conn->prepare(
+            "SELECT rgw.workflow_status,
+                    rgw.approved_garage_id,
+                    g.name as approved_garage_name
+             FROM vehicle_breakdown_inroute rb
+             LEFT JOIN route_breakdown_garage_workflow rgw ON rgw.route_breakdown_id = rb.id
+             LEFT JOIN garages g ON g.id = rgw.approved_garage_id
+             WHERE rb.route_breakdown_id = ?
+             LIMIT 1"
+        );
+        $stmt->execute([$routeBreakdownCode]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        return $row ?: null;
     }
     
     /**

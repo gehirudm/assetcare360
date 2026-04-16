@@ -170,7 +170,9 @@ class DriverTicketTracking extends HTMLElement {
                         <i class="fas fa-calendar"></i> ${breakdownDate}
                     </div>
                     ${breakdown.fault_ticket_number ? `<div class="item-meta" style="margin-top: 4px; color: #6b7280;"><i class="fas fa-ticket-alt"></i> Ticket: ${breakdown.fault_ticket_number}</div>` : ''}
-                    ${Array.isArray(breakdown.assigned_technicians) && breakdown.assigned_technicians.length
+                    ${!['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(workflowStatus)
+                        && Array.isArray(breakdown.assigned_technicians)
+                        && breakdown.assigned_technicians.length
                         ? `<div class="item-meta" style="margin-top: 4px;"><i class="fas fa-user-cog" style="color: #2563eb;"></i> <span style="color: #2563eb; font-weight: 600;">Assigned to: ${breakdown.assigned_technicians.map((item) => item.technician_name).join(', ')}</span></div>`
                         : ''}
                     <div class="item-meta" style="margin-top: 4px;">

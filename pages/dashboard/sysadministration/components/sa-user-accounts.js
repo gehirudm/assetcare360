@@ -115,6 +115,10 @@ class SAUserAccounts extends HTMLElement {
             }
 
             if (button.dataset.action === 'open-create-user') {
+                const createUserModal = document.querySelector('sa-create-user-modal');
+                if (createUserModal && typeof createUserModal.prepareForOpen === 'function') {
+                    createUserModal.prepareForOpen();
+                }
                 this.openModal('createUserModal');
                 return;
             }
@@ -350,7 +354,7 @@ class SAUserAccounts extends HTMLElement {
             technical_expertise: formData.get('role') === 'Technical Officer'
                 ? (formData.get('technical_expertise') || 'General')
                 : null,
-            password: formData.get('password'),
+            password: this.resolveCreateUserPassword(form, formData.get('password')),
             force_password_change: true,
         };
 
@@ -374,6 +378,24 @@ class SAUserAccounts extends HTMLElement {
             console.error('Error creating user:', error);
             Utils.showToast('Error creating user. Please try again.', 'error');
         }
+    }
+
+    resolveCreateUserPassword(form, currentPassword) {
+        if (currentPassword) {
+            return currentPassword;
+        }
+
+        const createUserModal = document.querySelector('sa-create-user-modal');
+        const generatedPassword = createUserModal && typeof createUserModal.ensurePasswordValue === 'function'
+            ? createUserModal.ensurePasswordValue(true)
+            : '';
+
+        const passwordInput = form?.querySelector('[name="password"]');
+        if (passwordInput && generatedPassword) {
+            passwordInput.value = generatedPassword;
+        }
+
+        return generatedPassword;
     }
 
     async viewUserDetails(userId) {
