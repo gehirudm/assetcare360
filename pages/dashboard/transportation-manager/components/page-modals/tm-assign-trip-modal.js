@@ -324,6 +324,7 @@ class TMAssignTripModal extends HTMLElement {
         const destination = this.querySelector('#tripDestination')?.value.trim();
         const vehicle_registration = this.querySelector('#tripVehicle')?.value;
         const cargo_description = this.querySelector('#tripCargo')?.value.trim();
+        const vehicleId = this._selectedVehicle?.id ? Number(this._selectedVehicle.id) : null;
 
         if (!origin) return this._showErrors('Origin is required.');
         if (!destination) return this._showErrors('Destination is required.');
@@ -348,12 +349,18 @@ class TMAssignTripModal extends HTMLElement {
 
         try {
             // Note: driver_id is not sent - backend will use vehicle's assigned driver
-            await API.post('/trips', {
+            const payload = {
                 origin,
                 destination,
                 vehicle_registration,
                 cargo_description,
-            });
+            };
+
+            if (Number.isFinite(vehicleId) && vehicleId > 0) {
+                payload.vehicle_id = vehicleId;
+            }
+
+            await API.post('/trips', payload);
 
             this.close();
             TMUtils.emitToast('Trip assigned successfully', 'success');
