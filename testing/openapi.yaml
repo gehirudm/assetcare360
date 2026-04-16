@@ -55,6 +55,8 @@ tags:
     description: System-wide configuration settings (Admin only). Includes petty cash limit for budget approval routing.
   - name: Trips
     description: Trip management for Transportation Manager and Drivers. Includes trip assignment, acceptance/rejection workflow, and trip lifecycle management.
+  - name: Fuel Logs
+    description: Vehicle fuel entry tracking with source-aware validation (internal vs external).
   - name: Notifications
     description: User notification listing and read-state updates.
   - name: Spare Part Requests
@@ -2827,6 +2829,55 @@ components:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /vehicles/{id}/fuel-qr:
+    post:
+      tags:
+        - Vehicles
+      summary: Upload government fuel QR image
+      description: Upload or replace the government-issued fuel QR image for a vehicle. Primarily used by Transportation Manager for external fuel station operations.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Vehicle ID
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - fuel_qr_image
+              properties:
+                fuel_qr_image:
+                  type: string
+                  format: binary
+                  description: Government-issued vehicle fuel QR image (JPG, PNG, WEBP; max 5MB)
+      responses:
+        '200':
+          description: Fuel QR image updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      vehicle:
+                        $ref: '#/components/schemas/Vehicle'
+        '400':
+          description: Invalid request, image validation failure, or vehicle not found
+
   /vehicles/due-service:
     get:
       tags:
@@ -3388,6 +3439,171 @@ components:
       responses:
         '200':
           description: Trip cancelled successfully
+
+  # ==================== FUEL LOGS ====================
+  /fuel-logs:
+    get:
+      tags:
+        - Fuel Logs
+      summary: Get fuel logs
+      description: Retrieve fuel logs with optional vehicle and driver filters.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: vehicle_registration
+          in: query
+          description: Filter by vehicle number plate/registration
+          schema:
+            type: string
+        - name: driver_id
+          in: query
+          description: Filter by driver user ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successfully retrieved fuel logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      fuel_logs:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/FuelLog'
+                  count:
+                    type: integer
+
+    post:
+      tags:
+        - Fuel Logs
+      summary: Create fuel log
+      description: |
+        Create a fuel log entry.
+
+        Business rules:
+        - `fuel_type` is derived automatically from the selected vehicle (`vehicles.fuel_type`).
+        - `fuel_source` is required and must be `internal` or `external`.
+        - For `external` fuel source, `total_cost` and `bill_image` are required.
+        - For `internal` fuel source, `total_cost` and `bill_image` are optional.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FuelLogInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FuelLogMultipartInput'
+      responses:
+        '201':
+          description: Fuel log created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      fuel_log:
+                        $ref: '#/components/schemas/FuelLog'
+        '400':
+          description: Validation error (missing required fields, invalid source, or external fueling without cost/receipt)
+
+  /fuel-logs/{fuelLogId}:
+    get:
+      tags:
+        - Fuel Logs
+      summary: Get fuel log by ID
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: fuelLogId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully retrieved fuel log
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      fuel_log:
+                        $ref: '#/components/schemas/FuelLog'
+        '404':
+          description: Fuel log not found
+
+    put:
+      tags:
+        - Fuel Logs
+      summary: Update fuel log
+      description: |
+        Update fuel log details.
+
+        Business rules for `fuel_source` apply on update as well:
+        - `external`: requires positive `total_cost` and bill image path or existing stored bill image.
+        - `internal`: allows empty `total_cost` and no bill image.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: fuelLogId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FuelLogInput'
+      responses:
+        '200':
+          description: Fuel log updated successfully
+        '400':
+          description: Invalid request data or validation failure
+
+    delete:
+      tags:
+        - Fuel Logs
+      summary: Delete fuel log
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: fuelLogId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Fuel log deleted successfully
 
   # ==================== FAULT TICKETS ====================
   /fault-tickets:
@@ -4626,6 +4842,10 @@ components:
         fuel_type:
           type: string
           enum: [Petrol, Diesel, Electric, Hybrid, LPG, CNG]
+        government_fuel_qr_image:
+          type: string
+          nullable: true
+          description: Path or URL to government-issued fuel QR image used at external fuel stations
         fuel_efficiency:
           type: number
           format: float
@@ -4700,6 +4920,10 @@ components:
         fuel_type:
           type: string
           enum: [Petrol, Diesel, Electric, Hybrid, LPG, CNG]
+        government_fuel_qr_image:
+          type: string
+          nullable: true
+          description: Existing path for government-issued fuel QR image (usually set via /vehicles/{id}/fuel-qr)
         fuel_efficiency:
           type: number
           format: float
@@ -4804,6 +5028,147 @@ components:
         updated_at:
           type: string
           format: date-time
+
+    FuelLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        fuel_log_id:
+          type: string
+          example: FL-001
+        vehicle_registration:
+          type: string
+          example: WP-CAB-1001
+        driver_id:
+          type: integer
+          nullable: true
+        driver_name:
+          type: string
+          nullable: true
+        log_datetime:
+          type: string
+          format: date-time
+        fuel_volume:
+          type: number
+          format: float
+        total_cost:
+          type: number
+          format: float
+          nullable: true
+          description: Required for external fueling. Can be null for internal fueling.
+        odometer_reading:
+          type: integer
+        station_name:
+          type: string
+          nullable: true
+        bill_image:
+          type: string
+          nullable: true
+          description: Upload path of fuel bill image. Required for external fueling.
+        fuel_type:
+          type: string
+          description: Auto-derived from the selected vehicle's fuel type.
+          example: Diesel
+        fuel_source:
+          type: string
+          enum: [internal, external]
+        distance_since_last:
+          type: number
+          format: float
+          nullable: true
+        fuel_efficiency:
+          type: number
+          format: float
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    FuelLogInput:
+      type: object
+      required:
+        - vehicle_registration
+        - log_datetime
+        - fuel_source
+        - fuel_volume
+        - odometer_reading
+      properties:
+        vehicle_registration:
+          type: string
+        driver_id:
+          type: integer
+          nullable: true
+        log_datetime:
+          type: string
+          format: date-time
+        fuel_source:
+          type: string
+          enum: [internal, external]
+        fuel_volume:
+          type: number
+          format: float
+          minimum: 0.01
+        total_cost:
+          type: number
+          format: float
+          nullable: true
+          minimum: 0
+          description: Required and must be > 0 when fuel_source is external.
+        odometer_reading:
+          type: integer
+          minimum: 1
+        station_name:
+          type: string
+          nullable: true
+        bill_image:
+          type: string
+          nullable: true
+          description: Existing bill image path. Required for external fueling if no new upload is provided.
+
+    FuelLogMultipartInput:
+      type: object
+      required:
+        - vehicle_registration
+        - log_datetime
+        - fuel_source
+        - fuel_volume
+        - odometer_reading
+      properties:
+        vehicle_registration:
+          type: string
+        driver_id:
+          type: integer
+          nullable: true
+        log_datetime:
+          type: string
+          format: date-time
+        fuel_source:
+          type: string
+          enum: [internal, external]
+        fuel_volume:
+          type: number
+          format: float
+          minimum: 0.01
+        total_cost:
+          type: number
+          format: float
+          nullable: true
+          minimum: 0
+          description: Required and must be > 0 when fuel_source is external.
+        odometer_reading:
+          type: integer
+          minimum: 1
+        station_name:
+          type: string
+          nullable: true
+        bill_image:
+          type: string
+          format: binary
+          description: Required for external fueling.
 
     FaultTicket:
       type: object
