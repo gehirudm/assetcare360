@@ -8,6 +8,7 @@ require_once __DIR__ . '/BaseModel.php';
  */
 class Vehicle extends BaseModel {
     protected $table = 'vehicles';
+    private array $schemaCheckCache = [];
     
     /**
      * Define table schema
@@ -294,7 +295,13 @@ class Vehicle extends BaseModel {
      * Assign a driver to a vehicle
      */
     public function assignDriver($vehicleId, $driverId) {
-        $sql = "UPDATE `{$this->table}` SET assigned_driver_id = ?, driver_assigned_at = NOW() WHERE id = ?";
+        if (!$this->columnExists('assigned_driver_id')) {
+            return false;
+        }
+
+        $sql = $this->columnExists('driver_assigned_at')
+            ? "UPDATE `{$this->table}` SET assigned_driver_id = ?, driver_assigned_at = NOW() WHERE id = ?"
+            : "UPDATE `{$this->table}` SET assigned_driver_id = ? WHERE id = ?";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([$driverId, $vehicleId]);
     }
@@ -303,7 +310,13 @@ class Vehicle extends BaseModel {
      * Unassign driver from a vehicle
      */
     public function unassignDriver($vehicleId) {
-        $sql = "UPDATE `{$this->table}` SET assigned_driver_id = NULL, driver_assigned_at = NULL WHERE id = ?";
+        if (!$this->columnExists('assigned_driver_id')) {
+            return false;
+        }
+
+        $sql = $this->columnExists('driver_assigned_at')
+            ? "UPDATE `{$this->table}` SET assigned_driver_id = NULL, driver_assigned_at = NULL WHERE id = ?"
+            : "UPDATE `{$this->table}` SET assigned_driver_id = NULL WHERE id = ?";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([$vehicleId]);
     }
@@ -312,7 +325,13 @@ class Vehicle extends BaseModel {
      * Unassign driver from any vehicle they're assigned to
      */
     public function unassignDriverFromAllVehicles($driverId) {
-        $sql = "UPDATE `{$this->table}` SET assigned_driver_id = NULL, driver_assigned_at = NULL WHERE assigned_driver_id = ?";
+        if (!$this->columnExists('assigned_driver_id')) {
+            return false;
+        }
+
+        $sql = $this->columnExists('driver_assigned_at')
+            ? "UPDATE `{$this->table}` SET assigned_driver_id = NULL, driver_assigned_at = NULL WHERE assigned_driver_id = ?"
+            : "UPDATE `{$this->table}` SET assigned_driver_id = NULL WHERE assigned_driver_id = ?";
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([$driverId]);
     }
@@ -321,6 +340,10 @@ class Vehicle extends BaseModel {
      * Get vehicle that a driver is currently assigned to
      */
     public function getVehicleByAssignedDriver($driverId) {
+        if (!$this->columnExists('assigned_driver_id')) {
+            return null;
+        }
+
         return $this->findOne(['assigned_driver_id' => $driverId]);
     }
     
@@ -328,13 +351,15 @@ class Vehicle extends BaseModel {
      * Get all vehicles with their assigned driver info (joined with users table)
      */
     public function getAllVehiclesWithDrivers($filters = [], $search = null, $orderBy = 'vehicle_name ASC') {
-        $sql = "SELECT v.*, 
-                       u.id as driver_user_id, 
-                       u.full_name as driver_name, 
-                       u.employee_id as driver_employee_id,
-                       u.phone as driver_phone
+        $hasAssignedDriverColumn = $this->columnExists('assigned_driver_id');
+        $driverSelect = $hasAssignedDriverColumn
+            ? "u.id as driver_user_id, u.full_name as driver_name, u.employee_id as driver_employee_id, u.phone as driver_phone"
+            : "NULL as driver_user_id, NULL as driver_name, NULL as driver_employee_id, NULL as driver_phone";
+        $driverJoin = $hasAssignedDriverColumn ? "LEFT JOIN users u ON v.assigned_driver_id = u.id" : "";
+
+        $sql = "SELECT v.*, {$driverSelect}
                 FROM `{$this->table}` v
-                LEFT JOIN users u ON v.assigned_driver_id = u.id
+                {$driverJoin}
                 WHERE 1=1";
         $params = [];
         
@@ -349,19 +374,26 @@ class Vehicle extends BaseModel {
             $params[] = $filters['vehicle_type'];
         }
         
-        if (!empty($filters['assignment_status'])) {
+        if (!empty($filters['assignment_status']) && $hasAssignedDriverColumn) {
             if ($filters['assignment_status'] === 'assigned') {
                 $sql .= " AND v.assigned_driver_id IS NOT NULL";
             } elseif ($filters['assignment_status'] === 'unassigned') {
                 $sql .= " AND v.assigned_driver_id IS NULL";
             }
+        } elseif (!empty($filters['assignment_status']) && $filters['assignment_status'] === 'assigned') {
+            return [];
         }
         
         // Apply search
-        if ($search) {
+        if ($search && $hasAssignedDriverColumn) {
             $sql .= " AND (v.vehicle_name LIKE ? OR v.number_plate LIKE ? OR u.full_name LIKE ?)";
             $searchTerm = "%{$search}%";
             $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        } elseif ($search) {
+            $sql .= " AND (v.vehicle_name LIKE ? OR v.number_plate LIKE ?)";
+            $searchTerm = "%{$search}%";
             $params[] = $searchTerm;
             $params[] = $searchTerm;
         }
@@ -386,13 +418,15 @@ class Vehicle extends BaseModel {
      * Get vehicle with driver info by number plate
      */
     public function getVehicleWithDriverByNumberPlate($numberPlate) {
-        $sql = "SELECT v.*, 
-                       u.id as driver_user_id, 
-                       u.full_name as driver_name, 
-                       u.employee_id as driver_employee_id,
-                       u.phone as driver_phone
+        $hasAssignedDriverColumn = $this->columnExists('assigned_driver_id');
+        $driverSelect = $hasAssignedDriverColumn
+            ? "u.id as driver_user_id, u.full_name as driver_name, u.employee_id as driver_employee_id, u.phone as driver_phone"
+            : "NULL as driver_user_id, NULL as driver_name, NULL as driver_employee_id, NULL as driver_phone";
+        $driverJoin = $hasAssignedDriverColumn ? "LEFT JOIN users u ON v.assigned_driver_id = u.id" : "";
+
+        $sql = "SELECT v.*, {$driverSelect}
                 FROM `{$this->table}` v
-                LEFT JOIN users u ON v.assigned_driver_id = u.id
+                {$driverJoin}
                 WHERE v.number_plate = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$numberPlate]);
@@ -403,5 +437,49 @@ class Vehicle extends BaseModel {
         }
         
         return $vehicle ?: null;
+    }
+
+    private function tableExists(string $table): bool {
+        $cacheKey = "table:{$table}";
+        if (array_key_exists($cacheKey, $this->schemaCheckCache)) {
+            return $this->schemaCheckCache[$cacheKey];
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT COUNT(*)
+             FROM information_schema.tables
+             WHERE table_schema = DATABASE()
+               AND table_name = ?'
+        );
+        $stmt->execute([$table]);
+        $exists = ((int) $stmt->fetchColumn()) > 0;
+        $this->schemaCheckCache[$cacheKey] = $exists;
+
+        return $exists;
+    }
+
+    private function columnExists(string $column): bool {
+        $cacheKey = "column:{$this->table}.{$column}";
+        if (array_key_exists($cacheKey, $this->schemaCheckCache)) {
+            return $this->schemaCheckCache[$cacheKey];
+        }
+
+        if (!$this->tableExists($this->table)) {
+            $this->schemaCheckCache[$cacheKey] = false;
+            return false;
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT COUNT(*)
+             FROM information_schema.columns
+             WHERE table_schema = DATABASE()
+               AND table_name = ?
+               AND column_name = ?'
+        );
+        $stmt->execute([$this->table, $column]);
+        $exists = ((int) $stmt->fetchColumn()) > 0;
+        $this->schemaCheckCache[$cacheKey] = $exists;
+
+        return $exists;
     }
 }
