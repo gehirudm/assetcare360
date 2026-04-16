@@ -11,9 +11,17 @@ class DriverBreakdown extends HTMLElement {
         this.render();
         this.bindEvents();
         this.refresh();
+        this._cleanupOverflowAutoClose = DriverUtils.registerOverflowAutoClose(this);
 
         this._onBreakdownsChanged = () => this.refresh();
         DriverUtils.on('driver:data-breakdowns-changed', this._onBreakdownsChanged);
+    }
+
+    disconnectedCallback() {
+        if (typeof this._cleanupOverflowAutoClose === 'function') {
+            this._cleanupOverflowAutoClose();
+            this._cleanupOverflowAutoClose = null;
+        }
     }
 
     render() {
@@ -55,17 +63,26 @@ class DriverBreakdown extends HTMLElement {
         this.addEventListener('click', (event) => {
             const actionEl = event.target.closest('[data-action]');
             if (!actionEl) {
+                DriverUtils.closeOverflowMenus(this);
                 return;
             }
 
             const action = actionEl.dataset.action;
 
+            if (action === 'toggle-actions-menu') {
+                event.stopPropagation();
+                DriverUtils.toggleOverflowMenu(actionEl, this);
+                return;
+            }
+
             if (action === 'open-breakdown-modal') {
+                DriverUtils.closeOverflowMenus(this);
                 DriverUtils.openModal('breakdownModal');
                 return;
             }
 
             if (action === 'open-route-breakdown-modal') {
+                DriverUtils.closeOverflowMenus(this);
                 DriverUtils.openModal('breakdownInRouteModal');
                 return;
             }
@@ -78,6 +95,8 @@ class DriverBreakdown extends HTMLElement {
                 this.renderItems();
                 return;
             }
+
+            DriverUtils.closeOverflowMenus(this);
 
             if (action === 'set-status-filter') {
                 this.currentStatusFilter = actionEl.dataset.filter;
@@ -186,6 +205,21 @@ class DriverBreakdown extends HTMLElement {
     renderItem(item) {
         const statusColor = DriverUtils.getStatusColor(item.status);
         const severityColor = DriverUtils.getStatusColor(item.severity);
+        const overflowMenu = `
+            <div class="dropdown-container">
+                <button class="btn btn-small btn-secondary dropdown-trigger" type="button" data-action="toggle-actions-menu" aria-label="More actions">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div class="dropdown-menu">
+                    <button class="dropdown-item" type="button" data-action="edit-breakdown" data-id="${item.id}">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="dropdown-item danger" type="button" data-action="delete-breakdown" data-id="${item.id}">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        `;
 
         return `
             <div class="inventory-item" data-type="${item.type}" data-status="${this.statusToFilterValue(item.status)}">
@@ -205,12 +239,7 @@ class DriverBreakdown extends HTMLElement {
                         <button class="btn btn-small btn-primary" type="button" data-action="view-breakdown" data-id="${item.id}">
                             <i class="fas fa-eye"></i> VIEW
                         </button>
-                        <button class="btn btn-small btn-secondary" type="button" data-action="edit-breakdown" data-id="${item.id}">
-                            <i class="fas fa-edit"></i> EDIT
-                        </button>
-                        <button class="btn btn-small btn-danger" type="button" data-action="delete-breakdown" data-id="${item.id}">
-                            <i class="fas fa-trash"></i> DELETE
-                        </button>
+                        ${overflowMenu}
                     </div>
                 </div>
             </div>

@@ -7,19 +7,28 @@ class DriverTicketTracking extends HTMLElement {
         this._mounted = true;
         this.currentFilter = 'all';
         this.currentUser = null;
+        this.ticketItems = [];
         this.render();
         this.bindEvents();
         this.refresh();
+        this._cleanupOverflowAutoClose = DriverUtils.registerOverflowAutoClose(this);
 
         this._onBreakdownsChanged = () => this.refresh();
         DriverUtils.on('driver:data-breakdowns-changed', this._onBreakdownsChanged);
+    }
+
+    disconnectedCallback() {
+        if (typeof this._cleanupOverflowAutoClose === 'function') {
+            this._cleanupOverflowAutoClose();
+            this._cleanupOverflowAutoClose = null;
+        }
     }
 
     render() {
         this.innerHTML = `
             <div class="page-header">
                 <h2 class="page-title"><i class="fas fa-ticket-alt"></i> Ticket Tracking</h2>
-                <p class="page-subtitle">Track route breakdown tickets and the approved garage repair workflow</p>
+                <p class="page-subtitle">Track vehicle and route breakdown tickets with current repair progress</p>
             </div>
 
             <div class="filter-controls" id="driverTicketTrackingFilterControls">
@@ -32,7 +41,7 @@ class DriverTicketTracking extends HTMLElement {
 
             <div class="card">
                 <div class="card-header">
-                    <span><i class="fas fa-ticket-alt"></i> Route Breakdown Tickets</span>
+                    <span><i class="fas fa-ticket-alt"></i> Breakdown Tickets</span>
                     <span class="status-text status-in-progress" data-ticket-summary>Loading...</span>
                 </div>
                 <div id="driverTicketTrackingList" class="inventory-list"></div>
@@ -44,29 +53,63 @@ class DriverTicketTracking extends HTMLElement {
         this.addEventListener('click', (event) => {
             const actionEl = event.target.closest('[data-action]');
             if (!actionEl) {
+                DriverUtils.closeOverflowMenus(this);
                 return;
             }
 
             const action = actionEl.dataset.action;
+
+            if (action === 'toggle-actions-menu') {
+                event.stopPropagation();
+                DriverUtils.toggleOverflowMenu(actionEl, this);
+                return;
+            }
 
             if (action === 'set-filter') {
                 this.applyFilter(actionEl.dataset.filter);
                 return;
             }
 
-            const breakdownId = Number.parseInt(actionEl.dataset.breakdownId, 10);
-            const breakdown = DriverUtils.store.breakdowns.routeBreakdowns.find((item) => Number(item.id) === breakdownId);
+            DriverUtils.closeOverflowMenus(this);
+
+            const itemKey = String(actionEl.dataset.itemKey || '').trim();
+            let breakdown = itemKey
+                ? this.ticketItems.find((item) => item.itemKey === itemKey)
+                : null;
+
+            if (!breakdown && actionEl.dataset.breakdownId) {
+                const breakdownId = Number.parseInt(actionEl.dataset.breakdownId, 10);
+                if (Number.isFinite(breakdownId)) {
+                    breakdown = this.ticketItems.find((item) => item.ticket_item_type === 'in-route' && Number(item.id) === breakdownId) || null;
+                }
+            }
 
             if (!breakdown) {
-                DriverUtils.showToast('Unable to find selected route breakdown.', 'warning');
+                DriverUtils.showToast('Unable to find selected breakdown ticket.', 'warning');
                 return;
             }
 
+            const isRouteBreakdown = breakdown.ticket_item_type === 'in-route';
+
             if (action === 'view-breakdown') {
-                DriverUtils.openModal('breakdownDetailsModal', {
-                    breakdownId,
-                    itemType: 'in-route',
-                });
+                const payload = {
+                    item: breakdown,
+                    itemType: isRouteBreakdown ? 'in-route' : 'breakdown',
+                };
+
+                if (isRouteBreakdown) {
+                    const breakdownId = Number.parseInt(breakdown.id, 10);
+                    if (Number.isFinite(breakdownId)) {
+                        payload.breakdownId = breakdownId;
+                    }
+                }
+
+                DriverUtils.openModal('breakdownDetailsModal', payload);
+                return;
+            }
+
+            if (!isRouteBreakdown) {
+                DriverUtils.showToast('Garage workflow is available only for route breakdown tickets.', 'warning');
                 return;
             }
 
@@ -107,14 +150,23 @@ class DriverTicketTracking extends HTMLElement {
             return;
         }
 
-        list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);">Loading route breakdown tickets...</div>';
+        list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);">Loading breakdown tickets...</div>';
 
         try {
             this.currentUser = DriverUtils.store.currentUser || null;
-            const response = await DriverUtils.apiGet('/route-breakdowns');
-            const breakdowns = DriverUtils.normalizeApiList(response, 'breakdowns');
+            const [routeResult, vehicleResult] = await Promise.allSettled([
+                DriverUtils.apiGet('/route-breakdowns'),
+                DriverUtils.apiGet('/breakdown-reports'),
+            ]);
 
-            const filteredBreakdowns = breakdowns.filter((item) => {
+            const routeBreakdowns = routeResult.status === 'fulfilled'
+                ? DriverUtils.normalizeApiList(routeResult.value, 'breakdowns')
+                : [];
+            const vehicleBreakdowns = vehicleResult.status === 'fulfilled'
+                ? DriverUtils.normalizeApiList(vehicleResult.value, 'reports')
+                : [];
+
+            const filteredRouteBreakdowns = routeBreakdowns.filter((item) => {
                 if (!this.currentUser) {
                     return true;
                 }
@@ -123,17 +175,45 @@ class DriverTicketTracking extends HTMLElement {
                     || item.driver_name === this.currentUser.full_name;
             });
 
-            DriverUtils.store.breakdowns.routeBreakdowns = filteredBreakdowns;
+            const filteredVehicleBreakdowns = vehicleBreakdowns.filter((item) => {
+                if (!this.currentUser) {
+                    return true;
+                }
 
-            if (!filteredBreakdowns.length) {
-                list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);">No route breakdown tickets found.</div>';
+                return Number(item.driver_id) === Number(this.currentUser.id)
+                    || item.driver_name === this.currentUser.full_name;
+            });
+
+            const routeTicketItems = filteredRouteBreakdowns.map((item) => ({
+                ...item,
+                ticket_item_type: 'in-route',
+                itemKey: `in-route-${item.id}`,
+            }));
+
+            const vehicleTicketItems = filteredVehicleBreakdowns.map((item) => ({
+                ...item,
+                ticket_item_type: 'vehicle',
+                itemKey: `vehicle-${item.id}`,
+            }));
+
+            this.ticketItems = [...routeTicketItems, ...vehicleTicketItems].sort((a, b) => {
+                const aTime = new Date(a.breakdown_datetime || a.breakdown_date || a.created_at || 0).getTime();
+                const bTime = new Date(b.breakdown_datetime || b.breakdown_date || b.created_at || 0).getTime();
+                return bTime - aTime;
+            });
+
+            DriverUtils.store.breakdowns.routeBreakdowns = filteredRouteBreakdowns;
+            DriverUtils.store.breakdowns.reports = filteredVehicleBreakdowns;
+
+            if (!this.ticketItems.length) {
+                list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);">No breakdown tickets found.</div>';
                 this.updateSummary([]);
                 return;
             }
 
-            list.innerHTML = filteredBreakdowns.map((breakdown) => this.renderTicketCard(breakdown)).join('');
+            list.innerHTML = this.ticketItems.map((breakdown) => this.renderTicketCard(breakdown)).join('');
             this.applyFilter(this.currentFilter);
-            this.updateSummary(filteredBreakdowns);
+            this.updateSummary(this.ticketItems);
         } catch (error) {
             console.error('Error loading route breakdown ticket tracking:', error);
             list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger);">Error loading ticket tracking data. Please try again.</div>';
@@ -148,20 +228,26 @@ class DriverTicketTracking extends HTMLElement {
 
         const severityText = String(breakdown.severity || 'MEDIUM').toUpperCase();
         const severityClass = String(breakdown.severity || 'medium').toLowerCase();
-        const breakdownDate = DriverUtils.formatDateTime(breakdown.breakdown_datetime || breakdown.created_at);
+        const breakdownDate = DriverUtils.formatDateTime(breakdown.breakdown_datetime || breakdown.breakdown_date || breakdown.created_at);
 
-        const workflowStatus = this.getGarageWorkflowStatus(breakdown);
+        const isRouteBreakdown = breakdown.ticket_item_type === 'in-route';
+        const breakdownIdentifier = breakdown.route_breakdown_id || breakdown.breakdown_id || (isRouteBreakdown ? `RBD-${breakdown.id}` : `VBD-${breakdown.id}`);
+        const typeLabel = isRouteBreakdown ? 'Breakdown in Route' : 'Vehicle Breakdown';
+
+        const workflowStatus = isRouteBreakdown ? this.getGarageWorkflowStatus(breakdown) : null;
         const workflowLabel = this.getGarageWorkflowLabel(workflowStatus);
         const workflowClass = this.getGarageWorkflowClass(workflowStatus);
         const approvedGarageName = breakdown?.garage_workflow?.approved_garage?.name || breakdown.approved_garage_name || null;
+        const itemKeyAttr = `data-item-key="${breakdown.itemKey}"`;
 
         return `
             <div class="inventory-item" data-status="${normalized}">
                 <div class="item-details">
-                    <strong><i class="fas fa-exclamation-triangle"></i> ${breakdown.route_breakdown_id || `RBD-${breakdown.id}`}</strong>
+                    <strong><i class="fas fa-exclamation-triangle"></i> ${breakdownIdentifier}</strong>
                     <div class="item-meta">
                         <i class="fas fa-truck"></i> ${breakdown.number_plate || `Vehicle #${breakdown.vehicle_id || 'N/A'}`} |
-                        <i class="fas fa-tools"></i> ${breakdown.breakdown_type || 'General Fault'}
+                        <i class="fas fa-tools"></i> ${breakdown.breakdown_type || 'General Fault'} |
+                        <i class="fas fa-tag"></i> ${typeLabel}
                     </div>
                     <div class="item-description">${breakdown.description || 'No description provided'}</div>
                     <div class="item-meta" style="margin-top: 8px;">
@@ -170,46 +256,64 @@ class DriverTicketTracking extends HTMLElement {
                         <i class="fas fa-calendar"></i> ${breakdownDate}
                     </div>
                     ${breakdown.fault_ticket_number ? `<div class="item-meta" style="margin-top: 4px; color: #6b7280;"><i class="fas fa-ticket-alt"></i> Ticket: ${breakdown.fault_ticket_number}</div>` : ''}
-                    ${!['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(workflowStatus)
+                    ${((!isRouteBreakdown) || !['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(workflowStatus))
                         && Array.isArray(breakdown.assigned_technicians)
                         && breakdown.assigned_technicians.length
                         ? `<div class="item-meta" style="margin-top: 4px;"><i class="fas fa-user-cog" style="color: #2563eb;"></i> <span style="color: #2563eb; font-weight: 600;">Assigned to: ${breakdown.assigned_technicians.map((item) => item.technician_name).join(', ')}</span></div>`
                         : ''}
-                    <div class="item-meta" style="margin-top: 4px;">
-                        <i class="fas fa-warehouse" style="color: #0f766e;"></i>
-                        <span class="status-text ${workflowClass}">${workflowLabel}</span>
-                        ${approvedGarageName ? `| <span style="font-weight: 600; color: #0f766e;">${approvedGarageName}</span>` : ''}
-                    </div>
+                    ${isRouteBreakdown ? `
+                        <div class="item-meta" style="margin-top: 4px;">
+                            <i class="fas fa-warehouse" style="color: #0f766e;"></i>
+                            <span class="status-text ${workflowClass}">${workflowLabel}</span>
+                            ${approvedGarageName ? `| <span style="font-weight: 600; color: #0f766e;">${approvedGarageName}</span>` : ''}
+                        </div>
+                    ` : ''}
                     ${actualStatus !== 'Pending' && actualStatus !== 'Open'
                         ? `<div class="item-meta" style="margin-top: 4px; color: #059669; font-weight: 500;">${updateText}</div>`
                         : ''}
                 </div>
                 <div class="item-actions">
-                    <div class="action-buttons" style="display: flex; flex-direction: column; gap: 8px;">
-                        ${this.renderActionButtons(breakdown, workflowStatus)}
+                    <div class="action-buttons">
+                        ${this.renderActionButtons(breakdown, workflowStatus, itemKeyAttr, isRouteBreakdown)}
                     </div>
                 </div>
             </div>
         `;
     }
 
-    renderActionButtons(breakdown, workflowStatus) {
+    renderActionButtons(breakdown, workflowStatus, itemKeyAttr, isRouteBreakdown) {
         const idAttr = `data-breakdown-id="${breakdown.id}"`;
-        const buttons = [
-            `<button class="btn btn-primary btn-small" type="button" data-action="view-breakdown" ${idAttr}><i class="fas fa-eye"></i> VIEW</button>`,
-            `<button class="btn btn-secondary btn-small" type="button" data-action="view-garages" ${idAttr}><i class="fas fa-map-marker-alt"></i> GARAGES</button>`,
-        ];
+        const routeActionAttr = `${itemKeyAttr} ${idAttr}`;
+        const menuItems = [];
+
+        if (isRouteBreakdown) {
+            menuItems.push(`<button class="dropdown-item" type="button" data-action="view-garages" ${routeActionAttr}><i class="fas fa-map-marker-alt"></i> Nearby Garages</button>`);
+        }
 
         if (workflowStatus === 'garage_approved') {
-            buttons.push(`<button class="btn btn-warning btn-small" type="button" data-action="log-garage-entry" ${idAttr}><i class="fas fa-sign-in-alt"></i> LOG GARAGE ENTRY</button>`);
+            menuItems.push(`<button class="dropdown-item" type="button" data-action="log-garage-entry" ${routeActionAttr}><i class="fas fa-sign-in-alt"></i> Log Garage Entry</button>`);
         }
 
         if (workflowStatus === 'garage_entry_logged' || workflowStatus === 'repair_in_progress') {
-            buttons.push(`<button class="btn btn-info btn-small" type="button" data-action="add-garage-progress" ${idAttr}><i class="fas fa-camera"></i> ADD PROGRESS</button>`);
-            buttons.push(`<button class="btn btn-success btn-small" type="button" data-action="complete-garage-breakdown" ${idAttr}><i class="fas fa-check-circle"></i> COMPLETE REPAIR</button>`);
+            menuItems.push(`<button class="dropdown-item" type="button" data-action="add-garage-progress" ${routeActionAttr}><i class="fas fa-camera"></i> Add Progress</button>`);
+            menuItems.push(`<button class="dropdown-item" type="button" data-action="complete-garage-breakdown" ${routeActionAttr}><i class="fas fa-check-circle"></i> Complete Repair</button>`);
         }
 
-        return buttons.join('');
+        const overflowMenu = menuItems.length ? `
+            <div class="dropdown-container">
+                <button class="btn btn-small btn-secondary dropdown-trigger" type="button" data-action="toggle-actions-menu" aria-label="More actions">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div class="dropdown-menu">
+                    ${menuItems.join('')}
+                </div>
+            </div>
+        ` : '';
+
+        return `
+            <button class="btn btn-primary btn-small" type="button" data-action="view-breakdown" ${itemKeyAttr}><i class="fas fa-eye"></i> VIEW</button>
+            ${overflowMenu}
+        `;
     }
 
     getGarageWorkflowStatus(breakdown) {
@@ -226,6 +330,10 @@ class DriverTicketTracking extends HTMLElement {
     }
 
     getGarageWorkflowLabel(status) {
+        if (!status) {
+            return '';
+        }
+
         const labels = {
             awaiting_supervisor_approval: 'Awaiting Supervisor Approval',
             garage_approved: 'Garage Approved',
@@ -234,10 +342,14 @@ class DriverTicketTracking extends HTMLElement {
             completed: 'Completed',
         };
 
-        return labels[status] || String(status || 'Awaiting Supervisor Approval').replace(/_/g, ' ');
+        return labels[status] || String(status).replace(/_/g, ' ');
     }
 
     getGarageWorkflowClass(status) {
+        if (!status) {
+            return '';
+        }
+
         if (status === 'completed') {
             return 'status-resolved';
         }

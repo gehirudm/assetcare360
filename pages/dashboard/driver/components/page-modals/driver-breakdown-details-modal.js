@@ -78,6 +78,29 @@ class DriverBreakdownDetailsModal extends HTMLElement {
             }
         }
 
+        const vehicleBreakdownId = this.getVehicleBreakdownId(payload, item);
+        if (vehicleBreakdownId) {
+            content.innerHTML = '<div style="padding: 20px; text-align:center; color: var(--muted);">Loading ticket workflow details...</div>';
+
+            try {
+                const detailPayload = await this.loadVehicleBreakdownDetails(vehicleBreakdownId, item);
+                const context = this.buildWorkflowContext(detailPayload.breakdown, detailPayload.workflowDetails, {
+                    isRouteBreakdown: false,
+                });
+                content.innerHTML = this.renderDetailedView(context);
+                return;
+            } catch (error) {
+                console.error('Failed to load vehicle breakdown details:', error);
+                if (item) {
+                    content.innerHTML = `${this.renderBasicItem(item)}<div style="padding: 12px; border-left: 4px solid var(--danger); border-radius: 6px; background: #fef2f2; color: #991b1b; margin-top: 12px;">Unable to load full workflow details. Showing basic report information.</div>`;
+                    return;
+                }
+
+                content.innerHTML = '<p style="color: var(--danger);">Failed to load breakdown details. Please try again.</p>';
+                return;
+            }
+        }
+
         if (!item) {
             content.innerHTML = '<p style="color: var(--muted);">Breakdown details are not available.</p>';
             return;
@@ -98,8 +121,7 @@ class DriverBreakdownDetailsModal extends HTMLElement {
 
         const looksLikeRouteBreakdown = item.type === 'in-route'
             || payload?.itemType === 'in-route'
-            || Boolean(item.route_breakdown_id)
-            || Boolean(item.number_plate);
+            || Boolean(item.route_breakdown_id);
 
         if (!looksLikeRouteBreakdown) {
             return null;
@@ -107,6 +129,24 @@ class DriverBreakdownDetailsModal extends HTMLElement {
 
         const fromItem = Number.parseInt(item.id, 10);
         return fromItem || null;
+    }
+
+    getVehicleBreakdownId(payload, item) {
+        if (!item) {
+            return null;
+        }
+
+        const looksLikeVehicleBreakdown = item.type === 'breakdown'
+            || item.ticket_item_type === 'vehicle'
+            || payload?.itemType === 'breakdown'
+            || Boolean(item.breakdown_id);
+
+        if (!looksLikeVehicleBreakdown) {
+            return null;
+        }
+
+        const fromItem = Number.parseInt(item.id, 10);
+        return Number.isFinite(fromItem) ? fromItem : null;
     }
 
     async loadRouteBreakdownDetails(routeBreakdownId, fallbackItem) {
@@ -128,53 +168,87 @@ class DriverBreakdownDetailsModal extends HTMLElement {
             throw new Error('Route breakdown not found');
         }
 
+        const ticketId = Number.parseInt(breakdown.fault_ticket_id, 10);
+        const workflowDetails = await this.loadTicketWorkflowDetails(ticketId);
+
+        return { breakdown, workflowDetails };
+    }
+
+    async loadVehicleBreakdownDetails(vehicleBreakdownId, fallbackItem) {
+        const response = await DriverUtils.apiGet(`/breakdown-reports/${encodeURIComponent(vehicleBreakdownId)}`);
+        const breakdown = response?.data?.report || response?.report || null;
+
+        if (!breakdown) {
+            if (fallbackItem) {
+                return {
+                    breakdown: fallbackItem,
+                    workflowDetails: {
+                        ticket: null,
+                        budgetReports: [],
+                        spareRequests: [],
+                    },
+                };
+            }
+
+            throw new Error('Vehicle breakdown not found');
+        }
+
+        const ticketId = Number.parseInt(breakdown.fault_ticket_id, 10);
+        const workflowDetails = await this.loadTicketWorkflowDetails(ticketId);
+
+        return { breakdown, workflowDetails };
+    }
+
+    async loadTicketWorkflowDetails(ticketId) {
         const workflowDetails = {
             ticket: null,
             budgetReports: [],
             spareRequests: [],
         };
 
-        const ticketId = Number.parseInt(breakdown.fault_ticket_id, 10);
-        if (ticketId) {
-            const [ticketResult, budgetResult, spareResult] = await Promise.allSettled([
-                DriverUtils.apiGet(`/fault-tickets/${ticketId}`),
-                DriverUtils.apiGet(`/budget-reports/ticket/${ticketId}`),
-                DriverUtils.apiGet(`/spare-part-requests/ticket/${ticketId}`),
-            ]);
+        if (!ticketId) {
+            return workflowDetails;
+        }
 
-            if (ticketResult.status === 'fulfilled' && ticketResult.value?.status === 'success') {
-                const ticketPayload = ticketResult.value.data;
-                if (ticketPayload && typeof ticketPayload === 'object') {
-                    workflowDetails.ticket = ticketPayload;
-                }
-            }
+        const [ticketResult, budgetResult, spareResult] = await Promise.allSettled([
+            DriverUtils.apiGet(`/fault-tickets/${ticketId}`),
+            DriverUtils.apiGet(`/budget-reports/ticket/${ticketId}`),
+            DriverUtils.apiGet(`/spare-part-requests/ticket/${ticketId}`),
+        ]);
 
-            if (budgetResult.status === 'fulfilled' && budgetResult.value?.status === 'success') {
-                const budgetPayload = budgetResult.value.data;
-                const reports = Array.isArray(budgetPayload?.reports)
-                    ? budgetPayload.reports
-                    : (Array.isArray(budgetPayload) ? budgetPayload : []);
-
-                workflowDetails.budgetReports = this.sortByDateDesc(reports, ['created_at', 'updated_at', 'reviewed_at']);
-            }
-
-            if (spareResult.status === 'fulfilled' && spareResult.value?.status === 'success') {
-                const sparePayload = spareResult.value.data;
-                const requests = Array.isArray(sparePayload)
-                    ? sparePayload
-                    : (Array.isArray(sparePayload?.requests) ? sparePayload.requests : []);
-
-                workflowDetails.spareRequests = this.sortByDateDesc(requests, ['created_at', 'updated_at', 'reviewed_at']);
+        if (ticketResult.status === 'fulfilled' && ticketResult.value?.status === 'success') {
+            const ticketPayload = ticketResult.value.data;
+            if (ticketPayload && typeof ticketPayload === 'object') {
+                workflowDetails.ticket = ticketPayload;
             }
         }
 
-        return { breakdown, workflowDetails };
+        if (budgetResult.status === 'fulfilled' && budgetResult.value?.status === 'success') {
+            const budgetPayload = budgetResult.value.data;
+            const reports = Array.isArray(budgetPayload?.reports)
+                ? budgetPayload.reports
+                : (Array.isArray(budgetPayload) ? budgetPayload : []);
+
+            workflowDetails.budgetReports = this.sortByDateDesc(reports, ['created_at', 'updated_at', 'reviewed_at']);
+        }
+
+        if (spareResult.status === 'fulfilled' && spareResult.value?.status === 'success') {
+            const sparePayload = spareResult.value.data;
+            const requests = Array.isArray(sparePayload)
+                ? sparePayload
+                : (Array.isArray(sparePayload?.requests) ? sparePayload.requests : []);
+
+            workflowDetails.spareRequests = this.sortByDateDesc(requests, ['created_at', 'updated_at', 'reviewed_at']);
+        }
+
+        return workflowDetails;
     }
 
-    buildWorkflowContext(breakdown, workflowDetails) {
+    buildWorkflowContext(breakdown, workflowDetails, options = {}) {
         const ticket = workflowDetails.ticket;
         const ticketStatus = ticket?.status || breakdown.ticket_status || breakdown.status || 'Pending';
         const ticketId = ticket?.id || breakdown.fault_ticket_id || null;
+        const isRouteBreakdown = options.isRouteBreakdown === true || Boolean(breakdown.route_breakdown_id);
 
         const assignmentsFromTicket = Array.isArray(ticket?.assignments) ? ticket.assignments : [];
         const assignmentsFromBreakdown = Array.isArray(breakdown.assigned_technicians) ? breakdown.assigned_technicians : [];
@@ -204,7 +278,8 @@ class DriverBreakdownDetailsModal extends HTMLElement {
             latestSpareRequest: spareRequests[0] || null,
             resolutionNotes: ticket?.resolution_notes || breakdown.resolution_notes || null,
             resolvedAt: ticket?.resolved_at || breakdown.resolved_at || null,
-            createdAt: ticket?.created_at || breakdown.breakdown_datetime || breakdown.created_at || null,
+            createdAt: ticket?.created_at || breakdown.breakdown_datetime || breakdown.breakdown_date || breakdown.created_at || null,
+            isRouteBreakdown,
         };
     }
 
@@ -212,6 +287,14 @@ class DriverBreakdownDetailsModal extends HTMLElement {
         const breakdown = context.breakdown;
         const garageWorkflowHtml = this.renderGarageWorkflowSection(breakdown);
         const garageUpdatesHtml = this.renderGarageUpdatesSection(breakdown.garage_updates || []);
+        const isRouteBreakdown = context.isRouteBreakdown === true;
+        const reportLabel = isRouteBreakdown ? 'Route Breakdown ID' : 'Breakdown ID';
+        const reportIdValue = breakdown.route_breakdown_id || breakdown.breakdown_id || `#${breakdown.id || 'N/A'}`;
+        const dateValue = this.formatDate(breakdown.breakdown_datetime || breakdown.breakdown_date || breakdown.created_at);
+        const infoTitle = isRouteBreakdown ? 'Route Information' : 'Vehicle Information';
+        const locationField = isRouteBreakdown
+            ? `<p><strong>Location:</strong> ${this.escapeHtml(breakdown.breakdown_location || 'N/A')}</p>`
+            : '';
 
         const assignmentsHtml = context.assignments.length
             ? `
@@ -247,18 +330,18 @@ class DriverBreakdownDetailsModal extends HTMLElement {
 
             <div class="form-section">
                 <h5><i class="fas fa-info-circle"></i> Breakdown Information</h5>
-                <p><strong>Route Breakdown ID:</strong> ${this.escapeHtml(breakdown.route_breakdown_id || `#${breakdown.id || 'N/A'}`)}</p>
-                <p><strong>Date:</strong> ${this.escapeHtml(this.formatDate(breakdown.breakdown_datetime || breakdown.created_at))}</p>
+                <p><strong>${this.escapeHtml(reportLabel)}:</strong> ${this.escapeHtml(reportIdValue)}</p>
+                <p><strong>Date:</strong> ${this.escapeHtml(dateValue)}</p>
                 <p><strong>Status:</strong> ${this.escapeHtml(context.ticketStatus || breakdown.status || 'Pending')}</p>
                 <p><strong>Severity:</strong> ${this.escapeHtml(String(breakdown.severity || 'N/A').toUpperCase())}</p>
                 <p><strong>Breakdown Type:</strong> ${this.escapeHtml(breakdown.breakdown_type || 'General Fault')}</p>
             </div>
 
             <div class="form-section">
-                <h5><i class="fas fa-route"></i> Route Information</h5>
+                <h5><i class="fas fa-route"></i> ${this.escapeHtml(infoTitle)}</h5>
                 <p><strong>Vehicle:</strong> ${this.escapeHtml(breakdown.number_plate || `Vehicle #${breakdown.vehicle_id || 'N/A'}`)}</p>
                 <p><strong>Driver:</strong> ${this.escapeHtml(breakdown.driver_name || 'N/A')}</p>
-                <p><strong>Location:</strong> ${this.escapeHtml(breakdown.breakdown_location || 'N/A')}</p>
+                ${locationField}
             </div>
 
             <div class="form-section">
@@ -409,6 +492,7 @@ class DriverBreakdownDetailsModal extends HTMLElement {
     }
 
     getFlowSteps(context) {
+        const isRouteBreakdown = context.isRouteBreakdown === true;
         const hasTicket = Boolean(context.ticketId || context.breakdown.fault_ticket_number);
         const status = context.normalizedTicketStatus;
         const hasAssignments = context.assignments.length > 0;
@@ -424,14 +508,14 @@ class DriverBreakdownDetailsModal extends HTMLElement {
         const previousRejectedSpareRequest = context.spareRequests.find((request) => this.normalizeStatus(request.status) === 'rejected');
 
         const reportedStep = {
-            title: 'Breakdown Reported On Route',
+            title: isRouteBreakdown ? 'Breakdown Reported On Route' : 'Vehicle Breakdown Reported',
             state: 'completed',
-            date: context.breakdown.breakdown_datetime || context.breakdown.created_at,
+            date: context.breakdown.breakdown_datetime || context.breakdown.breakdown_date || context.breakdown.created_at,
             details: [
-                `Report ID: ${context.breakdown.route_breakdown_id || 'N/A'}`,
-                `Location: ${context.breakdown.breakdown_location || 'N/A'}`,
+                `Report ID: ${context.breakdown.route_breakdown_id || context.breakdown.breakdown_id || 'N/A'}`,
                 `Fault Type: ${context.breakdown.breakdown_type || 'General Fault'}`,
                 `Severity: ${String(context.breakdown.severity || 'Medium').toUpperCase()}`,
+                ...(isRouteBreakdown ? [`Location: ${context.breakdown.breakdown_location || 'N/A'}`] : []),
             ],
         };
 
