@@ -3759,6 +3759,108 @@ components:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /fault-tickets/{id}/assign:
+    post:
+      tags:
+        - Fault Tickets
+      summary: Assign technicians to fault ticket
+      description: |
+        Assign one or more Technical Officers to a fault ticket.
+
+        **Rules:**
+        - Requires Supervisor or Admin role
+        - Ticket must be editable for assignment (`Open`, `Pending`, or `Assigned`)
+        - Route-breakdown tickets with active nearby-garage workflow
+          (`garage_approved`, `garage_entry_logged`, `repair_in_progress`, `completed`)
+          cannot be assigned to technicians
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Fault ticket ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - technician_ids
+              properties:
+                technician_ids:
+                  type: array
+                  description: Technical Officer user IDs. Use an empty array only for unassignment flows.
+                  items:
+                    type: integer
+                  example: [12, 17]
+                priority:
+                  type: string
+                  enum: [Low, Medium, High, Critical]
+                  example: High
+                expected_completion_date:
+                  type: string
+                  format: date
+                  nullable: true
+                  example: '2026-04-20'
+                notes:
+                  type: string
+                  nullable: true
+                  example: Prioritize roadside safety checks first.
+      responses:
+        '200':
+          description: Ticket assignment updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: 2 technician(s) assigned successfully
+        '400':
+          description: Assignment rejected due to validation or workflow rules
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                garageWorkflowActive:
+                  summary: Route breakdown is already in nearby-garage workflow
+                  value:
+                    status: error
+                    message: Nearby garage workflow is already active for this route breakdown. Technician assignment is not required.
+                invalidTechnicianPayload:
+                  summary: Invalid assignment payload
+                  value:
+                    status: error
+                    message: Invalid technician data
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - only Supervisor/Admin can assign tickets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   # ==================== TICKET WORK UPDATES ====================
   /ticket-work-updates:
     post:
