@@ -7,6 +7,9 @@ class DriverFuelMileage extends HTMLElement {
         this._mounted = true;
         this.render();
         this.bindEvents();
+        this.loadLogs();
+
+        DriverUtils.on('driver:data-fuel-changed', () => this.loadLogs());
     }
 
     render() {
@@ -22,28 +25,9 @@ class DriverFuelMileage extends HTMLElement {
 
             <div class="card">
                 <div class="card-header"><i class="fas fa-gas-pump"></i> Recent Fuel Logs</div>
-                <div class="inventory-item" data-fuel-id="FL-001">
-                    <div class="item-details">
-                        <strong><i class="fas fa-gas-pump"></i> FL-001</strong>
-                        <div class="item-meta"><i class="fas fa-calendar"></i> Aug 24, 2024 02:30 PM | <i class="fas fa-map-marker-alt"></i> IOC - Kandy Road</div>
-                        <div class="item-description"><i class="fas fa-fill-drip"></i> 45 L | <i class="fas fa-dollar-sign"></i> LKR 12,500 | <i class="fas fa-tachometer-alt"></i> 45,100 km | Efficiency: 8.3 km/L</div>
-                    </div>
-                    <div class="item-actions">
-                        <div class="action-buttons">
-                            <button class="btn btn-small btn-primary" type="button" data-action="view-fuel" data-fuel-id="FL-001"><i class="fas fa-eye"></i> VIEW</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="inventory-item" data-fuel-id="FL-002">
-                    <div class="item-details">
-                        <strong><i class="fas fa-gas-pump"></i> FL-002</strong>
-                        <div class="item-meta"><i class="fas fa-calendar"></i> Aug 20, 2024 09:15 AM | <i class="fas fa-map-marker-alt"></i> CPC - Colombo</div>
-                        <div class="item-description"><i class="fas fa-fill-drip"></i> 50 L | <i class="fas fa-dollar-sign"></i> LKR 13,800 | <i class="fas fa-tachometer-alt"></i> 44,800 km | Efficiency: 8.0 km/L</div>
-                    </div>
-                    <div class="item-actions">
-                        <div class="action-buttons">
-                            <button class="btn btn-small btn-primary" type="button" data-action="view-fuel" data-fuel-id="FL-002"><i class="fas fa-eye"></i> VIEW</button>
-                        </div>
+                <div id="fuelLogsList">
+                    <div class="loading-state" style="padding: 20px; text-align: center;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading fuel logs...
                     </div>
                 </div>
             </div>
@@ -59,17 +43,60 @@ class DriverFuelMileage extends HTMLElement {
 
             if (actionEl.dataset.action === 'open-fuel-modal') {
                 DriverUtils.openModal('fuelMileageModal');
-                return;
-            }
-
-            if (actionEl.dataset.action === 'view-fuel') {
-                DriverUtils.showToast(`Viewing fuel record ${actionEl.dataset.fuelId}`);
             }
         });
     }
 
+    async loadLogs() {
+        const list = this.querySelector('#fuelLogsList');
+        if (!list) return;
+
+        list.innerHTML = `<div class="loading-state" style="padding: 20px; text-align: center;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>`;
+
+        try {
+            // Filter by current driver's ID so only their logs are shown
+            const driverId = DriverUtils.store.currentUser?.id;
+            const query = driverId ? `?driver_id=${driverId}` : '';
+            const response = await DriverUtils.apiGet(`/fuel-logs${query}`);
+            const logs = response?.data?.fuel_logs || response?.data || [];
+
+            if (!logs.length) {
+                list.innerHTML = `
+                    <div class="empty-state" style="padding: 30px; text-align: center; color: #888;">
+                        <i class="fas fa-gas-pump" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                        <p>No fuel logs found. Add your first entry!</p>
+                    </div>`;
+                return;
+            }
+
+            list.innerHTML = logs.map(log => {
+                const date = log.log_datetime ? DriverUtils.formatDateTime(log.log_datetime) : '—';
+                const station = log.station_name ? `<i class="fas fa-map-marker-alt"></i> ${log.station_name}` : '';
+                const efficiency = log.fuel_efficiency ? ` | Efficiency: ${log.fuel_efficiency} km/L` : '';
+                return `
+                    <div class="inventory-item">
+                        <div class="item-details">
+                            <strong><i class="fas fa-gas-pump"></i> ${log.fuel_log_id}</strong>
+                            <div class="item-meta"><i class="fas fa-calendar"></i> ${date}${station ? ' | ' + station : ''}</div>
+                            <div class="item-description">
+                                <i class="fas fa-fill-drip"></i> ${parseFloat(log.fuel_volume).toFixed(1)} L |
+                                <i class="fas fa-money-bill-wave"></i> Rs ${parseFloat(log.total_cost).toLocaleString()} |
+                                <i class="fas fa-tachometer-alt"></i> ${parseInt(log.odometer_reading).toLocaleString()} km${efficiency}
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+        } catch (error) {
+            console.error('Failed to load fuel logs:', error);
+            list.innerHTML = `
+                <div class="empty-state" style="padding: 30px; text-align: center; color: #888;">
+                    <i class="fas fa-exclamation-circle"></i> Failed to load fuel logs.
+                </div>`;
+        }
+    }
+
     refresh() {
-        // Static section; no fetch required.
+        this.loadLogs();
     }
 }
 
