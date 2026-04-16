@@ -37,7 +37,7 @@ class InventorySparepartAddition extends HTMLElement {
             <div class="search-bar">
                 <input type="text" id="additionSearch" class="search-input" placeholder="Search by sparepart name, ID, or supplier...">
                 <button class="btn btn-primary" id="additionAddBtn">
-                    <i class="fas fa-plus"></i> Add Stock
+                    <i class="fas fa-plus"></i> Add New Sparepart/Stock
                 </button>
                 <button class="btn btn-secondary" id="additionRefreshBtn">
                     <i class="fas fa-sync"></i> Refresh

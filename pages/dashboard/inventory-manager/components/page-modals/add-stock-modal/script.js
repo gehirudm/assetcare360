@@ -257,36 +257,30 @@ async function saveSparePartFromAddStock(data) {
         let response;
 
         if (existingPart) {
-            // Update existing sparepart - add to quantity
+            // POST /additions is the single source of truth — the backend handler
+            // (SparepartAdditionController::create) already calls updateQuantity(+add).
+            // Do NOT call PUT /products separately; that would double the quantity.
             const newQuantity = parseInt(existingPart.quantity) + parseInt(data.quantity);
-            response = await API.put(`/products/${data.sparepart_id}`, {
-                quantity: newQuantity,
-                location: data.location || existingPart.location
+            response = await API.post('/additions', {
+                sparepart_id: data.sparepart_id,
+                sparepart_name: data.name,
+                category: data.category,
+                location: data.location || existingPart.location,
+                quantity_added: data.quantity,
+                received_date: new Date().toISOString().split('T')[0],
+                supplier: data.supplier || null,
+                supplier_contact: data.supplier_contact || null,
+                supplier_address: data.supplier_address || null,
+                warranty_period: data.warranty_period || null,
+                warranty_start: data.warranty_start || null,
+                warranty_terms: data.warranty_terms || null,
+                compatible_machines: data.compatible_machines || existingPart.compatible_machines,
+                compatible_vehicles: data.compatible_vehicles || existingPart.compatible_vehicles,
+                reference: `Stock Addition - ${data.sparepart_id}`,
+                notes: `Added ${data.quantity} units from ${data.supplier || 'unknown supplier'}`
             });
 
             if (response.status === 'success') {
-                // Record the addition in sparepart_additions table
-                await API.post('/additions', {
-                    sparepart_id: data.sparepart_id,
-                    sparepart_name: data.name,
-                    category: data.category,
-                    location: data.location || existingPart.location,
-                    quantity_added: data.quantity,
-                    previous_stock: parseInt(existingPart.quantity),
-                    new_stock: newQuantity,
-                    received_date: new Date().toISOString().split('T')[0],
-                    supplier: data.supplier || null,
-                    supplier_contact: data.supplier_contact || null,
-                    supplier_address: data.supplier_address || null,
-                    warranty_period: data.warranty_period || null,
-                    warranty_start: data.warranty_start || null,
-                    warranty_terms: data.warranty_terms || null,
-                    compatible_machines: data.compatible_machines || existingPart.compatible_machines,
-                    compatible_vehicles: data.compatible_vehicles || existingPart.compatible_vehicles,
-                    reference: `Stock Addition - ${data.sparepart_id}`,
-                    notes: `Added ${data.quantity} units from ${data.supplier || 'unknown supplier'}`
-                });
-
                 Utils.showToast(`Added ${data.quantity} units to ${data.sparepart_id} from ${data.supplier || 'supplier'}. New total: ${newQuantity} units`, 'success');
             }
         } else {
