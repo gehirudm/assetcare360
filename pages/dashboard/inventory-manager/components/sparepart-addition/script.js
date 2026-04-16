@@ -8,12 +8,22 @@ class InventorySparepartAddition extends HTMLElement {
         super();
         this.additions = [];
         this.currentCategory = 'all';
+        this._initialized = false;
+        this._eventsBound = false;
+        this._onDocumentClick = this._onDocumentClick.bind(this);
     }
 
     connectedCallback() {
+        if (this._initialized) return;
         this.loadStyles();
         this.render();
         this.bindEvents();
+        this._initialized = true;
+    }
+
+    disconnectedCallback() {
+        document.removeEventListener('click', this._onDocumentClick);
+        this._eventsBound = false;
     }
 
     loadStyles() {
@@ -66,6 +76,9 @@ class InventorySparepartAddition extends HTMLElement {
     }
 
     bindEvents() {
+        if (this._eventsBound) return;
+        this._eventsBound = true;
+
         const searchInput = this.querySelector('#additionSearch');
         if (searchInput) {
             searchInput.addEventListener('input', () => this.applyFilters());
@@ -135,6 +148,14 @@ class InventorySparepartAddition extends HTMLElement {
                     break;
             }
         });
+
+        document.addEventListener('click', this._onDocumentClick);
+    }
+
+    _onDocumentClick(event) {
+        if (!this.contains(event.target)) {
+            this.closeAllActionMenus();
+        }
     }
 
     async refresh() {
@@ -291,7 +312,7 @@ class InventorySparepartAddition extends HTMLElement {
     }
 
     closeAllActionMenus() {
-        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        this.querySelectorAll('.dropdown-menu').forEach(menu => {
             menu.classList.remove('active');
         });
     }
