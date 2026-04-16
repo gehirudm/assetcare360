@@ -74,6 +74,7 @@ require_once __DIR__ . '/../app/controllers/VehicleCheckController.php';
 require_once __DIR__ . '/../app/controllers/MachineWeeklyCheckController.php';
 require_once __DIR__ . '/../app/controllers/BreakdownReportController.php';
 require_once __DIR__ . '/../app/controllers/RouteBreakdownController.php';
+require_once __DIR__ . '/../app/controllers/GarageController.php';
 require_once __DIR__ . '/../app/controllers/MachineBreakdownController.php';
 require_once __DIR__ . '/../app/controllers/TecFaultRepairTicketController.php';
 require_once __DIR__ . '/../app/controllers/SparePartRequestController.php';
@@ -251,8 +252,13 @@ $router->put('/system-settings/:key', 'SystemSettingController', 'update');
 $router->get('/notifications', 'NotificationController', 'index');
 $router->post('/notifications/read', 'NotificationController', 'markRead');
 
+// Garage routes
+$router->get('/garages', 'GarageController', 'index');
+$router->get('/garages/:id', 'GarageController', 'show');
+
 // File serving routes (for uploaded files)
 $router->get('/uploads/fault-tickets/:filename', 'FileController', 'serveFaultTicketImage');
+$router->get('/uploads/route-breakdowns/:folder/:filename', 'FileController', 'serveRouteBreakdownImage');
 
 // Breakdown report routes (Supervisor and above)
 $router->get('/breakdown-reports/stats', 'BreakdownReportController', 'stats');
@@ -267,6 +273,10 @@ $router->get('/route-breakdowns/stats', 'RouteBreakdownController', 'stats');
 $router->get('/route-breakdowns', 'RouteBreakdownController', 'index');
 $router->get('/route-breakdowns/:id', 'RouteBreakdownController', 'show');
 $router->post('/route-breakdowns', 'RouteBreakdownController', 'create');
+$router->post('/route-breakdowns/:id/garage-approval', 'RouteBreakdownController', 'approveGarage');
+$router->post('/route-breakdowns/:id/garage-entry', 'RouteBreakdownController', 'logGarageEntry');
+$router->post('/route-breakdowns/:id/garage-progress', 'RouteBreakdownController', 'addGarageProgressUpdate');
+$router->post('/route-breakdowns/:id/garage-complete', 'RouteBreakdownController', 'completeGarageRepair');
 $router->put('/route-breakdowns/:id', 'RouteBreakdownController', 'update');
 $router->delete('/route-breakdowns/:id', 'RouteBreakdownController', 'delete');
 
