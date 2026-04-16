@@ -22,6 +22,7 @@ function componentSelectorBySection(sectionId) {
         'trip-log': 'driver-trip-log',
         'vehicle-check': 'driver-vehicle-check',
         breakdown: 'driver-breakdown',
+        'ticket-tracking': 'driver-ticket-tracking',
         'fuel-mileage': 'driver-fuel-mileage',
         'transport-ticket': 'driver-transport-ticket',
         garages: 'driver-garages',
@@ -48,6 +49,7 @@ async function refreshAllSections() {
         'trip-log',
         'vehicle-check',
         'breakdown',
+        'ticket-tracking',
         'fuel-mileage',
         'transport-ticket',
         'garages',
@@ -120,6 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     refreshSection('trip-log');
                     refreshSection('vehicle-check');
                     refreshSection('breakdown');
+                    refreshSection('ticket-tracking');
                 }, 30000);
             },
         });

@@ -19,6 +19,7 @@
             {"section":"trip-log","icon":"fas fa-route","label":"Trip Log"},
             {"section":"vehicle-check","icon":"fas fa-clipboard-check","label":"Vehicle Check"},
             {"section":"breakdown","icon":"fas fa-exclamation-triangle","label":"Breakdown Report"},
+            {"section":"ticket-tracking","icon":"fas fa-ticket-alt","label":"Ticket Tracking"},
             {"section":"fuel-mileage","icon":"fas fa-gas-pump","label":"Fuel & Mileage"},
             {"section":"transport-ticket","icon":"fas fa-ticket-alt","label":"Transport Ticket"},
             {"section":"garages","icon":"fas fa-warehouse","label":"Nearby Garages"}
@@ -39,6 +40,10 @@
             <driver-breakdown></driver-breakdown>
         </section>
 
+        <section class="content-section" id="ticket-tracking">
+            <driver-ticket-tracking></driver-ticket-tracking>
+        </section>
+
         <section class="content-section" id="fuel-mileage">
             <driver-fuel-mileage></driver-fuel-mileage>
         </section>
@@ -56,6 +61,8 @@
     <driver-end-trip-modal></driver-end-trip-modal>
     <driver-view-trip-modal></driver-view-trip-modal>
     <driver-edit-trip-modal></driver-edit-trip-modal>
+    <driver-reject-trip-modal></driver-reject-trip-modal>
+    <driver-start-accepted-trip-modal></driver-start-accepted-trip-modal>
     <driver-daily-check-modal></driver-daily-check-modal>
     <driver-breakdown-modal></driver-breakdown-modal>
     <driver-breakdown-in-route-modal></driver-breakdown-in-route-modal>
@@ -88,6 +95,7 @@
     <script src="./components/driver-trip-log.js"></script>
     <script src="./components/driver-vehicle-check.js"></script>
     <script src="./components/driver-breakdown.js"></script>
+    <script src="./components/driver-ticket-tracking.js"></script>
     <script src="./components/driver-fuel-mileage.js"></script>
     <script src="./components/driver-transport-ticket.js"></script>
     <script src="./components/driver-garages.js"></script>
@@ -96,6 +104,8 @@
     <script src="./components/page-modals/driver-end-trip-modal.js"></script>
     <script src="./components/page-modals/driver-view-trip-modal.js"></script>
     <script src="./components/page-modals/driver-edit-trip-modal.js"></script>
+    <script src="./components/page-modals/driver-reject-trip-modal.js"></script>
+    <script src="./components/page-modals/driver-start-accepted-trip-modal.js"></script>
     <script src="./components/page-modals/driver-daily-check-modal.js"></script>
     <script src="./components/page-modals/driver-breakdown-modal.js"></script>
     <script src="./components/page-modals/driver-breakdown-in-route-modal.js"></script>

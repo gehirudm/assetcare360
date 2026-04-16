@@ -85,6 +85,25 @@
         return apiRequest('POST', path, body);
     }
 
+    async function apiPostFormData(path, formData) {
+        const token = localStorage.getItem('auth_token');
+        const url = `${CONFIG.API_BASE_URL}${path}`;
+        
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': token ? `Bearer ${token}` : '',
+                },
+                body: formData,
+            });
+            return await response.json();
+        } catch (error) {
+            console.error('API FormData request failed:', error);
+            throw error;
+        }
+    }
+
     async function apiPut(path, body) {
         return apiRequest('PUT', path, body);
     }
@@ -118,17 +137,19 @@
             return 'Pending';
         }
 
-        if (status === 'Pending') {
-            return 'Pending';
-        }
-
         return status;
     }
 
     function getTripFilterStatus(status) {
         const value = String(status || '').toLowerCase();
-        if (value === 'pending' || value === 'ready') {
-            return 'ready';
+        if (value === 'pending') {
+            return 'pending';
+        }
+        if (value === 'accepted') {
+            return 'accepted';
+        }
+        if (value === 'rejected') {
+            return 'rejected';
         }
         if (value === 'in progress' || value === 'in-progress') {
             return 'in-progress';
@@ -139,12 +160,15 @@
         if (value === 'cancelled') {
             return 'cancelled';
         }
-        return 'ready';
+        return 'pending';
     }
 
     function getStatusColor(status) {
         const value = String(status || '').toLowerCase();
         if (value === 'approved' || value === 'resolved' || value === 'completed') {
+            return '#27ae60';
+        }
+        if (value === 'accepted') {
             return '#27ae60';
         }
         if (value === 'rejected' || value === 'critical' || value === 'cancelled') {
@@ -153,7 +177,66 @@
         if (value === 'in progress' || value === 'in-progress' || value === 'assigned') {
             return '#2563eb';
         }
+        if (value === 'pending') {
+            return '#f39c12';
+        }
         return '#f39c12';
+    }
+
+    function getTicketStatusInfo(status) {
+        const statusMap = {
+            Open: { label: 'Pending', class: 'status-pending', text: 'Pending' },
+            Pending: { label: 'Pending', class: 'status-pending', text: 'Pending' },
+            Assigned: { label: 'Assigned', class: 'status-assigned', text: 'Assigned' },
+            'Waiting for Budget Approval': { label: 'Awaiting Approval', class: 'status-in-progress', text: 'Awaiting Approval' },
+            'Waiting for Spare Parts': { label: 'Awaiting Parts', class: 'status-in-progress', text: 'Awaiting Parts' },
+            'Parts Approved': { label: 'Parts Approved', class: 'status-in-progress', text: 'Parts Approved' },
+            'Parts Rejected': { label: 'Parts Rejected', class: 'status-rejected', text: 'Parts Rejected' },
+            'In Progress': { label: 'In Progress', class: 'status-in-progress', text: 'In Progress' },
+            Resolved: { label: 'Resolved', class: 'status-resolved', text: 'Resolved' },
+            Closed: { label: 'Closed', class: 'status-closed', text: 'Closed' },
+        };
+
+        return statusMap[status] || { label: status || 'Pending', class: 'status-pending', text: status || 'Pending' };
+    }
+
+    function getTicketUpdateText(status) {
+        const updateMap = {
+            Open: 'Awaiting supervisor review',
+            Pending: 'Awaiting supervisor review',
+            Assigned: 'Technician assigned to this ticket',
+            'Waiting for Budget Approval': 'Budget report submitted and awaiting approval',
+            'Waiting for Spare Parts': 'Waiting for spare parts to be approved',
+            'Parts Approved': 'Spare parts approved, repair to begin soon',
+            'Parts Rejected': 'Spare parts request was rejected and needs revision',
+            'In Progress': 'Being investigated and repaired',
+            Resolved: 'Work completed and ticket resolved',
+            Closed: 'Ticket closed',
+        };
+
+        return updateMap[status] || 'No updates';
+    }
+
+    function normalizeTicketFilterStatus(status) {
+        const value = String(status || '').toLowerCase();
+
+        if (value === 'open' || value === 'pending') {
+            return 'open';
+        }
+
+        if (value === 'assigned' || value.includes('progress') || value.includes('spare') || value.includes('parts') || value.includes('budget')) {
+            return 'in-progress';
+        }
+
+        if (value === 'resolved' || value === 'finished' || value === 'completed') {
+            return 'resolved';
+        }
+
+        if (value === 'closed') {
+            return 'closed';
+        }
+
+        return value || 'open';
     }
 
     function formatDate(dateInput) {
@@ -221,12 +304,16 @@
         setModalState,
         apiGet,
         apiPost,
+        apiPostFormData,
         apiPut,
         apiDelete,
         normalizeApiList,
         getTripDisplayStatus,
         getTripFilterStatus,
         getStatusColor,
+        getTicketStatusInfo,
+        getTicketUpdateText,
+        normalizeTicketFilterStatus,
         formatDate,
         formatDateTime,
         ensureTodayDefaults,
