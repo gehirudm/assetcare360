@@ -13,8 +13,10 @@ class MaintenanceRejectCostModal extends HTMLElement {
         this.innerHTML = `
             <div id="rejectModal" class="modal" aria-hidden="true">
                 <div class="modal-content">
-                    <button class="close" type="button" data-action="close-modal">&times;</button>
-                    <h2 style="margin-bottom: 20px; color: var(--danger);">Reject Cost Request</h2>
+                    <div class="modal-header">
+                        <h4><i class="fas fa-times-circle"></i> Reject Cost Request</h4>
+                        <button class="btn-close" type="button" data-action="close-modal">&times;</button>
+                    </div>
                     <form id="rejectCostForm">
                         <div class="form-section">
                             <h5><i class="fas fa-times-circle"></i> Rejection Details</h5>
