@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUNTIME_DIR="/tmp/assetcare360-services"
 mkdir -p "$RUNTIME_DIR"
 
-SERVICES=(backend frontend audit-consumer notification-consumer service-due-producer)
+SERVICES=(backend frontend audit-consumer notification-consumer email-consumer service-due-producer)
 
 usage() {
     cat <<USAGE
@@ -19,7 +19,8 @@ Services:
   frontend              Static frontend server on http://127.0.0.1:3000
   audit-consumer        RabbitMQ audit consumer
   notification-consumer RabbitMQ notification consumer
-  service-due-producer  Service-due publisher loop (runs every 10 minutes)
+  email-consumer        RabbitMQ email consumer (MailHog SMTP)
+  service-due-producer  Service-due producer service (continuous loop)
 USAGE
 }
 
@@ -82,8 +83,11 @@ command_for_service() {
         notification-consumer)
             echo "php '$ROOT_DIR/services/consume_notification_events.php'"
             ;;
+        email-consumer)
+            echo "php '$ROOT_DIR/services/consume_email_events.php'"
+            ;;
         service-due-producer)
-            echo "while true; do php '$ROOT_DIR/services/check_service_due.php'; sleep 600; done"
+            echo "php '$ROOT_DIR/services/check_service_due.php'"
             ;;
         *)
             return 1
@@ -132,13 +136,14 @@ run_gui() {
     if command -v whiptail >/dev/null 2>&1; then
         local selection
         selection=$(whiptail --title "AssetCare360 Service Starter" \
-            --menu "Select service to start" 20 80 8 \
+            --menu "Select service to start" 21 80 9 \
             all "Start all services" \
             backend "Start backend API server" \
             frontend "Start frontend server" \
             audit-consumer "Start audit consumer" \
             notification-consumer "Start notification consumer" \
-            service-due-producer "Start service-due producer loop" \
+            email-consumer "Start email consumer" \
+            service-due-producer "Start service-due producer service" \
             3>&1 1>&2 2>&3) || exit 0
 
         if [[ "$selection" == "all" ]]; then
@@ -155,8 +160,9 @@ run_gui() {
     echo "3) frontend"
     echo "4) audit-consumer"
     echo "5) notification-consumer"
-    echo "6) service-due-producer"
-    read -r -p "Select option [1-6]: " choice
+    echo "6) email-consumer"
+    echo "7) service-due-producer"
+    read -r -p "Select option [1-7]: " choice
 
     case "$choice" in
         1) start_all ;;
@@ -164,7 +170,8 @@ run_gui() {
         3) start_service frontend ;;
         4) start_service audit-consumer ;;
         5) start_service notification-consumer ;;
-        6) start_service service-due-producer ;;
+        6) start_service email-consumer ;;
+        7) start_service service-due-producer ;;
         *) echo "Invalid selection"; exit 1 ;;
     esac
 }

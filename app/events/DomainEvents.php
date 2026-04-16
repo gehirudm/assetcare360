@@ -1,6 +1,7 @@
 <?php
 
 class DomainEvents {
+    public const USER_ACCOUNT_CREATED = 'USER_ACCOUNT_CREATED';
     public const ASSET_MACHINE_CREATED = 'ASSET_MACHINE_CREATED';
     public const ASSET_VEHICLE_CREATED = 'ASSET_VEHICLE_CREATED';
     public const FAULT_TICKET_CREATED = 'FAULT_TICKET_CREATED';
@@ -14,6 +15,7 @@ class DomainEvents {
 
     public static function all(): array {
         return [
+            self::USER_ACCOUNT_CREATED,
             self::ASSET_MACHINE_CREATED,
             self::ASSET_VEHICLE_CREATED,
             self::FAULT_TICKET_CREATED,
