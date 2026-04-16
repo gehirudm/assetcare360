@@ -65,28 +65,46 @@ class DriverTicketDetailsModal extends HTMLElement {
             return;
         }
 
+        const ticketDate = ticket.date || DriverUtils.formatDateTime(ticket.created_at);
+        const route = ticket.route || `${ticket.origin || 'N/A'} → ${ticket.destination || 'N/A'}`;
+        const tripId = ticket.trip || ticket.tripId || ticket.trip_id || 'N/A';
+        const cargo = ticket.cargo || ticket.cargo_description || 'N/A';
+        const status = ticket.status || 'Pending';
+        const vehicleRegistration = ticket.vehicleRegistration || ticket.vehicle_registration || 'N/A';
+        const recipient = ticket.recipient || ticket.driver_name || 'N/A';
+        const destination = ticket.destination || 'N/A';
+        const instructions = ticket.instructions || 'No instructions provided.';
+        const rejectionReason = ticket.rejectionReason || ticket.rejection_reason || null;
+
         content.innerHTML = `
             <div class="form-section">
                 <div style="display:grid; gap:10px;">
-                    <div style="display:flex; justify-content:space-between; padding:10px; background:#f8f9fa; border-radius:6px;"><strong>Ticket ID:</strong><span>${ticket.id}</span></div>
-                    <div style="display:flex; justify-content:space-between; padding:10px; background:#f8f9fa; border-radius:6px;"><strong>Date:</strong><span>${ticket.date}</span></div>
-                    <div style="display:flex; justify-content:space-between; padding:10px; background:#f8f9fa; border-radius:6px;"><strong>Route:</strong><span>${ticket.route}</span></div>
-                    <div style="display:flex; justify-content:space-between; padding:10px; background:#f8f9fa; border-radius:6px;"><strong>Trip:</strong><span>${ticket.trip}</span></div>
-                    <div style="display:flex; justify-content:space-between; padding:10px; background:#f8f9fa; border-radius:6px;"><strong>Status:</strong><span>${ticket.status}</span></div>
+                    <div style="display:flex; justify-content:space-between; padding:10px; background:#f8f9fa; border-radius:6px;"><strong>Ticket ID:</strong><span>${ticket.id || ('TT-' + tripId)}</span></div>
+                    <div style="display:flex; justify-content:space-between; padding:10px; background:#f8f9fa; border-radius:6px;"><strong>Date:</strong><span>${ticketDate}</span></div>
+                    <div style="display:flex; justify-content:space-between; padding:10px; background:#f8f9fa; border-radius:6px;"><strong>Route:</strong><span>${route}</span></div>
+                    <div style="display:flex; justify-content:space-between; padding:10px; background:#f8f9fa; border-radius:6px;"><strong>Trip:</strong><span>${tripId}</span></div>
+                    <div style="display:flex; justify-content:space-between; padding:10px; background:#f8f9fa; border-radius:6px;"><strong>Status:</strong><span>${status}</span></div>
+                    <div style="display:flex; justify-content:space-between; padding:10px; background:#f8f9fa; border-radius:6px;"><strong>Vehicle:</strong><span>${vehicleRegistration}</span></div>
                 </div>
             </div>
             <div class="form-section">
                 <h5><i class="fas fa-box"></i> Cargo & Recipient</h5>
                 <div style="padding:12px; background:#f8f9fa; border-radius:6px;">
-                    <p style="margin: 0 0 8px 0;"><strong>Cargo:</strong> ${ticket.cargo}</p>
-                    <p style="margin: 0 0 8px 0;"><strong>Recipient:</strong> ${ticket.recipient || 'N/A'}</p>
-                    <p style="margin: 0;"><strong>Destination:</strong> ${ticket.destination || 'N/A'}</p>
+                    <p style="margin: 0 0 8px 0;"><strong>Cargo:</strong> ${cargo}</p>
+                    <p style="margin: 0 0 8px 0;"><strong>Driver:</strong> ${recipient}</p>
+                    <p style="margin: 0;"><strong>Destination:</strong> ${destination}</p>
                 </div>
             </div>
             <div class="form-section">
                 <h5><i class="fas fa-sticky-note"></i> Instructions</h5>
-                <div style="padding:12px; background:#f8f9fa; border-radius:6px;">${ticket.instructions || 'No instructions provided.'}</div>
+                <div style="padding:12px; background:#f8f9fa; border-radius:6px;">${instructions}</div>
             </div>
+            ${rejectionReason ? `
+                <div class="form-section">
+                    <h5 style="color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Rejection Reason</h5>
+                    <div style="padding:12px; background:#fef2f2; border-radius:6px; color:#991b1b;">${rejectionReason}</div>
+                </div>
+            ` : ''}
         `;
 
         DriverUtils.setModalState(this.querySelector('#ticketDetailsModal'), true);
