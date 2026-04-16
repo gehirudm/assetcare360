@@ -41,9 +41,6 @@ class InventoryCatalog extends HTMLElement {
 
             <div class="search-bar">
                 <input type="text" id="catalogSearch" class="search-input" placeholder="Search by sparepart name, number, or category...">
-                <button class="btn btn-secondary" id="catalogRefreshBtn">
-                    <i class="fas fa-sync"></i> Refresh
-                </button>
             </div>
 
             <div class="filter-controls" id="stockFilterTabs">
@@ -82,12 +79,6 @@ class InventoryCatalog extends HTMLElement {
         const searchInput = this.querySelector('#catalogSearch');
         if (searchInput) {
             searchInput.addEventListener('input', () => this.applyFilters());
-        }
-
-        // Refresh
-        const refreshBtn = this.querySelector('#catalogRefreshBtn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.loadSpareParts());
         }
 
         // Stock filters

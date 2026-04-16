@@ -39,9 +39,6 @@ class InventoryVehicles extends HTMLElement {
                 <button class="btn btn-primary" id="addVehicleBtn">
                     <i class="fas fa-plus"></i> Add New Vehicle
                 </button>
-                <button class="btn btn-secondary" id="refreshVehiclesBtn">
-                    <i class="fas fa-sync"></i> Refresh
-                </button>
             </div>
 
             <div class="filter-controls" id="vehicleFilters">
@@ -83,11 +80,6 @@ class InventoryVehicles extends HTMLElement {
             });
         }
 
-        // Refresh button
-        const refreshBtn = this.querySelector('#refreshVehiclesBtn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.loadVehicles());
-        }
     }
 
     async loadVehicles() {

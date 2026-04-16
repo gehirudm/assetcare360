@@ -49,9 +49,6 @@ class InventorySparepartAddition extends HTMLElement {
                 <button class="btn btn-primary" id="additionAddBtn">
                     <i class="fas fa-plus"></i> Add New Sparepart/Stock
                 </button>
-                <button class="btn btn-secondary" id="additionRefreshBtn">
-                    <i class="fas fa-sync"></i> Refresh
-                </button>
             </div>
 
             <div class="filter-controls" id="additionCategoryFilter">
@@ -89,11 +86,6 @@ class InventorySparepartAddition extends HTMLElement {
             addBtn.addEventListener('click', () => {
                 this.dispatchEvent(new CustomEvent('inventory-sparepart-addition:add', { bubbles: true }));
             });
-        }
-
-        const refreshBtn = this.querySelector('#additionRefreshBtn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.loadRecentAdditions());
         }
 
         this.querySelectorAll('#additionCategoryFilter .filter-btn').forEach(btn => {

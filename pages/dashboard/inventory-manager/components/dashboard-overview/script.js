@@ -122,8 +122,6 @@ class InventoryDashboardOverview extends HTMLElement {
             this._statusBanner.innerHTML = '<div class="alert-banner loading">Refreshing dashboard metrics...</div>';
         }
 
-        this._refreshButton.disabled = loading;
-
         this._summaryGrid.innerHTML = this._renderSummaryCards(metrics);
         this._activitiesList.innerHTML = activities.length > 0
             ? activities.map(item => this._renderActivity(item)).join('')
@@ -137,9 +135,6 @@ class InventoryDashboardOverview extends HTMLElement {
                     <h2 class="page-title">Dashboard Overview</h2>
                     <p class="page-subtitle">Welcome! Here is your inventory management summary.</p>
                 </div>
-                <button id="refreshButton" type="button" class="btn btn-secondary btn-small" data-action="refresh">
-                    Refresh
-                </button>
             </div>
 
             <div id="statusBanner"></div>
@@ -156,7 +151,6 @@ class InventoryDashboardOverview extends HTMLElement {
     }
 
     _cacheDom() {
-        this._refreshButton = this.shadowRoot.getElementById('refreshButton');
         this._statusBanner = this.shadowRoot.getElementById('statusBanner');
         this._summaryGrid = this.shadowRoot.getElementById('summaryGrid');
         this._activitiesList = this.shadowRoot.getElementById('activitiesList');
@@ -313,12 +307,6 @@ class InventoryDashboardOverview extends HTMLElement {
     }
 
     _onRootClick(event) {
-        const actionButton = event.target.closest('button[data-action]');
-        if (actionButton && actionButton.dataset.action === 'refresh') {
-            this.refresh();
-            return;
-        }
-
         const targetButton = event.target.closest('button[data-target]');
         if (!targetButton) return;
 

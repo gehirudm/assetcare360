@@ -107,8 +107,6 @@ class InventoryUsageTracking extends HTMLElement {
         } else if (loading) {
             this._banner.innerHTML = '<div class="info-banner loading">Loading spare parts usage data...</div>';
         }
-
-        this._refreshButton.disabled = loading;
         this._searchInput.value = searchQuery;
 
         const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -153,7 +151,6 @@ class InventoryUsageTracking extends HTMLElement {
 
             <div class="search-row">
                 <input id="usageSearch" class="search-input" type="text" placeholder="Search by sparepart ID or name...">
-                <button id="refreshButton" type="button" class="btn btn-secondary btn-small" data-action="refresh">Refresh</button>
             </div>
 
             <div id="banner"></div>
@@ -220,7 +217,6 @@ class InventoryUsageTracking extends HTMLElement {
 
     _cacheDom() {
         this._searchInput = this.shadowRoot.getElementById('usageSearch');
-        this._refreshButton = this.shadowRoot.getElementById('refreshButton');
         this._banner = this.shadowRoot.getElementById('banner');
         this._tbody = this.shadowRoot.getElementById('usageTableBody');
 
@@ -306,9 +302,6 @@ class InventoryUsageTracking extends HTMLElement {
         }
 
         switch (button.dataset.action) {
-            case 'refresh':
-                this.refresh();
-                break;
             case 'open-issue-modal':
                 this._openIssueModal({
                     sparepartId: button.dataset.sparepartId || '',
