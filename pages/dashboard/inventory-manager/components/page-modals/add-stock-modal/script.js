@@ -6,24 +6,29 @@ class InventoryAddStockModal extends HTMLElement {
             <div id="addStockModal" class="modal">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2><i class="fas fa-plus-circle"></i> Add New Spare Part</h2>
+                        <h2><i class="fas fa-plus-circle"></i> Add Stock to Existing Sparepart</h2>
                         <button class="btn-close" onclick="closeModal('addStockModal')">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                     <form id="addStockForm">
                         <div class="form-section">
-                            <h5><i class="fas fa-box"></i> Basic Information</h5>
+                            <h5><i class="fas fa-box"></i> Sparepart Information</h5>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label class="form-label">Sparepart ID</label>
-                                    <input type="text" class="form-input" id="addStockSparepartIdDisplay"
-                                           placeholder="Auto-generated" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
-                                    <small style="color: var(--muted); display: block; margin-top: 4px;">Automatically generated unique identifier</small>
+                                    <input
+                                        type="text"
+                                        class="form-input"
+                                        id="addStockSparepartIdDisplay"
+                                        placeholder="Select category and sparepart"
+                                        readonly
+                                        style="background-color: #f3f4f6; cursor: not-allowed;"
+                                    >
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Category *</label>
-                                    <select class="form-select" id="addStockCategory" required onchange="updateAddStockSparepartNameOptions(); updateAddStockCompatibilityOptions();">
+                                    <select class="form-select" id="addStockCategory" required onchange="updateAddStockSparepartNameOptions()">
                                         <option value="">Select Category</option>
                                         <option value="vehicles">Vehicles</option>
                                         <option value="machines">Machines</option>
@@ -32,25 +37,32 @@ class InventoryAddStockModal extends HTMLElement {
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label class="form-label">Sparepart Name *</label>
-                                    <select class="form-select" id="addStockSparepartName" required>
+                                    <label class="form-label">Existing Sparepart *</label>
+                                    <select class="form-select" id="addStockSparepartName" required onchange="handleAddStockSparepartChange()">
                                         <option value="">Select Category First</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">Quantity *</label>
-                                    <input type="number" class="form-input" id="addStockQuantity" min="0" required>
+                                    <label class="form-label">Quantity to Add *</label>
+                                    <input type="number" class="form-input" id="addStockQuantity" min="1" required>
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">Storage Location *</label>
-                                <select class="form-select" id="addStockLocation" required>
-                                    <option value="">Select Location</option>
-                                    <option value="LOCATION 1">LOCATION 1</option>
-                                    <option value="LOCATION 2">LOCATION 2</option>
-                                    <option value="LOCATION 3">LOCATION 3</option>
-                                    <option value="LOCATION 4">LOCATION 4</option>
-                                </select>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Storage Location</label>
+                                    <input
+                                        type="text"
+                                        class="form-input"
+                                        id="addStockLocation"
+                                        placeholder="Location from catalog"
+                                        readonly
+                                        style="background-color: #f3f4f6; cursor: not-allowed;"
+                                    >
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Received Date *</label>
+                                    <input type="date" class="form-input" id="addStockReceivedDate" required>
+                                </div>
                             </div>
                         </div>
 
@@ -59,7 +71,7 @@ class InventoryAddStockModal extends HTMLElement {
                             <div class="form-row">
                                 <div class="form-group">
                                     <label class="form-label">Supplier Name</label>
-                                    <input type="text" class="form-input" id="addStockSupplier" placeholder="Enter supplier name" required>
+                                    <input type="text" class="form-input" id="addStockSupplier" placeholder="Enter supplier name">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Supplier Contact</label>
@@ -91,16 +103,18 @@ class InventoryAddStockModal extends HTMLElement {
                         </div>
 
                         <div class="form-section">
-                            <h5><i class="fas fa-link"></i> Machine Compatibility</h5>
+                            <h5><i class="fas fa-file-alt"></i> Additional Details</h5>
                             <div class="form-group">
-                                <label class="form-label" id="addStockCompatibilityLabel">Compatible Machines/Vehicles</label>
-                                <div id="addStockCompatibilityCheckboxes" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
-                                    <p style="color: #999; grid-column: 1 / -1;">Please select a category first</p>
-                                </div>
+                                <label class="form-label">Reference</label>
+                                <input type="text" class="form-input" id="addStockReference" placeholder="PO number, invoice reference, etc.">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Notes</label>
+                                <textarea class="form-textarea" id="addStockNotes" placeholder="Optional stock addition notes"></textarea>
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Add to Catalog</button>
+                        <button type="submit" class="btn btn-primary" id="addStockSubmitBtn"><i class="fas fa-check"></i> Add Stock</button>
                         <button type="button" class="btn btn-secondary" onclick="closeModal('addStockModal')"><i class="fas fa-times"></i> Cancel</button>
                     </form>
                 </div>
@@ -114,11 +128,21 @@ if (!customElements.get('inventory-add-stock-modal')) {
 }
 
 const addStockModalState = {
-    productsByCategory: new Map()
+    productsByCategory: new Map(),
+    selectedProduct: null,
 };
 
 function normalizeAddStockLookupValue(value) {
     return (value ?? '').toString().trim().toLowerCase();
+}
+
+function escapeAddStockHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 function setAddStockSparepartIdDisplay(value, tone = 'neutral') {
@@ -132,9 +156,6 @@ function setAddStockSparepartIdDisplay(value, tone = 'neutral') {
     if (tone === 'existing') {
         sparepartIdDisplay.style.background = '#dbeafe';
         sparepartIdDisplay.style.color = '#1e40af';
-    } else if (tone === 'new') {
-        sparepartIdDisplay.style.background = '#dcfce7';
-        sparepartIdDisplay.style.color = '#166534';
     } else if (tone === 'error') {
         sparepartIdDisplay.style.background = '#fee2e2';
         sparepartIdDisplay.style.color = '#991b1b';
@@ -144,400 +165,210 @@ function setAddStockSparepartIdDisplay(value, tone = 'neutral') {
     }
 }
 
-async function refreshAddStockNextIdPreview() {
-    const response = await API.get('/products/next-id');
-    if (response.status === 'success' && response.data && response.data.next_id) {
-        setAddStockSparepartIdDisplay(response.data.next_id, 'new');
-        return response.data.next_id;
+function setAddStockLocationValue(value) {
+    const locationInput = document.getElementById('addStockLocation');
+    if (!locationInput) {
+        return;
     }
 
-    throw new Error('Failed to get next sparepart ID');
+    locationInput.value = value || '';
+}
+
+function getAddStockTodayDate() {
+    return new Date().toISOString().split('T')[0];
+}
+
+function updateAddStockModalHeading(mode) {
+    const title = document.querySelector('#addStockModal .modal-header h2');
+    const submit = document.getElementById('addStockSubmitBtn');
+
+    if (mode === 'edit') {
+        if (title) title.innerHTML = '<i class="fas fa-edit"></i> Edit Stock Addition';
+        if (submit) submit.innerHTML = '<i class="fas fa-save"></i> Update Addition';
+    } else {
+        if (title) title.innerHTML = '<i class="fas fa-plus-circle"></i> Add Stock to Existing Sparepart';
+        if (submit) submit.innerHTML = '<i class="fas fa-check"></i> Add Stock';
+    }
+}
+
+function setAddStockSelectionControlsDisabled(disabled) {
+    const category = document.getElementById('addStockCategory');
+    const sparepart = document.getElementById('addStockSparepartName');
+
+    if (category) category.disabled = disabled;
+    if (sparepart) sparepart.disabled = disabled;
 }
 
 async function loadAddStockProducts(category, forceRefresh = false) {
-    const cacheKey = normalizeAddStockLookupValue(category) || 'all';
-
-    if (!forceRefresh && addStockModalState.productsByCategory.has(cacheKey)) {
-        return addStockModalState.productsByCategory.get(cacheKey);
-    }
-
-    const endpoint = category
-        ? `/products?category=${encodeURIComponent(category)}`
-        : '/products';
-
-    const response = await API.get(endpoint);
-    if (response.status !== 'success' || !response.data || !Array.isArray(response.data.products)) {
-        throw new Error(response.message || 'Failed to load spare part catalog');
-    }
-
-    addStockModalState.productsByCategory.set(cacheKey, response.data.products);
-    return response.data.products;
-}
-
-async function resolveAddStockSparepartSelection(category, sparepartName, options = {}) {
     const normalizedCategory = normalizeAddStockLookupValue(category);
-    const normalizedName = normalizeAddStockLookupValue(sparepartName);
-
-    if (!normalizedCategory || !normalizedName) {
-        return null;
+    if (!normalizedCategory) {
+        return [];
     }
 
-    const products = await loadAddStockProducts(category, Boolean(options.forceRefresh));
-    const existingPart = products.find(product =>
-        Number(product.is_active) === 1 &&
-        normalizeAddStockLookupValue(product.category) === normalizedCategory &&
-        normalizeAddStockLookupValue(product.name) === normalizedName
-    );
-
-    if (existingPart && existingPart.sparepart_id) {
-        setAddStockSparepartIdDisplay(existingPart.sparepart_id, 'existing');
-        return {
-            mode: 'existing',
-            sparepartId: existingPart.sparepart_id,
-            product: existingPart,
-            products
-        };
+    if (!forceRefresh && addStockModalState.productsByCategory.has(normalizedCategory)) {
+        return addStockModalState.productsByCategory.get(normalizedCategory);
     }
 
-    if (options.preserveCurrentPreview) {
-        const sparepartIdDisplay = document.getElementById('addStockSparepartIdDisplay');
-        const currentPreviewId = sparepartIdDisplay?.value || '';
-        if (/^SPR-\d+$/.test(currentPreviewId)) {
-            setAddStockSparepartIdDisplay(currentPreviewId, 'new');
-            return {
-                mode: 'new',
-                sparepartId: currentPreviewId,
-                product: null,
-                products
-            };
-        }
+    const response = await API.get(`/products?category=${encodeURIComponent(normalizedCategory)}`);
+    if (response.status !== 'success') {
+        throw new Error(response.message || 'Failed to load sparepart catalog');
     }
 
-    const nextId = await refreshAddStockNextIdPreview();
-    return {
-        mode: 'new',
-        sparepartId: nextId,
-        product: null,
-        products
-    };
+    const products = Array.isArray(response.data?.products)
+        ? response.data.products.filter(product => Number(product.is_active) === 1)
+        : [];
+
+    products.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+
+    addStockModalState.productsByCategory.set(normalizedCategory, products);
+    return products;
 }
 
-// Handle add stock form submission
-document.addEventListener('submit', async function (e) {
-    if (!e.target || e.target.id !== 'addStockForm') {
+function findAddStockSelectedProduct(category, sparepartId) {
+    const normalizedCategory = normalizeAddStockLookupValue(category);
+    const normalizedId = normalizeAddStockLookupValue(sparepartId);
+
+    const products = addStockModalState.productsByCategory.get(normalizedCategory) || [];
+    return products.find(product => normalizeAddStockLookupValue(product.sparepart_id) === normalizedId) || null;
+}
+
+async function updateAddStockSparepartNameOptions(selectedSparepartId = '') {
+    const category = document.getElementById('addStockCategory')?.value || '';
+    const select = document.getElementById('addStockSparepartName');
+
+    if (!select) {
         return;
     }
 
-    e.preventDefault();
+    select.innerHTML = '<option value="">Select Existing Sparepart</option>';
+    addStockModalState.selectedProduct = null;
+    setAddStockSparepartIdDisplay('');
+    setAddStockLocationValue('');
 
-    const sparepartName = document.getElementById('addStockSparepartName').value;
-    const category = document.getElementById('addStockCategory').value;
-    const quantity = document.getElementById('addStockQuantity').value;
-    const location = document.getElementById('addStockLocation').value;
-    const supplier = document.getElementById('addStockSupplier').value || '';
-    const supplierContact = document.getElementById('addStockSupplierContact')?.value || '';
-    const supplierAddress = document.getElementById('addStockSupplierAddress')?.value || '';
-
-    // Get warranty details
-    const warrantyPeriod = document.getElementById('addStockWarrantyPeriod')?.value || '';
-    const warrantyStart = document.getElementById('addStockWarrantyStart')?.value || '';
-    const warrantyTerms = document.getElementById('addStockWarrantyTerms')?.value || '';
-
-    // Get compatible machines and vehicles
-    const compatibleMachines = Array.from(document.querySelectorAll('input[name="addStockCompatibleMachines"]:checked'))
-        .map(cb => cb.value);
-    const compatibleVehicles = Array.from(document.querySelectorAll('input[name="addStockCompatibleVehicles"]:checked'))
-        .map(cb => cb.value);
-
-    if (!category || !sparepartName) {
-        Utils.showToast('Please select a category and sparepart name first', 'error');
+    if (!category) {
+        select.innerHTML = '<option value="">Select Category First</option>';
         return;
     }
 
     try {
-        const resolvedSelection = await resolveAddStockSparepartSelection(category, sparepartName, { forceRefresh: true, preserveCurrentPreview: true });
+        const products = await loadAddStockProducts(category, false);
 
-        if (!resolvedSelection || !resolvedSelection.sparepartId) {
-            throw new Error('Unable to resolve a valid sparepart ID');
-        }
-
-        const resolvedSparepartId = resolvedSelection.sparepartId;
-        setAddStockSparepartIdDisplay(resolvedSparepartId, resolvedSelection.mode === 'existing' ? 'existing' : 'new');
-
-        // Check if we're in edit mode
-        if (window.editingAdditionId) {
-            // Update existing addition record
-            await updateAdditionRecord({
-                id: window.editingAdditionId,
-                sparepart_id: resolvedSparepartId,
-                sparepart_name: sparepartName,
-                category: category,
-                quantity_added: parseInt(quantity),
-                location: location,
-                supplier: supplier,
-                supplier_contact: supplierContact,
-                supplier_address: supplierAddress,
-                warranty_period: warrantyPeriod || null,
-                warranty_start: warrantyStart || null,
-                warranty_terms: warrantyTerms || null,
-                compatible_machines: JSON.stringify(compatibleMachines),
-                compatible_vehicles: JSON.stringify(compatibleVehicles)
-            });
-        } else {
-            // Save new spare part to database
-            await saveSparePartFromAddStock({
-                sparepart_id: resolvedSparepartId,
-                name: sparepartName,
-                category: category,
-                quantity: parseInt(quantity),
-                location: location,
-                supplier: supplier,
-                supplier_contact: supplierContact,
-                supplier_address: supplierAddress,
-                warranty_period: warrantyPeriod || null,
-                warranty_start: warrantyStart || null,
-                warranty_terms: warrantyTerms || null,
-                compatible_machines: JSON.stringify(compatibleMachines),
-                compatible_vehicles: JSON.stringify(compatibleVehicles)
-            }, resolvedSelection);
-        }
-    } catch (error) {
-        console.error('Failed to resolve sparepart selection:', error);
-        Utils.showToast(error.message || 'Failed to resolve sparepart ID', 'error');
-    }
-});
-
-// Update an existing addition record
-async function updateAdditionRecord(data) {
-    try {
-        showLoading(true);
-        console.log('Updating addition record:', data);
-
-        // Get the original addition to compare quantities
-        const originalAddition = window.additionsData?.find(a => a.id == data.id);
-
-        // Update the addition record
-        const response = await API.put(`/additions/${data.id}`, data);
-
-        if (response.status === 'success') {
-            // If quantity changed, update the sparepart quantity
-            if (originalAddition && originalAddition.quantity_added !== data.quantity_added) {
-                const quantityDifference = data.quantity_added - originalAddition.quantity_added;
-
-                // Get current sparepart to calculate new quantity
-                const sparepartResponse = await API.get(`/products/${data.sparepart_id}`);
-                if (sparepartResponse.status === 'success' && sparepartResponse.data) {
-                    const currentQuantity = parseInt(sparepartResponse.data.quantity) || 0;
-                    const newQuantity = currentQuantity + quantityDifference;
-
-                    // Update sparepart quantity
-                    await API.put(`/products/${data.sparepart_id}`, {
-                        quantity: newQuantity
-                    });
-                }
-            }
-
-            Utils.showToast('Addition record updated successfully!', 'success');
-            closeModal('addStockModal');
-
-            // Reset form and modal state
-            const form = document.getElementById('addStockForm');
-            if (form) form.reset();
-
-            // Reset modal title and button
-            const modalTitle = document.querySelector('#addStockModal .modal-header h2');
-            const submitBtn = document.querySelector('#addStockModal button[type="submit"]');
-            if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-plus-circle"></i> Add New Spare Part';
-            if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-check"></i> Add to Catalog';
-
-            window.editingAdditionId = null;
-
-            // Reload recent additions and spare parts
-            await Promise.all([refreshSparepartAddition(), refreshCatalog()]);
-        } else {
-            console.error('Failed to update addition:', response);
-            Utils.showToast(`Failed to update: ${response.message}`, 'error');
-        }
-    } catch (error) {
-        console.error('Error updating addition:', error);
-        Utils.showToast('Error updating addition: ' + error.message, 'error');
-    } finally {
-        showLoading(false);
-    }
-}
-
-async function saveSparePartFromAddStock(data, resolvedSelection = null) {
-    try {
-        showLoading(true);
-        console.log('Saving spare part from Add Stock:', data);
-
-        if (!data.category || !data.name || !data.sparepart_id) {
-            throw new Error('Please select a category, sparepart name, and valid sparepart ID before saving');
-        }
-
-        // Check if sparepart already exists
-        const catalogProducts = resolvedSelection && Array.isArray(resolvedSelection.products)
-            ? resolvedSelection.products
-            : await loadAddStockProducts(data.category, true);
-        const existingPart = catalogProducts.find(p =>
-            p.sparepart_id === data.sparepart_id && Number(p.is_active) === 1
-        ) || null;
-
-        let response;
-
-        if (existingPart) {
-            // POST /additions is the single source of truth — the backend handler
-            // (SparepartAdditionController::create) already calls updateQuantity(+add).
-            // Do NOT call PUT /products separately; that would double the quantity.
-            const newQuantity = parseInt(existingPart.quantity) + parseInt(data.quantity);
-            response = await API.post('/additions', {
-                sparepart_id: data.sparepart_id,
-                sparepart_name: data.name,
-                category: data.category,
-                location: data.location || existingPart.location,
-                quantity_added: data.quantity,
-                received_date: new Date().toISOString().split('T')[0],
-                supplier: data.supplier || null,
-                supplier_contact: data.supplier_contact || null,
-                supplier_address: data.supplier_address || null,
-                warranty_period: data.warranty_period || null,
-                warranty_start: data.warranty_start || null,
-                warranty_terms: data.warranty_terms || null,
-                compatible_machines: data.compatible_machines || existingPart.compatible_machines,
-                compatible_vehicles: data.compatible_vehicles || existingPart.compatible_vehicles,
-                reference: `Stock Addition - ${data.sparepart_id}`,
-                notes: `Added ${data.quantity} units from ${data.supplier || 'unknown supplier'}`
-            });
-
-            if (response.status === 'success') {
-                Utils.showToast(`Added ${data.quantity} units to ${data.sparepart_id} from ${data.supplier || 'supplier'}. New total: ${newQuantity} units`, 'success');
-            }
-        } else {
-            // Create new sparepart
-            response = await API.post('/products', data);
-
-            if (response.status === 'success') {
-                // Record the addition in sparepart_additions table
-                await API.post('/additions', {
-                    sparepart_id: data.sparepart_id,
-                    sparepart_name: data.name,
-                    category: data.category,
-                    location: data.location,
-                    quantity_added: data.quantity,
-                    previous_stock: 0,
-                    new_stock: data.quantity,
-                    received_date: new Date().toISOString().split('T')[0],
-                    supplier: data.supplier || null,
-                    supplier_contact: data.supplier_contact || null,
-                    supplier_address: data.supplier_address || null,
-                    warranty_period: data.warranty_period || null,
-                    warranty_start: data.warranty_start || null,
-                    warranty_terms: data.warranty_terms || null,
-                    compatible_machines: data.compatible_machines || null,
-                    compatible_vehicles: data.compatible_vehicles || null,
-                    reference: 'Initial Stock',
-                    notes: `New sparepart added from ${data.supplier || 'catalog'}`
-                });
-
-                Utils.showToast(`${data.name} added to catalog successfully!`, 'success');
-            }
-        }
-
-        if (response.status === 'success') {
-            closeModal('addStockModal');
-            document.getElementById('addStockForm').reset();
-
-            // Reload spare parts and recent additions
-            await Promise.all([
-                refreshCatalog(),
-                refreshSparepartAddition()
-            ]);
-        } else {
-            console.error('Failed to save spare part:', response);
-            Utils.showToast(`Failed to save spare part: ${response.message}`, 'error');
-        }
-    } catch (error) {
-        console.error('Error saving spare part:', error);
-        Utils.showToast('Error saving spare part: ' + error.message, 'error');
-    } finally {
-        showLoading(false);
-    }
-}
-
-// Update sparepart name dropdown for add stock form
-function updateAddStockSparepartNameOptions() {
-    const category = document.getElementById('addStockCategory').value;
-    const sparepartNameSelect = document.getElementById('addStockSparepartName');
-
-    sparepartNameSelect.innerHTML = '<option value="">Select Sparepart Name</option>';
-
-    if (category && SPARE_PART_NAMES[category]) {
-        SPARE_PART_NAMES[category].forEach(sparepartName => {
-            const option = document.createElement('option');
-            option.value = sparepartName;
-            option.textContent = sparepartName;
-            sparepartNameSelect.appendChild(option);
-        });
-    }
-}
-
-// Auto-fetch sparepart ID when name is selected
-document.addEventListener('change', async function (e) {
-    if (!e.target || e.target.id !== 'addStockSparepartName') {
-        return;
-    }
-
-    const category = document.getElementById('addStockCategory').value;
-    const sparepartName = e.target.value;
-
-    if (!category || !sparepartName) {
-        return;
-    }
-
-    try {
-        const resolvedSelection = await resolveAddStockSparepartSelection(category, sparepartName, { forceRefresh: false });
-
-        if (!resolvedSelection || !resolvedSelection.sparepartId) {
+        if (!products.length) {
+            select.innerHTML = '<option value="">No spareparts in this category</option>';
             return;
         }
 
-        if (resolvedSelection.mode === 'existing') {
-            Utils.showToast(`Found existing sparepart: ${resolvedSelection.sparepartId}`, 'info');
-        } else {
-            Utils.showToast(`New sparepart will be created: ${resolvedSelection.sparepartId}`, 'info');
+        products.forEach(product => {
+            const option = document.createElement('option');
+            option.value = product.sparepart_id;
+            option.textContent = `${product.sparepart_id} · ${product.name}`;
+            if (selectedSparepartId && product.sparepart_id === selectedSparepartId) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+
+        if (selectedSparepartId) {
+            handleAddStockSparepartChange();
         }
     } catch (error) {
-        console.error('Error fetching sparepart:', error);
-        Utils.showToast(error.message || 'Failed to resolve sparepart ID', 'error');
+        console.error('Failed to load spareparts for stock addition:', error);
+        Utils.showToast(error.message || 'Failed to load spareparts', 'error');
+        select.innerHTML = '<option value="">Failed to load spareparts</option>';
     }
-});
+}
 
-// Update compatibility checkboxes for add stock form
-function updateAddStockCompatibilityOptions() {
-    const category = document.getElementById('addStockCategory').value;
-    const container = document.getElementById('addStockCompatibilityCheckboxes');
-    const label = document.getElementById('addStockCompatibilityLabel');
+function handleAddStockSparepartChange() {
+    const category = document.getElementById('addStockCategory')?.value || '';
+    const sparepartId = document.getElementById('addStockSparepartName')?.value || '';
 
-    if (category === 'vehicles') {
-        label.textContent = 'Compatible Vehicles';
-        const vehicleTypesList = Object.keys(VEHICLE_TYPES);
-        container.innerHTML = vehicleTypesList.map(vehicleType => `
-            <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="addStockCompatibleVehicles" value="${vehicleType}"> ${vehicleType}
-            </label>
-        `).join('');
-    } else if (category === 'machines') {
-        label.textContent = 'Compatible Machines';
-        const machineTypesList = Object.keys(MACHINE_TYPES);
-        container.innerHTML = machineTypesList.map(machineType => `
-            <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="addStockCompatibleMachines" value="${machineType}"> ${machineType}
-            </label>
-        `).join('');
-    } else {
-        label.textContent = 'Compatible Machines/Vehicles';
-        container.innerHTML = '<p style="color: #999; grid-column: 1 / -1;">Please select a category first</p>';
+    if (!category || !sparepartId) {
+        addStockModalState.selectedProduct = null;
+        setAddStockSparepartIdDisplay('');
+        setAddStockLocationValue('');
+        return;
     }
+
+    const product = findAddStockSelectedProduct(category, sparepartId);
+    addStockModalState.selectedProduct = product;
+
+    if (!product) {
+        setAddStockSparepartIdDisplay('', 'error');
+        setAddStockLocationValue('');
+        return;
+    }
+
+    setAddStockSparepartIdDisplay(product.sparepart_id, 'existing');
+    setAddStockLocationValue(product.location || '');
+}
+
+function buildAddStockPayload() {
+    const selectedProduct = addStockModalState.selectedProduct;
+    if (!selectedProduct) {
+        throw new Error('Please select an existing sparepart');
+    }
+
+    const quantityAdded = Number.parseInt(document.getElementById('addStockQuantity')?.value, 10);
+    if (!Number.isFinite(quantityAdded) || quantityAdded <= 0) {
+        throw new Error('Quantity to add must be greater than 0');
+    }
+
+    const receivedDate = document.getElementById('addStockReceivedDate')?.value || '';
+    if (!receivedDate) {
+        throw new Error('Received date is required');
+    }
+
+    return {
+        sparepart_id: selectedProduct.sparepart_id,
+        sparepart_name: selectedProduct.name,
+        category: selectedProduct.category,
+        location: selectedProduct.location || null,
+        quantity_added: quantityAdded,
+        received_date: receivedDate,
+        supplier: (document.getElementById('addStockSupplier')?.value || '').trim() || null,
+        supplier_contact: (document.getElementById('addStockSupplierContact')?.value || '').trim() || null,
+        supplier_address: (document.getElementById('addStockSupplierAddress')?.value || '').trim() || null,
+        warranty_period: (document.getElementById('addStockWarrantyPeriod')?.value || '').trim() || null,
+        warranty_start: (document.getElementById('addStockWarrantyStart')?.value || '').trim() || null,
+        warranty_terms: (document.getElementById('addStockWarrantyTerms')?.value || '').trim() || null,
+        reference: (document.getElementById('addStockReference')?.value || '').trim() || null,
+        notes: (document.getElementById('addStockNotes')?.value || '').trim() || null,
+    };
+}
+
+async function createAdditionRecord(payload) {
+    const response = await API.post('/additions', payload);
+    if (response.status !== 'success') {
+        throw new Error(response.message || 'Failed to record stock addition');
+    }
+    return response;
+}
+
+async function updateAdditionRecord(payload) {
+    if (!window.editingAdditionId) {
+        throw new Error('No addition selected for editing');
+    }
+
+    const originalAddition = resolveAdditionRecord(window.editingAdditionId);
+    const response = await API.put(`/additions/${window.editingAdditionId}`, payload);
+    if (response.status !== 'success') {
+        throw new Error(response.message || 'Failed to update addition');
+    }
+
+    const previousQuantity = Number.parseInt(originalAddition?.quantity_added, 10);
+    const nextQuantity = Number.parseInt(payload.quantity_added, 10);
+    const quantityDifference = (Number.isFinite(nextQuantity) ? nextQuantity : 0) - (Number.isFinite(previousQuantity) ? previousQuantity : 0);
+
+    if (quantityDifference !== 0) {
+        const productResponse = await API.get(`/products/${payload.sparepart_id}`);
+        if (productResponse.status === 'success' && productResponse.data) {
+            const currentQuantity = Number.parseInt(productResponse.data.quantity, 10) || 0;
+            const updatedQuantity = Math.max(0, currentQuantity + quantityDifference);
+            await API.put(`/products/${payload.sparepart_id}`, { quantity: updatedQuantity });
+        }
+    }
+
+    return response;
 }
 
 function resolveAdditionRecord(additionRef) {
@@ -546,10 +377,9 @@ function resolveAdditionRecord(additionRef) {
     }
 
     const additions = Array.isArray(window.additionsData) ? window.additionsData : [];
-    return additions.find(a => a.id == additionRef);
+    return additions.find(item => String(item.id) === String(additionRef)) || null;
 }
 
-// View addition details in modal
 function viewAdditionDetails(additionRef) {
     const addition = resolveAdditionRecord(additionRef);
     if (!addition) {
@@ -557,96 +387,53 @@ function viewAdditionDetails(additionRef) {
         return;
     }
 
-    const date = new Date(addition.received_date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
+    const receivedDate = addition.received_date
+        ? new Date(addition.received_date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        })
+        : 'N/A';
 
-    // Format warranty information
-    let warrantyDisplay = 'N/A';
-    if (addition.warranty_period) {
-        const warrantyMonths = addition.warranty_period;
-        warrantyDisplay = `${warrantyMonths} months`;
-        if (addition.warranty_start) {
-            const startDate = new Date(addition.warranty_start);
-            const endDate = new Date(startDate);
-            endDate.setMonth(endDate.getMonth() + parseInt(warrantyMonths));
-            warrantyDisplay = `${warrantyMonths} months (Valid until ${endDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })})`;
-        }
-    }
+    const warrantyDisplay = addition.warranty_period ? `${addition.warranty_period} months` : 'N/A';
 
-    // Format compatible machines/vehicles
-    let compatibleMachines = [];
-    let compatibleVehicles = [];
-    try {
-        if (addition.compatible_machines) {
-            compatibleMachines = JSON.parse(addition.compatible_machines);
-        }
-        if (addition.compatible_vehicles) {
-            compatibleVehicles = JSON.parse(addition.compatible_vehicles);
-        }
-    } catch (e) {
-        console.error('Error parsing compatibility data:', e);
-    }
-
-    // Format category display
-    const categoryDisplay = addition.category === 'vehicles' ? 'Vehicle Parts' : 'Machine Parts';
-
-    // Create modal using the same pattern as viewPartDetails
     const modal = createDetailsModal('Stock Addition Details', `
         <div class="form-section">
             <h5><i class="fas fa-box"></i> Sparepart Information</h5>
-            <p><strong>Sparepart ID:</strong> ${addition.sparepart_id}</p>
-            <p><strong>Sparepart Name:</strong> ${addition.sparepart_name}</p>
-            <p><strong>Category:</strong> ${categoryDisplay}</p>
-            <p><strong>Storage Location:</strong> ${addition.location || 'N/A'}</p>
-            <p><strong>Received Date:</strong> ${date}</p>
+            <p><strong>Sparepart ID:</strong> ${escapeAddStockHtml(addition.sparepart_id || 'N/A')}</p>
+            <p><strong>Sparepart Name:</strong> ${escapeAddStockHtml(addition.sparepart_name || 'N/A')}</p>
+            <p><strong>Category:</strong> ${escapeAddStockHtml(addition.category || 'N/A')}</p>
+            <p><strong>Storage Location:</strong> ${escapeAddStockHtml(addition.location || 'N/A')}</p>
+            <p><strong>Received Date:</strong> ${escapeAddStockHtml(receivedDate)}</p>
         </div>
         <div class="form-section">
             <h5><i class="fas fa-chart-line"></i> Stock Information</h5>
-            <p><strong>Quantity Added:</strong> <span style="color:#10b981; font-weight:700;">+${addition.quantity_added} units</span></p>
-            <p><strong>Previous Stock:</strong> ${addition.previous_stock} units</p>
-            <p><strong>New Stock:</strong> <span style="color:#6366f1; font-weight:600;">${addition.new_stock} units</span></p>
-            <p><strong>Reference:</strong> ${addition.reference || 'N/A'}</p>
+            <p><strong>Quantity Added:</strong> <span style="color:#10b981; font-weight:700;">+${escapeAddStockHtml(addition.quantity_added || 0)} units</span></p>
+            <p><strong>Previous Stock:</strong> ${escapeAddStockHtml(addition.previous_stock || 0)} units</p>
+            <p><strong>New Stock:</strong> <span style="color:#6366f1; font-weight:600;">${escapeAddStockHtml(addition.new_stock || 0)} units</span></p>
+            <p><strong>Reference:</strong> ${escapeAddStockHtml(addition.reference || 'N/A')}</p>
         </div>
         <div class="form-section">
             <h5><i class="fas fa-truck"></i> Supplier Information</h5>
-            <p><strong>Supplier Name:</strong> ${addition.supplier || 'N/A'}</p>
-            <p><strong>Contact:</strong> ${addition.supplier_contact || 'N/A'}</p>
-            <p><strong>Address:</strong> ${addition.supplier_address || 'N/A'}</p>
+            <p><strong>Supplier Name:</strong> ${escapeAddStockHtml(addition.supplier || 'N/A')}</p>
+            <p><strong>Contact:</strong> ${escapeAddStockHtml(addition.supplier_contact || 'N/A')}</p>
+            <p><strong>Address:</strong> ${escapeAddStockHtml(addition.supplier_address || 'N/A')}</p>
         </div>
         <div class="form-section">
             <h5><i class="fas fa-shield-alt"></i> Warranty Details</h5>
-            <p><strong>Warranty Period:</strong> ${warrantyDisplay}</p>
-            <p><strong>Warranty Terms:</strong> ${addition.warranty_terms || 'N/A'}</p>
-        </div>
-        <div class="form-section">
-            <h5><i class="fas fa-cog"></i> Compatible Machines</h5>
-            <div class="components-list">
-                ${compatibleMachines.length > 0
-            ? compatibleMachines.map(machine => `<span class="component-badge">${machine}</span>`).join('')
-            : '<span class="text-muted">No compatible machines specified</span>'}
-            </div>
-        </div>
-        <div class="form-section">
-            <h5><i class="fas fa-truck"></i> Compatible Vehicles</h5>
-            <div class="components-list">
-                ${compatibleVehicles.length > 0
-            ? compatibleVehicles.map(vehicle => `<span class="component-badge">${vehicle}</span>`).join('')
-            : '<span class="text-muted">No compatible vehicles specified</span>'}
-            </div>
+            <p><strong>Warranty Period:</strong> ${escapeAddStockHtml(warrantyDisplay)}</p>
+            <p><strong>Warranty Terms:</strong> ${escapeAddStockHtml(addition.warranty_terms || 'N/A')}</p>
         </div>
         ${addition.notes ? `
         <div class="form-section">
             <h5><i class="fas fa-sticky-note"></i> Notes</h5>
-            <p>${addition.notes}</p>
+            <p>${escapeAddStockHtml(addition.notes)}</p>
         </div>
         ` : ''}
         <div class="form-section">
             <h5><i class="fas fa-clock"></i> Record Information</h5>
-            <p><strong>Added By:</strong> ${addition.added_by || 'admin'}</p>
-            <p><strong>Created:</strong> ${new Date(addition.created_at).toLocaleString()}</p>
+            <p><strong>Added By:</strong> ${escapeAddStockHtml(addition.added_by || 'N/A')}</p>
+            <p><strong>Created:</strong> ${addition.created_at ? new Date(addition.created_at).toLocaleString() : 'N/A'}</p>
         </div>
     `);
 
@@ -654,7 +441,6 @@ function viewAdditionDetails(additionRef) {
     modal.classList.add('active');
 }
 
-// Edit addition - open modal with pre-filled data
 async function editAddition(additionRef) {
     const addition = resolveAdditionRecord(additionRef);
     if (!addition) {
@@ -662,93 +448,50 @@ async function editAddition(additionRef) {
         return;
     }
 
-    // Store the addition ID for updating
     window.editingAdditionId = addition.id;
+    updateAddStockModalHeading('edit');
+    setAddStockSelectionControlsDisabled(true);
 
-    // Open the add stock modal and populate with existing data
-    try {
-        // Populate form fields - use safe element access
-        const setFieldValue = (id, value) => {
-            const el = document.getElementById(id);
-            if (el) el.value = value || '';
-        };
-
-        setFieldValue('addStockSparepartIdDisplay', addition.sparepart_id);
-        setFieldValue('addStockCategory', addition.category);
-
-        // Update sparepart name options for the category
-        await updateAddStockSparepartNameOptions();
-
-        // Set the sparepart name after options are loaded
-        setTimeout(() => {
-            setFieldValue('addStockSparepartName', addition.sparepart_name);
-        }, 100);
-
-        // Other fields
-        setFieldValue('addStockQuantity', addition.quantity_added);
-        setFieldValue('addStockLocation', addition.location);
-        setFieldValue('addStockSupplier', addition.supplier);
-        setFieldValue('addStockSupplierContact', addition.supplier_contact);
-        setFieldValue('addStockSupplierAddress', addition.supplier_address);
-        setFieldValue('addStockWarrantyPeriod', addition.warranty_period);
-        setFieldValue('addStockWarrantyStart', addition.warranty_start);
-        setFieldValue('addStockWarrantyTerms', addition.warranty_terms);
-
-        // Update compatibility options and set checkboxes
-        updateAddStockCompatibilityOptions();
-
-        // Set compatible machines/vehicles checkboxes after a short delay to ensure they're loaded
-        setTimeout(() => {
-            if (addition.compatible_machines) {
-                try {
-                    // Handle if it's already an array or a JSON string
-                    const machines = typeof addition.compatible_machines === 'string'
-                        ? JSON.parse(addition.compatible_machines)
-                        : addition.compatible_machines;
-
-                    if (Array.isArray(machines)) {
-                        machines.forEach(machineId => {
-                            const checkbox = document.querySelector(`#addStockCompatibilityCheckboxes input[value="${machineId}"]`);
-                            if (checkbox) checkbox.checked = true;
-                        });
-                    }
-                } catch (e) {
-                    console.error('Error parsing machines:', e, addition.compatible_machines);
-                }
-            }
-            if (addition.compatible_vehicles) {
-                try {
-                    // Handle if it's already an array or a JSON string
-                    const vehicles = typeof addition.compatible_vehicles === 'string'
-                        ? JSON.parse(addition.compatible_vehicles)
-                        : addition.compatible_vehicles;
-
-                    if (Array.isArray(vehicles)) {
-                        vehicles.forEach(vehicleId => {
-                            const checkbox = document.querySelector(`#addStockCompatibilityCheckboxes input[value="${vehicleId}"]`);
-                            if (checkbox) checkbox.checked = true;
-                        });
-                    }
-                } catch (e) {
-                    console.error('Error parsing vehicles:', e, addition.compatible_vehicles);
-                }
-            }
-        }, 300);
-
-        // Change modal title and button for edit mode
-        const modalTitle = document.querySelector('#addStockModal .modal-header h2');
-        const submitBtn = document.querySelector('#addStockModal button[type="submit"]');
-        if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-edit"></i> Edit Stock Addition';
-        if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Update Addition';
-
-        openModal('addStockModal');
-    } catch (error) {
-        console.error('Failed to open edit modal:', error);
-        Utils.showToast('Failed to load addition for editing', 'error');
+    const form = document.getElementById('addStockForm');
+    if (form) {
+        form.reset();
     }
+
+    let resolvedCategory = addition.category || '';
+    try {
+        const productResponse = await API.get(`/products/${addition.sparepart_id}`);
+        if (productResponse.status === 'success' && productResponse.data?.category) {
+            resolvedCategory = productResponse.data.category;
+        }
+    } catch (error) {
+        console.warn('Unable to resolve category from catalog for addition edit:', error);
+    }
+
+    document.getElementById('addStockCategory').value = resolvedCategory;
+
+    try {
+        await updateAddStockSparepartNameOptions(addition.sparepart_id || '');
+    } catch (error) {
+        console.error('Failed to preload sparepart options for edit:', error);
+    }
+
+    document.getElementById('addStockSparepartName').value = addition.sparepart_id || '';
+    handleAddStockSparepartChange();
+
+    document.getElementById('addStockQuantity').value = addition.quantity_added || '';
+    document.getElementById('addStockReceivedDate').value = addition.received_date || getAddStockTodayDate();
+    document.getElementById('addStockSupplier').value = addition.supplier || '';
+    document.getElementById('addStockSupplierContact').value = addition.supplier_contact || '';
+    document.getElementById('addStockSupplierAddress').value = addition.supplier_address || '';
+    document.getElementById('addStockWarrantyPeriod').value = addition.warranty_period || '';
+    document.getElementById('addStockWarrantyStart').value = addition.warranty_start || '';
+    document.getElementById('addStockWarrantyTerms').value = addition.warranty_terms || '';
+    document.getElementById('addStockReference').value = addition.reference || '';
+    document.getElementById('addStockNotes').value = addition.notes || '';
+
+    openModal('addStockModal');
 }
 
-// Delete addition
 async function deleteAddition(additionRef) {
     const addition = resolveAdditionRecord(additionRef);
     if (!addition) {
@@ -757,7 +500,7 @@ async function deleteAddition(additionRef) {
     }
 
     const confirmDelete = await Utils.confirm(
-        `Are you sure you want to delete this stock addition?`,
+        'Are you sure you want to delete this stock addition?',
         `This will remove the record for ${addition.quantity_added} units of "${addition.sparepart_name}" added on ${new Date(addition.received_date).toLocaleDateString()}.`
     );
 
@@ -765,57 +508,89 @@ async function deleteAddition(additionRef) {
 
     try {
         const response = await API.delete(`/additions/${addition.id}`);
-
-        if (response.status === 'success') {
-            Utils.showToast('Stock addition deleted successfully', 'success');
-            await refreshSparepartAddition();
-        } else {
+        if (response.status !== 'success') {
             throw new Error(response.message || 'Failed to delete addition');
         }
+
+        Utils.showToast('Stock addition deleted successfully', 'success');
+        await refreshSparepartAddition();
     } catch (error) {
         console.error('Error deleting addition:', error);
         Utils.showToast(error.message || 'Failed to delete addition', 'error');
     }
 }
 
-// Open add stock modal
 async function openAddStockModal() {
-    try {
-        // Clear any editing state
-        window.editingAdditionId = null;
-        addStockModalState.productsByCategory.clear();
+    window.editingAdditionId = null;
+    updateAddStockModalHeading('create');
+    setAddStockSelectionControlsDisabled(false);
 
-        // Reset modal title and button to add mode
-        const modalTitle = document.querySelector('#addStockModal .modal-header h2');
-        const submitBtn = document.querySelector('#addStockModal button[type="submit"]');
-        if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-plus-circle"></i> Add New Spare Part';
-        if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-check"></i> Add to Catalog';
+    addStockModalState.selectedProduct = null;
+    addStockModalState.productsByCategory.clear();
 
-        // Reset form fields
-        const form = document.getElementById('addStockForm');
-        if (form) form.reset();
-
-        // Clear compatibility checkboxes
-        const compatibilityContainer = document.getElementById('addStockCompatibilityCheckboxes');
-        if (compatibilityContainer) {
-            compatibilityContainer.innerHTML = '<p style="color: #999; grid-column: 1 / -1;">Please select a category first</p>';
-        }
-        const compatibilityLabel = document.getElementById('addStockCompatibilityLabel');
-        if (compatibilityLabel) {
-            compatibilityLabel.textContent = 'Compatible Machines/Vehicles';
-        }
-
-        // Reset category dropdown
-        document.getElementById('addStockCategory').value = '';
-        document.getElementById('addStockSparepartName').innerHTML = '<option value="">Select category first</option>';
-
-        // Fetch next sparepart ID from backend
-        await refreshAddStockNextIdPreview();
-        openModal('addStockModal');
-    } catch (error) {
-        console.error('Failed to get next sparepart ID:', error);
-        Utils.showToast('Failed to get next sparepart ID', 'error');
-        setAddStockSparepartIdDisplay('SPR-###', 'error');
-        openModal('addStockModal');
+    const form = document.getElementById('addStockForm');
+    if (form) {
+        form.reset();
     }
+
+    const receivedDateInput = document.getElementById('addStockReceivedDate');
+    if (receivedDateInput) {
+        receivedDateInput.value = getAddStockTodayDate();
+    }
+
+    setAddStockSparepartIdDisplay('');
+    setAddStockLocationValue('');
+
+    const sparepartSelect = document.getElementById('addStockSparepartName');
+    if (sparepartSelect) {
+        sparepartSelect.innerHTML = '<option value="">Select Category First</option>';
+    }
+
+    openModal('addStockModal');
+}
+
+if (!window.__inventoryAddStockSubmitBound) {
+    window.__inventoryAddStockSubmitBound = true;
+
+    document.addEventListener('submit', async event => {
+        if (!event.target || event.target.id !== 'addStockForm') {
+            return;
+        }
+
+        event.preventDefault();
+
+        try {
+            showLoading(true);
+            const payload = buildAddStockPayload();
+
+            if (window.editingAdditionId) {
+                await updateAdditionRecord(payload);
+                Utils.showToast('Addition record updated successfully', 'success');
+            } else {
+                await createAdditionRecord(payload);
+                Utils.showToast(`${payload.quantity_added} unit(s) added to ${payload.sparepart_id}`, 'success');
+            }
+
+            closeModal('addStockModal');
+            event.target.reset();
+            window.editingAdditionId = null;
+
+            updateAddStockModalHeading('create');
+            setAddStockSelectionControlsDisabled(false);
+            setAddStockSparepartIdDisplay('');
+            setAddStockLocationValue('');
+
+            await Promise.all([
+                refreshSparepartAddition(),
+                refreshCatalog(),
+                refreshDashboardOverview(),
+                refreshNotifications(),
+            ]);
+        } catch (error) {
+            console.error('Error saving addition:', error);
+            Utils.showToast(error.message || 'Failed to save stock addition', 'error');
+        } finally {
+            showLoading(false);
+        }
+    });
 }
