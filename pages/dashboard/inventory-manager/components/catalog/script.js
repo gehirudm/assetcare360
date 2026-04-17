@@ -41,6 +41,9 @@ class InventoryCatalog extends HTMLElement {
 
             <div class="search-bar">
                 <input type="text" id="catalogSearch" class="search-input" placeholder="Search by sparepart name, number, or category...">
+                <button class="btn btn-primary" id="catalogAddBtn">
+                    <i class="fas fa-plus"></i> Add New Sparepart
+                </button>
             </div>
 
             <div class="filter-controls" id="stockFilterTabs">
@@ -79,6 +82,15 @@ class InventoryCatalog extends HTMLElement {
         const searchInput = this.querySelector('#catalogSearch');
         if (searchInput) {
             searchInput.addEventListener('input', () => this.applyFilters());
+        }
+
+        const addButton = this.querySelector('#catalogAddBtn');
+        if (addButton) {
+            addButton.addEventListener('click', () => {
+                this.dispatchEvent(new CustomEvent('inventory-catalog:add', {
+                    bubbles: true
+                }));
+            });
         }
 
         // Stock filters
@@ -182,12 +194,33 @@ class InventoryCatalog extends HTMLElement {
         }
     }
 
+    getLowStockThreshold(product) {
+        const rawThreshold = Number.parseInt(product.low_stock_threshold ?? product.reorder_level, 10);
+        if (Number.isFinite(rawThreshold) && rawThreshold > 0) {
+            return rawThreshold;
+        }
+        return 10;
+    }
+
+    getStockStatus(quantity, threshold) {
+        if (quantity <= 0) {
+            return 'out-of-stock';
+        }
+
+        if (quantity <= threshold) {
+            return 'low-stock';
+        }
+
+        return 'in-stock';
+    }
+
     applyFilters() {
         const searchValue = (this.querySelector('#catalogSearch')?.value || '').toLowerCase();
 
         const filtered = this.products.filter(product => {
             const quantity = parseInt(product.quantity, 10) || 0;
-            const stockStatus = quantity > 10 ? 'in-stock' : (quantity > 0 ? 'low-stock' : 'out-of-stock');
+            const threshold = this.getLowStockThreshold(product);
+            const stockStatus = this.getStockStatus(quantity, threshold);
             const category = product.category || 'unknown';
 
             const textSearch = `${product.name || ''} ${product.sparepart_id || ''} ${category}`.toLowerCase();
@@ -218,15 +251,21 @@ class InventoryCatalog extends HTMLElement {
 
         catalogItems.innerHTML = products.map(product => {
             const quantity = parseInt(product.quantity, 10) || 0;
-            const stockBadge = quantity > 10 ? 'status-in-stock' : (quantity > 0 ? 'status-low-stock' : 'status-out-of-stock');
-            const stockText = quantity > 10 ? 'In Stock' : (quantity > 0 ? 'Low Stock' : 'Out of Stock');
+            const threshold = this.getLowStockThreshold(product);
+            const stockStatus = this.getStockStatus(quantity, threshold);
+            const stockBadge = stockStatus === 'in-stock'
+                ? 'status-in-stock'
+                : (stockStatus === 'low-stock' ? 'status-low-stock' : 'status-out-of-stock');
+            const stockText = stockStatus === 'in-stock'
+                ? 'In Stock'
+                : (stockStatus === 'low-stock' ? 'Low Stock' : 'Out of Stock');
 
             const partName = product.name || 'Unnamed Part';
             const partId = product.sparepart_id || '-';
             const category = (product.category || 'Unknown');
             const categoryText = category.charAt(0).toUpperCase() + category.slice(1);
             const escapedPartId = this.escapeAttr(partId);
-            const reorderActionHtml = quantity <= 10
+            const reorderActionHtml = quantity <= threshold
                 ? `<button type="button" class="dropdown-item" data-action="reorder" data-id="${escapedPartId}"><i class="fas fa-sync"></i> Reorder</button>`
                 : '';
 
@@ -240,7 +279,8 @@ class InventoryCatalog extends HTMLElement {
                         </div>
                         <div class="item-description">
                             <span class="status-text ${stockBadge}">${stockText}</span> |
-                            <i class="fas fa-boxes"></i> ${quantity} units
+                            <i class="fas fa-boxes"></i> ${quantity} units |
+                            <i class="fas fa-bell"></i> Threshold: ${threshold}
                         </div>
                     </div>
                     <div class="item-actions">

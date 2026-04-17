@@ -13,17 +13,23 @@ class InventoryAddPartModal extends HTMLElement {
                     </div>
                     <form id="addPartForm">
                         <div class="form-section">
-                            <h5><i class="fas fa-box"></i> Basic Information</h5>
+                            <h5><i class="fas fa-box"></i> Catalog Information</h5>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label class="form-label">Sparepart ID</label>
-                                    <input type="text" class="form-input" id="sparepartIdDisplay"
-                                           placeholder="Auto-generated" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
+                                    <input
+                                        type="text"
+                                        class="form-input"
+                                        id="sparepartIdDisplay"
+                                        placeholder="Auto-generated"
+                                        readonly
+                                        style="background-color: #f3f4f6; cursor: not-allowed;"
+                                    >
                                     <small style="color: var(--muted); display: block; margin-top: 4px;">Automatically generated unique identifier</small>
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Category *</label>
-                                    <select class="form-select" id="partCategory" required onchange="updateSparepartNameOptions(); updateCompatibilityOptions();">
+                                    <select class="form-select" id="partCategory" required onchange="updateCompatibilityOptions()">
                                         <option value="">Select Category</option>
                                         <option value="vehicles">Vehicles</option>
                                         <option value="machines">Machines</option>
@@ -33,25 +39,17 @@ class InventoryAddPartModal extends HTMLElement {
                             <div class="form-row">
                                 <div class="form-group">
                                     <label class="form-label">Sparepart Name *</label>
-                                    <select class="form-select" id="sparepartName" required>
-                                        <option value="">Select Category First</option>
-                                    </select>
+                                    <input type="text" class="form-input" id="sparepartName" placeholder="Enter sparepart name" required>
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Storage Location *</label>
-                                <select class="form-select" id="partLocation" required>
-                                    <option value="">Select Location</option>
-                                    <option value="LOCATION 1">LOCATION 1</option>
-                                    <option value="LOCATION 2">LOCATION 2</option>
-                                    <option value="LOCATION 3">LOCATION 3</option>
-                                    <option value="LOCATION 4">LOCATION 4</option>
-                                </select>
+                                <div class="form-group">
+                                    <label class="form-label">Low Stock Threshold *</label>
+                                    <input type="number" class="form-input" id="lowStockThreshold" min="1" value="10" required>
+                                </div>
                             </div>
                         </div>
 
                         <div class="form-section">
-                            <h5><i class="fas fa-link"></i> Machine Compatibility</h5>
+                            <h5><i class="fas fa-link"></i> Compatibility</h5>
                             <div class="form-group">
                                 <label class="form-label" id="compatibilityLabel">Compatible Machines/Vehicles</label>
                                 <div id="compatibilityCheckboxes" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
@@ -73,57 +71,160 @@ if (!customElements.get('inventory-add-part-modal')) {
     customElements.define('inventory-add-part-modal', InventoryAddPartModal);
 }
 
-// Update sparepart name dropdown based on selected category
-function updateSparepartNameOptions() {
-    const category = document.getElementById('partCategory').value;
-    const sparepartNameSelect = document.getElementById('sparepartName');
+const addPartModalState = {
+    compatibilityOptions: {
+        machines: null,
+        vehicles: null,
+    },
+};
 
-    sparepartNameSelect.innerHTML = '<option value="">Select Sparepart Name</option>';
-
-    if (category && SPARE_PART_NAMES[category]) {
-        SPARE_PART_NAMES[category].forEach(sparepartName => {
-            const option = document.createElement('option');
-            option.value = sparepartName;
-            option.textContent = sparepartName;
-            sparepartNameSelect.appendChild(option);
-        });
+function parseAddPartNameList(items, key) {
+    if (!Array.isArray(items)) {
+        return [];
     }
+
+    const names = items
+        .map(item => (item && typeof item === 'object' ? item[key] : null))
+        .map(name => (name ?? '').toString().trim())
+        .filter(Boolean);
+
+    return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
 }
 
-// Update compatibility checkboxes based on selected category
-function updateCompatibilityOptions() {
-    const category = document.getElementById('partCategory').value;
+function escapeAddPartHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+async function loadAddPartCompatibilityOptions(category) {
+    if (!category) {
+        return [];
+    }
+
+    if (Array.isArray(addPartModalState.compatibilityOptions[category])) {
+        return addPartModalState.compatibilityOptions[category];
+    }
+
+    let endpoint = '';
+    let responseKey = '';
+    let nameKey = '';
+
+    if (category === 'machines') {
+        endpoint = '/machines';
+        responseKey = 'machines';
+        nameKey = 'machine_name';
+    } else if (category === 'vehicles') {
+        endpoint = '/vehicles';
+        responseKey = 'vehicles';
+        nameKey = 'vehicle_name';
+    } else {
+        return [];
+    }
+
+    const response = await API.get(endpoint);
+    if (response.status !== 'success') {
+        throw new Error(response.message || `Failed to load ${category}`);
+    }
+
+    const records = Array.isArray(response.data?.[responseKey]) ? response.data[responseKey] : [];
+    const names = parseAddPartNameList(records, nameKey);
+    addPartModalState.compatibilityOptions[category] = names;
+
+    return names;
+}
+
+function renderAddPartCompatibilityOptions(category, selectedValues = []) {
     const container = document.getElementById('compatibilityCheckboxes');
     const label = document.getElementById('compatibilityLabel');
 
-    if (category === 'vehicles') {
-        label.textContent = 'Compatible Vehicles';
-        const vehicleTypesList = Object.keys(VEHICLE_TYPES);
-        container.innerHTML = vehicleTypesList.map(vehicleType => `
-            <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="compatibleVehicles" value="${vehicleType}"> ${vehicleType}
-            </label>
-        `).join('');
-    } else if (category === 'machines') {
-        label.textContent = 'Compatible Machines';
-        const machineTypesList = Object.keys(MACHINE_TYPES);
-        container.innerHTML = machineTypesList.map(machineType => `
-            <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" name="compatibleMachines" value="${machineType}"> ${machineType}
-            </label>
-        `).join('');
-    } else {
+    if (!container || !label) {
+        return;
+    }
+
+    if (!category) {
         label.textContent = 'Compatible Machines/Vehicles';
         container.innerHTML = '<p style="color: #999; grid-column: 1 / -1;">Please select a category first</p>';
+        return;
+    }
+
+    const selectedSet = new Set((Array.isArray(selectedValues) ? selectedValues : []).map(value => String(value)));
+    const options = addPartModalState.compatibilityOptions[category] || [];
+
+    label.textContent = category === 'machines' ? 'Compatible Machines' : 'Compatible Vehicles';
+
+    if (!options.length) {
+        const emptyLabel = category === 'machines' ? 'machines' : 'vehicles';
+        container.innerHTML = `<p style="color: #999; grid-column: 1 / -1;">No ${emptyLabel} available for compatibility selection</p>`;
+        return;
+    }
+
+    const inputName = category === 'machines' ? 'compatibleMachines' : 'compatibleVehicles';
+    container.innerHTML = options.map(name => `
+        <label style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" name="${inputName}" value="${escapeAddPartHtml(name)}" ${selectedSet.has(name) ? 'checked' : ''}> ${escapeAddPartHtml(name)}
+        </label>
+    `).join('');
+}
+
+async function updateCompatibilityOptions(selectedValues = []) {
+    const category = document.getElementById('partCategory')?.value || '';
+
+    if (!category) {
+        renderAddPartCompatibilityOptions('');
+        return;
+    }
+
+    try {
+        await loadAddPartCompatibilityOptions(category);
+        renderAddPartCompatibilityOptions(category, selectedValues);
+    } catch (error) {
+        console.error('Failed to load compatibility options:', error);
+        Utils.showToast(error.message || 'Failed to load compatibility options', 'error');
+        renderAddPartCompatibilityOptions('');
     }
 }
 
-// CREATE - Add Part
+function collectAddPartCompatibility(category) {
+    if (category === 'machines') {
+        return {
+            compatible_machines: Array.from(document.querySelectorAll('input[name="compatibleMachines"]:checked')).map(cb => cb.value),
+            compatible_vehicles: [],
+        };
+    }
+
+    if (category === 'vehicles') {
+        return {
+            compatible_machines: [],
+            compatible_vehicles: Array.from(document.querySelectorAll('input[name="compatibleVehicles"]:checked')).map(cb => cb.value),
+        };
+    }
+
+    return {
+        compatible_machines: [],
+        compatible_vehicles: [],
+    };
+}
+
 async function openAddPartModal() {
+    const form = document.getElementById('addPartForm');
+    if (form) {
+        form.reset();
+    }
+
+    const thresholdInput = document.getElementById('lowStockThreshold');
+    if (thresholdInput) {
+        thresholdInput.value = '10';
+    }
+
+    renderAddPartCompatibilityOptions('');
+
     try {
-        // Fetch next sparepart ID from backend
         const response = await API.get('/products/next-id');
-        if (response.status === 'success' && response.data && response.data.next_id) {
+        if (response.status === 'success' && response.data?.next_id) {
             document.getElementById('sparepartIdDisplay').value = response.data.next_id;
         } else {
             throw new Error('Failed to get next sparepart ID');
@@ -131,63 +232,71 @@ async function openAddPartModal() {
         openModal('addPartModal');
     } catch (error) {
         console.error('Failed to get next sparepart ID:', error);
-        Utils.showToast('Failed to get next sparepart ID', 'error');
-        document.getElementById('sparepartIdDisplay').value = 'SPR-###';
-        openModal('addPartModal');
+        Utils.showToast(error.message || 'Failed to get next sparepart ID', 'error');
     }
 }
 
-document.addEventListener('submit', async function (e) {
-    if (!e.target || e.target.id !== 'addPartForm') {
-        return;
-    }
+if (!window.__inventoryAddPartSubmitBound) {
+    window.__inventoryAddPartSubmitBound = true;
 
-    e.preventDefault();
-
-    const sparepartId = document.getElementById('sparepartIdDisplay').value;
-    const sparepartName = document.getElementById('sparepartName').value;
-    const category = document.getElementById('partCategory').value;
-    const location = document.getElementById('partLocation').value;
-
-    // Get compatible machines and vehicles
-    const compatibleMachines = Array.from(document.querySelectorAll('input[name="compatibleMachines"]:checked'))
-        .map(cb => cb.value);
-    const compatibleVehicles = Array.from(document.querySelectorAll('input[name="compatibleVehicles"]:checked'))
-        .map(cb => cb.value);
-
-    // Save spare part to database (without warranty, quantity, and supplier fields - managed via additions)
-    await saveSparePart({
-        sparepart_id: sparepartId,
-        name: sparepartName,
-        category: category,
-        quantity: 0,
-        location: location,
-        compatible_machines: JSON.stringify(compatibleMachines),
-        compatible_vehicles: JSON.stringify(compatibleVehicles)
-    });
-});
-
-async function saveSparePart(data) {
-    try {
-        showLoading(true);
-        console.log('Saving spare part:', data);
-        const response = await API.post('/products', data);
-        console.log('API response:', response);
-
-        if (response.status === 'success') {
-            Utils.showToast(`${data.name} added to catalog successfully!`, 'success');
-            closeModal('addPartModal');
-            document.getElementById('addPartForm').reset();
-            // Reload spare parts
-            await refreshCatalog();
-        } else {
-            console.error('Failed to add spare part:', response);
-            Utils.showToast(`Failed to add spare part: ${response.message}`, 'error');
+    document.addEventListener('submit', async event => {
+        if (!event.target || event.target.id !== 'addPartForm') {
+            return;
         }
-    } catch (error) {
-        console.error('Error saving spare part:', error);
-        Utils.showToast('Error saving spare part', 'error');
-    } finally {
-        showLoading(false);
-    }
+
+        event.preventDefault();
+
+        const sparepartId = (document.getElementById('sparepartIdDisplay')?.value || '').trim();
+        const name = (document.getElementById('sparepartName')?.value || '').trim();
+        const category = document.getElementById('partCategory')?.value || '';
+        const thresholdValue = document.getElementById('lowStockThreshold')?.value;
+        const threshold = Number.parseInt(thresholdValue, 10);
+
+        if (!sparepartId || !name || !category) {
+            Utils.showToast('Please fill all required fields', 'error');
+            return;
+        }
+
+        if (!Number.isFinite(threshold) || threshold <= 0) {
+            Utils.showToast('Low stock threshold must be greater than 0', 'error');
+            return;
+        }
+
+        const compatibility = collectAddPartCompatibility(category);
+
+        try {
+            showLoading(true);
+            const payload = {
+                sparepart_id: sparepartId,
+                name,
+                category,
+                low_stock_threshold: threshold,
+                compatible_machines: compatibility.compatible_machines,
+                compatible_vehicles: compatibility.compatible_vehicles,
+            };
+
+            const response = await API.post('/products', payload);
+            if (response.status !== 'success') {
+                throw new Error(response.message || 'Failed to create sparepart');
+            }
+
+            Utils.showToast(`${name} added to catalog successfully`, 'success');
+            closeModal('addPartModal');
+
+            if (event.target) {
+                event.target.reset();
+            }
+
+            await Promise.all([
+                refreshCatalog(),
+                refreshDashboardOverview(),
+                refreshNotifications(),
+            ]);
+        } catch (error) {
+            console.error('Error saving spare part:', error);
+            Utils.showToast(error.message || 'Error saving spare part', 'error');
+        } finally {
+            showLoading(false);
+        }
+    });
 }
