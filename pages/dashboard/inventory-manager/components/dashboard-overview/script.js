@@ -74,10 +74,7 @@ class InventoryDashboardOverview extends HTMLElement {
 
             const totalParts = products.length;
             const outOfStock = products.filter(product => this._toInt(product.quantity) <= 0).length;
-            const lowStock = products.filter(product => {
-                const quantity = this._toInt(product.quantity);
-                return quantity > 0 && quantity <= 10;
-            }).length;
+            const lowStock = products.filter(product => this._isLowStock(product)).length;
             const pendingOrders = orders.filter(order => String(order.status || '').toLowerCase() === 'pending').length;
 
             const metrics = {
@@ -201,6 +198,7 @@ class InventoryDashboardOverview extends HTMLElement {
                 id: product.sparepart_id || product.product_id || product.id || '-',
                 name: product.sparepart_name || product.name || 'Unknown part',
                 quantity: this._toInt(product.quantity),
+                threshold: this._getLowStockThreshold(product),
             }))
             .filter(item => item.quantity >= 0)
             .sort((a, b) => a.quantity - b.quantity)[0];
@@ -230,7 +228,7 @@ class InventoryDashboardOverview extends HTMLElement {
             {
                 title: `${metrics.totalAssets} total assets under management`,
                 description: lowestStockPart
-                    ? `Lowest stock item: ${lowestStockPart.name} (${lowestStockPart.id}) has ${lowestStockPart.quantity} unit(s).`
+                    ? `Lowest stock item: ${lowestStockPart.name} (${lowestStockPart.id}) has ${lowestStockPart.quantity} unit(s) with threshold ${lowestStockPart.threshold}.`
                     : 'Asset inventory is up to date based on current machine and vehicle records.',
                 meta: 'Assets and inventory',
                 status: 'info',
@@ -239,6 +237,20 @@ class InventoryDashboardOverview extends HTMLElement {
         ];
 
         return activityItems;
+    }
+
+    _getLowStockThreshold(product) {
+        const rawThreshold = this._toInt(product.low_stock_threshold ?? product.reorder_level);
+        return rawThreshold > 0 ? rawThreshold : 10;
+    }
+
+    _isLowStock(product) {
+        const quantity = this._toInt(product.quantity);
+        if (quantity <= 0) {
+            return false;
+        }
+
+        return quantity <= this._getLowStockThreshold(product);
     }
 
     _renderSummaryCards(metrics) {
