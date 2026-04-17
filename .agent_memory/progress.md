@@ -20,6 +20,7 @@
   - Nearby garage approval now makes technician assignment optional in UI, and backend assignment endpoint rejects technician assignment updates when garage workflow is active.
   - Driver garage modal now shows only the approved garage once assigned.
   - OpenAPI updated to document `/fault-tickets/{id}/assign` and its garage-workflow blocked-assignment response.
+<<<<<<< Updated upstream
 - ✅ Route-breakdown driver GPS capture + map-based garage approval (TASK042)
   - Added and applied migration `055_add_coordinates_to_route_breakdowns.php` to store `breakdown_latitude`/`breakdown_longitude` for route breakdowns.
   - Updated route-breakdown API create/update validation and persistence to enforce coordinate-pair integrity.
@@ -29,6 +30,14 @@
   - Validation evidence:
     - Playwright `testing/ui-validation/route-breakdown-garage-workflow/validate-route-breakdown-garage-workflow.spec.js` passed for `VAL_STAGE=before` and `VAL_STAGE=after` (desktop+mobile, 2/2 each stage).
     - PHP lint, JS syntax checks, and editor diagnostics reported no errors in touched files.
+=======
+- ✅ Transportation Manager garage management and map-based supervisor approval enhancements
+  - Added backend `POST /garages` creation flow and registered missing `GET /route-breakdowns/garages` route.
+  - Added TM dashboard garages section/component with create/search/list actions and refresh orchestration.
+  - Added map visualization to shared ticket garage approval modal (Leaflet, marker/list sync, map hint states).
+  - Updated OpenAPI and Postman docs for garage create/list and route-breakdown garage-list endpoints.
+  - Validation: PHP/JS syntax checks passed, diagnostics clean on touched files, and Playwright `VAL_STAGE=after` passed for desktop + mobile in `testing/ui-validation/transportation-manager-garages/validate-transportation-manager-garages.spec.js`.
+>>>>>>> Stashed changes
 - ✅ Fuel logging + TM fleet details enhancement (TASK040)
   - Added migration `053_add_fuel_source_and_nullable_total_cost.php` to add `fuel_source`, backfill missing values, make `total_cost` nullable, and add index `idx_fuel_source`.
   - Updated backend fuel validation/normalization (`FuelLogService`) to derive `fuel_type` from vehicle and enforce source-aware rules (`external` requires cost + receipt).
@@ -222,6 +231,9 @@
   - Replaced inline usage section markup with `<inventory-usage-tracking>`
   - Added parent refresh bridge (`refreshUsageTracking`) for section loading
   - Removed legacy usage handlers/listeners from monolithic `inventory-manager/script.js`
+  - Follow-up UX update (Apr 17, 2026): replaced table action `Update` with `View Usage` and switched the modal to chart-based usage insight view (summary stats + trend line chart + recent issuance records)
+  - Detail-readability enhancement (Apr 17, 2026): added selectable date cards and a selected-date detail panel so usage records are read specifically by date with quantity/machine-vehicle/notes breakdown
+  - Added UI validation scope `testing/ui-validation/inventory-usage-tracking/validate-inventory-usage-tracking.spec.js` with desktop/mobile before and after evidence artifacts
 - ✅ Inventory Manager orders and approvals extraction
   - Added `components/orders-approvals/script.js` + `style.css`
   - Replaced inline orders section markup with `<inventory-orders-approvals>`

@@ -131,6 +131,72 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Garages",
+      "item": [
+        {
+          "name": "List Garages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/garages",
+              "host": ["{{base_url}}"],
+              "path": ["garages"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Garage",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rapid Route Repairs\",\n  \"address\": \"18 Baseline Road, Colombo\",\n  \"city\": \"Colombo\",\n  \"phone\": \"+94 11 700 1234\",\n  \"latitude\": 6.927079,\n  \"longitude\": 79.861244,\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/garages",
+              "host": ["{{base_url}}"],
+              "path": ["garages"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Garage by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/garages/1",
+              "host": ["{{base_url}}"],
+              "path": ["garages", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Route Breakdown Garages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/route-breakdowns/garages",
+              "host": ["{{base_url}}"],
+              "path": ["route-breakdowns", "garages"]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }

@@ -284,6 +284,7 @@ class SparePartRequestController {
                     ];
                 } else {
                     $availableQty = (int)$product['quantity'];
+                    $lowStockThreshold = (int)($product['low_stock_threshold'] ?? $product['reorder_level'] ?? 10);
                     $status = 'available';
                     $message = "In stock ({$availableQty} available)";
 
@@ -301,7 +302,8 @@ class SparePartRequestController {
                         'status' => $status,
                         'available_qty' => $availableQty,
                         'requested_qty' => $requestedQty,
-                        'reorder_level' => (int)($product['reorder_level'] ?? 10),
+                        'low_stock_threshold' => $lowStockThreshold,
+                        'reorder_level' => $lowStockThreshold,
                         'message' => $message
                     ];
                 }

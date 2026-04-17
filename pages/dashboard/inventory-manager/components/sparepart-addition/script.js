@@ -41,13 +41,13 @@ class InventorySparepartAddition extends HTMLElement {
         this.innerHTML = `
             <div class="page-header">
                 <h2 class="page-title"><i class="fas fa-plus-circle"></i> Sparepart Addition</h2>
-                <p class="page-subtitle">Add new stock to existing spareparts or record new stock arrivals</p>
+                <p class="page-subtitle">Add stock only to spareparts already created in the catalog</p>
             </div>
 
             <div class="search-bar">
                 <input type="text" id="additionSearch" class="search-input" placeholder="Search by sparepart name, ID, or supplier...">
                 <button class="btn btn-primary" id="additionAddBtn">
-                    <i class="fas fa-plus"></i> Add New Sparepart/Stock
+                    <i class="fas fa-plus"></i> Add Stock
                 </button>
             </div>
 

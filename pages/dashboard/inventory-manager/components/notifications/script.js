@@ -210,8 +210,10 @@ class InventoryNotifications extends HTMLElement {
     _mapLowStockProduct(product, index) {
         const quantity = Number.parseInt(product.quantity, 10);
         const normalizedQuantity = Number.isFinite(quantity) ? quantity : 0;
+        const threshold = Number.parseInt(product.low_stock_threshold ?? product.reorder_level, 10);
+        const normalizedThreshold = Number.isFinite(threshold) && threshold > 0 ? threshold : 10;
 
-        if (normalizedQuantity > 10) {
+        if (normalizedQuantity > normalizedThreshold) {
             return null;
         }
 
@@ -224,6 +226,7 @@ class InventoryNotifications extends HTMLElement {
             sparepartId,
             name: product.sparepart_name || product.name || sparepartId,
             quantity: normalizedQuantity,
+            threshold: normalizedThreshold,
             location: product.location || 'N/A',
         };
     }
@@ -287,7 +290,7 @@ class InventoryNotifications extends HTMLElement {
                 <span class="notification-icon low-stock">LS</span>
                 <div class="notification-body">
                     <p class="notification-title"><strong>${this._escape(alert.name)}</strong> is low on stock.</p>
-                    <p class="notification-meta">ID: ${this._escape(alert.sparepartId)} | Qty: ${alert.quantity} | Location: ${this._escape(alert.location)}</p>
+                    <p class="notification-meta">ID: ${this._escape(alert.sparepartId)} | Qty: ${alert.quantity} | Threshold: ${alert.threshold} | Location: ${this._escape(alert.location)}</p>
                     <div class="notification-actions">
                         <button type="button" class="btn btn-primary btn-small" data-action="reorder-part" data-part-id="${this._escapeAttr(alert.sparepartId)}">Reorder</button>
                         <button type="button" class="btn btn-secondary btn-small" data-action="view-part" data-part-id="${this._escapeAttr(alert.sparepartId)}">View</button>

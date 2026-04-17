@@ -1,0 +1,21 @@
+{
+  "stage": "before",
+  "viewport": "mobile",
+  "url": "http://127.0.0.1:3000/dashboard/inventory-manager/index.html",
+  "title": "Inventory Manager Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \"Usage Tracking\" [level=2]\n  - paragraph: Track sparepart issuance trends and inventory consumption history.\n  - textbox \"Search by sparepart ID or name...\"\n  - table:\n    - rowgroup:\n      - row \"Sparepart ID Sparepart Name Category Available Qty Issued Qty Last Issue Date Actions\":\n        - columnheader \"Sparepart ID\"\n        - columnheader \"Sparepart Name\"\n        - columnheader \"Category\"\n        - columnheader \"Available Qty\"\n        - columnheader \"Issued Qty\"\n        - columnheader \"Last Issue Date\"\n        - columnheader \"Actions\"\n    - rowgroup:\n      - row \"SPR-001 Hydraulic Pump Seal Machines 18 units 5 units Apr 10, 2026 View Usage\":\n        - cell \"SPR-001\":\n          - strong: SPR-001\n        - cell \"Hydraulic Pump Seal\"\n        - cell \"Machines\"\n        - cell \"18 units\"\n        - cell \"5 units\"\n        - cell \"Apr 10, 2026\"\n        - cell \"View Usage\":\n          - button \"View Usage\"\n      - row \"SPR-002 Brake Pad Set Vehicles 6 units 1 units Apr 9, 2026 View Usage\":\n        - cell \"SPR-002\":\n          - strong: SPR-002\n        - cell \"Brake Pad Set\"\n        - cell \"Vehicles\"\n        - cell \"6 units\"\n        - cell \"1 units\"\n        - cell \"Apr 9, 2026\"\n        - cell \"View Usage\":\n          - button \"View Usage\"",
+    "snapshotLength": 1269
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "modalOpened": "usage-modal-bar",
+    "chartBars": 3,
+    "linePoints": 0,
+    "historyCalls": [
+      "SPR-001"
+    ],
+    "usagePostCalls": 0
+  }
+}

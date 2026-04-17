@@ -40,9 +40,14 @@ class SparepartAdditionController {
     public function create() {
         try {
             $data = json_decode(file_get_contents('php://input'), true);
+
+            if (!is_array($data)) {
+                Response::error('Invalid JSON payload', 400);
+                return;
+            }
             
             // Validate required fields
-            $required = ['sparepart_id', 'sparepart_name', 'quantity_added', 'received_date'];
+            $required = ['sparepart_id', 'quantity_added', 'received_date'];
             foreach ($required as $field) {
                 if (!isset($data[$field])) {
                     Response::error("Missing required field: $field", 400);
@@ -50,16 +55,15 @@ class SparepartAdditionController {
                 }
             }
             
-            $sparepartId = $data['sparepart_id'];
+            $sparepartId = trim((string)$data['sparepart_id']);
             $quantityAdded = (int)$data['quantity_added'];
 
-            if (!preg_match('/^SPR-\d+$/', trim((string)$sparepartId))) {
+            if (!preg_match('/^SPR-\d+$/', $sparepartId)) {
                 Response::error('Invalid sparepart ID format', 400);
                 return;
             }
 
-            $data['sparepart_id'] = trim((string)$sparepartId);
-            $data['sparepart_name'] = trim((string)$data['sparepart_name']);
+            $data['sparepart_id'] = $sparepartId;
             
             if ($quantityAdded <= 0) {
                 Response::error('Quantity added must be greater than 0', 400);
@@ -70,47 +74,37 @@ class SparepartAdditionController {
             $product = $this->productModel->findOne(['sparepart_id' => $sparepartId, 'is_active' => 1]);
             
             if (!$product) {
-                // Auto-create the spare part in catalog
-                $newSparepartData = [
-                    'sparepart_id' => $sparepartId,
-                    'name' => $data['sparepart_name'],
-                    'description' => $data['notes'] ?? null,
-                    'category' => $data['category'] ?? 'General',
-                    'quantity' => $quantityAdded,
-                    'unit_price' => 0.00,
-                    'reorder_level' => 10,
-                    'location' => $data['location'] ?? null,
-                    'is_active' => 1,
-                    'compatible_machines' => $data['compatible_machines'] ?? null,
-                    'compatible_vehicles' => $data['compatible_vehicles'] ?? null
-                ];
-                
-                $productDbId = $this->productModel->create($newSparepartData);
-                
-                if (!$productDbId) {
-                    Response::error('Failed to create spare part in catalog', 500);
-                    return;
-                }
-                
-                // Set previous and new stock for the addition record
-                $data['previous_stock'] = 0;
-                $data['new_stock'] = $quantityAdded;
-            } else {
-                // Update existing spare part quantity
-                $previousStock = (int)$product['quantity'];
-                $newStock = $previousStock + $quantityAdded;
-                
-                $updateResult = $this->productModel->updateQuantity($product['id'], $quantityAdded, 'add');
-                
-                if (!$updateResult) {
-                    Response::error('Failed to update spare part quantity in catalog', 500);
-                    return;
-                }
-                
-                // Set previous and new stock for the addition record
-                $data['previous_stock'] = $previousStock;
-                $data['new_stock'] = $newStock;
+                Response::error('Spare part does not exist in catalog. Create it in Spare Parts Catalog first.', 400);
+                return;
             }
+
+            // Use catalog metadata for immutable fields in addition records.
+            $data['sparepart_name'] = trim((string)($product['name'] ?? $data['sparepart_name'] ?? ''));
+            $data['category'] = $product['category'] ?? ($data['category'] ?? null);
+            $data['location'] = $product['location'] ?? ($data['location'] ?? null);
+
+            if ($data['sparepart_name'] === '') {
+                Response::error('Spare part name is required', 400);
+                return;
+            }
+
+            // Update existing spare part quantity
+            $previousStock = (int)$product['quantity'];
+            $newStock = $previousStock + $quantityAdded;
+
+            $updateResult = $this->productModel->updateQuantity($product['id'], $quantityAdded, 'add');
+
+            if (!$updateResult) {
+                Response::error('Failed to update spare part quantity in catalog', 500);
+                return;
+            }
+
+            // Set previous and new stock for the addition record
+            $data['previous_stock'] = $previousStock;
+            $data['new_stock'] = $newStock;
+
+            // Compatibility is now owned by catalog metadata only.
+            unset($data['compatible_machines'], $data['compatible_vehicles']);
             
             // Set added_by from session or default
             $data['added_by'] = $_SESSION['user']['username'] ?? 'admin';
@@ -123,8 +117,7 @@ class SparepartAdditionController {
                     'message' => 'Addition recorded successfully',
                     'previous_stock' => $data['previous_stock'],
                     'new_stock' => $data['new_stock'],
-                    'quantity_added' => $quantityAdded,
-                    'auto_created_part' => !$product
+                    'quantity_added' => $quantityAdded
                 ]);
             } else {
                 Response::error('Failed to record addition');
@@ -186,6 +179,9 @@ class SparepartAdditionController {
             
             // Remove id from data to avoid updating the primary key
             unset($data['id']);
+
+            // Compatibility is catalog-level metadata only.
+            unset($data['compatible_machines'], $data['compatible_vehicles']);
             
             $result = $this->model->update($id, $data);
             

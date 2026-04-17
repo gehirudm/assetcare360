@@ -256,6 +256,7 @@ $router->post('/notifications/read', 'NotificationController', 'markRead');
 // Garage routes
 $router->get('/garages', 'GarageController', 'index');
 $router->get('/garages/:id', 'GarageController', 'show');
+$router->post('/garages', 'GarageController', 'create');
 
 // File serving routes (for uploaded files)
 $router->get('/uploads/fault-tickets/:filename', 'FileController', 'serveFaultTicketImage');
@@ -272,6 +273,7 @@ $router->delete('/breakdown-reports/:id', 'BreakdownReportController', 'delete')
 // Route breakdown routes (Supervisor and above)
 $router->get('/route-breakdowns/stats', 'RouteBreakdownController', 'stats');
 $router->get('/route-breakdowns', 'RouteBreakdownController', 'index');
+$router->get('/route-breakdowns/garages', 'RouteBreakdownController', 'garages');
 $router->get('/route-breakdowns/:id', 'RouteBreakdownController', 'show');
 $router->post('/route-breakdowns', 'RouteBreakdownController', 'create');
 $router->post('/route-breakdowns/:id/garage-approval', 'RouteBreakdownController', 'approveGarage');

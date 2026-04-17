@@ -14,13 +14,17 @@ class InventoryUsageTracking extends HTMLElement {
             products: [],
             issuedQtyMap: {},
             searchQuery: '',
-            issueModalOpen: false,
+            usageModalOpen: false,
+            usageModalLoading: false,
+            usageModalError: null,
+            selectedPartUsageHistory: [],
+            selectedPartUsageStats: null,
+            selectedUsageDate: null,
             selectedPart: null,
         };
 
         this._onRootClick = this._onRootClick.bind(this);
         this._onSearchInput = this._onSearchInput.bind(this);
-        this._onIssueSubmit = this._onIssueSubmit.bind(this);
     }
 
     async connectedCallback() {
@@ -37,7 +41,6 @@ class InventoryUsageTracking extends HTMLElement {
         this._cacheDom();
         this.shadowRoot.addEventListener('click', this._onRootClick);
         this._searchInput.addEventListener('input', this._onSearchInput);
-        this._issueForm.addEventListener('submit', this._onIssueSubmit);
 
         this._initialized = true;
         this.render();
@@ -47,7 +50,6 @@ class InventoryUsageTracking extends HTMLElement {
     disconnectedCallback() {
         this.shadowRoot.removeEventListener('click', this._onRootClick);
         this._searchInput?.removeEventListener('input', this._onSearchInput);
-        this._issueForm?.removeEventListener('submit', this._onIssueSubmit);
     }
 
     async refresh() {
@@ -99,7 +101,20 @@ class InventoryUsageTracking extends HTMLElement {
     render() {
         if (!this._initialized) return;
 
-        const { loading, error, products, issuedQtyMap, searchQuery, issueModalOpen, selectedPart } = this.state;
+        const {
+            loading,
+            error,
+            products,
+            issuedQtyMap,
+            searchQuery,
+            usageModalOpen,
+            usageModalLoading,
+            usageModalError,
+            selectedPartUsageHistory,
+            selectedPartUsageStats,
+            selectedUsageDate,
+            selectedPart,
+        } = this.state;
 
         this._banner.innerHTML = '';
         if (error) {
@@ -126,27 +141,29 @@ class InventoryUsageTracking extends HTMLElement {
                 </tr>
             `;
 
-        this._modal.classList.toggle('active', issueModalOpen);
-        if (selectedPart) {
-            this._issueSparepartId.value = selectedPart.sparepartId;
-            this._issueSparepartName.value = selectedPart.name;
-            this._issueAvailableQty.value = `${selectedPart.availableQty} units`;
-            this._issueQuantity.max = String(selectedPart.availableQty);
-            this._issueQuantity.placeholder = `Max: ${selectedPart.availableQty}`;
-        } else {
-            this._issueSparepartId.value = '';
-            this._issueSparepartName.value = '';
-            this._issueAvailableQty.value = '';
-            this._issueQuantity.max = '';
-            this._issueQuantity.placeholder = 'Enter quantity';
+        this._usageModal.classList.toggle('active', usageModalOpen);
+
+        if (!selectedPart) {
+            this._usageModalSubtitle.textContent = 'Select a sparepart to inspect usage history.';
+            this._usageModalBody.innerHTML = '';
+            return;
         }
+
+        this._usageModalSubtitle.textContent = `${selectedPart.name} (${selectedPart.sparepartId})`;
+        this._usageModalBody.innerHTML = this._renderUsageModalBody({
+            loading: usageModalLoading,
+            error: usageModalError,
+            history: selectedPartUsageHistory,
+            stats: selectedPartUsageStats,
+            selectedDate: selectedUsageDate,
+        });
     }
 
     _template() {
         return `
             <div class="page-header">
                 <h2 class="page-title">Usage Tracking</h2>
-                <p class="page-subtitle">Track spare part issuance and update inventory consumption.</p>
+                <p class="page-subtitle">Track sparepart issuance trends and inventory consumption history.</p>
             </div>
 
             <div class="search-row">
@@ -172,44 +189,16 @@ class InventoryUsageTracking extends HTMLElement {
                 </table>
             </div>
 
-            <div id="issueModal" class="modal">
-                <div class="modal-content">
+            <div id="usageModal" class="modal">
+                <div class="modal-content usage-modal-content">
                     <div class="modal-header">
-                        <h3 class="modal-title">Issue Sparepart</h3>
-                        <button type="button" class="btn btn-secondary btn-small" data-action="close-issue-modal">Close</button>
+                        <div>
+                            <h3 class="modal-title">Usage Overview</h3>
+                            <p id="usageModalSubtitle" class="modal-subtitle"></p>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-small" data-action="close-usage-modal">Close</button>
                     </div>
-                    <div class="modal-body">
-                        <form id="issueForm">
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label class="form-label" for="issueSparepartId">Sparepart ID</label>
-                                    <input id="issueSparepartId" class="form-input" type="text" readonly>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" for="issueSparepartName">Sparepart Name</label>
-                                    <input id="issueSparepartName" class="form-input" type="text" readonly>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" for="issueAvailableQty">Available Qty</label>
-                                    <input id="issueAvailableQty" class="form-input" type="text" readonly>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" for="issueQuantity">Quantity Issued *</label>
-                                    <input id="issueQuantity" class="form-input" type="number" min="1" required>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" for="issueNotes">Notes</label>
-                                <textarea id="issueNotes" class="form-textarea" placeholder="Optional notes for this issuance"></textarea>
-                            </div>
-
-                            <div class="modal-actions">
-                                <button type="button" class="btn btn-secondary" data-action="close-issue-modal">Cancel</button>
-                                <button id="submitIssueButton" type="submit" class="btn btn-primary">Issue Sparepart</button>
-                            </div>
-                        </form>
-                    </div>
+                    <div id="usageModalBody" class="modal-body"></div>
                 </div>
             </div>
         `;
@@ -220,14 +209,9 @@ class InventoryUsageTracking extends HTMLElement {
         this._banner = this.shadowRoot.getElementById('banner');
         this._tbody = this.shadowRoot.getElementById('usageTableBody');
 
-        this._modal = this.shadowRoot.getElementById('issueModal');
-        this._issueForm = this.shadowRoot.getElementById('issueForm');
-        this._issueSparepartId = this.shadowRoot.getElementById('issueSparepartId');
-        this._issueSparepartName = this.shadowRoot.getElementById('issueSparepartName');
-        this._issueAvailableQty = this.shadowRoot.getElementById('issueAvailableQty');
-        this._issueQuantity = this.shadowRoot.getElementById('issueQuantity');
-        this._issueNotes = this.shadowRoot.getElementById('issueNotes');
-        this._submitIssueButton = this.shadowRoot.getElementById('submitIssueButton');
+        this._usageModal = this.shadowRoot.getElementById('usageModal');
+        this._usageModalSubtitle = this.shadowRoot.getElementById('usageModalSubtitle');
+        this._usageModalBody = this.shadowRoot.getElementById('usageModalBody');
     }
 
     _adoptSharedStyles() {
@@ -263,8 +247,10 @@ class InventoryUsageTracking extends HTMLElement {
 
         const availableQty = this._toInt(product.quantity);
         const issuedQty = this._toInt(issuedQtyMap[sparepartId]);
+        const thresholdRaw = this._toInt(product.low_stock_threshold ?? product.reorder_level);
+        const lowStockThreshold = thresholdRaw > 0 ? thresholdRaw : 10;
 
-        const stockClass = availableQty <= 0 ? 'out' : (availableQty <= 10 ? 'low' : 'in');
+        const stockClass = availableQty <= 0 ? 'out' : (availableQty <= lowStockThreshold ? 'low' : 'in');
         const lastIssue = product.last_issue_date
             ? new Date(product.last_issue_date).toLocaleDateString('en-US', {
                 year: 'numeric',
@@ -272,8 +258,6 @@ class InventoryUsageTracking extends HTMLElement {
                 day: 'numeric',
             })
             : '<span class="muted">Not issued yet</span>';
-
-        const disableAction = availableQty <= 0 ? 'disabled' : '';
 
         return `
             <tr>
@@ -284,8 +268,8 @@ class InventoryUsageTracking extends HTMLElement {
                 <td>${issuedQty > 0 ? `<span class="issued-value">${issuedQty} units</span>` : '<span class="muted">0 units</span>'}</td>
                 <td>${lastIssue}</td>
                 <td>
-                    <button type="button" class="btn btn-primary btn-small" data-action="open-issue-modal" data-sparepart-id="${this._escapeAttr(sparepartId)}" data-sparepart-name="${this._escapeAttr(sparepartName)}" data-available-qty="${availableQty}" ${disableAction}>
-                        Update
+                    <button type="button" class="btn btn-primary btn-small" data-action="open-usage-modal" data-sparepart-id="${this._escapeAttr(sparepartId)}" data-sparepart-name="${this._escapeAttr(sparepartName)}" data-available-qty="${availableQty}">
+                        View Usage
                     </button>
                 </td>
             </tr>
@@ -293,24 +277,29 @@ class InventoryUsageTracking extends HTMLElement {
     }
 
     _onRootClick(event) {
-        const button = event.target.closest('button[data-action]');
-        if (!button) {
-            if (event.target === this._modal) {
-                this._closeIssueModal();
+        const actionElement = event.target.closest('[data-action]');
+        if (!actionElement) {
+            if (event.target === this._usageModal) {
+                this._closeUsageModal();
             }
             return;
         }
 
-        switch (button.dataset.action) {
-            case 'open-issue-modal':
-                this._openIssueModal({
-                    sparepartId: button.dataset.sparepartId || '',
-                    name: button.dataset.sparepartName || '',
-                    availableQty: this._toInt(button.dataset.availableQty),
+        switch (actionElement.dataset.action) {
+            case 'open-usage-modal':
+                this._openUsageModal({
+                    sparepartId: actionElement.dataset.sparepartId || '',
+                    name: actionElement.dataset.sparepartName || '',
+                    availableQty: this._toInt(actionElement.dataset.availableQty),
                 });
                 break;
-            case 'close-issue-modal':
-                this._closeIssueModal();
+            case 'close-usage-modal':
+                this._closeUsageModal();
+                break;
+            case 'select-usage-date':
+                this.setState({
+                    selectedUsageDate: actionElement.dataset.usageDate || null,
+                });
                 break;
             default:
                 break;
@@ -321,74 +310,411 @@ class InventoryUsageTracking extends HTMLElement {
         this.setState({ searchQuery: event.target.value || '' });
     }
 
-    async _onIssueSubmit(event) {
-        event.preventDefault();
-
-        const selectedPart = this.state.selectedPart;
-        if (!selectedPart) {
-            this._toast('No sparepart selected.', 'error');
-            return;
-        }
-
-        const quantityIssued = this._toInt(this._issueQuantity.value);
-        if (quantityIssued < 1) {
-            this._toast('Please enter a valid quantity (at least 1).', 'error');
-            return;
-        }
-
-        if (quantityIssued > selectedPart.availableQty) {
-            this._toast(`Cannot issue ${quantityIssued} units. Only ${selectedPart.availableQty} available.`, 'error');
-            return;
-        }
-
-        this._submitIssueButton.disabled = true;
-
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            const notes = (this._issueNotes.value || '').trim() || `Issued ${quantityIssued} unit(s) from inventory`;
-
-            const response = await window.API.post('/usage', {
-                sparepart_id: selectedPart.sparepartId,
-                sparepart_name: selectedPart.name,
-                quantity_issued: quantityIssued,
-                issue_date: today,
-                notes,
-            });
-
-            if (!response || response.status !== 'success') {
-                throw new Error(response?.message || 'Failed to issue sparepart');
-            }
-
-            const newQuantity = response.data?.new_quantity ?? (selectedPart.availableQty - quantityIssued);
-            this._toast(`Issued ${quantityIssued} unit(s) of ${selectedPart.name}. Remaining: ${newQuantity}`, 'success');
-
-            this._closeIssueModal();
-            await this.refresh();
-        } catch (error) {
-            console.error('Usage Tracking: failed to issue sparepart.', error);
-            this._toast(`Error issuing sparepart: ${error.message}`, 'error');
-        } finally {
-            this._submitIssueButton.disabled = false;
-        }
-    }
-
-    _openIssueModal(part) {
+    _openUsageModal(part) {
         if (!part || !part.sparepartId) return;
 
-        this._issueQuantity.value = '';
-        this._issueNotes.value = '';
-
         this.setState({
-            issueModalOpen: true,
+            usageModalOpen: true,
+            usageModalLoading: true,
+            usageModalError: null,
             selectedPart: part,
+            selectedPartUsageHistory: [],
+            selectedPartUsageStats: null,
+            selectedUsageDate: null,
+        });
+
+        this._loadSelectedPartUsage(part.sparepartId);
+    }
+
+    _closeUsageModal() {
+        this.setState({
+            usageModalOpen: false,
+            usageModalLoading: false,
+            usageModalError: null,
+            selectedPart: null,
+            selectedPartUsageHistory: [],
+            selectedPartUsageStats: null,
+            selectedUsageDate: null,
         });
     }
 
-    _closeIssueModal() {
-        this.setState({
-            issueModalOpen: false,
-            selectedPart: null,
+    async _loadSelectedPartUsage(sparepartId) {
+        if (!window.API || typeof window.API.get !== 'function') {
+            this.setState({
+                usageModalLoading: false,
+                usageModalError: 'API client is not available.',
+            });
+            return;
+        }
+
+        try {
+            const response = await window.API.get(`/usage/sparepart/${encodeURIComponent(sparepartId)}`);
+            const { history, stats } = this._extractUsageHistoryPayload(response);
+
+            if (this.state.selectedPart?.sparepartId !== sparepartId) {
+                return;
+            }
+
+            this.setState({
+                usageModalLoading: false,
+                usageModalError: null,
+                selectedPartUsageHistory: history,
+                selectedPartUsageStats: this._normalizeUsageStats(history, stats),
+                selectedUsageDate: this._resolveSelectedUsageDate(history, this.state.selectedUsageDate),
+            });
+        } catch (error) {
+            console.error('Usage Tracking: failed to load sparepart usage history.', error);
+
+            if (this.state.selectedPart?.sparepartId !== sparepartId) {
+                return;
+            }
+
+            this.setState({
+                usageModalLoading: false,
+                usageModalError: error.message || 'Failed to load usage history.',
+            });
+        }
+    }
+
+    _extractUsageHistoryPayload(response) {
+        if (!response || response.status !== 'success') {
+            throw new Error(response?.message || 'Failed to load usage history');
+        }
+
+        if (Array.isArray(response.data)) {
+            return {
+                history: response.data,
+                stats: null,
+            };
+        }
+
+        const history = Array.isArray(response.data?.history) ? response.data.history : [];
+        const stats = response.data && typeof response.data.stats === 'object' ? response.data.stats : null;
+
+        return { history, stats };
+    }
+
+    _normalizeUsageStats(history, stats) {
+        const sortedDates = history
+            .map(item => String(item.issue_date || '').split('T')[0])
+            .filter(Boolean)
+            .sort((a, b) => a.localeCompare(b));
+
+        const fallbackTotalQuantity = history.reduce(
+            (sum, item) => sum + this._toInt(item.quantity_issued),
+            0
+        );
+
+        return {
+            totalIssuances: this._toInt(stats?.total_issuances ?? history.length),
+            totalQuantity: this._toInt(stats?.total_quantity ?? fallbackTotalQuantity),
+            firstIssueDate: stats?.first_issue_date || sortedDates[0] || null,
+            lastIssueDate: stats?.last_issue_date || sortedDates[sortedDates.length - 1] || null,
+        };
+    }
+
+    _renderUsageModalBody({ loading, error, history, stats, selectedDate }) {
+        if (loading) {
+            return '<div class="info-banner loading">Loading usage history and chart data...</div>';
+        }
+
+        if (error) {
+            return `<div class="info-banner error">${this._escape(error)}</div>`;
+        }
+
+        const safeStats = stats || this._normalizeUsageStats(history, null);
+
+        return `
+            ${this._renderUsageStats(safeStats)}
+            ${this._renderUsageChart(history, selectedDate)}
+            ${this._renderUsageDateDetails(history, selectedDate)}
+            ${this._renderUsageHistory(history)}
+        `;
+    }
+
+    _renderUsageStats(stats) {
+        return `
+            <div class="usage-stats-grid">
+                <article class="usage-stat-card">
+                    <div class="usage-stat-label">Total Issuances</div>
+                    <div class="usage-stat-value">${stats.totalIssuances}</div>
+                </article>
+                <article class="usage-stat-card">
+                    <div class="usage-stat-label">Total Issued Qty</div>
+                    <div class="usage-stat-value">${stats.totalQuantity}</div>
+                </article>
+                <article class="usage-stat-card">
+                    <div class="usage-stat-label">First Issued</div>
+                    <div class="usage-stat-value small">${this._escape(this._formatDate(stats.firstIssueDate))}</div>
+                </article>
+                <article class="usage-stat-card">
+                    <div class="usage-stat-label">Last Issued</div>
+                    <div class="usage-stat-value small">${this._escape(this._formatDate(stats.lastIssueDate))}</div>
+                </article>
+            </div>
+        `;
+    }
+
+    _renderUsageChart(history, selectedDate) {
+        const points = this._buildUsagePoints(history);
+        if (points.length === 0) {
+            return '<div class="usage-empty-state">No issuance records found for this sparepart yet.</div>';
+        }
+
+        const activeDate = selectedDate || points[points.length - 1].date;
+
+        const geometry = this._buildLineChartGeometry(points);
+
+        const gridMarkup = geometry.gridLines.map(line => `
+            <g>
+                <line class="usage-line-grid" x1="${geometry.padding.left}" y1="${line.y}" x2="${geometry.width - geometry.padding.right}" y2="${line.y}"></line>
+                <text class="usage-line-y-label" x="${geometry.padding.left - 8}" y="${line.y + 4}" text-anchor="end">${line.value}</text>
+            </g>
+        `).join('');
+
+        const pointsMarkup = geometry.points.map(point => {
+            const tooltip = `${point.quantity} unit(s) on ${point.fullDate}`;
+
+            return `
+                <g class="usage-line-point-group">
+                    <text class="usage-line-point-value" x="${point.x}" y="${point.valueLabelY}" text-anchor="middle">${point.quantity}</text>
+                    <circle class="usage-line-point" cx="${point.x}" cy="${point.y}" r="4"></circle>
+                    <title>${this._escape(tooltip)}</title>
+                </g>
+            `;
+        }).join('');
+
+        const labelsMarkup = geometry.points
+            .map(point => `<span class="usage-line-label">${this._escape(point.label)}</span>`)
+            .join('');
+
+        const detailItemsMarkup = geometry.points
+            .map(point => `
+                <button type="button" class="usage-line-detail-item ${point.date === activeDate ? 'active' : ''}" data-action="select-usage-date" data-usage-date="${this._escapeAttr(point.date)}">
+                    <div class="usage-line-detail-date">${this._escape(point.fullDate)}</div>
+                    <div class="usage-line-detail-qty">${point.quantity} unit(s)</div>
+                </button>
+            `)
+            .join('');
+
+        return `
+            <div class="usage-chart-shell">
+                <div class="usage-chart-header">
+                    <h4 class="usage-section-title">Usage Trend (Last ${points.length} Issuance Dates)</h4>
+                    <span class="usage-chart-meta">Max per day: ${geometry.maxQuantity}</span>
+                </div>
+                <div class="usage-line-chart-wrapper">
+                    <svg class="usage-line-chart" viewBox="0 0 ${geometry.width} ${geometry.height}" role="img" aria-label="Usage line chart">
+                        ${gridMarkup}
+                        <polygon class="usage-line-area" points="${geometry.areaPoints}"></polygon>
+                        <polyline class="usage-line-path" points="${geometry.pathPoints}"></polyline>
+                        ${pointsMarkup}
+                    </svg>
+                    <div class="usage-line-label-row">${labelsMarkup}</div>
+                    <div class="usage-line-detail-list">${detailItemsMarkup}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    _renderUsageDateDetails(history, selectedDate) {
+        const targetDate = this._resolveSelectedUsageDate(history, selectedDate);
+        if (!targetDate) {
+            return '';
+        }
+
+        const selectedRecords = history.filter(record => this._normalizeDate(record.issue_date) === targetDate);
+        if (selectedRecords.length === 0) {
+            return '';
+        }
+
+        const totalQuantity = selectedRecords.reduce((sum, record) => sum + this._toInt(record.quantity_issued), 0);
+
+        const rowMarkup = selectedRecords.map(record => {
+            const machineText = record.machine_id ? `Machine ${this._escape(record.machine_id)}` : '';
+            const vehicleText = record.vehicle_id ? `Vehicle ${this._escape(record.vehicle_id)}` : '';
+            const location = [machineText, vehicleText].filter(Boolean).join(' / ') || '<span class="muted">-</span>';
+            const notes = record.notes ? this._escape(record.notes) : '<span class="muted">-</span>';
+
+            return `
+                <tr>
+                    <td>${this._toInt(record.quantity_issued)} units</td>
+                    <td>${location}</td>
+                    <td>${notes}</td>
+                </tr>
+            `;
+        }).join('');
+
+        return `
+            <div class="usage-date-detail-card">
+                <div class="usage-date-detail-header">
+                    <h4 class="usage-section-title">Details for ${this._escape(this._formatDate(targetDate))}</h4>
+                    <span class="usage-date-detail-meta">${selectedRecords.length} record(s) • ${totalQuantity} unit(s)</span>
+                </div>
+                <div class="usage-date-detail-scroll">
+                    <table class="usage-date-detail-table">
+                        <thead>
+                            <tr>
+                                <th>Quantity</th>
+                                <th>Machine/Vehicle</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowMarkup}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    _resolveSelectedUsageDate(history, selectedDate) {
+        const availableDates = Array.from(
+            new Set(history.map(record => this._normalizeDate(record.issue_date)).filter(Boolean))
+        ).sort((a, b) => a.localeCompare(b));
+
+        if (selectedDate && availableDates.includes(selectedDate)) {
+            return selectedDate;
+        }
+
+        return availableDates.length > 0 ? availableDates[availableDates.length - 1] : null;
+    }
+
+    _normalizeDate(value) {
+        return String(value || '').split('T')[0] || null;
+    }
+
+    _buildLineChartGeometry(points) {
+        const width = 640;
+        const height = 240;
+        const padding = {
+            top: 16,
+            right: 18,
+            bottom: 40,
+            left: 36,
+        };
+
+        const maxQuantity = Math.max(...points.map(point => point.quantity), 1);
+        const innerWidth = width - padding.left - padding.right;
+        const innerHeight = height - padding.top - padding.bottom;
+        const baselineY = padding.top + innerHeight;
+
+        const chartPoints = points.map((point, index) => {
+            const x = points.length === 1
+                ? padding.left + (innerWidth / 2)
+                : padding.left + (index * innerWidth) / (points.length - 1);
+            const y = padding.top + ((maxQuantity - point.quantity) / maxQuantity) * innerHeight;
+            const valueLabelY = Math.max(y - 10, padding.top + 12);
+
+            return {
+                ...point,
+                x: Number(x.toFixed(2)),
+                y: Number(y.toFixed(2)),
+                valueLabelY: Number(valueLabelY.toFixed(2)),
+            };
         });
+
+        const pathPoints = chartPoints.map(point => `${point.x},${point.y}`).join(' ');
+
+        const areaPoints = chartPoints.length === 1
+            ? `${chartPoints[0].x},${baselineY} ${chartPoints[0].x},${chartPoints[0].y} ${chartPoints[0].x},${baselineY}`
+            : `${chartPoints[0].x},${baselineY} ${pathPoints} ${chartPoints[chartPoints.length - 1].x},${baselineY}`;
+
+        const gridSteps = 4;
+        const gridLines = Array.from({ length: gridSteps + 1 }, (_, index) => {
+            const y = padding.top + (innerHeight * index) / gridSteps;
+            const value = Math.round(maxQuantity - (maxQuantity * index) / gridSteps);
+            return {
+                y: Number(y.toFixed(2)),
+                value,
+            };
+        });
+
+        return {
+            width,
+            height,
+            padding,
+            maxQuantity,
+            points: chartPoints,
+            pathPoints,
+            areaPoints,
+            gridLines,
+        };
+    }
+
+    _renderUsageHistory(history) {
+        if (!history || history.length === 0) {
+            return '';
+        }
+
+        const rowsMarkup = history.slice(0, 8).map(record => {
+            const machineText = record.machine_id ? `Machine ${this._escape(record.machine_id)}` : '';
+            const vehicleText = record.vehicle_id ? `Vehicle ${this._escape(record.vehicle_id)}` : '';
+            const location = [machineText, vehicleText].filter(Boolean).join(' / ') || '<span class="muted">-</span>';
+            const notes = record.notes ? this._escape(record.notes) : '<span class="muted">-</span>';
+
+            return `
+                <tr>
+                    <td>${this._escape(this._formatDate(record.issue_date))}</td>
+                    <td>${this._toInt(record.quantity_issued)} units</td>
+                    <td>${location}</td>
+                    <td>${notes}</td>
+                </tr>
+            `;
+        }).join('');
+
+        return `
+            <div class="usage-history-card">
+                <h4 class="usage-section-title">Recent Issuance Records</h4>
+                <div class="usage-history-scroll">
+                    <table class="usage-history-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Quantity</th>
+                                <th>Machine/Vehicle</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rowsMarkup}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    _buildUsagePoints(history) {
+        const totalsByDate = new Map();
+
+        history.forEach(record => {
+            const normalizedDate = String(record.issue_date || '').split('T')[0];
+            if (!normalizedDate) return;
+
+            const quantityIssued = this._toInt(record.quantity_issued);
+            totalsByDate.set(normalizedDate, (totalsByDate.get(normalizedDate) || 0) + quantityIssued);
+        });
+
+        const points = Array.from(totalsByDate.entries())
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([date, quantity]) => ({
+                date,
+                quantity,
+                label: this._formatDate(date, { month: 'short', day: 'numeric' }),
+                fullDate: this._formatDate(date),
+            }));
+
+        const maxPoints = 10;
+        return points.length > maxPoints ? points.slice(points.length - maxPoints) : points;
+    }
+
+    _formatDate(value, options = { year: 'numeric', month: 'short', day: 'numeric' }) {
+        if (!value) return '-';
+
+        const parsedDate = new Date(value);
+        if (Number.isNaN(parsedDate.getTime())) {
+            return '-';
+        }
+
+        return parsedDate.toLocaleDateString('en-US', options);
     }
 
     _extractProducts(response) {

@@ -1527,13 +1527,20 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
-  # ==================== PRODUCTS (PLACEHOLDER) ====================
+  # ==================== PRODUCTS ====================
   /products:
     get:
       tags:
         - Products
-      summary: List all products
-      description: Get list of all products in inventory
+      summary: List catalog spareparts
+      description: Returns active spareparts from the catalog. Use category filter for `machines` or `vehicles`.
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [machines, vehicles]
       responses:
         '200':
           description: Products retrieved successfully
@@ -1542,13 +1549,245 @@ paths:
               schema:
                 type: object
                 properties:
-                  success:
-                    type: boolean
-                    example: true
+                  status:
+                    type: string
+                    example: success
                   data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Product'
+                    type: object
+                    properties:
+                      products:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Product'
+                  message:
+                    type: string
+                    example: Products retrieved successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Products
+      summary: Create a sparepart in catalog
+      description: Creates sparepart metadata in catalog. Initial stock is always `0`; stock additions must be recorded via `/additions`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - category
+                - low_stock_threshold
+              properties:
+                sparepart_id:
+                  type: string
+                  example: "SPR-121"
+                name:
+                  type: string
+                  example: "Hydraulic Pump"
+                category:
+                  type: string
+                  enum: [machines, vehicles]
+                  example: machines
+                low_stock_threshold:
+                  type: integer
+                  minimum: 1
+                  example: 12
+                compatible_machines:
+                  type: array
+                  items:
+                    type: string
+                  example: ["LPG Cylinder Filling Machine", "Gas Compressor"]
+                compatible_vehicles:
+                  type: array
+                  items:
+                    type: string
+                  example: []
+      responses:
+        '201':
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 42
+                      sparepart_id:
+                        type: string
+                        example: "SPR-121"
+                  message:
+                    type: string
+                    example: Product created successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /products/next-id:
+    get:
+      tags:
+        - Products
+      summary: Get next sparepart ID
+      description: Returns the next generated sparepart ID in `SPR-###` format.
+      responses:
+        '200':
+          description: Next product ID generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      next_id:
+                        type: string
+                        example: "SPR-122"
+                  message:
+                    type: string
+                    example: Next product ID generated successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /products/{id}:
+    get:
+      tags:
+        - Products
+      summary: Get product by ID
+      description: Returns one sparepart by database ID or `SPR-###` sparepart ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/Product'
+                  message:
+                    type: string
+                    example: Product retrieved successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags:
+        - Products
+      summary: Update catalog sparepart metadata
+      description: Updates a sparepart by database ID or `SPR-###` sparepart ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Hydraulic Pump"
+                category:
+                  type: string
+                  enum: [machines, vehicles]
+                  example: machines
+                low_stock_threshold:
+                  type: integer
+                  minimum: 1
+                  example: 10
+                compatible_machines:
+                  type: array
+                  items:
+                    type: string
+                compatible_vehicles:
+                  type: array
+                  items:
+                    type: string
+                quantity:
+                  type: integer
+                  minimum: 0
+                  example: 35
+      responses:
+        '200':
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 42
+                  message:
+                    type: string
+                    example: Product updated successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags:
+        - Products
+      summary: Soft-delete a sparepart
+      description: Marks a sparepart as inactive by database ID or `SPR-###` sparepart ID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Product deleted successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -1749,9 +1988,9 @@ paths:
         - Sparepart Additions
       summary: Record a spare part addition
       description: |
-        Records stock addition for a spare part. Automatically updates the spare part catalog quantity.
-        If the spare part doesn't exist in the catalog, it will be auto-created.
-        Sparepart IDs must be generated identifiers in the form `SPR-###`; malformed placeholder values are rejected.
+        Records stock addition for an existing spare part and updates catalog quantity.
+        Sparepart must already exist in `/products`; this endpoint no longer auto-creates catalog records.
+        Sparepart IDs must be in the `SPR-###` format.
       requestBody:
         required: true
         content:
@@ -1760,7 +1999,6 @@ paths:
               type: object
               required:
                 - sparepart_id
-                - sparepart_name
                 - quantity_added
                 - received_date
               properties:
@@ -1769,6 +2007,7 @@ paths:
                   example: "SPR-001"
                 sparepart_name:
                   type: string
+                  description: Optional. Backend will use catalog name when available.
                   example: "Hydraulic Pump"
                 quantity_added:
                   type: integer
@@ -1819,10 +2058,6 @@ paths:
                       quantity_added:
                         type: integer
                         example: 10
-                      auto_created_part:
-                        type: boolean
-                        example: false
-                        description: "True if the spare part was auto-created in the catalog"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1834,7 +2069,7 @@ paths:
       tags:
         - Garages
       summary: List available garages
-      description: Returns active garages. Supports optional search by `q` and filter by `city`.
+      description: Returns active garages by default. Supports optional search by `q`, filter by `city`, and `include_inactive=true` for Transportation Manager/Admin views.
       parameters:
         - name: q
           in: query
@@ -1846,6 +2081,12 @@ paths:
           required: false
           schema:
             type: string
+        - name: include_inactive
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Include inactive garages in the response.
       responses:
         '200':
           description: Garages fetched successfully
@@ -1896,6 +2137,131 @@ paths:
                       count:
                         type: integer
                         example: 5
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags:
+        - Garages
+      summary: Create a new garage
+      description: "Creates a company-connected garage. Allowed roles: Transportation Manager and Admin."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - address
+              properties:
+                name:
+                  type: string
+                  maxLength: 255
+                  example: Rapid Route Repairs
+                address:
+                  type: string
+                  maxLength: 500
+                  example: 18 Baseline Road, Colombo
+                city:
+                  type: string
+                  nullable: true
+                  maxLength: 100
+                  example: Colombo
+                phone:
+                  type: string
+                  nullable: true
+                  maxLength: 50
+                  example: +94 11 700 1234
+                latitude:
+                  type: number
+                  format: float
+                  nullable: true
+                  minimum: -90
+                  maximum: 90
+                  example: 6.927079
+                longitude:
+                  type: number
+                  format: float
+                  nullable: true
+                  minimum: -180
+                  maximum: 180
+                  example: 79.861244
+                is_active:
+                  type: boolean
+                  default: true
+                  example: true
+      responses:
+        '201':
+          description: Garage created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Garage created successfully
+                  data:
+                    type: object
+                    properties:
+                      garage:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                            example: 6
+                          name:
+                            type: string
+                            example: Rapid Route Repairs
+                          address:
+                            type: string
+                            example: 18 Baseline Road, Colombo
+                          city:
+                            type: string
+                            nullable: true
+                            example: Colombo
+                          phone:
+                            type: string
+                            nullable: true
+                            example: +94 11 700 1234
+                          latitude:
+                            type: number
+                            format: float
+                            nullable: true
+                            example: 6.927079
+                          longitude:
+                            type: number
+                            format: float
+                            nullable: true
+                            example: 79.861244
+                          is_active:
+                            type: integer
+                            example: 1
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Garage already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: error
+                  message:
+                    type: string
+                    example: A garage with the same name and address already exists
 
   /garages/{id}:
     get:
@@ -1927,6 +2293,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+<<<<<<< Updated upstream
   /route-breakdowns:
     get:
       tags:
@@ -1943,10 +2310,21 @@ paths:
         - cookieAuth: []
       parameters:
         - name: status
+=======
+  /route-breakdowns/garages:
+    get:
+      tags:
+        - Route Breakdowns
+      summary: List active garages for route-breakdown workflow
+      description: Returns active garages used by driver nearby garage views and supervisor approval flows.
+      parameters:
+        - name: q
+>>>>>>> Stashed changes
           in: query
           required: false
           schema:
             type: string
+<<<<<<< Updated upstream
         - name: severity
           in: query
           required: false
@@ -1954,13 +2332,20 @@ paths:
             type: string
             enum: [low, medium, high, critical]
         - name: breakdown_type
+=======
+        - name: city
+>>>>>>> Stashed changes
           in: query
           required: false
           schema:
             type: string
       responses:
         '200':
+<<<<<<< Updated upstream
           description: Route breakdown reports retrieved successfully
+=======
+          description: Route-breakdown garages fetched successfully
+>>>>>>> Stashed changes
           content:
             application/json:
               schema:
@@ -1972,6 +2357,7 @@ paths:
                   data:
                     type: object
                     properties:
+<<<<<<< Updated upstream
                       breakdowns:
                         type: array
                         items:
@@ -2133,6 +2519,45 @@ paths:
                     example: success
                   data:
                     type: object
+=======
+                      garages:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 1
+                            name:
+                              type: string
+                              example: AutoCare Service Center
+                            address:
+                              type: string
+                              example: 123 Galle Road, Colombo 03
+                            city:
+                              type: string
+                              nullable: true
+                              example: Colombo
+                            phone:
+                              type: string
+                              nullable: true
+                              example: +94 11 234 5678
+                            latitude:
+                              type: number
+                              format: float
+                              nullable: true
+                            longitude:
+                              type: number
+                              format: float
+                              nullable: true
+                            is_active:
+                              type: integer
+                              example: 1
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+>>>>>>> Stashed changes
 
   # ==================== ROUTE BREAKDOWN GARAGE WORKFLOW ====================
   /route-breakdowns/{id}/garage-approval:
@@ -2476,29 +2901,68 @@ components:
       properties:
         id:
           type: integer
-          example: 1
-        name:
+          example: 42
+        sparepart_id:
           type: string
-          example: "Product Name"
+          example: "SPR-121"
         sku:
           type: string
-          example: "SKU-001"
+          nullable: true
+          example: null
+        name:
+          type: string
+          example: "Hydraulic Pump"
         description:
           type: string
-          example: "Product description"
+          nullable: true
+          example: "High-pressure hydraulic pump"
+        category:
+          type: string
+          enum: [machines, vehicles]
+          example: machines
         quantity:
           type: integer
-          example: 100
-        price:
+          example: 28
+        unit_price:
           type: number
-          format: decimal
-          example: 1500.00
+          format: float
+          example: 0
+        reorder_level:
+          type: integer
+          example: 10
+        low_stock_threshold:
+          type: integer
+          example: 10
+        compatible_machines:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+          example: ["LPG Cylinder Filling Machine"]
+        compatible_vehicles:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+          example: []
+        location:
+          type: string
+          nullable: true
+          example: "LOCATION 1"
+        is_active:
+          type: integer
+          enum: [0, 1]
+          example: 1
         created_at:
           type: string
           format: date-time
+          example: "2026-04-17T10:15:00Z"
         updated_at:
           type: string
           format: date-time
+          example: "2026-04-17T10:15:00Z"
 
     Notification:
       type: object

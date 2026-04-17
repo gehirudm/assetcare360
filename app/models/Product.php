@@ -11,6 +11,7 @@ require_once __DIR__ . '/BaseModel.php';
  */
 class Product extends BaseModel {
     protected $table = 'spareparts';
+    private $schemaCache = [];
     
     /**
      * Define table schema
@@ -27,6 +28,7 @@ class Product extends BaseModel {
             'quantity' => 'INT DEFAULT 0',
             'unit_price' => 'DECIMAL(10,2) DEFAULT 0.00',
             'reorder_level' => 'INT DEFAULT 10',
+            'low_stock_threshold' => 'INT DEFAULT 10',
             'compatible_machines' => 'JSON NULL',
             'compatible_vehicles' => 'JSON NULL',
             'location' => 'VARCHAR(255) NULL',
@@ -46,32 +48,53 @@ class Product extends BaseModel {
         return [
             'idx_category' => 'category',
             'idx_active' => 'is_active',
-            'idx_reorder' => 'quantity, reorder_level'
+            'idx_reorder' => 'quantity, reorder_level',
+            'idx_low_stock_threshold' => 'quantity, low_stock_threshold'
         ];
+    }
+
+    private function columnExists($column) {
+        if (array_key_exists($column, $this->schemaCache)) {
+            return $this->schemaCache[$column];
+        }
+
+        $stmt = $this->db->prepare(
+            'SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?'
+        );
+        $stmt->execute([$this->table, $column]);
+
+        $exists = (int)$stmt->fetchColumn() > 0;
+        $this->schemaCache[$column] = $exists;
+
+        return $exists;
+    }
+
+    private function thresholdExpression() {
+        if ($this->columnExists('low_stock_threshold')) {
+            return 'COALESCE(low_stock_threshold, reorder_level, 10)';
+        }
+
+        return 'COALESCE(reorder_level, 10)';
+    }
+
+    public function supportsLowStockThreshold() {
+        return $this->columnExists('low_stock_threshold');
     }
     
     /**
      * Generate next sparepart ID in format SPR-001, SPR-002, etc.
      */
     public function generateProductId() {
-        $sql = "SELECT sparepart_id FROM `{$this->table}` ORDER BY id DESC LIMIT 1";
+        $sql = "SELECT MAX(CAST(SUBSTRING(sparepart_id, 5) AS UNSIGNED)) AS max_sequence
+                FROM `{$this->table}`
+                WHERE sparepart_id REGEXP '^SPR-[0-9]+$'";
         $stmt = $this->db->query($sql);
-        $lastProduct = $stmt->fetch();
-        
-        if (!$lastProduct || empty($lastProduct['sparepart_id'])) {
-            return 'SPR-001';
-        }
-        
-        // Extract the numeric part from SPR-XXX format
-        $lastId = $lastProduct['sparepart_id'];
-        preg_match('/SPR-(\\d+)/', $lastId, $matches);
-        
-        if (!empty($matches[1])) {
-            $nextNumber = intval($matches[1]) + 1;
-            return 'SPR-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
-        }
-        
-        return 'SPR-001';
+        $result = $stmt->fetch();
+
+        $maxSequence = (int)($result['max_sequence'] ?? 0);
+        $nextNumber = $maxSequence + 1;
+
+        return 'SPR-' . str_pad((string)$nextNumber, 3, '0', STR_PAD_LEFT);
     }
     
     /**
@@ -99,9 +122,10 @@ class Product extends BaseModel {
      * Get products that need reordering
      */
     public function getProductsNeedingReorder() {
+        $thresholdExpression = $this->thresholdExpression();
         $sql = "SELECT * FROM `{$this->table}` 
                 WHERE is_active = 1 
-                AND quantity <= reorder_level 
+            AND quantity <= {$thresholdExpression} 
                 ORDER BY quantity ASC";
         $stmt = $this->query($sql);
         return $stmt->fetchAll();
@@ -146,10 +170,13 @@ class Product extends BaseModel {
      * Get low stock products count
      */
     public function getLowStockCount() {
-        return $this->count([
-            'is_active' => 1,
-            // Custom SQL for complex conditions can be added via query() method
-        ]);
+        $thresholdExpression = $this->thresholdExpression();
+        $sql = "SELECT COUNT(*) FROM `{$this->table}`
+                WHERE is_active = 1
+                AND quantity <= {$thresholdExpression}";
+
+        $stmt = $this->query($sql);
+        return (int)$stmt->fetchColumn();
     }
     
     /**
@@ -170,11 +197,12 @@ class Product extends BaseModel {
      * Get product statistics
      */
     public function getStatistics() {
+        $thresholdExpression = $this->thresholdExpression();
         $sql = "SELECT 
                     COUNT(*) as total_products,
                     SUM(quantity) as total_quantity,
                     SUM(quantity * unit_price) as total_value,
-                    COUNT(CASE WHEN quantity <= reorder_level THEN 1 END) as low_stock_count
+                    COUNT(CASE WHEN quantity <= {$thresholdExpression} THEN 1 END) as low_stock_count
                 FROM `{$this->table}` 
                 WHERE is_active = 1";
         
