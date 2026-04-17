@@ -3,6 +3,7 @@
 ## Current Focus
 Dashboard Web Components refactor execution for the active Supervisor residual slice remains complete (TASK034, TASK035, TASK036). TASK033 and TASK032 are also complete. Latest active workflow correction for route-breakdown garage handling is now completed as TASK039. Remaining non-dashboard backlog primarily includes migration verification.
 
+<<<<<<< Updated upstream
 ### Route-breakdown driver GPS + map-based garage approval completed (April 17, 2026)
 - Completed TASK042 end-to-end for driver coordinate capture and supervisor map-based garage approval.
 - Backend/data updates complete:
@@ -20,6 +21,30 @@ Dashboard Web Components refactor execution for the active Supervisor residual s
 		- `VAL_STAGE=before`: passed (2/2 desktop+mobile)
 		- `VAL_STAGE=after`: passed (2/2 desktop+mobile)
 		- PHP lint, JS syntax checks, and editor diagnostics passed for touched files.
+=======
+### Transportation Manager garage management + supervisor map approval update (April 17, 2026)
+- Implemented backend garage creation endpoint in `app/controllers/GarageController.php` and registered `POST /garages` in `public/index.php`.
+- Added missing `GET /route-breakdowns/garages` route registration in `public/index.php` for route-breakdown garage workflows.
+- Added TM dashboard garages section + component (`pages/dashboard/transportation-manager/components/garages/*`) with create/search/list/call/directions and section-refresh orchestration.
+- Enhanced shared ticket page garage approval modal (`pages/view-ticket/index.html`, `pages/view-ticket/script.js`) with map panel, Leaflet integration, marker/list synchronization, and modal cleanup.
+- Updated API contract and collection docs (`testing/openapi.yaml`, `testing/postman/postman_collection.json`) for garage create/list and route-breakdown garage list endpoints.
+- Validation status:
+	- Syntax checks passed for touched PHP/JS files.
+	- Touched-file diagnostics show no new errors.
+	- Playwright validation passed: `VAL_STAGE=after` for `testing/ui-validation/transportation-manager-garages/validate-transportation-manager-garages.spec.js` (desktop + mobile).
+
+### Inventory usage tracking view-chart popup update (April 17, 2026)
+- Updated `pages/dashboard/inventory-manager/components/usage-tracking` so table row action now uses `View Usage` instead of `Update`.
+- Replaced Issue Sparepart modal flow in this component with a dedicated Usage Overview popup showing:
+	- usage summary stats
+	- per-date usage line chart
+	- selectable per-date detail cards and a dedicated selected-date records panel
+	- recent issuance history table
+- Added stage-based UI validation scope `testing/ui-validation/inventory-usage-tracking/validate-inventory-usage-tracking.spec.js` with desktop/mobile before and after artifacts.
+- Validation status:
+	- `VAL_STAGE=before`: passed (desktop + mobile)
+	- `VAL_STAGE=after`: passed (desktop + mobile)
+>>>>>>> Stashed changes
 
 ### Vehicle government fuel QR image flow completed (April 16, 2026)
 - Completed TASK041 for Sri Lanka external-fuel QR support across vehicle management, TM dashboard, and Driver dashboard.
