@@ -4,6 +4,8 @@ require_once __DIR__ . '/../models/Product.php';
 
 class ProductService {
     private $productModel;
+    private const ALLOWED_CATEGORIES = ['machines', 'vehicles'];
+    private const SPAREPART_ID_PATTERN = '/^SPR-\d+$/';
     
     public function __construct() {
         $this->productModel = new Product();
@@ -94,41 +96,90 @@ class ProductService {
      */
     public function createProduct($data) {
         try {
-            // Validate required fields
-            $required = ['name', 'category', 'quantity', 'location'];
-            foreach ($required as $field) {
-                if (empty($data[$field])) {
-                    return [
-                        'status' => 'error',
-                        'message' => ucfirst($field) . ' is required'
-                    ];
-                }
+            $name = trim((string)($data['name'] ?? ''));
+            $category = strtolower(trim((string)($data['category'] ?? '')));
+
+            if ($name === '') {
+                return [
+                    'status' => 'error',
+                    'message' => 'Name is required'
+                ];
             }
-            
-            // Auto-generate sparepart_id if not provided
-            if (empty($data['sparepart_id'])) {
-                $data['sparepart_id'] = $this->productModel->generateProductId();
+
+            if (!in_array($category, self::ALLOWED_CATEGORIES, true)) {
+                return [
+                    'status' => 'error',
+                    'message' => 'Category must be either machines or vehicles'
+                ];
             }
+
+            $thresholdInput = $data['low_stock_threshold'] ?? $data['reorder_level'] ?? null;
+            $threshold = $this->normalizeThreshold($thresholdInput);
+
+            if ($threshold === null) {
+                return [
+                    'status' => 'error',
+                    'message' => 'Low stock threshold must be a positive integer'
+                ];
+            }
+
+            $requestedSparepartId = trim((string)($data['sparepart_id'] ?? ''));
+            $data['sparepart_id'] = $this->resolveNextAvailableSparepartId($requestedSparepartId);
+
+            $data['name'] = $name;
+            $data['category'] = $category;
             
             // Remove fields that don't belong to the spareparts table
             $additionOnlyFields = ['warranty_period', 'warranty_start', 'warranty_terms', 'supplier_contact', 'supplier_address', 'supplier'];
             foreach ($additionOnlyFields as $field) {
                 unset($data[$field]);
             }
+
+            // Catalog creation is metadata-only. Initial stock is always added from the additions flow.
+            $data['quantity'] = 0;
+            $data['reorder_level'] = $threshold;
+
+            if ($this->productModel->supportsLowStockThreshold()) {
+                $data['low_stock_threshold'] = $threshold;
+            } else {
+                unset($data['low_stock_threshold']);
+            }
+
+            if ($category === 'machines') {
+                $data['compatible_machines'] = json_encode($this->normalizeCompatibility($data['compatible_machines'] ?? []));
+                $data['compatible_vehicles'] = json_encode([]);
+            } else {
+                $data['compatible_vehicles'] = json_encode($this->normalizeCompatibility($data['compatible_vehicles'] ?? []));
+                $data['compatible_machines'] = json_encode([]);
+            }
+
+            // Location and supplier details are tracked by stock additions, not by catalog creation.
+            unset($data['location']);
             
             // Set default values
             if (!isset($data['unit_price'])) {
                 $data['unit_price'] = 0.00;
             }
-            if (!isset($data['reorder_level'])) {
-                $data['reorder_level'] = 10;
-            }
             if (!isset($data['is_active'])) {
                 $data['is_active'] = 1;
             }
-            
-            // Create the product
-            $productId = $this->productModel->create($data);
+
+            $productId = null;
+            $maxAttempts = 3;
+            for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+                try {
+                    $productId = $this->productModel->create($data);
+                    break;
+                } catch (PDOException $e) {
+                    if ($this->isDuplicateSparepartIdError($e) && $attempt < $maxAttempts) {
+                        // Handle concurrent creation races by rolling forward to the next ID.
+                        $data['sparepart_id'] = $this->resolveNextAvailableSparepartId('');
+                        continue;
+                    }
+
+                    throw $e;
+                }
+            }
             
             if ($productId) {
                 return [
@@ -137,7 +188,7 @@ class ProductService {
                     'message' => 'Product created successfully'
                 ];
             }
-            
+
             return [
                 'status' => 'error',
                 'message' => 'Failed to create product'
@@ -174,11 +225,91 @@ class ProductService {
             
             // Don't allow updating sparepart_id
             unset($data['sparepart_id']);
+
+            if (array_key_exists('name', $data)) {
+                $name = trim((string)$data['name']);
+                if ($name === '') {
+                    return [
+                        'status' => 'error',
+                        'message' => 'Name is required'
+                    ];
+                }
+                $data['name'] = $name;
+            }
             
             // Remove fields that don't belong to the spareparts table
             $additionOnlyFields = ['warranty_period', 'warranty_start', 'warranty_terms', 'supplier_contact', 'supplier_address', 'supplier'];
             foreach ($additionOnlyFields as $field) {
                 unset($data[$field]);
+            }
+
+            // Keep catalog metadata clean; stock movement should happen via additions/usage.
+            unset($data['location']);
+
+            $categoryChanged = false;
+            if (array_key_exists('category', $data)) {
+                $category = strtolower(trim((string)$data['category']));
+                if (!in_array($category, self::ALLOWED_CATEGORIES, true)) {
+                    return [
+                        'status' => 'error',
+                        'message' => 'Category must be either machines or vehicles'
+                    ];
+                }
+                $categoryChanged = $category !== strtolower((string)($product['category'] ?? ''));
+                $data['category'] = $category;
+            }
+
+            $thresholdInput = null;
+            if (array_key_exists('low_stock_threshold', $data)) {
+                $thresholdInput = $data['low_stock_threshold'];
+            } elseif (array_key_exists('reorder_level', $data)) {
+                $thresholdInput = $data['reorder_level'];
+            }
+
+            if ($thresholdInput !== null) {
+                $threshold = $this->normalizeThreshold($thresholdInput);
+                if ($threshold === null) {
+                    return [
+                        'status' => 'error',
+                        'message' => 'Low stock threshold must be a positive integer'
+                    ];
+                }
+
+                $data['reorder_level'] = $threshold;
+                if ($this->productModel->supportsLowStockThreshold()) {
+                    $data['low_stock_threshold'] = $threshold;
+                } else {
+                    unset($data['low_stock_threshold']);
+                }
+            } else {
+                unset($data['low_stock_threshold']);
+            }
+
+            $effectiveCategory = $data['category'] ?? strtolower((string)($product['category'] ?? ''));
+            $compatibilityTouched =
+                array_key_exists('compatible_machines', $data) ||
+                array_key_exists('compatible_vehicles', $data) ||
+                $categoryChanged;
+
+            if ($compatibilityTouched) {
+                $existingMachines = $this->normalizeCompatibility($product['compatible_machines'] ?? []);
+                $existingVehicles = $this->normalizeCompatibility($product['compatible_vehicles'] ?? []);
+
+                if ($effectiveCategory === 'machines') {
+                    $data['compatible_machines'] = json_encode(
+                        array_key_exists('compatible_machines', $data)
+                            ? $this->normalizeCompatibility($data['compatible_machines'])
+                            : ($categoryChanged ? [] : $existingMachines)
+                    );
+                    $data['compatible_vehicles'] = json_encode([]);
+                } else {
+                    $data['compatible_vehicles'] = json_encode(
+                        array_key_exists('compatible_vehicles', $data)
+                            ? $this->normalizeCompatibility($data['compatible_vehicles'])
+                            : ($categoryChanged ? [] : $existingVehicles)
+                    );
+                    $data['compatible_machines'] = json_encode([]);
+                }
             }
             
             $success = $this->productModel->update($dbId, $data);
@@ -211,7 +342,7 @@ class ProductService {
             // Check if it's a product_id (starts with SPR-) or database ID (numeric)
             if (preg_match('/^SPR-\d+$/', $id)) {
                 // It's a product_id like SPR-001
-                $product = $this->productModel->findOne(['product_id' => $id, 'is_active' => 1]);
+                $product = $this->productModel->findOne(['sparepart_id' => $id, 'is_active' => 1]);
                 if ($product) {
                     $id = $product['id']; // Use database ID for update
                 }
@@ -282,5 +413,68 @@ class ProductService {
                 'message' => 'Failed to update quantity: ' . $e->getMessage()
             ];
         }
+    }
+
+    private function resolveNextAvailableSparepartId($candidateId = '') {
+        $candidateId = strtoupper(trim((string)$candidateId));
+
+        if ($candidateId !== '' && !preg_match(self::SPAREPART_ID_PATTERN, $candidateId)) {
+            $candidateId = '';
+        }
+
+        if ($candidateId !== '') {
+            $exists = $this->productModel->findOne(['sparepart_id' => $candidateId]);
+            if (!$exists) {
+                return $candidateId;
+            }
+        }
+
+        $generated = $this->productModel->generateProductId();
+        while ($this->productModel->findOne(['sparepart_id' => $generated])) {
+            $generated = $this->productModel->generateProductId();
+        }
+
+        return $generated;
+    }
+
+    private function isDuplicateSparepartIdError(PDOException $e) {
+        $message = strtolower((string)$e->getMessage());
+        return strpos($message, 'duplicate') !== false && strpos($message, 'sparepart_id') !== false;
+    }
+
+    private function normalizeThreshold($value) {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (!is_numeric($value)) {
+            return null;
+        }
+
+        $threshold = (int)$value;
+        return $threshold > 0 ? $threshold : null;
+    }
+
+    private function normalizeCompatibility($value) {
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $value = $decoded;
+            }
+        }
+
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($value as $item) {
+            $name = trim((string)$item);
+            if ($name !== '') {
+                $normalized[] = $name;
+            }
+        }
+
+        return array_values(array_unique($normalized));
     }
 }
