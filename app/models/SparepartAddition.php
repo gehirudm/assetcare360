@@ -22,8 +22,6 @@ class SparepartAddition extends BaseModel {
             'warranty_period' => 'INT DEFAULT NULL',
             'warranty_start' => 'DATE DEFAULT NULL',
             'warranty_terms' => 'TEXT DEFAULT NULL',
-            'compatible_machines' => 'LONGTEXT DEFAULT NULL',
-            'compatible_vehicles' => 'LONGTEXT DEFAULT NULL',
             'reference' => 'VARCHAR(255) DEFAULT NULL',
             'notes' => 'TEXT DEFAULT NULL',
             'added_by' => 'VARCHAR(100) DEFAULT NULL',
@@ -103,7 +101,7 @@ class SparepartAddition extends BaseModel {
             'sparepart_id', 'sparepart_name', 'category', 'location',
             'quantity_added', 'received_date', 'supplier', 'supplier_contact',
             'supplier_address', 'warranty_period', 'warranty_start', 'warranty_terms',
-            'compatible_machines', 'compatible_vehicles', 'reference', 'notes'
+            'reference', 'notes'
         ];
         
         $updates = [];
