@@ -3,6 +3,24 @@
 ## Current Focus
 Dashboard Web Components refactor execution for the active Supervisor residual slice remains complete (TASK034, TASK035, TASK036). TASK033 and TASK032 are also complete. Latest active workflow correction for route-breakdown garage handling is now completed as TASK039. Remaining non-dashboard backlog primarily includes migration verification.
 
+### Route-breakdown driver GPS + map-based garage approval completed (April 17, 2026)
+- Completed TASK042 end-to-end for driver coordinate capture and supervisor map-based garage approval.
+- Backend/data updates complete:
+	- Added and applied migration `055_add_coordinates_to_route_breakdowns.php`.
+	- `vehicle_breakdown_inroute` now stores `breakdown_latitude` and `breakdown_longitude`.
+	- `RouteBreakdownController` create/update now validate/persist coordinate pairs.
+- Frontend updates complete:
+	- Driver route-breakdown modal now captures browser geolocation and requires GPS capture before create submit.
+	- Supervisor garage approval modal now renders driver + garage markers and allows marker-based garage selection.
+	- Shared `pages/view-ticket` garage approval modal now includes map container, marker rendering, and marker-driven selection.
+- API contract + validation:
+	- Updated `testing/openapi.yaml` route-breakdown CRUD/stats docs and coordinate-aware schemas.
+	- Updated and executed `testing/ui-validation/route-breakdown-garage-workflow/validate-route-breakdown-garage-workflow.spec.js`.
+	- Validation evidence:
+		- `VAL_STAGE=before`: passed (2/2 desktop+mobile)
+		- `VAL_STAGE=after`: passed (2/2 desktop+mobile)
+		- PHP lint, JS syntax checks, and editor diagnostics passed for touched files.
+
 ### Vehicle government fuel QR image flow completed (April 16, 2026)
 - Completed TASK041 for Sri Lanka external-fuel QR support across vehicle management, TM dashboard, and Driver dashboard.
 - Backend updates complete:
