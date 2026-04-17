@@ -11,6 +11,7 @@
     <!-- Dashboard shell styles first, then detail overrides -->
     <link rel="stylesheet" href="../dashboard/technical-officer/style.css">
     <link rel="stylesheet" href="../dashboard/technical-officer/view-ticket/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <style>
         .assign-tech-list {
             display: flex;
@@ -34,6 +35,12 @@
             border-radius: 8px;
             background: #fff;
             font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .assign-tech-item.selected {
+            border-color: var(--royal-blue);
+            background: #eff6ff;
         }
 
         .assign-tech-name {
@@ -59,6 +66,61 @@
             border: 1px solid #fde68a;
             border-radius: 8px;
             padding: 8px 10px;
+        }
+
+        .garage-approval-layout {
+            display: grid;
+            grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
+            gap: 14px;
+            align-items: start;
+        }
+
+        .garage-map-panel {
+            border: 1px solid var(--stone-200);
+            border-radius: var(--radius-sm);
+            background: #fff;
+            padding: 10px;
+        }
+
+        .garage-map-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-700);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .garage-approval-map {
+            width: 100%;
+            height: 260px;
+            border-radius: 8px;
+            border: 1px solid var(--stone-200);
+            background: var(--stone-100);
+            overflow: hidden;
+        }
+
+        .garage-map-hint {
+            margin-top: 8px;
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+
+        .garage-map-hint.error {
+            color: var(--danger);
+        }
+
+        @media (max-width: 900px) {
+            .garage-approval-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .garage-approval-map {
+                height: 220px;
+            }
         }
     </style>
 </head>
@@ -637,11 +699,19 @@
                         <input type="text" class="form-input" id="garageApprovalRouteCode" readonly>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Select Nearby Garage <span class="required">*</span></label>
-                        <div id="garageApprovalList" class="assign-tech-list"></div>
-                        <div id="garageApprovalSelectionWarning" class="assign-warning" style="display:none;">
-                            Please select one nearby garage to approve.
+                    <div class="garage-approval-layout">
+                        <div class="form-group">
+                            <label class="form-label">Select Nearby Garage <span class="required">*</span></label>
+                            <div id="garageApprovalList" class="assign-tech-list"></div>
+                            <div id="garageApprovalSelectionWarning" class="assign-warning" style="display:none;">
+                                Please select one nearby garage to approve.
+                            </div>
+                        </div>
+
+                        <div class="garage-map-panel">
+                            <div class="garage-map-title"><i class="fas fa-map-marked-alt"></i> Garage Locations</div>
+                            <div id="garageApprovalMap" class="garage-approval-map"></div>
+                            <p id="garageApprovalMapHint" class="garage-map-hint">Loading garage coordinates...</p>
                         </div>
                     </div>
 
@@ -689,6 +759,7 @@
     <script src="../components/shared/confirm-dialog.js"></script>
     <script src="../js/dashboard-init.js"></script>
     <script src="../js/fault-ticket-detail-template.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="./script.js"></script>
 </body>
 </html>
