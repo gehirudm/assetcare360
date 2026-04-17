@@ -67,6 +67,13 @@ async function refreshFuelLog() {
     }
 }
 
+async function refreshGarages() {
+    const section = getComponent('tm-garages');
+    if (section && typeof section.refresh === 'function') {
+        await section.refresh();
+    }
+}
+
 async function refreshFleet() {
     const section = getComponent('tm-fleet');
     if (section && typeof section.refresh === 'function') {
@@ -225,6 +232,19 @@ function setupFuelLogEvents() {
     });
 }
 
+function setupGaragesEvents() {
+    const garages = getComponent('tm-garages');
+    if (!garages || garages._eventsBound) return;
+    garages._eventsBound = true;
+
+    garages.addEventListener('tm-garages:add', () => {
+        const modal = getComponent('tm-add-garage-modal');
+        if (modal && typeof modal.open === 'function') {
+            modal.open();
+        }
+    });
+}
+
 function setupTripLogEvents() {
     const tripLog = getComponent('tm-trip-log');
     if (!tripLog || tripLog._eventsBound) return;
@@ -347,10 +367,19 @@ function setupModalEvents() {
         await refreshDashboardOverview();
     });
 
+    document.addEventListener('tm-modal:garage-added', async () => {
+        await refreshGarages();
+    });
+
     // Refresh fuel log whenever the section becomes visible
     document.addEventListener('section-change', async (event) => {
         if (event.detail?.section === 'fuel-log') {
             await refreshFuelLog();
+            return;
+        }
+
+        if (event.detail?.section === 'garages') {
+            await refreshGarages();
             return;
         }
 
@@ -377,6 +406,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         setupDashboardOverviewEvents();
         setupTripsEvents();
         setupFuelLogEvents();
+        setupGaragesEvents();
         setupTripLogEvents();
         setupFleetEvents();
         setupFleetDetailsEvents();
