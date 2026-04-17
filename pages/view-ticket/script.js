@@ -8,6 +8,9 @@ let workUpdates = [];
 let currentRoleContext = null;
 let routeBreakdownContext = null;
 let availableRouteGarages = [];
+let routeGarageMap = null;
+let routeGarageMapGarageMarkers = [];
+let routeGarageMapLeafletPromise = null;
 
 const STATUS_ORDER = [
     'open',
@@ -1130,8 +1133,9 @@ async function openGarageApprovalModal() {
         notesField.value = '';
     }
 
-    await loadGaragesForRouteApproval();
     document.getElementById('garageApprovalModal').classList.add('active');
+    await loadGaragesForRouteApproval();
+    await renderGarageApprovalMap();
 }
 
 function closeGarageApprovalModal() {
@@ -1144,6 +1148,8 @@ function closeGarageApprovalModal() {
     if (warning) {
         warning.style.display = 'none';
     }
+
+    destroyRouteGarageMap();
 }
 
 async function loadGaragesForRouteApproval() {
@@ -1155,7 +1161,7 @@ async function loadGaragesForRouteApproval() {
     listEl.innerHTML = '<p class="step-hint"><i class="fas fa-spinner fa-spin"></i> Loading nearby garages...</p>';
 
     try {
-        const response = await API.get('/route-breakdowns/garages');
+        const response = await API.get('/garages');
         availableRouteGarages = Array.isArray(response?.data?.garages)
             ? response.data.garages
             : (Array.isArray(response?.data) ? response.data : []);
@@ -1171,7 +1177,7 @@ async function loadGaragesForRouteApproval() {
             const phone = garage.phone || 'No phone';
             return `
                 <label class="assign-tech-item">
-                    <span><input type="radio" name="approveGarageChoice" value="${Number(garage.id)}"></span>
+                    <span><input type="radio" name="approveGarageChoice" value="${Number(garage.id)}" data-latitude="${garage.latitude ?? ''}" data-longitude="${garage.longitude ?? ''}"></span>
                     <span style="flex:1; min-width:0;">
                         <span class="assign-tech-name">${name}</span>
                         <span class="assign-tech-meta"><i class="fas fa-map-marker-alt"></i> ${address}</span>
@@ -1194,6 +1200,179 @@ function updateGarageApprovalSelectionWarning() {
 
     const selected = document.querySelector('input[name="approveGarageChoice"]:checked');
     warning.style.display = selected ? 'none' : 'block';
+
+    syncGarageSelectionOnMap(Number(selected?.value || 0));
+}
+
+function getRouteBreakdownCoordinates() {
+    const latitude = Number(routeBreakdownContext?.breakdown_latitude);
+    const longitude = Number(routeBreakdownContext?.breakdown_longitude);
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return null;
+    }
+
+    return [latitude, longitude];
+}
+
+function destroyRouteGarageMap() {
+    if (routeGarageMap && typeof routeGarageMap.remove === 'function') {
+        routeGarageMap.remove();
+    }
+
+    routeGarageMap = null;
+    routeGarageMapGarageMarkers = [];
+}
+
+async function ensureLeafletForGarageMap() {
+    if (typeof window.L !== 'undefined') {
+        return true;
+    }
+
+    if (!routeGarageMapLeafletPromise) {
+        routeGarageMapLeafletPromise = new Promise((resolve) => {
+            const existingScript = document.getElementById('leaflet-script');
+            if (existingScript) {
+                existingScript.addEventListener('load', () => resolve(true), { once: true });
+                existingScript.addEventListener('error', () => resolve(false), { once: true });
+                return;
+            }
+
+            if (!document.getElementById('leaflet-stylesheet')) {
+                const stylesheet = document.createElement('link');
+                stylesheet.id = 'leaflet-stylesheet';
+                stylesheet.rel = 'stylesheet';
+                stylesheet.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+                document.head.appendChild(stylesheet);
+            }
+
+            const script = document.createElement('script');
+            script.id = 'leaflet-script';
+            script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+            script.onload = () => resolve(true);
+            script.onerror = () => resolve(false);
+            document.head.appendChild(script);
+        });
+    }
+
+    return routeGarageMapLeafletPromise;
+}
+
+async function renderGarageApprovalMap() {
+    const mapEl = document.getElementById('garageApprovalMap');
+    const mapHintEl = document.getElementById('garageApprovalMapHint');
+    if (!mapEl) {
+        return;
+    }
+
+    const leafletReady = await ensureLeafletForGarageMap();
+    if (!leafletReady || typeof window.L === 'undefined') {
+        if (mapHintEl) {
+            mapHintEl.textContent = 'Unable to load map resources. You can still approve using the list below.';
+        }
+        return;
+    }
+
+    destroyRouteGarageMap();
+
+    routeGarageMap = window.L.map(mapEl, {
+        zoomControl: true,
+    });
+
+    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(routeGarageMap);
+
+    const bounds = [];
+    routeGarageMapGarageMarkers = [];
+
+    const driverCoordinates = getRouteBreakdownCoordinates();
+    if (driverCoordinates) {
+        const driverMarker = window.L.marker(driverCoordinates)
+            .addTo(routeGarageMap)
+            .bindPopup('<strong>Driver Location</strong>');
+        bounds.push(driverMarker.getLatLng());
+    }
+
+    availableRouteGarages.forEach((garage) => {
+        const latitude = Number(garage.latitude);
+        const longitude = Number(garage.longitude);
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+            return;
+        }
+
+        const marker = window.L.circleMarker([latitude, longitude], {
+            radius: 8,
+            color: '#1d4ed8',
+            fillColor: '#2563eb',
+            fillOpacity: 0.75,
+            weight: 2,
+        }).addTo(routeGarageMap);
+
+        marker.bindPopup(`<strong>${garage.name || 'Garage'}</strong><br>${garage.address || 'Address not available'}`);
+        marker.on('click', () => {
+            const radio = document.querySelector(`input[name="approveGarageChoice"][value="${Number(garage.id)}"]`);
+            if (radio) {
+                radio.checked = true;
+            }
+            updateGarageApprovalSelectionWarning();
+        });
+
+        routeGarageMapGarageMarkers.push({
+            garageId: Number(garage.id),
+            marker,
+        });
+
+        bounds.push(marker.getLatLng());
+    });
+
+    if (bounds.length > 1) {
+        routeGarageMap.fitBounds(bounds, { padding: [30, 30] });
+    } else if (bounds.length === 1) {
+        routeGarageMap.setView(bounds[0], 14);
+    } else {
+        routeGarageMap.setView([7.8731, 80.7718], 7);
+    }
+
+    const selected = document.querySelector('input[name="approveGarageChoice"]:checked');
+    syncGarageSelectionOnMap(Number(selected?.value || 0));
+
+    if (mapHintEl) {
+        if (!driverCoordinates) {
+            mapHintEl.textContent = 'Driver GPS coordinates are missing for this breakdown. Garages are still shown on the map.';
+        } else if (!routeGarageMapGarageMarkers.length) {
+            mapHintEl.textContent = 'No garages with coordinates are available. Select from the list below.';
+        } else {
+            mapHintEl.textContent = 'Click a garage marker to select it, then approve.';
+        }
+    }
+
+    setTimeout(() => {
+        if (routeGarageMap) {
+            routeGarageMap.invalidateSize();
+        }
+    }, 50);
+}
+
+function syncGarageSelectionOnMap(selectedGarageId) {
+    if (!routeGarageMapGarageMarkers.length) {
+        return;
+    }
+
+    routeGarageMapGarageMarkers.forEach(({ garageId, marker }) => {
+        const isSelected = selectedGarageId > 0 && garageId === selectedGarageId;
+        marker.setStyle({
+            color: isSelected ? '#991b1b' : '#1d4ed8',
+            fillColor: isSelected ? '#dc2626' : '#2563eb',
+            fillOpacity: isSelected ? 0.9 : 0.75,
+            radius: isSelected ? 10 : 8,
+        });
+
+        if (isSelected && routeGarageMap) {
+            routeGarageMap.panTo(marker.getLatLng());
+        }
+    });
 }
 
 async function submitGarageApproval(event) {

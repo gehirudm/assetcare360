@@ -1927,6 +1927,213 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /route-breakdowns:
+    get:
+      tags:
+        - Route Breakdowns
+      summary: List route breakdown reports
+      description: |
+        Retrieve route breakdown reports.
+
+        Role behavior:
+        - Driver: only own reports
+        - Supervisor/Admin and higher roles: all reports
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: severity
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [low, medium, high, critical]
+        - name: breakdown_type
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Route breakdown reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      breakdowns:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/RouteBreakdown'
+                      count:
+                        type: integer
+                        example: 3
+
+    post:
+      tags:
+        - Route Breakdowns
+      summary: Create route breakdown report
+      description: |
+        Submit an in-route vehicle breakdown report.
+
+        Driver GPS coordinates are required so supervisors can view the driver location on map-based garage approval flow.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RouteBreakdownInput'
+      responses:
+        '201':
+          description: Route breakdown created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Route breakdown created successfully
+                  data:
+                    type: object
+                    properties:
+                      route_breakdown_id:
+                        type: string
+                        example: RBD-001
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /route-breakdowns/{id}:
+    get:
+      tags:
+        - Route Breakdowns
+      summary: Get route breakdown details
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Route breakdown details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      breakdown:
+                        allOf:
+                          - $ref: '#/components/schemas/RouteBreakdown'
+                          - type: object
+                            properties:
+                              available_garages:
+                                type: array
+                                items:
+                                  type: object
+                              garage_updates:
+                                type: array
+                                items:
+                                  type: object
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Route Breakdowns
+      summary: Update route breakdown report
+      description: |
+        Update route breakdown fields.
+
+        If updating coordinates, provide both `breakdown_latitude` and `breakdown_longitude` together.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RouteBreakdownUpdateInput'
+      responses:
+        '200':
+          description: Route breakdown updated successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+    delete:
+      tags:
+        - Route Breakdowns
+      summary: Delete route breakdown report
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Route breakdown deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /route-breakdowns/stats:
+    get:
+      tags:
+        - Route Breakdowns
+      summary: Get route breakdown statistics
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Route breakdown stats retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+
   # ==================== ROUTE BREAKDOWN GARAGE WORKFLOW ====================
   /route-breakdowns/{id}/garage-approval:
     post:
@@ -5177,6 +5384,159 @@ components:
           type: string
           format: binary
           description: Required for external fueling.
+
+    RouteBreakdown:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12
+        route_breakdown_id:
+          type: string
+          example: RBD-012
+        vehicle_id:
+          type: integer
+          example: 4
+        driver_id:
+          type: integer
+          example: 17
+        number_plate:
+          type: string
+          nullable: true
+          example: LK-3456
+        driver_name:
+          type: string
+          nullable: true
+          example: Nimal Perera
+        breakdown_location:
+          type: string
+          example: A1 Highway, near Kadugannawa
+        breakdown_latitude:
+          type: number
+          format: float
+          nullable: true
+          minimum: -90
+          maximum: 90
+          example: 7.2512345
+        breakdown_longitude:
+          type: number
+          format: float
+          nullable: true
+          minimum: -180
+          maximum: 180
+          example: 80.5187654
+        breakdown_datetime:
+          type: string
+          format: date-time
+        breakdown_type:
+          type: string
+          example: engine
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+          example: high
+        description:
+          type: string
+        status:
+          type: string
+          example: In Progress
+        fault_ticket_id:
+          type: integer
+          nullable: true
+        fault_ticket_number:
+          type: string
+          nullable: true
+        garage_workflow_status:
+          type: string
+          nullable: true
+        approved_garage_id:
+          type: integer
+          nullable: true
+        approved_garage_name:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    RouteBreakdownInput:
+      type: object
+      required:
+        - vehicle_id
+        - breakdown_location
+        - breakdown_latitude
+        - breakdown_longitude
+        - breakdown_datetime
+        - breakdown_type
+        - severity
+        - description
+      properties:
+        vehicle_id:
+          type: integer
+          example: 4
+        breakdown_location:
+          type: string
+          example: A1 Highway, near Kadugannawa
+        breakdown_latitude:
+          type: number
+          format: float
+          minimum: -90
+          maximum: 90
+          example: 7.2512345
+        breakdown_longitude:
+          type: number
+          format: float
+          minimum: -180
+          maximum: 180
+          example: 80.5187654
+        breakdown_datetime:
+          type: string
+          format: date-time
+          example: '2026-04-17 10:30:00'
+        breakdown_type:
+          type: string
+          example: engine
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+          example: high
+        description:
+          type: string
+          example: Vehicle stopped with heavy engine noise and smoke.
+
+    RouteBreakdownUpdateInput:
+      type: object
+      properties:
+        breakdown_location:
+          type: string
+        breakdown_latitude:
+          type: number
+          format: float
+          nullable: true
+          minimum: -90
+          maximum: 90
+        breakdown_longitude:
+          type: number
+          format: float
+          nullable: true
+          minimum: -180
+          maximum: 180
+        breakdown_datetime:
+          type: string
+          format: date-time
+        breakdown_type:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        description:
+          type: string
+        status:
+          type: string
+          example: In Progress
 
     FaultTicket:
       type: object

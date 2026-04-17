@@ -207,14 +207,17 @@ class RouteBreakdownController {
             Response::error('vehicle_id, breakdown_location, breakdown_datetime, breakdown_type, severity and description are required', 400);
         }
 
+        $breakdownLatitude = $this->parseCoordinate($input['breakdown_latitude'] ?? null, 'breakdown_latitude', -90, 90, true);
+        $breakdownLongitude = $this->parseCoordinate($input['breakdown_longitude'] ?? null, 'breakdown_longitude', -180, 180, true);
+
         $stmt = $this->conn->query('SELECT COUNT(*) FROM vehicle_breakdown_inroute');
         $count = (int) $stmt->fetchColumn() + 1;
         $routeBreakdownId = 'RBD-' . str_pad((string) $count, 3, '0', STR_PAD_LEFT);
 
         $sql = "INSERT INTO vehicle_breakdown_inroute
-                (route_breakdown_id, breakdown_id, vehicle_id, driver_id, breakdown_location,
+                (route_breakdown_id, breakdown_id, vehicle_id, driver_id, breakdown_location, breakdown_latitude, breakdown_longitude,
                  breakdown_datetime, breakdown_type, severity, description, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')";
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([
@@ -223,6 +226,8 @@ class RouteBreakdownController {
             (int) $input['vehicle_id'],
             (int) RoleMiddleware::getCurrentUser()['id'],
             trim((string) $input['breakdown_location']),
+            $breakdownLatitude,
+            $breakdownLongitude,
             $input['breakdown_datetime'],
             trim((string) $input['breakdown_type']),
             trim((string) $input['severity']),
@@ -265,6 +270,33 @@ class RouteBreakdownController {
             if (isset($input[$field])) {
                 $fields[] = "$field = ?";
                 $params[] = is_string($input[$field]) ? trim($input[$field]) : $input[$field];
+            }
+        }
+
+        $hasLatitude = array_key_exists('breakdown_latitude', $input);
+        $hasLongitude = array_key_exists('breakdown_longitude', $input);
+        if ($hasLatitude || $hasLongitude) {
+            if (!$hasLatitude || !$hasLongitude) {
+                Response::error('Both breakdown_latitude and breakdown_longitude must be provided together', 400);
+            }
+
+            $latitudeRaw = $input['breakdown_latitude'];
+            $longitudeRaw = $input['breakdown_longitude'];
+
+            $isClearingCoordinates = ($latitudeRaw === null || $latitudeRaw === '') && ($longitudeRaw === null || $longitudeRaw === '');
+            if ($isClearingCoordinates) {
+                $fields[] = 'breakdown_latitude = ?';
+                $params[] = null;
+                $fields[] = 'breakdown_longitude = ?';
+                $params[] = null;
+            } else {
+                $latitude = $this->parseCoordinate($latitudeRaw, 'breakdown_latitude', -90, 90, true);
+                $longitude = $this->parseCoordinate($longitudeRaw, 'breakdown_longitude', -180, 180, true);
+
+                $fields[] = 'breakdown_latitude = ?';
+                $params[] = $latitude;
+                $fields[] = 'breakdown_longitude = ?';
+                $params[] = $longitude;
             }
         }
 
@@ -912,6 +944,26 @@ class RouteBreakdownController {
         $stmt->execute($params);
 
         return $stmt->fetchAll();
+    }
+
+    private function parseCoordinate($value, string $field, float $min, float $max, bool $required): ?float {
+        if ($value === null || $value === '') {
+            if ($required) {
+                Response::error($field . ' is required', 400);
+            }
+            return null;
+        }
+
+        if (!is_numeric($value)) {
+            Response::error($field . ' must be numeric', 400);
+        }
+
+        $numericValue = (float)$value;
+        if ($numericValue < $min || $numericValue > $max) {
+            Response::error($field . ' is out of range', 400);
+        }
+
+        return round($numericValue, 7);
     }
 
     private function getGarageUpdates(int $routeBreakdownId): array {

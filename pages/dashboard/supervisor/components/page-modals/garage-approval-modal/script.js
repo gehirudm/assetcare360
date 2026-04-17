@@ -4,6 +4,9 @@ class SupervisorGarageApprovalModal extends HTMLElement {
         this._initialized = false;
         this.currentBreakdown = null;
         this.garages = [];
+        this.map = null;
+        this.driverMarker = null;
+        this.garageMarkers = [];
     }
 
     connectedCallback() {
@@ -43,6 +46,14 @@ class SupervisorGarageApprovalModal extends HTMLElement {
                             </div>
 
                             <div class="form-group">
+                                <label class="form-label">Driver & Garage Map</label>
+                                <div id="garageApprovalMap" style="height:320px; border:1px solid #dbeafe; border-radius:10px; overflow:hidden; background:#f8fafc;"></div>
+                                <p id="garageApprovalMapHint" style="margin-top:8px; color:#64748b; font-size:12px;">
+                                    Driver location and registered garages will be shown here. Click a garage marker to select it.
+                                </p>
+                            </div>
+
+                            <div class="form-group">
                                 <label class="form-label" for="garageApprovalNotes">Approval Notes</label>
                                 <textarea id="garageApprovalNotes" class="form-textarea" placeholder="Optional instructions for the driver"></textarea>
                             </div>
@@ -71,6 +82,14 @@ class SupervisorGarageApprovalModal extends HTMLElement {
             event.preventDefault();
             await this.submitApproval();
         });
+
+        const garageSelect = this.querySelector('#garageApprovalSelect');
+        if (garageSelect) {
+            garageSelect.addEventListener('change', () => {
+                const selectedGarageId = Number(garageSelect.value || 0);
+                this.syncMapSelection(selectedGarageId);
+            });
+        }
     }
 
     async open(payload) {
@@ -90,8 +109,6 @@ class SupervisorGarageApprovalModal extends HTMLElement {
         this.querySelector('#garageApprovalNotes').value = '';
         this.renderMeta();
 
-        await this.loadGarages();
-
         this.modalElement.style.display = 'flex';
         this.modalElement.style.opacity = '0';
         document.body.style.overflow = 'hidden';
@@ -99,6 +116,9 @@ class SupervisorGarageApprovalModal extends HTMLElement {
         setTimeout(() => {
             this.modalElement.style.opacity = '1';
         }, 10);
+
+        await this.loadGarages();
+        await this.renderGarageMap();
     }
 
     close() {
@@ -110,6 +130,7 @@ class SupervisorGarageApprovalModal extends HTMLElement {
         setTimeout(() => {
             this.modalElement.style.display = 'none';
             document.body.style.overflow = '';
+            this.destroyMap();
         }, 200);
     }
 
@@ -156,6 +177,8 @@ class SupervisorGarageApprovalModal extends HTMLElement {
                     </option>
                 `).join('')}
             `;
+
+            this.syncMapSelection(preselectedId);
         } catch (error) {
             console.error('Failed to load garages for approval:', error);
             select.innerHTML = '<option value="">Failed to load garages</option>';
@@ -211,6 +234,179 @@ class SupervisorGarageApprovalModal extends HTMLElement {
             bubbles: true,
             detail: { message, type },
         }));
+    }
+
+    async renderGarageMap() {
+        const mapEl = this.querySelector('#garageApprovalMap');
+        const hintEl = this.querySelector('#garageApprovalMapHint');
+        if (!mapEl) {
+            return;
+        }
+
+        const leafletReady = await this.ensureLeafletLoaded();
+        if (!leafletReady || typeof window.L === 'undefined') {
+            if (hintEl) {
+                hintEl.textContent = 'Unable to load map resources. You can still approve using the garage dropdown.';
+            }
+            return;
+        }
+
+        this.destroyMap();
+
+        this.map = window.L.map(mapEl, {
+            zoomControl: true,
+        });
+
+        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors',
+        }).addTo(this.map);
+
+        this.garageMarkers = [];
+        const bounds = [];
+
+        const driverCoordinates = this.getDriverCoordinates();
+        if (driverCoordinates) {
+            this.driverMarker = window.L.marker(driverCoordinates)
+                .addTo(this.map)
+                .bindPopup('<strong>Driver Location</strong>');
+            bounds.push(driverCoordinates);
+        }
+
+        this.garages.forEach((garage) => {
+            const latitude = Number(garage.latitude);
+            const longitude = Number(garage.longitude);
+            if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+                return;
+            }
+
+            const marker = window.L.circleMarker([latitude, longitude], {
+                radius: 8,
+                color: '#1d4ed8',
+                fillColor: '#2563eb',
+                fillOpacity: 0.75,
+                weight: 2,
+            }).addTo(this.map);
+
+            marker.bindPopup(`<strong>${garage.name || 'Garage'}</strong><br>${garage.address || 'Address not available'}`);
+            marker.on('click', () => {
+                const select = this.querySelector('#garageApprovalSelect');
+                if (select) {
+                    select.value = String(garage.id);
+                }
+                this.syncMapSelection(Number(garage.id));
+            });
+
+            this.garageMarkers.push({
+                garageId: Number(garage.id),
+                marker,
+            });
+
+            bounds.push([latitude, longitude]);
+        });
+
+        if (bounds.length > 1) {
+            this.map.fitBounds(bounds, { padding: [30, 30] });
+        } else if (bounds.length === 1) {
+            this.map.setView(bounds[0], 14);
+        } else {
+            this.map.setView([7.8731, 80.7718], 7);
+        }
+
+        const selectedGarageId = Number(this.querySelector('#garageApprovalSelect')?.value || 0);
+        this.syncMapSelection(selectedGarageId);
+
+        if (hintEl) {
+            if (!driverCoordinates) {
+                hintEl.textContent = 'Driver GPS coordinates are missing for this report. Garage markers are still selectable.';
+            } else if (!this.garageMarkers.length) {
+                hintEl.textContent = 'No garages with coordinates were found. Use the dropdown to select a garage.';
+            } else {
+                hintEl.textContent = 'Click a garage marker or use the dropdown to select a garage for approval.';
+            }
+        }
+
+        setTimeout(() => {
+            if (this.map) {
+                this.map.invalidateSize();
+            }
+        }, 50);
+    }
+
+    syncMapSelection(selectedGarageId) {
+        if (!Array.isArray(this.garageMarkers) || !this.garageMarkers.length) {
+            return;
+        }
+
+        this.garageMarkers.forEach(({ garageId, marker }) => {
+            const isSelected = selectedGarageId > 0 && garageId === selectedGarageId;
+            marker.setStyle({
+                color: isSelected ? '#991b1b' : '#1d4ed8',
+                fillColor: isSelected ? '#dc2626' : '#2563eb',
+                fillOpacity: isSelected ? 0.9 : 0.75,
+                radius: isSelected ? 10 : 8,
+            });
+
+            if (isSelected && this.map) {
+                this.map.panTo(marker.getLatLng());
+            }
+        });
+    }
+
+    getDriverCoordinates() {
+        const source = this.currentBreakdown?.raw || this.currentBreakdown || {};
+        const latitude = Number(source.breakdown_latitude);
+        const longitude = Number(source.breakdown_longitude);
+
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+            return null;
+        }
+
+        return [latitude, longitude];
+    }
+
+    destroyMap() {
+        if (this.map && typeof this.map.remove === 'function') {
+            this.map.remove();
+        }
+
+        this.map = null;
+        this.driverMarker = null;
+        this.garageMarkers = [];
+    }
+
+    async ensureLeafletLoaded() {
+        if (typeof window.L !== 'undefined') {
+            return true;
+        }
+
+        if (!window.__assetcareLeafletPromise) {
+            window.__assetcareLeafletPromise = new Promise((resolve) => {
+                const existingScript = document.getElementById('leaflet-script');
+                if (existingScript) {
+                    existingScript.addEventListener('load', () => resolve(true), { once: true });
+                    existingScript.addEventListener('error', () => resolve(false), { once: true });
+                    return;
+                }
+
+                if (!document.getElementById('leaflet-stylesheet')) {
+                    const leafletCss = document.createElement('link');
+                    leafletCss.id = 'leaflet-stylesheet';
+                    leafletCss.rel = 'stylesheet';
+                    leafletCss.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+                    document.head.appendChild(leafletCss);
+                }
+
+                const leafletScript = document.createElement('script');
+                leafletScript.id = 'leaflet-script';
+                leafletScript.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+                leafletScript.onload = () => resolve(true);
+                leafletScript.onerror = () => resolve(false);
+                document.head.appendChild(leafletScript);
+            });
+        }
+
+        return window.__assetcareLeafletPromise;
     }
 }
 
