@@ -20,6 +20,15 @@
   - Nearby garage approval now makes technician assignment optional in UI, and backend assignment endpoint rejects technician assignment updates when garage workflow is active.
   - Driver garage modal now shows only the approved garage once assigned.
   - OpenAPI updated to document `/fault-tickets/{id}/assign` and its garage-workflow blocked-assignment response.
+- ✅ Route-breakdown driver GPS capture + map-based garage approval (TASK042)
+  - Added and applied migration `055_add_coordinates_to_route_breakdowns.php` to store `breakdown_latitude`/`breakdown_longitude` for route breakdowns.
+  - Updated route-breakdown API create/update validation and persistence to enforce coordinate-pair integrity.
+  - Driver in-route breakdown modal now captures browser geolocation, shows capture status, and requires captured coordinates on create submit.
+  - Supervisor dashboard garage approval modal and shared `pages/view-ticket` garage approval modal now render driver+garage map markers and support marker-driven garage selection.
+  - Updated `testing/openapi.yaml` with route-breakdown CRUD/stats path documentation and coordinate-aware schemas.
+  - Validation evidence:
+    - Playwright `testing/ui-validation/route-breakdown-garage-workflow/validate-route-breakdown-garage-workflow.spec.js` passed for `VAL_STAGE=before` and `VAL_STAGE=after` (desktop+mobile, 2/2 each stage).
+    - PHP lint, JS syntax checks, and editor diagnostics reported no errors in touched files.
 - ✅ Fuel logging + TM fleet details enhancement (TASK040)
   - Added migration `053_add_fuel_source_and_nullable_total_cost.php` to add `fuel_source`, backfill missing values, make `total_cost` nullable, and add index `idx_fuel_source`.
   - Updated backend fuel validation/normalization (`FuelLogService`) to derive `fuel_type` from vehicle and enforce source-aware rules (`external` requires cost + receipt).

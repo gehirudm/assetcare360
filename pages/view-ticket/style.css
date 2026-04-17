@@ -671,6 +671,21 @@ body {
     justify-content: flex-end;
 }
 
+.garage-approval-map {
+    width: 100%;
+    height: 320px;
+    border: 1px solid #dbeafe;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #f8fafc;
+}
+
+.garage-approval-map-hint {
+    margin-top: 8px;
+    color: #64748b;
+    font-size: 12px;
+}
+
 /* Toast Notification */
 .toast {
     position: fixed;

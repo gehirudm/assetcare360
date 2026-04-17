@@ -52,6 +52,14 @@ class DriverBreakdownInRouteModal extends HTMLElement {
                                 <div class="form-group">
                                     <label class="form-label">Current Location *</label>
                                     <input type="text" id="routeBreakdownLocation" class="form-input" required>
+                                    <div style="display:flex; gap:8px; margin-top:10px; align-items:center; flex-wrap:wrap;">
+                                        <button type="button" class="btn btn-secondary btn-small" data-action="capture-location">
+                                            <i class="fas fa-location-dot"></i> Use Current GPS Location
+                                        </button>
+                                        <span id="routeBreakdownCoordinateStatus" style="font-size:12px; color:#666;">GPS location not captured yet.</span>
+                                    </div>
+                                    <input type="hidden" id="routeBreakdownLatitude">
+                                    <input type="hidden" id="routeBreakdownLongitude">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Incident Time *</label>
@@ -93,6 +101,11 @@ class DriverBreakdownInRouteModal extends HTMLElement {
             const actionEl = event.target.closest('[data-action]');
             if (event.target === modal || (actionEl && actionEl.dataset.action === 'close-modal')) {
                 this.close();
+                return;
+            }
+
+            if (actionEl && actionEl.dataset.action === 'capture-location') {
+                this.captureCurrentLocation();
             }
         });
 
@@ -113,6 +126,21 @@ class DriverBreakdownInRouteModal extends HTMLElement {
                 breakdown_datetime: form.querySelector('#routeBreakdownDatetime').value,
                 description: form.querySelector('#routeBreakdownDescription').value.trim(),
             };
+
+            const latitudeRaw = form.querySelector('#routeBreakdownLatitude')?.value;
+            const longitudeRaw = form.querySelector('#routeBreakdownLongitude')?.value;
+            const latitude = latitudeRaw !== '' ? Number(latitudeRaw) : null;
+            const longitude = longitudeRaw !== '' ? Number(longitudeRaw) : null;
+
+            if (this.editingId == null && (!Number.isFinite(latitude) || !Number.isFinite(longitude))) {
+                DriverUtils.showToast('Please capture your current GPS location before submitting the route breakdown.', 'error');
+                return;
+            }
+
+            if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+                payload.breakdown_latitude = latitude;
+                payload.breakdown_longitude = longitude;
+            }
 
             try {
                 const response = this.editingId
@@ -152,12 +180,21 @@ class DriverBreakdownInRouteModal extends HTMLElement {
         const title = this.querySelector('#routeBreakdownTitle');
         const submit = this.querySelector('#routeBreakdownSubmit');
         const vehicleFieldContainer = this.querySelector('#routeVehicleContainer');
+        const latitudeField = this.querySelector('#routeBreakdownLatitude');
+        const longitudeField = this.querySelector('#routeBreakdownLongitude');
         const editItem = payload?.editItem || null;
 
         form.reset();
         DriverUtils.ensureTodayDefaults(form);
         this.assignedVehicle = null;
         this.allVehicles = [];
+        if (latitudeField) {
+            latitudeField.value = '';
+        }
+        if (longitudeField) {
+            longitudeField.value = '';
+        }
+        this.updateLocationCaptureStatus('GPS location not captured yet.', 'neutral');
 
         // Check for assigned vehicle first
         try {
@@ -186,6 +223,17 @@ class DriverBreakdownInRouteModal extends HTMLElement {
             form.querySelector('#routeBreakdownType').value = editItem.category || editItem.breakdown_type || '';
             form.querySelector('#routeBreakdownLocation').value = editItem.breakdown_location || '';
             form.querySelector('#routeBreakdownDescription').value = editItem.description || '';
+            if (latitudeField) {
+                latitudeField.value = editItem.breakdown_latitude ?? '';
+            }
+            if (longitudeField) {
+                longitudeField.value = editItem.breakdown_longitude ?? '';
+            }
+
+            if (editItem.breakdown_latitude != null && editItem.breakdown_longitude != null) {
+                this.updateLocationCaptureStatus('Using saved GPS coordinates for this report.', 'success');
+            }
+
             if (editItem.breakdown_datetime) {
                 const date = new Date(editItem.breakdown_datetime);
                 date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
@@ -237,6 +285,74 @@ class DriverBreakdownInRouteModal extends HTMLElement {
 
     close() {
         DriverUtils.setModalState(this.querySelector('#breakdownInRouteModal'), false);
+    }
+
+    updateLocationCaptureStatus(message, tone = 'neutral') {
+        const statusEl = this.querySelector('#routeBreakdownCoordinateStatus');
+        if (!statusEl) {
+            return;
+        }
+
+        const color = tone === 'success'
+            ? '#166534'
+            : tone === 'error'
+                ? '#b91c1c'
+                : '#666';
+
+        statusEl.textContent = message;
+        statusEl.style.color = color;
+    }
+
+    captureCurrentLocation() {
+        if (!navigator.geolocation) {
+            this.updateLocationCaptureStatus('Geolocation is not supported by this browser.', 'error');
+            DriverUtils.showToast('Geolocation is not supported by this browser.', 'error');
+            return;
+        }
+
+        this.updateLocationCaptureStatus('Capturing GPS coordinates...', 'neutral');
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const latitude = Number(position.coords.latitude.toFixed(7));
+                const longitude = Number(position.coords.longitude.toFixed(7));
+
+                const latitudeField = this.querySelector('#routeBreakdownLatitude');
+                const longitudeField = this.querySelector('#routeBreakdownLongitude');
+                const locationField = this.querySelector('#routeBreakdownLocation');
+
+                if (latitudeField) {
+                    latitudeField.value = String(latitude);
+                }
+
+                if (longitudeField) {
+                    longitudeField.value = String(longitude);
+                }
+
+                if (locationField && !locationField.value.trim()) {
+                    locationField.value = `Lat ${latitude}, Lng ${longitude}`;
+                }
+
+                this.updateLocationCaptureStatus('GPS location captured successfully.', 'success');
+                DriverUtils.showToast('Current GPS location captured.', 'success');
+            },
+            (error) => {
+                let message = 'Unable to capture GPS location.';
+                if (error && error.code === error.PERMISSION_DENIED) {
+                    message = 'Location permission denied. Allow location access and try again.';
+                } else if (error && error.code === error.TIMEOUT) {
+                    message = 'Location request timed out. Please try again.';
+                }
+
+                this.updateLocationCaptureStatus(message, 'error');
+                DriverUtils.showToast(message, 'error');
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0,
+            }
+        );
     }
 }
 

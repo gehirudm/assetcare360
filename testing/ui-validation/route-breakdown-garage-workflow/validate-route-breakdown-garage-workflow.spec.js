@@ -4,6 +4,7 @@ const path = require('path');
 
 const STAGE = process.env.VAL_STAGE || 'before';
 const BASE_URL = process.env.VAL_BASE_URL || 'http://127.0.0.1:3000';
+const BASE_ORIGIN = new URL(BASE_URL).origin;
 const OUT_DIR = __dirname;
 
 function json(route, body, status = 200) {
@@ -11,6 +12,245 @@ function json(route, body, status = 200) {
         status,
         contentType: 'application/json',
         body: JSON.stringify(body),
+    });
+}
+
+async function installLeafletStub(page) {
+    await page.addInitScript(() => {
+        if (window.L) {
+            return;
+        }
+
+        const toLatLng = (value) => {
+            if (Array.isArray(value)) {
+                return {
+                    lat: Number(value[0]),
+                    lng: Number(value[1]),
+                };
+            }
+
+            return {
+                lat: Number(value?.lat),
+                lng: Number(value?.lng),
+            };
+        };
+
+        const createMap = (target) => {
+            const container = typeof target === 'string'
+                ? document.getElementById(target)
+                : target;
+
+            const map = {
+                _container: container,
+                _layers: new Set(),
+                setView() {
+                    return this;
+                },
+                fitBounds() {
+                    return this;
+                },
+                invalidateSize() {
+                    return this;
+                },
+                panTo() {
+                    return this;
+                },
+                eachLayer(callback) {
+                    Array.from(this._layers).forEach((layer) => callback(layer));
+                },
+                removeLayer(layer) {
+                    if (layer && layer._iconEl && layer._iconEl.parentNode) {
+                        layer._iconEl.parentNode.removeChild(layer._iconEl);
+                    }
+                    this._layers.delete(layer);
+                },
+                remove() {
+                    if (this._container) {
+                        this._container.innerHTML = '';
+                    }
+                    this._layers.clear();
+                },
+                _addLayer(layer) {
+                    this._layers.add(layer);
+                },
+                _showPopup(marker) {
+                    if (!this._container) {
+                        return;
+                    }
+
+                    const existing = this._container.querySelector('.leaflet-popup');
+                    if (existing) {
+                        existing.remove();
+                    }
+
+                    const popup = document.createElement('div');
+                    popup.className = 'leaflet-popup';
+                    popup.innerHTML = `<div class="leaflet-popup-content">${marker._popupHtml || ''}</div>`;
+                    this._container.appendChild(popup);
+                },
+                _renderMarker(marker) {
+                    if (!this._container) {
+                        return;
+                    }
+
+                    const iconEl = document.createElement('div');
+                    iconEl.className = 'leaflet-marker-icon';
+                    iconEl.style.cursor = 'pointer';
+                    iconEl.style.display = 'inline-flex';
+                    iconEl.style.margin = '6px';
+
+                    if (marker._isCircleMarker) {
+                        iconEl.classList.add('leaflet-circle-marker');
+                        iconEl.style.width = '16px';
+                        iconEl.style.height = '16px';
+                        iconEl.style.borderRadius = '999px';
+                        iconEl.style.border = `2px solid ${marker._style?.color || '#1d4ed8'}`;
+                        iconEl.style.background = marker._style?.fillColor || '#2563eb';
+                        iconEl.style.opacity = String(marker._style?.fillOpacity ?? 0.75);
+                    }
+
+                    if (marker._icon && typeof marker._icon.html === 'string') {
+                        iconEl.innerHTML = marker._icon.html;
+                    } else {
+                        if (!marker._isCircleMarker) {
+                            iconEl.textContent = marker._options?.title || 'Marker';
+                            iconEl.style.background = '#1f4b99';
+                            iconEl.style.color = '#fff';
+                            iconEl.style.padding = '4px 8px';
+                            iconEl.style.borderRadius = '999px';
+                            iconEl.style.fontSize = '12px';
+                        }
+                    }
+
+                    iconEl.addEventListener('click', () => {
+                        const clickHandler = marker._events.click;
+                        if (typeof clickHandler === 'function') {
+                            clickHandler();
+                        }
+                        if (marker._popupHtml) {
+                            this._showPopup(marker);
+                        }
+                    });
+
+                    marker._iconEl = iconEl;
+                    this._container.appendChild(iconEl);
+                },
+            };
+
+            return map;
+        };
+
+        const createMarker = (latlng, options = {}) => {
+            const marker = {
+                _latlng: toLatLng(latlng),
+                _options: options,
+                _icon: options.icon || null,
+                _events: {},
+                _popupHtml: '',
+                _map: null,
+                _iconEl: null,
+                _style: {},
+                _isCircleMarker: false,
+                addTo(map) {
+                    this._map = map;
+                    map._addLayer(this);
+                    map._renderMarker(this);
+                    return this;
+                },
+                bindPopup(html) {
+                    this._popupHtml = html || '';
+                    return this;
+                },
+                on(eventName, handler) {
+                    this._events[eventName] = handler;
+                    return this;
+                },
+                setIcon(icon) {
+                    this._icon = icon;
+                    if (this._iconEl && icon && typeof icon.html === 'string') {
+                        this._iconEl.innerHTML = icon.html;
+                    }
+                    return this;
+                },
+                setStyle(style) {
+                    this._style = {
+                        ...this._style,
+                        ...(style || {}),
+                    };
+
+                    if (this._iconEl && this._isCircleMarker) {
+                        this._iconEl.style.border = `2px solid ${this._style.color || '#1d4ed8'}`;
+                        this._iconEl.style.background = this._style.fillColor || '#2563eb';
+                        this._iconEl.style.opacity = String(this._style.fillOpacity ?? 0.75);
+                    }
+
+                    return this;
+                },
+                openPopup() {
+                    if (this._map) {
+                        this._map._showPopup(this);
+                    }
+                    return this;
+                },
+                getLatLng() {
+                    return this._latlng;
+                },
+            };
+
+            return marker;
+        };
+
+        const createCircleMarker = (latlng, style = {}) => {
+            const marker = createMarker(latlng, { title: 'Garage Marker' });
+            marker._isCircleMarker = true;
+            marker._style = {
+                color: '#1d4ed8',
+                fillColor: '#2563eb',
+                fillOpacity: 0.75,
+                ...style,
+            };
+            return marker;
+        };
+
+        window.L = {
+            map: createMap,
+            tileLayer: () => ({
+                addTo(map) {
+                    if (map && typeof map._addLayer === 'function') {
+                        map._addLayer(this);
+                    }
+                    return this;
+                },
+            }),
+            marker: createMarker,
+            circleMarker: createCircleMarker,
+            icon: (options = {}) => ({ ...options }),
+            divIcon: (options = {}) => ({ ...options }),
+            latLngBounds(initial = []) {
+                const points = [];
+
+                const addPoint = (value) => {
+                    if (!value) {
+                        return;
+                    }
+                    points.push(toLatLng(value));
+                };
+
+                if (Array.isArray(initial)) {
+                    initial.forEach(addPoint);
+                }
+
+                return {
+                    extend(value) {
+                        addPoint(value);
+                        return this;
+                    },
+                    isValid() {
+                        return points.length > 0;
+                    },
+                };
+            },
+        };
     });
 }
 
@@ -130,6 +370,26 @@ async function mockDriverApi(page, state) {
             });
         }
 
+        if (pathname.endsWith('/api/route-breakdowns') && method === 'POST') {
+            state.createCalls += 1;
+            try {
+                state.createdPayload = JSON.parse(request.postData() || '{}');
+            } catch (_error) {
+                state.createdPayload = null;
+            }
+
+            return json(route, {
+                status: 'success',
+                message: 'Route breakdown created successfully',
+                data: {
+                    breakdown: {
+                        id: 504,
+                        route_breakdown_id: 'RBD-504',
+                    },
+                },
+            });
+        }
+
         if (/\/api\/route-breakdowns\/\d+$/.test(pathname) && method === 'GET') {
             const id = Number(pathname.split('/').pop());
             const found = routeBreakdowns.find((item) => item.id === id) || routeBreakdowns[0];
@@ -226,6 +486,8 @@ async function mockSupervisorApi(page, state) {
             description: 'Engine stalled on route',
             status: 'Pending',
             ticket_status: 'Pending',
+            breakdown_latitude: 6.9271,
+            breakdown_longitude: 79.8612,
             garage_workflow_status: 'awaiting_supervisor_approval',
             garage_workflow: {
                 status: 'awaiting_supervisor_approval',
@@ -240,6 +502,28 @@ async function mockSupervisorApi(page, state) {
             address: '123 Galle Road, Colombo 03',
             city: 'Colombo',
             phone: '+94 11 234 5678',
+            latitude: 6.9032,
+            longitude: 79.8501,
+            contact_person: 'Nimal Perera',
+            contact_person_phone: '+94 77 200 3000',
+            capabilities: ['engine', 'electrical'],
+            notes: '24/7 emergency support',
+            estimated_distance_km: 4.8,
+            is_active: 1,
+        },
+        {
+            id: 2,
+            name: 'Rapid Fleet Garage',
+            address: '24 Parliament Road, Colombo 05',
+            city: 'Colombo',
+            phone: '+94 11 987 6543',
+            latitude: 6.9112,
+            longitude: 79.8683,
+            contact_person: 'Kasun Silva',
+            contact_person_phone: '+94 77 400 5000',
+            capabilities: ['brakes', 'tires'],
+            notes: 'Fleet priority lane available',
+            estimated_distance_km: 6.2,
             is_active: 1,
         },
     ];
@@ -329,16 +613,50 @@ function attachMonitors(page, state, scope) {
 
 async function runDriverFlow(page, viewportName, artifact) {
     const state = {
+        createCalls: 0,
+        createdPayload: null,
         entryCalls: 0,
         progressCalls: 0,
         completeCalls: 0,
     };
 
+    await installLeafletStub(page);
     await mockDriverApi(page, state);
     attachMonitors(page, artifact, 'driver');
 
     await page.goto(`${BASE_URL}/dashboard/driver/index.html`, { waitUntil: 'domcontentloaded' });
     await expect(page.locator('ac-layout')).toBeVisible({ timeout: 15000 });
+
+    await page.evaluate(() => {
+        const layout = document.querySelector('ac-layout');
+        if (layout && typeof layout.navigateTo === 'function') {
+            layout.navigateTo('breakdown');
+        }
+    });
+
+    await expect(page.locator('#breakdown')).toHaveClass(/active/, { timeout: 10000 });
+
+    await page.locator('[data-action="open-route-breakdown-modal"]').click();
+    await expect(page.locator('#breakdownInRouteModal')).toHaveClass(/active/, { timeout: 10000 });
+    await expect(page.locator('#vehicleDisplay')).toBeVisible({ timeout: 10000 });
+
+    const incidentAt = new Date();
+    incidentAt.setMinutes(incidentAt.getMinutes() - incidentAt.getTimezoneOffset());
+
+    await page.selectOption('#routeBreakdownSeverity', 'high');
+    await page.fill('#routeBreakdownLocation', 'A1 Highway near Kadawatha');
+    await page.fill('#routeBreakdownDatetime', incidentAt.toISOString().slice(0, 16));
+    await page.selectOption('#routeBreakdownType', 'engine');
+    await page.fill('#routeBreakdownDescription', 'Engine overheated and stalled while in route.');
+
+    await page.locator('[data-action="capture-location"]').click();
+    await expect(page.locator('#routeBreakdownCoordinateStatus')).toHaveText(/captured successfully/i, { timeout: 10000 });
+
+    await page.locator('#breakdownInRouteForm button[type="submit"]').click();
+    await expect.poll(() => state.createCalls).toBe(1);
+    expect(state.createdPayload).toBeTruthy();
+    expect(state.createdPayload.breakdown_latitude).toBeCloseTo(6.9271, 3);
+    expect(state.createdPayload.breakdown_longitude).toBeCloseTo(79.8612, 3);
 
     await page.evaluate(() => {
         const layout = document.querySelector('ac-layout');
@@ -352,6 +670,7 @@ async function runDriverFlow(page, viewportName, artifact) {
 
     const approvedCard = page.locator('#driverTicketTrackingList .inventory-item').filter({ hasText: 'RBD-502' });
     await expect(approvedCard).toBeVisible({ timeout: 10000 });
+    await approvedCard.locator('[data-action="toggle-actions-menu"]').click();
     await approvedCard.locator('[data-action="log-garage-entry"]').click();
 
     await expect(page.locator('#nearbyGaragesModal')).toHaveClass(/active/, { timeout: 10000 });
@@ -362,6 +681,7 @@ async function runDriverFlow(page, viewportName, artifact) {
     const inProgressCard = page.locator('#driverTicketTrackingList .inventory-item').filter({ hasText: 'RBD-503' });
     await expect(inProgressCard).toBeVisible({ timeout: 10000 });
 
+    await inProgressCard.locator('[data-action="toggle-actions-menu"]').click();
     await inProgressCard.locator('[data-action="add-garage-progress"]').click();
     await expect(page.locator('#garageProgressModal')).toHaveClass(/active/, { timeout: 10000 });
     await page.fill('#garageProgressNote', 'Completed electrical diagnostics and replaced damaged relay.');
@@ -373,6 +693,7 @@ async function runDriverFlow(page, viewportName, artifact) {
     await page.locator('#garageProgressForm button[type="submit"]').click();
     await expect.poll(() => state.progressCalls).toBe(1);
 
+    await inProgressCard.locator('[data-action="toggle-actions-menu"]').click();
     await inProgressCard.locator('[data-action="complete-garage-breakdown"]').click();
     await expect(page.locator('#completeBreakdownModal')).toHaveClass(/active/, { timeout: 10000 });
     await page.fill('#completeBillAmount', '12500');
@@ -393,10 +714,12 @@ async function runDriverFlow(page, viewportName, artifact) {
     artifact.driver = {
         url: page.url(),
         actions: {
+            createCalls: state.createCalls,
             entryCalls: state.entryCalls,
             progressCalls: state.progressCalls,
             completeCalls: state.completeCalls,
         },
+        createdPayload: state.createdPayload,
         ui: await page.evaluate(() => ({
             activeSection: document.querySelector('.content-section.active')?.id || null,
             ticketRows: document.querySelectorAll('#driverTicketTrackingList .inventory-item').length,
@@ -410,6 +733,7 @@ async function runSupervisorFlow(page, viewportName, artifact) {
         approvalCalls: 0,
     };
 
+    await installLeafletStub(page);
     await mockSupervisorApi(page, state);
     attachMonitors(page, artifact, 'supervisor');
 
@@ -431,7 +755,12 @@ async function runSupervisorFlow(page, viewportName, artifact) {
     await routeCard.locator('[data-action="approve-garage"]').click();
 
     await expect(page.locator('#garageApprovalModal')).toBeVisible({ timeout: 10000 });
-    await page.selectOption('#garageApprovalSelect', '1');
+    await expect(page.locator('#garageApprovalMap')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#garageApprovalMap .leaflet-circle-marker').first()).toBeVisible({ timeout: 10000 });
+
+    await page.locator('#garageApprovalMap .leaflet-circle-marker').first().click();
+
+    await expect(page.locator('#garageApprovalSelect')).toHaveValue('1', { timeout: 10000 });
     await page.fill('#garageApprovalNotes', 'Approved nearest garage for immediate repair.');
     await page.locator('#garageApprovalForm button[type="submit"]').click();
     await expect.poll(() => state.approvalCalls).toBe(1);
@@ -450,6 +779,7 @@ async function runSupervisorFlow(page, viewportName, artifact) {
         ui: await page.evaluate(() => ({
             activeSection: document.querySelector('.content-section.active')?.id || null,
             ticketRows: document.querySelectorAll('#supervisorFaultTicketList .inventory-item').length,
+            mapMarkerCount: document.querySelectorAll('#garageApprovalMap .leaflet-marker-icon').length,
             modalVisible: document.querySelector('#garageApprovalModal')
                 ? document.querySelector('#garageApprovalModal').style.display !== 'none'
                 : false,
@@ -468,7 +798,14 @@ async function runValidation(browser, viewportName, viewport) {
         supervisor: null,
     };
 
-    const driverContext = await browser.newContext({ viewport });
+    const driverContext = await browser.newContext({
+        viewport,
+        geolocation: {
+            latitude: 6.9271,
+            longitude: 79.8612,
+        },
+    });
+    await driverContext.grantPermissions(['geolocation'], { origin: BASE_ORIGIN });
     const driverPage = await driverContext.newPage();
     await runDriverFlow(driverPage, viewportName, artifact);
     artifact.title = await driverPage.title();
