@@ -5,11 +5,22 @@
   "console": [],
   "failedRequests": [],
   "driver": {
-    "url": "http://127.0.0.1:3000/dashboard/driver/index.html",
+    "url": "http://127.0.0.1:3000/pages/dashboard/driver/index.html",
     "actions": {
+      "createCalls": 1,
       "entryCalls": 1,
       "progressCalls": 1,
       "completeCalls": 1
+    },
+    "createdPayload": {
+      "vehicle_id": 10,
+      "severity": "high",
+      "breakdown_type": "engine",
+      "breakdown_location": "A1 Highway near Kadawatha",
+      "breakdown_datetime": "2026-04-17T14:07",
+      "description": "Engine overheated and stalled while in route.",
+      "breakdown_latitude": 6.9271,
+      "breakdown_longitude": 79.8612
     },
     "ui": {
       "activeSection": "ticket-tracking",
@@ -18,13 +29,14 @@
     }
   },
   "supervisor": {
-    "url": "http://127.0.0.1:3000/dashboard/supervisor/index.html",
+    "url": "http://127.0.0.1:3000/pages/dashboard/supervisor/index.html?section=fault-ticket-tracking",
     "actions": {
       "approvalCalls": 1
     },
     "ui": {
       "activeSection": "fault-ticket-tracking",
       "ticketRows": 1,
+      "mapMarkerCount": 0,
       "modalVisible": false
     }
   }
