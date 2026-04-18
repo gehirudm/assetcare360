@@ -229,6 +229,9 @@ $buildEmailRecords = function (array $event) use (
             $headline = 'Budget Approval Required';
             $message = 'A budget report is waiting for your approval.';
 
+            // Maintenance Manager can approve all budget requests, so always notify this role.
+            $addRoleUsers('Maintenance Manager', $subject, $headline, $message);
+
             if ($approvalRole === 'supervisor') {
                 $ticketId = isset($data['fault_ticket_id']) ? (int)$data['fault_ticket_id'] : 0;
                 $submittedBy = isset($data['submitted_by']) ? (int)$data['submitted_by'] : null;
@@ -265,9 +268,6 @@ $buildEmailRecords = function (array $event) use (
 
                 break;
             }
-
-            $targetRole = $approvalRole === 'maintenance_manager' ? 'Maintenance Manager' : 'Supervisor';
-            $addRoleUsers($targetRole, $subject, $headline, $message);
             break;
 
         case DomainEvents::BUDGET_REPORT_REVIEWED:

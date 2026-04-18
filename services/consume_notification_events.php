@@ -109,7 +109,16 @@ $buildRecords = function (array $event) use ($supervisorsBySubmittedTechStmt, $s
 
         case DomainEvents::BUDGET_REPORT_CREATED:
             $approvalRole = strtolower(str_replace(' ', '_', trim((string)($data['approval_role'] ?? 'Supervisor'))));
-            $targetRole = $approvalRole === 'maintenance_manager' ? 'Maintenance Manager' : 'Supervisor';
+
+            // Maintenance Manager can approve all budget requests, so always notify this role.
+            $records[] = [
+                'user_id' => null,
+                'target_role' => 'Maintenance Manager',
+                'title' => 'Budget review required',
+                'message' => 'A budget report is waiting for your approval.',
+                'type' => 'warning',
+                'source_event_id' => (string)($data['report_id'] ?? ''),
+            ];
 
             if ($approvalRole === 'supervisor') {
                 $ticketId = isset($data['fault_ticket_id']) ? (int)$data['fault_ticket_id'] : 0;
@@ -166,15 +175,6 @@ $buildRecords = function (array $event) use ($supervisorsBySubmittedTechStmt, $s
 
                 break;
             }
-
-            $records[] = [
-                'user_id' => null,
-                'target_role' => $targetRole,
-                'title' => 'Budget review required',
-                'message' => 'A budget report is waiting for your approval.',
-                'type' => 'warning',
-                'source_event_id' => (string)($data['report_id'] ?? ''),
-            ];
             break;
 
         case DomainEvents::BUDGET_REPORT_REVIEWED:
