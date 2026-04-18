@@ -1,8 +1,8 @@
 # TASK038 - Technical Officer Script Monolith Final Decomposition
 
-**Status:** Pending  
+**Status:** In Progress  
 **Added:** April 14, 2026  
-**Updated:** April 14, 2026
+**Updated:** April 18, 2026
 
 ## Original Request
 Supervisor and technical officer JS scripts are still monolithic. Analyze them and figure out why, and create tasks to address those issues via proper refactoring.
@@ -32,18 +32,33 @@ High-level audit shows `pages/dashboard/technical-officer/script.js` is still la
 
 ## Progress Tracking
 
-**Overall Status:** Not Started - 0%
+**Overall Status:** In Progress - 25%
 
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
 |----|-------------|--------|---------|-------|
 | 38.1 | TO ownership audit and decomposition map | Not Started | April 14, 2026 | Identify all remaining parent-owned section/modal logic |
 | 38.2 | Legacy TO modal extraction to page-modals | Not Started | April 14, 2026 | Remove page-level modal markup and inline handlers |
-| 38.3 | Ticket workflow migration to components | Not Started | April 14, 2026 | Move start/update/resolve/request workflows out of parent |
+| 38.3 | Ticket workflow migration to components | In Progress | April 18, 2026 | TO ticket detail flow now uses actor-specific `to-ticket-detail-view` component that opens standalone view-ticket page directly (no iframe) with role override + return path, preserving existing view-ticket UI. |
 | 38.4 | Parent script cleanup and bootstrap consolidation | Not Started | April 14, 2026 | Keep only orchestration responsibilities |
-| 38.5 | Validation and regression guard | Not Started | April 14, 2026 | Before/after desktop+mobile validation artifacts |
+| 38.5 | Validation and regression guard | In Progress | April 18, 2026 | Updated TO routing assertions for direct detail-page navigation/back-return flow and revalidated desktop/mobile after removing shared iframe host files. |
 
 ## Progress Log
 ### April 14, 2026
 - Task created from script decomposition analysis request.
 - Confirmed TO parent script remains monolithic due legacy modal ownership, fallback inline template rendering, and parent-owned ticket lifecycle workflows.
+
+### April 17, 2026
+- Completed TO ticket-details route migration to dashboard section/component behavior using shared `ac-ticket-detail-view`.
+- TO ticket-routing validation spec now asserts section activation + embedded frame behavior rather than full-page URL redirect.
+- Executed `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js` (desktop + mobile passed).
+- Re-executed TO routing validation after shared ticket-detail component UX updates (desktop + mobile passed).
+
+### April 18, 2026
+- Fixed shared ticket-detail dual-scroll behavior affecting TO ticket details by adding parent dashboard scroll lock to `ac-ticket-detail-view` while `ticket-details` is active.
+- Added section-aware lock/unlock handling so normal dashboard scrolling resumes outside the ticket-details section.
+- Re-executed `VAL_STAGE=after` `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js` (desktop + mobile passed).
+- Re-executed `VAL_STAGE=after` `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js` as shared-component regression guard (desktop + mobile passed).
+- Replaced Technical Officer dashboard ticket-detail section host with actor-specific `to-ticket-detail-view` component under `pages/dashboard/technical-officer/components/ticket-details/`.
+- Updated TO orchestration to open `pages/view-ticket/index.html` directly (no iframe) with `TECHNICAL_OFFICER` role override and section return path.
+- Updated TO routing validation suite assertions to verify direct detail-page navigation and back-return to dashboard section; after-stage desktop/mobile reruns passed.
