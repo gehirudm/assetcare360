@@ -139,6 +139,50 @@ function createMachineModal(machine = null, nextMachineId = 'MCH-001') {
                 </div>
 
                 <div class="form-section">
+                    <h5><i class="fas fa-shield-alt"></i> Insurance</h5>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Insurance Type *</label>
+                            <select class="form-select" id="insuranceType" required>
+                                <option value="">Select Insurance Type</option>
+                                <option value="Full" ${machine?.insurance_type === 'Full' ? 'selected' : ''}>Full</option>
+                                <option value="Third-Party" ${machine?.insurance_type === 'Third-Party' ? 'selected' : ''}>Third-Party</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Insurance Provider *</label>
+                            <input type="text" class="form-input" id="insuranceProvider"
+                                   value="${machine?.insurance_provider || ''}" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Insurance Provider Details *</label>
+                            <textarea class="form-textarea" id="insuranceProviderDetails" rows="2" required>${machine?.insurance_provider_details || ''}</textarea>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Insurance Renew Interval (Days) *</label>
+                            <input type="number" class="form-input" id="insuranceRenewIntervalDays"
+                                   value="${machine?.insurance_renew_interval_days || ''}" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Last Insurance Renew Date *</label>
+                            <input type="date" class="form-input" id="lastInsuranceRenewDate"
+                                   value="${machine?.last_insurance_renew_date || ''}"
+                                   max="${new Date().toISOString().split('T')[0]}" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Last Insurance Renew Details *</label>
+                            <textarea class="form-textarea" id="lastInsuranceRenewDetails" rows="2" required>${machine?.last_insurance_renew_details || ''}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
                     <h5><i class="fas fa-cogs"></i> Machine Components</h5>
                     <div class="form-group">
                         <label class="form-label">Select Components</label>
@@ -227,12 +271,26 @@ async function handleAddMachine(e) {
             }
         }
 
+        if (formData.last_insurance_renew_date) {
+            const lastInsuranceRenewDate = new Date(formData.last_insurance_renew_date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (lastInsuranceRenewDate > today) {
+                Utils.showToast('Last insurance renew date cannot be in the future', 'error');
+                return;
+            }
+        }
+
         const response = await API.post('/machines', formData);
 
         if (response.status === 'success') {
             Utils.showToast('Machine added successfully!', 'success');
             closeModal('addMachineModal');
             await refreshMachines();
+            if (typeof refreshInsuranceManagement === 'function') {
+                await refreshInsuranceManagement();
+            }
         } else if (response.status === 'error') {
             // Display error message from backend
             Utils.showToast(response.message || 'Failed to add machine', 'error');
@@ -273,12 +331,26 @@ async function handleEditMachine(e) {
             }
         }
 
+        if (formData.last_insurance_renew_date) {
+            const lastInsuranceRenewDate = new Date(formData.last_insurance_renew_date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (lastInsuranceRenewDate > today) {
+                Utils.showToast('Last insurance renew date cannot be in the future', 'error');
+                return;
+            }
+        }
+
         const response = await API.put(`/machines/${machineId}`, formData);
 
         if (response.status === 'success') {
             Utils.showToast('Machine updated successfully!', 'success');
             closeModal('editMachineModal');
             await refreshMachines();
+            if (typeof refreshInsuranceManagement === 'function') {
+                await refreshInsuranceManagement();
+            }
         } else if (response.status === 'error') {
             // Display error message from backend
             Utils.showToast(response.message || 'Failed to update machine', 'error');
@@ -309,6 +381,12 @@ function getMachineFormData(form) {
         last_service_date: form.querySelector('#lastServiceDate')?.value || null,
         warranty_expiry: form.querySelector('#warrantyExpiry')?.value || null,
         warranty_provider: form.querySelector('#warrantyProvider')?.value || '',
+        insurance_type: form.querySelector('#insuranceType')?.value || '',
+        insurance_provider: form.querySelector('#insuranceProvider')?.value || '',
+        insurance_provider_details: form.querySelector('#insuranceProviderDetails')?.value || '',
+        insurance_renew_interval_days: parseInt(form.querySelector('#insuranceRenewIntervalDays')?.value || '0', 10),
+        last_insurance_renew_date: form.querySelector('#lastInsuranceRenewDate')?.value || null,
+        last_insurance_renew_details: form.querySelector('#lastInsuranceRenewDetails')?.value || '',
         components: selectedComponents,
         notes: form.querySelector('#notes')?.value || ''
     };

@@ -60,6 +60,16 @@ async function viewVehicleDetails(id) {
             ${vehicle.warranty_expiry ? `<p><strong>Warranty Expiry:</strong> ${Utils.formatDate(vehicle.warranty_expiry)}</p>` : ''}
             ${vehicle.warranty_provider ? `<p><strong>Warranty Provider:</strong> ${vehicle.warranty_provider}</p>` : ''}
         </div>
+        <div class="form-section">
+            <h5><i class="fas fa-shield-alt"></i> Insurance</h5>
+            ${vehicle.insurance_type ? `<p><strong>Insurance Type:</strong> ${vehicle.insurance_type}</p>` : '<p><strong>Insurance Type:</strong> N/A</p>'}
+            ${vehicle.insurance_provider ? `<p><strong>Insurance Provider:</strong> ${vehicle.insurance_provider}</p>` : '<p><strong>Insurance Provider:</strong> N/A</p>'}
+            ${vehicle.insurance_provider_details ? `<p><strong>Provider Details:</strong> ${vehicle.insurance_provider_details}</p>` : ''}
+            ${vehicle.insurance_renew_interval_days ? `<p><strong>Renew Interval:</strong> ${vehicle.insurance_renew_interval_days} day(s)</p>` : ''}
+            ${vehicle.last_insurance_renew_date ? `<p><strong>Last Renew Date:</strong> ${Utils.formatDate(vehicle.last_insurance_renew_date)}</p>` : ''}
+            ${vehicle.next_insurance_renew_date ? `<p><strong>Next Renew Date:</strong> ${Utils.formatDate(vehicle.next_insurance_renew_date)}</p>` : ''}
+            ${vehicle.last_insurance_renew_details ? `<p><strong>Last Renew Details:</strong> ${vehicle.last_insurance_renew_details}</p>` : ''}
+        </div>
         ${vehicle.components && vehicle.components.length > 0 ? `
             <div class="form-section">
                 <h5><i class="fas fa-cogs"></i> Components</h5>

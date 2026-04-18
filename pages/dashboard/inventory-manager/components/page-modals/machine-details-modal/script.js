@@ -53,6 +53,16 @@ async function viewMachineDetails(id) {
             ${machine.warranty_expiry ? `<p><strong>Warranty Expiry:</strong> ${Utils.formatDate(machine.warranty_expiry)}</p>` : ''}
             ${machine.warranty_provider ? `<p><strong>Warranty Provider:</strong> ${machine.warranty_provider}</p>` : ''}
         </div>
+        <div class="form-section">
+            <h5><i class="fas fa-shield-alt"></i> Insurance</h5>
+            ${machine.insurance_type ? `<p><strong>Insurance Type:</strong> ${machine.insurance_type}</p>` : '<p><strong>Insurance Type:</strong> N/A</p>'}
+            ${machine.insurance_provider ? `<p><strong>Insurance Provider:</strong> ${machine.insurance_provider}</p>` : '<p><strong>Insurance Provider:</strong> N/A</p>'}
+            ${machine.insurance_provider_details ? `<p><strong>Provider Details:</strong> ${machine.insurance_provider_details}</p>` : ''}
+            ${machine.insurance_renew_interval_days ? `<p><strong>Renew Interval:</strong> ${machine.insurance_renew_interval_days} day(s)</p>` : ''}
+            ${machine.last_insurance_renew_date ? `<p><strong>Last Renew Date:</strong> ${Utils.formatDate(machine.last_insurance_renew_date)}</p>` : ''}
+            ${machine.next_insurance_renew_date ? `<p><strong>Next Renew Date:</strong> ${Utils.formatDate(machine.next_insurance_renew_date)}</p>` : ''}
+            ${machine.last_insurance_renew_details ? `<p><strong>Last Renew Details:</strong> ${machine.last_insurance_renew_details}</p>` : ''}
+        </div>
         ${machine.components && Array.isArray(machine.components) ? `
             <div class="form-section">
                 <h5><i class="fas fa-list"></i> Components</h5>
