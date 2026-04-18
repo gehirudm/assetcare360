@@ -6,7 +6,9 @@ class DriverTicketTracking extends HTMLElement {
 
         this._mounted = true;
         this.currentFilter = 'all';
+        this.currentSort = 'created';
         this.currentUser = null;
+        this.rawTicketItems = [];
         this.ticketItems = [];
         this.render();
         this.bindEvents();
@@ -31,12 +33,21 @@ class DriverTicketTracking extends HTMLElement {
                 <p class="page-subtitle">Track vehicle and route breakdown tickets with current repair progress</p>
             </div>
 
-            <div class="filter-controls" id="driverTicketTrackingFilterControls">
-                <button class="filter-btn active" type="button" data-action="set-filter" data-filter="all">All Tickets</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-filter="open">Pending</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-filter="in-progress">In Progress</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-filter="resolved">Resolved</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-filter="closed">Closed</button>
+            <div class="filter-toolbar">
+                <div class="filter-controls filter-toolbar__filters" id="driverTicketTrackingFilterControls">
+                    <button class="filter-btn active" type="button" data-action="set-filter" data-filter="all">All Tickets</button>
+                    <button class="filter-btn" type="button" data-action="set-filter" data-filter="open">Pending</button>
+                    <button class="filter-btn" type="button" data-action="set-filter" data-filter="in-progress">In Progress</button>
+                    <button class="filter-btn" type="button" data-action="set-filter" data-filter="resolved">Resolved</button>
+                    <button class="filter-btn" type="button" data-action="set-filter" data-filter="closed">Closed</button>
+                </div>
+                <div class="filter-toolbar__sort">
+                    <label class="filter-toolbar__label" for="driverTicketSort">Sort by</label>
+                    <select id="driverTicketSort" class="filter-toolbar__select" data-action="set-sort">
+                        <option value="created">Created Date</option>
+                        <option value="priority">Priority</option>
+                    </select>
+                </div>
             </div>
 
             <div class="card">
@@ -67,6 +78,10 @@ class DriverTicketTracking extends HTMLElement {
 
             if (action === 'set-filter') {
                 this.applyFilter(actionEl.dataset.filter);
+                return;
+            }
+
+            if (action === 'set-sort') {
                 return;
             }
 
@@ -142,6 +157,16 @@ class DriverTicketTracking extends HTMLElement {
                 });
             }
         });
+
+        this.addEventListener('change', (event) => {
+            const actionEl = event.target.closest('[data-action="set-sort"]');
+            if (!actionEl) {
+                return;
+            }
+
+            this.currentSort = actionEl.value || 'created';
+            this.renderTicketItems();
+        });
     }
 
     async refresh() {
@@ -196,28 +221,147 @@ class DriverTicketTracking extends HTMLElement {
                 itemKey: `vehicle-${item.id}`,
             }));
 
-            this.ticketItems = [...routeTicketItems, ...vehicleTicketItems].sort((a, b) => {
-                const aTime = new Date(a.breakdown_datetime || a.breakdown_date || a.created_at || 0).getTime();
-                const bTime = new Date(b.breakdown_datetime || b.breakdown_date || b.created_at || 0).getTime();
-                return bTime - aTime;
-            });
+            this.rawTicketItems = [...routeTicketItems, ...vehicleTicketItems];
 
             DriverUtils.store.breakdowns.routeBreakdowns = filteredRouteBreakdowns;
             DriverUtils.store.breakdowns.reports = filteredVehicleBreakdowns;
 
-            if (!this.ticketItems.length) {
+            if (!this.rawTicketItems.length) {
+                this.ticketItems = [];
                 list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);">No breakdown tickets found.</div>';
                 this.updateSummary([]);
                 return;
             }
 
-            list.innerHTML = this.ticketItems.map((breakdown) => this.renderTicketCard(breakdown)).join('');
-            this.applyFilter(this.currentFilter);
-            this.updateSummary(this.ticketItems);
+            this.renderTicketItems();
         } catch (error) {
             console.error('Error loading route breakdown ticket tracking:', error);
+            this.rawTicketItems = [];
+            this.ticketItems = [];
             list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger);">Error loading ticket tracking data. Please try again.</div>';
         }
+    }
+
+    renderTicketItems() {
+        const list = this.querySelector('#driverTicketTrackingList');
+        if (!list) {
+            return;
+        }
+
+        const sortedItems = this.sortTicketItems(this.rawTicketItems);
+        this.ticketItems = sortedItems;
+
+        if (!sortedItems.length) {
+            list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--muted);">No breakdown tickets found.</div>';
+            this.updateSummary([]);
+            return;
+        }
+
+        list.innerHTML = sortedItems.map((breakdown) => this.renderTicketCard(breakdown)).join('');
+        this.applyFilter(this.currentFilter);
+        this.updateSummary(sortedItems);
+    }
+
+    sortTicketItems(items) {
+        const normalizedItems = Array.isArray(items) ? [...items] : [];
+
+        if (this.currentSort === 'priority') {
+            return normalizedItems.sort((first, second) => {
+                const priorityDiff = this.getTicketPriorityRank(second) - this.getTicketPriorityRank(first);
+                if (priorityDiff !== 0) {
+                    return priorityDiff;
+                }
+
+                const timeDiff = this.getTicketSortTime(second) - this.getTicketSortTime(first);
+                if (timeDiff !== 0) {
+                    return timeDiff;
+                }
+
+                return this.getTicketSortRank(second) - this.getTicketSortRank(first);
+            });
+        }
+
+        return normalizedItems.sort((first, second) => {
+            const timeDiff = this.getTicketSortTime(second) - this.getTicketSortTime(first);
+            if (timeDiff !== 0) {
+                return timeDiff;
+            }
+
+            const priorityDiff = this.getTicketPriorityRank(second) - this.getTicketPriorityRank(first);
+            if (priorityDiff !== 0) {
+                return priorityDiff;
+            }
+
+            return this.getTicketSortRank(second) - this.getTicketSortRank(first);
+        });
+    }
+
+    getTicketSortTime(item) {
+        const candidates = [
+            item?.created_at,
+            item?.updated_at,
+            item?.breakdown_datetime,
+            item?.breakdown_date,
+        ];
+
+        for (const value of candidates) {
+            if (!value) {
+                continue;
+            }
+
+            const timestamp = new Date(value).getTime();
+            if (Number.isFinite(timestamp) && timestamp > 0) {
+                return timestamp;
+            }
+        }
+
+        return 0;
+    }
+
+    getTicketSortRank(item) {
+        const directId = Number.parseInt(item?.id, 10);
+        if (Number.isFinite(directId) && directId > 0) {
+            return directId;
+        }
+
+        const candidates = [
+            item?.fault_ticket_id,
+            item?.route_breakdown_id,
+            item?.breakdown_id,
+        ];
+
+        for (const value of candidates) {
+            const text = String(value || '');
+            const numberPart = text.match(/(\d+)(?!.*\d)/);
+            if (!numberPart) {
+                continue;
+            }
+
+            const parsed = Number.parseInt(numberPart[1], 10);
+            if (Number.isFinite(parsed) && parsed > 0) {
+                return parsed;
+            }
+        }
+
+        return 0;
+    }
+
+    getTicketPriorityRank(item) {
+        const normalizedPriority = String(item?.priority || item?.severity || 'medium').trim().toLowerCase();
+
+        if (normalizedPriority === 'critical') {
+            return 4;
+        }
+
+        if (normalizedPriority === 'high') {
+            return 3;
+        }
+
+        if (normalizedPriority === 'low') {
+            return 1;
+        }
+
+        return 2;
     }
 
     renderTicketCard(breakdown) {
