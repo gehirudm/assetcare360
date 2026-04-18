@@ -1,0 +1,24 @@
+{
+  "stage": "after",
+  "tm": {
+    "assignTripCalls": 0,
+    "cargoCreateCalls": 0,
+    "hasCargoAnalyticsRoot": true,
+    "hasCargoCatalogRoot": true,
+    "hasCargoDetailsViewAction": true,
+    "hasAssignCargoSection": true,
+    "hasAssignCargoAddButton": true
+  },
+  "driver": {
+    "hasCargoSummaryInTripList": true,
+    "hasStructuredCargoInViewModal": true,
+    "inRouteDangerousPriorityLocked": true,
+    "inRouteDangerousPriorityValue": "critical",
+    "inRouteDangerousPriorityNoticeVisible": true
+  },
+  "supervisor": {
+    "hasDangerousCargoBadge": true
+  },
+  "console": [],
+  "failedRequests": []
+}

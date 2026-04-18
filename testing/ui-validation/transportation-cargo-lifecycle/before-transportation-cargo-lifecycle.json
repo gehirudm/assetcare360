@@ -1,0 +1,20 @@
+{
+  "stage": "before",
+  "tm": {
+    "assignTripCalls": 0,
+    "cargoCreateCalls": 0,
+    "hasCargoAnalyticsRoot": false,
+    "hasCargoCatalogRoot": false,
+    "hasAssignCargoSection": false,
+    "hasAssignCargoAddButton": false
+  },
+  "driver": {
+    "hasCargoSummaryInTripList": false,
+    "hasStructuredCargoInViewModal": false
+  },
+  "supervisor": {
+    "hasDangerousCargoBadge": false
+  },
+  "console": [],
+  "failedRequests": []
+}
