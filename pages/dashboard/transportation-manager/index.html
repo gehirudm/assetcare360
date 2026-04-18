@@ -16,6 +16,7 @@
             {"section":"dashboard","icon":"fas fa-chart-line","label":"Dashboard"},
             {"section":"driver-assignment","icon":"fas fa-user-cog","label":"Driver Assignment"},
             {"section":"trips","icon":"fas fa-route","label":"Trips"},
+            {"section":"cargo-management","icon":"fas fa-boxes-stacked","label":"Cargo Management"},
             {"section":"trip-log","icon":"fas fa-history","label":"Trip Log"},
             {"section":"fuel-log","icon":"fas fa-gas-pump","label":"Fuel Log"},
             {"section":"fleet","icon":"fas fa-truck","label":"Fleet"}
@@ -30,6 +31,14 @@
 
         <section class="content-section" id="trips">
             <tm-trips></tm-trips>
+        </section>
+
+        <section class="content-section" id="cargo-management">
+            <tm-cargo-management></tm-cargo-management>
+        </section>
+
+        <section class="content-section" id="cargo-details">
+            <tm-cargo-details></tm-cargo-details>
         </section>
 
         <section class="content-section" id="trip-log">
@@ -54,6 +63,7 @@
     <tm-assign-driver-modal></tm-assign-driver-modal>
     <tm-end-trip-modal></tm-end-trip-modal>
     <tm-add-fuel-log-modal></tm-add-fuel-log-modal>
+    <tm-cargo-item-modal></tm-cargo-item-modal>
     <tm-view-trip-modal></tm-view-trip-modal>
     <tm-view-fuel-modal></tm-view-fuel-modal>
 
@@ -79,10 +89,13 @@
     <script src="./components/page-modals/tm-assign-driver-modal.js"></script>
     <script src="./components/page-modals/tm-end-trip-modal.js"></script>
     <script src="./components/page-modals/tm-add-fuel-log-modal.js"></script>
+    <script src="./components/page-modals/tm-cargo-item-modal.js"></script>
     <script src="./components/page-modals/tm-view-trip-modal.js"></script>
     <script src="./components/page-modals/tm-view-fuel-modal.js"></script>
     <script src="./components/dashboard-overview/script.js"></script>
     <script src="./components/trips/script.js"></script>
+    <script src="./components/cargo-management/script.js"></script>
+    <script src="./components/cargo-details/script.js"></script>
     <script src="./components/trip-log/script.js"></script>
     <script src="./components/fuel-log/script.js"></script>
     <script src="./components/fleet/script.js"></script>

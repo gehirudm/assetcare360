@@ -1,0 +1,186 @@
+tm-cargo-details {
+    display: block;
+}
+
+.cargo-details-subheader {
+    padding: 16px 0 20px;
+    margin-bottom: 20px;
+}
+
+.cargo-details-header-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.cargo-details-title h2 {
+    margin: 0;
+    color: var(--tang-blue);
+    font-size: 1.6rem;
+}
+
+.cargo-details-title p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.cargo-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.metric-card.danger {
+    border-color: #fecaca;
+    background: #fff5f5;
+}
+
+.metric-value-small {
+    font-size: 1rem;
+}
+
+.cargo-details-split-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.cargo-chart-shell {
+    min-height: 320px;
+    position: relative;
+}
+
+.cargo-chart-shell canvas {
+    width: 100%;
+    max-height: 300px;
+}
+
+.cargo-profile-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.cargo-profile-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cargo-profile-item {
+    border: 1px solid var(--stone-200);
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: var(--card);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.cargo-profile-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.cargo-profile-item strong {
+    color: var(--text-900);
+    text-align: right;
+}
+
+.cargo-description-block {
+    border: 1px solid var(--stone-200);
+    border-radius: 10px;
+    padding: 12px;
+    margin-top: 10px;
+    background: var(--card);
+}
+
+.cargo-description-block p {
+    margin: 6px 0 0;
+    color: var(--text-700);
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+.cargo-trip-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.cargo-trip-item {
+    border: 1px solid var(--stone-200);
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: var(--card);
+}
+
+.cargo-trip-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.cargo-trip-item-head strong {
+    color: var(--text-900);
+}
+
+.cargo-trip-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 0.86rem;
+}
+
+.cargo-trip-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+@media (max-width: 1100px) {
+    .cargo-metrics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cargo-details-split-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .cargo-details-header-row {
+        align-items: center;
+    }
+
+    .cargo-details-title h2 {
+        font-size: 1.25rem;
+    }
+
+    .cargo-metrics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cargo-profile-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .cargo-profile-item strong {
+        text-align: left;
+    }
+
+    .cargo-trip-item-head {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}

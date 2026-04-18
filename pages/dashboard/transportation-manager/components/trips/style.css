@@ -78,3 +78,15 @@ tm-trips .actions-menu-item.danger {
 tm-trips .actions-menu-item.danger:hover {
     background: #fef2f2;
 }
+
+tm-trips .cargo-trip-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+tm-trips .cargo-summary-inline {
+    color: var(--text-700);
+    font-size: 12px;
+}

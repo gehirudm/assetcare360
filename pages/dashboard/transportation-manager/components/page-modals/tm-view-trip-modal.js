@@ -96,12 +96,40 @@ class TMViewTripModal extends HTMLElement {
         const statusInfo = TMUtils.getStatusInfo(trip.status);
         const driverName = trip.driver_name || (trip.driver_id ? `Driver #${trip.driver_id}` : '—');
         const distance = TMUtils.formatDistance(trip.starting_odometer, trip.final_odometer);
+        const cargoItems = Array.isArray(trip.cargo_items) ? trip.cargo_items : [];
+        const cargoSummary = TMUtils.buildCargoSummary(trip);
+        const hasDangerousCargo = TMUtils.hasDangerousCargo(trip);
+        const totalCargoQuantity = TMUtils.formatQuantity(trip.total_cargo_quantity || 0);
+        const dangerousCargoQuantity = TMUtils.formatQuantity(trip.dangerous_cargo_quantity || 0);
+
+        const cargoItemsSection = cargoItems.length
+            ? `
+                <div class="detail-grid" style="margin-top: 10px;">
+                    ${cargoItems.map((item) => {
+                        const name = TMUtils.escapeHtml(item.name || item.cargo_item_id || 'Cargo Item');
+                        const quantity = TMUtils.formatQuantity(item.quantity || 0);
+                        const unit = TMUtils.escapeHtml(item.unit || 'units');
+                        const notes = item.notes ? `<div class="detail-item"><span class="detail-label">Notes</span><span class="detail-value">${TMUtils.escapeHtml(item.notes)}</span></div>` : '';
+                        const isDangerous = Number(item.is_dangerous) === 1;
+
+                        return `
+                            <div class="detail-item" style="border: 1px solid var(--stone-200); border-radius: 8px; padding: 10px; background: #fff;">
+                                <span class="detail-label">${name}</span>
+                                <span class="detail-value">${quantity} ${unit}</span>
+                                ${isDangerous ? '<span class="status-badge badge-danger" style="margin-top: 8px; width: fit-content;"><i class="fas fa-radiation"></i> Dangerous</span>' : ''}
+                                ${notes}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `
+            : '';
 
         content.innerHTML = `
             <div class="detail-view">
                 <div class="detail-header">
-                    <span class="id-badge" style="font-size: 1.2rem;">${trip.trip_id}</span>
-                    <span class="status-badge ${statusInfo.badge}">${statusInfo.label}</span>
+                    <span class="id-badge" style="font-size: 1.2rem;">${TMUtils.escapeHtml(trip.trip_id || 'N/A')}</span>
+                    <span class="status-badge ${statusInfo.badge}">${TMUtils.escapeHtml(statusInfo.label)}</span>
                 </div>
 
                 <div class="form-section">
@@ -109,11 +137,11 @@ class TMViewTripModal extends HTMLElement {
                     <div class="detail-grid">
                         <div class="detail-item">
                             <span class="detail-label">Origin</span>
-                            <span class="detail-value">${trip.origin || '—'}</span>
+                            <span class="detail-value">${TMUtils.escapeHtml(trip.origin || '—')}</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Destination</span>
-                            <span class="detail-value">${trip.destination || '—'}</span>
+                            <span class="detail-value">${TMUtils.escapeHtml(trip.destination || '—')}</span>
                         </div>
                     </div>
                 </div>
@@ -123,16 +151,16 @@ class TMViewTripModal extends HTMLElement {
                     <div class="detail-grid">
                         <div class="detail-item">
                             <span class="detail-label">Vehicle</span>
-                            <span class="detail-value">${trip.vehicle_registration || '—'}</span>
+                            <span class="detail-value">${TMUtils.escapeHtml(trip.vehicle_registration || '—')}</span>
                         </div>
                         <div class="detail-item">
                             <span class="detail-label">Driver</span>
-                            <span class="detail-value">${driverName}</span>
+                            <span class="detail-value">${TMUtils.escapeHtml(driverName)}</span>
                         </div>
                         ${trip.assistant_driver_name ? `
                         <div class="detail-item">
                             <span class="detail-label">Assistant Driver</span>
-                            <span class="detail-value">${trip.assistant_driver_name}</span>
+                            <span class="detail-value">${TMUtils.escapeHtml(trip.assistant_driver_name)}</span>
                         </div>
                         ` : ''}
                     </div>
@@ -141,7 +169,7 @@ class TMViewTripModal extends HTMLElement {
                 ${trip.status === 'Rejected' && trip.rejection_reason ? `
                 <div class="form-section" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px;">
                     <h5 style="color: #dc2626;"><i class="fas fa-times-circle"></i> Rejection Information</h5>
-                    <p class="detail-text" style="color: #dc2626;">${trip.rejection_reason}</p>
+                    <p class="detail-text" style="color: #dc2626;">${TMUtils.escapeHtml(trip.rejection_reason)}</p>
                 </div>
                 ` : ''}
 
@@ -181,17 +209,33 @@ class TMViewTripModal extends HTMLElement {
                     </div>
                 </div>
 
-                ${trip.cargo_description ? `
                 <div class="form-section">
-                    <h5><i class="fas fa-box"></i> Cargo Information</h5>
-                    <p class="detail-text">${trip.cargo_description}</p>
+                    <h5><i class="fas fa-boxes-stacked"></i> Cargo Information</h5>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Cargo Summary</span>
+                            <span class="detail-value">${TMUtils.escapeHtml(cargoSummary || 'No cargo summary provided')}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Total Quantity</span>
+                            <span class="detail-value">${totalCargoQuantity}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Dangerous Quantity</span>
+                            <span class="detail-value">${dangerousCargoQuantity}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Dangerous Cargo</span>
+                            <span class="detail-value">${hasDangerousCargo ? '<span class="status-badge badge-danger"><i class="fas fa-radiation"></i> Yes</span>' : '<span class="status-badge badge-ok">No</span>'}</span>
+                        </div>
+                    </div>
+                    ${cargoItemsSection}
                 </div>
-                ` : ''}
 
                 ${trip.completion_notes ? `
                 <div class="form-section">
                     <h5><i class="fas fa-sticky-note"></i> Completion Notes</h5>
-                    <p class="detail-text">${trip.completion_notes}</p>
+                    <p class="detail-text">${TMUtils.escapeHtml(trip.completion_notes)}</p>
                 </div>
                 ` : ''}
             </div>

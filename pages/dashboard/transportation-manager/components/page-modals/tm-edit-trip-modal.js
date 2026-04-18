@@ -8,6 +8,8 @@ class TMEditTripModal extends HTMLElement {
         this._trip = null;
         this._selectedVehicle = null;
         this._vehicleTripCount = 0;
+        this._cargoCatalog = [];
+        this._cargoRowSeed = 0;
         this.render();
         this.bindEvents();
     }
@@ -61,11 +63,18 @@ class TMEditTripModal extends HTMLElement {
                         </div>
 
                         <div class="form-section">
-                            <h5><i class="fas fa-box"></i> Cargo Information</h5>
+                            <h5><i class="fas fa-boxes-stacked"></i> Cargo Information</h5>
+                            <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+                                <p style="margin: 0; font-size: 12px; color: var(--muted);">Update structured cargo quantities for this trip.</p>
+                                <button type="button" class="btn btn-secondary btn-small" data-action="add-cargo-row">
+                                    <i class="fas fa-plus"></i> Add Cargo Item
+                                </button>
+                            </div>
+                            <div id="editTripCargoItemsList" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px;"></div>
                             <div class="form-group">
-                                <label class="form-label">Cargo Description</label>
+                                <label class="form-label">Cargo Description / Notes</label>
                                 <textarea class="form-textarea" id="editTripCargo" name="cargo_description" 
-                                          placeholder="Describe what is being transported..."></textarea>
+                                          placeholder="Optional free-text notes for this trip cargo..."></textarea>
                             </div>
                         </div>
 
@@ -94,7 +103,35 @@ class TMEditTripModal extends HTMLElement {
 
             if (actionEl && actionEl.dataset.action === 'close') {
                 this.close();
+                return;
             }
+
+            if (actionEl && actionEl.dataset.action === 'add-cargo-row') {
+                this._appendCargoRow();
+                return;
+            }
+
+            if (actionEl && actionEl.dataset.action === 'remove-cargo-row') {
+                const row = actionEl.closest('.tm-cargo-row');
+                if (row) {
+                    row.remove();
+                }
+
+                const rows = this.querySelectorAll('.tm-cargo-row');
+                if (!rows.length) {
+                    this._appendCargoRow();
+                }
+            }
+        });
+
+        this.addEventListener('change', (event) => {
+            const cargoSelect = event.target.closest('.tm-cargo-item-select');
+            if (!cargoSelect) {
+                return;
+            }
+
+            const row = cargoSelect.closest('.tm-cargo-row');
+            this._renderCargoDangerBadge(row);
         });
 
         const form = this.querySelector('#editTripForm');
@@ -129,10 +166,13 @@ class TMEditTripModal extends HTMLElement {
             modal.setAttribute('aria-hidden', 'false');
         }
 
-        // Load trip data and vehicles in parallel
+        this._renderCargoRows();
+
+        // Load trip data, vehicles, and cargo catalog in parallel
         await Promise.all([
             this._loadTrip(tripId),
-            this._loadVehicles()
+            this._loadVehicles(),
+            this._loadCargoItems(),
         ]);
 
         // After loading, set the vehicle and load driver info
@@ -143,6 +183,8 @@ class TMEditTripModal extends HTMLElement {
                 await this._onVehicleChange(this._trip.vehicle_registration);
             }
         }
+
+        this._renderCargoRows(this._trip?.cargo_items || []);
     }
 
     close() {
@@ -172,6 +214,17 @@ class TMEditTripModal extends HTMLElement {
         }
     }
 
+    async _loadCargoItems() {
+        const response = await API.get('/trips/cargo-items');
+        if (!response || (!response.success && response.status !== 'success')) {
+            throw new Error(response?.message || 'Failed to load cargo items');
+        }
+
+        this._cargoCatalog = Array.isArray(response.data?.cargo_items)
+            ? response.data.cargo_items
+            : [];
+    }
+
     async _loadVehicles() {
         const select = this.querySelector('#editTripVehicle');
         if (!select) return;
@@ -195,6 +248,147 @@ class TMEditTripModal extends HTMLElement {
         } catch (error) {
             select.innerHTML = '<option value="">Failed to load vehicles</option>';
         }
+    }
+
+    _renderCargoRows(initialRows = []) {
+        const list = this.querySelector('#editTripCargoItemsList');
+        if (!list) {
+            return;
+        }
+
+        if (!Array.isArray(this._cargoCatalog) || this._cargoCatalog.length === 0) {
+            list.innerHTML = `
+                <div class="step-hint" style="display: flex; align-items: center; gap: 8px; color: var(--muted);">
+                    <i class="fas fa-box-open"></i> No cargo items found. Create cargo items from the Trips page catalog first.
+                </div>
+            `;
+            return;
+        }
+
+        const rows = Array.isArray(initialRows) && initialRows.length > 0
+            ? initialRows
+            : [{}];
+
+        list.innerHTML = '';
+        rows.forEach((rowData) => {
+            this._appendCargoRow(rowData);
+        });
+    }
+
+    _appendCargoRow(rowData = {}) {
+        const list = this.querySelector('#editTripCargoItemsList');
+        if (!list || !Array.isArray(this._cargoCatalog) || this._cargoCatalog.length === 0) {
+            return;
+        }
+
+        this._cargoRowSeed += 1;
+        const rowId = `tm-edit-cargo-row-${this._cargoRowSeed}`;
+        const selectedId = Number(rowData.cargo_item_db_id || rowData.cargo_item_id || 0);
+        const selectedQuantity = rowData.quantity != null ? TMUtils.formatQuantity(rowData.quantity) : '';
+        const selectedNotes = rowData.notes || '';
+
+        const row = document.createElement('div');
+        row.className = 'tm-cargo-row';
+        row.dataset.rowId = rowId;
+        row.style.display = 'grid';
+        row.style.gridTemplateColumns = '2fr 1fr 1.5fr auto';
+        row.style.gap = '8px';
+        row.style.alignItems = 'center';
+        row.style.padding = '10px';
+        row.style.border = '1px solid var(--stone-200)';
+        row.style.borderRadius = '8px';
+        row.style.background = '#fff';
+
+        const options = this._cargoCatalog.map((item) => {
+            const id = Number(item.id || 0);
+            const isSelected = id === selectedId;
+            const dangerMark = Number(item.is_dangerous) === 1 ? ' [Dangerous]' : '';
+            const unit = item.unit || 'units';
+            return `<option value="${id}" ${isSelected ? 'selected' : ''}>${TMUtils.escapeHtml(item.name || item.cargo_item_id || `Cargo #${id}`)} (${TMUtils.escapeHtml(unit)})${dangerMark}</option>`;
+        }).join('');
+
+        row.innerHTML = `
+            <div>
+                <select class="form-select tm-cargo-item-select">
+                    <option value="">Select cargo item...</option>
+                    ${options}
+                </select>
+                <div class="tm-cargo-danger" style="display:none; margin-top: 6px; font-size: 11px; color: #b91c1c; font-weight: 600;"></div>
+            </div>
+            <input type="number" class="form-input tm-cargo-quantity" min="0.001" step="0.001" placeholder="Qty" value="${TMUtils.escapeHtml(selectedQuantity)}">
+            <input type="text" class="form-input tm-cargo-notes" placeholder="Notes (optional)" value="${TMUtils.escapeHtml(selectedNotes)}">
+            <button type="button" class="btn btn-danger btn-small" data-action="remove-cargo-row" title="Remove cargo row">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+
+        list.appendChild(row);
+        this._renderCargoDangerBadge(row);
+    }
+
+    _renderCargoDangerBadge(row) {
+        if (!row) {
+            return;
+        }
+
+        const select = row.querySelector('.tm-cargo-item-select');
+        const badge = row.querySelector('.tm-cargo-danger');
+        if (!select || !badge) {
+            return;
+        }
+
+        const selectedId = Number(select.value || 0);
+        const selectedItem = this._cargoCatalog.find((item) => Number(item.id) === selectedId);
+        const isDangerous = Number(selectedItem?.is_dangerous) === 1;
+
+        if (isDangerous) {
+            badge.style.display = 'block';
+            badge.innerHTML = '<i class="fas fa-radiation"></i> Dangerous cargo';
+        } else {
+            badge.style.display = 'none';
+            badge.textContent = '';
+        }
+    }
+
+    _collectCargoAssignments() {
+        const rows = Array.from(this.querySelectorAll('.tm-cargo-row'));
+        const mergedByItem = new Map();
+
+        for (let index = 0; index < rows.length; index += 1) {
+            const row = rows[index];
+            const itemId = Number(row.querySelector('.tm-cargo-item-select')?.value || 0);
+            const quantityRaw = String(row.querySelector('.tm-cargo-quantity')?.value || '').trim();
+            const notes = String(row.querySelector('.tm-cargo-notes')?.value || '').trim();
+
+            if (!itemId && !quantityRaw && !notes) {
+                continue;
+            }
+
+            if (!itemId) {
+                throw new Error(`Cargo row ${index + 1}: select a cargo item`);
+            }
+
+            const quantity = Number(quantityRaw);
+            if (!Number.isFinite(quantity) || quantity <= 0) {
+                throw new Error(`Cargo row ${index + 1}: quantity must be greater than 0`);
+            }
+
+            if (mergedByItem.has(itemId)) {
+                const current = mergedByItem.get(itemId);
+                current.quantity = Number((current.quantity + quantity).toFixed(3));
+                if (notes) {
+                    current.notes = current.notes ? `${current.notes}; ${notes}` : notes;
+                }
+            } else {
+                mergedByItem.set(itemId, {
+                    cargo_item_id: itemId,
+                    quantity: Number(quantity.toFixed(3)),
+                    notes: notes || null,
+                });
+            }
+        }
+
+        return Array.from(mergedByItem.values());
     }
 
     async _onVehicleChange(numberPlate) {
@@ -339,6 +533,7 @@ class TMEditTripModal extends HTMLElement {
         const destination = this.querySelector('#editTripDestination')?.value.trim();
         const vehicle_registration = this.querySelector('#editTripVehicle')?.value;
         const cargo_description = this.querySelector('#editTripCargo')?.value.trim();
+        let cargoAssignments = [];
 
         if (!origin) return this._showErrors('Origin is required.');
         if (!destination) return this._showErrors('Destination is required.');
@@ -347,6 +542,12 @@ class TMEditTripModal extends HTMLElement {
         // Verify vehicle has assigned driver
         if (!this._selectedVehicle || !this._selectedVehicle.assigned_driver_id) {
             return this._showErrors('Selected vehicle has no assigned driver. Please assign a driver first.');
+        }
+
+        try {
+            cargoAssignments = this._collectCargoAssignments();
+        } catch (error) {
+            return this._showErrors(error.message || 'Invalid cargo rows.');
         }
 
         const submitBtn = this.querySelector('#editTripSubmit');
@@ -362,6 +563,7 @@ class TMEditTripModal extends HTMLElement {
                 destination,
                 vehicle_registration,
                 cargo_description,
+                cargo_items: cargoAssignments,
             });
 
             this.close();
