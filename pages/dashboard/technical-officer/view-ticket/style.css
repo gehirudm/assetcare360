@@ -261,6 +261,74 @@
     line-height: 1.5;
 }
 
+.overview-insurance {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border: 1px solid #bfdbfe;
+    background: #f8fbff;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.overview-insurance-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+@media (max-width: 640px) {
+    .overview-insurance-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.overview-insurance-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.overview-insurance-item span {
+    font-size: 0.73rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.overview-insurance-item strong {
+    color: #0f172a;
+    font-size: 0.9rem;
+}
+
+.overview-insurance-eligibility {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.overview-insurance-eligibility.eligible {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.overview-insurance-eligibility.not-eligible {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.overview-insurance p {
+    margin: 0;
+    color: #475569;
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
 /* Status & Priority badges inside overview */
 .badge {
     display: inline-flex;
@@ -280,6 +348,7 @@
 .badge-in-progress { background: #ede9fe; color: #5b21b6; }
 .badge-resolved    { background: #dcfce7; color: #166534; }
 .badge-closed      { background: #e5e7eb; color: #374151; }
+.badge-insurance-claimed { background: #e0f2fe; color: #075985; }
 
 .badge-priority-low      { background: #f0fdf4; color: #16a34a; }
 .badge-priority-medium   { background: #fefce8; color: #a16207; }
@@ -490,6 +559,8 @@
 .btn-action:hover { background: var(--tang-blue); transform: translateY(-1px); }
 .btn-action.btn-success { background: var(--kelly-green); box-shadow: 0 2px 8px rgba(99,182,55,0.3); }
 .btn-action.btn-success:hover { background: #3d9e28; }
+.btn-action.btn-insurance { background: #0ea5e9; box-shadow: 0 2px 8px rgba(14,165,233,0.35); }
+.btn-action.btn-insurance:hover { background: #0284c7; }
 
 /* ============================================================
    BUDGET SUMMARY
