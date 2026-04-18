@@ -219,6 +219,29 @@
                 <div class="overview-dangerous-badges" id="ovDangerousCargoBadges"></div>
                 <p id="ovDangerousCargoSummary">-</p>
             </div>
+            <div class="overview-insurance" id="ovInsurancePanel" style="display:none;">
+                <div class="overview-label"><i class="fas fa-shield-alt"></i> Insurance Claim Assessment</div>
+                <div class="overview-insurance-grid">
+                    <div class="overview-insurance-item">
+                        <span>Asset</span>
+                        <strong id="ovInsuranceAsset">-</strong>
+                    </div>
+                    <div class="overview-insurance-item">
+                        <span>Provider</span>
+                        <strong id="ovInsuranceProvider">-</strong>
+                    </div>
+                    <div class="overview-insurance-item">
+                        <span>Type</span>
+                        <strong id="ovInsuranceType">-</strong>
+                    </div>
+                    <div class="overview-insurance-item">
+                        <span>Next Renewal Date</span>
+                        <strong id="ovInsuranceRenewalDate">-</strong>
+                    </div>
+                </div>
+                <div class="overview-insurance-eligibility" id="ovInsuranceEligibility">-</div>
+                <p id="ovInsuranceReason">-</p>
+            </div>
         </section>
 
         <section class="route-location-panel" id="routeLocationPanel" style="display:none;">
@@ -301,6 +324,9 @@
                                 </button>
                                 <button class="btn btn-action" id="approveGarageBtn" onclick="openGarageApprovalModal()" style="display:none; margin-left:8px;">
                                     <i class="fas fa-warehouse"></i> Approve Nearby Garage
+                                </button>
+                                <button class="btn btn-action btn-insurance" id="claimInsuranceBtn" onclick="submitInsuranceClaim()" style="display:none; margin-left:8px;">
+                                    <i class="fas fa-file-signature"></i> Claim Insurance
                                 </button>
                                 <div id="step2-garage-hint" class="step-hint" style="display:none; margin-top:8px;"></div>
                             </div>
@@ -555,59 +581,91 @@
     <div class="modal-overlay" id="partsModal">
         <div class="modal modal-wide">
             <div class="modal-header">
-                <h3><i class="fas fa-tools"></i> Request Spare Parts</h3>
+                <h3><i class="fas fa-clipboard-list"></i> Request Spare Parts</h3>
                 <button class="modal-close" onclick="closePartsModal()"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <form id="partsForm" onsubmit="submitPartsRequest(event)">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Fault Ticket</label>
-                            <input type="text" class="form-input" id="partsTicketDisplay" readonly>
+                <form id="requestPartsForm" onsubmit="submitPartsRequest(event)">
+                    <input type="hidden" id="requestingTicketId" value="">
+
+                    <div class="form-section">
+                        <h5><i class="fas fa-ticket-alt"></i> Ticket Information</h5>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Ticket ID</label>
+                                <input type="text" class="form-input" id="relatedTicketId" readonly style="background-color: #f0f0f0;">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Equipment</label>
+                                <input type="text" class="form-input" id="equipmentInput" placeholder="Enter equipment/machine ID" required>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Priority</label>
-                            <select class="form-input" id="partsPriority">
-                                <option value="Low">Low</option>
-                                <option value="Medium" selected>Medium</option>
-                                <option value="High">High</option>
-                                <option value="Critical">Critical</option>
-                            </select>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Location</label>
+                                <input type="text" class="form-input" id="locationInput" readonly style="background-color: #f0f0f0;">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Priority</label>
+                                <select class="form-select" id="prioritySelect" required>
+                                    <option value="">Select Priority</option>
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="critical">Critical</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Equipment Name</label>
-                            <input type="text" class="form-input" id="partsEquipment" placeholder="e.g. Excavator CAT 320">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Reported By</label>
+                                <input type="text" class="form-input" id="reportedByInput" readonly style="background-color: #f0f0f0;">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Reported Date</label>
+                                <input type="text" class="form-input" id="reportedDateInput" readonly style="background-color: #f0f0f0;">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Location</label>
-                            <input type="text" class="form-input" id="partsLocation" placeholder="e.g. Site A, Zone 3">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Additional Notes</label>
-                        <textarea class="form-textarea" id="partsNotes" placeholder="Any additional information about the parts request..." rows="2"></textarea>
                     </div>
 
-                    <!-- Parts Items -->
-                    <div class="parts-section">
-                        <div class="parts-section-header">
-                            <label class="form-label">Spare Parts Required <span class="required">*</span></label>
-                            <button type="button" class="btn-add-part" onclick="addPartRow()">
-                                <i class="fas fa-plus"></i> Add Part
-                            </button>
+                    <div class="form-section">
+                        <h5><i class="fas fa-exclamation-circle"></i> Original Issue Description</h5>
+                        <div class="form-group">
+                            <label class="form-label">Issue Details</label>
+                            <textarea id="originalIssueTextarea" class="form-textarea" rows="4" readonly style="background-color: #f0f0f0;"></textarea>
                         </div>
-                        <div class="parts-items-list" id="partsItemsList">
-                            <!-- rows added dynamically -->
+                    </div>
+
+                    <div class="form-section">
+                        <h5><i class="fas fa-edit"></i> Additional Notes (Optional)</h5>
+                        <div class="form-group">
+                            <label class="form-label">Spare Parts Request Notes</label>
+                            <textarea id="additionalNotesTextarea" class="form-textarea" rows="3" placeholder="Add any additional observations, diagnostics, or notes about the spare parts needed..."></textarea>
+                            <small style="color: var(--muted); margin-top: 5px; display: block;">Add any extra information about why specific parts are needed or additional findings during inspection.</small>
                         </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" id="noSparePartsNeeded" onchange="toggleSparePartsSection(this.checked)" style="width: 18px; height: 18px;">
+                                <span style="font-weight: 500; color: var(--tang-blue);">No Spare Parts Needed for this Ticket</span>
+                            </label>
+                            <small style="color: var(--muted); display: block; margin-top: 5px; margin-left: 28px;">Check this if the repair can be done without any spare parts</small>
+                        </div>
+                    </div>
+
+                    <div class="form-section" id="sparePartsSection">
+                        <h5><i class="fas fa-wrench"></i> Spare Parts Required</h5>
+                        <div id="sparePartsContainer"></div>
+                        <button type="button" class="btn btn-secondary" onclick="addPartField()" style="margin-top: 10px;">
+                            <i class="fas fa-plus"></i> Add Another Part
+                        </button>
                     </div>
 
                     <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closePartsModal()">Cancel</button>
-                        <button type="submit" class="btn btn-primary" id="partsSubmitBtn">
-                            <i class="fas fa-paper-plane"></i> Submit Request
-                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="closePartsModal()"><i class="fas fa-times"></i> Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="partsSubmitBtn"><i class="fas fa-paper-plane"></i> Submit &amp; Start Work</button>
                     </div>
                 </form>
             </div>
@@ -620,19 +678,36 @@
     <div class="modal-overlay" id="completeModal">
         <div class="modal">
             <div class="modal-header">
-                <h3><i class="fas fa-check-double"></i> Mark Ticket as Resolved</h3>
+                <h3><i class="fas fa-check-circle"></i> Finish Work</h3>
                 <button class="modal-close" onclick="closeCompleteModal()"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
                 <form id="completeForm" onsubmit="submitComplete(event)">
-                    <div class="form-group">
-                        <label class="form-label">Work Summary / Resolution Notes <span class="required">*</span></label>
-                        <textarea class="form-textarea" id="completeSummary" placeholder="Describe what was done to resolve the fault..." rows="5" required></textarea>
+                    <div class="form-section">
+                        <h5><i class="fas fa-check-circle"></i> Work Completion</h5>
+                        <div class="form-group">
+                            <label class="form-label">Ticket ID</label>
+                            <input type="text" class="form-input" id="updateTicketId" readonly style="background-color: #f0f0f0;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Parts Used (if any)</label>
+                            <div id="updatePartsUsedContainer" style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; max-height: 180px; overflow-y: auto; background: #fafafa;">
+                                <p style="color: #999; font-size: 0.9rem; margin: 0;" id="noPartsMessage">No spare parts were requested for this ticket.</p>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Time Spent (hours) <span class="required">*</span></label>
+                            <input type="number" class="form-input" id="completeTimeSpent" step="0.5" min="0.5" placeholder="Hours worked" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Description About the Machine Update <span class="required">*</span></label>
+                            <textarea class="form-textarea" id="completeMachineDescription" placeholder="Describe the machine condition and updates made..." rows="5" required></textarea>
+                        </div>
                     </div>
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" onclick="closeCompleteModal()">Cancel</button>
                         <button type="submit" class="btn btn-primary btn-green" id="completeSubmitBtn">
-                            <i class="fas fa-check"></i> Confirm Resolved
+                            <i class="fas fa-check-circle"></i> Finish
                         </button>
                     </div>
                 </form>
