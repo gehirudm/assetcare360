@@ -498,6 +498,67 @@ body {
     flex-wrap: wrap;
 }
 
+.filter-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding: 12px 14px;
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    background: #fff;
+}
+
+.filter-toolbar__group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1 1 360px;
+}
+
+.filter-toolbar__label-inline,
+.filter-toolbar__label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.filter-toolbar__filters {
+    margin-bottom: 0;
+}
+
+.filter-toolbar__sort {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    flex: 0 0 auto;
+    min-width: 220px;
+}
+
+.filter-toolbar__select {
+    min-height: 38px;
+    min-width: 170px;
+    padding: 8px 12px;
+    border: 2px solid var(--stone-200);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--text-700);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.filter-toolbar__select:focus {
+    outline: none;
+    border-color: var(--royal-blue);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
 .filter-btn {
     padding: 8px 16px;
     border: 2px solid var(--stone-200);
@@ -1403,6 +1464,19 @@ body {
 
     .grid {
         grid-template-columns: 1fr;
+    }
+
+    .filter-toolbar {
+        padding: 12px;
+    }
+
+    .filter-toolbar__sort {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .filter-toolbar__select {
+        width: 100%;
     }
 
     .vehicle-actions {
