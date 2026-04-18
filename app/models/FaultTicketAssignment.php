@@ -203,7 +203,7 @@ class FaultTicketAssignment extends BaseModel {
                 LEFT JOIN fault_tickets ft ON fta.fault_ticket_id = ft.id
                 WHERE fta.assigned_to = ? 
                 AND fta.status = 'Active'
-                AND ft.status NOT IN ('Resolved', 'Closed')";
+            AND ft.status NOT IN ('Resolved', 'Closed', 'Insurance Claimed')";
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$technicianId]);

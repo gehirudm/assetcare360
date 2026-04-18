@@ -8,6 +8,7 @@ require_once __DIR__ . '/BaseModel.php';
  */
 class FaultTicket extends BaseModel {
     protected $table = 'fault_tickets';
+    private $columnExistsCache = [];
     
     // Valid priority levels
     const PRIORITY_LOW = 'Low';
@@ -22,6 +23,7 @@ class FaultTicket extends BaseModel {
     const STATUS_WAITING_PARTS = 'Waiting for Spare Parts';
     const STATUS_PARTS_APPROVED = 'Parts Approved';
     const STATUS_PARTS_REJECTED = 'Parts Rejected';
+    const STATUS_INSURANCE_CLAIMED = 'Insurance Claimed';
     const STATUS_IN_PROGRESS = 'In Progress';
     const STATUS_RESOLVED = 'Resolved';
     const STATUS_CLOSED = 'Closed';
@@ -34,13 +36,14 @@ class FaultTicket extends BaseModel {
             'id' => 'INT AUTO_INCREMENT PRIMARY KEY',
             'ticket_id' => 'VARCHAR(20) NOT NULL UNIQUE',
             'machine_id' => 'INT NULL',
+            'vehicle_id' => 'INT NULL',
             'breakdown_report_id' => 'VARCHAR(50) NULL',
             'breakdown_type' => 'VARCHAR(50) NULL',
             'reported_by' => 'INT NOT NULL',
             'description' => 'TEXT NOT NULL',
             'priority' => "ENUM('Low', 'Medium', 'High', 'Critical') NOT NULL DEFAULT 'Medium'",
             'location' => 'VARCHAR(255) NOT NULL',
-            'status' => "ENUM('Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts', 'Parts Approved', 'In Progress', 'Resolved', 'Closed') NOT NULL DEFAULT 'Open'",
+            'status' => "ENUM('Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts', 'Parts Approved', 'Insurance Claimed', 'In Progress', 'Resolved', 'Closed') NOT NULL DEFAULT 'Open'",
             'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
             'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
         ];
@@ -64,7 +67,9 @@ class FaultTicket extends BaseModel {
      * Get all fault tickets with filters
      */
     public function getAllTickets($filters = []) {
-        $sql = "SELECT ft.id, ft.ticket_id, ft.machine_id, 
+        $vehicleSelect = $this->hasColumn('vehicle_id') ? 'ft.vehicle_id' : 'NULL as vehicle_id';
+
+        $sql = "SELECT ft.id, ft.ticket_id, ft.machine_id, {$vehicleSelect},
                        ft.breakdown_report_id, ft.breakdown_type,
                        ft.reported_by, 
                        ft.description, ft.priority, ft.location, ft.status,
@@ -150,7 +155,9 @@ class FaultTicket extends BaseModel {
      * Get fault ticket by ID with related data
      */
     public function getTicketById($id) {
-        $sql = "SELECT ft.id, ft.ticket_id, ft.machine_id, 
+        $vehicleSelect = $this->hasColumn('vehicle_id') ? 'ft.vehicle_id' : 'NULL as vehicle_id';
+
+        $sql = "SELECT ft.id, ft.ticket_id, ft.machine_id, {$vehicleSelect},
                        ft.breakdown_report_id, ft.breakdown_type,
                        ft.reported_by, 
                        ft.description, ft.priority, ft.location, ft.status,
@@ -200,6 +207,31 @@ class FaultTicket extends BaseModel {
         }
         
         $ticketId = $this->generateNextTicketId($prefix);
+
+        $hasVehicleIdColumn = $this->hasColumn('vehicle_id');
+
+        if ($hasVehicleIdColumn) {
+            $sql = "INSERT INTO `{$this->table}` 
+                    (ticket_id, machine_id, vehicle_id, breakdown_report_id, breakdown_type, reported_by, description, priority, location, status) 
+                    VALUES 
+                    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+            $stmt = $this->db->prepare($sql);
+            $result = $stmt->execute([
+                $ticketId,
+                $data['machine_id'] ?? null,
+                $data['vehicle_id'] ?? null,
+                $data['breakdown_report_id'] ?? null,
+                $data['breakdown_type'] ?? null,
+                $data['reported_by'],
+                $data['description'],
+                $data['priority'],
+                $data['location'],
+                $data['status'] ?? self::STATUS_OPEN
+            ]);
+
+            return $result ? $this->db->lastInsertId() : false;
+        }
         
         $sql = "INSERT INTO `{$this->table}` 
                 (ticket_id, machine_id, breakdown_report_id, breakdown_type, reported_by, description, priority, location, status) 
@@ -220,6 +252,19 @@ class FaultTicket extends BaseModel {
         ]);
         
         return $result ? $this->db->lastInsertId() : false;
+    }
+
+    private function hasColumn(string $column): bool {
+        if (array_key_exists($column, $this->columnExistsCache)) {
+            return $this->columnExistsCache[$column];
+        }
+
+        $escapedColumn = str_replace("'", "''", $column);
+        $stmt = $this->db->query("SHOW COLUMNS FROM `{$this->table}` LIKE '{$escapedColumn}'");
+
+        $this->columnExistsCache[$column] = (bool) $stmt->fetch();
+
+        return $this->columnExistsCache[$column];
     }
     
     /**
@@ -310,6 +355,7 @@ class FaultTicket extends BaseModel {
             self::STATUS_WAITING_PARTS,
             self::STATUS_PARTS_APPROVED,
             self::STATUS_PARTS_REJECTED,
+            self::STATUS_INSURANCE_CLAIMED,
             self::STATUS_IN_PROGRESS,
             self::STATUS_RESOLVED,
             self::STATUS_CLOSED

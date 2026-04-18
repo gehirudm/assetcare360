@@ -318,7 +318,7 @@ class User extends BaseModel {
                         FROM fault_ticket_assignments fta
                         INNER JOIN fault_tickets ft ON ft.id = fta.fault_ticket_id
                         WHERE fta.status = 'Active'
-                          AND ft.status NOT IN ('Resolved', 'Closed')
+                                                    AND ft.status NOT IN ('Resolved', 'Closed', 'Insurance Claimed')
                         GROUP BY fta.assigned_to
                     ) workload ON workload.assigned_to = u.id
                     WHERE u.role = 'Technical Officer'";

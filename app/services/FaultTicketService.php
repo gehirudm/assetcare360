@@ -19,6 +19,7 @@ class FaultTicketService {
     private array $schemaCheckCache = [];
     private array $routeBreakdownDangerousCache = [];
     private array $breakdownContextCache = [];
+    private array $assetInsuranceCache = [];
     
     // Constants for validation
     const MAX_IMAGES = 5;
@@ -175,9 +176,8 @@ class FaultTicketService {
             
             // Handle machine-based tickets
             if (!empty($data['machine_id'])) {
-                require_once __DIR__ . '/../models/Machine.php';
-                $machineModel = new Machine();
-                $machine = $machineModel->findById($data['machine_id']);
+                $machineId = (int) $data['machine_id'];
+                $machine = $this->getMachineForTicket($machineId);
                 
                 if (!$machine) {
                     return [
@@ -187,14 +187,12 @@ class FaultTicketService {
                 }
                 
                 $location = $machine['location'] ?? 'Unknown Location';
-                $machineId = $data['machine_id'];
             }
             
             // Handle vehicle-based tickets  
             if (!empty($data['vehicle_id'])) {
-                require_once __DIR__ . '/../models/Vehicle.php';
-                $vehicleModel = new Vehicle();
-                $vehicle = $vehicleModel->findById($data['vehicle_id']);
+                $vehicleId = (int) $data['vehicle_id'];
+                $vehicle = $this->getVehicleForTicket($vehicleId);
                 
                 if (!$vehicle) {
                     return [
@@ -203,8 +201,9 @@ class FaultTicketService {
                     ];
                 }
                 
-                $location = $vehicle['current_location'] ?? $vehicle['location'] ?? 'Unknown Location';
-                $vehicleId = $data['vehicle_id'];
+                $location = !empty($vehicle['number_plate'])
+                    ? 'Vehicle ' . $vehicle['number_plate']
+                    : 'Unknown Location';
             }
             
             // Create fault ticket
@@ -219,6 +218,11 @@ class FaultTicketService {
             // Add machine_id if provided
             if ($machineId) {
                 $ticketData['machine_id'] = $machineId;
+            }
+
+            // Add vehicle_id if provided
+            if ($vehicleId) {
+                $ticketData['vehicle_id'] = $vehicleId;
             }
             
             // Add breakdown report link if provided
@@ -258,6 +262,24 @@ class FaultTicketService {
                 'message' => 'Error creating fault ticket: ' . $e->getMessage()
             ];
         }
+    }
+
+    private function getMachineForTicket(int $machineId): ?array {
+        $conn = Database::getInstance()->getConnection();
+        $stmt = $conn->prepare("SELECT id, location FROM machines WHERE id = ? LIMIT 1");
+        $stmt->execute([$machineId]);
+        $machine = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        return $machine ?: null;
+    }
+
+    private function getVehicleForTicket(int $vehicleId): ?array {
+        $conn = Database::getInstance()->getConnection();
+        $stmt = $conn->prepare("SELECT id, number_plate FROM vehicles WHERE id = ? LIMIT 1");
+        $stmt->execute([$vehicleId]);
+        $vehicle = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        return $vehicle ?: null;
     }
     
     /**
@@ -389,6 +411,8 @@ class FaultTicketService {
         $this->mergeBreakdownContextIntoTicket($ticket);
 
         $this->mergeRouteBreakdownDangerousContextIntoTicket($ticket);
+
+        $ticket['insurance_claim'] = $this->buildInsuranceClaimContext($ticket);
         
         // Format image URLs for frontend
         if (isset($ticket['images']) && is_array($ticket['images'])) {
@@ -744,6 +768,245 @@ class FaultTicketService {
             $ticket['dangerous_cargo_trip_id'] = null;
         }
     }
+
+    private function buildInsuranceClaimContext(array $ticket): array {
+        $defaultContext = [
+            'asset_type' => null,
+            'asset_id' => null,
+            'asset_label' => null,
+            'insurance_type' => null,
+            'insurance_provider' => null,
+            'insurance_provider_details' => null,
+            'insurance_renew_interval_days' => null,
+            'last_insurance_renew_date' => null,
+            'last_insurance_renew_details' => null,
+            'next_insurance_renew_date' => null,
+            'eligible' => false,
+            'eligibility_reason' => 'Insurance details are unavailable for this ticket.',
+        ];
+
+        $assetContext = $this->resolveTicketAssetForInsurance($ticket);
+        if ($assetContext === null) {
+            return $defaultContext;
+        }
+
+        $defaultContext['asset_type'] = $assetContext['asset_type'];
+        $defaultContext['asset_id'] = $assetContext['asset_id'];
+        $defaultContext['asset_label'] = $assetContext['asset_label'];
+
+        $insuranceDetails = $this->getAssetInsuranceDetails(
+            $assetContext['asset_type'],
+            $assetContext['asset_id']
+        );
+
+        if ($insuranceDetails === null) {
+            $defaultContext['eligibility_reason'] = 'Insurance details are unavailable for the linked asset.';
+            return $defaultContext;
+        }
+
+        $context = array_merge($defaultContext, $insuranceDetails);
+        $eligibility = $this->evaluateInsuranceEligibility($insuranceDetails);
+
+        $context['eligible'] = $eligibility['eligible'];
+        $context['eligibility_reason'] = $eligibility['reason'];
+
+        return $context;
+    }
+
+    private function resolveTicketAssetForInsurance(array $ticket): ?array {
+        $machineId = (int) ($ticket['machine_id'] ?? 0);
+        if ($machineId > 0) {
+            $machineLabel = trim((string) ($ticket['machine_name'] ?? ''));
+            if ($machineLabel === '') {
+                $machineLabel = trim((string) ($ticket['machine_model_number'] ?? ''));
+            }
+
+            if ($machineLabel === '') {
+                $machineLabel = 'Machine #' . $machineId;
+            }
+
+            return [
+                'asset_type' => 'machine',
+                'asset_id' => $machineId,
+                'asset_label' => $machineLabel,
+            ];
+        }
+
+        $vehicleId = (int) ($ticket['vehicle_id'] ?? 0);
+        if ($vehicleId <= 0 && isset($ticket['breakdown_context']) && is_array($ticket['breakdown_context'])) {
+            $vehicleId = (int) ($ticket['breakdown_context']['vehicle_id'] ?? 0);
+        }
+
+        if ($vehicleId <= 0) {
+            return null;
+        }
+
+        $vehicleLabel = trim((string) ($ticket['number_plate'] ?? ''));
+        if ($vehicleLabel === '' && isset($ticket['breakdown_context']) && is_array($ticket['breakdown_context'])) {
+            $vehicleLabel = trim((string) ($ticket['breakdown_context']['number_plate'] ?? ''));
+
+            if ($vehicleLabel === '') {
+                $vehicleLabel = trim((string) ($ticket['breakdown_context']['equipment_label'] ?? ''));
+            }
+        }
+
+        if ($vehicleLabel === '') {
+            $vehicleLabel = trim((string) ($ticket['machine_name'] ?? ''));
+        }
+
+        if ($vehicleLabel === '') {
+            $vehicleLabel = 'Vehicle #' . $vehicleId;
+        }
+
+        return [
+            'asset_type' => 'vehicle',
+            'asset_id' => $vehicleId,
+            'asset_label' => $vehicleLabel,
+        ];
+    }
+
+    private function getAssetInsuranceDetails(string $assetType, int $assetId): ?array {
+        if ($assetId <= 0 || ($assetType !== 'machine' && $assetType !== 'vehicle')) {
+            return null;
+        }
+
+        $cacheKey = $assetType . ':' . $assetId;
+        if (array_key_exists($cacheKey, $this->assetInsuranceCache)) {
+            return $this->assetInsuranceCache[$cacheKey];
+        }
+
+        $tableName = $assetType === 'machine' ? 'machines' : 'vehicles';
+        $db = Database::getInstance()->getConnection();
+
+        if (!$this->tableExists($db, $tableName)) {
+            $this->assetInsuranceCache[$cacheKey] = null;
+            return null;
+        }
+
+        $requiredColumns = [
+            'insurance_type',
+            'insurance_provider',
+            'insurance_provider_details',
+            'insurance_renew_interval_days',
+            'last_insurance_renew_date',
+            'last_insurance_renew_details',
+            'next_insurance_renew_date',
+        ];
+
+        foreach ($requiredColumns as $column) {
+            if (!$this->columnExists($db, $tableName, $column)) {
+                $this->assetInsuranceCache[$cacheKey] = null;
+                return null;
+            }
+        }
+
+        $stmt = $db->prepare(
+            "SELECT insurance_type,
+                    insurance_provider,
+                    insurance_provider_details,
+                    insurance_renew_interval_days,
+                    last_insurance_renew_date,
+                    last_insurance_renew_details,
+                    next_insurance_renew_date
+             FROM {$tableName}
+             WHERE id = ?
+             LIMIT 1"
+        );
+        $stmt->execute([$assetId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            $this->assetInsuranceCache[$cacheKey] = null;
+            return null;
+        }
+
+        $insuranceDetails = [
+            'insurance_type' => $row['insurance_type'] ?? null,
+            'insurance_provider' => $row['insurance_provider'] ?? null,
+            'insurance_provider_details' => $row['insurance_provider_details'] ?? null,
+            'insurance_renew_interval_days' => isset($row['insurance_renew_interval_days'])
+                ? (int) $row['insurance_renew_interval_days']
+                : null,
+            'last_insurance_renew_date' => $row['last_insurance_renew_date'] ?? null,
+            'last_insurance_renew_details' => $row['last_insurance_renew_details'] ?? null,
+            'next_insurance_renew_date' => $row['next_insurance_renew_date'] ?? null,
+        ];
+
+        $this->assetInsuranceCache[$cacheKey] = $insuranceDetails;
+        return $insuranceDetails;
+    }
+
+    private function evaluateInsuranceEligibility(array $insuranceDetails): array {
+        $insuranceType = trim((string) ($insuranceDetails['insurance_type'] ?? ''));
+        $insuranceProvider = trim((string) ($insuranceDetails['insurance_provider'] ?? ''));
+
+        if ($insuranceType === '' || $insuranceProvider === '') {
+            return [
+                'eligible' => false,
+                'reason' => 'Insurance type or provider is not configured for this asset.',
+            ];
+        }
+
+        $nextRenewDate = $this->parseInsuranceDate($insuranceDetails['next_insurance_renew_date'] ?? null);
+        $lastRenewDate = $this->parseInsuranceDate($insuranceDetails['last_insurance_renew_date'] ?? null);
+        $renewIntervalDays = (int) ($insuranceDetails['insurance_renew_interval_days'] ?? 0);
+
+        if ($nextRenewDate === null && $lastRenewDate !== null && $renewIntervalDays > 0) {
+            $nextRenewDate = $lastRenewDate->modify('+' . $renewIntervalDays . ' days');
+        }
+
+        if ($nextRenewDate === null) {
+            return [
+                'eligible' => false,
+                'reason' => 'Next insurance renewal date is unavailable for eligibility validation.',
+            ];
+        }
+
+        $today = new \DateTimeImmutable('today');
+        if ($nextRenewDate < $today) {
+            return [
+                'eligible' => false,
+                'reason' => 'Insurance policy expired on ' . $nextRenewDate->format('Y-m-d') . '.',
+            ];
+        }
+
+        return [
+            'eligible' => true,
+            'reason' => 'Insurance policy is active until ' . $nextRenewDate->format('Y-m-d') . '.',
+        ];
+    }
+
+    private function parseInsuranceDate($value): ?\DateTimeImmutable {
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            return null;
+        }
+
+        try {
+            return new \DateTimeImmutable($raw);
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    private function deactivateAssignmentsForTicket(int $ticketId): void {
+        if ($ticketId <= 0) {
+            return;
+        }
+
+        try {
+            $conn = Database::getInstance()->getConnection();
+            $stmt = $conn->prepare(
+                "UPDATE fault_ticket_assignments
+                 SET status = 'Removed'
+                 WHERE fault_ticket_id = ?
+                   AND status = 'Active'"
+            );
+            $stmt->execute([$ticketId]);
+        } catch (\Exception $e) {
+            error_log('Failed to deactivate ticket assignments for insurance claim: ' . $e->getMessage());
+        }
+    }
     
     /**
      * Update fault ticket
@@ -801,6 +1064,48 @@ class FaultTicketService {
             $isValidStatusTransition = $isStatusChangeOnly && 
                 isset($allowedTransitions[$ticket['status']]) && 
                 in_array($data['status'], $allowedTransitions[$ticket['status']]);
+
+            $isInsuranceClaimTransition = $isStatusChangeOnly
+                && isset($data['status'])
+                && $data['status'] === FaultTicket::STATUS_INSURANCE_CLAIMED;
+
+            if ($isInsuranceClaimTransition) {
+                $userRole = $user['role'] ?? null;
+                if (!in_array($userRole, ['Supervisor', 'Admin'], true)) {
+                    return [
+                        'success' => false,
+                        'message' => 'Only Supervisors and Admins can submit insurance claims.'
+                    ];
+                }
+
+                $claimableStatuses = [
+                    FaultTicket::STATUS_OPEN,
+                    FaultTicket::STATUS_ASSIGNED,
+                    FaultTicket::STATUS_WAITING_BUDGET,
+                    FaultTicket::STATUS_WAITING_PARTS,
+                    FaultTicket::STATUS_PARTS_APPROVED,
+                ];
+
+                if (!in_array($ticket['status'], $claimableStatuses, true)) {
+                    return [
+                        'success' => false,
+                        'message' => 'Insurance claims can only be submitted before repair work begins.'
+                    ];
+                }
+
+                $ticketForInsurance = $ticket;
+                $this->mergeBreakdownContextIntoTicket($ticketForInsurance);
+                $insuranceClaimContext = $this->buildInsuranceClaimContext($ticketForInsurance);
+
+                if (empty($insuranceClaimContext['eligible'])) {
+                    return [
+                        'success' => false,
+                        'message' => $insuranceClaimContext['eligibility_reason'] ?? 'This ticket is not eligible for insurance claim processing.'
+                    ];
+                }
+
+                $isValidStatusTransition = true;
+            }
 
             if ($isStatusChangeOnly && isset($data['status']) && $data['status'] === FaultTicket::STATUS_IN_PROGRESS) {
                 $latestBudget = $this->budgetReportModel->getLatestByTicketId($id);
@@ -921,16 +1226,23 @@ class FaultTicketService {
                     ];
                 }
 
+                if (isset($updateData['status']) && $updateData['status'] === FaultTicket::STATUS_INSURANCE_CLAIMED) {
+                    $this->deactivateAssignmentsForTicket((int) $id);
+                }
+
                 // Keep machine breakdown report fields in sync so MO list reflects edits immediately.
                 $this->syncMachineBreakdownDetailsFromTicket($ticket, $updateData);
                 
-                // If status is being changed to Resolved, sync the breakdown report status
-                if (isset($data['status']) && $data['status'] === 'Resolved') {
+                // Keep linked breakdown status aligned when ticket reaches a terminal workflow state.
+                if (
+                    isset($data['status'])
+                    && in_array($data['status'], [FaultTicket::STATUS_RESOLVED, FaultTicket::STATUS_INSURANCE_CLAIMED], true)
+                ) {
                     $logFile = __DIR__ . '/../../logs/breakdown_sync.log';
                     file_put_contents($logFile, date('Y-m-d H:i:s') . " - update() calling updateBreakdownReportStatus\n", FILE_APPEND);
                     file_put_contents($logFile, "  Ticket breakdown_report_id: " . ($ticket['breakdown_report_id'] ?? 'NULL') . "\n", FILE_APPEND);
                     file_put_contents($logFile, "  Ticket breakdown_type: " . ($ticket['breakdown_type'] ?? 'NULL') . "\n", FILE_APPEND);
-                    $this->updateBreakdownReportStatus($ticket, 'Resolved');
+                    $this->updateBreakdownReportStatus($ticket, $data['status']);
                 }
             }
             

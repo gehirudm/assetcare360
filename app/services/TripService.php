@@ -578,7 +578,7 @@ class TripService {
                 "SELECT id, ticket_id, status
                  FROM fault_tickets
                  WHERE vehicle_id = ?
-                   AND status NOT IN ('Resolved', 'Closed')
+                                     AND status NOT IN ('Resolved', 'Closed', 'Insurance Claimed')
                  ORDER BY updated_at DESC
                  LIMIT 1"
             );
@@ -610,7 +610,7 @@ class TripService {
                      ON ft.breakdown_type = 'vehicle_breakdown'
                     AND ft.breakdown_report_id = vb.breakdown_id
                  WHERE vb.vehicle_id = ?
-                   AND ft.status NOT IN ('Resolved', 'Closed')
+                                     AND ft.status NOT IN ('Resolved', 'Closed', 'Insurance Claimed')
                  ORDER BY ft.updated_at DESC
                  LIMIT 1"
             );
@@ -634,7 +634,7 @@ class TripService {
                      ON ft.breakdown_type = 'route_breakdown'
                     AND ft.breakdown_report_id = rb.route_breakdown_id
                  WHERE rb.vehicle_id = ?
-                   AND ft.status NOT IN ('Resolved', 'Closed')
+                                     AND ft.status NOT IN ('Resolved', 'Closed', 'Insurance Claimed')
                  ORDER BY ft.updated_at DESC
                  LIMIT 1"
             );

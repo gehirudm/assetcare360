@@ -56,6 +56,7 @@ class FaultTicketWorkflowService {
 
         $currentStatus = $ticket['status'] ?? FaultTicket::STATUS_OPEN;
         $terminalStatuses = [
+            FaultTicket::STATUS_INSURANCE_CLAIMED,
             FaultTicket::STATUS_IN_PROGRESS,
             FaultTicket::STATUS_RESOLVED,
             FaultTicket::STATUS_CLOSED,
