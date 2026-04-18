@@ -25,8 +25,12 @@ class Machine extends BaseModel {
             'supplier_name' => 'VARCHAR(255) NOT NULL',
             'supplier_contact' => 'VARCHAR(100) NULL',
             'service_interval_days' => 'INT NOT NULL DEFAULT 90',
+            'service_interval_hours' => 'INT NULL COMMENT "Service interval in operating hours"',
+            'current_operating_hours' => 'INT NOT NULL DEFAULT 0 COMMENT "Current operating hours"',
             'last_service_date' => 'DATE NULL',
             'next_service_date' => 'DATE NULL',
+            'last_service_hours' => 'INT NULL COMMENT "Operating hours at last service"',
+            'next_service_hours' => 'INT NULL COMMENT "Next service threshold in operating hours"',
             'components' => 'TEXT NULL',
             'status' => "ENUM('Active', 'Inactive', 'Under Maintenance', 'Decommissioned', 'For Auction') DEFAULT 'Active'",
             'notes' => 'TEXT NULL',
@@ -44,8 +48,16 @@ class Machine extends BaseModel {
         return [
             'idx_status' => 'status',
             'idx_location' => 'location',
-            'idx_next_service' => 'next_service_date'
+            'idx_next_service' => 'next_service_date',
+            'idx_next_service_hours' => 'next_service_hours'
         ];
+    }
+
+    /**
+     * Whether a value can be treated as a numeric value.
+     */
+    private function hasNumericValue($value): bool {
+        return $value !== null && $value !== '' && is_numeric($value);
     }
     
     /**
@@ -87,10 +99,23 @@ class Machine extends BaseModel {
         }
         
         // Calculate next service date if last service date is provided
-        if (isset($data['last_service_date']) && isset($data['service_interval_days'])) {
+        if (!empty($data['last_service_date']) && $this->hasNumericValue($data['service_interval_days'])) {
             $lastService = new DateTime($data['last_service_date']);
-            $lastService->modify("+{$data['service_interval_days']} days");
+            $lastService->modify("+" . (int)$data['service_interval_days'] . " days");
             $data['next_service_date'] = $lastService->format('Y-m-d');
+        }
+
+        // Calculate next service operating-hour threshold when hour interval is configured.
+        $lastServiceHours = null;
+        if ($this->hasNumericValue($data['last_service_hours'] ?? null)) {
+            $lastServiceHours = (int)$data['last_service_hours'];
+        } elseif ($this->hasNumericValue($data['current_operating_hours'] ?? null)) {
+            $lastServiceHours = (int)$data['current_operating_hours'];
+            $data['last_service_hours'] = $lastServiceHours;
+        }
+
+        if ($lastServiceHours !== null && $this->hasNumericValue($data['service_interval_hours'] ?? null)) {
+            $data['next_service_hours'] = $lastServiceHours + (int)$data['service_interval_hours'];
         }
         
         return $this->create($data);
@@ -104,17 +129,42 @@ class Machine extends BaseModel {
         if (isset($data['components']) && is_array($data['components'])) {
             $data['components'] = json_encode($data['components']);
         }
+
+        $current = $this->findById($id);
         
         // Recalculate next service date if last service date or interval changed
         if (isset($data['last_service_date']) || isset($data['service_interval_days'])) {
-            $current = $this->findById($id);
             $lastService = isset($data['last_service_date']) ? $data['last_service_date'] : $current['last_service_date'];
             $interval = isset($data['service_interval_days']) ? $data['service_interval_days'] : $current['service_interval_days'];
             
-            if ($lastService && $interval) {
+            if (!empty($lastService) && $this->hasNumericValue($interval) && (int)$interval > 0) {
                 $date = new DateTime($lastService);
-                $date->modify("+{$interval} days");
+                $date->modify("+" . (int)$interval . " days");
                 $data['next_service_date'] = $date->format('Y-m-d');
+            } elseif (isset($data['last_service_date']) || isset($data['service_interval_days'])) {
+                $data['next_service_date'] = null;
+            }
+        }
+
+        // Recalculate next service operating-hour threshold if hour fields change.
+        if (isset($data['last_service_hours']) || isset($data['service_interval_hours']) || isset($data['current_operating_hours'])) {
+            $lastServiceHours = array_key_exists('last_service_hours', $data)
+                ? $data['last_service_hours']
+                : $current['last_service_hours'];
+
+            if (!$this->hasNumericValue($lastServiceHours) && $this->hasNumericValue($data['current_operating_hours'] ?? null)) {
+                $lastServiceHours = $data['current_operating_hours'];
+                $data['last_service_hours'] = (int)$lastServiceHours;
+            }
+
+            $intervalHours = array_key_exists('service_interval_hours', $data)
+                ? $data['service_interval_hours']
+                : $current['service_interval_hours'];
+
+            if ($this->hasNumericValue($lastServiceHours) && $this->hasNumericValue($intervalHours) && (int)$intervalHours > 0) {
+                $data['next_service_hours'] = (int)$lastServiceHours + (int)$intervalHours;
+            } elseif (array_key_exists('service_interval_hours', $data) || array_key_exists('last_service_hours', $data)) {
+                $data['next_service_hours'] = null;
             }
         }
         
@@ -223,8 +273,15 @@ class Machine extends BaseModel {
     public function getMachinesDueForService() {
         $sql = "SELECT * FROM `{$this->table}` 
                 WHERE status = 'Active' 
-                AND next_service_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-                ORDER BY next_service_date ASC";
+                AND (
+                    (next_service_date IS NOT NULL AND next_service_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY))
+                    OR
+                    (
+                        next_service_hours IS NOT NULL
+                        AND current_operating_hours >= GREATEST(next_service_hours - 10, 0)
+                    )
+                )
+                ORDER BY next_service_date ASC, next_service_hours ASC";
         
         $stmt = $this->db->query($sql);
         $machines = $stmt->fetchAll();

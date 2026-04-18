@@ -3296,7 +3296,7 @@ components:
       tags:
         - Machines
       summary: Get machines due for service
-      description: Retrieve machines that need servicing within 7 days
+      description: Retrieve active machines that need servicing by date (within 7 days) or operating-hour threshold
       security:
         - bearerAuth: []
         - cookieAuth: []
@@ -5419,6 +5419,8 @@ components:
       properties:
         id:
           type: integer
+        machine_id:
+          type: string
         model_number:
           type: string
         machine_name:
@@ -5436,12 +5438,27 @@ components:
           type: string
         service_interval_days:
           type: integer
+        service_interval_hours:
+          type: integer
+          nullable: true
+          description: Optional service interval in operating hours
+        current_operating_hours:
+          type: integer
+          description: Current machine operating hours
         last_service_date:
           type: string
           format: date
         next_service_date:
           type: string
           format: date
+        last_service_hours:
+          type: integer
+          nullable: true
+          description: Operating hours at the last service
+        next_service_hours:
+          type: integer
+          nullable: true
+          description: Next service threshold in operating hours
         components:
           type: array
           items:
@@ -5489,9 +5506,23 @@ components:
         service_interval_days:
           type: integer
           default: 90
+        service_interval_hours:
+          type: integer
+          nullable: true
+          description: Optional service interval in operating hours
+        current_operating_hours:
+          type: integer
+          nullable: true
+          minimum: 0
+          description: Current machine operating hours
         last_service_date:
           type: string
           format: date
+        last_service_hours:
+          type: integer
+          nullable: true
+          minimum: 0
+          description: Operating hours at the last service
         components:
           type: array
           items:

@@ -24,6 +24,37 @@ class MachineService {
                 throw new Exception("Field '$field' is required");
             }
         }
+
+        $serviceIntervalDays = $this->parseNullableNonNegativeInteger($data['service_interval_days'] ?? null, 'service_interval_days');
+        if ($serviceIntervalDays === null || $serviceIntervalDays <= 0) {
+            throw new Exception("Field 'service_interval_days' must be a positive number");
+        }
+        $data['service_interval_days'] = $serviceIntervalDays;
+
+        $serviceIntervalHours = $this->parseNullableNonNegativeInteger($data['service_interval_hours'] ?? null, 'service_interval_hours');
+        if ($serviceIntervalHours !== null && $serviceIntervalHours <= 0) {
+            throw new Exception("Field 'service_interval_hours' must be greater than 0 when provided");
+        }
+        if ($serviceIntervalHours !== null) {
+            $data['service_interval_hours'] = $serviceIntervalHours;
+        }
+
+        $currentOperatingHours = $this->parseNullableNonNegativeInteger($data['current_operating_hours'] ?? null, 'current_operating_hours');
+        $lastServiceHours = $this->parseNullableNonNegativeInteger($data['last_service_hours'] ?? null, 'last_service_hours');
+
+        if ($lastServiceHours !== null && $currentOperatingHours !== null && $lastServiceHours > $currentOperatingHours) {
+            throw new Exception('Last service hours cannot be greater than current operating hours');
+        }
+
+        if ($currentOperatingHours !== null) {
+            $data['current_operating_hours'] = $currentOperatingHours;
+        }
+        if ($lastServiceHours !== null) {
+            $data['last_service_hours'] = $lastServiceHours;
+        }
+        if ($lastServiceHours !== null && $currentOperatingHours === null) {
+            $data['current_operating_hours'] = $lastServiceHours;
+        }
         
         // Validate last service date is not in the future
         if (!empty($data['last_service_date'])) {
@@ -54,6 +85,50 @@ class MachineService {
         $machine = $this->machineModel->findById($id);
         if (!$machine) {
             throw new Exception("Machine not found");
+        }
+
+        if (array_key_exists('service_interval_days', $data)) {
+            $serviceIntervalDays = $this->parseNullableNonNegativeInteger($data['service_interval_days'], 'service_interval_days');
+            if ($serviceIntervalDays !== null && $serviceIntervalDays <= 0) {
+                throw new Exception("Field 'service_interval_days' must be greater than 0 when provided");
+            }
+            if ($serviceIntervalDays === null) {
+                unset($data['service_interval_days']);
+            } else {
+                $data['service_interval_days'] = $serviceIntervalDays;
+            }
+        }
+
+        if (array_key_exists('service_interval_hours', $data)) {
+            $serviceIntervalHours = $this->parseNullableNonNegativeInteger($data['service_interval_hours'], 'service_interval_hours');
+            if ($serviceIntervalHours !== null && $serviceIntervalHours <= 0) {
+                throw new Exception("Field 'service_interval_hours' must be greater than 0 when provided");
+            }
+            $data['service_interval_hours'] = $serviceIntervalHours;
+        }
+
+        $currentOperatingHours = array_key_exists('current_operating_hours', $data)
+            ? $this->parseNullableNonNegativeInteger($data['current_operating_hours'], 'current_operating_hours')
+            : $this->parseNullableNonNegativeInteger($machine['current_operating_hours'] ?? null, 'current_operating_hours');
+
+        $lastServiceHours = array_key_exists('last_service_hours', $data)
+            ? $this->parseNullableNonNegativeInteger($data['last_service_hours'], 'last_service_hours')
+            : $this->parseNullableNonNegativeInteger($machine['last_service_hours'] ?? null, 'last_service_hours');
+
+        if ($lastServiceHours !== null && $currentOperatingHours !== null && $lastServiceHours > $currentOperatingHours) {
+            throw new Exception('Last service hours cannot be greater than current operating hours');
+        }
+
+        if (array_key_exists('current_operating_hours', $data)) {
+            if ($currentOperatingHours === null) {
+                unset($data['current_operating_hours']);
+            } else {
+                $data['current_operating_hours'] = $currentOperatingHours;
+            }
+        }
+
+        if (array_key_exists('last_service_hours', $data)) {
+            $data['last_service_hours'] = $lastServiceHours;
         }
         
         // Validate last service date is not in the future
@@ -133,6 +208,26 @@ class MachineService {
      */
     public function getMachinesDueForService() {
         return $this->machineModel->getMachinesDueForService();
+    }
+
+    /**
+     * Parse optional non-negative integer input.
+     */
+    private function parseNullableNonNegativeInteger($value, string $field): ?int {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (!is_numeric($value)) {
+            throw new Exception("Field '$field' must be a valid number");
+        }
+
+        $normalized = (int)$value;
+        if ($normalized < 0) {
+            throw new Exception("Field '$field' cannot be negative");
+        }
+
+        return $normalized;
     }
     
     /**
