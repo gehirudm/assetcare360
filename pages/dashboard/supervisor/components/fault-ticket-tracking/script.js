@@ -7,6 +7,7 @@ class SupervisorFaultTicketTracking extends HTMLElement {
         this._mounted = true;
         this.currentFilter = 'all';
         this.currentSourceFilter = 'all';
+        this.currentSort = 'created';
         this._allBreakdowns = [];
 
         this.render();
@@ -30,18 +31,34 @@ class SupervisorFaultTicketTracking extends HTMLElement {
                 <p class="page-subtitle">Track machine and vehicle breakdown reports in one place</p>
             </div>
 
-            <div class="filter-controls" id="supervisorFaultTicketFilterControls">
-                <button class="filter-btn active" type="button" data-action="set-filter" data-filter="all">All Fault Tickets</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-filter="open">Pending</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-filter="in-progress">In Progress</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-filter="resolved">Resolved</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-filter="closed">Closed</button>
-            </div>
+            <div class="filter-toolbar filter-toolbar--stacked">
+                <div class="filter-toolbar__group">
+                    <span class="filter-toolbar__label-inline">Status</span>
+                    <div class="filter-controls filter-toolbar__filters" id="supervisorFaultTicketFilterControls">
+                        <button class="filter-btn active" type="button" data-action="set-filter" data-filter="all">All Fault Tickets</button>
+                        <button class="filter-btn" type="button" data-action="set-filter" data-filter="open">Pending</button>
+                        <button class="filter-btn" type="button" data-action="set-filter" data-filter="in-progress">In Progress</button>
+                        <button class="filter-btn" type="button" data-action="set-filter" data-filter="resolved">Resolved</button>
+                        <button class="filter-btn" type="button" data-action="set-filter" data-filter="closed">Closed</button>
+                    </div>
+                </div>
 
-            <div class="filter-controls" id="supervisorFaultTicketSourceFilterControls">
-                <button class="filter-btn active" type="button" data-action="set-source-filter" data-source="all">All Sources</button>
-                <button class="filter-btn" type="button" data-action="set-source-filter" data-source="vehicle">Vehicle</button>
-                <button class="filter-btn" type="button" data-action="set-source-filter" data-source="machine">Machine</button>
+                <div class="filter-toolbar__group">
+                    <span class="filter-toolbar__label-inline">Source</span>
+                    <div class="filter-controls filter-toolbar__filters" id="supervisorFaultTicketSourceFilterControls">
+                        <button class="filter-btn active" type="button" data-action="set-source-filter" data-source="all">All Sources</button>
+                        <button class="filter-btn" type="button" data-action="set-source-filter" data-source="vehicle">Vehicle</button>
+                        <button class="filter-btn" type="button" data-action="set-source-filter" data-source="machine">Machine</button>
+                    </div>
+                </div>
+
+                <div class="filter-toolbar__sort">
+                    <label class="filter-toolbar__label" for="supervisorFaultTicketSort">Sort by</label>
+                    <select id="supervisorFaultTicketSort" class="filter-toolbar__select" data-action="set-sort">
+                        <option value="created">Created Date</option>
+                        <option value="priority">Priority</option>
+                    </select>
+                </div>
             </div>
 
             <div class="card">
@@ -73,10 +90,23 @@ class SupervisorFaultTicketTracking extends HTMLElement {
                 return;
             }
 
+            if (action === 'set-sort') {
+                return;
+            }
+
             if (action === 'view-ticket' || action === 'view-breakdown') {
                 this.openDetails(actionNode.dataset.breakdownIdx);
                 return;
             }
+        });
+
+        this.addEventListener('change', (event) => {
+            const actionNode = event.target.closest('[data-action="set-sort"]');
+            if (!actionNode) {
+                return;
+            }
+
+            this.applySort(actionNode.value);
         });
     }
 
@@ -94,9 +124,10 @@ class SupervisorFaultTicketTracking extends HTMLElement {
         list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">Loading fault tickets...</div>';
 
         try {
-            const [machineRes, routeRes] = await Promise.all([
+            const [machineRes, routeRes, vehicleRes] = await Promise.all([
                 API.get('/machine-breakdowns'),
                 API.get('/route-breakdowns'),
+                API.get('/breakdown-reports'),
             ]);
 
             const machineBreakdowns = (machineRes?.status === 'success' && machineRes.data?.reports)
@@ -107,14 +138,12 @@ class SupervisorFaultTicketTracking extends HTMLElement {
                 ? routeRes.data.breakdowns.map((report) => this.normalizeRouteBreakdown(report))
                 : [];
 
-            this._allBreakdowns = [...machineBreakdowns, ...routeBreakdowns].sort((a, b) => {
-                const severityDiff = this.getSeverityRank(b.severity) - this.getSeverityRank(a.severity);
-                if (severityDiff !== 0) {
-                    return severityDiff;
-                }
+            const vehicleBreakdowns = (vehicleRes?.status === 'success' && vehicleRes.data?.reports)
+                ? vehicleRes.data.reports.map((report) => this.normalizeVehicleBreakdown(report))
+                : [];
 
-                return new Date(b.date || 0) - new Date(a.date || 0);
-            });
+            this._allBreakdowns = [...machineBreakdowns, ...routeBreakdowns, ...vehicleBreakdowns];
+            this.sortBreakdowns();
         } catch (error) {
             console.error('Error loading supervisor fault ticket tracking data:', error);
             this._allBreakdowns = [];
@@ -129,6 +158,7 @@ class SupervisorFaultTicketTracking extends HTMLElement {
     normalizeMachineBreakdown(report) {
         return {
             source: 'machine',
+            reportType: 'machine_breakdown',
             id: report.id,
             raw: report,
             breakdownId: report.breakdown_id,
@@ -146,6 +176,29 @@ class SupervisorFaultTicketTracking extends HTMLElement {
         };
     }
 
+    normalizeVehicleBreakdown(report) {
+        return {
+            source: 'vehicle',
+            reportType: 'vehicle_breakdown',
+            id: report.id,
+            raw: report,
+            breakdownId: report.breakdown_id,
+            identifier: report.number_plate || `Vehicle #${report.vehicle_id || 'N/A'}`,
+            reportedBy: report.driver_name || 'Unknown',
+            reporterType: 'Driver',
+            description: report.description || '',
+            type: report.breakdown_type || 'Vehicle Breakdown',
+            severity: this.normalizeSeverity(report.severity || 'Medium'),
+            date: report.breakdown_date || report.created_at,
+            effectiveStatus: report.ticket_status || report.status || 'Pending',
+            ticketNumber: report.fault_ticket_number || null,
+            faultTicketId: report.fault_ticket_id ? Number(report.fault_ticket_id) : null,
+            assignments: Array.isArray(report.assigned_technicians)
+                ? report.assigned_technicians.map((technician) => ({ technician_name: technician.technician_name }))
+                : [],
+        };
+    }
+
     normalizeRouteBreakdown(report) {
         const legacyDescription = this.parseLegacyRouteBreakdownDescription(report.description);
         const normalizedSeverity = this.normalizeSeverity(legacyDescription.severity || report.severity || 'Medium');
@@ -159,6 +212,7 @@ class SupervisorFaultTicketTracking extends HTMLElement {
 
         return {
             source: 'vehicle',
+            reportType: 'route_breakdown',
             id: report.id,
             raw: report,
             breakdownId: report.route_breakdown_id,
@@ -205,6 +259,30 @@ class SupervisorFaultTicketTracking extends HTMLElement {
         }
 
         return 2;
+    }
+
+    getBreakdownSortTimestamp(breakdown) {
+        const candidateValues = [
+            breakdown?.date,
+            breakdown?.raw?.created_at,
+            breakdown?.raw?.breakdown_datetime,
+            breakdown?.raw?.breakdown_date,
+            breakdown?.raw?.updated_at,
+        ];
+
+        for (const value of candidateValues) {
+            if (!value) {
+                continue;
+            }
+
+            const parsedTimestamp = new Date(value).getTime();
+            if (Number.isFinite(parsedTimestamp)) {
+                return parsedTimestamp;
+            }
+        }
+
+        const fallbackId = Number(breakdown?.id || 0);
+        return Number.isFinite(fallbackId) ? fallbackId : 0;
     }
 
     normalizeSeverity(severity) {
@@ -357,6 +435,10 @@ class SupervisorFaultTicketTracking extends HTMLElement {
             return 'in-progress';
         }
 
+        if (normalizedStatus === 'insurance claimed') {
+            return 'resolved';
+        }
+
         if (normalizedStatus === 'resolved' || normalizedStatus === 'finished' || normalizedStatus === 'completed') {
             return 'resolved';
         }
@@ -380,6 +462,7 @@ class SupervisorFaultTicketTracking extends HTMLElement {
             'Garage Approved': { label: 'Garage Approved', className: 'status-assigned' },
             'Garage Entry Logged': { label: 'Garage Entry Logged', className: 'status-in-progress' },
             'Repair In Progress': { label: 'Repair In Progress', className: 'status-in-progress' },
+            'Insurance Claimed': { label: 'Insurance Claimed', className: 'status-resolved' },
             Completed: { label: 'Completed', className: 'status-resolved' },
             Resolved: { label: 'Resolved', className: 'status-resolved' },
             Closed: { label: 'Closed', className: 'status-resolved' },
@@ -418,6 +501,7 @@ class SupervisorFaultTicketTracking extends HTMLElement {
             'Garage Approved': 'Nearby garage approved by supervisor',
             'Garage Entry Logged': 'Vehicle arrived at approved garage',
             'Repair In Progress': 'Repair is in progress at the approved garage',
+            'Insurance Claimed': 'Submitted through insurance claim workflow',
             Completed: 'Garage repair completed',
             Resolved: 'Work completed and ticket resolved',
             Closed: 'Ticket closed',
@@ -557,6 +641,44 @@ class SupervisorFaultTicketTracking extends HTMLElement {
         this.renderList();
     }
 
+    applySort(sortValue) {
+        this.currentSort = sortValue || 'created';
+        this.sortBreakdowns();
+        this.renderList();
+    }
+
+    sortBreakdowns() {
+        this._allBreakdowns.sort((first, second) => this.compareBreakdowns(first, second));
+    }
+
+    compareBreakdowns(first, second) {
+        if (this.currentSort === 'priority') {
+            const severityDiff = this.getSeverityRank(second.severity) - this.getSeverityRank(first.severity);
+            if (severityDiff !== 0) {
+                return severityDiff;
+            }
+
+            const timestampDiff = this.getBreakdownSortTimestamp(second) - this.getBreakdownSortTimestamp(first);
+            if (timestampDiff !== 0) {
+                return timestampDiff;
+            }
+
+            return Number(second.id || 0) - Number(first.id || 0);
+        }
+
+        const timestampDiff = this.getBreakdownSortTimestamp(second) - this.getBreakdownSortTimestamp(first);
+        if (timestampDiff !== 0) {
+            return timestampDiff;
+        }
+
+        const severityDiff = this.getSeverityRank(second.severity) - this.getSeverityRank(first.severity);
+        if (severityDiff !== 0) {
+            return severityDiff;
+        }
+
+        return Number(second.id || 0) - Number(first.id || 0);
+    }
+
     updateSummary() {
         const summary = this.querySelector('[data-fault-ticket-summary]');
         if (!summary) {
@@ -593,7 +715,7 @@ class SupervisorFaultTicketTracking extends HTMLElement {
         }
 
         if (typeof window.viewOrCreateBreakdownTicket === 'function') {
-            const reportType = breakdown.source === 'vehicle' ? 'route_breakdown' : 'machine_breakdown';
+            const reportType = breakdown.reportType || (breakdown.source === 'vehicle' ? 'vehicle_breakdown' : 'machine_breakdown');
             await window.viewOrCreateBreakdownTicket(reportType, breakdown.id, breakdown);
             return;
         }
