@@ -773,4 +773,29 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+body.ticket-detail-embedded {
+    background: transparent;
+}
+
+body.ticket-detail-embedded .container {
+    min-height: auto;
+}
+
+body.ticket-detail-embedded .main-wrapper {
+    display: block;
+}
+
+body.ticket-detail-embedded .main-content.detail-page-content {
+    max-width: none;
+    width: 100%;
+    padding: 0 0 24px;
+}
+
+body.ticket-detail-embedded to-shell-header,
+body.ticket-detail-embedded to-shell-sidebar,
+body.ticket-detail-embedded #detailSubheader,
+body.ticket-detail-embedded #errorBackButton {
+    display: none !important;
+}
     

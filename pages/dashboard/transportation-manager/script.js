@@ -1,6 +1,7 @@
 let currentUser = null;
 let refreshIntervalId = null;
 let currentFleetVehicleId = null;
+let currentCargoItemId = null;
 
 function getComponent(selector) {
     return document.querySelector(selector);
@@ -51,6 +52,27 @@ async function refreshTrips() {
     if (section && typeof section.refresh === 'function') {
         await section.refresh();
     }
+}
+
+async function refreshCargoManagement() {
+    const section = getComponent('tm-cargo-management');
+    if (section && typeof section.refresh === 'function') {
+        await section.refresh();
+    }
+}
+
+async function refreshCargoDetails() {
+    const section = getComponent('tm-cargo-details');
+    if (!section || typeof section.refresh !== 'function') {
+        return;
+    }
+
+    if (currentCargoItemId && typeof section.open === 'function') {
+        await section.open(currentCargoItemId);
+        return;
+    }
+
+    await section.refresh();
 }
 
 async function refreshTripLog() {
@@ -202,6 +224,37 @@ function setupTripsEvents() {
     });
 }
 
+function setupCargoManagementEvents() {
+    const cargoManagement = getComponent('tm-cargo-management');
+    if (!cargoManagement || cargoManagement._eventsBound) return;
+    cargoManagement._eventsBound = true;
+
+    cargoManagement.addEventListener('tm-cargo-management:create-item', () => {
+        openModal('tm-cargo-item-modal');
+    });
+
+    cargoManagement.addEventListener('tm-cargo-management:view', async (event) => {
+        const itemId = Number(event.detail?.itemId || 0);
+        if (itemId <= 0) {
+            return;
+        }
+
+        currentCargoItemId = itemId;
+        navigateToSection('cargo-details');
+        await refreshCargoDetails();
+    });
+}
+
+function setupCargoDetailsEvents() {
+    const cargoDetails = getComponent('tm-cargo-details');
+    if (!cargoDetails || cargoDetails._eventsBound) return;
+    cargoDetails._eventsBound = true;
+
+    cargoDetails.addEventListener('tm-cargo-details:back', () => {
+        navigateToSection('cargo-management');
+    });
+}
+
 function setupFuelLogEvents() {
     const fuelLog = getComponent('tm-fuel-log');
     if (!fuelLog || fuelLog._eventsBound) return;
@@ -328,16 +381,22 @@ function setupModalEvents() {
     // Listen for modal completion events
     document.addEventListener('tm-modal:trip-assigned', async () => {
         await refreshTrips();
+        await refreshCargoManagement();
+        await refreshCargoDetails();
         await refreshDashboardOverview();
     });
 
     document.addEventListener('tm-modal:trip-updated', async () => {
         await refreshTrips();
+        await refreshCargoManagement();
+        await refreshCargoDetails();
         await refreshDashboardOverview();
     });
 
     document.addEventListener('tm-modal:trip-ended', async () => {
         await refreshTrips();
+        await refreshCargoManagement();
+        await refreshCargoDetails();
         await refreshTripLog();
         await refreshDashboardOverview();
     });
@@ -345,6 +404,18 @@ function setupModalEvents() {
     document.addEventListener('tm-modal:fuel-added', async () => {
         await refreshFuelLog();
         await refreshDashboardOverview();
+    });
+
+    document.addEventListener('tm-modal:cargo-item-saved', async (event) => {
+        const cargoItemId = Number(event.detail?.cargoItem?.id || 0);
+        if (cargoItemId > 0) {
+            currentCargoItemId = cargoItemId;
+        }
+
+        await refreshCargoManagement();
+        if (document.getElementById('cargo-details')?.classList.contains('active')) {
+            await refreshCargoDetails();
+        }
     });
 
     // Refresh fuel log whenever the section becomes visible
@@ -356,6 +427,16 @@ function setupModalEvents() {
 
         if (event.detail?.section === 'fleet-details') {
             await refreshFleetDetails();
+            return;
+        }
+
+        if (event.detail?.section === 'cargo-management') {
+            await refreshCargoManagement();
+            return;
+        }
+
+        if (event.detail?.section === 'cargo-details') {
+            await refreshCargoDetails();
         }
     });
 
@@ -376,6 +457,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         setupDashboardOverviewEvents();
         setupTripsEvents();
+        setupCargoManagementEvents();
+        setupCargoDetailsEvents();
         setupFuelLogEvents();
         setupTripLogEvents();
         setupFleetEvents();

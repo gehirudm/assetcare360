@@ -160,6 +160,11 @@ $router->delete('/vehicles/:id', 'VehicleController', 'delete');
 
 // Trip management routes (Driver)
 $router->get('/trips/active-count', 'TripController', 'getActiveTripCount');
+$router->get('/trips/cargo-items', 'TripController', 'getCargoItems');
+$router->post('/trips/cargo-items', 'TripController', 'createCargoItem');
+$router->put('/trips/cargo-items/:id', 'TripController', 'updateCargoItem');
+$router->delete('/trips/cargo-items/:id', 'TripController', 'deleteCargoItem');
+$router->get('/trips/cargo-analytics', 'TripController', 'getCargoAnalytics');
 $router->get('/trips', 'TripController', 'getAllTrips');
 $router->post('/trips', 'TripController', 'createTrip');
 $router->get('/trips/:id', 'TripController', 'getTripById');

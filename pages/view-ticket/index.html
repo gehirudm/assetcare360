@@ -60,6 +60,65 @@
             border-radius: 8px;
             padding: 8px 10px;
         }
+
+        .route-location-panel {
+            background: #ffffff;
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .route-location-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .route-location-title {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1e3a8a;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .route-location-label {
+            font-size: 0.78rem;
+            color: #334155;
+            background: #eff6ff;
+            border: 1px solid #dbeafe;
+            border-radius: 999px;
+            padding: 3px 10px;
+        }
+
+        .route-location-map {
+            width: 100%;
+            height: 320px;
+            border: 1px solid #dbeafe;
+            border-radius: 10px;
+            background: #f8fafc;
+            overflow: hidden;
+        }
+
+        .route-location-hint {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 768px) {
+            .route-location-map {
+                height: 260px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -155,6 +214,23 @@
                 <div class="overview-label"><i class="fas fa-align-left"></i> Issue Description</div>
                 <p id="ovDescription">-</p>
             </div>
+            <div class="overview-dangerous" id="ovDangerousCargoPanel" style="display:none;">
+                <div class="overview-label"><i class="fas fa-radiation"></i> Dangerous Cargo Context</div>
+                <div class="overview-dangerous-badges" id="ovDangerousCargoBadges"></div>
+                <p id="ovDangerousCargoSummary">-</p>
+            </div>
+        </section>
+
+        <section class="route-location-panel" id="routeLocationPanel" style="display:none;">
+            <div class="route-location-header">
+                <h3 class="route-location-title">
+                    <i class="fas fa-map-marked-alt"></i>
+                    Breakdown Location Map
+                </h3>
+                <span class="route-location-label" id="routeLocationLabel" style="display:none;"></span>
+            </div>
+            <div id="routeLocationMap" class="route-location-map"></div>
+            <p id="routeLocationHint" class="route-location-hint">Loading reported location map...</p>
         </section>
 
         <!-- Step-by-Step Flow -->

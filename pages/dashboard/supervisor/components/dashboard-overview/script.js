@@ -61,7 +61,7 @@ class SupervisorDashboardOverview extends HTMLElement {
                     </div>
                 </div>
 
-                <div class="summary-card clickable" data-section-nav="fault-tickets">
+                <div class="summary-card clickable" data-section-nav="fault-ticket-tracking">
                     <div class="summary-card-content">
                         <div class="summary-icon">
                             <i class="fas fa-exclamation-triangle"></i>

@@ -6,6 +6,8 @@ DashboardInit.init('Supervisor', {
         bindSupervisorDailyCheckReports();
         bindSupervisorFaultTickets();
         bindSupervisorTicketModals();
+        bindSupervisorTicketDetailView();
+        bindSupervisorBreakdownDetailView();
         bindSupervisorAssetStatus();
         bindSupervisorRepairManagement();
         bindSupervisorBudgetApproval();
@@ -28,17 +30,20 @@ const SUPERVISOR_SECTIONS = new Set([
     'dashboard',
     'daily-check-reports',
     'fault-ticket-tracking',
-    'fault-tickets',
+    'ticket-details',
+    'breakdown-details',
     'repair-management',
     'budget-approval',
     'asset-status',
-    'technicians',
-    'technician-assignments'
+    'technicians'
 ]);
 
+let supervisorTicketDetailsReturnSection = 'fault-ticket-tracking';
+let supervisorBreakdownDetailsReturnSection = 'fault-ticket-tracking';
+
 function normalizeSupervisorSection(sectionId) {
-    if (sectionId === 'technician-assignments') {
-        return 'fault-tickets';
+    if (sectionId === 'technician-assignments' || sectionId === 'fault-tickets') {
+        return 'fault-ticket-tracking';
     }
 
     return SUPERVISOR_SECTIONS.has(sectionId) ? sectionId : 'dashboard';
@@ -59,6 +64,24 @@ function syncSupervisorSectionInUrl(sectionId) {
 
     url.searchParams.set('section', normalized);
     window.history.replaceState({}, '', `${url.pathname}${url.search}`);
+}
+
+function navigateSupervisorSection(sectionId) {
+    const section = normalizeSupervisorSection(sectionId);
+    const layout = document.querySelector('ac-layout');
+    if (!layout || typeof layout.navigateTo !== 'function') {
+        return;
+    }
+
+    layout.navigateTo(section);
+}
+
+function scrollSupervisorViewportToTop() {
+    try {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    } catch (_error) {
+        window.scrollTo(0, 0);
+    }
 }
 
 document.querySelector('ac-layout')
@@ -94,8 +117,8 @@ function loadSectionData(sectionId) {
         case 'fault-ticket-tracking':
             refreshSupervisorFaultTicketTracking();
             break;
-        case 'fault-tickets':
-            refreshSupervisorFaultTickets();
+        case 'ticket-details':
+        case 'breakdown-details':
             break;
         case 'repair-management':
             refreshSupervisorRepairManagement();
@@ -107,7 +130,6 @@ function loadSectionData(sectionId) {
             refreshSupervisorAssetStatus();
             break;
         case 'technicians':
-        case 'technician-assignments':
             loadTechnicians();
             break;
     }
@@ -189,12 +211,9 @@ function bindSupervisorFaultTickets() {
 
         switch (action) {
             case 'view-breakdown':
+            case 'view-breakdown-ticket':
                 if (!detail.reportType || !detail.reportId) return;
-                if (detail.reportType === 'route_breakdown') {
-                    viewRouteBreakdownTicket(detail.reportType, detail.reportId);
-                } else {
-                    viewBreakdownDetails(detail.reportType, detail.reportId);
-                }
+                viewOrCreateBreakdownTicket(detail.reportType, detail.reportId);
                 break;
             case 'assign-breakdown':
                 if (!detail.reportType || !detail.reportId) return;
@@ -285,14 +304,56 @@ function bindSupervisorTicketModals() {
             if (!message) return;
             showToast(message, type);
         });
-
-        viewTicketModal.addEventListener('supervisor-view-ticket-modal:create-ticket-from-breakdown', (event) => {
-            const reportType = event.detail?.reportType;
-            const reportId = Number(event.detail?.reportId);
-            if (!reportType || !Number.isFinite(reportId)) return;
-            createTicketFromBreakdown(reportType, reportId);
-        });
     }
+}
+
+function bindSupervisorTicketDetailView() {
+    const component = document.querySelector('#ticket-details supervisor-ticket-detail-view');
+    if (!component || component.dataset.bound === 'true') {
+        return;
+    }
+
+    component.dataset.bound = 'true';
+
+    component.addEventListener('supervisor-ticket-detail-view:toast', (event) => {
+        const message = event.detail?.message;
+        const type = event.detail?.type || 'info';
+        if (!message) {
+            return;
+        }
+
+        showToast(message, type);
+    });
+}
+
+function bindSupervisorBreakdownDetailView() {
+    const component = document.querySelector('#breakdown-details ac-breakdown-detail-view');
+    if (!component || component.dataset.bound === 'true') {
+        return;
+    }
+
+    component.dataset.bound = 'true';
+
+    component.addEventListener('ac-breakdown-detail-view:toast', (event) => {
+        const message = event.detail?.message;
+        const type = event.detail?.type || 'info';
+        if (!message) {
+            return;
+        }
+
+        showToast(message, type);
+    });
+
+    component.addEventListener('ac-breakdown-detail-view:back', (event) => {
+        const requestedSection = String(
+            event.detail?.returnSection
+            || supervisorBreakdownDetailsReturnSection
+            || 'fault-ticket-tracking'
+        ).trim();
+
+        component.closeView?.();
+        navigateSupervisorSection(requestedSection);
+    });
 }
 
 function refreshSupervisorFaultTickets() {
@@ -595,6 +656,9 @@ async function loadFaultTickets() {
                         route_garage_workflow_status: breakdown?.garage_workflow?.status || breakdown.garage_workflow_status || null,
                         route_approved_garage_name: breakdown?.garage_workflow?.approved_garage?.name || breakdown.approved_garage_name || null,
                         route_breakdown_numeric_id: breakdown.id,
+                        dangerous_cargo_present: Number(breakdown.dangerous_cargo_present || 0) === 1 ? 1 : 0,
+                        dangerous_cargo_summary: breakdown.dangerous_cargo_summary || null,
+                        dangerous_cargo_trip_id: breakdown.dangerous_cargo_trip_id || null,
                     });
                 }
 
@@ -619,6 +683,9 @@ async function loadFaultTickets() {
                     fault_ticket_id: breakdown.fault_ticket_id ? Number(breakdown.fault_ticket_id) : null,
                     garage_workflow_status: breakdown?.garage_workflow?.status || breakdown.garage_workflow_status || null,
                     approved_garage_name: breakdown?.garage_workflow?.approved_garage?.name || breakdown.approved_garage_name || null,
+                    dangerous_cargo_present: Number(breakdown.dangerous_cargo_present || 0) === 1 ? 1 : 0,
+                    dangerous_cargo_summary: breakdown.dangerous_cargo_summary || null,
+                    dangerous_cargo_trip_id: breakdown.dangerous_cargo_trip_id || null,
                 });
             });
             console.log('Loaded route breakdowns:', routeResponse.data.breakdowns.length);
@@ -640,6 +707,10 @@ async function loadFaultTickets() {
                     route_garage_workflow_status: workflowMeta.route_garage_workflow_status,
                     route_approved_garage_name: workflowMeta.route_approved_garage_name,
                     route_breakdown_numeric_id: workflowMeta.route_breakdown_numeric_id,
+                    dangerous_cargo_present: workflowMeta.dangerous_cargo_present,
+                    dangerous_cargo_summary: workflowMeta.dangerous_cargo_summary,
+                    dangerous_cargo_trip_id: workflowMeta.dangerous_cargo_trip_id,
+                    is_dangerous_cargo: workflowMeta.dangerous_cargo_present === 1,
                 };
             });
         }
@@ -855,17 +926,23 @@ function viewTicketDetails(ticketId) {
         return;
     }
 
-    const currentUrl = new URL(window.location.href);
-    const currentSection = currentUrl.searchParams.get('section') || 'fault-tickets';
+    const ticketDetailView = document.querySelector('#ticket-details supervisor-ticket-detail-view');
+    if (!ticketDetailView || typeof ticketDetailView.open !== 'function') {
+        showToast('Ticket details component is unavailable', 'error');
+        return;
+    }
 
-    const returnUrl = new URL(CONFIG.ROUTES.DASHBOARD.SUPERVISOR, window.location.origin);
-    returnUrl.searchParams.set('section', currentSection);
+    const activeSection = document.querySelector('.content-section.active')?.id || '';
+    const urlSection = new URLSearchParams(window.location.search).get('section') || '';
+    const requestedReturnSection = normalizeSupervisorSection(activeSection || urlSection || 'fault-ticket-tracking');
 
-    const viewTicketUrl = new URL('/view-ticket/index.html', window.location.origin);
-    viewTicketUrl.searchParams.set('id', String(numericTicketId));
-    viewTicketUrl.searchParams.set('return_to', `${returnUrl.pathname}${returnUrl.search}`);
+    if (requestedReturnSection !== 'ticket-details') {
+        supervisorTicketDetailsReturnSection = requestedReturnSection;
+    }
 
-    window.location.href = `${viewTicketUrl.pathname}${viewTicketUrl.search}`;
+    ticketDetailView.open(numericTicketId, {
+        returnSection: supervisorTicketDetailsReturnSection,
+    });
 }
 
 function closeViewTicketModal() {
@@ -1081,23 +1158,76 @@ async function fetchTechniciansWithWorkload() {
 // ==================== BREAKDOWN REPORT DETAILS ====================
 
 async function viewBreakdownDetails(type, id) {
-    const modal = document.querySelector('supervisor-view-ticket-modal');
-    if (!modal || typeof modal.openBreakdownDetails !== 'function') {
-        showToast('Ticket details modal is not available', 'error');
+    const normalizedType = normalizeBreakdownType(type);
+    const numericId = Number(id);
+
+    if (!normalizedType || !Number.isFinite(numericId) || numericId <= 0) {
+        showToast('Invalid breakdown report selection', 'error');
         return;
     }
 
-    await modal.openBreakdownDetails(type, id);
+    const detailView = document.querySelector('#breakdown-details ac-breakdown-detail-view');
+    if (!detailView || typeof detailView.open !== 'function') {
+        showToast('Breakdown details component is unavailable', 'error');
+        return;
+    }
+
+    const activeSection = document.querySelector('.content-section.active')?.id || '';
+    const urlSection = new URLSearchParams(window.location.search).get('section') || '';
+    const requestedReturnSection = normalizeSupervisorSection(activeSection || urlSection || 'fault-ticket-tracking');
+
+    if (requestedReturnSection !== 'breakdown-details') {
+        supervisorBreakdownDetailsReturnSection = requestedReturnSection;
+    }
+
+    await detailView.open(normalizedType, numericId, {
+        returnSection: supervisorBreakdownDetailsReturnSection,
+    });
+
+    navigateSupervisorSection('breakdown-details');
+    requestAnimationFrame(() => {
+        scrollSupervisorViewportToTop();
+    });
+}
+
+function normalizeBreakdownType(type) {
+    const normalizedType = String(type || '').trim().toLowerCase();
+
+    if (normalizedType === 'route_breakdown' || normalizedType === 'route') {
+        return 'route_breakdown';
+    }
+
+    if (normalizedType === 'machine_breakdown' || normalizedType === 'machine') {
+        return 'machine_breakdown';
+    }
+
+    if (normalizedType === 'vehicle_breakdown' || normalizedType === 'breakdown_report' || normalizedType === 'vehicle') {
+        return 'vehicle_breakdown';
+    }
+
+    return '';
 }
 
 function findFaultTicketForBreakdown(report) {
     if (!report) return null;
 
-    const breakdownId = String(report.breakdown_id || '').trim();
+    const normalizedReportType = normalizeBreakdownType(report.type || report.breakdown_type || report.source);
+    const directTicketId = Number(report.fault_ticket_id || report.faultTicketId || 0);
+
+    if (Number.isFinite(directTicketId) && directTicketId > 0) {
+        return allTickets.find((ticket) => Number(ticket?.id || 0) === directTicketId) || null;
+    }
+
+    const breakdownId = String(report.breakdown_id || report.route_breakdown_id || '').trim();
     const reportNumericId = Number(report.id || 0);
 
     return allTickets.find((ticket) => {
-        if (!ticket || String(ticket.breakdown_type || '').toLowerCase() !== String(report.type || '').toLowerCase()) {
+        if (!ticket) {
+            return false;
+        }
+
+        const normalizedTicketType = normalizeBreakdownType(ticket.breakdown_type);
+        if (normalizedReportType && normalizedTicketType && normalizedTicketType !== normalizedReportType) {
             return false;
         }
 
@@ -1111,6 +1241,57 @@ function findFaultTicketForBreakdown(report) {
 
         return false;
     }) || null;
+}
+
+function buildBreakdownReportFromTrackingItem(breakdown) {
+    if (!breakdown) {
+        return null;
+    }
+
+    const raw = breakdown.raw || {};
+    const normalizedType = breakdown.source === 'route' ? 'route_breakdown' : 'machine_breakdown';
+
+    if (normalizedType === 'route_breakdown') {
+        return {
+            id: Number(raw.id || breakdown.id || 0),
+            breakdown_id: raw.route_breakdown_id || breakdown.breakdownId || '',
+            type: 'route_breakdown',
+            vehicle_id: raw.vehicle_id || null,
+            description: raw.description || breakdown.description || 'Route breakdown reported',
+            severity: raw.severity || breakdown.severity || 'Medium',
+            status: raw.status || breakdown.effectiveStatus || 'Pending',
+            driver_name: raw.driver_name || breakdown.reportedBy || 'Unknown Driver',
+            number_plate: raw.number_plate || breakdown.identifier || 'N/A',
+            breakdown_date: raw.breakdown_datetime || raw.breakdown_date || breakdown.date,
+            breakdown_type: raw.breakdown_type || breakdown.type || 'Route Breakdown',
+            breakdown_location: raw.breakdown_location || '',
+            created_at: raw.breakdown_datetime || raw.created_at || breakdown.date,
+            source: 'driver',
+            fault_ticket_id: Number(raw.fault_ticket_id || breakdown.faultTicketId || 0) || null,
+            garage_workflow_status: raw?.garage_workflow?.status || raw.garage_workflow_status || breakdown.garageWorkflowStatus || null,
+            approved_garage_name: raw?.garage_workflow?.approved_garage?.name || raw.approved_garage_name || breakdown.approvedGarageName || null,
+            dangerous_cargo_present: Number(raw.dangerous_cargo_present || 0) === 1 ? 1 : 0,
+            dangerous_cargo_summary: raw.dangerous_cargo_summary || null,
+            dangerous_cargo_trip_id: raw.dangerous_cargo_trip_id || null
+        };
+    }
+
+    return {
+        id: Number(raw.id || breakdown.id || 0),
+        breakdown_id: raw.breakdown_id || breakdown.breakdownId || '',
+        type: 'machine_breakdown',
+        machine_id: raw.machine_id || null,
+        machine_model: raw.machine_model || raw.machine_name || breakdown.identifier || 'Unknown Machine',
+        operator_name: raw.operator_name || breakdown.reportedBy || 'Unknown Operator',
+        description: raw.description || breakdown.description || 'Machine breakdown reported',
+        severity: raw.severity || breakdown.severity || 'Medium',
+        status: raw.status || breakdown.effectiveStatus || 'Pending',
+        breakdown_type: raw.breakdown_type || breakdown.type || 'Machine Fault',
+        breakdown_date: raw.breakdown_date || raw.created_at || breakdown.date,
+        created_at: raw.created_at || breakdown.date,
+        source: 'machinery_operator',
+        fault_ticket_id: Number(raw.fault_ticket_id || breakdown.faultTicketId || 0) || null
+    };
 }
 
 async function createFaultTicketFromBreakdownReport(type, report) {
@@ -1149,56 +1330,91 @@ async function createFaultTicketFromBreakdownReport(type, report) {
     throw new Error(errorMsg);
 }
 
-async function viewRouteBreakdownTicket(type, id) {
-    const report = allBreakdownItems.find((item) => item.type === type && item.id === id);
+async function viewOrCreateBreakdownTicket(type, id, trackingBreakdown = null) {
+    const normalizedType = normalizeBreakdownType(type);
+    const numericId = Number(id);
+
+    if (!normalizedType || !Number.isFinite(numericId) || numericId <= 0) {
+        showToast('Invalid breakdown report selection', 'error');
+        return;
+    }
+
+    let report = allBreakdownItems.find((item) => normalizeBreakdownType(item.type) === normalizedType && Number(item.id) === numericId);
+
+    if (!report && trackingBreakdown) {
+        report = buildBreakdownReportFromTrackingItem(trackingBreakdown);
+    }
+
+    if (!report && normalizedType === 'machine_breakdown') {
+        const fallbackTicket = allTickets.find((ticket) => {
+            if (!ticket || !ticket.is_machine_breakdown) {
+                return false;
+            }
+
+            if (Number(ticket.id) === numericId) {
+                return true;
+            }
+
+            const breakdownCode = String(ticket.breakdown_report_id || ticket.ticket_id || '').trim();
+            return breakdownCode !== '' && breakdownCode === String(id).trim();
+        });
+
+        if (fallbackTicket) {
+            report = {
+                id: Number(fallbackTicket.id),
+                breakdown_id: fallbackTicket.breakdown_report_id || fallbackTicket.ticket_id || `MBD-${String(fallbackTicket.id).padStart(3, '0')}`,
+                type: 'machine_breakdown',
+                machine_id: fallbackTicket.machine_id,
+                machine_model: fallbackTicket.machine_name || fallbackTicket.machine_model_number,
+                operator_name: fallbackTicket.reporter_full_name || fallbackTicket.reported_by_name,
+                description: fallbackTicket.description,
+                severity: fallbackTicket.priority,
+                status: fallbackTicket.status,
+                breakdown_type: fallbackTicket.original_report ? fallbackTicket.original_report.breakdown_type : 'Machine Fault',
+                breakdown_date: fallbackTicket.created_at,
+                fault_ticket_id: Number(fallbackTicket.id)
+            };
+        }
+    }
+
     if (!report) {
-        showToast('Route breakdown report not found', 'error');
+        showToast('Breakdown report not found', 'error');
         return;
     }
 
-    if (report.fault_ticket_id) {
-        viewTicketDetails(report.fault_ticket_id);
-        return;
-    }
+    const linkedTicket = findFaultTicketForBreakdown(report);
+    const linkedTicketId = Number(report.fault_ticket_id || linkedTicket?.id || 0);
 
-    const existingTicket = findFaultTicketForBreakdown(report);
-    if (existingTicket && Number(existingTicket.id) > 0) {
-        viewTicketDetails(existingTicket.id);
+    if (Number.isFinite(linkedTicketId) && linkedTicketId > 0) {
+        viewTicketDetails(linkedTicketId);
         return;
     }
 
     try {
-        showToast('Creating ticket details view for this route breakdown...', 'info');
-        const newTicketId = await createFaultTicketFromBreakdownReport(type, report);
+        showToast('Creating fault ticket from breakdown report...', 'info');
+        const newTicketId = await createFaultTicketFromBreakdownReport(normalizedType, report);
 
         if (!Number.isFinite(newTicketId) || newTicketId <= 0) {
-            throw new Error('Failed to create fault ticket');
+            showToast('Failed to open ticket details', 'error');
+            return;
         }
 
         await loadFaultTickets();
-        showToast('Fault ticket created. Opening details page...', 'success');
         viewTicketDetails(newTicketId);
+        showToast('Fault ticket created successfully', 'success');
     } catch (error) {
-        console.error('Error opening route breakdown in ticket page:', error);
-        showToast(error.message || 'Failed to open route breakdown ticket details', 'error');
+        console.error('Error creating fault ticket from breakdown view flow:', error);
+        showToast(error.message || 'Failed to create ticket from breakdown', 'error');
     }
+}
+
+async function viewRouteBreakdownTicket(type, id) {
+    await viewBreakdownDetails(type, id);
 }
 
 // View machine breakdown details from allTickets
 function viewMachineBreakdownInSupervisor(breakdownId) {
-    const ticket = allTickets.find(t => t.is_machine_breakdown && t.id === breakdownId);
-    if (!ticket) {
-        showToast('Machine breakdown not found', 'error');
-        return;
-    }
-
-    const modal = document.querySelector('supervisor-view-ticket-modal');
-    if (!modal || typeof modal.openMachineBreakdown !== 'function') {
-        showToast('Ticket details modal is not available', 'error');
-        return;
-    }
-
-    modal.openMachineBreakdown(ticket);
+    viewBreakdownDetails('machine_breakdown', breakdownId);
 }
 
 // Assign technician to a breakdown report (auto-creates fault ticket first, then opens assign modal)
@@ -1227,6 +1443,14 @@ async function assignBreakdownTicket(type, id) {
 
     if (!report) {
         showToast('Breakdown report not found', 'error');
+        return;
+    }
+
+    const linkedTicket = findFaultTicketForBreakdown(report);
+    const linkedTicketId = Number(report.fault_ticket_id || linkedTicket?.id || 0);
+
+    if (Number.isFinite(linkedTicketId) && linkedTicketId > 0) {
+        assignTicket(linkedTicketId);
         return;
     }
 
@@ -1926,7 +2150,7 @@ async function viewTechnicianDetails(techId) {
 }
 
 function assignNewTicket(techId) {
-    navigateTo('fault-tickets');
+    navigateTo('fault-ticket-tracking');
     showToast('Select a fault ticket and use Assign to choose technician(s)', 'info');
 }
 

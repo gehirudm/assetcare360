@@ -191,6 +191,8 @@ class DriverTripLog extends HTMLElement {
         const statusColor = DriverUtils.getStatusColor(trip.status);
         const tripDate = DriverUtils.formatDate(trip.created_at || trip.date);
         const route = `${trip.origin || 'N/A'} → ${trip.destination || 'N/A'}`;
+        const cargoSummary = DriverUtils.buildCargoSummary(trip);
+        const hasDangerousCargo = DriverUtils.hasDangerousCargo(trip);
 
         const viewButton = `
             <button class="btn btn-small btn-primary" type="button" data-action="view-trip" data-trip-id="${trip.trip_id}">
@@ -244,23 +246,32 @@ class DriverTripLog extends HTMLElement {
 
         // Show rejection reason if rejected
         const rejectionInfo = filterStatus === 'rejected' && trip.rejection_reason
-            ? `<div class="item-rejection" style="color: #e74c3c; font-size: 12px; margin-top: 4px;"><i class="fas fa-exclamation-circle"></i> Reason: ${trip.rejection_reason}</div>`
+            ? `<div class="item-rejection" style="color: #e74c3c; font-size: 12px; margin-top: 4px;"><i class="fas fa-exclamation-circle"></i> Reason: ${DriverUtils.escapeHtml(trip.rejection_reason)}</div>`
+            : '';
+
+        const cargoHtml = cargoSummary
+            ? `<div class="item-meta" data-driver-cargo-summary style="margin-top: 4px;"><i class="fas fa-boxes-stacked"></i> ${DriverUtils.escapeHtml(cargoSummary)}</div>`
+            : '';
+
+        const dangerousHtml = hasDangerousCargo
+            ? `<span class="status-badge" style="background: #dc2626; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px;"><i class="fas fa-radiation"></i> Dangerous Cargo</span>`
             : '';
 
         return `
             <div class="inventory-item" data-id="${trip.trip_id}" data-status="${filterStatus}">
                 <div class="item-details">
-                    <strong><i class="fas fa-route"></i> ${trip.trip_id}</strong>
+                    <strong><i class="fas fa-route"></i> ${DriverUtils.escapeHtml(trip.trip_id)}</strong>
                     <div class="item-meta">
-                        <i class="fas fa-map-marker-alt"></i> ${route} | <i class="fas fa-calendar"></i> ${tripDate}
+                        <i class="fas fa-map-marker-alt"></i> ${DriverUtils.escapeHtml(route)} | <i class="fas fa-calendar"></i> ${DriverUtils.escapeHtml(tripDate)}
                     </div>
                     <div class="item-meta">
-                        <i class="fas fa-truck"></i> ${trip.vehicle_registration || 'No vehicle assigned'}
+                        <i class="fas fa-truck"></i> ${DriverUtils.escapeHtml(trip.vehicle_registration || 'No vehicle assigned')}
                     </div>
                     <div class="item-description">
-                        <span class="status-badge" style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">${trip.status}</span>
-                        ${trip.cargo_description ? ` | <i class="fas fa-box"></i> ${trip.cargo_description}` : ''}
+                        <span class="status-badge" style="background: ${statusColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">${DriverUtils.escapeHtml(trip.status)}</span>
+                        ${dangerousHtml}
                     </div>
+                    ${cargoHtml}
                     ${rejectionInfo}
                 </div>
                 <div class="item-actions">

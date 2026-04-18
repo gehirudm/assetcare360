@@ -1988,6 +1988,7 @@ paths:
         Submit an in-route vehicle breakdown report.
 
         Driver GPS coordinates are required so supervisors can view the driver location on map-based garage approval flow.
+        A linked fault ticket is created automatically for every new route breakdown.
       security:
         - bearerAuth: []
         - cookieAuth: []
@@ -3388,6 +3389,11 @@ components:
                   description: Optional. If omitted, backend resolves the driver from context.
                 cargo_description:
                   type: string
+                cargo_items:
+                  type: array
+                  description: Structured cargo assignments for this trip.
+                  items:
+                    $ref: '#/components/schemas/TripCargoAssignmentInput'
       responses:
         '201':
           description: Trip created successfully
@@ -3418,6 +3424,167 @@ components:
                   message:
                     type: string
                     example: Cannot create trip. Vehicle has an ongoing breakdown ticket (VBD-012).
+
+  /trips/cargo-items:
+    get:
+      tags:
+        - Trips
+      summary: List cargo catalog items
+      description: Retrieve cargo item catalog entries used for trip assignment.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: include_inactive
+          in: query
+          required: false
+          description: Include deactivated cargo items when true.
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Cargo items retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      cargo_items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CargoItem'
+                  count:
+                    type: integer
+
+    post:
+      tags:
+        - Trips
+      summary: Create cargo catalog item
+      description: Create a cargo item for Transportation Manager cargo assignment workflows.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CargoItemInput'
+      responses:
+        '201':
+          description: Cargo item created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      cargo_item:
+                        $ref: '#/components/schemas/CargoItem'
+
+  /trips/cargo-items/{id}:
+    put:
+      tags:
+        - Trips
+      summary: Update cargo catalog item
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CargoItemUpdateInput'
+      responses:
+        '200':
+          description: Cargo item updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      cargo_item:
+                        $ref: '#/components/schemas/CargoItem'
+
+    delete:
+      tags:
+        - Trips
+      summary: Deactivate cargo catalog item
+      description: Soft-deactivate a cargo item so it can no longer be assigned to trips.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Cargo item deactivated successfully
+
+  /trips/cargo-analytics:
+    get:
+      tags:
+        - Trips
+      summary: Get transported cargo analytics
+      description: Returns cargo transport totals and trends for completed trips.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: from_date
+          in: query
+          required: false
+          description: Include trips on or after this date (YYYY-MM-DD).
+          schema:
+            type: string
+            format: date
+        - name: to_date
+          in: query
+          required: false
+          description: Include trips on or before this date (YYYY-MM-DD).
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Cargo analytics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/CargoAnalytics'
 
   /trips/{tripId}:
     get:
@@ -3469,6 +3636,11 @@ components:
                   type: integer
                 cargo_description:
                   type: string
+                cargo_items:
+                  type: array
+                  description: Structured cargo assignments for this trip.
+                  items:
+                    $ref: '#/components/schemas/TripCargoAssignmentInput'
       responses:
         '200':
           description: Trip updated successfully
@@ -5219,6 +5391,25 @@ components:
         cargo_description:
           type: string
           nullable: true
+        cargo_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TripCargoItem'
+        total_cargo_quantity:
+          type: number
+          format: float
+          example: 125.5
+        dangerous_cargo_quantity:
+          type: number
+          format: float
+          example: 25.0
+        has_dangerous_cargo:
+          type: boolean
+          example: true
+        cargo_summary:
+          type: string
+          nullable: true
+          example: Chlorine Cylinders (25 kg) [Dangerous], Steel Rods (100 kg)
         status:
           type: string
           enum: [Pending, Accepted, Rejected, In Progress, Completed, Cancelled]
@@ -5243,6 +5434,194 @@ components:
         updated_at:
           type: string
           format: date-time
+
+    TripCargoAssignmentInput:
+      type: object
+      required:
+        - cargo_item_id
+        - quantity
+      properties:
+        cargo_item_id:
+          type: integer
+          description: Cargo item database ID from the cargo catalog.
+        quantity:
+          type: number
+          format: float
+          minimum: 0.001
+        notes:
+          type: string
+          nullable: true
+
+    TripCargoItem:
+      type: object
+      properties:
+        cargo_item_db_id:
+          type: integer
+          description: Cargo item database ID.
+        cargo_item_id:
+          type: string
+          example: CGI-001
+        name:
+          type: string
+          example: Chlorine Cylinders
+        description:
+          type: string
+          nullable: true
+        unit:
+          type: string
+          example: kg
+        is_dangerous:
+          type: integer
+          enum: [0, 1]
+          example: 1
+        is_active:
+          type: integer
+          enum: [0, 1]
+          example: 1
+        quantity:
+          type: number
+          format: float
+          example: 25
+        notes:
+          type: string
+          nullable: true
+
+    CargoItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        cargo_item_id:
+          type: string
+          example: CGI-001
+        name:
+          type: string
+          example: Chlorine Cylinders
+        description:
+          type: string
+          nullable: true
+        unit:
+          type: string
+          example: kg
+        is_dangerous:
+          type: integer
+          enum: [0, 1]
+          example: 1
+        is_active:
+          type: integer
+          enum: [0, 1]
+          example: 1
+        created_by:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    CargoItemInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        unit:
+          type: string
+          default: units
+        is_dangerous:
+          type: boolean
+
+    CargoItemUpdateInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        unit:
+          type: string
+        is_dangerous:
+          type: boolean
+        is_active:
+          type: boolean
+
+    CargoAnalytics:
+      type: object
+      properties:
+        totals:
+          $ref: '#/components/schemas/CargoAnalyticsTotals'
+        by_item:
+          type: array
+          items:
+            $ref: '#/components/schemas/CargoAnalyticsByItem'
+        monthly:
+          type: array
+          items:
+            $ref: '#/components/schemas/CargoAnalyticsMonthly'
+
+    CargoAnalyticsTotals:
+      type: object
+      properties:
+        total_quantity_transported:
+          type: number
+          format: float
+        dangerous_quantity_transported:
+          type: number
+          format: float
+        trips_with_cargo:
+          type: integer
+        dangerous_trips:
+          type: integer
+
+    CargoAnalyticsByItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        cargo_item_id:
+          type: string
+          example: CGI-001
+        name:
+          type: string
+        unit:
+          type: string
+        is_dangerous:
+          type: integer
+          enum: [0, 1]
+        total_quantity:
+          type: number
+          format: float
+        trips_count:
+          type: integer
+        last_transported_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    CargoAnalyticsMonthly:
+      type: object
+      properties:
+        month:
+          type: string
+          description: Year-month bucket in YYYY-MM format.
+          example: 2026-04
+        total_quantity:
+          type: number
+          format: float
+        dangerous_quantity:
+          type: number
+          format: float
+        trips_count:
+          type: integer
 
     FuelLog:
       type: object
@@ -5455,6 +5834,19 @@ components:
         approved_garage_name:
           type: string
           nullable: true
+        dangerous_cargo_present:
+          type: integer
+          nullable: true
+          enum: [0, 1]
+          description: 1 when dangerous cargo was active at the time of breakdown report creation.
+        dangerous_cargo_summary:
+          type: string
+          nullable: true
+          description: Server-generated summary of dangerous cargo in the active trip.
+        dangerous_cargo_trip_id:
+          type: string
+          nullable: true
+          description: Trip identifier associated with dangerous cargo at report time.
         created_at:
           type: string
           format: date-time
@@ -5567,6 +5959,18 @@ components:
         status:
           type: string
           enum: [Open, Assigned, Waiting for Budget Approval, Waiting for Spare Parts, Parts Approved, In Progress, Resolved, Closed]
+        is_dangerous_cargo:
+          type: boolean
+          nullable: true
+          description: True when linked route-breakdown context indicates dangerous cargo.
+        dangerous_cargo_summary:
+          type: string
+          nullable: true
+          description: Dangerous cargo summary from the route-breakdown snapshot or active trip context.
+        dangerous_cargo_trip_id:
+          type: string
+          nullable: true
+          description: Trip identifier tied to dangerous cargo context.
         created_at:
           type: string
           format: date-time
