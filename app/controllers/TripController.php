@@ -248,6 +248,122 @@ class TripController {
             Response::error($e->getMessage(), 400);
         }
     }
+
+    public function getCargoItems() {
+        try {
+            RoleMiddleware::requireMinRole('Transportation Manager');
+
+            $includeInactive = isset($_GET['include_inactive'])
+                && in_array(strtolower((string) $_GET['include_inactive']), ['1', 'true', 'yes'], true);
+
+            $items = $this->tripService->getCargoItems($includeInactive);
+
+            Response::json([
+                'success' => true,
+                'data' => ['cargo_items' => $items],
+                'count' => count($items),
+            ]);
+        } catch (Exception $e) {
+            Response::error($e->getMessage(), 400);
+        }
+    }
+
+    public function createCargoItem() {
+        try {
+            RoleMiddleware::requireMinRole('Transportation Manager');
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!is_array($data)) {
+                Response::error('Invalid request data', 400);
+                return;
+            }
+
+            $user = RoleMiddleware::getCurrentUser();
+            $cargoItem = $this->tripService->createCargoItem($data, $user);
+
+            Response::json([
+                'success' => true,
+                'message' => 'Cargo item created successfully',
+                'data' => ['cargo_item' => $cargoItem],
+            ], 201);
+        } catch (Exception $e) {
+            Response::error($e->getMessage(), 400);
+        }
+    }
+
+    public function updateCargoItem() {
+        try {
+            RoleMiddleware::requireMinRole('Transportation Manager');
+
+            $cargoItemId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+            if ($cargoItemId <= 0) {
+                Response::error('Cargo item ID is required', 400);
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!is_array($data)) {
+                Response::error('Invalid request data', 400);
+                return;
+            }
+
+            $cargoItem = $this->tripService->updateCargoItem($cargoItemId, $data);
+
+            Response::json([
+                'success' => true,
+                'message' => 'Cargo item updated successfully',
+                'data' => ['cargo_item' => $cargoItem],
+            ]);
+        } catch (Exception $e) {
+            $statusCode = stripos($e->getMessage(), 'not found') !== false ? 404 : 400;
+            Response::error($e->getMessage(), $statusCode);
+        }
+    }
+
+    public function deleteCargoItem() {
+        try {
+            RoleMiddleware::requireMinRole('Transportation Manager');
+
+            $cargoItemId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+            if ($cargoItemId <= 0) {
+                Response::error('Cargo item ID is required', 400);
+                return;
+            }
+
+            $this->tripService->deleteCargoItem($cargoItemId);
+
+            Response::json([
+                'success' => true,
+                'message' => 'Cargo item deactivated successfully',
+            ]);
+        } catch (Exception $e) {
+            $statusCode = stripos($e->getMessage(), 'not found') !== false ? 404 : 400;
+            Response::error($e->getMessage(), $statusCode);
+        }
+    }
+
+    public function getCargoAnalytics() {
+        try {
+            RoleMiddleware::requireMinRole('Transportation Manager');
+
+            $filters = [];
+            if (isset($_GET['from_date'])) {
+                $filters['from_date'] = $_GET['from_date'];
+            }
+            if (isset($_GET['to_date'])) {
+                $filters['to_date'] = $_GET['to_date'];
+            }
+
+            $analytics = $this->tripService->getCargoAnalytics($filters);
+
+            Response::json([
+                'success' => true,
+                'data' => $analytics,
+            ]);
+        } catch (Exception $e) {
+            Response::error($e->getMessage(), 400);
+        }
+    }
     
     public function getActiveTripCount() {
         try {

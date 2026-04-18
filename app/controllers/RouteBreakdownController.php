@@ -3,6 +3,8 @@
 require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 require_once __DIR__ . '/../models/Notification.php';
+require_once __DIR__ . '/../services/TripService.php';
+require_once __DIR__ . '/../services/FaultTicketService.php';
 
 /**
  * Route Breakdown Controller
@@ -11,11 +13,16 @@ require_once __DIR__ . '/../models/Notification.php';
 class RouteBreakdownController {
     private $conn;
     private Notification $notificationModel;
+    private TripService $tripService;
+    private FaultTicketService $faultTicketService;
+    private ?bool $dangerousSnapshotColumnsAvailable = null;
 
     public function __construct() {
         $db = Database::getInstance();
         $this->conn = $db->getConnection();
         $this->notificationModel = new Notification();
+        $this->tripService = new TripService();
+        $this->faultTicketService = new FaultTicketService();
     }
 
     /**
@@ -209,32 +216,144 @@ class RouteBreakdownController {
 
         $breakdownLatitude = $this->parseCoordinate($input['breakdown_latitude'] ?? null, 'breakdown_latitude', -90, 90, true);
         $breakdownLongitude = $this->parseCoordinate($input['breakdown_longitude'] ?? null, 'breakdown_longitude', -180, 180, true);
+        $severity = $this->normalizeSeverityInput($input['severity']);
+        $currentUser = RoleMiddleware::getCurrentUser();
 
         $stmt = $this->conn->query('SELECT COUNT(*) FROM vehicle_breakdown_inroute');
         $count = (int) $stmt->fetchColumn() + 1;
         $routeBreakdownId = 'RBD-' . str_pad((string) $count, 3, '0', STR_PAD_LEFT);
 
-        $sql = "INSERT INTO vehicle_breakdown_inroute
-                (route_breakdown_id, breakdown_id, vehicle_id, driver_id, breakdown_location, breakdown_latitude, breakdown_longitude,
-                 breakdown_datetime, breakdown_type, severity, description, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')";
+        $dangerousContext = $this->tripService->getDangerousCargoContextForVehicle((int) $input['vehicle_id']);
+        $dangerousCargoPresent = !empty($dangerousContext['has_dangerous_cargo']) ? 1 : 0;
+        $dangerousCargoSummary = !empty($dangerousContext['dangerous_cargo_summary'])
+            ? trim((string) $dangerousContext['dangerous_cargo_summary'])
+            : null;
+        $dangerousCargoTripId = !empty($dangerousContext['dangerous_cargo_trip_id'])
+            ? trim((string) $dangerousContext['dangerous_cargo_trip_id'])
+            : null;
 
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute([
-            $routeBreakdownId,
-            $input['breakdown_id'] ?? null,
-            (int) $input['vehicle_id'],
-            (int) RoleMiddleware::getCurrentUser()['id'],
-            trim((string) $input['breakdown_location']),
-            $breakdownLatitude,
-            $breakdownLongitude,
-            $input['breakdown_datetime'],
-            trim((string) $input['breakdown_type']),
-            trim((string) $input['severity']),
-            trim((string) $input['description']),
-        ]);
+        if ($dangerousCargoPresent === 1) {
+            $severity = 'critical';
+        }
+
+        try {
+            $this->conn->beginTransaction();
+
+            if ($this->hasDangerousSnapshotColumns()) {
+                $sql = "INSERT INTO vehicle_breakdown_inroute
+                        (route_breakdown_id, breakdown_id, vehicle_id, driver_id, breakdown_location, breakdown_latitude, breakdown_longitude,
+                         breakdown_datetime, breakdown_type, severity, description, dangerous_cargo_present, dangerous_cargo_summary, dangerous_cargo_trip_id, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')";
+
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute([
+                    $routeBreakdownId,
+                    $input['breakdown_id'] ?? null,
+                    (int) $input['vehicle_id'],
+                    (int) $currentUser['id'],
+                    trim((string) $input['breakdown_location']),
+                    $breakdownLatitude,
+                    $breakdownLongitude,
+                    $input['breakdown_datetime'],
+                    trim((string) $input['breakdown_type']),
+                    $severity,
+                    trim((string) $input['description']),
+                    $dangerousCargoPresent,
+                    $dangerousCargoSummary,
+                    $dangerousCargoTripId,
+                ]);
+            } else {
+                $sql = "INSERT INTO vehicle_breakdown_inroute
+                        (route_breakdown_id, breakdown_id, vehicle_id, driver_id, breakdown_location, breakdown_latitude, breakdown_longitude,
+                         breakdown_datetime, breakdown_type, severity, description, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')";
+
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute([
+                    $routeBreakdownId,
+                    $input['breakdown_id'] ?? null,
+                    (int) $input['vehicle_id'],
+                    (int) $currentUser['id'],
+                    trim((string) $input['breakdown_location']),
+                    $breakdownLatitude,
+                    $breakdownLongitude,
+                    $input['breakdown_datetime'],
+                    trim((string) $input['breakdown_type']),
+                    $severity,
+                    trim((string) $input['description']),
+                ]);
+            }
+
+            $ticketPayload = [
+                'vehicle_id' => (int) $input['vehicle_id'],
+                'reported_by' => (int) $currentUser['id'],
+                'breakdown_report_id' => $routeBreakdownId,
+                'breakdown_type' => 'route_breakdown',
+                'priority' => $this->mapSeverityToPriority($severity),
+                'description' => $this->buildAutoTicketDescription($routeBreakdownId, [
+                    'breakdown_type' => $input['breakdown_type'] ?? 'Route Breakdown',
+                    'severity' => $severity,
+                    'breakdown_datetime' => $input['breakdown_datetime'] ?? null,
+                    'breakdown_location' => $input['breakdown_location'] ?? null,
+                    'description' => $input['description'] ?? '',
+                    'dangerous_cargo_present' => $dangerousCargoPresent,
+                    'dangerous_cargo_summary' => $dangerousCargoSummary,
+                    'dangerous_cargo_trip_id' => $dangerousCargoTripId,
+                ])
+            ];
+
+            $ticketResult = $this->faultTicketService->create($ticketPayload);
+            if (empty($ticketResult['success'])) {
+                $ticketError = $ticketResult['message'] ?? 'Failed to auto-create linked fault ticket';
+                throw new RuntimeException($ticketError);
+            }
+
+            $this->conn->commit();
+        } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+
+            Response::error('Failed to create route breakdown report: ' . $e->getMessage(), 500);
+            return;
+        }
 
         Response::success(['route_breakdown_id' => $routeBreakdownId], 'Route breakdown created successfully', 201);
+    }
+
+    private function mapSeverityToPriority($severity): string {
+        $normalized = strtolower(trim((string) $severity));
+
+        if ($normalized === 'critical') {
+            return 'Critical';
+        }
+
+        if ($normalized === 'high') {
+            return 'High';
+        }
+
+        if ($normalized === 'low') {
+            return 'Low';
+        }
+
+        return 'Medium';
+    }
+
+    private function buildAutoTicketDescription(string $routeBreakdownId, array $input): string {
+        $details = trim((string) ($input['description'] ?? ''));
+        if ($details !== '') {
+            return $details;
+        }
+
+        $breakdownType = trim((string) ($input['breakdown_type'] ?? 'Route Breakdown'));
+        $breakdownLocation = trim((string) ($input['breakdown_location'] ?? ''));
+
+        $fallback = $breakdownType !== '' ? $breakdownType : 'Route breakdown reported';
+        if ($breakdownLocation !== '') {
+            $fallback .= ' near ' . $breakdownLocation;
+        }
+
+        return $fallback . ' (' . $routeBreakdownId . ')';
     }
 
     /**
@@ -264,13 +383,23 @@ class RouteBreakdownController {
 
         $fields = [];
         $params = [];
+        $shouldForceCriticalSeverity = $this->shouldForceCriticalSeverity($record);
 
-        $allowedFields = ['severity', 'breakdown_type', 'description', 'status', 'breakdown_location', 'breakdown_datetime'];
+        $allowedFields = ['breakdown_type', 'description', 'status', 'breakdown_location', 'breakdown_datetime'];
         foreach ($allowedFields as $field) {
             if (isset($input[$field])) {
                 $fields[] = "$field = ?";
                 $params[] = is_string($input[$field]) ? trim($input[$field]) : $input[$field];
             }
+        }
+
+        if (array_key_exists('severity', $input)) {
+            $requestedSeverity = $this->normalizeSeverityInput($input['severity']);
+            $fields[] = 'severity = ?';
+            $params[] = $shouldForceCriticalSeverity ? 'critical' : $requestedSeverity;
+        } elseif ($shouldForceCriticalSeverity && !empty($fields)) {
+            $fields[] = 'severity = ?';
+            $params[] = 'critical';
         }
 
         $hasLatitude = array_key_exists('breakdown_latitude', $input);
@@ -825,6 +954,9 @@ class RouteBreakdownController {
 
     private function getRouteBreakdownRecord(int $routeBreakdownId): ?array {
         $sql = "SELECT rb.id, rb.route_breakdown_id, rb.driver_id, rb.status, rb.vehicle_id,
+                       rb.dangerous_cargo_present,
+                       rb.dangerous_cargo_summary,
+                       rb.dangerous_cargo_trip_id,
                        v.number_plate,
                        ft.id as fault_ticket_id,
                        ft.ticket_id as fault_ticket_number
@@ -944,6 +1076,53 @@ class RouteBreakdownController {
         $stmt->execute($params);
 
         return $stmt->fetchAll();
+    }
+
+    private function hasDangerousSnapshotColumns(): bool {
+        if ($this->dangerousSnapshotColumnsAvailable !== null) {
+            return $this->dangerousSnapshotColumnsAvailable;
+        }
+
+        try {
+            $stmt = $this->conn->prepare(
+                "SELECT COUNT(*)
+                 FROM information_schema.columns
+                 WHERE table_schema = DATABASE()
+                   AND table_name = 'vehicle_breakdown_inroute'
+                   AND column_name IN ('dangerous_cargo_present', 'dangerous_cargo_summary', 'dangerous_cargo_trip_id')"
+            );
+            $stmt->execute();
+            $this->dangerousSnapshotColumnsAvailable = ((int) $stmt->fetchColumn()) === 3;
+        } catch (Throwable $e) {
+            $this->dangerousSnapshotColumnsAvailable = false;
+        }
+
+        return $this->dangerousSnapshotColumnsAvailable;
+    }
+
+    private function shouldForceCriticalSeverity(array $routeBreakdownRecord): bool {
+        if ($this->hasDangerousSnapshotColumns() && (int) ($routeBreakdownRecord['dangerous_cargo_present'] ?? 0) === 1) {
+            return true;
+        }
+
+        $vehicleId = (int) ($routeBreakdownRecord['vehicle_id'] ?? 0);
+        if ($vehicleId <= 0) {
+            return false;
+        }
+
+        $dangerousContext = $this->tripService->getDangerousCargoContextForVehicle($vehicleId);
+        return !empty($dangerousContext['has_dangerous_cargo']);
+    }
+
+    private function normalizeSeverityInput($severity): string {
+        $normalized = strtolower(trim((string) $severity));
+        $allowed = ['low', 'medium', 'high', 'critical'];
+
+        if ($normalized === '' || !in_array($normalized, $allowed, true)) {
+            Response::error('severity must be one of: low, medium, high, critical', 400);
+        }
+
+        return $normalized;
     }
 
     private function parseCoordinate($value, string $field, float $min, float $max, bool $required): ?float {
