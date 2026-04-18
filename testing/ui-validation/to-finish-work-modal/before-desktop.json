@@ -1,0 +1,40 @@
+{
+  "stage": "before",
+  "viewport": "desktop",
+  "startUrl": "http://127.0.0.1:3000/view-ticket/index.html?id=701&role_override=TECHNICAL_OFFICER&return_to=%2Fdashboard%2Ftechnical-officer%2Findex.html%3Fsection%3Dtickets",
+  "finalUrl": "http://127.0.0.1:3000/view-ticket/index.html?id=701&role_override=TECHNICAL_OFFICER&return_to=%2Fdashboard%2Ftechnical-officer%2Findex.html%3Fsection%3Dtickets",
+  "title": "Fault Ticket Detail - AssetCare360",
+  "checks": {
+    "workUpdateCreated": true,
+    "ticketResolved": true,
+    "finalTicketStatus": "Resolved"
+  },
+  "apiPayloads": {
+    "workUpdates": [
+      {
+        "ticket_id": 701,
+        "parts_used": "Hydraulic Pump Seal Kit",
+        "time_spent": 2.5,
+        "machine_description": "Replaced faulty seals and recalibrated hydraulic pressure settings.",
+        "work_status": "Completed"
+      }
+    ],
+    "ticketUpdates": [
+      {
+        "path": "/api/fault-tickets/701",
+        "payload": {
+          "status": "Resolved",
+          "resolution_notes": "Replaced faulty seals and recalibrated hydraulic pressure settings."
+        }
+      }
+    ]
+  },
+  "diagnostics": {
+    "console": [],
+    "failedRequests": []
+  },
+  "accessibility": {
+    "ariaSnapshot": "- text: AssetCare360\n- heading \"Technical Officer Dashboard\" [level=1]\n- button \"TO\"\n- navigation: Dashboard Fault & Repair Tickets Spare Part Management Inventory Management Service & Warranty Asset Feedback Notifications\n- main:\n  - button \"Back to Fault & Repair Tickets\"\n  - navigation \"Breadcrumb\":\n    - link \"Dashboard\":\n      - /url: /dashboard/technical-officer/index.html?section=dashboard\n    - link \"Fault & Repair Tickets\":\n      - /url: /dashboard/technical-officer/index.html?section=tickets\n    - text: MBD-701\n  - heading \"Fault Ticket Detail\" [level=2]\n  - text: Ticket ID MBD-701 Status Resolved Priority High Equipment CAT 320D Excavator Location Main Yard Reported Apr 18, 2026 Issue Description\n  - paragraph: Hydraulic leak and pressure fluctuation during operation.\n  - heading \"Ticket Progress Flow\" [level=2]\n  - text: Fault Reported Step 1 Supervisor One Apr 18, 2026\n  - paragraph: \"Fault reported. Breakdown type: machine_breakdown.\"\n  - text: Assigned to Technician Step 2 Supervisor Supervisor Pending Technical Officer\n  - paragraph: Assigned on Apr 18, 2026.\n  - text: Budget Approval Step 3 Technical Officer Submitted by Total Amount\n  - strong: \"-\"\n  - text: Approval Level Supervisor Status pending Spare Parts Request Step 4 SPR-5001 Approved • Hydraulic Pump Seal Kit x 2 • Pressure Relief Valve x 1 Repair In Progress Step 5 Technical Officer One Technical Officer\n  - paragraph: No work updates yet.\n  - text: Resolved Step 6 Technical Officer One Technical Officer Resolution Notes\n  - paragraph: No resolution notes were provided.\n  - text: Ticket Closed Step 7 Ticket is not yet closed.",
+    "snapshotLength": 1630
+  }
+}

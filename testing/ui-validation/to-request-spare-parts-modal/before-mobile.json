@@ -1,0 +1,51 @@
+{
+  "stage": "before",
+  "viewport": "mobile",
+  "startUrl": "http://127.0.0.1:3000/view-ticket/index.html?id=601&role_override=TECHNICAL_OFFICER&return_to=%2Fdashboard%2Ftechnical-officer%2Findex.html%3Fsection%3Dtickets",
+  "finalUrl": "http://127.0.0.1:3000/view-ticket/index.html?id=601&role_override=TECHNICAL_OFFICER&return_to=%2Fdashboard%2Ftechnical-officer%2Findex.html%3Fsection%3Dtickets",
+  "title": "Fault Ticket Detail - AssetCare360",
+  "checks": {
+    "partRequestSubmission": true,
+    "noPartStatusUpdate": true,
+    "availabilityChecks": 2,
+    "finalTicketStatus": "In Progress"
+  },
+  "apiPayloads": {
+    "spareRequests": [
+      {
+        "fault_ticket_id": 601,
+        "ticket_id_formatted": "MBD-601",
+        "equipment_name": "CAT 320D Excavator",
+        "location": "Main Yard",
+        "priority": "high",
+        "additional_notes": "Need urgently for pump repair",
+        "items": [
+          {
+            "part_code": "SP-001",
+            "part_name": "Hydraulic Pump Seal Kit — SP-001",
+            "quantity": 3
+          }
+        ]
+      }
+    ],
+    "statusUpdates": [
+      {
+        "path": "/api/fault-tickets/601",
+        "payload": {
+          "status": "In Progress"
+        }
+      }
+    ]
+  },
+  "diagnostics": {
+    "console": [],
+    "failedRequests": []
+  },
+  "accessibility": {
+    "ariaSnapshot": "- text: AssetCare360\n- heading \"Technical Officer Dashboard\" [level=1]\n- button \"TO\"\n- navigation: Dashboard Fault & Repair Tickets Spare Part Management Inventory Management Service & Warranty Asset Feedback Notifications\n- main:\n  - button \"Back to Fault & Repair Tickets\"\n  - navigation \"Breadcrumb\":\n    - link \"Dashboard\":\n      - /url: /dashboard/technical-officer/index.html?section=dashboard\n    - link \"Fault & Repair Tickets\":\n      - /url: /dashboard/technical-officer/index.html?section=tickets\n    - text: MBD-601\n  - heading \"Fault Ticket Detail\" [level=2]\n  - text: Ticket ID MBD-601 Status In Progress Priority High Equipment CAT 320D Excavator Location Main Yard Reported Apr 18, 2026 Issue Description\n  - paragraph: Hydraulic pressure drops under load while operating boom.\n  - heading \"Ticket Progress Flow\" [level=2]\n  - text: Fault Reported Step 1 Supervisor One Apr 18, 2026\n  - paragraph: \"Fault reported. Breakdown type: machine_breakdown.\"\n  - text: Assigned to Technician Step 2 Supervisor Supervisor Pending Technical Officer\n  - paragraph: Assigned on Apr 18, 2026.\n  - text: Budget Approval Step 3 No budget report submitted yet. Spare Parts Request Step 4 No spare parts requested yet. Repair In Progress Step 5 Technical Officer One Technical Officer\n  - paragraph: No work updates yet.\n  - button \"Mark as Resolved\"\n  - text: Resolved Step 6 Not yet resolved. Ticket Closed Step 7 Ticket is not yet closed.",
+    "snapshotLength": 1439
+  },
+  "artifacts": {
+    "screenshot": "/Users/senashadeesha/Documents/GitHub/assetcare360/testing/ui-validation/to-request-spare-parts-modal/before-mobile.png"
+  }
+}

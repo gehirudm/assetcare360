@@ -1,0 +1,19 @@
+{
+  "stage": "before",
+  "viewport": "mobile",
+  "url": "http://127.0.0.1:3000/dashboard/inventory-manager/index.html",
+  "title": "Inventory Manager Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \"Dashboard Overview\" [level=2]\n  - paragraph: Welcome! Here is your inventory management summary.\n  - button \" Spare Parts 1 Total parts in catalog \"\n  - button \" Out of Stock 0 Items requiring restock \"\n  - button \" Low Stock Alerts 1 Items below threshold \"\n  - button \" Total Assets 2 Vehicles and machines managed \"\n  - heading \"Recent Activities\" [level=3]\n  - paragraph: 1 pending order awaiting review\n  - paragraph: Review and resolve pending spare part requests from Technical Officers.\n  - paragraph: Orders and Approvals\n  - text: warning\n  - button \"Open\"\n  - paragraph: 1 low-stock part detected\n  - paragraph: Open notifications to prioritize low-stock replenishment actions.\n  - paragraph: Low stock monitoring\n  - text: danger\n  - button \"Open\"\n  - paragraph: 0 out-of-stock parts in catalog\n  - paragraph: Review the spare parts catalog and submit reorder requests where needed.\n  - paragraph: Catalog health\n  - text: info\n  - button \"Open\"\n  - paragraph: 2 total assets under management\n  - paragraph: \"Lowest stock item: Hydraulic Pump Seal (SPR-001) has 4 unit(s) with threshold 5.\"\n  - paragraph: Assets and inventory\n  - text: info\n  - button \"Open\"",
+    "snapshotLength": 1200
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "insuranceNavVisible": false,
+    "insuranceSectionCount": 0,
+    "latestUpdatePath": null,
+    "latestUpdatePayloadKeys": [],
+    "updateCalls": 0
+  }
+}

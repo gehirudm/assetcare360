@@ -12,9 +12,11 @@
   "failedRequests": [],
   "interactionSummary": {
     "dangerousCargoBadgeVisible": true,
+    "driverVehicleBreakdownVisible": true,
     "approveGarageActionRemoved": true,
     "viewLabelUpdated": true,
-    "criticalSortWorks": true,
+    "newestFirstSortWorks": true,
+    "prioritySortWorks": true,
     "garageApprovedStatusShown": true,
     "legacyRouteDescriptionNormalized": true,
     "listMapActionRemoved": true,

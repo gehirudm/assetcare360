@@ -1,0 +1,26 @@
+{
+  "stage": "after",
+  "viewport": "mobile",
+  "url": "http://127.0.0.1:3000/dashboard/inventory-manager/index.html",
+  "title": "Inventory Manager Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \" Insurance Management\" [level=2]\n  - paragraph: Track upcoming insurance renewals and submit renewal updates for machines and vehicles.\n  - text: Upcoming Insurance Renewals 2 Overdue Renewals 0 Missing Insurance Data 0 Tracked Assets 2\n  - textbox \"Search by asset name, ID, provider, or number plate...\"\n  - button \"Upcoming\"\n  - button \"Overdue\"\n  - button \"Missing Data\"\n  - button \"All\"\n  - text: \"machine LPG Cylinder Filling Machine (MCH-011) Model: CAT-320D | Location: LOCATION 1 Insurance: Full | Provider: Litro Insurance PLC Upcoming Next renew: Apr 28, 2026 (10 day(s) remaining)\"\n  - button \" Submit Renewal\"\n  - text: \"vehicle LPG Distribution Truck (VEH-021) Model: ISUZU-NPR | Number Plate: NB-2026 Insurance: Third-Party | Provider: Transit Assurance Ltd Upcoming Next renew: Apr 28, 2026 (10 day(s) remaining)\"\n  - button \" Submit Renewal\"\n  - heading \" Submit Insurance Renewal\" [level=2]\n  - button \"\"\n  - paragraph: LPG Cylinder Filling Machine (MCH-011) - CAT-320D\n  - text: Insurance Type *\n  - combobox:\n    - option \"Select Insurance Type\"\n    - option \"Full\" [selected]\n    - option \"Third-Party\"\n  - text: Insurance Provider *\n  - textbox: Litro Insurance PLC\n  - text: Provider Details *\n  - textbox: Hotline 011-9999999, policy account managed by fleet team\n  - text: Renew Interval (Days) *\n  - spinbutton: \"365\"\n  - text: Last Renew Date *\n  - textbox: 2026-04-01\n  - text: Last Renew Details *\n  - textbox: Renewed annual policy and attached payment receipt reference INV-2026-44\n  - button \"Cancel\"\n  - button \" Saving...\" [disabled]",
+    "snapshotLength": 1594
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "insuranceNavVisible": false,
+    "insuranceSectionCount": 0,
+    "latestUpdatePath": "/api/machines/11",
+    "latestUpdatePayloadKeys": [
+      "insurance_type",
+      "insurance_provider",
+      "insurance_provider_details",
+      "insurance_renew_interval_days",
+      "last_insurance_renew_date",
+      "last_insurance_renew_details"
+    ],
+    "updateCalls": 1
+  }
+}

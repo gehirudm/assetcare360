@@ -8,13 +8,20 @@
     "ariaSnapshot": "- main:\n  - text: Ticket ID RBD-201 Status Assigned Priority High Equipment Route Vehicle Location Lat 6.927079, Lng 79.861244 Reported Apr 14, 2026 Issue Description\n  - paragraph: Engine vibration and warning light remain active\n  - text: Dangerous Cargo Context Hazardous Load Reported Trip TRIP-991\n  - paragraph: Compressed gas cylinders\n  - heading \"Breakdown Location Map\" [level=3]\n  - text: Lat 6.927079, Lng 79.861244 Marker\n  - paragraph: This map shows the location reported when the route breakdown was submitted.\n  - heading \"Ticket Progress Flow\" [level=2]\n  - text: Fault Reported Step 1 Driver One Apr 14, 2026\n  - paragraph: \"Fault reported. Breakdown type: route_breakdown. Dangerous cargo was active at report time. Cargo trip: TRIP-991.\"\n  - text: Assigned to Technician Step 2 Supervisor Supervisor Pending Technical Officer\n  - paragraph: Assigned on N/A.\n  - button \"Assign Technician\"\n  - button \"Approve Nearby Garage\"\n  - text: Budget Approval Step 3 Technical Officer Submitted by Total Amount\n  - strong: \"-\"\n  - text: Approval Level Supervisor Status Pending\n  - button \"Approve Budget\"\n  - button \"Reject Budget\"\n  - text: Spare Parts Request Step 4 No spare parts requested yet. Repair In Progress Step 5 Work has not started yet. Resolved Step 6 Not yet resolved. Ticket Closed Step 7 Ticket is not yet closed.",
     "snapshotLength": 1343
   },
-  "console": [],
+  "console": [
+    {
+      "type": "error",
+      "text": "Font Awesome Kit: TypeError: Failed to fetch"
+    }
+  ],
   "failedRequests": [],
   "interactionSummary": {
     "dangerousCargoBadgeVisible": true,
+    "driverVehicleBreakdownVisible": true,
     "approveGarageActionRemoved": true,
     "viewLabelUpdated": true,
-    "criticalSortWorks": true,
+    "newestFirstSortWorks": true,
+    "prioritySortWorks": true,
     "garageApprovedStatusShown": true,
     "legacyRouteDescriptionNormalized": true,
     "listMapActionRemoved": true,

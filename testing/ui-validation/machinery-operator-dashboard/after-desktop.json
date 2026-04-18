@@ -11,9 +11,9 @@
   "failedRequests": [],
   "interactionSummary": {
     "activeSection": "notifications",
-    "visibleFaultCards": 2,
+    "visibleFaultCards": 3,
     "visibleUpdateCards": 2,
-    "editableFaultActionCount": 2,
+    "editableFaultActionCount": 3,
     "editableWeeklyActionCount": 2,
     "ticketTrackingSectionPresent": false,
     "notificationsCount": 5,
