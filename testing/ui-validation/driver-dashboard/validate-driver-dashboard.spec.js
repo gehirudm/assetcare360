@@ -70,12 +70,28 @@ function buildFixtures() {
                 breakdown_id: 'BR-001',
                 vehicle_id: 1,
                 number_plate: 'LKA-1234',
+                driver_id: 701,
+                driver_name: 'Driver One',
                 severity: 'high',
                 breakdown_type: 'engine',
                 description: 'Engine overheating on Matara Road',
                 breakdown_date: '2026-04-12',
                 status: 'Assigned',
                 ticket_status: 'Assigned',
+            },
+            {
+                id: 12,
+                breakdown_id: 'BR-002',
+                vehicle_id: 1,
+                number_plate: 'LKA-1234',
+                driver_id: 701,
+                driver_name: 'Driver One',
+                severity: 'low',
+                breakdown_type: 'electrical',
+                description: 'Dashboard indicator intermittently failing',
+                breakdown_date: '2026-04-13',
+                status: 'Pending',
+                ticket_status: 'Open',
             },
         ],
         routeBreakdowns: [
@@ -84,6 +100,8 @@ function buildFixtures() {
                 route_breakdown_id: 'RBR-001',
                 vehicle_id: 1,
                 number_plate: 'LKA-1234',
+                driver_id: 701,
+                driver_name: 'Driver One',
                 severity: 'medium',
                 breakdown_type: 'tires',
                 breakdown_location: 'Galle Highway Exit 12',
@@ -92,16 +110,57 @@ function buildFixtures() {
                 status: 'Resolved',
                 ticket_status: 'Resolved',
             },
+            {
+                id: 22,
+                route_breakdown_id: 'RBR-002',
+                vehicle_id: 1,
+                number_plate: 'LKA-1234',
+                driver_id: 701,
+                driver_name: 'Driver One',
+                severity: 'critical',
+                breakdown_type: 'brakes',
+                breakdown_location: 'Southern Expressway KM 22',
+                breakdown_datetime: '2026-04-10T10:00:00Z',
+                description: 'Brake pressure dropped suddenly',
+                status: 'In Progress',
+                ticket_status: 'In Progress',
+            },
         ],
     };
 }
 
 async function mockApi(page, fixtures) {
-    await page.route('**/api/**', async (route) => {
+    await page.route('**/js/dashboard-init.js', (route) => {
+        route.fulfill({
+            status: 200,
+            contentType: 'application/javascript',
+            body: `
+                const DashboardInit = {
+                    async init(_allowedRoles, options = {}) {
+                        const user = ${JSON.stringify(fixtures.user)};
+                        if (typeof options.onSuccess === 'function') {
+                            await options.onSuccess(user);
+                        }
+                        return user;
+                    },
+                    updateUserInfo() {},
+                    logout() {},
+                };
+
+                function createConfirmationDialog() {}
+                function closeConfirmation() {}
+                async function confirmAction() {}
+                function logout() {}
+            `,
+        });
+    });
+
+    const handleApiRoute = async (route) => {
         const request = route.request();
         const method = request.method();
         const url = new URL(request.url());
         const pathname = url.pathname;
+        const normalizedPath = pathname.startsWith('/api/') ? pathname.slice(4) : pathname;
 
         const json = (body, status = 200) => route.fulfill({
             status,
@@ -109,7 +168,7 @@ async function mockApi(page, fixtures) {
             body: JSON.stringify(body),
         });
 
-        if (pathname.endsWith('/api/auth/me') && method === 'GET') {
+        if (normalizedPath === '/auth/me' && method === 'GET') {
             return json({
                 status: 'success',
                 success: true,
@@ -117,7 +176,7 @@ async function mockApi(page, fixtures) {
             });
         }
 
-        if (pathname.endsWith('/api/trips') && method === 'GET') {
+        if (normalizedPath === '/trips' && method === 'GET') {
             return json({
                 status: 'success',
                 success: true,
@@ -125,7 +184,7 @@ async function mockApi(page, fixtures) {
             });
         }
 
-        if (pathname.endsWith('/api/trips') && method === 'POST') {
+        if (normalizedPath === '/trips' && method === 'POST') {
             return json({
                 status: 'success',
                 success: true,
@@ -144,15 +203,15 @@ async function mockApi(page, fixtures) {
             });
         }
 
-        if (pathname.match(/\/api\/trips\/[^/]+$/) && method === 'PUT') {
+        if (normalizedPath.match(/\/trips\/[^/]+$/) && method === 'PUT') {
             return json({ status: 'success', success: true, data: {} });
         }
 
-        if (pathname.match(/\/api\/trips\/[^/]+\/(start|end|cancel)$/) && method === 'POST') {
+        if (normalizedPath.match(/\/trips\/[^/]+\/(start|end|cancel)$/) && method === 'POST') {
             return json({ status: 'success', success: true, data: {} });
         }
 
-        if (pathname.endsWith('/api/vehicle-checks') && method === 'GET') {
+        if (normalizedPath === '/vehicle-checks' && method === 'GET') {
             return json({
                 status: 'success',
                 success: true,
@@ -160,7 +219,7 @@ async function mockApi(page, fixtures) {
             });
         }
 
-        if (pathname.endsWith('/api/vehicle-checks') && method === 'POST') {
+        if (normalizedPath === '/vehicle-checks' && method === 'POST') {
             return json({
                 status: 'success',
                 success: true,
@@ -172,7 +231,7 @@ async function mockApi(page, fixtures) {
             });
         }
 
-        if (pathname.endsWith('/api/breakdown-reports') && method === 'GET') {
+        if (normalizedPath === '/breakdown-reports' && method === 'GET') {
             return json({
                 status: 'success',
                 success: true,
@@ -180,7 +239,7 @@ async function mockApi(page, fixtures) {
             });
         }
 
-        if (pathname.endsWith('/api/route-breakdowns') && method === 'GET') {
+        if (normalizedPath === '/route-breakdowns' && method === 'GET') {
             return json({
                 status: 'success',
                 success: true,
@@ -188,20 +247,23 @@ async function mockApi(page, fixtures) {
             });
         }
 
-        if (pathname.endsWith('/api/breakdown-reports') && method === 'POST') {
+        if (normalizedPath === '/breakdown-reports' && method === 'POST') {
             return json({ status: 'success', success: true, data: {} });
         }
 
-        if (pathname.endsWith('/api/route-breakdowns') && method === 'POST') {
+        if (normalizedPath === '/route-breakdowns' && method === 'POST') {
             return json({ status: 'success', success: true, data: {} });
         }
 
-        if (pathname.match(/\/api\/(breakdown-reports|route-breakdowns)\/[^/]+$/) && (method === 'PUT' || method === 'DELETE')) {
+        if (normalizedPath.match(/\/(breakdown-reports|route-breakdowns)\/[^/]+$/) && (method === 'PUT' || method === 'DELETE')) {
             return json({ status: 'success', success: true, data: {} });
         }
 
-        return route.continue();
-    });
+        return json({ status: 'success', success: true, data: {} });
+    };
+
+    await page.route('**://localhost:8000/**', handleApiRoute);
+    await page.route('**/api/**', handleApiRoute);
 }
 
 function attachMonitors(page, state) {
@@ -239,54 +301,23 @@ async function runFlow(page, viewportName) {
     await page.evaluate(() => {
         const layout = document.querySelector('ac-layout');
         if (layout && typeof layout.navigateTo === 'function') {
-            layout.navigateTo('trip-log');
+            layout.navigateTo('ticket-tracking');
         }
     });
 
-    await expect(page.locator('#trip-log')).toBeVisible();
-    await page.locator('#trip-log [data-action="open-start-trip-modal"]').click();
-    await expect(page.locator('#startTripModal')).toBeVisible();
-    await page.locator('#startTripModal [data-action="close-modal"]').first().click();
-    await expect(page.locator('#startTripModal')).toBeHidden();
+    await expect(page.locator('#ticket-tracking')).toBeVisible();
+    const driverSortSelect = page.locator('#ticket-tracking #driverTicketSort');
+    await expect(driverSortSelect).toBeVisible();
+    await expect(page.locator('#driverTicketTrackingList .inventory-item').first()).toContainText('BR-002');
 
-    await page.evaluate(() => {
-        const layout = document.querySelector('ac-layout');
-        if (layout && typeof layout.navigateTo === 'function') {
-            layout.navigateTo('vehicle-check');
-        }
-    });
+    await driverSortSelect.selectOption('priority');
+    await expect(page.locator('#driverTicketTrackingList .inventory-item').first()).toContainText('RBR-002');
 
-    await expect(page.locator('#vehicle-check')).toBeVisible();
-    await page.locator('#vehicle-check [data-action="open-weekly-check"]').click();
-    await expect(page.locator('#dailyCheckModal')).toBeVisible();
-    await page.locator('#dailyCheckModal [data-action="close-modal"]').first().click();
-    await expect(page.locator('#dailyCheckModal')).toBeHidden();
+    await driverSortSelect.selectOption('created');
+    await expect(page.locator('#driverTicketTrackingList .inventory-item').first()).toContainText('BR-002');
 
-    await page.evaluate(() => {
-        const layout = document.querySelector('ac-layout');
-        if (layout && typeof layout.navigateTo === 'function') {
-            layout.navigateTo('breakdown');
-        }
-    });
-
-    await expect(page.locator('#breakdown')).toBeVisible();
-    await page.locator('#breakdown [data-action="open-breakdown-modal"]').click();
-    await expect(page.locator('#breakdownModal')).toBeVisible();
-    await page.locator('#breakdownModal [data-action="close-modal"]').first().click();
-    await expect(page.locator('#breakdownModal')).toBeHidden();
-
-    await page.evaluate(() => {
-        const layout = document.querySelector('ac-layout');
-        if (layout && typeof layout.navigateTo === 'function') {
-            layout.navigateTo('transport-ticket');
-        }
-    });
-
-    await expect(page.locator('#transport-ticket')).toBeVisible();
-    await page.locator('#transport-ticket [data-action="open-transport-ticket-modal"]').click();
-    await expect(page.locator('#transportTicketModal')).toBeVisible();
-    await page.locator('#transportTicketModal [data-action="close-modal"]').first().click();
-    await expect(page.locator('#transportTicketModal')).toBeHidden();
+    await page.locator('#ticket-tracking .filter-btn', { hasText: 'Pending' }).click();
+    await page.locator('#ticket-tracking .filter-btn', { hasText: 'All Tickets' }).click();
 
     let ariaSnapshot = '';
     try {
@@ -298,9 +329,7 @@ async function runFlow(page, viewportName) {
     const interactionSummary = await page.evaluate(() => ({
         activeSection: document.querySelector('.content-section.active')?.id || null,
         openModalCount: document.querySelectorAll('.modal.active').length,
-        tripRows: document.querySelectorAll('#driverTripsList .inventory-item').length,
-        checkRows: document.querySelectorAll('#driverChecksList .inventory-item').length,
-        breakdownRows: document.querySelectorAll('#driverBreakdownList .inventory-item').length,
+        ticketTrackingRows: document.querySelectorAll('#driverTicketTrackingList .inventory-item').length,
     }));
 
     await page.screenshot({

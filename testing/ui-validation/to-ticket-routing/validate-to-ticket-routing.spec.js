@@ -36,6 +36,28 @@ function buildFixtures() {
                         status: 'Active'
                     }
                 ]
+            },
+            {
+                id: 502,
+                ticket_id: 'TKT-502',
+                machine_id: 12,
+                machine_model_number: 'CAT-330D',
+                machine_name: 'Excavator 330D',
+                description: 'Emergency hydraulic pump fault',
+                priority: 'Critical',
+                status: 'Assigned',
+                reported_by_name: 'Supervisor Two',
+                created_at: '2026-04-10T05:00:00Z',
+                updated_at: '2026-04-10T06:00:00Z',
+                assignments: [
+                    {
+                        assigned_by_name: 'Supervisor Two',
+                        assigned_at: '2026-04-10T05:30:00Z',
+                        technician_name: 'Technical Officer One',
+                        assigned_to: 1001,
+                        status: 'Active'
+                    }
+                ]
             }
         ]
     };
@@ -82,7 +104,9 @@ async function mockApi(page, fixtures) {
         }
 
         if (pathname.match(/\/api\/fault-tickets\/\d+$/) && method === 'GET') {
-            return json({ status: 'success', success: true, data: fixtures.tickets[0] });
+            const ticketId = Number(pathname.split('/').pop());
+            const ticket = fixtures.tickets.find((item) => Number(item.id) === ticketId) || fixtures.tickets[0];
+            return json({ status: 'success', success: true, data: ticket });
         }
 
         if (pathname.endsWith('/api/notifications') && method === 'GET') {
@@ -149,6 +173,16 @@ async function runFlow(page, viewportName) {
 
     await expect(page.locator('#tickets')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('to-tickets #allTicketsList .ticket-item').first()).toBeVisible({ timeout: 15000 });
+
+    const toSortSelect = page.locator('to-tickets #ticketSortSelect');
+    await expect(toSortSelect).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('to-tickets #allTicketsList .ticket-item').first()).toContainText('TKT-501');
+
+    await toSortSelect.selectOption('priority');
+    await expect(page.locator('to-tickets #allTicketsList .ticket-item').first()).toContainText('TKT-502');
+
+    await toSortSelect.selectOption('created');
+    await expect(page.locator('to-tickets #allTicketsList .ticket-item').first()).toContainText('TKT-501');
 
     await page.locator('to-tickets #allTicketsList .ticket-item').first().click();
 

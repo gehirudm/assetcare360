@@ -68,6 +68,28 @@ function buildFixtures() {
                 assigned_technicians: []
             }
         ],
+        vehicleBreakdowns: [
+            {
+                id: 401,
+                breakdown_id: 'VBD-401',
+                vehicle_id: 23,
+                number_plate: 'CAL-7788',
+                driver_name: 'Driver Three',
+                breakdown_type: 'Brake Failure',
+                severity: 'medium',
+                description: 'Brake pedal pressure is inconsistent and requires inspection',
+                breakdown_date: '2026-04-14T12:30:00Z',
+                status: 'Pending',
+                ticket_status: 'Assigned',
+                fault_ticket_id: 304,
+                fault_ticket_number: 'TKT-304',
+                assigned_technicians: [
+                    {
+                        technician_name: 'Technician Two'
+                    }
+                ]
+            }
+        ],
         machineBreakdowns: [
             {
                 id: 301,
@@ -339,6 +361,10 @@ async function mockApi(page, fixtures) {
             return json(route, { status: 'success', success: true, data: { breakdowns: fixtures.routeBreakdowns } });
         }
 
+        if (pathname.endsWith('/api/breakdown-reports') && method === 'GET') {
+            return json(route, { status: 'success', success: true, data: { reports: fixtures.vehicleBreakdowns } });
+        }
+
         if (pathname.endsWith('/api/machine-breakdowns') && method === 'GET') {
             return json(route, { status: 'success', success: true, data: { reports: fixtures.machineBreakdowns } });
         }
@@ -449,19 +475,35 @@ async function runFlow(page, viewportName) {
     await expect(tracking).toBeVisible({ timeout: 15000 });
 
     const listItems = tracking.locator('#supervisorFaultTicketList .inventory-item');
-    await expect(listItems).toHaveCount(3, { timeout: 15000 });
+    await expect(listItems).toHaveCount(4, { timeout: 15000 });
 
-    const criticalCard = listItems.first();
+    const newestCard = listItems.first();
     const routeCard = listItems.filter({ hasText: 'RBD-201' }).first();
     const approvedRouteCard = listItems.filter({ hasText: 'RBD-202' }).first();
+    const vehicleCard = listItems.filter({ hasText: 'VBD-401' }).first();
     const machineCard = listItems.filter({ hasText: 'MBD-301' }).first();
 
-    await expect(criticalCard).toContainText('RBD-202');
-    await expect(criticalCard).toContainText('CRITICAL');
+    await expect(newestCard).toContainText('VBD-401');
+    await expect(newestCard).toContainText('MEDIUM');
+
+    const sortSelect = tracking.locator('#supervisorFaultTicketSort');
+    await expect(sortSelect).toBeVisible();
+
+    await sortSelect.selectOption('priority');
+    await expect(listItems.first()).toContainText('RBD-202');
+    await expect(listItems.first()).toContainText('CRITICAL');
+
+    await sortSelect.selectOption('created');
+    await expect(listItems.first()).toContainText('VBD-401');
 
     await expect(routeCard).toBeVisible();
     await expect(approvedRouteCard).toBeVisible();
+    await expect(vehicleCard).toBeVisible();
     await expect(machineCard).toBeVisible();
+
+    await expect(vehicleCard.locator('.item-meta').first()).toContainText('Driver Three (Driver)');
+    await expect(vehicleCard).toContainText('Brake Failure');
+    await expect(vehicleCard).toContainText('MEDIUM');
 
     await expect(routeCard).toContainText('Dangerous Cargo');
     await expect(routeCard).not.toContainText('Compressed gas cylinders');
@@ -500,15 +542,15 @@ async function runFlow(page, viewportName) {
     }
 
     await tracking.locator('button[data-action="set-source-filter"][data-source="vehicle"]').click();
-    await expect(tracking.locator('#supervisorFaultTicketList .inventory-item')).toHaveCount(2);
-    await expect(tracking.locator('#supervisorFaultTicketList .inventory-item').first()).toContainText('RBD-202');
+    await expect(tracking.locator('#supervisorFaultTicketList .inventory-item')).toHaveCount(3);
+    await expect(tracking.locator('#supervisorFaultTicketList .inventory-item').first()).toContainText('VBD-401');
 
     await tracking.locator('button[data-action="set-source-filter"][data-source="machine"]').click();
     await expect(tracking.locator('#supervisorFaultTicketList .inventory-item')).toHaveCount(1);
     await expect(tracking.locator('#supervisorFaultTicketList .inventory-item').first()).toContainText('MBD-301');
 
     await tracking.locator('button[data-action="set-source-filter"][data-source="all"]').click();
-    await expect(tracking.locator('#supervisorFaultTicketList .inventory-item')).toHaveCount(3);
+    await expect(tracking.locator('#supervisorFaultTicketList .inventory-item')).toHaveCount(4);
 
     await page.evaluate(() => {
         const detailView = document.querySelector('#ticket-details supervisor-ticket-detail-view');
@@ -639,9 +681,11 @@ async function runFlow(page, viewportName) {
         failedRequests: state.failedRequests,
         interactionSummary: {
             dangerousCargoBadgeVisible: true,
+            driverVehicleBreakdownVisible: true,
             approveGarageActionRemoved: true,
             viewLabelUpdated: true,
-            criticalSortWorks: true,
+            newestFirstSortWorks: true,
+            prioritySortWorks: true,
             garageApprovedStatusShown: true,
             legacyRouteDescriptionNormalized: true,
             listMapActionRemoved: mapButtonCount === 0,

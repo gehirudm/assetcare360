@@ -269,6 +269,17 @@ async function runFlow(page, viewportName) {
 
     await navigateSection(page, 'fault-tickets');
     await expect(page.getByRole('heading', { name: 'Fault Tickets' })).toBeVisible();
+
+    const maintenanceSortSelect = page.locator('#fault-tickets #maintenanceFaultSort');
+    await expect(maintenanceSortSelect).toBeVisible();
+    await expect(page.locator('#breakdownReportsList .inventory-item').first()).toContainText('RB-3001');
+
+    await maintenanceSortSelect.selectOption('priority');
+    await expect(page.locator('#breakdownReportsList .inventory-item').first()).toContainText('MB-2001');
+
+    await maintenanceSortSelect.selectOption('created');
+    await expect(page.locator('#breakdownReportsList .inventory-item').first()).toContainText('RB-3001');
+
     await page.getByRole('button', { name: 'Pending' }).click();
     await expect(page.locator('#breakdownReportsList [data-action="view-breakdown"]').first()).toBeVisible();
     await page.locator('#breakdownReportsList [data-action="view-breakdown"]').first().click();

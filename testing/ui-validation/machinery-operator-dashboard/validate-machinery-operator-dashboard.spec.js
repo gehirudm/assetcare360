@@ -71,6 +71,25 @@ function buildBreakdowns() {
             ],
             images: [],
         },
+        {
+            id: 3,
+            breakdown_id: 'MBD-003',
+            machine_id: 203,
+            machine_name: 'Truck #203',
+            machine_model: 'Truck #203',
+            operator_id: 801,
+            operator_name: 'Machinery Operator One',
+            breakdown_type: 'Brake Failure',
+            description: 'Critical brake pressure loss',
+            severity: 'Critical',
+            status: 'Pending',
+            breakdown_date: '2026-04-09T07:30:00Z',
+            ticket_status: 'Open',
+            fault_ticket_number: 'TKT-4503',
+            fault_ticket_id: 4503,
+            assignments: [],
+            images: [],
+        },
     ];
 }
 
@@ -304,6 +323,17 @@ async function runFlow(page, viewportName) {
 
     await navigateSection(page, 'fault-reporting', 'Fault Reporting');
     await expect(page.locator('#fault-reporting .page-title')).toContainText('Fault Reporting');
+
+    const moSortSelect = page.locator('#fault-reporting #faultReportSort');
+    await expect(moSortSelect).toBeVisible();
+    await expect(page.locator('#faultReportsList .inventory-item').first()).toContainText('MBD-001');
+
+    await moSortSelect.selectOption('priority');
+    await expect(page.locator('#faultReportsList .inventory-item').first()).toContainText('MBD-003');
+
+    await moSortSelect.selectOption('created');
+    await expect(page.locator('#faultReportsList .inventory-item').first()).toContainText('MBD-001');
+
     await page.locator('#fault-reporting .filter-btn', { hasText: 'Pending' }).click();
     await page.locator('#fault-reporting .filter-btn', { hasText: 'All Reports' }).click();
     await page.locator('#fault-reporting .btn.btn-primary', { hasText: 'Report New Fault' }).click();
