@@ -242,6 +242,11 @@
                 <div class="overview-insurance-eligibility" id="ovInsuranceEligibility">-</div>
                 <p id="ovInsuranceReason">-</p>
             </div>
+            <div class="overview-actions" id="overviewActions" style="display:none;">
+                <button class="btn btn-action" id="editFaultTicketBtn" type="button" style="display:none;">
+                    <i class="fas fa-edit"></i> Edit Fault Ticket
+                </button>
+            </div>
         </section>
 
         <section class="route-location-panel" id="routeLocationPanel" style="display:none;">
@@ -573,13 +578,13 @@
                 </form>
             </div>
         </div>
-    </div>
+            </div>
+            <div class="overview-actions" id="overviewActions" style="display:none;">
 
     <!-- ============================
          SPARE PARTS MODAL
     ============================= -->
     <div class="modal-overlay" id="partsModal">
-        <div class="modal modal-wide">
             <div class="modal-header">
                 <h3><i class="fas fa-clipboard-list"></i> Request Spare Parts</h3>
                 <button class="modal-close" onclick="closePartsModal()"><i class="fas fa-times"></i></button>
