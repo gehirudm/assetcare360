@@ -2,16 +2,20 @@
   "stage": "before",
   "viewport": "mobile",
   "startUrl": "http://127.0.0.1:3000/dashboard/technical-officer/index.html?section=tickets",
-  "finalUrl": "http://127.0.0.1:3000/dashboard/technical-officer/fault-ticket-detail/?id=501",
-  "title": "Fault Ticket Detail — AssetCare360",
+  "finalUrl": "http://127.0.0.1:3000/dashboard/technical-officer/index.html?section=tickets",
+  "title": "Technical Officer Dashboard - AssetCare360",
   "accessibility": {
-    "ariaSnapshot": "- text: AssetCare360\n- heading \"Technical Officer Dashboard\" [level=1]\n- button \"TO\"\n- navigation: Dashboard Fault & Repair Tickets Spare Part Management Inventory Management Service & Warranty Asset Feedback Notifications\n- main:\n  - button \"Back to Fault & Repair Tickets\"\n  - navigation \"Breadcrumb\":\n    - link \"Dashboard\":\n      - /url: ../?section=dashboard\n    - link \"Fault & Repair Tickets\":\n      - /url: ../?section=tickets\n    - text: Ticket Detail\n  - heading \"Fault Ticket Detail\" [level=2]\n  - paragraph: Loading ticket details...",
-    "snapshotLength": 545
+    "ariaSnapshot": "- text: AssetCare360\n- heading \"Technical Officer Dashboard\" [level=1]\n- button \"TO\"\n- navigation: Dashboard Fault & Repair Tickets Spare Part Management Inventory Management Service & Warranty Asset Feedback Notifications\n- main:\n  - heading \"Fault & Repair Tickets\" [level=1]\n  - paragraph: Manage tickets assigned by supervisors\n  - button \"Create New Repair Ticket\"\n  - button \"All Tickets\"\n  - button \"Pending\"\n  - button \"Waiting for Parts\"\n  - button \"Parts Approved\"\n  - button \"Parts Rejected\"\n  - button \"In Progress\"\n  - button \"Completed\"\n  - text: Tickets 1 ticket\n  - strong: TKT-501\n  - text: \"Equipment: CAT-320D | Reporter: Supervisor One Hydraulic pressure drop under load Assigned by: Supervisor One | HIGH | PENDING\"\n  - button \"Request Spare Parts\"\n  - button \"Add Budget\"\n- button \"☰\"",
+    "snapshotLength": 806
   },
   "console": [],
   "failedRequests": [],
   "interactionSummary": {
-    "destinationPath": "/dashboard/technical-officer/fault-ticket-detail/",
-    "destinationSearch": "?id=501"
+    "detailUrl": "http://127.0.0.1:3000/view-ticket/index.html?id=501&embedded=1&return_to=%2Fdashboard%2Ftechnical-officer%2Findex.html%3Fsection%3Dtickets&role_override=TECHNICAL_OFFICER",
+    "destinationPath": "/view-ticket/index.html",
+    "destinationSearch": "?id=501&embedded=1&return_to=%2Fdashboard%2Ftechnical-officer%2Findex.html%3Fsection%3Dtickets&role_override=TECHNICAL_OFFICER",
+    "returnUrl": "http://127.0.0.1:3000/dashboard/technical-officer/index.html?section=tickets",
+    "returnPath": "/dashboard/technical-officer/index.html",
+    "returnSearch": "?section=tickets"
   }
 }
