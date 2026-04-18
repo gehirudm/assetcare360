@@ -36,7 +36,7 @@ Centralised static methods — **always use these, never `echo json_encode(...)`
 - Run via `scripts/migrate.php` (custom manager)
 - **Never modify existing migration files** — always create new numbered ones
 - Use `tableExists()` / `columnExists()` helpers for safety
-- Latest: `047_create_system_settings_and_budget_approval.php`
+- Latest: `057_normalize_legacy_route_breakdown_descriptions.php`
 
 ### Frontend Navigation (dashboard sub-pages)
 - Query-param navigation: `?section=sectionId` → `navigateTo()` / `activateSection()`
@@ -51,12 +51,19 @@ Centralised static methods — **always use these, never `echo json_encode(...)`
 - Budget `pending` → blocks `TicketWorkUpdateController::create()` with 400 error
 - Budget `approved`/`rejected` → ticket moves back to `Assigned`
 
+### Breakdown-to-Ticket Linkage
+- Breakdown create flows in `BreakdownReportController`, `RouteBreakdownController`, and `MachineBreakdownController` auto-create linked fault tickets in the same transaction.
+- Link contract uses `fault_tickets.breakdown_report_id` + `fault_tickets.breakdown_type` as the canonical association.
+- `FaultTicketService::formatTicket(...)` resolves source-table context for vehicle/route/machine and exposes a merged `breakdown_context` read model to frontend consumers.
+- Supervisor breakdown list actions route through ticket flow semantics (open linked ticket, or create-and-open for legacy unlinked records).
+
 ## Component Relationships
 ```
 FaultTicket ←—— BudgetReport (latest per ticket)
 FaultTicket ←—— SparePartRequest
 FaultTicket ←—— TicketWorkUpdate (one per ticket)
 FaultTicket ←—— TecFaultRepairTicket (TO's repair record)
+BreakdownReport / RouteBreakdown / MachineBreakdown ←—— FaultTicket (via breakdown_report_id + breakdown_type)
 Machine / Vehicle ←—— FaultTicket
 User ←—— FaultTicketAssignment
 SystemSetting ——→ BudgetReport (petty_cash_limit)

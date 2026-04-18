@@ -6,6 +6,7 @@ require_once __DIR__ . '/../models/FaultTicketAssignment.php';
 require_once __DIR__ . '/../models/BudgetReport.php';
 require_once __DIR__ . '/../models/SparePartRequest.php';
 require_once __DIR__ . '/FaultTicketWorkflowService.php';
+require_once __DIR__ . '/TripService.php';
 require_once __DIR__ . '/../../config/Database.php';
 
 class FaultTicketService {
@@ -15,6 +16,9 @@ class FaultTicketService {
     private $budgetReportModel;
     private $sparePartRequestModel;
     private $workflowService;
+    private array $schemaCheckCache = [];
+    private array $routeBreakdownDangerousCache = [];
+    private array $breakdownContextCache = [];
     
     // Constants for validation
     const MAX_IMAGES = 5;
@@ -150,6 +154,11 @@ class FaultTicketService {
      * Create fault ticket with images
      */
     public function create($data, $files = []) {
+        $dangerousCargoContext = $this->resolveRouteBreakdownDangerousCargoContext($data);
+        if (!empty($dangerousCargoContext['is_dangerous'])) {
+            $data['priority'] = FaultTicket::PRIORITY_CRITICAL;
+        }
+
         // Validate data
         $errors = $this->validate($data, $files);
         if (!empty($errors)) {
@@ -235,7 +244,12 @@ class FaultTicketService {
             return [
                 'success' => true,
                 'message' => 'Fault ticket created successfully',
-                'data' => ['id' => $ticketId]
+                'data' => [
+                    'id' => $ticketId,
+                    'is_dangerous_cargo' => !empty($dangerousCargoContext['is_dangerous']),
+                    'dangerous_cargo_summary' => $dangerousCargoContext['summary'] ?? null,
+                    'dangerous_cargo_trip_id' => $dangerousCargoContext['trip_id'] ?? null,
+                ]
             ];
             
         } catch (\Exception $e) {
@@ -371,6 +385,10 @@ class FaultTicketService {
             $workStmt->execute([$ticket['id']]);
             $ticket['work_updates'] = $workStmt->fetchAll(\PDO::FETCH_ASSOC);
         }
+
+        $this->mergeBreakdownContextIntoTicket($ticket);
+
+        $this->mergeRouteBreakdownDangerousContextIntoTicket($ticket);
         
         // Format image URLs for frontend
         if (isset($ticket['images']) && is_array($ticket['images'])) {
@@ -383,6 +401,348 @@ class FaultTicketService {
         }
         
         return $ticket;
+    }
+
+    private function mergeBreakdownContextIntoTicket(array &$ticket): void {
+        $breakdownType = strtolower(trim((string) ($ticket['breakdown_type'] ?? '')));
+        $breakdownReportId = trim((string) ($ticket['breakdown_report_id'] ?? ''));
+
+        if ($breakdownType === '' || $breakdownReportId === '') {
+            return;
+        }
+
+        $cacheKey = $breakdownType . ':' . $breakdownReportId;
+        if (!array_key_exists($cacheKey, $this->breakdownContextCache)) {
+            $this->breakdownContextCache[$cacheKey] = $this->resolveBreakdownContext($breakdownType, $breakdownReportId);
+        }
+
+        $context = $this->breakdownContextCache[$cacheKey];
+        if (!is_array($context) || empty($context)) {
+            return;
+        }
+
+        $ticket['breakdown_context'] = $context;
+
+        if (!empty($context['vehicle_id'])) {
+            $ticket['vehicle_id'] = (int) $context['vehicle_id'];
+        }
+
+        if (!empty($context['number_plate'])) {
+            $ticket['number_plate'] = $context['number_plate'];
+        }
+
+        if (!empty($context['equipment_label']) && empty($ticket['machine_name'])) {
+            $ticket['machine_name'] = $context['equipment_label'];
+        }
+
+        if (!empty($context['equipment_model']) && empty($ticket['machine_model_number'])) {
+            $ticket['machine_model_number'] = $context['equipment_model'];
+        }
+
+        if (!empty($context['location']) && (empty($ticket['location']) || $ticket['location'] === 'Unknown Location')) {
+            $ticket['location'] = $context['location'];
+        }
+
+        if (!empty($context['reporter_name']) && (empty($ticket['reported_by_name']) || $ticket['reported_by_name'] === 'Unknown')) {
+            $ticket['reported_by_name'] = $context['reporter_name'];
+        }
+
+        if (!empty($context['reporter_name']) && empty($ticket['reporter_full_name'])) {
+            $ticket['reporter_full_name'] = $context['reporter_name'];
+        }
+
+        if (!empty($context['route_garage_workflow_status'])) {
+            $ticket['route_garage_workflow_status'] = $context['route_garage_workflow_status'];
+        }
+
+        if (!empty($context['route_approved_garage_name'])) {
+            $ticket['route_approved_garage_name'] = $context['route_approved_garage_name'];
+        }
+
+        if (!empty($context['route_breakdown_numeric_id'])) {
+            $ticket['route_breakdown_numeric_id'] = (int) $context['route_breakdown_numeric_id'];
+        }
+
+        if (array_key_exists('dangerous_cargo_present', $context)) {
+            $ticket['dangerous_cargo_present'] = (int) $context['dangerous_cargo_present'];
+            $ticket['is_dangerous_cargo'] = ((int) $context['dangerous_cargo_present']) === 1;
+        }
+
+        if (array_key_exists('dangerous_cargo_summary', $context)) {
+            $ticket['dangerous_cargo_summary'] = $context['dangerous_cargo_summary'];
+        }
+
+        if (array_key_exists('dangerous_cargo_trip_id', $context)) {
+            $ticket['dangerous_cargo_trip_id'] = $context['dangerous_cargo_trip_id'];
+        }
+    }
+
+    private function resolveBreakdownContext(string $breakdownType, string $breakdownReportId): ?array {
+        if ($breakdownType === 'vehicle_breakdown') {
+            return $this->getVehicleBreakdownContext($breakdownReportId);
+        }
+
+        if ($breakdownType === 'route_breakdown') {
+            return $this->getRouteBreakdownContext($breakdownReportId);
+        }
+
+        if ($breakdownType === 'machine_breakdown') {
+            return $this->getMachineBreakdownContext($breakdownReportId);
+        }
+
+        return null;
+    }
+
+    private function getVehicleBreakdownContext(string $breakdownReportId): ?array {
+        $conn = Database::getInstance()->getConnection();
+        if (!$this->tableExists($conn, 'vehicle_breakdown')) {
+            return null;
+        }
+
+        $stmt = $conn->prepare(
+            "SELECT br.id,
+                    br.breakdown_id,
+                    br.vehicle_id,
+                    br.driver_id,
+                    br.breakdown_date,
+                    br.breakdown_type,
+                    br.severity,
+                    br.description,
+                    br.status,
+                    v.number_plate,
+                    v.model_number as vehicle_model_number,
+                    v.vehicle_name,
+                    u.full_name as reporter_name
+             FROM vehicle_breakdown br
+             LEFT JOIN vehicles v ON br.vehicle_id = v.id
+             LEFT JOIN users u ON br.driver_id = u.id
+             WHERE br.breakdown_id = ?
+             LIMIT 1"
+        );
+        $stmt->execute([$breakdownReportId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            return null;
+        }
+
+        $equipmentLabel = trim((string) ($row['number_plate'] ?? ''));
+        if ($equipmentLabel === '') {
+            $equipmentLabel = trim((string) ($row['vehicle_name'] ?? ''));
+        }
+        if ($equipmentLabel === '') {
+            $equipmentLabel = 'Vehicle #' . (int) ($row['vehicle_id'] ?? 0);
+        }
+
+        return [
+            'source' => 'vehicle_breakdown',
+            'id' => (int) ($row['id'] ?? 0),
+            'breakdown_id' => $row['breakdown_id'] ?? null,
+            'vehicle_id' => isset($row['vehicle_id']) ? (int) $row['vehicle_id'] : null,
+            'equipment_label' => $equipmentLabel,
+            'equipment_model' => $row['vehicle_model_number'] ?? ($row['vehicle_name'] ?? null),
+            'reporter_name' => $row['reporter_name'] ?? null,
+            'breakdown_datetime' => $row['breakdown_date'] ?? null,
+            'breakdown_type' => $row['breakdown_type'] ?? null,
+            'severity' => $row['severity'] ?? null,
+            'description' => $row['description'] ?? null,
+            'status' => $row['status'] ?? null,
+            'number_plate' => $row['number_plate'] ?? null,
+            'location' => null,
+        ];
+    }
+
+    private function getRouteBreakdownContext(string $breakdownReportId): ?array {
+        $conn = Database::getInstance()->getConnection();
+        if (!$this->tableExists($conn, 'vehicle_breakdown_inroute')) {
+            return null;
+        }
+
+        $hasDangerousSnapshotColumns = $this->columnExists($conn, 'vehicle_breakdown_inroute', 'dangerous_cargo_present')
+            && $this->columnExists($conn, 'vehicle_breakdown_inroute', 'dangerous_cargo_summary')
+            && $this->columnExists($conn, 'vehicle_breakdown_inroute', 'dangerous_cargo_trip_id');
+
+        $hasGarageWorkflowTable = $this->tableExists($conn, 'route_breakdown_garage_workflow');
+        $hasGaragesTable = $this->tableExists($conn, 'garages');
+
+        $selectParts = [
+            'rb.id',
+            'rb.route_breakdown_id',
+            'rb.vehicle_id',
+            'rb.driver_id',
+            'rb.breakdown_datetime',
+            'rb.breakdown_location',
+            'rb.breakdown_type',
+            'rb.severity',
+            'rb.description',
+            'rb.status',
+            'v.number_plate',
+            'v.model_number as vehicle_model_number',
+            'v.vehicle_name',
+            'u.full_name as reporter_name',
+        ];
+
+        if ($hasDangerousSnapshotColumns) {
+            $selectParts[] = 'rb.dangerous_cargo_present';
+            $selectParts[] = 'rb.dangerous_cargo_summary';
+            $selectParts[] = 'rb.dangerous_cargo_trip_id';
+        }
+
+        if ($hasGarageWorkflowTable) {
+            $selectParts[] = 'rgw.workflow_status as route_garage_workflow_status';
+            $selectParts[] = 'rgw.approved_garage_id';
+            $selectParts[] = 'rgw.approved_at';
+            $selectParts[] = 'rgw.garage_entry_at';
+            $selectParts[] = 'rgw.completed_at';
+
+            if ($hasGaragesTable) {
+                $selectParts[] = 'g.name as route_approved_garage_name';
+            }
+        }
+
+        $sql = 'SELECT ' . implode(', ', $selectParts)
+            . ' FROM vehicle_breakdown_inroute rb'
+            . ' LEFT JOIN vehicles v ON rb.vehicle_id = v.id'
+            . ' LEFT JOIN users u ON rb.driver_id = u.id';
+
+        if ($hasGarageWorkflowTable) {
+            $sql .= ' LEFT JOIN route_breakdown_garage_workflow rgw ON rgw.route_breakdown_id = rb.id';
+            if ($hasGaragesTable) {
+                $sql .= ' LEFT JOIN garages g ON g.id = rgw.approved_garage_id';
+            }
+        }
+
+        $sql .= ' WHERE rb.route_breakdown_id = ? LIMIT 1';
+
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([$breakdownReportId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            return null;
+        }
+
+        $equipmentLabel = trim((string) ($row['number_plate'] ?? ''));
+        if ($equipmentLabel === '') {
+            $equipmentLabel = trim((string) ($row['vehicle_name'] ?? ''));
+        }
+        if ($equipmentLabel === '') {
+            $equipmentLabel = 'Vehicle #' . (int) ($row['vehicle_id'] ?? 0);
+        }
+
+        return [
+            'source' => 'route_breakdown',
+            'id' => (int) ($row['id'] ?? 0),
+            'route_breakdown_id' => $row['route_breakdown_id'] ?? null,
+            'route_breakdown_numeric_id' => (int) ($row['id'] ?? 0),
+            'vehicle_id' => isset($row['vehicle_id']) ? (int) $row['vehicle_id'] : null,
+            'equipment_label' => $equipmentLabel,
+            'equipment_model' => $row['vehicle_model_number'] ?? ($row['vehicle_name'] ?? null),
+            'reporter_name' => $row['reporter_name'] ?? null,
+            'breakdown_datetime' => $row['breakdown_datetime'] ?? null,
+            'breakdown_type' => $row['breakdown_type'] ?? null,
+            'severity' => $row['severity'] ?? null,
+            'description' => $row['description'] ?? null,
+            'status' => $row['status'] ?? null,
+            'number_plate' => $row['number_plate'] ?? null,
+            'location' => $row['breakdown_location'] ?? null,
+            'route_garage_workflow_status' => $row['route_garage_workflow_status'] ?? null,
+            'route_approved_garage_name' => $row['route_approved_garage_name'] ?? null,
+            'dangerous_cargo_present' => isset($row['dangerous_cargo_present']) ? (int) $row['dangerous_cargo_present'] : 0,
+            'dangerous_cargo_summary' => $row['dangerous_cargo_summary'] ?? null,
+            'dangerous_cargo_trip_id' => $row['dangerous_cargo_trip_id'] ?? null,
+        ];
+    }
+
+    private function getMachineBreakdownContext(string $breakdownReportId): ?array {
+        $conn = Database::getInstance()->getConnection();
+        if (!$this->tableExists($conn, 'machine_breakdown')) {
+            return null;
+        }
+
+        $stmt = $conn->prepare(
+            "SELECT mb.id,
+                    mb.breakdown_id,
+                    mb.machine_id,
+                    mb.operator_id,
+                    mb.breakdown_date,
+                    mb.breakdown_type,
+                    mb.severity,
+                    mb.description,
+                    mb.status,
+                    m.model_number as machine_model_number,
+                    m.machine_name,
+                    m.location as machine_location,
+                    u.full_name as reporter_name
+             FROM machine_breakdown mb
+             LEFT JOIN machines m ON mb.machine_id = m.id
+             LEFT JOIN users u ON mb.operator_id = u.id
+             WHERE mb.breakdown_id = ?
+             LIMIT 1"
+        );
+        $stmt->execute([$breakdownReportId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            return null;
+        }
+
+        $equipmentLabel = trim((string) ($row['machine_name'] ?? ''));
+        if ($equipmentLabel === '') {
+            $equipmentLabel = 'Machine #' . (int) ($row['machine_id'] ?? 0);
+        }
+
+        return [
+            'source' => 'machine_breakdown',
+            'id' => (int) ($row['id'] ?? 0),
+            'breakdown_id' => $row['breakdown_id'] ?? null,
+            'machine_id' => isset($row['machine_id']) ? (int) $row['machine_id'] : null,
+            'equipment_label' => $equipmentLabel,
+            'equipment_model' => $row['machine_model_number'] ?? ($row['machine_name'] ?? null),
+            'reporter_name' => $row['reporter_name'] ?? null,
+            'breakdown_datetime' => $row['breakdown_date'] ?? null,
+            'breakdown_type' => $row['breakdown_type'] ?? null,
+            'severity' => $row['severity'] ?? null,
+            'description' => $row['description'] ?? null,
+            'status' => $row['status'] ?? null,
+            'location' => $row['machine_location'] ?? null,
+        ];
+    }
+
+    private function mergeRouteBreakdownDangerousContextIntoTicket(array &$ticket): void {
+        $ticket['is_dangerous_cargo'] = $ticket['is_dangerous_cargo'] ?? false;
+        $ticket['dangerous_cargo_present'] = $ticket['dangerous_cargo_present'] ?? 0;
+        $ticket['dangerous_cargo_summary'] = $ticket['dangerous_cargo_summary'] ?? null;
+        $ticket['dangerous_cargo_trip_id'] = $ticket['dangerous_cargo_trip_id'] ?? null;
+
+        $breakdownType = strtolower(trim((string) ($ticket['breakdown_type'] ?? '')));
+        $routeBreakdownCode = trim((string) ($ticket['breakdown_report_id'] ?? ''));
+
+        if ($breakdownType !== 'route_breakdown' || $routeBreakdownCode === '') {
+            return;
+        }
+
+        $cacheKey = 'route:' . $routeBreakdownCode;
+        if (!array_key_exists($cacheKey, $this->routeBreakdownDangerousCache)) {
+            $this->routeBreakdownDangerousCache[$cacheKey] = $this->resolveRouteBreakdownDangerousCargoContext([
+                'breakdown_type' => 'route_breakdown',
+                'breakdown_report_id' => $routeBreakdownCode,
+            ]);
+        }
+
+        $dangerousContext = $this->routeBreakdownDangerousCache[$cacheKey];
+        $isDangerous = !empty($dangerousContext['is_dangerous']);
+
+        $ticket['is_dangerous_cargo'] = $isDangerous;
+        $ticket['dangerous_cargo_present'] = $isDangerous ? 1 : 0;
+
+        if ($isDangerous) {
+            $ticket['dangerous_cargo_summary'] = $dangerousContext['summary'] ?? null;
+            $ticket['dangerous_cargo_trip_id'] = $dangerousContext['trip_id'] ?? null;
+        } else {
+            $ticket['dangerous_cargo_summary'] = null;
+            $ticket['dangerous_cargo_trip_id'] = null;
+        }
     }
     
     /**
@@ -1019,6 +1379,129 @@ class FaultTicketService {
         } catch (\Exception $e) {
             error_log("Error creating repair tickets: " . $e->getMessage());
         }
+    }
+
+    private function resolveRouteBreakdownDangerousCargoContext(array $data): array {
+        $default = [
+            'is_dangerous' => false,
+            'summary' => null,
+            'trip_id' => null,
+        ];
+
+        $breakdownType = strtolower(trim((string) ($data['breakdown_type'] ?? '')));
+        $routeBreakdownCode = trim((string) ($data['breakdown_report_id'] ?? ''));
+
+        if ($breakdownType !== 'route_breakdown' || $routeBreakdownCode === '') {
+            return $default;
+        }
+
+        $db = Database::getInstance()->getConnection();
+
+        if (!$this->tableExists($db, 'vehicle_breakdown_inroute')) {
+            return $default;
+        }
+
+        $hasDangerousSnapshotColumns = $this->columnExists($db, 'vehicle_breakdown_inroute', 'dangerous_cargo_present')
+            && $this->columnExists($db, 'vehicle_breakdown_inroute', 'dangerous_cargo_summary')
+            && $this->columnExists($db, 'vehicle_breakdown_inroute', 'dangerous_cargo_trip_id');
+
+        if ($hasDangerousSnapshotColumns) {
+            $stmt = $db->prepare(
+                "SELECT route_breakdown_id,
+                        vehicle_id,
+                        dangerous_cargo_present,
+                        dangerous_cargo_summary,
+                        dangerous_cargo_trip_id
+                 FROM vehicle_breakdown_inroute
+                 WHERE route_breakdown_id = ?
+                 LIMIT 1"
+            );
+            $stmt->execute([$routeBreakdownCode]);
+            $routeBreakdown = $stmt->fetch(PDO::FETCH_ASSOC);
+        } else {
+            $stmt = $db->prepare(
+                "SELECT route_breakdown_id, vehicle_id
+                 FROM vehicle_breakdown_inroute
+                 WHERE route_breakdown_id = ?
+                 LIMIT 1"
+            );
+            $stmt->execute([$routeBreakdownCode]);
+            $routeBreakdown = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+
+        if (!$routeBreakdown) {
+            return $default;
+        }
+
+        if ($hasDangerousSnapshotColumns && (int) ($routeBreakdown['dangerous_cargo_present'] ?? 0) === 1) {
+            return [
+                'is_dangerous' => true,
+                'summary' => $routeBreakdown['dangerous_cargo_summary'] ?? null,
+                'trip_id' => $routeBreakdown['dangerous_cargo_trip_id'] ?? null,
+            ];
+        }
+
+        $vehicleId = (int) ($routeBreakdown['vehicle_id'] ?? 0);
+        if ($vehicleId <= 0) {
+            return $default;
+        }
+
+        $tripService = new TripService();
+        $fallbackContext = $tripService->getDangerousCargoContextForVehicle($vehicleId);
+
+        if (!empty($fallbackContext['has_dangerous_cargo'])) {
+            return [
+                'is_dangerous' => true,
+                'summary' => $fallbackContext['dangerous_cargo_summary'] ?? null,
+                'trip_id' => $fallbackContext['dangerous_cargo_trip_id'] ?? null,
+            ];
+        }
+
+        return $default;
+    }
+
+    private function tableExists(PDO $db, string $table): bool {
+        $cacheKey = "table:{$table}";
+        if (array_key_exists($cacheKey, $this->schemaCheckCache)) {
+            return $this->schemaCheckCache[$cacheKey];
+        }
+
+        $stmt = $db->prepare(
+            'SELECT COUNT(*)
+             FROM information_schema.tables
+             WHERE table_schema = DATABASE()
+               AND table_name = ?'
+        );
+        $stmt->execute([$table]);
+        $exists = ((int) $stmt->fetchColumn()) > 0;
+        $this->schemaCheckCache[$cacheKey] = $exists;
+
+        return $exists;
+    }
+
+    private function columnExists(PDO $db, string $table, string $column): bool {
+        $cacheKey = "column:{$table}.{$column}";
+        if (array_key_exists($cacheKey, $this->schemaCheckCache)) {
+            return $this->schemaCheckCache[$cacheKey];
+        }
+
+        if (!$this->tableExists($db, $table)) {
+            $this->schemaCheckCache[$cacheKey] = false;
+            return false;
+        }
+
+        $stmt = $db->prepare(
+            'SELECT COUNT(*)
+             FROM information_schema.columns
+             WHERE table_schema = DATABASE()
+               AND table_name = ?
+               AND column_name = ?'
+        );
+        $stmt->execute([$table, $column]);
+        $exists = ((int) $stmt->fetchColumn()) > 0;
+        $this->schemaCheckCache[$cacheKey] = $exists;
+
+        return $exists;
     }
 
     private function getRouteGarageWorkflowForTicket($ticket) {

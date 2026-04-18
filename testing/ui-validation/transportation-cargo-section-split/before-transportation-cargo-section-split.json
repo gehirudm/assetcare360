@@ -1,0 +1,25 @@
+{
+  "stage": "before",
+  "desktop": {
+    "hasCargoNavItem": true,
+    "hasCargoSectionComponent": true,
+    "hasCargoAnalyticsInTrips": false,
+    "hasCargoCatalogInTrips": false,
+    "hasCargoAnalyticsInCargoSection": true,
+    "hasCargoCatalogInCargoSection": true,
+    "hasAssignCargoSection": true,
+    "hasAssignCargoAddButton": true
+  },
+  "mobile": {
+    "hasCargoNavItem": true,
+    "hasCargoSectionComponent": true,
+    "hasCargoAnalyticsInTrips": false,
+    "hasCargoCatalogInTrips": false,
+    "hasCargoAnalyticsInCargoSection": true,
+    "hasCargoCatalogInCargoSection": true,
+    "hasAssignCargoSection": true,
+    "hasAssignCargoAddButton": true
+  },
+  "console": [],
+  "failedRequests": []
+}

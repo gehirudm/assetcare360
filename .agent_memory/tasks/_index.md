@@ -2,12 +2,18 @@
 
 ## In Progress
 - [TASK003] Run Migration 047 and Update OpenAPI Spec
+- [TASK037] Supervisor Script Monolith Final Decomposition - Ticket-detail flow uses actor-specific components; breakdown actions follow unified ticket-flow create-or-open behavior; Technician Assignment section removed and active fault-ticket-tracking now owns source filtering + criticality sorting + route status formatting; list map actions removed and route map context embedded in detail view; latest supervisor detail-page garage-approval modal centering/map-selection regression fixed with desktop/mobile validation pass (broader decomposition pending)
+- [TASK038] Technical Officer Script Monolith Final Decomposition - TO ticket detail flow now uses actor-specific component and direct view-ticket navigation; broader decomposition pending
 
 ## Pending
-- [TASK037] Supervisor Script Monolith Final Decomposition - Move remaining section/modal business logic out of parent script and enforce orchestration-only ownership
-- [TASK038] Technical Officer Script Monolith Final Decomposition - Remove legacy modal/fallback parent ownership and complete component-owned ticket workflows
+- _(none)_
 
 ## Completed
+- [TASK047] Unify Breakdown View and Auto-Create Fault Tickets - Completed on 2026-04-18
+- [TASK046] Enforce Dangerous In-Route Priority Lock and Supervisor Visibility - Completed on 2026-04-17
+- [TASK045] Refine Transportation Manager Cargo Catalogue and Add Details View - Completed on 2026-04-17
+- [TASK044] Move Transportation Manager Cargo Management to Separate Sidebar Section - Completed on 2026-04-17
+- [TASK043] Transportation Cargo Lifecycle and Dangerous Route Breakdown Escalation - Completed on 2026-04-17
 - [TASK042] Route Breakdown Driver Location Capture and Map-Based Garage Approval - Completed on 2026-04-17
 - [TASK041] Vehicle Government Fuel QR Image Flow - Completed on 2026-04-16
 - [TASK040] Fuel Logging and TM Fleet Detail Enhancements - Completed on 2026-04-16

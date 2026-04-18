@@ -6,6 +6,7 @@ class SupervisorFaultTicketTracking extends HTMLElement {
 
         this._mounted = true;
         this.currentFilter = 'all';
+        this.currentSourceFilter = 'all';
         this._allBreakdowns = [];
 
         this.render();
@@ -26,7 +27,7 @@ class SupervisorFaultTicketTracking extends HTMLElement {
         this.innerHTML = `
             <div class="page-header">
                 <h1 class="page-title">Fault Tickets</h1>
-                <p class="page-subtitle">Track machine and route breakdown reports in one place</p>
+                <p class="page-subtitle">Track machine and vehicle breakdown reports in one place</p>
             </div>
 
             <div class="filter-controls" id="supervisorFaultTicketFilterControls">
@@ -35,6 +36,12 @@ class SupervisorFaultTicketTracking extends HTMLElement {
                 <button class="filter-btn" type="button" data-action="set-filter" data-filter="in-progress">In Progress</button>
                 <button class="filter-btn" type="button" data-action="set-filter" data-filter="resolved">Resolved</button>
                 <button class="filter-btn" type="button" data-action="set-filter" data-filter="closed">Closed</button>
+            </div>
+
+            <div class="filter-controls" id="supervisorFaultTicketSourceFilterControls">
+                <button class="filter-btn active" type="button" data-action="set-source-filter" data-source="all">All Sources</button>
+                <button class="filter-btn" type="button" data-action="set-source-filter" data-source="vehicle">Vehicle</button>
+                <button class="filter-btn" type="button" data-action="set-source-filter" data-source="machine">Machine</button>
             </div>
 
             <div class="card">
@@ -61,13 +68,14 @@ class SupervisorFaultTicketTracking extends HTMLElement {
                 return;
             }
 
-            if (action === 'view-breakdown') {
-                this.openDetails(actionNode.dataset.breakdownIdx);
+            if (action === 'set-source-filter') {
+                this.applySourceFilter(actionNode.dataset.source);
                 return;
             }
 
-            if (action === 'approve-garage') {
-                this.openGarageApproval(actionNode.dataset.breakdownIdx);
+            if (action === 'view-ticket' || action === 'view-breakdown') {
+                this.openDetails(actionNode.dataset.breakdownIdx);
+                return;
             }
         });
     }
@@ -100,6 +108,11 @@ class SupervisorFaultTicketTracking extends HTMLElement {
                 : [];
 
             this._allBreakdowns = [...machineBreakdowns, ...routeBreakdowns].sort((a, b) => {
+                const severityDiff = this.getSeverityRank(b.severity) - this.getSeverityRank(a.severity);
+                if (severityDiff !== 0) {
+                    return severityDiff;
+                }
+
                 return new Date(b.date || 0) - new Date(a.date || 0);
             });
         } catch (error) {
@@ -134,27 +147,194 @@ class SupervisorFaultTicketTracking extends HTMLElement {
     }
 
     normalizeRouteBreakdown(report) {
+        const legacyDescription = this.parseLegacyRouteBreakdownDescription(report.description);
+        const normalizedSeverity = this.normalizeSeverity(legacyDescription.severity || report.severity || 'Medium');
+        const coordinatesFromColumns = this.parseRouteCoordinates(report.breakdown_latitude, report.breakdown_longitude);
+        const coordinatesFromText = coordinatesFromColumns
+            || this.parseCoordinatesFromText(legacyDescription.locationText || report.breakdown_location || report.description || '');
+        const latitude = coordinatesFromText?.latitude ?? null;
+        const longitude = coordinatesFromText?.longitude ?? null;
+        const locationLabel = this.formatRouteLocationLabel(latitude, longitude, report.breakdown_location || legacyDescription.locationText || '');
+        const garageWorkflowStatus = report?.garage_workflow?.status || report.garage_workflow_status || 'awaiting_supervisor_approval';
+
         return {
-            source: 'route',
+            source: 'vehicle',
             id: report.id,
             raw: report,
             breakdownId: report.route_breakdown_id,
-            identifier: report.number_plate || `Vehicle #${report.vehicle_id}`,
-            reportedBy: report.driver_name || 'Unknown',
+            identifier: legacyDescription.vehicle || report.number_plate || `Vehicle #${report.vehicle_id}`,
+            reportedBy: legacyDescription.driver || report.driver_name || 'Unknown',
             reporterType: 'Driver',
-            description: report.description || '',
-            type: report.breakdown_type || 'Route Breakdown',
-            severity: report.severity || 'Medium',
+            description: legacyDescription.issueDescription || report.description || '',
+            type: legacyDescription.breakdownType || report.breakdown_type || 'Route Breakdown',
+            severity: normalizedSeverity,
             date: report.breakdown_datetime,
-            effectiveStatus: report.ticket_status || report.status || 'Pending',
+            effectiveStatus: this.resolveRouteEffectiveStatus(report.ticket_status || report.status || 'Pending', garageWorkflowStatus),
             ticketNumber: report.fault_ticket_number || null,
             faultTicketId: report.fault_ticket_id ? Number(report.fault_ticket_id) : null,
-            garageWorkflowStatus: report?.garage_workflow?.status || report.garage_workflow_status || 'awaiting_supervisor_approval',
+            garageWorkflowStatus,
             approvedGarageName: report?.garage_workflow?.approved_garage?.name || report.approved_garage_name || null,
+            locationLabel,
+            latitude,
+            longitude,
+            dangerousCargoPresent: this.parseDangerousCargoPresent(
+                report.is_dangerous_cargo,
+                report.dangerous_cargo_present,
+            ),
+            dangerousCargoSummary: String(report.dangerous_cargo_summary || '').trim(),
+            dangerousCargoTripId: String(report.dangerous_cargo_trip_id || '').trim(),
             assignments: Array.isArray(report.assigned_technicians)
                 ? report.assigned_technicians.map((technician) => ({ technician_name: technician.technician_name }))
                 : [],
         };
+    }
+
+    getSeverityRank(severity) {
+        const normalizedSeverity = this.normalizeSeverity(severity);
+
+        if (normalizedSeverity === 'critical') {
+            return 4;
+        }
+
+        if (normalizedSeverity === 'high') {
+            return 3;
+        }
+
+        if (normalizedSeverity === 'low') {
+            return 1;
+        }
+
+        return 2;
+    }
+
+    normalizeSeverity(severity) {
+        const normalizedSeverity = String(severity || 'medium').trim().toLowerCase();
+        if (['critical', 'high', 'medium', 'low'].includes(normalizedSeverity)) {
+            return normalizedSeverity;
+        }
+
+        return 'medium';
+    }
+
+    parseRouteCoordinates(latitudeValue, longitudeValue) {
+        const latitude = Number(latitudeValue);
+        const longitude = Number(longitudeValue);
+
+        if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+            return { latitude, longitude };
+        }
+
+        return null;
+    }
+
+    parseCoordinatesFromText(value) {
+        const text = String(value || '');
+        const match = text.match(/lat\s*[:]?\s*(-?\d+(?:\.\d+)?)\s*[,|]\s*lng\s*[:]?\s*(-?\d+(?:\.\d+)?)/i);
+
+        if (!match) {
+            return null;
+        }
+
+        const latitude = Number(match[1]);
+        const longitude = Number(match[2]);
+
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+            return null;
+        }
+
+        return { latitude, longitude };
+    }
+
+    formatRouteLocationLabel(latitude, longitude, fallbackLocation) {
+        if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+            return `Lat ${latitude.toFixed(6)}, Lng ${longitude.toFixed(6)}`;
+        }
+
+        return String(fallbackLocation || '').trim();
+    }
+
+    parseLegacyRouteBreakdownDescription(description) {
+        const rawDescription = String(description || '').trim();
+        if (!rawDescription) {
+            return {
+                issueDescription: '',
+                breakdownType: '',
+                severity: '',
+                vehicle: '',
+                driver: '',
+                locationText: '',
+            };
+        }
+
+        const normalized = rawDescription.replace(/\r\n/g, '\n');
+        const seemsLegacy = /^\[route breakdown\]/i.test(normalized)
+            || (/vehicle\s*:/i.test(normalized) && /driver\s*:/i.test(normalized) && /description\s*:/i.test(normalized));
+
+        if (!seemsLegacy) {
+            return {
+                issueDescription: rawDescription,
+                breakdownType: '',
+                severity: '',
+                vehicle: '',
+                driver: '',
+                locationText: '',
+            };
+        }
+
+        const readField = (label, nextLabels = []) => {
+            const lookahead = nextLabels.length
+                ? `(?=(?:\\s*[|\\n]?\\s*(?:${nextLabels.join('|')})\\s*:)|$)`
+                : '$';
+            const pattern = new RegExp(`${label}\\s*:\\s*([\\s\\S]*?)${lookahead}`, 'i');
+            const match = normalized.match(pattern);
+            return match ? String(match[1] || '').trim() : '';
+        };
+
+        const issueDescription = readField('Description')
+            || readField('Details')
+            || rawDescription;
+
+        return {
+            issueDescription,
+            breakdownType: readField('Type', ['Location', 'Description', 'Details']),
+            severity: readField('Severity', ['Type', 'Location', 'Description', 'Details']),
+            vehicle: readField('Vehicle', ['Driver', 'Severity', 'Type', 'Location', 'Description', 'Details']),
+            driver: readField('Driver', ['Severity', 'Type', 'Location', 'Description', 'Details']),
+            locationText: readField('Location', ['Description', 'Details']),
+        };
+    }
+
+    resolveRouteEffectiveStatus(baseStatus, garageWorkflowStatus) {
+        const normalizedWorkflowStatus = String(garageWorkflowStatus || '').toLowerCase();
+
+        if (normalizedWorkflowStatus === 'garage_approved') {
+            return 'Garage Approved';
+        }
+
+        if (normalizedWorkflowStatus === 'garage_entry_logged') {
+            return 'Garage Entry Logged';
+        }
+
+        if (normalizedWorkflowStatus === 'repair_in_progress') {
+            return 'Repair In Progress';
+        }
+
+        if (normalizedWorkflowStatus === 'completed') {
+            return 'Completed';
+        }
+
+        return baseStatus || 'Pending';
+    }
+
+    parseDangerousCargoPresent(...values) {
+        return values.some((value) => {
+            if (typeof value === 'boolean') {
+                return value;
+            }
+
+            const normalized = String(value ?? '').trim().toLowerCase();
+            return normalized === '1' || normalized === 'true' || normalized === 'yes';
+        });
     }
 
     normalizeFilterStatus(status) {
@@ -166,6 +346,9 @@ class SupervisorFaultTicketTracking extends HTMLElement {
 
         if (
             normalizedStatus === 'assigned' ||
+            normalizedStatus === 'garage approved' ||
+            normalizedStatus === 'garage entry logged' ||
+            normalizedStatus === 'repair in progress' ||
             normalizedStatus.includes('progress') ||
             normalizedStatus.includes('spare') ||
             normalizedStatus.includes('parts') ||
@@ -194,6 +377,10 @@ class SupervisorFaultTicketTracking extends HTMLElement {
             'Waiting for Budget Approval': { label: 'Awaiting Approval', className: 'status-in-progress' },
             'Parts Approved': { label: 'Parts Approved', className: 'status-in-progress' },
             'In Progress': { label: 'In Progress', className: 'status-in-progress' },
+            'Garage Approved': { label: 'Garage Approved', className: 'status-assigned' },
+            'Garage Entry Logged': { label: 'Garage Entry Logged', className: 'status-in-progress' },
+            'Repair In Progress': { label: 'Repair In Progress', className: 'status-in-progress' },
+            Completed: { label: 'Completed', className: 'status-resolved' },
             Resolved: { label: 'Resolved', className: 'status-resolved' },
             Closed: { label: 'Closed', className: 'status-resolved' },
         };
@@ -228,6 +415,10 @@ class SupervisorFaultTicketTracking extends HTMLElement {
             'Waiting for Budget Approval': 'Awaiting budget approval',
             'Parts Approved': 'Spare parts approved - repair to begin soon',
             'In Progress': 'Being investigated and repaired',
+            'Garage Approved': 'Nearby garage approved by supervisor',
+            'Garage Entry Logged': 'Vehicle arrived at approved garage',
+            'Repair In Progress': 'Repair is in progress at the approved garage',
+            Completed: 'Garage repair completed',
             Resolved: 'Work completed and ticket resolved',
             Closed: 'Ticket closed',
         };
@@ -260,7 +451,10 @@ class SupervisorFaultTicketTracking extends HTMLElement {
 
         const filtered = [];
         this._allBreakdowns.forEach((breakdown, index) => {
-            if (this.currentFilter === 'all' || this.normalizeFilterStatus(breakdown.effectiveStatus) === this.currentFilter) {
+            const matchesStatus = this.currentFilter === 'all' || this.normalizeFilterStatus(breakdown.effectiveStatus) === this.currentFilter;
+            const matchesSource = this.currentSourceFilter === 'all' || breakdown.source === this.currentSourceFilter;
+
+            if (matchesStatus && matchesSource) {
                 filtered.push({ breakdown, index });
             }
         });
@@ -278,51 +472,50 @@ class SupervisorFaultTicketTracking extends HTMLElement {
     renderCard(breakdown, index) {
         const statusInfo = this.getStatusInfo(breakdown.effectiveStatus);
         const severityInfo = this.getSeverityInfo(breakdown.severity);
-        const sourceIcon = breakdown.source === 'route' ? 'fa-car' : 'fa-cogs';
-        const garageStatus = breakdown.source === 'route' ? this.getGarageWorkflowStatusInfo(breakdown.garageWorkflowStatus) : null;
-        const ticketHtml = breakdown.ticketNumber
-            ? `<div class="item-meta" style="margin-top:4px;color:#6b7280;"><i class="fas fa-ticket-alt"></i> Ticket: ${this.escapeHtml(breakdown.ticketNumber)}</div>`
-            : '';
+        const isVehicleSource = breakdown.source === 'vehicle';
+        const sourceIcon = isVehicleSource ? 'fa-car' : 'fa-cogs';
+        const sourceLabel = isVehicleSource ? 'Vehicle' : 'Machine';
+        const sourceChipColor = isVehicleSource ? '#2563eb' : '#7c3aed';
+        const dangerousCargoPresent = this.parseDangerousCargoPresent(breakdown.dangerousCargoPresent);
+        const viewActionLabel = 'View';
         const assignedHtml = breakdown.assignments.length
             ? `<div class="item-meta" style="margin-top:4px;"><i class="fas fa-user-cog" style="color:#2563eb;"></i> <span style="color:#2563eb;font-weight:600;">Assigned to: ${this.escapeHtml(breakdown.assignments.map((assignment) => assignment.technician_name).filter(Boolean).join(', '))}</span></div>`
             : '';
-        const garageWorkflowHtml = breakdown.source === 'route'
-            ? `<div class="item-meta" style="margin-top:4px;color:#0f766e;"><i class="fas fa-warehouse"></i> Garage Workflow: <span class="status-text ${garageStatus.className}">${this.escapeHtml(garageStatus.label)}</span>${breakdown.approvedGarageName ? ` | ${this.escapeHtml(breakdown.approvedGarageName)}` : ''}</div>`
+        const dangerousBadgeHtml = dangerousCargoPresent
+            ? '<span class="dangerous-cargo-chip" style="font-size: 10px; background: #dc2626; color: white; padding: 1px 6px; border-radius: 4px; margin-left: 6px;"><i class="fas fa-radiation"></i> Dangerous Cargo</span>'
+            : '';
+        const routeDetailsHtml = isVehicleSource
+            ? `<div class="item-meta" style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;">
+                <span class="status-text status-normal"><i class="fas fa-tools"></i> ${this.escapeHtml(breakdown.type || 'Route Breakdown')}</span>
+            </div>`
             : '';
         const updateText = this.getUpdateText(breakdown.effectiveStatus);
         const showUpdateText = breakdown.effectiveStatus !== 'Pending' && breakdown.effectiveStatus !== 'Open';
-        const showApproveGarageAction = breakdown.source === 'route' && (breakdown.garageWorkflowStatus === 'awaiting_supervisor_approval' || !breakdown.garageWorkflowStatus);
 
         return `
             <div class="inventory-item" data-status="${this.escapeHtml(this.normalizeFilterStatus(breakdown.effectiveStatus))}" data-breakdown-idx="${index}">
                 <div class="item-details">
-                    <strong><i class="fas ${sourceIcon}"></i> ${this.escapeHtml(breakdown.breakdownId || `#${breakdown.id}`)} <small style="font-weight:400;color:var(--muted);">(${this.escapeHtml(breakdown.reporterType)})</small></strong>
+                    <strong><i class="fas ${sourceIcon}"></i> ${this.escapeHtml(breakdown.breakdownId || `#${breakdown.id}`)}<span style="font-size: 10px; background: ${sourceChipColor}; color: white; padding: 1px 6px; border-radius: 4px; margin-left: 6px;">${sourceLabel}</span>${dangerousBadgeHtml}</strong>
                     <div class="item-meta">
                         <i class="fas ${sourceIcon}"></i> ${this.escapeHtml(breakdown.identifier)} &nbsp;|&nbsp;
-                        <i class="fas fa-user"></i> ${this.escapeHtml(breakdown.reportedBy)} &nbsp;|&nbsp;
-                        <i class="fas fa-tag"></i> ${this.escapeHtml(breakdown.type)}
+                        <i class="fas fa-user"></i> ${this.escapeHtml(breakdown.reportedBy)} <span style="color:var(--muted);">(${this.escapeHtml(breakdown.reporterType)})</span>
+                        ${isVehicleSource ? '' : `&nbsp;|&nbsp;<i class="fas fa-tag"></i> ${this.escapeHtml(breakdown.type)}`}
                     </div>
                     <div class="item-description">${this.escapeHtml(breakdown.description || 'No description provided.')}</div>
+                    ${routeDetailsHtml}
                     <div class="item-meta" style="margin-top:6px;">
                         <span class="status-text ${statusInfo.className}">${this.escapeHtml(statusInfo.label)}</span> &nbsp;|&nbsp;
                         <span class="status-text ${severityInfo.className}">${this.escapeHtml(severityInfo.label)}</span> &nbsp;|&nbsp;
                         <i class="fas fa-calendar"></i> ${this.escapeHtml(this.formatDate(breakdown.date))}
                     </div>
-                    ${ticketHtml}
                     ${assignedHtml}
-                    ${garageWorkflowHtml}
                     ${showUpdateText ? `<div class="item-meta" style="margin-top:4px;color:#059669;font-weight:500;">${this.escapeHtml(updateText)}</div>` : ''}
                 </div>
                 <div class="item-actions">
                     <div class="action-buttons" style="display:flex; flex-direction:column; gap:8px;">
-                        <button class="btn btn-primary btn-small" type="button" data-action="view-breakdown" data-breakdown-idx="${index}">
-                            <i class="fas fa-eye"></i> VIEW
+                        <button class="btn btn-primary btn-small" type="button" data-action="view-ticket" data-breakdown-idx="${index}">
+                            <i class="fas fa-eye"></i> ${viewActionLabel}
                         </button>
-                        ${showApproveGarageAction ? `
-                            <button class="btn btn-warning btn-small" type="button" data-action="approve-garage" data-breakdown-idx="${index}">
-                                <i class="fas fa-check-circle"></i> APPROVE GARAGE
-                            </button>
-                        ` : ''}
                     </div>
                 </div>
             </div>`;
@@ -354,6 +547,16 @@ class SupervisorFaultTicketTracking extends HTMLElement {
         this.renderList();
     }
 
+    applySourceFilter(source) {
+        this.currentSourceFilter = source || 'all';
+
+        this.querySelectorAll('#supervisorFaultTicketSourceFilterControls .filter-btn').forEach((button) => {
+            button.classList.toggle('active', button.dataset.source === this.currentSourceFilter);
+        });
+
+        this.renderList();
+    }
+
     updateSummary() {
         const summary = this.querySelector('[data-fault-ticket-summary]');
         if (!summary) {
@@ -377,58 +580,25 @@ class SupervisorFaultTicketTracking extends HTMLElement {
             return;
         }
 
-        if (breakdown.faultTicketId) {
+        const numericFaultTicketId = Number(breakdown.faultTicketId || 0);
+        const hasFaultTicket = Number.isFinite(numericFaultTicketId) && numericFaultTicketId > 0;
+
+        if (hasFaultTicket) {
             if (typeof window.viewTicketDetails === 'function') {
-                window.viewTicketDetails(breakdown.faultTicketId);
+                window.viewTicketDetails(numericFaultTicketId);
                 return;
             }
-
-            const currentUrl = new URL(window.location.href);
-            const currentSection = currentUrl.searchParams.get('section') || 'fault-ticket-tracking';
-            const returnUrl = new URL('/dashboard/supervisor/index.html', window.location.origin);
-            returnUrl.searchParams.set('section', currentSection);
-
-            const viewTicketUrl = new URL('/view-ticket/index.html', window.location.origin);
-            viewTicketUrl.searchParams.set('id', String(breakdown.faultTicketId));
-            viewTicketUrl.searchParams.set('return_to', `${returnUrl.pathname}${returnUrl.search}`);
-
-            window.location.href = `${viewTicketUrl.pathname}${viewTicketUrl.search}`;
+            this.emitToast('Ticket details handler is unavailable.', 'error');
             return;
         }
 
-        const modal = document.querySelector('supervisor-view-ticket-modal');
-        if (!modal) {
-            this.emitToast('Ticket details modal is unavailable.', 'error');
+        if (typeof window.viewOrCreateBreakdownTicket === 'function') {
+            const reportType = breakdown.source === 'vehicle' ? 'route_breakdown' : 'machine_breakdown';
+            await window.viewOrCreateBreakdownTicket(reportType, breakdown.id, breakdown);
             return;
         }
 
-        if (breakdown.source === 'route' && typeof modal.openBreakdownDetails === 'function') {
-            await modal.openBreakdownDetails('route_breakdown', breakdown.id);
-            return;
-        }
-
-        if (breakdown.source === 'machine' && typeof modal.openMachineBreakdown === 'function') {
-            modal.openMachineBreakdown(this.toMachineTicketPayload(breakdown));
-            return;
-        }
-
-        this.emitToast('No details available for this item.', 'warning');
-    }
-
-    openGarageApproval(index) {
-        const breakdown = this._allBreakdowns[Number(index)];
-        if (!breakdown || breakdown.source !== 'route') {
-            this.emitToast('Route breakdown details are unavailable.', 'warning');
-            return;
-        }
-
-        const modal = document.querySelector('supervisor-garage-approval-modal');
-        if (!modal || typeof modal.open !== 'function') {
-            this.emitToast('Garage approval modal is unavailable.', 'error');
-            return;
-        }
-
-        modal.open({ breakdown });
+        this.emitToast('Unable to open ticket details for this breakdown.', 'warning');
     }
 
     toMachineTicketPayload(breakdown) {

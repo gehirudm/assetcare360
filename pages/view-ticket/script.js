@@ -8,15 +8,10 @@ let workUpdates = [];
 let currentRoleContext = null;
 let routeBreakdownContext = null;
 let availableRouteGarages = [];
-<<<<<<< Updated upstream
+let routeLocationMap = null;
 let routeGarageMap = null;
 let routeGarageMapGarageMarkers = [];
 let routeGarageMapLeafletPromise = null;
-=======
-let garageApprovalMap = null;
-let garageApprovalMapMarkers = [];
-let garageApprovalMarkerLookup = new Map();
->>>>>>> Stashed changes
 
 const STATUS_ORDER = [
     'open',
@@ -56,6 +51,15 @@ function toRoleKey(roleName) {
     return String(roleName || '').trim().toUpperCase().replace(/\s+/g, '_');
 }
 
+function getRoleOverrideKey() {
+    const overrideParam = new URLSearchParams(window.location.search).get('role_override');
+    return toRoleKey(overrideParam);
+}
+
+function isEmbeddedMode() {
+    return new URLSearchParams(window.location.search).get('embedded') === '1';
+}
+
 function normaliseStatus(status) {
     return String(status || '').toLowerCase().trim();
 }
@@ -74,11 +78,12 @@ function isPreWork(status) {
 }
 
 function isTechnicalOfficer() {
-    return toRoleKey(currentUser?.role) === 'TECHNICAL_OFFICER';
+    const roleKey = currentRoleContext?.roleKey || getRoleOverrideKey() || toRoleKey(currentUser?.role);
+    return roleKey === 'TECHNICAL_OFFICER';
 }
 
 function isSupervisorLike() {
-    const roleKey = toRoleKey(currentUser?.role);
+    const roleKey = currentRoleContext?.roleKey || getRoleOverrideKey() || toRoleKey(currentUser?.role);
     return roleKey === 'SUPERVISOR' || roleKey === 'ADMIN';
 }
 
@@ -97,6 +102,19 @@ function getRouteGarageWorkflowStatus() {
 function hasRouteGarageAssignment() {
     const status = getRouteGarageWorkflowStatus();
     return ['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(status);
+}
+
+function getDangerousCargoContext() {
+    const dangerousPresent = Number(routeBreakdownContext?.dangerous_cargo_present || 0) === 1
+        || ticketData?.is_dangerous_cargo === true
+        || Number(ticketData?.is_dangerous_cargo || 0) === 1
+        || Number(ticketData?.dangerous_cargo_present || 0) === 1;
+
+    return {
+        present: dangerousPresent,
+        summary: String(routeBreakdownContext?.dangerous_cargo_summary || ticketData?.dangerous_cargo_summary || '').trim(),
+        tripId: String(routeBreakdownContext?.dangerous_cargo_trip_id || ticketData?.dangerous_cargo_trip_id || '').trim(),
+    };
 }
 
 function getApprovedRouteGarageName() {
@@ -190,6 +208,15 @@ function showError(message) {
     if (errorMessage) errorMessage.textContent = message;
 }
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function markStep(stepId, state) {
     const el = document.getElementById(stepId);
     if (!el) return;
@@ -212,7 +239,7 @@ function getSafeReturnToPath() {
 }
 
 function resolveRoleContext(user) {
-    const roleKey = toRoleKey(user?.role);
+    const roleKey = getRoleOverrideKey() || toRoleKey(user?.role);
     const dashboardPath = CONFIG?.ROUTES?.DASHBOARD?.[roleKey]
         || CONFIG?.ROUTES?.DASHBOARD?.TECHNICAL_OFFICER
         || '/dashboard/technical-officer/index.html';
@@ -245,10 +272,18 @@ function buildDashboardUrl(section = 'dashboard') {
 function applyRoleShellAndNavigation() {
     if (!currentRoleContext) return;
 
+    const embeddedMode = isEmbeddedMode();
+    if (embeddedMode && document.body) {
+        document.body.classList.add('ticket-detail-embedded');
+    }
+
     const header = document.querySelector('to-shell-header');
     if (header) {
         header.setAttribute('title', currentRoleContext.title);
         header.setAttribute('icon', currentRoleContext.roleKey === 'SUPERVISOR' ? 'fa-user-tie' : 'fa-tools');
+        if (embeddedMode) {
+            header.style.display = 'none';
+        }
     }
 
     const sidebar = document.querySelector('to-shell-sidebar');
@@ -259,6 +294,10 @@ function applyRoleShellAndNavigation() {
 
         if (currentRoleContext.navItems) sidebar.setAttribute('nav', JSON.stringify(currentRoleContext.navItems));
         else sidebar.removeAttribute('nav');
+
+        if (embeddedMode) {
+            sidebar.style.display = 'none';
+        }
     }
 
     const returnToPath = getSafeReturnToPath();
@@ -277,6 +316,21 @@ function applyRoleShellAndNavigation() {
         ticketsCrumb.textContent = currentRoleContext.roleKey === 'SUPERVISOR'
             ? 'Technician Assignment'
             : 'Fault & Repair Tickets';
+    }
+
+    if (embeddedMode) {
+        const detailSubheader = document.getElementById('detailSubheader');
+        const errorBackButton = document.getElementById('errorBackButton');
+
+        if (detailSubheader) {
+            detailSubheader.style.display = 'none';
+        }
+
+        if (errorBackButton) {
+            errorBackButton.style.display = 'none';
+        }
+
+        return;
     }
 
     const navigateBack = () => {
@@ -368,12 +422,14 @@ function renderPage() {
     if (badge) badge.textContent = ticketIdFormatted;
 
     renderOverview(ticketIdFormatted);
+    void renderRouteLocationPanel();
     renderFlow();
 }
 
 function renderOverview(ticketIdFormatted) {
     const status = normaliseStatus(ticketData.status);
     const priority = String(ticketData.priority || 'Medium').toLowerCase();
+    const dangerousContext = getDangerousCargoContext();
 
     document.getElementById('ovTicketId').textContent = ticketIdFormatted;
     document.getElementById('ovLocation').textContent = ticketData.location || 'N/A';
@@ -394,15 +450,179 @@ function renderOverview(ticketIdFormatted) {
 
     document.getElementById('ovStatus').innerHTML = `<span class="badge badge-${statusClass}">${ticketData.status || 'Unknown'}</span>`;
     document.getElementById('ovPriority').innerHTML = `<span class="badge badge-priority-${priorityClass}">${ticketData.priority || 'Medium'}</span>`;
+
+    const dangerousPanel = document.getElementById('ovDangerousCargoPanel');
+    const dangerousBadges = document.getElementById('ovDangerousCargoBadges');
+    const dangerousSummary = document.getElementById('ovDangerousCargoSummary');
+
+    if (dangerousPanel && dangerousBadges && dangerousSummary) {
+        if (dangerousContext.present) {
+            dangerousPanel.style.display = 'flex';
+
+            const tripBadge = dangerousContext.tripId
+                ? `<span class="dangerous-badge secondary"><i class="fas fa-route"></i> Trip ${escapeHtml(dangerousContext.tripId)}</span>`
+                : '';
+
+            dangerousBadges.innerHTML = `
+                <span class="dangerous-badge primary"><i class="fas fa-radiation"></i> Hazardous Load Reported</span>
+                ${tripBadge}
+            `;
+
+            dangerousSummary.textContent = dangerousContext.summary || 'This route breakdown ticket was created while dangerous cargo was in transit.';
+        } else {
+            dangerousPanel.style.display = 'none';
+            dangerousBadges.innerHTML = '';
+            dangerousSummary.textContent = '';
+        }
+    }
+}
+
+function parseCoordinatePair(latitudeValue, longitudeValue) {
+    const latitude = Number(latitudeValue);
+    const longitude = Number(longitudeValue);
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return null;
+    }
+
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+        return null;
+    }
+
+    return [latitude, longitude];
+}
+
+function parseCoordinatesFromText(value) {
+    const text = String(value || '').trim();
+    if (!text) {
+        return null;
+    }
+
+    const labelledMatch = text.match(/lat(?:itude)?\s*[:=]?\s*(-?\d+(?:\.\d+)?)\s*[,|]\s*lng(?:itude)?\s*[:=]?\s*(-?\d+(?:\.\d+)?)/i);
+    if (labelledMatch) {
+        return parseCoordinatePair(labelledMatch[1], labelledMatch[2]);
+    }
+
+    const coordinatePairMatch = text.match(/(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/);
+    if (coordinatePairMatch) {
+        return parseCoordinatePair(coordinatePairMatch[1], coordinatePairMatch[2]);
+    }
+
+    return null;
+}
+
+function getRouteTicketLocationLabel() {
+    return String(routeBreakdownContext?.breakdown_location || ticketData?.location || '').trim();
+}
+
+function getRouteTicketCoordinates() {
+    const coordinateCandidates = [
+        parseCoordinatePair(routeBreakdownContext?.breakdown_latitude, routeBreakdownContext?.breakdown_longitude),
+        parseCoordinatePair(routeBreakdownContext?.latitude, routeBreakdownContext?.longitude),
+        parseCoordinatePair(ticketData?.breakdown_latitude, ticketData?.breakdown_longitude),
+        parseCoordinatePair(ticketData?.latitude, ticketData?.longitude),
+        parseCoordinatesFromText(routeBreakdownContext?.breakdown_location),
+        parseCoordinatesFromText(routeBreakdownContext?.description),
+        parseCoordinatesFromText(ticketData?.location),
+        parseCoordinatesFromText(ticketData?.description),
+    ];
+
+    return coordinateCandidates.find((candidate) => Array.isArray(candidate) && candidate.length === 2) || null;
+}
+
+function destroyRouteLocationMap() {
+    if (routeLocationMap && typeof routeLocationMap.remove === 'function') {
+        routeLocationMap.remove();
+    }
+
+    routeLocationMap = null;
+}
+
+async function renderRouteLocationPanel() {
+    const panelEl = document.getElementById('routeLocationPanel');
+    const mapEl = document.getElementById('routeLocationMap');
+    const hintEl = document.getElementById('routeLocationHint');
+    const labelEl = document.getElementById('routeLocationLabel');
+
+    if (!panelEl || !mapEl || !hintEl || !labelEl) {
+        return;
+    }
+
+    if (!isRouteBreakdownTicket()) {
+        destroyRouteLocationMap();
+        panelEl.style.display = 'none';
+        return;
+    }
+
+    panelEl.style.display = 'flex';
+
+    const locationLabel = getRouteTicketLocationLabel();
+    if (locationLabel) {
+        labelEl.textContent = locationLabel;
+        labelEl.style.display = 'inline-flex';
+    } else {
+        labelEl.textContent = '';
+        labelEl.style.display = 'none';
+    }
+
+    const coordinates = getRouteTicketCoordinates();
+    if (!coordinates) {
+        destroyRouteLocationMap();
+        mapEl.style.display = 'none';
+        hintEl.textContent = locationLabel
+            ? 'A location was reported, but map coordinates are not available for this ticket.'
+            : 'Location coordinates were not captured for this route breakdown.';
+        return;
+    }
+
+    mapEl.style.display = 'block';
+
+    const leafletReady = await ensureLeafletForGarageMap();
+    if (!leafletReady || typeof window.L === 'undefined') {
+        hintEl.textContent = 'Unable to load map resources right now. Please try again shortly.';
+        return;
+    }
+
+    destroyRouteLocationMap();
+
+    routeLocationMap = window.L.map(mapEl, {
+        zoomControl: true,
+    });
+
+    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(routeLocationMap);
+
+    const marker = window.L.marker(coordinates)
+        .addTo(routeLocationMap)
+        .bindPopup('<strong>Reported Breakdown Location</strong>');
+
+    routeLocationMap.setView(coordinates, 14);
+    marker.openPopup();
+
+    hintEl.textContent = 'This map shows the location reported when the route breakdown was submitted.';
+
+    setTimeout(() => {
+        if (routeLocationMap) {
+            routeLocationMap.invalidateSize();
+        }
+    }, 50);
 }
 
 function renderFlow() {
     const status = normaliseStatus(ticketData.status);
+    const dangerousContext = getDangerousCargoContext();
 
     markStep('step-reported', 'completed');
     document.getElementById('step1-reporter').textContent = ticketData.reporter_full_name || ticketData.reported_by_name || 'Unknown';
     document.getElementById('step1-date').textContent = fmtDateShort(ticketData.created_at);
-    document.getElementById('step1-desc').textContent = `Fault reported. Breakdown type: ${ticketData.breakdown_type || 'N/A'}.`;
+    let stepOneDescription = `Fault reported. Breakdown type: ${ticketData.breakdown_type || 'N/A'}.`;
+    if (dangerousContext.present) {
+        const dangerousTripText = dangerousContext.tripId ? ` Cargo trip: ${dangerousContext.tripId}.` : '';
+        stepOneDescription += ` Dangerous cargo was active at report time.${dangerousTripText}`;
+    }
+    document.getElementById('step1-desc').textContent = stepOneDescription;
 
     const assignment = ticketData.assignments && ticketData.assignments.length > 0 ? ticketData.assignments[0] : null;
     const hasGarageAssignment = hasRouteGarageAssignment();
@@ -730,155 +950,6 @@ function renderClosedStep(status) {
 function capitalise(value) {
     const text = String(value || '');
     return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
-}
-
-function escapeHtml(value) {
-    return String(value || '').replace(/[&<>"']/g, (char) => {
-        if (char === '&') return '&amp;';
-        if (char === '<') return '&lt;';
-        if (char === '>') return '&gt;';
-        if (char === '"') return '&quot;';
-        return '&#39;';
-    });
-}
-
-function setGarageApprovalMapHint(message, isError = false) {
-    const hint = document.getElementById('garageApprovalMapHint');
-    if (!hint) {
-        return;
-    }
-
-    hint.textContent = message;
-    hint.classList.toggle('error', Boolean(isError));
-}
-
-function resetGarageApprovalMap() {
-    garageApprovalMapMarkers = [];
-    garageApprovalMarkerLookup = new Map();
-
-    if (garageApprovalMap) {
-        garageApprovalMap.remove();
-        garageApprovalMap = null;
-    }
-
-    setGarageApprovalMapHint('Loading garage coordinates...');
-}
-
-function ensureGarageApprovalMap() {
-    const mapElement = document.getElementById('garageApprovalMap');
-    if (!mapElement || typeof window.L === 'undefined') {
-        return null;
-    }
-
-    if (!garageApprovalMap) {
-        garageApprovalMap = window.L.map(mapElement, {
-            zoomControl: true,
-            attributionControl: true,
-        });
-
-        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap contributors',
-        }).addTo(garageApprovalMap);
-    }
-
-    return garageApprovalMap;
-}
-
-function setSelectedGarageListItem(garageId) {
-    document.querySelectorAll('#garageApprovalList .assign-tech-item').forEach((item) => {
-        const itemGarageId = Number(item.dataset.garageId || 0);
-        item.classList.toggle('selected', garageId > 0 && itemGarageId === garageId);
-    });
-}
-
-function focusGarageApprovalMarker(garageId) {
-    const numericId = Number(garageId || 0);
-    if (!numericId || !garageApprovalMap) {
-        return;
-    }
-
-    const marker = garageApprovalMarkerLookup.get(numericId);
-    if (!marker) {
-        return;
-    }
-
-    const markerLatLng = marker.getLatLng();
-    garageApprovalMap.setView(markerLatLng, Math.max(garageApprovalMap.getZoom(), 13), {
-        animate: true,
-    });
-    marker.openPopup();
-}
-
-function renderGarageApprovalMap() {
-    if (typeof window.L === 'undefined') {
-        setGarageApprovalMapHint('Map is unavailable right now. Please verify Leaflet is loaded.', true);
-        return;
-    }
-
-    const map = ensureGarageApprovalMap();
-    if (!map) {
-        setGarageApprovalMapHint('Map container is unavailable.', true);
-        return;
-    }
-
-    garageApprovalMapMarkers.forEach((marker) => {
-        map.removeLayer(marker);
-    });
-    garageApprovalMapMarkers = [];
-    garageApprovalMarkerLookup = new Map();
-
-    const garagesWithCoordinates = availableRouteGarages.filter((garage) => {
-        const latitude = Number(garage.latitude);
-        const longitude = Number(garage.longitude);
-        return Number.isFinite(latitude) && Number.isFinite(longitude);
-    });
-
-    if (!garagesWithCoordinates.length) {
-        map.setView([7.8731, 80.7718], 7);
-        if (!availableRouteGarages.length) {
-            setGarageApprovalMapHint('No active garages are available to display on the map.');
-        } else {
-            setGarageApprovalMapHint('Garage list loaded. Add latitude and longitude to view map pins.');
-        }
-        map.invalidateSize();
-        return;
-    }
-
-    const bounds = [];
-
-    garagesWithCoordinates.forEach((garage) => {
-        const latitude = Number(garage.latitude);
-        const longitude = Number(garage.longitude);
-        const garageId = Number(garage.id);
-
-        const marker = window.L.marker([latitude, longitude]).addTo(map);
-        marker.bindPopup(
-            `<strong>${escapeHtml(garage.name || `Garage #${garageId}`)}</strong><br>${escapeHtml(garage.address || 'Address not available')}`
-        );
-
-        marker.on('click', () => {
-            const input = document.querySelector(`input[name="approveGarageChoice"][value="${garageId}"]`);
-            if (input) {
-                input.checked = true;
-                updateGarageApprovalSelectionWarning({ syncMap: false });
-                setSelectedGarageListItem(garageId);
-            }
-        });
-
-        garageApprovalMapMarkers.push(marker);
-        garageApprovalMarkerLookup.set(garageId, marker);
-        bounds.push([latitude, longitude]);
-    });
-
-    if (bounds.length === 1) {
-        map.setView(bounds[0], 13);
-    } else {
-        map.fitBounds(bounds, { padding: [24, 24] });
-    }
-
-    setGarageApprovalMapHint('All garages with saved coordinates are shown on this map.');
-    map.invalidateSize();
 }
 
 function openBudgetModal() {
@@ -1288,18 +1359,9 @@ async function openGarageApprovalModal() {
         notesField.value = '';
     }
 
-<<<<<<< Updated upstream
     document.getElementById('garageApprovalModal').classList.add('active');
     await loadGaragesForRouteApproval();
     await renderGarageApprovalMap();
-=======
-    const modal = document.getElementById('garageApprovalModal');
-    if (modal) {
-        modal.classList.add('active');
-    }
-
-    await loadGaragesForRouteApproval();
->>>>>>> Stashed changes
 }
 
 function closeGarageApprovalModal() {
@@ -1307,8 +1369,6 @@ function closeGarageApprovalModal() {
     if (modal) {
         modal.classList.remove('active');
     }
-
-    resetGarageApprovalMap();
 
     const warning = document.getElementById('garageApprovalSelectionWarning');
     if (warning) {
@@ -1334,7 +1394,6 @@ async function loadGaragesForRouteApproval() {
 
         if (!availableRouteGarages.length) {
             listEl.innerHTML = '<p class="step-hint"><i class="fas fa-store-slash"></i> No active garages available right now.</p>';
-            renderGarageApprovalMap();
             return;
         }
 
@@ -1343,13 +1402,8 @@ async function loadGaragesForRouteApproval() {
             const address = garage.address || 'Address not available';
             const phone = garage.phone || 'No phone';
             return `
-<<<<<<< Updated upstream
                 <label class="assign-tech-item">
                     <span><input type="radio" name="approveGarageChoice" value="${Number(garage.id)}" data-latitude="${garage.latitude ?? ''}" data-longitude="${garage.longitude ?? ''}"></span>
-=======
-                <label class="assign-tech-item" data-garage-id="${Number(garage.id)}">
-                    <span><input type="radio" name="approveGarageChoice" value="${Number(garage.id)}"></span>
->>>>>>> Stashed changes
                     <span style="flex:1; min-width:0;">
                         <span class="assign-tech-name">${name}</span>
                         <span class="assign-tech-meta"><i class="fas fa-map-marker-alt"></i> ${address}</span>
@@ -1358,45 +1412,26 @@ async function loadGaragesForRouteApproval() {
                 </label>
             `;
         }).join('');
-
-        renderGarageApprovalMap();
-        updateGarageApprovalSelectionWarning({ syncMap: false });
-
-        if (garageApprovalMap) {
-            window.setTimeout(() => {
-                garageApprovalMap.invalidateSize();
-            }, 40);
-        }
     } catch (error) {
         console.error('loadGaragesForRouteApproval error:', error);
         listEl.innerHTML = '<p class="step-hint" style="color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Failed to load nearby garages.</p>';
-        setGarageApprovalMapHint('Failed to load garages for map preview.', true);
     }
 }
 
-function updateGarageApprovalSelectionWarning(options = {}) {
+function updateGarageApprovalSelectionWarning() {
     const warning = document.getElementById('garageApprovalSelectionWarning');
     if (!warning) {
         return;
     }
 
     const selected = document.querySelector('input[name="approveGarageChoice"]:checked');
-    const selectedGarageId = Number(selected?.value || 0);
     warning.style.display = selected ? 'none' : 'block';
 
-<<<<<<< Updated upstream
     syncGarageSelectionOnMap(Number(selected?.value || 0));
 }
 
 function getRouteBreakdownCoordinates() {
-    const latitude = Number(routeBreakdownContext?.breakdown_latitude);
-    const longitude = Number(routeBreakdownContext?.breakdown_longitude);
-
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-        return null;
-    }
-
-    return [latitude, longitude];
+    return getRouteTicketCoordinates();
 }
 
 function destroyRouteGarageMap() {
@@ -1557,13 +1592,6 @@ function syncGarageSelectionOnMap(selectedGarageId) {
             routeGarageMap.panTo(marker.getLatLng());
         }
     });
-=======
-    setSelectedGarageListItem(selectedGarageId);
-
-    if (options.syncMap && selectedGarageId > 0) {
-        focusGarageApprovalMarker(selectedGarageId);
-    }
->>>>>>> Stashed changes
 }
 
 async function submitGarageApproval(event) {
@@ -1765,11 +1793,6 @@ async function submitAssignment(event) {
 
 document.addEventListener('click', (event) => {
     if (event.target.classList.contains('modal-overlay')) {
-        if (event.target.id === 'garageApprovalModal') {
-            closeGarageApprovalModal();
-            return;
-        }
-
         event.target.classList.remove('active');
     }
 });
@@ -1781,7 +1804,7 @@ document.addEventListener('change', (event) => {
     }
 
     if (event.target.matches('input[name="approveGarageChoice"]')) {
-        updateGarageApprovalSelectionWarning({ syncMap: true });
+        updateGarageApprovalSelectionWarning();
     }
 });
 

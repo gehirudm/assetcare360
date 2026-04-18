@@ -1,0 +1,25 @@
+{
+  "stage": "before",
+  "viewport": "desktop",
+  "startUrl": "http://127.0.0.1:3000/dashboard/supervisor/index.html?section=fault-ticket-tracking",
+  "finalUrl": "http://127.0.0.1:3000/dashboard/supervisor/index.html?section=fault-ticket-tracking",
+  "title": "Supervisor Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- text: AssetCare360\n- heading \"Supervisor Dashboard\" [level=1]\n- button \"SO\"\n- navigation: Dashboard Weekly Check Reports Fault Tickets Repair Management Budget Approval Asset Status Technicians\n- main:\n  - heading \"Fault Tickets\" [level=1]\n  - paragraph: Track machine and vehicle breakdown reports in one place\n  - button \"All Fault Tickets\"\n  - button \"Pending\"\n  - button \"In Progress\"\n  - button \"Resolved\"\n  - button \"Closed\"\n  - button \"All Sources\"\n  - button \"Vehicle\"\n  - button \"Machine\"\n  - text: Fault Ticket List 1 pending, 2 active\n  - strong: RBD-202 (Driver)Vehicle\n  - text: \"LK-3456 | Driver Two Kaduna engine Lat 6.877821, Lng 79.878752 Garage Approved | CRITICAL | Apr 14, 2026 Ticket: TKT-303 Nearby garage approved by supervisor\"\n  - button \"View\"\n  - button \"Map View\"\n  - strong: RBD-201 (Driver)Vehicle Dangerous Cargo\n  - text: \"WP-CAB-2010 | Driver One Engine vibration and warning light remain active Engine Fault Pending | HIGH | Apr 14, 2026 Ticket: TKT-301\"\n  - button \"View\"\n  - strong: MBD-301 (Machinery Operator)Machine\n  - text: \"Excavator EX-220 | Operator One | Hydraulic Fault Hydraulic pressure drops after warmup Assigned | MEDIUM | Apr 14, 2026 Ticket: TKT-302 Assigned to: Technician One Technician assigned to this ticket\"\n  - button \"View\"",
+    "snapshotLength": 1286
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "dangerousCargoBadgeVisible": true,
+    "approveGarageActionRemoved": true,
+    "viewLabelUpdated": true,
+    "criticalSortWorks": true,
+    "garageApprovedStatusShown": true,
+    "legacyRouteDescriptionNormalized": true,
+    "mapViewActionWorks": true,
+    "sourceFilterVehicleWorks": true,
+    "sourceFilterMachineWorks": true,
+    "detailReturnSectionUsesFaultTicketTracking": true
+  }
+}

@@ -61,27 +61,6 @@ class SupervisorViewTicketModal extends HTMLElement {
                 return;
             }
 
-            const createTicketFromBreakdownButton = event.target.closest('[data-create-ticket-from-breakdown]');
-            if (createTicketFromBreakdownButton) {
-                const reportType = createTicketFromBreakdownButton.dataset.breakdownType;
-                const reportId = Number(createTicketFromBreakdownButton.dataset.breakdownId);
-
-                if (!reportType || !Number.isFinite(reportId)) {
-                    this.emitToast('Breakdown details are not available for ticket creation', 'error');
-                    return;
-                }
-
-                this.close();
-                this.dispatchEvent(new CustomEvent('supervisor-view-ticket-modal:create-ticket-from-breakdown', {
-                    bubbles: true,
-                    detail: {
-                        reportType,
-                        reportId
-                    }
-                }));
-                return;
-            }
-
             if (event.target === this.modalElement) {
                 this.close();
             }
@@ -309,18 +288,6 @@ class SupervisorViewTicketModal extends HTMLElement {
                     ${report.driver_employee_id ? `<p><strong>Employee ID:</strong> ${report.driver_employee_id}</p>` : ''}
                     ${report.driver_phone ? `<p><strong>Phone:</strong> ${report.driver_phone}</p>` : ''}
                     <p><strong>Reported On:</strong> ${createdDate.toLocaleString()}</p>
-                </div>
-
-                <div style="text-align: center; margin-top: 20px;">
-                    <button
-                        class="btn btn-success"
-                        type="button"
-                        data-create-ticket-from-breakdown
-                        data-breakdown-type="${type}"
-                        data-breakdown-id="${id}"
-                    >
-                        <i class="fas fa-plus-circle"></i> Create Fault Ticket from this Report
-                    </button>
                 </div>
             `;
 

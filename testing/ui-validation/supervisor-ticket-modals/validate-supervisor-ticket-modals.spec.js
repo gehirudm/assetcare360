@@ -2,6 +2,8 @@ const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
 
+test.skip(true, 'Deprecated: fault-tickets section was removed. Use supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js');
+
 const STAGE = process.env.VAL_STAGE || 'before';
 const BASE_URL = process.env.VAL_BASE_URL || 'http://127.0.0.1:3000';
 const OUT_DIR = __dirname;
@@ -108,6 +110,19 @@ function attachMonitors(page, state) {
         }
     });
 
+    page.on('request', (request) => {
+        if (request.method() !== 'POST') {
+            return;
+        }
+
+        if (request.url().includes('/api/fault-tickets')) {
+            state.postFaultTicketCalls.push({
+                method: request.method(),
+                url: request.url()
+            });
+        }
+    });
+
     page.on('response', (response) => {
         if (response.status() >= 400) {
             state.failedRequests.push({
@@ -140,6 +155,38 @@ async function mockApi(page, fixtures) {
             return json({ status: 'success', success: true, data: { tickets: fixtures.tickets } });
         }
 
+        if (pathname.endsWith('/api/fault-tickets') && method === 'POST') {
+            const createdTicketId = 177;
+            const existing = fixtures.tickets.find((item) => item.id === createdTicketId);
+
+            if (!existing) {
+                fixtures.tickets.push({
+                    id: createdTicketId,
+                    ticket_id: 'VBD-077',
+                    machine_id: null,
+                    machine_name: 'ABC-1234',
+                    machine_model_number: 'Vehicle Breakdown',
+                    description: 'Brake response delay',
+                    priority: 'Medium',
+                    status: 'Open',
+                    reported_by_name: 'Driver One',
+                    reporter_full_name: 'Driver One',
+                    breakdown_report_id: 'VBD-077',
+                    breakdown_type: 'vehicle_breakdown',
+                    created_at: '2026-04-12T11:30:00Z',
+                    updated_at: '2026-04-12T11:30:00Z',
+                    assignments: []
+                });
+            }
+
+            return json({
+                status: 'success',
+                success: true,
+                message: 'Fault ticket created successfully',
+                data: { id: createdTicketId }
+            }, 201);
+        }
+
         if (pathname.match(/\/api\/fault-tickets\/\d+$/) && method === 'GET') {
             const id = Number(pathname.split('/').pop());
             const ticket = fixtures.tickets.find((item) => item.id === id) || fixtures.tickets[0];
@@ -152,6 +199,12 @@ async function mockApi(page, fixtures) {
 
         if (pathname.endsWith('/api/breakdown-reports') && method === 'GET') {
             return json({ status: 'success', success: true, data: { reports: fixtures.breakdownReports } });
+        }
+
+        if (pathname.match(/\/api\/breakdown-reports\/\d+$/) && method === 'GET') {
+            const id = Number(pathname.split('/').pop());
+            const report = fixtures.breakdownReports.find((item) => item.id === id) || fixtures.breakdownReports[0];
+            return json({ status: 'success', success: true, data: { report } });
         }
 
         if (pathname.endsWith('/api/route-breakdowns') && method === 'GET') {
@@ -170,7 +223,8 @@ async function runFlow(page, viewportName) {
     const fixtures = buildFixtures();
     const state = {
         console: [],
-        failedRequests: []
+        failedRequests: [],
+        postFaultTicketCalls: []
     };
 
     attachMonitors(page, state);
@@ -205,9 +259,24 @@ async function runFlow(page, viewportName) {
     await expect(page.locator('#assignTicketModal')).not.toBeVisible({ timeout: 15000 });
 
     await assignedCard.locator('button[data-action="view-ticket"][data-ticket-id="101"]').click();
-    await expect(page.locator('#viewTicketModal')).toBeVisible({ timeout: 15000 });
-    await page.locator('#viewTicketModal .btn-close').click();
-    await expect(page.locator('#viewTicketModal')).not.toBeVisible({ timeout: 15000 });
+    await page.waitForURL((url) => {
+        return url.pathname.includes('/view-ticket/index.html')
+            && url.searchParams.get('id') === '101'
+            && url.searchParams.get('role_override') === 'SUPERVISOR';
+    }, { timeout: 15000 });
+
+    const openedDetailUrl = new URL(page.url());
+    expect(openedDetailUrl.searchParams.get('return_to') || '').toContain('/dashboard/supervisor/index.html?section=fault-tickets');
+
+    await expect(page.locator('#backButton')).toBeVisible({ timeout: 15000 });
+    await page.locator('#backButton').click();
+
+    await page.waitForURL((url) => {
+        return url.pathname.includes('/dashboard/supervisor/index.html')
+            && url.searchParams.get('section') === 'fault-tickets';
+    }, { timeout: 15000 });
+
+    await expect(page.locator('#fault-tickets')).toBeVisible({ timeout: 15000 });
 
     const unassignedCard = page.locator('supervisor-fault-tickets .inventory-item').filter({ hasText: 'TKT-102' }).first();
     await unassignedCard.locator('button[data-dropdown-id="ticket-TKT-102"]').click();
@@ -215,6 +284,25 @@ async function runFlow(page, viewportName) {
     await expect(page.locator('#assignTicketModal')).toBeVisible({ timeout: 15000 });
     await page.locator('#assignTicketModal .btn-close').click();
     await expect(page.locator('#assignTicketModal')).not.toBeVisible({ timeout: 15000 });
+
+    const breakdownCard = page.locator('supervisor-fault-tickets .inventory-item').filter({ hasText: 'VBD-077' }).first();
+    await expect(breakdownCard).toBeVisible({ timeout: 15000 });
+    await breakdownCard.locator('button[data-action="view-breakdown-ticket"]').click();
+
+    await page.waitForURL((url) => {
+        return url.pathname.includes('/view-ticket/index.html')
+            && url.searchParams.get('id') === '177'
+            && url.searchParams.get('role_override') === 'SUPERVISOR';
+    }, { timeout: 15000 });
+
+    await expect(page.locator('#backButton')).toBeVisible({ timeout: 15000 });
+    expect(state.postFaultTicketCalls).toHaveLength(1);
+
+    await page.locator('#backButton').click();
+    await page.waitForURL((url) => {
+        return url.pathname.includes('/dashboard/supervisor/index.html')
+            && url.searchParams.get('section') === 'fault-tickets';
+    }, { timeout: 15000 });
 
     let ariaSnapshot = '';
     try {
@@ -243,7 +331,10 @@ async function runFlow(page, viewportName) {
         interactionSummary: {
             createModalOpened: true,
             assignModalOpened: true,
-            viewModalOpened: true,
+            detailPageOpened: true,
+            detailReturnNavigationWorked: true,
+            breakdownViewOpenedTicketDetail: true,
+            faultTicketCreateTriggeredOnLegacyBreakdownView: state.postFaultTicketCalls.length === 1,
             componentActionFlowVerified: true
         }
     };

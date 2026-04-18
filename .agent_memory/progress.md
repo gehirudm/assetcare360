@@ -14,13 +14,56 @@
   - Spare-part request workflow
   - Ticket work-update record (TO marks work done)
   - Breakdown report linking
+- ✅ Technical Officer + Supervisor dashboard ticket detail routing now uses actor-specific components with direct view-ticket page navigation (no iframe)
+  - TO and Supervisor dashboards both use actor-specific ticket-detail components (`to-ticket-detail-view`, `supervisor-ticket-detail-view`) that open `pages/view-ticket/index.html` directly with role override + dashboard return path.
+  - Supervisor legacy redirect fallback from `supervisor-fault-ticket-tracking` was removed for existing ticket IDs.
+  - Supervisor UX stability fixes shipped:
+    - back button styling preserved in existing view-ticket UI
+    - detail open flow now scrolls viewport to top
+    - supervisor ticket/breakdown actions now use explicit `VIEW TICKET` vs `VIEW BREAKDOWN` labels
+  - Supervisor breakdown actions are now unified to ticket-flow semantics (`VIEW TICKET`):
+    - open existing linked ticket when present
+    - create-and-open linked ticket only for legacy unlinked breakdown rows
+  - Breakdown creation now auto-creates linked fault tickets transactionally for vehicle, in-route, and machine breakdown endpoints.
+  - `FaultTicketService` merges specialized breakdown source-table data into `breakdown_context` for ticket consumers.
+  - Removed shared iframe ticket-detail host files (`pages/components/shared/ac-ticket-detail-view.js`, `pages/components/shared/ac-ticket-detail-view.css`) to prevent fallback to iframe-based rendering.
+  - Updated Playwright validation specs for section-based flow:
+    - `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js`
+    - `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js`
+  - Validation evidence: desktop + mobile passed for direct detail-page suites (`4/4`), plus `VAL_STAGE=after` route-breakdown workflow suite passed (`2/2`) after breakdown-ticket flow unification.
+- ✅ Supervisor fault-ticket section consolidation and list UX alignment (April 18, 2026)
+  - Removed duplicate `fault-tickets` Technician Assignment section from Supervisor dashboard and standardized list/detail return defaults to `fault-ticket-tracking`.
+  - Updated active `supervisor-fault-ticket-tracking` component to include Vehicle/Machine source filtering, criticality-first card sorting, dangerous-cargo badge-only rendering (summary/trip lines removed), remove list-level approve-garage action, and relabel `VIEW TICKET` to `View`.
+  - Final UX correction removed list-level map actions and coordinate chips, removed the `Ticket:` line, and moved role rendering next to reportee metadata.
+  - Added route-breakdown presentation improvements in active list cards:
+    - legacy in-route description normalization for converted payload strings,
+    - workflow-aware status display (`garage_approved` surfaces as `Garage Approved`),
+    - embedded route-location map panel rendered in shared `pages/view-ticket` detail UI instead of list-level map actions.
+  - Updated `RouteBreakdownController::buildAutoTicketDescription` to persist concise issue text for new linked route-breakdown fault tickets, preventing future legacy blob descriptions.
+  - Added and applied migration `057_normalize_legacy_route_breakdown_descriptions.php` to normalize existing incompatible route-description blobs:
+    - `fault_tickets` rows normalized: 6
+    - `vehicle_breakdown_inroute` rows normalized: 0
+    - migration status after run: 55/55 applied, 0 pending
+  - Added focused UI validation suite `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` with `VAL_STAGE=before` and `VAL_STAGE=after` desktop/mobile passes, including assertions for no list map button/coordinates and visible detail-page route map panel.
+  - Marked legacy `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js` as deprecated/skipped because it targets removed `fault-tickets` section markup.
+- ✅ Supervisor detail-page garage-approval modal regression fix (April 18, 2026)
+  - Fixed top-left/unstyled `Approve Nearby Garage` modal rendering in shared `pages/view-ticket` flow by overriding inherited dashboard `.modal` overlay styles in `pages/dashboard/technical-officer/view-ticket/style.css`.
+  - Added explicit `.garage-approval-map` and `.garage-approval-map-hint` styles in the imported detail stylesheet so map container sizing remains stable in the modal.
+  - Extended `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` to assert centered modal geometry, map marker visibility, marker-click selection, and garage-approval submit payload (`garage_id`).
+  - Validation evidence: `VAL_STAGE=after` run passed desktop+mobile (`2/2`) with no failed requests.
+- ✅ Breakdown-view and fault-ticket lifecycle unification (TASK047)
+  - Breakdown create endpoints now auto-create linked fault tickets for vehicle, in-route, and machine flows.
+  - Supervisor breakdown actions open ticket flow consistently (`VIEW TICKET`) with a create-or-open fallback only for legacy unlinked records.
+  - Ticket payload aggregation now includes source-table `breakdown_context` enrichment in `FaultTicketService`.
+  - Targeted validations passed:
+    - `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js` (`VAL_STAGE=after`, desktop + mobile)
+    - `testing/ui-validation/route-breakdown-garage-workflow/validate-route-breakdown-garage-workflow.spec.js` (`VAL_STAGE=after`, desktop + mobile)
 - ✅ Route-breakdown garage workflow alignment across Supervisor, shared ticket detail, Driver, and backend assignment rules (TASK039)
   - Supervisor pending route-breakdown VIEW now routes to shared `pages/view-ticket/` flow.
   - Shared detail page supports Supervisor dual step-2 actions for route tickets: assign technician or approve nearby garage.
   - Nearby garage approval now makes technician assignment optional in UI, and backend assignment endpoint rejects technician assignment updates when garage workflow is active.
   - Driver garage modal now shows only the approved garage once assigned.
   - OpenAPI updated to document `/fault-tickets/{id}/assign` and its garage-workflow blocked-assignment response.
-<<<<<<< Updated upstream
 - ✅ Route-breakdown driver GPS capture + map-based garage approval (TASK042)
   - Added and applied migration `055_add_coordinates_to_route_breakdowns.php` to store `breakdown_latitude`/`breakdown_longitude` for route breakdowns.
   - Updated route-breakdown API create/update validation and persistence to enforce coordinate-pair integrity.
@@ -30,14 +73,52 @@
   - Validation evidence:
     - Playwright `testing/ui-validation/route-breakdown-garage-workflow/validate-route-breakdown-garage-workflow.spec.js` passed for `VAL_STAGE=before` and `VAL_STAGE=after` (desktop+mobile, 2/2 each stage).
     - PHP lint, JS syntax checks, and editor diagnostics reported no errors in touched files.
-=======
 - ✅ Transportation Manager garage management and map-based supervisor approval enhancements
   - Added backend `POST /garages` creation flow and registered missing `GET /route-breakdowns/garages` route.
   - Added TM dashboard garages section/component with create/search/list actions and refresh orchestration.
   - Added map visualization to shared ticket garage approval modal (Leaflet, marker/list sync, map hint states).
   - Updated OpenAPI and Postman docs for garage create/list and route-breakdown garage-list endpoints.
   - Validation: PHP/JS syntax checks passed, diagnostics clean on touched files, and Playwright `VAL_STAGE=after` passed for desktop + mobile in `testing/ui-validation/transportation-manager-garages/validate-transportation-manager-garages.spec.js`.
->>>>>>> Stashed changes
+- ✅ Transportation cargo lifecycle + dangerous route-breakdown escalation (TASK043)
+  - Added migration `056_add_cargo_lifecycle_and_route_dangerous_snapshot.php` for cargo catalog/trip cargo assignment and dangerous snapshot fields.
+  - Added cargo APIs (`/trips/cargo-items` CRUD and `/trips/cargo-analytics`) and trip cargo enrichment (`cargo_items`, totals, dangerous flags, summary).
+  - Added dangerous-cargo escalation visibility across route-breakdown/fault-ticket contexts and supervisor/shared-ticket UIs.
+  - Updated TM, Driver, and Supervisor dashboards to surface structured cargo data and dangerous indicators.
+  - Updated `testing/openapi.yaml` for new cargo endpoints/schemas and dangerous snapshot fields.
+  - Validation evidence: `VAL_STAGE=after` Playwright validation passed for `testing/ui-validation/transportation-cargo-lifecycle/validate-transportation-cargo-lifecycle.spec.js` (1/1); touched-file diagnostics clean.
+- ✅ Dangerous in-route priority lock + supervisor dangerous visibility hardening (TASK046)
+  - Enforced backend severity lock for dangerous in-route breakdowns in `RouteBreakdownController` create/update flows (forces `critical` when dangerous context is active).
+  - Added driver modal urgency lock UX in `driver-breakdown-in-route-modal` (auto-set `critical`, disable severity input, show dangerous-cargo lock notice).
+  - Hardened `FaultTicketService` formatting to consistently include dangerous route-breakdown metadata (`is_dangerous_cargo`, `dangerous_cargo_present`, summary, trip id) for supervisor ticket rendering.
+  - Validation evidence:
+    - `VAL_STAGE=after` passed for `testing/ui-validation/transportation-cargo-lifecycle/validate-transportation-cargo-lifecycle.spec.js` (1/1).
+    - `php -l` passed for `app/controllers/RouteBreakdownController.php` and `app/services/FaultTicketService.php`.
+- ✅ Transportation Manager cargo section split and sidebar navigation update (TASK044)
+  - Moved cargo catalog and analytics ownership from TM Trips into dedicated `tm-cargo-management` component and section.
+  - Added TM sidebar navigation item `Cargo Management` and layout section host `cargo-management`.
+  - Refactored `tm-trips` to trips-only concerns while preserving trip cargo summary/dangerous indicators in trip rows.
+  - Updated TM parent orchestration to refresh cargo management section on trip modal completion and when cargo section becomes active.
+  - Added UI validation scope `testing/ui-validation/transportation-cargo-section-split/validate-transportation-cargo-section-split.spec.js` with stage-based assertions.
+  - Validation evidence:
+    - `VAL_STAGE=before` passed (1/1)
+    - `VAL_STAGE=after` passed (1/1, includes desktop + mobile viewport checks)
+    - Regression guard `VAL_STAGE=after` passed for `testing/ui-validation/transportation-cargo-lifecycle/validate-transportation-cargo-lifecycle.spec.js` (1/1)
+    - Final rerun from `testing/ui-validation` workspace reconfirmed both after-stage specs passing (1/1 each)
+    - `VAL_STAGE=before` is baseline-only and expected to fail when rerun on the post-refactor tree
+- ✅ Transportation Manager cargo catalogue/details UX refinement (TASK045)
+  - Refined `tm-cargo-management` to catalogue-only UX and removed embedded analytics subsection.
+  - Added catalogue filters (search + type + status), modal-based add-item entry point, and item-level View Details actions.
+  - Follow-up cleanup removed visible refresh buttons and organized the cargo toolbar into cleaner grouped rows.
+  - Follow-up polish fixed `Mark as dangerous cargo` checkbox alignment in add-cargo modal via dedicated checkbox classes/styles.
+  - Second-pass polish updated dangerous-checkbox row margins/padding and centered layout with stronger selectors to avoid generic form-label overrides.
+  - Added dedicated `tm-cargo-details` section/component with item profile, analytics cards, trend chart, and recent trip usage list.
+  - Added `tm-cargo-item-modal` component and updated TM parent script orchestration for details navigation/back and refresh hooks.
+  - Updated UI validation coverage in:
+    - `testing/ui-validation/transportation-cargo-section-split/validate-transportation-cargo-section-split.spec.js`
+    - `testing/ui-validation/transportation-cargo-lifecycle/validate-transportation-cargo-lifecycle.spec.js`
+  - Validation evidence:
+    - `VAL_STAGE=after` section split spec passed (1/1)
+    - `VAL_STAGE=after` cargo lifecycle spec passed (1/1)
 - ✅ Fuel logging + TM fleet details enhancement (TASK040)
   - Added migration `053_add_fuel_source_and_nullable_total_cost.php` to add `fuel_source`, backfill missing values, make `total_cost` nullable, and add index `idx_fuel_source`.
   - Updated backend fuel validation/normalization (`FuelLogService`) to derive `fuel_type` from vehicle and enforce source-aware rules (`external` requires cost + receipt).

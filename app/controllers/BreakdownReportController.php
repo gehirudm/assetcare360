@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
+require_once __DIR__ . '/../services/FaultTicketService.php';
 
 /**
  * Breakdown Report Controller
@@ -9,10 +10,12 @@ require_once __DIR__ . '/../middleware/RoleMiddleware.php';
  */
 class BreakdownReportController {
     private $conn;
+    private $faultTicketService;
     
     public function __construct() {
         $db = Database::getInstance();
         $this->conn = $db->getConnection();
+        $this->faultTicketService = new FaultTicketService();
     }
     
     /**
@@ -176,6 +179,21 @@ class BreakdownReportController {
                 $input['severity'],
                 $input['description']
             ]);
+
+            $ticketPayload = [
+                'vehicle_id' => (int) $input['vehicle_id'],
+                'reported_by' => (int) $currentUser['id'],
+                'breakdown_report_id' => $breakdownId,
+                'breakdown_type' => 'vehicle_breakdown',
+                'priority' => $this->mapSeverityToPriority($input['severity'] ?? null),
+                'description' => $this->buildAutoTicketDescription($breakdownId, $input)
+            ];
+
+            $ticketResult = $this->faultTicketService->create($ticketPayload);
+            if (empty($ticketResult['success'])) {
+                $ticketError = $ticketResult['message'] ?? 'Failed to auto-create linked fault ticket';
+                throw new RuntimeException($ticketError);
+            }
             
             // Commit transaction
             $this->conn->commit();
@@ -189,6 +207,37 @@ class BreakdownReportController {
             $this->conn->rollBack();
             Response::error('Failed to create breakdown report: ' . $e->getMessage(), 500);
         }
+    }
+
+    private function mapSeverityToPriority($severity) {
+        $normalized = strtolower(trim((string) $severity));
+
+        if ($normalized === 'critical') {
+            return 'Critical';
+        }
+
+        if ($normalized === 'high') {
+            return 'High';
+        }
+
+        if ($normalized === 'low') {
+            return 'Low';
+        }
+
+        return 'Medium';
+    }
+
+    private function buildAutoTicketDescription(string $breakdownId, array $input): string {
+        $breakdownType = trim((string) ($input['breakdown_type'] ?? 'General Breakdown'));
+        $severity = strtoupper(trim((string) ($input['severity'] ?? 'medium')));
+        $reportedDate = trim((string) ($input['breakdown_date'] ?? date('Y-m-d')));
+        $details = trim((string) ($input['description'] ?? 'No description provided'));
+
+        return "[Vehicle Breakdown] {$breakdownId}\n"
+            . "Type: {$breakdownType}\n"
+            . "Severity: {$severity}\n"
+            . "Reported Date: {$reportedDate}\n"
+            . "Details: {$details}";
     }
     
     /**

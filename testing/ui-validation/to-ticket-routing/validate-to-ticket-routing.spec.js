@@ -150,25 +150,29 @@ async function runFlow(page, viewportName) {
     await expect(page.locator('#tickets')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('to-tickets #allTicketsList .ticket-item').first()).toBeVisible({ timeout: 15000 });
 
-    await Promise.all([
-        page.waitForURL(/(\/dashboard\/technical-officer\/fault-ticket-detail\/\?id=\d+|\/view-ticket\/(index\.html)?\?id=\d+)/, { timeout: 15000 }),
-        page.locator('to-tickets #allTicketsList .ticket-item').first().click()
-    ]);
+    await page.locator('to-tickets #allTicketsList .ticket-item').first().click();
 
-    const destinationPath = new URL(page.url()).pathname;
+    await page.waitForURL((url) => {
+        return url.pathname.includes('/view-ticket/index.html')
+            && url.searchParams.get('id') === '501'
+            && url.searchParams.get('role_override') === 'TECHNICAL_OFFICER';
+    }, { timeout: 15000 });
+
     const detailUrl = page.url();
+    const detailUrlObject = new URL(detailUrl);
+    const destinationPath = detailUrlObject.pathname;
 
-    if (STAGE === 'after') {
-        expect(destinationPath).toContain('/view-ticket/');
-    } else {
-        expect(destinationPath === '/dashboard/technical-officer/fault-ticket-detail/' || destinationPath.startsWith('/view-ticket/')).toBeTruthy();
-    }
+    expect(destinationPath).toContain('/view-ticket/index.html');
 
     await expect(page.locator('#backButton')).toBeVisible({ timeout: 15000 });
-    await Promise.all([
-        page.waitForURL(/\/dashboard\/technical-officer\/(index\.html)?\?section=tickets/, { timeout: 15000 }),
-        page.locator('#backButton').click()
-    ]);
+    await page.locator('#backButton').click();
+
+    await page.waitForURL((url) => {
+        return url.pathname.includes('/dashboard/technical-officer/index.html')
+            && url.searchParams.get('section') === 'tickets';
+    }, { timeout: 15000 });
+
+    await expect(page.locator('#tickets')).toBeVisible({ timeout: 15000 });
 
     const returnPath = new URL(page.url()).pathname;
     const returnSearch = new URL(page.url()).search;
@@ -203,7 +207,7 @@ async function runFlow(page, viewportName) {
         interactionSummary: {
             detailUrl,
             destinationPath,
-            destinationSearch: new URL(detailUrl).search,
+            destinationSearch: detailUrlObject.search,
             returnUrl: page.url(),
             returnPath,
             returnSearch

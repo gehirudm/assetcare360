@@ -109,6 +109,9 @@ class DriverTransportTicket extends HTMLElement {
     renderTicket(ticket) {
         const statusColor = DriverUtils.getStatusColor(ticket.status);
         const normalizedStatus = DriverUtils.getTripFilterStatus(ticket.status);
+        const dangerousBadge = ticket.hasDangerousCargo
+            ? '<span class="status-badge" style="background:#dc2626;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;margin-left:8px;"><i class="fas fa-radiation"></i> Dangerous</span>'
+            : '';
         const trailingAction = normalizedStatus !== 'completed' && normalizedStatus !== 'cancelled' && normalizedStatus !== 'rejected'
             ? `
                 <button class="dropdown-item" type="button" data-action="update-ticket-status" data-ticket-id="${ticket.id}">
@@ -138,12 +141,14 @@ class DriverTransportTicket extends HTMLElement {
         return `
             <div class="inventory-item">
                 <div class="item-details">
-                    <strong><i class="fas fa-ticket-alt"></i> ${ticket.id}</strong>
-                    <div class="item-meta"><i class="fas fa-route"></i> ${ticket.route} | <i class="fas fa-calendar"></i> ${ticket.date}</div>
+                    <strong><i class="fas fa-ticket-alt"></i> ${DriverUtils.escapeHtml(ticket.id)}</strong>
+                    <div class="item-meta"><i class="fas fa-route"></i> ${DriverUtils.escapeHtml(ticket.route)} | <i class="fas fa-calendar"></i> ${DriverUtils.escapeHtml(ticket.date)}</div>
                     <div class="item-description">
-                        <span class="status-text" style="color: ${statusColor};">${ticket.status}</span> | <i class="fas fa-box"></i> ${ticket.cargo} | Trip: ${ticket.trip}
+                        <span class="status-text" style="color: ${statusColor};">${DriverUtils.escapeHtml(ticket.status)}</span>${dangerousBadge}
                     </div>
-                    ${ticket.rejectionReason ? `<div class="item-meta" style="margin-top: 4px; color: var(--danger);"><i class="fas fa-exclamation-circle"></i> ${ticket.rejectionReason}</div>` : ''}
+                    <div class="item-meta"><i class="fas fa-boxes-stacked"></i> ${DriverUtils.escapeHtml(ticket.cargo)}</div>
+                    <div class="item-meta"><i class="fas fa-hashtag"></i> Trip: ${DriverUtils.escapeHtml(ticket.trip)}</div>
+                    ${ticket.rejectionReason ? `<div class="item-meta" style="margin-top: 4px; color: var(--danger);"><i class="fas fa-exclamation-circle"></i> ${DriverUtils.escapeHtml(ticket.rejectionReason)}</div>` : ''}
                 </div>
                 <div class="item-actions">
                     <div class="action-buttons">
@@ -186,7 +191,10 @@ class DriverTransportTicket extends HTMLElement {
                     route: `${trip.origin || 'N/A'} → ${trip.destination || 'N/A'}`,
                     date: DriverUtils.formatDateTime(trip.created_at),
                     status: trip.status || 'Pending',
-                    cargo: trip.cargo_description || 'No cargo description',
+                    cargo: DriverUtils.buildCargoSummary(trip) || 'No cargo description',
+                    cargo_items: DriverUtils.normalizeCargoItems(trip),
+                    has_dangerous_cargo: DriverUtils.hasDangerousCargo(trip),
+                    hasDangerousCargo: DriverUtils.hasDangerousCargo(trip),
                     recipient: trip.driver_name || 'N/A',
                     destination: trip.destination || 'N/A',
                     instructions: trip.completion_notes || '',

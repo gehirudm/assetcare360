@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
+require_once __DIR__ . '/../services/FaultTicketService.php';
 
 /**
  * Machine Breakdown Controller
@@ -9,10 +10,12 @@ require_once __DIR__ . '/../middleware/RoleMiddleware.php';
  */
 class MachineBreakdownController {
     private $conn;
+    private $faultTicketService;
     
     public function __construct() {
         $db = Database::getInstance();
         $this->conn = $db->getConnection();
+        $this->faultTicketService = new FaultTicketService();
     }
     
     /**
@@ -198,6 +201,26 @@ class MachineBreakdownController {
                 $input['severity'],
                 $input['description']
             ]);
+
+            $ticketPayload = [
+                'machine_id' => (int) $input['machine_id'],
+                'reported_by' => (int) $currentUser['id'],
+                'breakdown_report_id' => $breakdownId,
+                'breakdown_type' => 'machine_breakdown',
+                'priority' => $this->mapSeverityToPriority($input['severity'] ?? null),
+                'description' => $this->buildAutoTicketDescription($breakdownId, [
+                    'breakdown_type' => $input['breakdown_type'] ?? 'Machine Fault',
+                    'severity' => $input['severity'] ?? 'medium',
+                    'breakdown_date' => $breakdownDate,
+                    'description' => $input['description'] ?? ''
+                ])
+            ];
+
+            $ticketResult = $this->faultTicketService->create($ticketPayload);
+            if (empty($ticketResult['success'])) {
+                $ticketError = $ticketResult['message'] ?? 'Failed to auto-create linked fault ticket';
+                throw new RuntimeException($ticketError);
+            }
             
             $this->conn->commit();
             
@@ -209,5 +232,36 @@ class MachineBreakdownController {
             $this->conn->rollBack();
             Response::error('Failed to create breakdown report: ' . $e->getMessage(), 500);
         }
+    }
+
+    private function mapSeverityToPriority($severity) {
+        $normalized = strtolower(trim((string) $severity));
+
+        if ($normalized === 'critical') {
+            return 'Critical';
+        }
+
+        if ($normalized === 'high') {
+            return 'High';
+        }
+
+        if ($normalized === 'low') {
+            return 'Low';
+        }
+
+        return 'Medium';
+    }
+
+    private function buildAutoTicketDescription(string $breakdownId, array $input): string {
+        $breakdownType = trim((string) ($input['breakdown_type'] ?? 'Machine Fault'));
+        $severity = strtoupper(trim((string) ($input['severity'] ?? 'medium')));
+        $reportedDate = trim((string) ($input['breakdown_date'] ?? date('Y-m-d H:i:s')));
+        $details = trim((string) ($input['description'] ?? 'No description provided'));
+
+        return "[Machine Breakdown] {$breakdownId}\n"
+            . "Type: {$breakdownType}\n"
+            . "Severity: {$severity}\n"
+            . "Reported At: {$reportedDate}\n"
+            . "Details: {$details}";
     }
 }

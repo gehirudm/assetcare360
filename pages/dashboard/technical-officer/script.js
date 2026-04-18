@@ -8,6 +8,7 @@ let requestedPartsMap = {};
 
 // Track the current ticket being updated in the update work modal
 let currentUpdateTicketId = null;
+let technicalOfficerTicketDetailReturnSection = 'tickets';
 
 // Navigation is handled by <ac-layout>; this keeps query-param deep links in sync.
 let isHistoryNavigation = false;
@@ -27,6 +28,13 @@ function handleSectionActivation(sectionId) {
 
     if (sectionId === 'spare-parts') {
         refreshTOSpareParts();
+    }
+
+    if (sectionId === 'ticket-details') {
+        const ticketDetailView = document.querySelector('#ticket-details to-ticket-detail-view');
+        if (ticketDetailView && typeof ticketDetailView.refresh === 'function') {
+            ticketDetailView.refresh();
+        }
     }
 }
 
@@ -313,7 +321,7 @@ function bindTOTickets() {
     ticketsComponent.addEventListener('technical-officer-tickets:view-ticket', (event) => {
         const ticketId = Number(event.detail?.ticketId);
         if (!ticketId) return;
-        viewTicket(ticketId);
+        viewTicket(ticketId, { returnSection: 'tickets' });
     });
 
     ticketsComponent.addEventListener('technical-officer-tickets:request-spare-parts', (event) => {
@@ -337,8 +345,10 @@ function bindTOTickets() {
     ticketsComponent.addEventListener('technical-officer-tickets:add-budget', (event) => {
         const ticketId = Number(event.detail?.ticketId);
         if (!ticketId) return;
-        const url = buildCanonicalTicketDetailUrl(ticketId) + '#budgetReportCard';
-        window.location.href = url;
+        viewTicket(ticketId, {
+            returnSection: 'tickets',
+            focusHash: 'budgetReportCard'
+        });
     });
 }
 
@@ -688,22 +698,46 @@ function updateDashboardCounts(tickets) {
     if (dashCompleteCount) dashCompleteCount.textContent = completedToday;
 }
 
-function buildTechnicalOfficerTicketsReturnPath() {
-    const dashboardUrl = new URL('./index.html', window.location.href);
-    dashboardUrl.searchParams.set('section', 'tickets');
-    return `${dashboardUrl.pathname}${dashboardUrl.search}`;
+function bindTOTicketDetails() {
+    const ticketDetailView = document.querySelector('#ticket-details to-ticket-detail-view');
+    if (!ticketDetailView || ticketDetailView.dataset.bound === 'true') {
+        return;
+    }
+
+    ticketDetailView.dataset.bound = 'true';
+
+    ticketDetailView.addEventListener('to-ticket-detail-view:toast', (event) => {
+        const message = event.detail?.message;
+        const type = event.detail?.type || 'info';
+        if (!message) {
+            return;
+        }
+
+        showToast(message, type);
+    });
 }
 
-function buildCanonicalTicketDetailUrl(ticketId) {
-    const detailUrl = new URL('../../view-ticket/index.html', window.location.href);
-    detailUrl.searchParams.set('id', ticketId);
-    detailUrl.searchParams.set('return_to', buildTechnicalOfficerTicketsReturnPath());
-    return detailUrl.toString();
-}
+// View ticket details in the dashboard-local details section component.
+function viewTicket(ticketId, options = {}) {
+    const numericTicketId = Number(ticketId);
+    if (!Number.isFinite(numericTicketId) || numericTicketId <= 0) {
+        showToast('Invalid ticket ID.', 'error');
+        return;
+    }
 
-// View ticket details — navigate to the dedicated detail page
-function viewTicket(ticketId) {
-    window.location.href = buildCanonicalTicketDetailUrl(ticketId);
+    const ticketDetailView = document.querySelector('#ticket-details to-ticket-detail-view');
+    if (!ticketDetailView || typeof ticketDetailView.open !== 'function') {
+        showToast('Ticket details component is unavailable.', 'error');
+        return;
+    }
+
+    const returnSection = String(options.returnSection || 'tickets').trim() || 'tickets';
+    technicalOfficerTicketDetailReturnSection = returnSection;
+
+    ticketDetailView.open(numericTicketId, {
+        returnSection,
+        focusHash: options.focusHash || '',
+    });
 }
 
 // Cached options HTML for spare parts dropdowns (loaded once per modal open)
@@ -1591,6 +1625,7 @@ function toggleSidebar() {
         bindTONotifications();
         bindTOFeedback();
         bindTOTickets();
+        bindTOTicketDetails();
         bindTOSpareParts();
         bindTOServiceWarranty();
 
@@ -1610,6 +1645,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initializeForms();
     bindCreateFaultTicket();
     bindTOTickets();
+    bindTOTicketDetails();
     bindTOInventory();
     bindTONotifications();
     bindTOFeedback();

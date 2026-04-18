@@ -1,7 +1,189 @@
 # Active Context
 
 ## Current Focus
-Dashboard Web Components refactor execution for the active Supervisor residual slice remains complete (TASK034, TASK035, TASK036). TASK033 and TASK032 are also complete. Latest active workflow correction for route-breakdown garage handling is now completed as TASK039. Remaining non-dashboard backlog primarily includes migration verification.
+Dashboard Web Components refactor execution for the active Supervisor residual slice remains complete (TASK034, TASK035, TASK036). TASK033 and TASK032 are also complete. Route-breakdown workflow correction (TASK039), GPS/map approval (TASK042), transportation cargo lifecycle + dangerous escalation (TASK043), TM cargo section split/navigation cleanup (TASK044), TM cargo catalogue/details UX refinement (TASK045), dangerous in-route priority lock + supervisor dangerous visibility hardening (TASK046), and breakdown-view/ticket-flow unification with create-time linked fault-ticket creation (TASK047) are now complete. Active remaining backlog is TASK003 migration verification plus pending monolith-final-decomposition cleanup tasks (TASK037, TASK038).
+
+### Supervisor view-ticket garage-approval modal regression fix completed (April 18, 2026)
+- Fixed shared detail-page modal style conflict causing `Approve Nearby Garage` modal to render top-left/unstyled for Supervisor route-breakdown tickets.
+- Updated `pages/dashboard/technical-officer/view-ticket/style.css` modal card selector to neutralize inherited dashboard `.modal` overlay properties and keep modal card centered inside `.modal-overlay`.
+- Added explicit garage map styling in the same detail stylesheet (`.garage-approval-map`, `.garage-approval-map-hint`) to preserve map container sizing in the modal.
+- Extended `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` to validate:
+	- opening Supervisor detail-page garage-approval modal,
+	- visible map markers,
+	- marker-click garage selection,
+	- submit payload (`garage_id`) path,
+	- modal centering geometry assertions.
+- Validation evidence:
+	- `VAL_STAGE=after npx playwright test supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js --reporter=line`
+	- passed desktop + mobile (`2/2`).
+
+### Supervisor fault-ticket section consolidation and UX fixes completed (April 18, 2026)
+- Removed the duplicate Supervisor Technician Assignment section (`fault-tickets`) from dashboard navigation/layout and standardized active fault-ticket ownership under `fault-ticket-tracking`.
+- Updated Supervisor routing defaults and legacy section aliases so detail returns and old links normalize to `fault-ticket-tracking`.
+- Updated `supervisor-fault-ticket-tracking` list behavior to:
+	- show dangerous-cargo badge + summary/trip metadata for vehicle route breakdowns,
+	- remove list-level approve-garage button,
+	- rename action label from `VIEW TICKET` to `View`,
+	- add source filter controls (`All Sources`, `Vehicle`, `Machine`).
+- Updated overview card and ticket-detail fallback return section to use `fault-ticket-tracking`.
+- Validation evidence:
+	- Added `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js`.
+	- `VAL_STAGE=before`: passed (desktop + mobile).
+	- `VAL_STAGE=after`: passed (desktop + mobile).
+	- Final artifacts show zero console warnings/errors and zero failed network requests.
+	- Legacy `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js` is now explicitly skipped/deprecated because it targets the removed `fault-tickets` section.
+
+### Supervisor fault-ticket critical sorting and route-breakdown presentation refinement completed (April 18, 2026)
+- Updated `supervisor-fault-ticket-tracking` list ordering to prioritize ticket criticality (Critical > High > Medium > Low) before date.
+- Removed verbose card-level metadata lines for:
+	- dangerous cargo summary text,
+	- dangerous cargo trip line,
+	- garage workflow details line.
+- Added route-workflow-aware status normalization in the active list so rows with `garage_approved` show `Garage Approved` instead of `Pending`.
+- Added legacy route-description normalization for converted in-route records and introduced `Map View` action with coordinate parsing from both stored coordinate columns and legacy text payloads.
+- Updated route auto-ticket description generation (`RouteBreakdownController::buildAutoTicketDescription`) to store concise issue text for newly created linked tickets.
+- Added and applied migration `057_normalize_legacy_route_breakdown_descriptions.php` to normalize incompatible existing route description blobs in DB records (`fault_tickets` updated: 6 rows).
+- Validation evidence:
+	- `VAL_STAGE=before` and `VAL_STAGE=after` both passed for `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` (desktop + mobile).
+	- Assertions include criticality sort order, Garage Approved status display, hidden verbose metadata text, legacy description cleanup, and map-view action behavior.
+
+### Supervisor list-vs-detail map placement correction completed (April 18, 2026)
+- Applied follow-up UX correction to keep list cards focused and move location map context into detail view:
+	- removed list-level map button/action from `supervisor-fault-ticket-tracking`,
+	- removed list coordinate text and `Ticket:` line from cards,
+	- moved role display next to reportee metadata row,
+	- added embedded route location panel and map in shared `pages/view-ticket` for route breakdown tickets.
+- Updated `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` to assert:
+	- no map button in list,
+	- no coordinates rendered in list,
+	- no `Ticket:` line in list cards,
+	- role rendered next to reportee,
+	- embedded route map panel visible on detail page.
+- Validation evidence:
+	- `VAL_STAGE=after` passed desktop + mobile (`2/2`).
+	- Touched-file diagnostics clean.
+
+### Breakdown-view/ticket-flow unification + create-time linkage completed (April 18, 2026)
+- Completed TASK047 to align breakdown and fault-ticket View behavior around ticket flow semantics.
+- Backend now auto-creates linked fault tickets transactionally for new breakdown reports across all three create paths:
+	- `BreakdownReportController` (vehicle)
+	- `RouteBreakdownController` (in-route)
+	- `MachineBreakdownController` (machine)
+- Supervisor breakdown actions now resolve to ticket flow (`VIEW TICKET`) and use create-or-open fallback only for legacy unlinked breakdown rows.
+- `FaultTicketService` now merges specialized source-table data into ticket payloads using `breakdown_context` for vehicle/route/machine breakdowns.
+- OpenAPI note updated in `testing/openapi.yaml` for route-breakdown create auto-link behavior.
+- Validation evidence:
+	- PHP lint passed for all touched backend controllers/service.
+	- `VAL_STAGE=after` `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js` passed (desktop + mobile).
+	- `VAL_STAGE=after` `testing/ui-validation/route-breakdown-garage-workflow/validate-route-breakdown-garage-workflow.spec.js` passed (desktop + mobile).
+
+### Actor-specific ticket-detail component migration completed (April 18, 2026)
+- Replaced iframe-based shared ticket detail host usage in dashboards with actor-specific components:
+	- `supervisor-ticket-detail-view`
+	- `to-ticket-detail-view`
+- Updated Supervisor and Technical Officer dashboard orchestration to open standalone `pages/view-ticket/index.html` directly with role override and dashboard-section return path.
+- Removed shared iframe host implementation files (`pages/components/shared/ac-ticket-detail-view.js` and `.css`) to prevent regressions back to iframe rendering.
+- Preserved existing View Ticket UI by keeping `pages/view-ticket/*` unchanged.
+- Validation evidence:
+	- `VAL_STAGE=after` `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js` passed (desktop + mobile).
+	- `VAL_STAGE=after` `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js` passed (desktop + mobile).
+
+### Shared ticket-detail dual-scroll fix superseded by actor-specific detail components (April 18, 2026)
+- Initial dual-scroll mitigation was implemented on the shared ticket-detail host, then superseded in the same day by removing iframe-based host usage entirely.
+- Current architecture uses actor-specific components (`supervisor-ticket-detail-view`, `to-ticket-detail-view`) that open standalone `pages/view-ticket/index.html` directly (no iframe).
+- Shared iframe host files were removed to avoid regression to nested scrolling behavior.
+- Validation evidence:
+	- `VAL_STAGE=after` `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js` passed (desktop + mobile).
+	- `VAL_STAGE=after` `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js` passed (desktop + mobile).
+
+### Supervisor view-breakdown side-effect slice superseded (April 17, 2026)
+- This view-only slice was later superseded by TASK047 product-direction changes that unified Supervisor breakdown actions to ticket-flow semantics (`VIEW TICKET`).
+- Added shared `ac-breakdown-detail-view` host and mounted a dedicated `breakdown-details` dashboard section in Supervisor.
+- Rewired Supervisor breakdown view actions from fault-ticket and fault-ticket-tracking lists to open the new section instead of creating/converting tickets.
+- Removed breakdown-to-ticket create CTA/event handling from Supervisor view-ticket modal breakdown content.
+- Historical validation evidence (superseded behavior only):
+	- Updated and executed `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js`.
+	- Desktop + mobile passed for the former view-only path before TASK047 replaced it.
+
+### Supervisor ticket-detail UX stabilization completed (April 17, 2026)
+- Addressed three supervisor-facing issues in ticket detail flow:
+	- Back button styling for shared `ac-ticket-detail-view` was added and aligned with project navigation standards.
+	- Opening ticket details from deep list positions now resets viewport to top.
+	- Supervisor view actions are now clearly labeled by behavior (`VIEW TICKET` vs `VIEW BREAKDOWN`) to remove modal/page ambiguity.
+- Validation evidence:
+	- `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js` passed desktop + mobile after changes.
+	- TO regression guard `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js` passed desktop + mobile after shared component updates.
+
+### TO + Supervisor in-dashboard ticket detail componentization completed (April 17, 2026)
+- Replaced remaining Supervisor ticket-detail redirect behavior with section-based component flow in `pages/dashboard/supervisor/script.js` (`viewTicketDetails`) and removed fallback redirect in `supervisor-fault-ticket-tracking`.
+- TO and Supervisor dashboards now both rely on `ticket-details` section + shared `ac-ticket-detail-view` behavior with return-section handling.
+- Updated UI validation suites for the new section-based behavior:
+	- `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js`
+	- `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js`
+- Validation evidence:
+	- Desktop + mobile passed for both specs (4/4 total) after serving frontend at `127.0.0.1:3000`.
+- Task tracking updates:
+	- TASK037 set to In Progress (fault-ticket detail routing slice complete; broader decomposition pending).
+	- TASK038 set to In Progress (TO ticket detail routing slice complete; broader decomposition pending).
+
+### Dangerous in-route priority lock + supervisor visibility hardening completed (April 17, 2026)
+- Completed TASK046 to enforce dangerous-cargo route-breakdown urgency lock and consistent supervisor visibility.
+- Backend updates complete:
+	- `RouteBreakdownController` now normalizes incoming severity and forces `critical` for dangerous-cargo in-route breakdown contexts during create/update.
+	- `FaultTicketService` now enriches route-breakdown tickets with `is_dangerous_cargo`, `dangerous_cargo_present`, `dangerous_cargo_summary`, and `dangerous_cargo_trip_id` during formatting.
+- Frontend updates complete:
+	- Driver in-route breakdown modal now auto-locks urgency to critical, disables severity editing, and shows contextual dangerous-cargo lock notice.
+- Validation evidence:
+	- `VAL_STAGE=after` run passed for `testing/ui-validation/transportation-cargo-lifecycle/validate-transportation-cargo-lifecycle.spec.js` (1/1).
+	- PHP lint passed for `app/controllers/RouteBreakdownController.php` and `app/services/FaultTicketService.php`.
+
+### Transportation Manager cargo catalogue/details UX refinement completed (April 17, 2026)
+- Completed TASK045 to improve TM cargo management information architecture and interactions.
+- Frontend updates complete:
+	- Removed embedded Cargo Analytics subsection from `tm-cargo-management` and retained catalogue-focused UI only.
+	- Added catalogue filters (search + cargo type + status) and action-first item rows.
+	- Follow-up UI cleanup removed explicit refresh buttons and restructured cargo toolbar into cleaner grouped rows.
+	- Follow-up modal polish fixed `Mark as dangerous cargo` checkbox alignment in add-cargo modal.
+	- Second-pass modal polish adjusted dangerous-checkbox margins/padding and centered checkbox row content.
+	- Replaced inline cargo create form with modal flow using `tm-cargo-item-modal`.
+	- Added dedicated cargo details section/component `tm-cargo-details` with breadcrumb/back layout, item profile, analytics cards, trend chart, and recent trip usage.
+	- Updated parent TM orchestration for cargo create modal open, details navigation/back flow, and cargo details refresh.
+- Validation evidence:
+	- Updated and executed `testing/ui-validation/transportation-cargo-section-split/validate-transportation-cargo-section-split.spec.js` with `VAL_STAGE=after` (pass: 1/1).
+	- Updated and executed `testing/ui-validation/transportation-cargo-lifecycle/validate-transportation-cargo-lifecycle.spec.js` with `VAL_STAGE=after` (pass: 1/1).
+
+### Transportation Manager cargo section split completed (April 17, 2026)
+- Completed TASK044 to separate cargo management from Trips into a dedicated TM dashboard section and sidebar entry.
+- Frontend updates complete:
+	- Added new `cargo-management` section + sidebar item and mounted `<tm-cargo-management>` in TM dashboard layout.
+	- Added `pages/dashboard/transportation-manager/components/cargo-management/script.js` and `style.css` to own cargo analytics and cargo catalog behavior.
+	- Refactored `tm-trips` to trips-only ownership (trip lifecycle/list actions retained; cargo analytics/catalog removed).
+	- Updated parent TM orchestration refresh to include cargo section on trip modal completion and section navigation.
+- Validation evidence:
+	- Added `testing/ui-validation/transportation-cargo-section-split/validate-transportation-cargo-section-split.spec.js`.
+	- `VAL_STAGE=before`: passed (1/1).
+	- `VAL_STAGE=after`: passed (1/1) with desktop and mobile viewport checks.
+	- Regression guard `VAL_STAGE=after` for `testing/ui-validation/transportation-cargo-lifecycle/validate-transportation-cargo-lifecycle.spec.js`: passed (1/1).
+	- Final rerun from `testing/ui-validation` workspace reconfirmed both after-stage specs passing (1/1 each).
+	- `VAL_STAGE=before` remains baseline-only and is expected to fail if rerun on post-refactor code.
+
+### Transportation cargo lifecycle + dangerous route-breakdown escalation completed (April 17, 2026)
+- Completed TASK043 end-to-end for TM cargo management/analytics, Driver cargo visibility, and Supervisor dangerous-cargo escalation visibility.
+- Backend/domain updates complete:
+	- Added migration `056_add_cargo_lifecycle_and_route_dangerous_snapshot.php` for cargo catalog/trip cargo assignments and route-breakdown dangerous snapshot fields.
+	- Added cargo APIs in Trip domain (`/trips/cargo-items` CRUD + `/trips/cargo-analytics`).
+	- Trip payloads now include structured cargo fields (`cargo_items`, `total_cargo_quantity`, `dangerous_cargo_quantity`, `has_dangerous_cargo`, `cargo_summary`).
+	- Fault-ticket/route-breakdown dangerous context flow now exposes dangerous snapshot metadata for escalation visibility.
+- Frontend updates complete:
+	- TM trip assignment/edit/view modals now support structured cargo rows with quantity/notes and dangerous indicators.
+	- TM trips page now includes cargo catalog management + cargo analytics UI.
+	- Driver trip log + trip/ticket modals now show structured cargo summaries/details and dangerous markers.
+	- Supervisor ticket lists now show dangerous-cargo chip/summary/trip context for route-breakdown tickets.
+	- Shared `pages/view-ticket` now renders dangerous cargo panel + flow narrative context.
+- API contract + validation:
+	- Updated `testing/openapi.yaml` for cargo endpoints/schemas and dangerous snapshot fields.
+	- Executed `VAL_STAGE=after` for `testing/ui-validation/transportation-cargo-lifecycle/validate-transportation-cargo-lifecycle.spec.js` (pass: 1/1).
+	- Editor diagnostics reported no errors for touched files.
 
 <<<<<<< Updated upstream
 ### Route-breakdown driver GPS + map-based garage approval completed (April 17, 2026)

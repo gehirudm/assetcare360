@@ -11,7 +11,6 @@
     <!-- Dashboard shell styles first, then detail overrides -->
     <link rel="stylesheet" href="../dashboard/technical-officer/style.css">
     <link rel="stylesheet" href="../dashboard/technical-officer/view-ticket/style.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <style>
         .assign-tech-list {
             display: flex;
@@ -35,12 +34,6 @@
             border-radius: 8px;
             background: #fff;
             font-size: 0.85rem;
-            cursor: pointer;
-        }
-
-        .assign-tech-item.selected {
-            border-color: var(--royal-blue);
-            background: #eff6ff;
         }
 
         .assign-tech-name {
@@ -68,58 +61,62 @@
             padding: 8px 10px;
         }
 
-        .garage-approval-layout {
-            display: grid;
-            grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
-            gap: 14px;
-            align-items: start;
+        .route-location-panel {
+            background: #ffffff;
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .garage-map-panel {
-            border: 1px solid var(--stone-200);
-            border-radius: var(--radius-sm);
-            background: #fff;
-            padding: 10px;
-        }
-
-        .garage-map-title {
-            font-size: 0.82rem;
-            font-weight: 700;
-            color: var(--text-700);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        .route-location-header {
             display: flex;
             align-items: center;
-            gap: 6px;
-            margin-bottom: 8px;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
-        .garage-approval-map {
+        .route-location-title {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1e3a8a;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .route-location-label {
+            font-size: 0.78rem;
+            color: #334155;
+            background: #eff6ff;
+            border: 1px solid #dbeafe;
+            border-radius: 999px;
+            padding: 3px 10px;
+        }
+
+        .route-location-map {
             width: 100%;
-            height: 260px;
-            border-radius: 8px;
-            border: 1px solid var(--stone-200);
-            background: var(--stone-100);
+            height: 320px;
+            border: 1px solid #dbeafe;
+            border-radius: 10px;
+            background: #f8fafc;
             overflow: hidden;
         }
 
-        .garage-map-hint {
-            margin-top: 8px;
-            font-size: 0.78rem;
-            color: var(--muted);
+        .route-location-hint {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.8rem;
         }
 
-        .garage-map-hint.error {
-            color: var(--danger);
-        }
-
-        @media (max-width: 900px) {
-            .garage-approval-layout {
-                grid-template-columns: 1fr;
-            }
-
-            .garage-approval-map {
-                height: 220px;
+        @media (max-width: 768px) {
+            .route-location-map {
+                height: 260px;
             }
         }
     </style>
@@ -217,6 +214,23 @@
                 <div class="overview-label"><i class="fas fa-align-left"></i> Issue Description</div>
                 <p id="ovDescription">-</p>
             </div>
+            <div class="overview-dangerous" id="ovDangerousCargoPanel" style="display:none;">
+                <div class="overview-label"><i class="fas fa-radiation"></i> Dangerous Cargo Context</div>
+                <div class="overview-dangerous-badges" id="ovDangerousCargoBadges"></div>
+                <p id="ovDangerousCargoSummary">-</p>
+            </div>
+        </section>
+
+        <section class="route-location-panel" id="routeLocationPanel" style="display:none;">
+            <div class="route-location-header">
+                <h3 class="route-location-title">
+                    <i class="fas fa-map-marked-alt"></i>
+                    Breakdown Location Map
+                </h3>
+                <span class="route-location-label" id="routeLocationLabel" style="display:none;"></span>
+            </div>
+            <div id="routeLocationMap" class="route-location-map"></div>
+            <p id="routeLocationHint" class="route-location-hint">Loading reported location map...</p>
         </section>
 
         <!-- Step-by-Step Flow -->
@@ -699,19 +713,11 @@
                         <input type="text" class="form-input" id="garageApprovalRouteCode" readonly>
                     </div>
 
-                    <div class="garage-approval-layout">
-                        <div class="form-group">
-                            <label class="form-label">Select Nearby Garage <span class="required">*</span></label>
-                            <div id="garageApprovalList" class="assign-tech-list"></div>
-                            <div id="garageApprovalSelectionWarning" class="assign-warning" style="display:none;">
-                                Please select one nearby garage to approve.
-                            </div>
-                        </div>
-
-                        <div class="garage-map-panel">
-                            <div class="garage-map-title"><i class="fas fa-map-marked-alt"></i> Garage Locations</div>
-                            <div id="garageApprovalMap" class="garage-approval-map"></div>
-                            <p id="garageApprovalMapHint" class="garage-map-hint">Loading garage coordinates...</p>
+                    <div class="form-group">
+                        <label class="form-label">Select Nearby Garage <span class="required">*</span></label>
+                        <div id="garageApprovalList" class="assign-tech-list"></div>
+                        <div id="garageApprovalSelectionWarning" class="assign-warning" style="display:none;">
+                            Please select one nearby garage to approve.
                         </div>
                     </div>
 
@@ -759,7 +765,6 @@
     <script src="../components/shared/confirm-dialog.js"></script>
     <script src="../js/dashboard-init.js"></script>
     <script src="../js/fault-ticket-detail-template.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="./script.js"></script>
 </body>
 </html>
