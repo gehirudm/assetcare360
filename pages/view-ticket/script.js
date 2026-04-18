@@ -12,6 +12,9 @@ let routeLocationMap = null;
 let routeGarageMap = null;
 let routeGarageMapGarageMarkers = [];
 let routeGarageMapLeafletPromise = null;
+let cachedSparePartOptionsHtml = '';
+
+const STATUS_INSURANCE_CLAIMED = 'insurance claimed';
 
 const STATUS_ORDER = [
     'open',
@@ -65,7 +68,12 @@ function normaliseStatus(status) {
 }
 
 function statusIndex(status) {
-    const idx = STATUS_ORDER.indexOf(normaliseStatus(status));
+    const normalizedStatus = normaliseStatus(status);
+    if (normalizedStatus === STATUS_INSURANCE_CLAIMED) {
+        return STATUS_ORDER.indexOf('assigned');
+    }
+
+    const idx = STATUS_ORDER.indexOf(normalizedStatus);
     return idx === -1 ? 0 : idx;
 }
 
@@ -102,6 +110,26 @@ function getRouteGarageWorkflowStatus() {
 function hasRouteGarageAssignment() {
     const status = getRouteGarageWorkflowStatus();
     return ['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(status);
+}
+
+function isInsuranceClaimed(status = ticketData?.status) {
+    return normaliseStatus(status) === STATUS_INSURANCE_CLAIMED;
+}
+
+function getInsuranceClaimContext() {
+    const context = ticketData?.insurance_claim;
+    if (!context || typeof context !== 'object') {
+        return null;
+    }
+
+    return {
+        assetLabel: String(context.asset_label || '').trim(),
+        insuranceProvider: String(context.insurance_provider || '').trim(),
+        insuranceType: String(context.insurance_type || '').trim(),
+        nextRenewalDate: String(context.next_insurance_renew_date || '').trim(),
+        eligibilityReason: String(context.eligibility_reason || '').trim(),
+        eligible: context.eligible === true || String(context.eligible || '').toLowerCase() === 'true' || Number(context.eligible || 0) === 1,
+    };
 }
 
 function getDangerousCargoContext() {
@@ -430,6 +458,7 @@ function renderOverview(ticketIdFormatted) {
     const status = normaliseStatus(ticketData.status);
     const priority = String(ticketData.priority || 'Medium').toLowerCase();
     const dangerousContext = getDangerousCargoContext();
+    const insuranceContext = getInsuranceClaimContext();
 
     document.getElementById('ovTicketId').textContent = ticketIdFormatted;
     document.getElementById('ovLocation').textContent = ticketData.location || 'N/A';
@@ -473,6 +502,47 @@ function renderOverview(ticketIdFormatted) {
             dangerousPanel.style.display = 'none';
             dangerousBadges.innerHTML = '';
             dangerousSummary.textContent = '';
+        }
+    }
+
+    const insurancePanel = document.getElementById('ovInsurancePanel');
+    const insuranceAssetEl = document.getElementById('ovInsuranceAsset');
+    const insuranceProviderEl = document.getElementById('ovInsuranceProvider');
+    const insuranceTypeEl = document.getElementById('ovInsuranceType');
+    const insuranceRenewalDateEl = document.getElementById('ovInsuranceRenewalDate');
+    const insuranceEligibilityEl = document.getElementById('ovInsuranceEligibility');
+    const insuranceReasonEl = document.getElementById('ovInsuranceReason');
+
+    if (
+        insurancePanel
+        && insuranceAssetEl
+        && insuranceProviderEl
+        && insuranceTypeEl
+        && insuranceRenewalDateEl
+        && insuranceEligibilityEl
+        && insuranceReasonEl
+    ) {
+        if (isSupervisorLike() && insuranceContext) {
+            const renewalDateText = insuranceContext.nextRenewalDate
+                ? fmtDateShort(insuranceContext.nextRenewalDate)
+                : 'N/A';
+
+            insuranceAssetEl.textContent = insuranceContext.assetLabel || 'N/A';
+            insuranceProviderEl.textContent = insuranceContext.insuranceProvider || 'N/A';
+            insuranceTypeEl.textContent = insuranceContext.insuranceType || 'N/A';
+            insuranceRenewalDateEl.textContent = renewalDateText;
+
+            insuranceEligibilityEl.textContent = insuranceContext.eligible
+                ? 'Eligible for Insurance Claim'
+                : 'Not Eligible for Insurance Claim';
+            insuranceEligibilityEl.classList.toggle('eligible', insuranceContext.eligible);
+            insuranceEligibilityEl.classList.toggle('not-eligible', !insuranceContext.eligible);
+
+            insuranceReasonEl.textContent = insuranceContext.eligibilityReason || 'Eligibility details are unavailable.';
+            insurancePanel.style.display = 'flex';
+        } else {
+            insurancePanel.style.display = 'none';
+            insuranceEligibilityEl.classList.remove('eligible', 'not-eligible');
         }
     }
 }
@@ -627,18 +697,42 @@ function renderFlow() {
     const assignment = ticketData.assignments && ticketData.assignments.length > 0 ? ticketData.assignments[0] : null;
     const hasGarageAssignment = hasRouteGarageAssignment();
     const approvedGarageName = getApprovedRouteGarageName();
+    const insuranceContext = getInsuranceClaimContext();
     const assignmentTitle = document.getElementById('step2-title');
     const assigneeRole = document.getElementById('step2-assignee-role');
 
     if (assignmentTitle) {
-        assignmentTitle.textContent = hasGarageAssignment ? 'Assigned to Nearby Garage' : 'Assigned to Technician';
+        if (isInsuranceClaimed(status)) {
+            assignmentTitle.textContent = 'Insurance Claim Submitted';
+        } else {
+            assignmentTitle.textContent = hasGarageAssignment ? 'Assigned to Nearby Garage' : 'Assigned to Technician';
+        }
     }
 
     if (assigneeRole) {
-        assigneeRole.textContent = hasGarageAssignment ? 'Nearby Garage' : 'Technical Officer';
+        if (isInsuranceClaimed(status)) {
+            assigneeRole.textContent = 'Insurance Provider';
+        } else {
+            assigneeRole.textContent = hasGarageAssignment ? 'Nearby Garage' : 'Technical Officer';
+        }
     }
 
-    if (hasGarageAssignment) {
+    if (isInsuranceClaimed(status)) {
+        markStep('step-assigned', 'completed');
+        document.getElementById('step2-assignedBy').textContent = 'Supervisor';
+        document.getElementById('step2-technician').textContent = insuranceContext?.insuranceProvider || 'Insurance Provider';
+        document.getElementById('step2-desc').textContent = `Insurance claim submitted on ${fmtDateShort(ticketData.updated_at)}.`;
+
+        const notesEl = document.getElementById('step2-notes');
+        const eligibilityNote = String(insuranceContext?.eligibilityReason || '').trim();
+        if (eligibilityNote) {
+            notesEl.textContent = eligibilityNote;
+            notesEl.style.display = 'block';
+        } else {
+            notesEl.style.display = 'none';
+            notesEl.textContent = '';
+        }
+    } else if (hasGarageAssignment) {
         markStep('step-assigned', 'completed');
         document.getElementById('step2-assignedBy').textContent = routeBreakdownContext?.approved_by_name || 'Supervisor';
         document.getElementById('step2-technician').textContent = approvedGarageName || 'Approved Garage';
@@ -688,14 +782,32 @@ function renderAssignmentAction(status, assignment) {
     const actionEl = document.getElementById('step2-action');
     const assignButton = document.getElementById('assignTicketBtn');
     const approveGarageButton = document.getElementById('approveGarageBtn');
+    const claimInsuranceButton = document.getElementById('claimInsuranceBtn');
     const garageHint = document.getElementById('step2-garage-hint');
-    if (!actionEl || !assignButton || !approveGarageButton || !garageHint) return;
+    if (!actionEl || !assignButton || !approveGarageButton || !claimInsuranceButton || !garageHint) return;
 
     const routeTicket = isRouteBreakdownTicket();
     const hasGarageAssignment = hasRouteGarageAssignment();
+    const insuranceContext = getInsuranceClaimContext();
+    const insuranceClaimed = isInsuranceClaimed(status);
+    const canClaimInsurance = isSupervisorLike()
+        && !insuranceClaimed
+        && !hasGarageAssignment
+        && insuranceContext?.eligible === true;
 
     if (!isSupervisorLike() || statusAtOrPast(status, 'resolved')) {
         actionEl.style.display = 'none';
+        return;
+    }
+
+    if (insuranceClaimed) {
+        assignButton.style.display = 'none';
+        approveGarageButton.style.display = 'none';
+        claimInsuranceButton.style.display = 'none';
+
+        garageHint.textContent = 'This ticket is now in the insurance-claim workflow. Technical assignment is not required.';
+        garageHint.style.display = 'flex';
+        actionEl.style.display = 'block';
         return;
     }
 
@@ -703,6 +815,20 @@ function renderAssignmentAction(status, assignment) {
         ? '<i class="fas fa-user-cog"></i> Edit Assignment'
         : '<i class="fas fa-user-plus"></i> Assign Technician';
 
+    if (canClaimInsurance) {
+        assignButton.style.display = 'none';
+        approveGarageButton.style.display = 'none';
+        claimInsuranceButton.style.display = 'inline-flex';
+
+        const providerName = insuranceContext?.insuranceProvider ? ` (${insuranceContext.insuranceProvider})` : '';
+        garageHint.textContent = `Eligible for insurance claim${providerName}. Technical assignment will be skipped after claim submission.`;
+        garageHint.style.display = 'flex';
+
+        actionEl.style.display = 'block';
+        return;
+    }
+
+    claimInsuranceButton.style.display = 'none';
     assignButton.style.display = hasGarageAssignment ? 'none' : 'inline-flex';
     approveGarageButton.style.display = (routeTicket && !hasGarageAssignment) ? 'inline-flex' : 'none';
 
@@ -711,6 +837,9 @@ function renderAssignmentAction(status, assignment) {
         garageHint.textContent = approvedGarageName
             ? `Nearby garage approved (${approvedGarageName}). Technician assignment is optional.`
             : 'Nearby garage is already approved. Technician assignment is optional.';
+        garageHint.style.display = 'flex';
+    } else if (insuranceContext && insuranceContext.eligible === false) {
+        garageHint.textContent = insuranceContext.eligibilityReason || 'This ticket is not eligible for insurance claim processing.';
         garageHint.style.display = 'flex';
     } else {
         garageHint.style.display = 'none';
@@ -1106,66 +1235,233 @@ function openPartsModal() {
         return;
     }
 
-    const ticketIdFormatted = ticketData.breakdown_report_id || ticketData.ticket_id || `#${ticketData.id}`;
-    document.getElementById('partsTicketDisplay').value = ticketIdFormatted;
-    document.getElementById('partsEquipment').value = ticketData.machine_model_number || ticketData.machine_name || '';
-    document.getElementById('partsLocation').value = ticketData.location || '';
-    document.getElementById('partsPriority').value = ticketData.priority || 'Medium';
-    document.getElementById('partsNotes').value = '';
+    const ticketIdFormatted = window.FaultTicketDetailTemplate?.formatTicketDisplayId
+        ? window.FaultTicketDetailTemplate.formatTicketDisplayId(ticketData)
+        : (ticketData.breakdown_report_id || ticketData.ticket_id || `#${ticketData.id}`);
 
-    const listEl = document.getElementById('partsItemsList');
-    listEl.innerHTML = '';
-    addHeaderRow();
-    addPartRow();
+    const requestingTicketIdField = document.getElementById('requestingTicketId');
+    const relatedTicketIdField = document.getElementById('relatedTicketId');
+    const equipmentInput = document.getElementById('equipmentInput');
+    const locationInput = document.getElementById('locationInput');
+    const reportedByInput = document.getElementById('reportedByInput');
+    const reportedDateInput = document.getElementById('reportedDateInput');
+    const originalIssueTextarea = document.getElementById('originalIssueTextarea');
+    const prioritySelect = document.getElementById('prioritySelect');
+    const additionalNotesTextarea = document.getElementById('additionalNotesTextarea');
+    const sparePartsContainer = document.getElementById('sparePartsContainer');
 
-    document.getElementById('partsModal').classList.add('active');
+    if (requestingTicketIdField) requestingTicketIdField.value = String(ticketData.id);
+    if (relatedTicketIdField) relatedTicketIdField.value = ticketIdFormatted;
+
+    const assetName = ticketData.machine_model_number || ticketData.machine_name || (ticketData.machine_id ? `Machine #${ticketData.machine_id}` : 'N/A');
+    if (equipmentInput) {
+        equipmentInput.value = assetName;
+        equipmentInput.readOnly = true;
+        equipmentInput.style.backgroundColor = '#f0f0f0';
+    }
+
+    if (locationInput) locationInput.value = ticketData.location || '';
+    if (reportedByInput) reportedByInput.value = ticketData.reported_by_name || ticketData.reporter_full_name || 'Unknown';
+    if (reportedDateInput) {
+        reportedDateInput.value = ticketData.created_at
+            ? new Date(ticketData.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+            : '';
+    }
+    if (originalIssueTextarea) originalIssueTextarea.value = ticketData.description || '';
+    if (additionalNotesTextarea) additionalNotesTextarea.value = '';
+
+    if (prioritySelect) {
+        const priorityValue = String(ticketData.priority || 'medium').toLowerCase();
+        prioritySelect.value = ['low', 'medium', 'high', 'critical'].includes(priorityValue) ? priorityValue : 'medium';
+    }
+
+    const noPartsCheckbox = document.getElementById('noSparePartsNeeded');
+    if (noPartsCheckbox) {
+        noPartsCheckbox.checked = false;
+        toggleSparePartsSection(false);
+    }
+
+    (async () => {
+        if (!sparePartsContainer) {
+            return;
+        }
+
+        try {
+            const productsRes = await API.get('/products');
+            const products = (productsRes?.status === 'success' && Array.isArray(productsRes?.data?.products))
+                ? productsRes.data.products
+                : (Array.isArray(productsRes?.data) ? productsRes.data : []);
+
+            cachedSparePartOptionsHtml = products.length > 0
+                ? products.map((product) => `<option value="${product.sparepart_id}">${product.name} — ${product.sparepart_id}</option>`).join('')
+                : '';
+        } catch (error) {
+            console.error('Could not load spare parts list from API:', error);
+            cachedSparePartOptionsHtml = '';
+        }
+
+        sparePartsContainer.innerHTML = buildSparePartRow(false);
+        attachAvailabilityListeners(sparePartsContainer);
+    })();
+
+    document.getElementById('partsModal')?.classList.add('active');
 }
 
 function closePartsModal() {
-    document.getElementById('partsModal').classList.remove('active');
+    document.getElementById('partsModal')?.classList.remove('active');
 }
 
-function addHeaderRow() {
-    const listEl = document.getElementById('partsItemsList');
-    if (!listEl || listEl.querySelector('.part-row-header')) return;
+async function checkSparePartAvailability(partCode, quantity) {
+    try {
+        const response = await API.post('/spare-part-requests/check-availability', {
+            items: [{ part_code: partCode, quantity }]
+        });
 
-    const header = document.createElement('div');
-    header.className = 'part-row-header';
-    header.innerHTML = '<span>Part Name</span><span>Qty</span><span class="part-unit">Unit</span><span></span>';
-    listEl.insertBefore(header, listEl.firstChild);
+        if (response?.status === 'success' && response.data?.items?.length > 0) {
+            return response.data.items[0];
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Availability check failed:', error);
+        return null;
+    }
 }
 
-function addPartRow() {
-    const listEl = document.getElementById('partsItemsList');
-    if (!listEl) return;
-
-    addHeaderRow();
-
-    const row = document.createElement('div');
-    row.className = 'part-row';
-    row.innerHTML = `
-        <input type="text" placeholder="e.g. Hydraulic Seal" class="part-name" required>
-        <input type="number" placeholder="1" class="part-qty" min="1" value="1">
-        <input type="text" placeholder="pcs" class="part-unit">
-        <button type="button" class="btn-remove-part" onclick="removePartRow(this)" title="Remove">
-            <i class="fas fa-times"></i>
-        </button>
-    `;
-
-    listEl.appendChild(row);
-}
-
-function removePartRow(button) {
-    const listEl = document.getElementById('partsItemsList');
-    if (!listEl) return;
-
-    const rows = listEl.querySelectorAll('.part-row');
-    if (rows.length <= 1) {
-        showToast('At least one spare part item is required.', 'warning');
+function updateAvailabilityBadge(row, result) {
+    const badge = row.querySelector('.availability-badge');
+    if (!badge) {
         return;
     }
 
-    button.closest('.part-row')?.remove();
+    if (!result) {
+        badge.innerHTML = '';
+        badge.className = 'availability-badge';
+        return;
+    }
+
+    let badgeClass = '';
+    let badgeText = '';
+    let icon = '';
+
+    switch (result.status) {
+        case 'available':
+            badgeClass = 'badge-success';
+            icon = '✓';
+            badgeText = `In Stock (${result.available_qty} available)`;
+            break;
+        case 'insufficient':
+            badgeClass = 'badge-warning';
+            icon = '⚠';
+            badgeText = `Low Stock (${result.available_qty} available, ${result.requested_qty} requested)`;
+            break;
+        case 'out_of_stock':
+            badgeClass = 'badge-danger';
+            icon = '✗';
+            badgeText = 'Out of Stock';
+            break;
+        case 'not_found':
+            badgeClass = 'badge-danger';
+            icon = '✗';
+            badgeText = 'Not in Catalog';
+            break;
+        default:
+            badge.innerHTML = '';
+            badge.className = 'availability-badge';
+            return;
+    }
+
+    badge.className = `availability-badge ${badgeClass}`;
+    badge.innerHTML = `<span class="badge-icon">${icon}</span> ${badgeText}`;
+}
+
+function attachAvailabilityListeners(container) {
+    const rows = container.querySelectorAll('.spare-part-item');
+    rows.forEach((row) => {
+        const select = row.querySelector('.form-select');
+        const quantityInput = row.querySelector('input[type="number"]');
+
+        if (select && !select.dataset.availabilityBound) {
+            select.dataset.availabilityBound = 'true';
+            select.addEventListener('change', async () => {
+                const partCode = select.value;
+                const quantity = quantityInput ? Number.parseInt(quantityInput.value, 10) || 1 : 1;
+                if (partCode) {
+                    const result = await checkSparePartAvailability(partCode, quantity);
+                    updateAvailabilityBadge(row, result);
+                } else {
+                    updateAvailabilityBadge(row, null);
+                }
+            });
+        }
+
+        if (quantityInput && !quantityInput.dataset.availabilityBound) {
+            quantityInput.dataset.availabilityBound = 'true';
+            let debounceTimer = null;
+            quantityInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(async () => {
+                    const partCode = select ? select.value : '';
+                    const quantity = Number.parseInt(quantityInput.value, 10) || 1;
+                    if (partCode) {
+                        const result = await checkSparePartAvailability(partCode, quantity);
+                        updateAvailabilityBadge(row, result);
+                    }
+                }, 300);
+            });
+        }
+    });
+}
+
+function buildSparePartRow(removable = false, required = true) {
+    const removeBtn = removable
+        ? '<button type="button" onclick="this.parentElement.remove()" style="position:absolute;top:10px;right:10px;background:var(--danger);color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;font-size:14px;">×</button>'
+        : '';
+    const requiredAttr = required ? ' required' : '';
+
+    return `
+        <div class="spare-part-item" style="background:#f8f9fa;border-radius:8px;padding:15px;margin-bottom:10px;position:relative;">
+            ${removeBtn}
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Part Name</label>
+                    <select class="form-select"${requiredAttr}>
+                        <option value="">Select Part</option>
+                        ${cachedSparePartOptionsHtml}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Quantity</label>
+                    <input type="number" class="form-input" min="1" placeholder="Qty" value="1"${requiredAttr}>
+                </div>
+            </div>
+            <div class="availability-badge" style="margin-top:8px;font-size:0.85rem;"></div>
+        </div>
+    `;
+}
+
+function addPartField() {
+    const container = document.getElementById('sparePartsContainer');
+    if (!container) {
+        return;
+    }
+
+    const noPartsChecked = document.getElementById('noSparePartsNeeded')?.checked || false;
+    const rowHtml = buildSparePartRow(true, !noPartsChecked);
+    container.insertAdjacentHTML('beforeend', rowHtml);
+    attachAvailabilityListeners(container);
+}
+
+function toggleSparePartsSection(isChecked) {
+    const section = document.getElementById('sparePartsSection');
+    if (!section) {
+        return;
+    }
+
+    section.style.display = isChecked ? 'none' : 'block';
+    section.querySelectorAll('select, input').forEach((element) => {
+        element.required = !isChecked;
+    });
 }
 
 async function submitPartsRequest(event) {
@@ -1177,26 +1473,30 @@ async function submitPartsRequest(event) {
     }
 
     const submitButton = document.getElementById('partsSubmitBtn');
-    const listEl = document.getElementById('partsItemsList');
-    const rows = listEl ? listEl.querySelectorAll('.part-row') : [];
-    const items = [];
-    let hasError = false;
+    const form = document.getElementById('requestPartsForm');
+    const ticketId = document.getElementById('requestingTicketId')?.value;
+    const noSparePartsNeeded = document.getElementById('noSparePartsNeeded')?.checked || false;
+    const sparePartItems = [];
 
-    rows.forEach((row) => {
-        const name = row.querySelector('.part-name')?.value.trim();
-        const quantity = Number.parseInt(row.querySelector('.part-qty')?.value || '1', 10) || 1;
-        const unit = row.querySelector('.part-unit')?.value.trim() || 'pcs';
+    if (!noSparePartsNeeded) {
+        const partRows = document.querySelectorAll('#sparePartsContainer .spare-part-item');
+        partRows.forEach((row) => {
+            const select = row.querySelector('.form-select');
+            const qtyInput = row.querySelector('input[type="number"]');
 
-        if (!name) {
-            hasError = true;
-            return;
-        }
+            if (select && select.value) {
+                const selectedOption = select.options[select.selectedIndex];
+                sparePartItems.push({
+                    part_code: select.value,
+                    part_name: selectedOption.text || select.value,
+                    quantity: qtyInput ? Number.parseInt(qtyInput.value, 10) || 1 : 1,
+                });
+            }
+        });
+    }
 
-        items.push({ part_name: name, quantity, unit });
-    });
-
-    if (hasError || items.length === 0) {
-        showToast('Please provide a valid part name for each row.', 'error');
+    if (!ticketId) {
+        showToast('Unable to resolve ticket for this spare parts request.', 'error');
         return;
     }
 
@@ -1204,29 +1504,115 @@ async function submitPartsRequest(event) {
     submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
 
     try {
-        const response = await API.post('/spare-part-requests', {
-            fault_ticket_id: ticketData.id,
-            ticket_id_formatted: ticketData.breakdown_report_id || ticketData.ticket_id || null,
-            equipment_name: document.getElementById('partsEquipment').value.trim() || null,
-            location: document.getElementById('partsLocation').value.trim() || null,
-            priority: document.getElementById('partsPriority').value,
-            additional_notes: document.getElementById('partsNotes').value.trim() || null,
-            items
-        });
+        if (!noSparePartsNeeded) {
+            if (sparePartItems.length === 0) {
+                showToast('Please select at least one spare part, or check "No Spare Parts Needed".', 'error');
+                return;
+            }
 
-        if (response.status === 'success') {
-            showToast('Spare parts request submitted successfully.', 'success');
-            closePartsModal();
-            await loadAll();
+            try {
+                const availabilityResponse = await API.post('/spare-part-requests/check-availability', {
+                    items: sparePartItems.map((item) => ({ part_code: item.part_code, quantity: item.quantity }))
+                });
+
+                if (availabilityResponse?.status === 'success' && availabilityResponse.data?.items) {
+                    const unavailableItems = availabilityResponse.data.items.filter((item) => item.status === 'not_found');
+                    const lowStockItems = availabilityResponse.data.items.filter((item) => item.status === 'insufficient' || item.status === 'out_of_stock');
+
+                    if (unavailableItems.length > 0) {
+                        const partNames = unavailableItems.map((item) => item.part_code).join(', ');
+                        showToast(`Cannot submit: Parts not found in catalog: ${partNames}`, 'error');
+                        return;
+                    }
+
+                    if (lowStockItems.length > 0) {
+                        const warnings = lowStockItems.map((item) => `${item.part_code}: ${item.message}`).join('; ');
+                        console.warn('Low stock warning:', warnings);
+                    }
+                }
+            } catch (availabilityError) {
+                console.warn('Availability check failed, proceeding with request:', availabilityError);
+            }
+
+            const ticketIdFormatted = window.FaultTicketDetailTemplate?.formatTicketDisplayId
+                ? window.FaultTicketDetailTemplate.formatTicketDisplayId(ticketData)
+                : (ticketData.breakdown_report_id || ticketData.ticket_id || null);
+
+            const equipmentName = document.getElementById('equipmentInput')?.value || '';
+            const locationVal = document.getElementById('locationInput')?.value || '';
+            const priorityVal = document.getElementById('prioritySelect')?.value || 'Medium';
+            const additionalNotes = document.getElementById('additionalNotesTextarea')?.value || '';
+
+            const requestPayload = {
+                fault_ticket_id: Number.parseInt(ticketId, 10),
+                ticket_id_formatted: ticketIdFormatted,
+                equipment_name: equipmentName,
+                location: locationVal,
+                priority: priorityVal,
+                additional_notes: additionalNotes,
+                items: sparePartItems,
+            };
+
+            const spareResponse = await API.post('/spare-part-requests', requestPayload);
+            if (spareResponse?.status !== 'success') {
+                showToast(spareResponse?.message || 'Failed to submit spare parts request.', 'error');
+                return;
+            }
+
+            showToast('Spare parts request submitted to Inventory Manager. Waiting for approval.', 'success');
         } else {
-            showToast(response.message || 'Failed to submit spare parts request.', 'error');
+            const response = await API.put(`/fault-tickets/${ticketId}`, {
+                status: 'In Progress'
+            });
+
+            if (response?.status !== 'success') {
+                showToast(response?.message || 'Status update failed. Please try again.', 'error');
+                return;
+            }
+
+            showToast('No spare parts needed. Work started! Status changed to In Progress.', 'success');
         }
+
+        closePartsModal();
+
+        if (form) {
+            form.reset();
+        }
+
+        const noPartsCheckbox = document.getElementById('noSparePartsNeeded');
+        if (noPartsCheckbox) {
+            noPartsCheckbox.checked = false;
+            toggleSparePartsSection(false);
+        }
+
+        const equipmentInput = document.getElementById('equipmentInput');
+        if (equipmentInput) {
+            equipmentInput.readOnly = false;
+            equipmentInput.style.backgroundColor = '';
+        }
+
+        const locationInput = document.getElementById('locationInput');
+        if (locationInput) locationInput.value = '';
+        const reportedByInput = document.getElementById('reportedByInput');
+        if (reportedByInput) reportedByInput.value = '';
+        const reportedDateInput = document.getElementById('reportedDateInput');
+        if (reportedDateInput) reportedDateInput.value = '';
+        const originalIssueTextarea = document.getElementById('originalIssueTextarea');
+        if (originalIssueTextarea) originalIssueTextarea.value = '';
+        const additionalNotesTextarea = document.getElementById('additionalNotesTextarea');
+        if (additionalNotesTextarea) additionalNotesTextarea.value = '';
+        const requestingTicketIdField = document.getElementById('requestingTicketId');
+        if (requestingTicketIdField) requestingTicketIdField.value = '';
+        const sparePartsContainer = document.getElementById('sparePartsContainer');
+        if (sparePartsContainer) sparePartsContainer.innerHTML = '';
+
+        await loadAll();
     } catch (error) {
         console.error('submitPartsRequest error:', error);
-        showToast('An error occurred while submitting the spare parts request.', 'error');
+        showToast(error.message || 'Failed to submit request. Please try again.', 'error');
     } finally {
         submitButton.disabled = false;
-        submitButton.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Request';
+        submitButton.innerHTML = '<i class="fas fa-paper-plane"></i> Submit & Start Work';
     }
 }
 
@@ -1236,8 +1622,53 @@ function openCompleteModal() {
         return;
     }
 
-    document.getElementById('completeSummary').value = '';
-    document.getElementById('completeModal').classList.add('active');
+    if (!ticketData?.id) {
+        showToast('Ticket data is not ready yet.', 'warning');
+        return;
+    }
+
+    const ticketIdFormatted = window.FaultTicketDetailTemplate?.formatTicketDisplayId
+        ? window.FaultTicketDetailTemplate.formatTicketDisplayId(ticketData)
+        : (ticketData.breakdown_report_id || ticketData.ticket_id || `#${ticketData.id}`);
+
+    const updateTicketIdField = document.getElementById('updateTicketId');
+    if (updateTicketIdField) updateTicketIdField.value = ticketIdFormatted;
+
+    const timeSpentField = document.getElementById('completeTimeSpent');
+    if (timeSpentField) timeSpentField.value = '';
+    const machineDescriptionField = document.getElementById('completeMachineDescription');
+    if (machineDescriptionField) machineDescriptionField.value = '';
+
+    const container = document.getElementById('updatePartsUsedContainer');
+    if (container) {
+        const requestedParts = [];
+
+        if (Array.isArray(sparePartRequests)) {
+            sparePartRequests.forEach((request) => {
+                if (Array.isArray(request?.items)) {
+                    request.items.forEach((item) => {
+                        const partLabel = String(item?.part_name || item?.part_code || '').trim();
+                        if (partLabel) requestedParts.push(partLabel);
+                    });
+                }
+            });
+        }
+
+        const uniqueParts = [...new Set(requestedParts)];
+
+        if (uniqueParts.length > 0) {
+            container.innerHTML = uniqueParts.map((partName) => `
+                <label style="display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 0.95rem;">
+                    <input type="checkbox" name="partsUsed" value="${escapeHtml(partName)}" style="width: 18px; height: 18px; accent-color: var(--tang-blue);">
+                    <span>${escapeHtml(partName)}</span>
+                </label>
+            `).join('');
+        } else {
+            container.innerHTML = '<p style="color: #999; font-size: 0.9rem; margin: 0;">No spare parts were requested for this ticket.</p>';
+        }
+    }
+
+    document.getElementById('completeModal')?.classList.add('active');
 }
 
 function closeCompleteModal() {
@@ -1252,34 +1683,68 @@ async function submitComplete(event) {
         return;
     }
 
-    const summary = document.getElementById('completeSummary').value.trim();
-    if (!summary) {
-        showToast('Please enter work summary / resolution notes.', 'error');
+    if (!ticketData?.id) {
+        showToast('Ticket data is not ready yet.', 'warning');
         return;
     }
+
+    const machineDescription = document.getElementById('completeMachineDescription')?.value.trim() || '';
+    const timeSpent = Number.parseFloat(document.getElementById('completeTimeSpent')?.value || '0');
+
+    if (!machineDescription) {
+        showToast('Please provide machine description.', 'error');
+        return;
+    }
+
+    if (!timeSpent || timeSpent <= 0) {
+        showToast('Please provide valid time spent.', 'error');
+        return;
+    }
+
+    const checkedParts = Array.from(document.querySelectorAll('#updatePartsUsedContainer input[name="partsUsed"]:checked'))
+        .map((checkbox) => String(checkbox.value || '').trim())
+        .filter(Boolean);
 
     const submitButton = document.getElementById('completeSubmitBtn');
     submitButton.disabled = true;
     submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
 
     try {
-        const response = await API.post(`/fault-tickets/${ticketData.id}/complete`, {
-            work_summary: summary
+        const workUpdateResponse = await API.post('/ticket-work-updates', {
+            ticket_id: ticketData.id,
+            parts_used: checkedParts.join(', '),
+            time_spent: timeSpent,
+            machine_description: machineDescription,
+            work_status: 'Completed'
+        });
+
+        if (workUpdateResponse?.status !== 'success') {
+            showToast(workUpdateResponse?.message || 'Failed to save work update.', 'error');
+            return;
+        }
+
+        const response = await API.put(`/fault-tickets/${ticketData.id}`, {
+            status: 'Resolved',
+            resolution_notes: machineDescription
         });
 
         if (response.status === 'success') {
-            showToast('Ticket marked as resolved.', 'success');
+            showToast('Work completed and ticket marked as resolved.', 'success');
             closeCompleteModal();
+
+            const completeForm = document.getElementById('completeForm');
+            if (completeForm) completeForm.reset();
+
             await loadAll();
         } else {
-            showToast(response.message || 'Failed to mark ticket as resolved.', 'error');
+            showToast(response.message || 'Work update saved but failed to mark ticket as resolved.', 'warning');
         }
     } catch (error) {
         console.error('submitComplete error:', error);
-        showToast('An error occurred while resolving the ticket.', 'error');
+        showToast(error.message || 'Failed to finish work. Please try again.', 'error');
     } finally {
         submitButton.disabled = false;
-        submitButton.innerHTML = '<i class="fas fa-check"></i> Confirm Resolved';
+        submitButton.innerHTML = '<i class="fas fa-check-circle"></i> Finish';
     }
 }
 
@@ -1291,6 +1756,11 @@ async function openAssignModal() {
 
     if (!ticketData?.id) {
         showToast('Ticket data is not ready yet.', 'warning');
+        return;
+    }
+
+    if (isInsuranceClaimed(ticketData.status)) {
+        showToast('This ticket is in insurance-claim workflow and cannot be assigned to technicians.', 'warning');
         return;
     }
 
@@ -1334,6 +1804,11 @@ async function openGarageApprovalModal() {
 
     if (!ticketData?.id || !isRouteBreakdownTicket()) {
         showToast('Nearby garage approval is only available for route breakdown tickets.', 'warning');
+        return;
+    }
+
+    if (isInsuranceClaimed(ticketData.status)) {
+        showToast('This ticket is already in insurance-claim workflow.', 'warning');
         return;
     }
 
@@ -1607,6 +2082,12 @@ async function submitGarageApproval(event) {
         return;
     }
 
+    if (isInsuranceClaimed(ticketData.status)) {
+        showToast('This ticket is already in insurance-claim workflow.', 'warning');
+        closeGarageApprovalModal();
+        return;
+    }
+
     if (hasRouteGarageAssignment()) {
         showToast('A nearby garage is already approved for this route breakdown.', 'warning');
         closeGarageApprovalModal();
@@ -1739,6 +2220,12 @@ async function submitAssignment(event) {
         return;
     }
 
+    if (isInsuranceClaimed(ticketData.status)) {
+        showToast('This ticket is in insurance-claim workflow and cannot be assigned to technicians.', 'warning');
+        closeAssignModal();
+        return;
+    }
+
     if (isRouteBreakdownTicket() && hasRouteGarageAssignment()) {
         showToast('Nearby garage is already approved. Technician assignment is not required.', 'warning');
         closeAssignModal();
@@ -1788,6 +2275,61 @@ async function submitAssignment(event) {
     } finally {
         submitButton.disabled = false;
         submitButton.innerHTML = '<i class="fas fa-user-check"></i> Save Assignment';
+    }
+}
+
+async function submitInsuranceClaim() {
+    if (!isSupervisorLike()) {
+        showToast('Only Supervisors can submit insurance claims from this page.', 'warning');
+        return;
+    }
+
+    if (!ticketData?.id) {
+        showToast('Ticket context is missing for insurance claim submission.', 'error');
+        return;
+    }
+
+    if (isInsuranceClaimed(ticketData.status)) {
+        showToast('This ticket has already been moved to insurance claim workflow.', 'warning');
+        return;
+    }
+
+    const insuranceContext = getInsuranceClaimContext();
+    if (!insuranceContext || insuranceContext.eligible !== true) {
+        showToast(insuranceContext?.eligibilityReason || 'This ticket is not eligible for insurance claim processing.', 'error');
+        return;
+    }
+
+    if (!window.confirm('Submit this ticket to insurance claim workflow? This will bypass technician assignment.')) {
+        return;
+    }
+
+    const claimButton = document.getElementById('claimInsuranceBtn');
+    if (claimButton) {
+        claimButton.disabled = true;
+        claimButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    }
+
+    try {
+        const response = await API.put(`/fault-tickets/${ticketData.id}`, {
+            status: 'Insurance Claimed'
+        });
+
+        if (response?.status === 'success') {
+            showToast('Ticket moved to insurance claim workflow.', 'success');
+            await loadAll();
+            return;
+        }
+
+        showToast(response?.message || 'Failed to submit insurance claim.', 'error');
+    } catch (error) {
+        console.error('submitInsuranceClaim error:', error);
+        showToast('An error occurred while submitting the insurance claim.', 'error');
+    } finally {
+        if (claimButton) {
+            claimButton.disabled = false;
+            claimButton.innerHTML = '<i class="fas fa-file-signature"></i> Claim Insurance';
+        }
     }
 }
 
