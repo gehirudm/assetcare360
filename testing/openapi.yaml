@@ -4712,7 +4712,7 @@ components:
                   type: string
                 status:
                   type: string
-                  enum: [Open, Assigned, Waiting for Budget Approval, Waiting for Spare Parts, Parts Approved, In Progress, Resolved, Closed]
+                  enum: [Open, Assigned, Waiting for Budget Approval, Waiting for Spare Parts, Parts Approved, Insurance Claimed, In Progress, Resolved, Closed]
       responses:
         '200':
           description: Fault ticket updated successfully
@@ -5604,6 +5604,27 @@ components:
           format: date
         warranty_provider:
           type: string
+        insurance_type:
+          type: string
+          enum: [Full, Third-Party]
+        insurance_provider:
+          type: string
+        insurance_provider_details:
+          type: string
+        insurance_renew_interval_days:
+          type: integer
+          nullable: true
+          minimum: 1
+        last_insurance_renew_date:
+          type: string
+          format: date
+          nullable: true
+        last_insurance_renew_details:
+          type: string
+        next_insurance_renew_date:
+          type: string
+          format: date
+          nullable: true
         supplier_name:
           type: string
         supplier_contact:
@@ -5659,6 +5680,12 @@ components:
         - location
         - supplier_name
         - service_interval_days
+        - insurance_type
+        - insurance_provider
+        - insurance_provider_details
+        - insurance_renew_interval_days
+        - last_insurance_renew_date
+        - last_insurance_renew_details
       properties:
         model_number:
           type: string
@@ -5670,6 +5697,22 @@ components:
           type: string
           format: date
         warranty_provider:
+          type: string
+        insurance_type:
+          type: string
+          enum: [Full, Third-Party]
+        insurance_provider:
+          type: string
+        insurance_provider_details:
+          type: string
+        insurance_renew_interval_days:
+          type: integer
+          minimum: 1
+        last_insurance_renew_date:
+          type: string
+          format: date
+          description: Must not be in the future
+        last_insurance_renew_details:
           type: string
         supplier_name:
           type: string
@@ -5736,6 +5779,27 @@ components:
           format: date
         warranty_provider:
           type: string
+        insurance_type:
+          type: string
+          enum: [Full, Third-Party]
+        insurance_provider:
+          type: string
+        insurance_provider_details:
+          type: string
+        insurance_renew_interval_days:
+          type: integer
+          nullable: true
+          minimum: 1
+        last_insurance_renew_date:
+          type: string
+          format: date
+          nullable: true
+        last_insurance_renew_details:
+          type: string
+        next_insurance_renew_date:
+          type: string
+          format: date
+          nullable: true
         supplier_name:
           type: string
         supplier_contact:
@@ -5787,6 +5851,12 @@ components:
         - fuel_type
         - supplier_name
         - service_interval_type
+        - insurance_type
+        - insurance_provider
+        - insurance_provider_details
+        - insurance_renew_interval_days
+        - last_insurance_renew_date
+        - last_insurance_renew_details
       properties:
         vehicle_name:
           type: string
@@ -5813,6 +5883,22 @@ components:
           type: string
           format: date
         warranty_provider:
+          type: string
+        insurance_type:
+          type: string
+          enum: [Full, Third-Party]
+        insurance_provider:
+          type: string
+        insurance_provider_details:
+          type: string
+        insurance_renew_interval_days:
+          type: integer
+          minimum: 1
+        last_insurance_renew_date:
+          type: string
+          format: date
+          description: Must not be in the future
+        last_insurance_renew_details:
           type: string
         supplier_name:
           type: string
@@ -6453,7 +6539,9 @@ components:
           type: string
         status:
           type: string
-          enum: [Open, Assigned, Waiting for Budget Approval, Waiting for Spare Parts, Parts Approved, In Progress, Resolved, Closed]
+          enum: [Open, Assigned, Waiting for Budget Approval, Waiting for Spare Parts, Parts Approved, Insurance Claimed, In Progress, Resolved, Closed]
+        insurance_claim:
+          $ref: '#/components/schemas/FaultTicketInsuranceClaim'
         is_dangerous_cargo:
           type: boolean
           nullable: true
@@ -6472,6 +6560,50 @@ components:
         updated_at:
           type: string
           format: date-time
+
+    FaultTicketInsuranceClaim:
+      type: object
+      properties:
+        asset_type:
+          type: string
+          nullable: true
+          enum: [machine, vehicle]
+        asset_id:
+          type: integer
+          nullable: true
+        asset_label:
+          type: string
+          nullable: true
+        insurance_type:
+          type: string
+          nullable: true
+          enum: [Full, Third-Party]
+        insurance_provider:
+          type: string
+          nullable: true
+        insurance_provider_details:
+          type: string
+          nullable: true
+        insurance_renew_interval_days:
+          type: integer
+          nullable: true
+          minimum: 1
+        last_insurance_renew_date:
+          type: string
+          format: date
+          nullable: true
+        last_insurance_renew_details:
+          type: string
+          nullable: true
+        next_insurance_renew_date:
+          type: string
+          format: date
+          nullable: true
+        eligible:
+          type: boolean
+        eligibility_reason:
+          type: string
+          nullable: true
 
     FaultTicketWorkflow:
       type: object
