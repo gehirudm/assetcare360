@@ -180,9 +180,12 @@ class DriverTransportTicket extends HTMLElement {
 
             this.tickets = [...filteredTrips]
                 .sort((first, second) => {
-                    const firstTime = new Date(first.created_at || 0).getTime();
-                    const secondTime = new Date(second.created_at || 0).getTime();
-                    return secondTime - firstTime;
+                    const timeDiff = this.getTripSortTime(second) - this.getTripSortTime(first);
+                    if (timeDiff !== 0) {
+                        return timeDiff;
+                    }
+
+                    return this.getTripSortRank(second) - this.getTripSortRank(first);
                 })
                 .map((trip) => ({
                     id: `TT-${trip.trip_id || trip.id}`,
@@ -210,6 +213,46 @@ class DriverTransportTicket extends HTMLElement {
             this.renderTickets();
             DriverUtils.showToast('Unable to load transport tickets.', 'warning');
         }
+    }
+
+    getTripSortTime(trip) {
+        const candidates = [
+            trip?.created_at,
+            trip?.updated_at,
+            trip?.date,
+            trip?.departure_datetime,
+        ];
+
+        for (const value of candidates) {
+            if (!value) {
+                continue;
+            }
+
+            const timestamp = new Date(value).getTime();
+            if (Number.isFinite(timestamp) && timestamp > 0) {
+                return timestamp;
+            }
+        }
+
+        return 0;
+    }
+
+    getTripSortRank(trip) {
+        const directId = Number.parseInt(trip?.id, 10);
+        if (Number.isFinite(directId) && directId > 0) {
+            return directId;
+        }
+
+        const tripIdText = String(trip?.trip_id || '');
+        const numberPart = tripIdText.match(/(\d+)(?!.*\d)/);
+        if (numberPart) {
+            const parsed = Number.parseInt(numberPart[1], 10);
+            if (Number.isFinite(parsed) && parsed > 0) {
+                return parsed;
+            }
+        }
+
+        return 0;
     }
 }
 
