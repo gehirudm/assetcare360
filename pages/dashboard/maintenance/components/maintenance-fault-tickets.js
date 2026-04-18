@@ -6,6 +6,7 @@ class MaintenanceFaultTickets extends HTMLElement {
 
         this._mounted = true;
         this.currentFilter = 'all';
+        this.currentSort = 'created';
         this._allBreakdowns = [];
 
         this.render();
@@ -20,12 +21,21 @@ class MaintenanceFaultTickets extends HTMLElement {
                 <p class="page-subtitle">Breakdown reports from Drivers and Machinery Operators</p>
             </div>
 
-            <div class="filter-controls" id="faultTicketsFilterControls">
-                <button class="filter-btn active" type="button" data-action="set-filter" data-filter="all">All Breakdowns</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-filter="open">Pending</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-filter="in-progress">In Progress</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-filter="resolved">Resolved</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-filter="closed">Closed</button>
+            <div class="filter-toolbar">
+                <div class="filter-controls filter-toolbar__filters" id="faultTicketsFilterControls">
+                    <button class="filter-btn active" type="button" data-action="set-filter" data-filter="all">All Breakdowns</button>
+                    <button class="filter-btn" type="button" data-action="set-filter" data-filter="open">Pending</button>
+                    <button class="filter-btn" type="button" data-action="set-filter" data-filter="in-progress">In Progress</button>
+                    <button class="filter-btn" type="button" data-action="set-filter" data-filter="resolved">Resolved</button>
+                    <button class="filter-btn" type="button" data-action="set-filter" data-filter="closed">Closed</button>
+                </div>
+                <div class="filter-toolbar__sort">
+                    <label class="filter-toolbar__label" for="maintenanceFaultSort">Sort by</label>
+                    <select id="maintenanceFaultSort" class="filter-toolbar__select" data-action="set-sort">
+                        <option value="created">Created Date</option>
+                        <option value="priority">Priority</option>
+                    </select>
+                </div>
             </div>
 
             <div class="card">
@@ -60,9 +70,7 @@ class MaintenanceFaultTickets extends HTMLElement {
                 ? routeRes.data.breakdowns.map(r => this._normalizeRoute(r))
                 : [];
 
-            this._allBreakdowns = [...machineBreakdowns, ...routeBreakdowns].sort((a, b) => {
-                return new Date(b.date || 0) - new Date(a.date || 0);
-            });
+            this._allBreakdowns = [...machineBreakdowns, ...routeBreakdowns];
         } catch (err) {
             this._allBreakdowns = [];
             list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);">Error loading breakdown reports.</div>';
@@ -169,12 +177,13 @@ class MaintenanceFaultTickets extends HTMLElement {
             return;
         }
 
-        const filtered = this._allBreakdowns.filter(b => {
+        const sortedEntries = this._getSortedBreakdownEntries();
+        const filtered = sortedEntries.filter(({ breakdown }) => {
             if (this.currentFilter === 'all') {
                 return true;
             }
 
-            return this._normalizeFilter(b.effectiveStatus) === this.currentFilter;
+            return this._normalizeFilter(breakdown.effectiveStatus) === this.currentFilter;
         });
 
         if (!filtered.length) {
@@ -182,10 +191,85 @@ class MaintenanceFaultTickets extends HTMLElement {
             return;
         }
 
-        list.innerHTML = filtered.map(b => this._renderCard(b)).join('');
+        list.innerHTML = filtered.map(({ breakdown, index }) => this._renderCard(breakdown, index)).join('');
     }
 
-    _renderCard(b) {
+    _getSortedBreakdownEntries() {
+        const entries = this._allBreakdowns.map((breakdown, index) => ({ breakdown, index }));
+
+        entries.sort((first, second) => {
+            if (this.currentSort === 'priority') {
+                const severityDiff = this._getSeverityRank(second.breakdown.severity) - this._getSeverityRank(first.breakdown.severity);
+                if (severityDiff !== 0) {
+                    return severityDiff;
+                }
+
+                const timestampDiff = this._getSortTimestamp(second.breakdown) - this._getSortTimestamp(first.breakdown);
+                if (timestampDiff !== 0) {
+                    return timestampDiff;
+                }
+
+                return Number(second.breakdown._id || 0) - Number(first.breakdown._id || 0);
+            }
+
+            const timestampDiff = this._getSortTimestamp(second.breakdown) - this._getSortTimestamp(first.breakdown);
+            if (timestampDiff !== 0) {
+                return timestampDiff;
+            }
+
+            const severityDiff = this._getSeverityRank(second.breakdown.severity) - this._getSeverityRank(first.breakdown.severity);
+            if (severityDiff !== 0) {
+                return severityDiff;
+            }
+
+            return Number(second.breakdown._id || 0) - Number(first.breakdown._id || 0);
+        });
+
+        return entries;
+    }
+
+    _getSortTimestamp(breakdown) {
+        const candidates = [
+            breakdown?.date,
+            breakdown?._raw?.created_at,
+            breakdown?._raw?.breakdown_datetime,
+            breakdown?._raw?.breakdown_date,
+            breakdown?._raw?.updated_at,
+        ];
+
+        for (const value of candidates) {
+            if (!value) {
+                continue;
+            }
+
+            const timestamp = new Date(value).getTime();
+            if (Number.isFinite(timestamp) && timestamp > 0) {
+                return timestamp;
+            }
+        }
+
+        return Number(breakdown?._id || 0);
+    }
+
+    _getSeverityRank(severity) {
+        const normalized = String(severity || 'medium').trim().toLowerCase();
+
+        if (normalized === 'critical') {
+            return 4;
+        }
+
+        if (normalized === 'high') {
+            return 3;
+        }
+
+        if (normalized === 'low') {
+            return 1;
+        }
+
+        return 2;
+    }
+
+    _renderCard(b, index) {
         const statusInfo = this._getStatusInfo(b.effectiveStatus);
         const normalized = this._normalizeFilter(b.effectiveStatus);
         const severityCls = 'status-' + String(b.severity || 'medium').toLowerCase();
@@ -200,7 +284,7 @@ class MaintenanceFaultTickets extends HTMLElement {
         const showUpdate = b.effectiveStatus !== 'Pending' && b.effectiveStatus !== 'Open';
 
         return `
-            <div class="inventory-item" data-status="${normalized}" data-breakdown-idx="${this._allBreakdowns.indexOf(b)}">
+            <div class="inventory-item" data-status="${normalized}" data-breakdown-idx="${index}">
                 <div class="item-details">
                     <strong><i class="fas ${sourceIcon}"></i> ${b.breakdownId || '#' + b._id} <small style="font-weight:400;color:var(--muted);">(${b.reporterType})</small></strong>
                     <div class="item-meta">
@@ -219,7 +303,7 @@ class MaintenanceFaultTickets extends HTMLElement {
                     ${showUpdate ? `<div class="item-meta" style="margin-top:4px;color:#059669;font-weight:500;">${updateText}</div>` : ''}
                 </div>
                 <div class="item-actions">
-                    <button class="btn btn-primary btn-small" type="button" data-action="view-breakdown" data-breakdown-idx="${this._allBreakdowns.indexOf(b)}">
+                    <button class="btn btn-primary btn-small" type="button" data-action="view-breakdown" data-breakdown-idx="${index}">
                         <i class="fas fa-eye"></i> VIEW
                     </button>
                 </div>
@@ -266,9 +350,23 @@ class MaintenanceFaultTickets extends HTMLElement {
                 return;
             }
 
+            if (action === 'set-sort') {
+                return;
+            }
+
             if (action === 'view-breakdown') {
                 this.viewBreakdownDetails(actionNode.dataset.breakdownIdx);
             }
+        });
+
+        this.addEventListener('change', (event) => {
+            const actionNode = event.target.closest('[data-action="set-sort"]');
+            if (!actionNode) {
+                return;
+            }
+
+            this.currentSort = actionNode.value || 'created';
+            this._renderList();
         });
     }
 
