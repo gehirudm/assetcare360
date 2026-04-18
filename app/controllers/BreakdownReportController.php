@@ -196,7 +196,9 @@ class BreakdownReportController {
             }
             
             // Commit transaction
-            $this->conn->commit();
+            if ($this->conn->inTransaction()) {
+                $this->conn->commit();
+            }
             
             Response::success([
                 'breakdown_id' => $breakdownId
@@ -204,7 +206,9 @@ class BreakdownReportController {
             
         } catch (Exception $e) {
             // Rollback on error
-            $this->conn->rollBack();
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
             Response::error('Failed to create breakdown report: ' . $e->getMessage(), 500);
         }
     }

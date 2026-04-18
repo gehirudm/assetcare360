@@ -569,7 +569,7 @@ class RouteBreakdownController {
 
             $statusStmt = $this->conn->prepare(
                 "UPDATE vehicle_breakdown_inroute
-                 SET status = CASE WHEN status IN ('Resolved', 'Closed') THEN status ELSE 'In Progress' END
+                  SET status = CASE WHEN status IN ('Resolved', 'Closed', 'Insurance Claimed') THEN status ELSE 'In Progress' END
                  WHERE id = ?"
             );
             $statusStmt->execute([$routeBreakdownId]);
@@ -667,7 +667,7 @@ class RouteBreakdownController {
 
             $statusStmt = $this->conn->prepare(
                 "UPDATE vehicle_breakdown_inroute
-                 SET status = CASE WHEN status IN ('Resolved', 'Closed') THEN status ELSE 'In Progress' END
+                  SET status = CASE WHEN status IN ('Resolved', 'Closed', 'Insurance Claimed') THEN status ELSE 'In Progress' END
                  WHERE id = ?"
             );
             $statusStmt->execute([$routeBreakdownId]);
@@ -764,7 +764,7 @@ class RouteBreakdownController {
 
             $statusStmt = $this->conn->prepare(
                 "UPDATE vehicle_breakdown_inroute
-                 SET status = CASE WHEN status IN ('Resolved', 'Closed') THEN status ELSE 'In Progress' END
+                  SET status = CASE WHEN status IN ('Resolved', 'Closed', 'Insurance Claimed') THEN status ELSE 'In Progress' END
                  WHERE id = ?"
             );
             $statusStmt->execute([$routeBreakdownId]);

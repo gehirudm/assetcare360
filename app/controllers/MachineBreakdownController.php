@@ -222,14 +222,18 @@ class MachineBreakdownController {
                 throw new RuntimeException($ticketError);
             }
             
-            $this->conn->commit();
+            if ($this->conn->inTransaction()) {
+                $this->conn->commit();
+            }
             
             Response::success([
                 'breakdown_id' => $breakdownId
             ], 'Machine breakdown report created successfully', 201);
             
         } catch (Exception $e) {
-            $this->conn->rollBack();
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
             Response::error('Failed to create breakdown report: ' . $e->getMessage(), 500);
         }
     }
