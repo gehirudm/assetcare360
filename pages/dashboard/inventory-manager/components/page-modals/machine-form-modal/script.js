@@ -1,6 +1,14 @@
 // Machine form modal workflow (add/edit)
 
+function cleanupMachineModals() {
+    document.querySelectorAll('#addMachineModal, #editMachineModal').forEach((modal) => {
+        modal.remove();
+    });
+}
+
 async function openAddMachineModal() {
+    cleanupMachineModals();
+
     // Fetch next machine ID before creating the modal
     let nextMachineId = 'MCH-001';
     try {
@@ -46,7 +54,7 @@ function createMachineModal(machine = null, nextMachineId = 'MCH-001') {
                         </div>
                         <div class="form-group">
                             <label class="form-label">Machine Name *</label>
-                            <select class="form-select" id="machineName" required onchange="updateMachineComponents()">
+                            <select class="form-select" id="machineName" required onchange="updateMachineComponents(this)">
                                 <option value="">Select Machine Type</option>
                                 ${Object.keys(MACHINE_TYPES).map(type => `
                                     <option value="${type}" ${machine?.machine_name === type ? 'selected' : ''}>${type}</option>
@@ -175,9 +183,14 @@ function createMachineModal(machine = null, nextMachineId = 'MCH-001') {
 }
 
 // Update machine components based on selected machine type
-function updateMachineComponents() {
-    const machineType = document.getElementById('machineName')?.value;
-    const componentsGrid = document.getElementById('componentsGrid');
+function updateMachineComponents(trigger) {
+    const form = trigger?.closest('form') || document.getElementById('editMachineForm') || document.getElementById('addMachineForm');
+    if (!form) {
+        return;
+    }
+
+    const machineType = form.querySelector('#machineName')?.value;
+    const componentsGrid = form.querySelector('#componentsGrid');
 
     if (!componentsGrid) return;
 
@@ -199,7 +212,8 @@ async function handleAddMachine(e) {
     e.preventDefault();
 
     try {
-        const formData = getMachineFormData();
+        const form = e.currentTarget;
+        const formData = getMachineFormData(form);
 
         // Validate last service date is not in the future
         if (formData.last_service_date) {
@@ -225,7 +239,6 @@ async function handleAddMachine(e) {
 
             // If there are validation errors, display them on the form
             if (response.errors) {
-                const form = document.getElementById('addMachineForm');
                 Utils.showFormErrors(form, response.errors);
             }
         }
@@ -239,8 +252,14 @@ async function handleEditMachine(e) {
     e.preventDefault();
 
     try {
-        const machineId = document.getElementById('machineId').value;
-        const formData = getMachineFormData();
+        const form = e.currentTarget;
+        const machineId = form.querySelector('#machineId')?.value;
+        const formData = getMachineFormData(form);
+
+        if (!machineId) {
+            Utils.showToast('Machine ID is missing for update', 'error');
+            return;
+        }
 
         // Validate last service date is not in the future
         if (formData.last_service_date) {
@@ -266,7 +285,6 @@ async function handleEditMachine(e) {
 
             // If there are validation errors, display them on the form
             if (response.errors) {
-                const form = document.getElementById('editMachineForm');
                 Utils.showFormErrors(form, response.errors);
             }
         }
@@ -276,27 +294,29 @@ async function handleEditMachine(e) {
     }
 }
 
-function getMachineFormData() {
-    const selectedComponents = Array.from(document.querySelectorAll('input[name="machineComponent"]:checked'))
+function getMachineFormData(form) {
+    const selectedComponents = Array.from(form.querySelectorAll('input[name="machineComponent"]:checked'))
         .map(cb => cb.value);
 
     return {
-        machine_name: document.getElementById('machineName').value,
-        model_number: document.getElementById('modelNumber').value,
-        location: document.getElementById('location').value,
-        status: document.getElementById('status').value,
-        supplier_name: document.getElementById('supplierName').value,
-        supplier_contact: document.getElementById('supplierContact').value,
-        service_interval_days: parseInt(document.getElementById('serviceInterval').value),
-        last_service_date: document.getElementById('lastServiceDate').value || null,
-        warranty_expiry: document.getElementById('warrantyExpiry').value || null,
-        warranty_provider: document.getElementById('warrantyProvider').value,
+        machine_name: form.querySelector('#machineName')?.value || '',
+        model_number: form.querySelector('#modelNumber')?.value || '',
+        location: form.querySelector('#location')?.value || '',
+        status: form.querySelector('#status')?.value || 'Active',
+        supplier_name: form.querySelector('#supplierName')?.value || '',
+        supplier_contact: form.querySelector('#supplierContact')?.value || '',
+        service_interval_days: parseInt(form.querySelector('#serviceInterval')?.value || '0', 10),
+        last_service_date: form.querySelector('#lastServiceDate')?.value || null,
+        warranty_expiry: form.querySelector('#warrantyExpiry')?.value || null,
+        warranty_provider: form.querySelector('#warrantyProvider')?.value || '',
         components: selectedComponents,
-        notes: document.getElementById('notes').value
+        notes: form.querySelector('#notes')?.value || ''
     };
 }
 
 async function editMachine(id) {
+    cleanupMachineModals();
+
     const machine = await fetchMachineRecord(id);
     if (!machine) {
         Utils.showToast('Machine not found', 'error');

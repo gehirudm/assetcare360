@@ -163,9 +163,9 @@ class SADashboardOverview extends HTMLElement {
                 <div class="activities-list">
                     <div class="activity-item">
                         <div class="activity-content">
-                            <div class="activity-title">Service Interval Alert</div>
-                            <div class="activity-meta">Vehicle #045 | Overdue by 15 days</div>
-                            <div class="activity-description">Oil change overdue, immediate action required</div>
+                            <div class="activity-title">Authentication Alert</div>
+                            <div class="activity-meta">User: driver_05 | Repeated failed logins</div>
+                            <div class="activity-description">Multiple failed login attempts detected and monitored</div>
                         </div>
                         <div class="activity-status">
                             <span class="status-text status-critical">CRITICAL</span>
