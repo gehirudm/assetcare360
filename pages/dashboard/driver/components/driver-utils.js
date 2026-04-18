@@ -275,6 +275,83 @@
         });
     }
 
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function formatQuantity(value) {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) {
+            return '0';
+        }
+
+        const fixed = numeric.toFixed(3);
+        return fixed.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+    }
+
+    function normalizeCargoItems(entity) {
+        if (!entity || typeof entity !== 'object') {
+            return [];
+        }
+
+        return Array.isArray(entity.cargo_items)
+            ? entity.cargo_items
+            : [];
+    }
+
+    function hasDangerousCargo(entity) {
+        if (!entity || typeof entity !== 'object') {
+            return false;
+        }
+
+        if (entity.has_dangerous_cargo === true || Number(entity.has_dangerous_cargo) === 1) {
+            return true;
+        }
+
+        const items = normalizeCargoItems(entity);
+        if (!items.length) {
+            return false;
+        }
+
+        return items.some((item) => Number(item?.is_dangerous) === 1);
+    }
+
+    function buildCargoSummary(entity) {
+        if (!entity || typeof entity !== 'object') {
+            return '';
+        }
+
+        if (typeof entity.cargo_summary === 'string' && entity.cargo_summary.trim()) {
+            return entity.cargo_summary.trim();
+        }
+
+        const items = normalizeCargoItems(entity);
+        if (items.length) {
+            return items.map((item) => {
+                const name = String(item?.name || item?.cargo_item_id || 'Cargo Item').trim();
+                const quantity = formatQuantity(item?.quantity);
+                const unit = String(item?.unit || 'units').trim();
+                const dangerSuffix = Number(item?.is_dangerous) === 1 ? ' [Dangerous]' : '';
+                return `${name} (${quantity} ${unit})${dangerSuffix}`;
+            }).join(', ');
+        }
+
+        if (typeof entity.cargo_description === 'string' && entity.cargo_description.trim()) {
+            return entity.cargo_description.trim();
+        }
+
+        if (typeof entity.cargo === 'string' && entity.cargo.trim()) {
+            return entity.cargo.trim();
+        }
+
+        return '';
+    }
+
     function ensureTodayDefaults(root = document) {
         const today = new Date().toISOString().split('T')[0];
         root.querySelectorAll('input[type="date"]').forEach((input) => {
@@ -358,6 +435,11 @@
         normalizeTicketFilterStatus,
         formatDate,
         formatDateTime,
+        escapeHtml,
+        formatQuantity,
+        normalizeCargoItems,
+        hasDangerousCargo,
+        buildCargoSummary,
         ensureTodayDefaults,
         closeOverflowMenus,
         toggleOverflowMenu,
