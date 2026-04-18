@@ -1,7 +1,112 @@
 # Active Context
 
 ## Current Focus
-Dashboard Web Components refactor execution for the active Supervisor residual slice remains complete (TASK034, TASK035, TASK036). TASK033 and TASK032 are also complete. Route-breakdown workflow correction (TASK039), GPS/map approval (TASK042), transportation cargo lifecycle + dangerous escalation (TASK043), TM cargo section split/navigation cleanup (TASK044), TM cargo catalogue/details UX refinement (TASK045), dangerous in-route priority lock + supervisor dangerous visibility hardening (TASK046), and breakdown-view/ticket-flow unification with create-time linked fault-ticket creation (TASK047) are now complete. Active remaining backlog is TASK003 migration verification plus pending monolith-final-decomposition cleanup tasks (TASK037, TASK038).
+Dashboard Web Components refactor execution for the active Supervisor residual slice remains complete (TASK034, TASK035, TASK036). TASK033 and TASK032 are also complete. Route-breakdown workflow correction (TASK039), GPS/map approval (TASK042), transportation cargo lifecycle + dangerous escalation (TASK043), TM cargo section split/navigation cleanup (TASK044), TM cargo catalogue/details UX refinement (TASK045), dangerous in-route priority lock + supervisor dangerous visibility hardening (TASK046), breakdown-view/ticket-flow unification with create-time linked fault-ticket creation (TASK047), Inventory insurance flow implementation (TASK048), Supervisor insurance-claim ticket flow implementation (TASK049), Driver/Machinery Operator fault-reporting 500 fix (TASK050), Machinery Operator duplicate ticket creation fix (TASK051), and newest-first ticket rendering stabilization (TASK052) are now complete. Active remaining backlog is TASK003 migration verification plus pending monolith-final-decomposition cleanup tasks (TASK037, TASK038).
+
+### Cross-dashboard newest-first fault ticket ordering + sort/filter toolbar alignment completed (April 19, 2026)
+- Implemented explicit sort controls (`Created Date`, `Priority`) and default newest-first behavior across active fault-ticket/fault-reporting list components:
+	- `pages/dashboard/supervisor/components/fault-ticket-tracking/script.js`
+	- `pages/dashboard/technical-officer/components/tickets/script.js`
+	- `pages/dashboard/driver/components/driver-ticket-tracking.js`
+	- `pages/dashboard/machinery-operator/components/mo-fault-reporting.js`
+	- `pages/dashboard/maintenance/components/maintenance-fault-tickets.js`
+- Added responsive filter-toolbar layout patterns in role stylesheets for Supervisor, Technical Officer, Driver, Machinery Operator, and Maintenance dashboards.
+- Updated UI validation suites to assert sort-control visibility and created-vs-priority behavior, with `VAL_STAGE=after` combined run passing desktop+mobile (`10/10` tests):
+	- `supervisor-fault-ticket-tracking`
+	- `to-ticket-routing`
+	- `driver-dashboard`
+	- `machinery-operator-dashboard`
+	- `maintenance-remaining-sections`
+
+### Supervisor driver breakdown visibility regression fix completed (April 18, 2026)
+- Fixed missing driver-reported vehicle breakdown rows in active Supervisor list by updating `pages/dashboard/supervisor/components/fault-ticket-tracking/script.js` to fetch and normalize `GET /breakdown-reports` in the same pipeline as machine and route breakdown feeds.
+- Added `normalizeVehicleBreakdown(...)` and included vehicle reports in the merged list sorting and source-filter rendering path.
+- Updated `openDetails(...)` fallback to use per-row `reportType` so legacy unlinked vehicle rows are not forced through the route-breakdown path.
+- Validation evidence: updated `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` with `/api/breakdown-reports` fixture coverage and vehicle visibility assertions; `VAL_STAGE=after` passed desktop + mobile (`2/2`).
+
+### Supervisor newest-first fault ordering update completed (April 18, 2026)
+- Updated active Supervisor fault-ticket-tracking sort behavior to timestamp-first so newly created faults always appear at the top of the list.
+- Added candidate timestamp fallback handling (`date`, `created_at`, `breakdown_datetime`, `breakdown_date`, `updated_at`) with severity and ID tie-breakers for stable ordering.
+- Updated supervisor tracking validation fixtures/assertions to verify newest-first behavior in both all-source and vehicle-source views.
+- Validation evidence: `VAL_STAGE=after` Playwright run passed for `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` (desktop + mobile, `2/2`).
+
+### TO view-ticket Finish Work modal and resolve flow parity fix completed (April 18, 2026)
+- Updated shared TO detail route `pages/view-ticket/index.html` complete modal to match TO fault-ticket list Finish Work modal structure (ticket ID, parts-used checklist, time spent, machine update description).
+- Updated `pages/view-ticket/script.js` completion workflow to match TO list behavior:
+	- load parts-used checklist from ticket spare-part requests,
+	- submit work update via `POST /ticket-work-updates`,
+	- mark ticket resolved via `PUT /fault-tickets/{id}` with `status: Resolved` and `resolution_notes`.
+- Added targeted UI validation suite `testing/ui-validation/to-finish-work-modal/validate-to-finish-work-modal.spec.js`.
+- Validation evidence: `VAL_STAGE=before` and `VAL_STAGE=after` runs both passed desktop + mobile (`2/2` each) with zero console warnings/errors and zero failed requests.
+
+### TO view-ticket spare-parts modal and logic parity fix completed (April 18, 2026)
+- Updated shared TO detail route `pages/view-ticket/index.html` to use TO dashboard list parity Request Spare Parts modal structure (ticket context fields, no-spare-parts path, dynamic part rows).
+- Updated `pages/view-ticket/script.js` request-parts workflow to align with TO list logic:
+	- prefill ticket context and priority,
+	- load product options from `GET /products`,
+	- check stock via `POST /spare-part-requests/check-availability`,
+	- submit TO-aligned request payload to `POST /spare-part-requests`,
+	- support no-spare-parts fast path via `PUT /fault-tickets/{id}` -> `In Progress`.
+- Added targeted UI validation suite `testing/ui-validation/to-request-spare-parts-modal/validate-to-request-spare-parts-modal.spec.js`.
+- Validation evidence: `VAL_STAGE=before` and `VAL_STAGE=after` runs both passed desktop + mobile (`2/2` each) with zero console warnings/errors and zero failed requests.
+
+### Newest-first ticket rendering stabilization completed (April 18, 2026)
+- Completed TASK052 to ensure newly created tickets/breakdowns consistently render at the top of dashboard lists.
+- Updated list sorting in:
+	- `pages/dashboard/machinery-operator/components/mo-fault-reporting.js`
+	- `pages/dashboard/driver/components/driver-ticket-tracking.js`
+	- `pages/dashboard/driver/components/driver-transport-ticket.js`
+- Replaced single-field timestamp sorting with robust candidate timestamp selection and deterministic ID fallback tie-breakers for equal/missing timestamps.
+- Validation evidence:
+	- Editor diagnostics clean for all touched files.
+	- Sort helper methods confirmed present and used in each component.
+
+### Machinery Operator double fault-ticket creation fix completed (April 18, 2026)
+- Completed TASK051 to fix duplicated fault ticket creation from Machinery Operator fault-report submission.
+- Root cause was a stale frontend sequence in `mo-report-fault-modal` that still posted `POST /fault-tickets` after `POST /machine-breakdowns`, while backend auto-link creation was already enabled in TASK047.
+- Updated MO submit flow to rely on backend auto-created linked tickets and removed manual ticket create call.
+- Preserved photo upload by resolving the linked ticket ID from machine-breakdown list data and uploading selected photos via `PUT /fault-tickets/{id}`.
+- Validation evidence:
+	- Editor diagnostics clean for touched modal file.
+	- Code scan confirms no remaining manual fault-ticket create call in the MO report modal.
+
+### Driver and machinery operator fault-reporting 500 fix completed (April 18, 2026)
+- Completed TASK050 to restore both Driver and Machinery Operator breakdown submission flows.
+- Root cause was a transaction-state failure (`There is no active transaction`) caused by `FaultTicketService::create()` instantiating BaseModel-backed `Machine`/`Vehicle` models during active controller transactions.
+- Replaced model-instantiation lookups with direct PDO queries in `FaultTicketService::create()` to avoid transaction side effects.
+- Added defensive transaction guards (`inTransaction()`) before commit/rollback in:
+	- `BreakdownReportController::create()`
+	- `MachineBreakdownController::create()`
+- Updated `FaultTicket` model to support `vehicle_id` in schema and use runtime column detection for backward-compatible reads/inserts on mixed DB states.
+- Validation evidence:
+	- PHP lint passed for touched files.
+	- Runtime API validation passed:
+		- Driver `POST /api/breakdown-reports` -> `201 Created`
+		- Machinery Operator `POST /api/machine-breakdowns` -> `201 Created`
+
+### Supervisor insurance-claim ticket flow completed (April 18, 2026)
+- Completed TASK049 to support insurance-claim decisioning in Supervisor fault-ticket flow.
+- Added and applied migration `059_add_insurance_claimed_status_to_fault_tickets.php` and extended status model/workflow handling for `Insurance Claimed`.
+- `FaultTicketService` now returns insurance context payload (`insurance_claim`) with asset/provider/type/renewal details, eligibility state, and eligibility reason.
+- Backend transition guard now enforces Supervisor/Admin role checks, eligibility checks, allowed source statuses, and deactivates technician assignments when insurance claim is submitted.
+- Shared detail page now renders insurance overview and claim action branch for Supervisor/Admin; Supervisor tracking list now recognizes and displays `Insurance Claimed` consistently.
+- Updated `testing/openapi.yaml` status enums and fault-ticket schema with insurance-claim contract.
+- Validation evidence:
+	- PHP lint passed for touched backend and migration files.
+	- Migration status confirmed `59/59 applied, 0 pending`.
+	- `VAL_STAGE=after` Playwright validation passed for `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` (desktop + mobile, `2/2`).
+
+### Inventory insurance flow completed (April 18, 2026)
+- Completed TASK048 for Inventory Manager insurance lifecycle support across machine/vehicle create/edit flows and insurance renewals management.
+- Added and applied migration `058_add_insurance_fields_to_assets.php` with insurance columns, renewal-date indexes, and backfill of next renewal dates.
+- Updated machine/vehicle models and services to validate and normalize insurance payload fields and compute `next_insurance_renew_date`.
+- Added new Inventory Manager section component `insurance-management` with summary cards, filtering, upcoming renewals list, and renewal submission modal.
+- Updated machine/vehicle form and details modal UIs to capture and display insurance fields.
+- Updated `testing/openapi.yaml` schemas (`Machine`, `MachineInput`, `Vehicle`, `VehicleInput`) to reflect insurance fields and create requirements.
+- Validation evidence:
+	- PHP lint and JS syntax checks passed for touched files.
+	- Migration status confirmed `58/58 applied, 0 pending`.
+	- Playwright after-stage validation passed for `testing/ui-validation/inventory-insurance-management/validate-inventory-insurance-management.spec.js` (desktop + mobile, `2/2`) after selector hardening and fixture alignment.
 
 ### Supervisor view-ticket garage-approval modal regression fix completed (April 18, 2026)
 - Fixed shared detail-page modal style conflict causing `Approve Nearby Garage` modal to render top-left/unstyled for Supervisor route-breakdown tickets.

@@ -6,6 +6,66 @@
 - ✅ API request logging with analytics (Admin)
 - ✅ User management (CRUD, search, filters, force-password-change)
 - ✅ Machine & vehicle inventory management
+- ✅ Supervisor fault-ticket-tracking now includes driver vehicle breakdown reports
+  - Fixed missing driver-reported rows by updating `pages/dashboard/supervisor/components/fault-ticket-tracking/script.js` to fetch and normalize `/breakdown-reports` in addition to machine/route feeds.
+  - Added `normalizeVehicleBreakdown(...)` mapping and merged vehicle data into newest-first sorted list rendering and source-filter views.
+  - Updated open-details fallback to use per-row report type, avoiding incorrect fallback routing for legacy unlinked vehicle rows.
+  - Validation evidence: updated `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` with `/api/breakdown-reports` fixture assertions; `VAL_STAGE=after` passed desktop + mobile (`2/2`).
+- ✅ Supervisor fault-ticket-tracking now prioritizes newly created faults at top
+  - Updated the active tracking list comparator to sort by latest available timestamps first, with severity and ID tie-breakers for deterministic order.
+  - Validation evidence: updated supervisor tracking spec asserts first-card newest behavior and passes in desktop/mobile (`2/2`).
+- ✅ Cross-dashboard newest-first fault ticket default ordering + sort controls (TASK053)
+  - Added sort controls (`Created Date`, `Priority`) and ensured `Created Date` newest-first default ordering in active fault-ticket/fault-reporting lists for Supervisor, Technical Officer, Driver, Machinery Operator, and Maintenance dashboards.
+  - Added responsive filter-toolbar layout updates to align status/source filters and sort controls across desktop/mobile.
+  - Updated validation coverage:
+    - `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js`
+    - `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js`
+    - `testing/ui-validation/driver-dashboard/validate-driver-dashboard.spec.js`
+    - `testing/ui-validation/machinery-operator-dashboard/validate-machinery-operator-dashboard.spec.js`
+    - `testing/ui-validation/maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js`
+  - Validation evidence: combined `VAL_STAGE=after` run passed `10/10` tests (desktop + mobile).
+- ✅ Inventory insurance lifecycle for machines and vehicles (TASK048)
+  - Added migration `058_add_insurance_fields_to_assets.php` with insurance columns, renewal indexes, and next-renewal backfill for existing assets.
+  - Machine/vehicle create + update flows now validate/normalize insurance fields and compute `next_insurance_renew_date`.
+  - Inventory Manager dashboard now includes dedicated `insurance-management` section with upcoming/overdue/missing summaries, asset filtering, and insurance renewal submission modal.
+  - Machine and vehicle add/edit forms and details modals now capture/render insurance details.
+  - OpenAPI schemas updated in `testing/openapi.yaml` for machine/vehicle insurance fields.
+  - Validation evidence: `VAL_STAGE=after` Playwright suite passed for `testing/ui-validation/inventory-insurance-management/validate-inventory-insurance-management.spec.js` (desktop + mobile, `2/2`).
+- ✅ Supervisor insurance-claim routing in fault-ticket flow (TASK049)
+  - Added `Insurance Claimed` status support across fault-ticket model/workflow logic and applied migration `059_add_insurance_claimed_status_to_fault_tickets.php`.
+  - `FaultTicketService` now emits `insurance_claim` context (insurance details, eligibility, reason) in ticket payloads.
+  - Backend transition enforcement now requires Supervisor/Admin role and insurance eligibility before claim submission; active technician assignments are deactivated on successful claim.
+  - Shared ticket detail and Supervisor ticket-tracking list now render insurance claim branch behavior consistently.
+  - OpenAPI updated in `testing/openapi.yaml` for status enums and `FaultTicketInsuranceClaim` schema.
+  - Validation evidence: PHP lint + diagnostics clean; migration status `59/59 applied`; `VAL_STAGE=after` Playwright validation passed for `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` (desktop + mobile, `2/2`).
+- ✅ Driver + Machinery Operator fault-reporting 500 fix (TASK050)
+  - Root cause was transaction-state invalidation (`There is no active transaction`) during auto fault-ticket creation when `FaultTicketService::create()` instantiated BaseModel-backed lookup models inside active controller transactions.
+  - Replaced create-path machine/vehicle lookups with direct PDO queries in `FaultTicketService` to remove constructor-side DDL side effects.
+  - Added transaction guards (`inTransaction()`) before commit/rollback in both `BreakdownReportController::create()` and `MachineBreakdownController::create()`.
+  - Hardened `FaultTicket` model for mixed schema states by adding runtime `vehicle_id` column detection and backward-compatible insert/select behavior when the column is absent.
+  - Validation evidence: PHP lint passed for all touched backend files; runtime API checks passed with `201 Created` for Driver `POST /api/breakdown-reports` and Machinery Operator `POST /api/machine-breakdowns`.
+- ✅ Machinery Operator duplicate ticket creation fix (TASK051)
+  - Root cause was outdated frontend submit behavior in `mo-report-fault-modal` that manually created a fault ticket after posting machine breakdowns, even though backend auto-link creation is now handled at breakdown-create time.
+  - Removed manual `POST /fault-tickets` from MO fault-report submit flow to prevent duplicate ticket records.
+  - Preserved photo attachment behavior by uploading selected images to the linked auto-created ticket via `PUT /fault-tickets/{id}` after resolving the linked ticket ID from machine-breakdown list data.
+  - Validation evidence: diagnostics clean for touched modal file and source scan confirms no remaining manual MO fault-ticket create call.
+- ✅ Newest-first ticket rendering stabilization (TASK052)
+  - Ensured newly created tickets/breakdowns appear at the top of relevant dashboard lists by replacing single-field timestamp sorts with robust multi-candidate timestamp sort helpers and deterministic ID fallback tie-breakers.
+  - Updated components:
+    - `pages/dashboard/machinery-operator/components/mo-fault-reporting.js`
+    - `pages/dashboard/driver/components/driver-ticket-tracking.js`
+    - `pages/dashboard/driver/components/driver-transport-ticket.js`
+  - Validation evidence: editor diagnostics clean across all touched files; helper methods confirmed present and wired in each component.
+- ✅ TO view-ticket Request Spare Parts parity fix (TASK038 slice)
+  - Replaced simplified shared detail-page spare-parts modal in `pages/view-ticket/index.html` with TO dashboard list parity structure and field IDs.
+  - Updated `pages/view-ticket/script.js` flow to match TO list behavior for prefill, product loading (`GET /products`), stock checks (`POST /spare-part-requests/check-availability`), spare-part request submit payload (`POST /spare-part-requests`), and no-spare-parts path (`PUT /fault-tickets/{id}` -> `In Progress`).
+  - Added targeted validation suite `testing/ui-validation/to-request-spare-parts-modal/validate-to-request-spare-parts-modal.spec.js`.
+  - Validation evidence: `VAL_STAGE=before` and `VAL_STAGE=after` suites both passed desktop + mobile (`2/2` each) with zero console warnings/errors and zero failed requests.
+- ✅ TO view-ticket Finish Work modal parity fix (TASK038 slice)
+  - Replaced shared detail-page complete modal in `pages/view-ticket/index.html` with TO fault-ticket list Finish Work modal structure and fields.
+  - Updated `pages/view-ticket/script.js` completion flow to align with TO list logic: collect parts-used selections, submit `POST /ticket-work-updates`, then resolve via `PUT /fault-tickets/{id}` with `status: Resolved` and `resolution_notes`.
+  - Added targeted validation suite `testing/ui-validation/to-finish-work-modal/validate-to-finish-work-modal.spec.js`.
+  - Validation evidence: `VAL_STAGE=before` and `VAL_STAGE=after` suites both passed desktop + mobile (`2/2` each) with zero console warnings/errors and zero failed requests.
 - ✅ Spare-parts inventory (additions, usage tracking)
 - ✅ Fault ticket system — full lifecycle (Open → Closed)
   - Image uploads (up to 5 per ticket, UUID filenames)

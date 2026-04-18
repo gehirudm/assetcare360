@@ -2,13 +2,19 @@
 
 ## In Progress
 - [TASK003] Run Migration 047 and Update OpenAPI Spec
-- [TASK037] Supervisor Script Monolith Final Decomposition - Ticket-detail flow uses actor-specific components; breakdown actions follow unified ticket-flow create-or-open behavior; Technician Assignment section removed and active fault-ticket-tracking now owns source filtering + criticality sorting + route status formatting; list map actions removed and route map context embedded in detail view; latest supervisor detail-page garage-approval modal centering/map-selection regression fixed with desktop/mobile validation pass (broader decomposition pending)
-- [TASK038] Technical Officer Script Monolith Final Decomposition - TO ticket detail flow now uses actor-specific component and direct view-ticket navigation; broader decomposition pending
+- [TASK037] Supervisor Script Monolith Final Decomposition - Ticket-detail flow uses actor-specific components; breakdown actions follow unified ticket-flow create-or-open behavior; Technician Assignment section removed and active fault-ticket-tracking now owns source filtering + newest-first ordering + route status formatting; list map actions removed and route map context embedded in detail view; latest supervisor detail-page garage-approval modal centering/map-selection regression fixed, and missing driver vehicle breakdown feed restored in active list with desktop/mobile validation pass (broader decomposition pending)
+- [TASK038] Technical Officer Script Monolith Final Decomposition - TO ticket detail flow now uses actor-specific component and direct view-ticket navigation; shared view-ticket Request Spare Parts and Finish Work modal/logic now aligned to TO list flow with focused before/after desktop/mobile validation suites passing; broader decomposition pending
 
 ## Pending
 - _(none)_
 
 ## Completed
+- [TASK053] Cross-dashboard fault-ticket sorting and filter-toolbar alignment - Completed on 2026-04-19
+- [TASK052] Ensure New Tickets Render First - Completed on 2026-04-18
+- [TASK051] Fix Machinery Operator Double Fault Ticket Creation - Completed on 2026-04-18
+- [TASK050] Fix Driver And Machinery Operator Fault Reporting 500 - Completed on 2026-04-18
+- [TASK049] Supervisor Insurance Claim Fault Ticket Flow - Completed on 2026-04-18
+- [TASK048] Inventory Insurance Flow - Completed on 2026-04-18
 - [TASK047] Unify Breakdown View and Auto-Create Fault Tickets - Completed on 2026-04-18
 - [TASK046] Enforce Dangerous In-Route Priority Lock and Supervisor Visibility - Completed on 2026-04-17
 - [TASK045] Refine Transportation Manager Cargo Catalogue and Add Details View - Completed on 2026-04-17

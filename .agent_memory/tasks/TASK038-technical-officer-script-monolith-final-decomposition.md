@@ -32,16 +32,16 @@ High-level audit shows `pages/dashboard/technical-officer/script.js` is still la
 
 ## Progress Tracking
 
-**Overall Status:** In Progress - 25%
+**Overall Status:** In Progress - 45%
 
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
 |----|-------------|--------|---------|-------|
 | 38.1 | TO ownership audit and decomposition map | Not Started | April 14, 2026 | Identify all remaining parent-owned section/modal logic |
 | 38.2 | Legacy TO modal extraction to page-modals | Not Started | April 14, 2026 | Remove page-level modal markup and inline handlers |
-| 38.3 | Ticket workflow migration to components | In Progress | April 18, 2026 | TO ticket detail flow now uses actor-specific `to-ticket-detail-view` component that opens standalone view-ticket page directly (no iframe) with role override + return path, preserving existing view-ticket UI. |
+| 38.3 | Ticket workflow migration to components | In Progress | April 18, 2026 | TO ticket detail flow now uses actor-specific `to-ticket-detail-view` component that opens standalone view-ticket page directly (no iframe) with role override + return path, preserving existing view-ticket UI. Shared `pages/view-ticket` Request Spare Parts modal + submit flow and Finish Work modal + resolve workflow are now aligned with TO dashboard list modal semantics and payload contract. |
 | 38.4 | Parent script cleanup and bootstrap consolidation | Not Started | April 14, 2026 | Keep only orchestration responsibilities |
-| 38.5 | Validation and regression guard | In Progress | April 18, 2026 | Updated TO routing assertions for direct detail-page navigation/back-return flow and revalidated desktop/mobile after removing shared iframe host files. |
+| 38.5 | Validation and regression guard | In Progress | April 18, 2026 | Updated TO routing assertions for direct detail-page navigation/back-return flow and revalidated desktop/mobile after removing shared iframe host files. Added focused TO request-spare-parts and finish-work validation suites with before/after desktop/mobile passes (`2/2` each stage per suite). |
 
 ## Progress Log
 ### April 14, 2026
@@ -62,3 +62,9 @@ High-level audit shows `pages/dashboard/technical-officer/script.js` is still la
 - Replaced Technical Officer dashboard ticket-detail section host with actor-specific `to-ticket-detail-view` component under `pages/dashboard/technical-officer/components/ticket-details/`.
 - Updated TO orchestration to open `pages/view-ticket/index.html` directly (no iframe) with `TECHNICAL_OFFICER` role override and section return path.
 - Updated TO routing validation suite assertions to verify direct detail-page navigation and back-return to dashboard section; after-stage desktop/mobile reruns passed.
+- Fixed TO detail-page spare-parts regression by replacing simplified Request Spare Parts modal in `pages/view-ticket/index.html` with TO dashboard list parity markup and field IDs.
+- Reworked `pages/view-ticket/script.js` spare-parts flow to mirror TO list behavior: prefill ticket context, load products from `/products`, perform availability checks via `/spare-part-requests/check-availability`, submit TO-aligned payload to `/spare-part-requests`, and support no-spare-parts status advance (`PUT /fault-tickets/{id}` -> `In Progress`).
+- Added focused validation spec `testing/ui-validation/to-request-spare-parts-modal/validate-to-request-spare-parts-modal.spec.js` and executed both `VAL_STAGE=before` and `VAL_STAGE=after` runs with desktop/mobile pass (`2/2` each), zero console warnings/errors, and zero failed requests.
+- Replaced shared `pages/view-ticket` complete modal with TO fault-ticket list Finish Work modal structure (ticket ID, parts-used checklist, time spent, machine update description).
+- Updated shared `submitComplete` workflow in `pages/view-ticket/script.js` to mirror TO list behavior by creating a ticket work update (`POST /ticket-work-updates`) and then resolving the ticket (`PUT /fault-tickets/{id}` with `status: Resolved` and `resolution_notes`).
+- Added focused validation spec `testing/ui-validation/to-finish-work-modal/validate-to-finish-work-modal.spec.js` and executed both `VAL_STAGE=before` and `VAL_STAGE=after` runs with desktop/mobile pass (`2/2` each), zero console warnings/errors, and zero failed requests.

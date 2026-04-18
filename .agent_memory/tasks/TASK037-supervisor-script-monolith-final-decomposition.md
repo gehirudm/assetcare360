@@ -32,16 +32,16 @@ High-level audit shows `pages/dashboard/supervisor/script.js` is still large (17
 
 ## Progress Tracking
 
-**Overall Status:** In Progress - 74%
+**Overall Status:** In Progress - 80%
 
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
 |----|-------------|--------|---------|-------|
 | 37.1 | Supervisor ownership audit and move-map | Not Started | April 14, 2026 | Map section/modal logic still in parent script |
-| 37.2 | Fault-ticket logic migration from parent | In Progress | April 18, 2026 | Replaced iframe-based shared ticket detail host with actor-specific ticket-detail components and direct view-ticket page navigation (Supervisor role override + return path), aligned breakdown actions to ticket-flow semantics, consolidated active list ownership under `fault-ticket-tracking` (removed parallel technician-assignment section), and added component-owned criticality sorting plus legacy route-description normalization. A final UX correction removed list-level map actions and moved route map display into `pages/view-ticket` detail UI. |
+| 37.2 | Fault-ticket logic migration from parent | In Progress | April 18, 2026 | Replaced iframe-based shared ticket detail host with actor-specific ticket-detail components and direct view-ticket page navigation (Supervisor role override + return path), aligned breakdown actions to ticket-flow semantics, consolidated active list ownership under `fault-ticket-tracking` (removed parallel technician-assignment section), and added component-owned route-description normalization with stable sorting logic. A final UX correction removed list-level map actions and moved route map display into `pages/view-ticket` detail UI. Follow-up fix restored missing driver vehicle breakdown feed in active Supervisor fault-ticket-tracking by ingesting `/breakdown-reports` with normalized vehicle breakdown rendering. Latest update switched list ordering to newest-first (timestamp-first, severity/id tie-breakers) so newly created faults render at the top. |
 | 37.3 | Repair-management + details-modal decomposition | Not Started | April 14, 2026 | Remove sample/TODO parent handlers |
 | 37.4 | Budget/asset/technician detail modal extraction | Not Started | April 14, 2026 | One-modal-per-component under page-modals |
-| 37.5 | Validation and cleanup | In Progress | April 18, 2026 | Supervisor ticket-flow validation and regression reruns passed desktop/mobile after UX fixes. Revalidated after removing shared iframe host files and moving Supervisor to actor-specific ticket-detail component with direct view-ticket navigation. Updated modal-suite assertions for breakdown create-or-open behavior and revalidated desktop/mobile pass. Added dedicated `supervisor-fault-ticket-tracking` before/after desktop+mobile validation for section consolidation, dangerous badge visibility, source filtering, button-label/action regressions, criticality ordering, garage-approved status rendering, and final map placement behavior (no list map button, embedded detail-page route map). Added follow-up regression coverage for detail-page nearby-garage modal centering + map marker selection, with desktop/mobile pass. |
+| 37.5 | Validation and cleanup | In Progress | April 18, 2026 | Supervisor ticket-flow validation and regression reruns passed desktop/mobile after UX fixes. Revalidated after removing shared iframe host files and moving Supervisor to actor-specific ticket-detail component with direct view-ticket navigation. Updated modal-suite assertions for breakdown create-or-open behavior and revalidated desktop/mobile pass. Added dedicated `supervisor-fault-ticket-tracking` before/after desktop+mobile validation for section consolidation, dangerous badge visibility, source filtering, button-label/action regressions, ordering/status rendering, and final map placement behavior (no list map button, embedded detail-page route map). Added follow-up regression coverage for detail-page nearby-garage modal centering + map marker selection, with desktop/mobile pass. Added driver vehicle breakdown visibility regression coverage in the same suite (`/api/breakdown-reports` fixture path + list/source-count assertions), passing desktop/mobile `2/2`. Latest validation update now asserts newest-first ordering so newly created faults appear first regardless of severity. |
 
 ## Progress Log
 ### April 14, 2026
@@ -140,3 +140,15 @@ High-level audit shows `pages/dashboard/supervisor/script.js` is still large (17
 	- submit payload garage ID,
 	- modal centering geometry.
 - Executed `VAL_STAGE=after npx playwright test supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js --reporter=line` with desktop + mobile pass (`2/2`).
+
+### April 18, 2026 (Driver Breakdown Visibility Fix)
+- Fixed missing driver-reported vehicle breakdown visibility in active Supervisor list by updating `pages/dashboard/supervisor/components/fault-ticket-tracking/script.js` to fetch and normalize `GET /breakdown-reports` alongside existing machine and route feeds.
+- Added `normalizeVehicleBreakdown(...)` mapping and included the normalized vehicle dataset in combined severity/date sort and source-filter rendering.
+- Hardened unlinked breakdown fallback behavior by switching `openDetails(...)` to use per-item `reportType` instead of forcing all vehicle-source rows through `route_breakdown`.
+- Updated and executed `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` with added `/api/breakdown-reports` fixture coverage and vehicle-row assertions; `VAL_STAGE=after` passed desktop + mobile (`2/2`).
+
+### April 18, 2026 (Newest-First Fault Ordering Update)
+- Updated active Supervisor list sort in `pages/dashboard/supervisor/components/fault-ticket-tracking/script.js` to prioritize latest timestamps first so newly created faults appear at the top.
+- Added robust timestamp selection (`date`, `created_at`, `breakdown_datetime`, `breakdown_date`, `updated_at`) with severity and ID tie-breakers for deterministic ordering.
+- Updated `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` fixtures/assertions to verify newest-first behavior for both all-sources and vehicle-source filters.
+- Executed `VAL_STAGE=after` run; desktop + mobile passed (`2/2`).
