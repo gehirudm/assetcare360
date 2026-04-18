@@ -229,6 +229,69 @@ body {
     display: block;
 }
 
+#breakdown.content-section,
+#ticket-details.content-section {
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    border-radius: 0;
+}
+
+.driver-breakdown-actions {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.driver-breakdown-content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.driver-breakdown-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-700);
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+.driver-breakdown-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px 14px;
+    padding: 16px;
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    background: #fff;
+}
+
+.driver-breakdown-filter-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.driver-breakdown-filter-label {
+    min-width: 54px;
+    font-weight: 700;
+    color: var(--text-700);
+    line-height: 34px;
+}
+
+.driver-breakdown-filter-group .filter-controls {
+    gap: 8px;
+    margin-bottom: 0;
+    flex: 1;
+}
+
+.driver-breakdown-list {
+    min-height: 44px;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
@@ -1490,6 +1553,16 @@ body {
 
     .form-section p strong {
         min-width: 120px;
+    }
+
+    .driver-breakdown-filter-group {
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .driver-breakdown-filter-label {
+        line-height: 1.2;
+        min-width: auto;
     }
 }
 
