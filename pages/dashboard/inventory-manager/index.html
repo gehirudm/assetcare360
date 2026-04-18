@@ -39,6 +39,7 @@
             {"section":"dashboard","icon":"fas fa-tachometer-alt","label":"Dashboard"},
             {"section":"machines","icon":"fas fa-cogs","label":"Manage Machines"},
             {"section":"vehicles","icon":"fas fa-truck","label":"Manage Vehicles"},
+            {"section":"insurance-management","icon":"fas fa-shield-alt","label":"Insurance Management"},
             {"section":"catalog","icon":"fas fa-list-alt","label":"Spare Parts Catalog"},
             {"section":"sparepart-addition","icon":"fas fa-plus-circle","label":"Sparepart Addition"},
             {"section":"orders-approvals","icon":"fas fa-clipboard-check","label":"Orders &amp; Approvals"},
@@ -58,6 +59,11 @@
                 <!-- Vehicles Section -->
                 <section class="content-section" id="vehicles">
                     <inventory-vehicles></inventory-vehicles>
+                </section>
+
+                <!-- Insurance Management Section -->
+                <section class="content-section" id="insurance-management">
+                    <inventory-insurance-management></inventory-insurance-management>
                 </section>
 
                 <!-- Spare Parts Catalog -->
@@ -120,6 +126,7 @@
     <script src="./components/page-modals/vehicle-mileage-modal/script.js"></script>
     <script src="./components/machines/script.js"></script>
     <script src="./components/vehicles/script.js"></script>
+    <script src="./components/insurance-management/script.js"></script>
     <script src="script.js?v=1.7.0"></script>
 </body>
 </html>

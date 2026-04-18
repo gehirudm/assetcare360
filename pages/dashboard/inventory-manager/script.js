@@ -37,6 +37,12 @@ async function initializeApp() {
             console.warn('Initial notifications refresh failed:', err);
         });
 
+        // Wire insurance management section and initialize renewal status view
+        bindInsuranceManagement();
+        await refreshInsuranceManagement().catch(err => {
+            console.warn('Initial insurance management refresh failed:', err);
+        });
+
         // Wire catalog section events
         bindCatalog();
 
@@ -276,6 +282,36 @@ async function refreshNotifications() {
     await notificationsModel.refresh();
 }
 
+function bindInsuranceManagement() {
+    const insuranceModel = document.querySelector('inventory-insurance-management');
+    if (!insuranceModel || insuranceModel._inventoryInsuranceManagementBound) {
+        return;
+    }
+
+    insuranceModel._inventoryInsuranceManagementBound = true;
+
+    insuranceModel.addEventListener('inventory-insurance-management:renewal-saved', async () => {
+        try {
+            await Promise.all([
+                refreshMachines(),
+                refreshVehicles(),
+                refreshDashboardOverview(),
+            ]);
+        } catch (error) {
+            console.error('Failed to sync dashboard after insurance renewal update:', error);
+        }
+    });
+}
+
+async function refreshInsuranceManagement() {
+    const insuranceModel = document.querySelector('inventory-insurance-management');
+    if (!insuranceModel || typeof insuranceModel.refresh !== 'function') {
+        return;
+    }
+
+    await insuranceModel.refresh();
+}
+
 function bindCatalog() {
     const catalogModel = document.querySelector('inventory-catalog');
     if (!catalogModel || catalogModel._inventoryCatalogBound) {
@@ -426,6 +462,9 @@ async function loadSectionData(sectionId) {
                 break;
             case 'vehicles':
                 refreshVehicles();
+                break;
+            case 'insurance-management':
+                await refreshInsuranceManagement();
                 break;
             case 'catalog':
                 await refreshCatalog();
