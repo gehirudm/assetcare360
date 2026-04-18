@@ -26,6 +26,13 @@ class Vehicle extends BaseModel {
             'government_fuel_qr_image' => 'VARCHAR(500) NULL COMMENT "Path to government-issued fuel QR image"',
             'warranty_expiry' => 'DATE NULL',
             'warranty_provider' => 'VARCHAR(255) NULL',
+            'insurance_type' => "ENUM('Full', 'Third-Party') NULL",
+            'insurance_provider' => 'VARCHAR(255) NULL',
+            'insurance_provider_details' => 'TEXT NULL',
+            'insurance_renew_interval_days' => 'INT NULL',
+            'last_insurance_renew_date' => 'DATE NULL',
+            'last_insurance_renew_details' => 'TEXT NULL',
+            'next_insurance_renew_date' => 'DATE NULL',
             'supplier_name' => 'VARCHAR(255) NOT NULL',
             'supplier_contact' => 'VARCHAR(100) NULL',
             'service_interval_type' => "ENUM('Time-Based', 'Mileage-Based', 'Both') DEFAULT 'Both'",
@@ -54,7 +61,8 @@ class Vehicle extends BaseModel {
             'idx_status' => 'status',
             'idx_vehicle_type' => 'vehicle_type',
             'idx_next_service_date' => 'next_service_date',
-            'idx_next_service_mileage' => 'next_service_mileage'
+            'idx_next_service_mileage' => 'next_service_mileage',
+            'idx_next_insurance_renew' => 'next_insurance_renew_date'
         ];
     }
     
@@ -106,6 +114,12 @@ class Vehicle extends BaseModel {
         if (isset($data['last_service_mileage']) && !empty($data['service_interval_km'])) {
             $data['next_service_mileage'] = $data['last_service_mileage'] + $data['service_interval_km'];
         }
+
+        if (!empty($data['last_insurance_renew_date']) && isset($data['insurance_renew_interval_days']) && (int)$data['insurance_renew_interval_days'] > 0) {
+            $lastInsuranceRenew = new DateTime($data['last_insurance_renew_date']);
+            $lastInsuranceRenew->modify('+' . (int)$data['insurance_renew_interval_days'] . ' days');
+            $data['next_insurance_renew_date'] = $lastInsuranceRenew->format('Y-m-d');
+        }
         
         return $this->create($data);
     }
@@ -140,6 +154,24 @@ class Vehicle extends BaseModel {
             
             if ($lastServiceMileage !== null && $intervalKm) {
                 $data['next_service_mileage'] = $lastServiceMileage + $intervalKm;
+            }
+        }
+
+        if (array_key_exists('last_insurance_renew_date', $data) || array_key_exists('insurance_renew_interval_days', $data)) {
+            $lastInsuranceRenewDate = array_key_exists('last_insurance_renew_date', $data)
+                ? $data['last_insurance_renew_date']
+                : ($current['last_insurance_renew_date'] ?? null);
+
+            $insuranceIntervalDays = array_key_exists('insurance_renew_interval_days', $data)
+                ? $data['insurance_renew_interval_days']
+                : ($current['insurance_renew_interval_days'] ?? null);
+
+            if (!empty($lastInsuranceRenewDate) && is_numeric($insuranceIntervalDays) && (int)$insuranceIntervalDays > 0) {
+                $date = new DateTime($lastInsuranceRenewDate);
+                $date->modify('+' . (int)$insuranceIntervalDays . ' days');
+                $data['next_insurance_renew_date'] = $date->format('Y-m-d');
+            } else {
+                $data['next_insurance_renew_date'] = null;
             }
         }
         

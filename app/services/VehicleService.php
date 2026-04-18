@@ -22,12 +22,29 @@ class VehicleService {
     public function createVehicle($data, $userId) {
         // Validate required fields
         $required = ['vehicle_name', 'number_plate', 
-                     'vehicle_type', 'fuel_type', 'supplier_name', 'service_interval_type'];
+                     'vehicle_type', 'fuel_type', 'supplier_name', 'service_interval_type',
+                     'insurance_type', 'insurance_provider', 'insurance_provider_details',
+                     'insurance_renew_interval_days', 'last_insurance_renew_date', 'last_insurance_renew_details'];
         foreach ($required as $field) {
             if (empty($data[$field])) {
                 throw new Exception("Field '$field' is required");
             }
         }
+
+        $data['insurance_type'] = $this->normalizeInsuranceType($data['insurance_type'] ?? null, true);
+        $data['insurance_provider'] = $this->normalizeRequiredString($data['insurance_provider'] ?? null, 'insurance_provider');
+        $data['insurance_provider_details'] = $this->normalizeRequiredString($data['insurance_provider_details'] ?? null, 'insurance_provider_details');
+        $data['last_insurance_renew_details'] = $this->normalizeRequiredString($data['last_insurance_renew_details'] ?? null, 'last_insurance_renew_details');
+
+        $insuranceIntervalDays = $this->parseNullableNonNegativeInteger($data['insurance_renew_interval_days'] ?? null, 'insurance_renew_interval_days');
+        if ($insuranceIntervalDays === null || $insuranceIntervalDays <= 0) {
+            throw new Exception("Field 'insurance_renew_interval_days' must be a positive number");
+        }
+        $data['insurance_renew_interval_days'] = $insuranceIntervalDays;
+
+        $lastInsuranceRenewDate = $this->normalizeDateInput($data['last_insurance_renew_date'] ?? null, 'last_insurance_renew_date', true);
+        $this->ensureDateNotFuture($lastInsuranceRenewDate, 'last_insurance_renew_date');
+        $data['last_insurance_renew_date'] = $lastInsuranceRenewDate;
         
         // Validate service intervals based on type
         if (in_array($data['service_interval_type'], ['Time-Based', 'Both']) && empty($data['service_interval_days'])) {
@@ -87,6 +104,36 @@ class VehicleService {
         $vehicle = $this->vehicleModel->findById($id);
         if (!$vehicle) {
             throw new Exception("Vehicle not found");
+        }
+
+        if (array_key_exists('insurance_type', $data)) {
+            $data['insurance_type'] = $this->normalizeInsuranceType($data['insurance_type'], false);
+        }
+
+        if (array_key_exists('insurance_provider', $data)) {
+            $data['insurance_provider'] = $this->normalizeOptionalString($data['insurance_provider']);
+        }
+
+        if (array_key_exists('insurance_provider_details', $data)) {
+            $data['insurance_provider_details'] = $this->normalizeOptionalString($data['insurance_provider_details']);
+        }
+
+        if (array_key_exists('last_insurance_renew_details', $data)) {
+            $data['last_insurance_renew_details'] = $this->normalizeOptionalString($data['last_insurance_renew_details']);
+        }
+
+        if (array_key_exists('insurance_renew_interval_days', $data)) {
+            $insuranceIntervalDays = $this->parseNullableNonNegativeInteger($data['insurance_renew_interval_days'], 'insurance_renew_interval_days');
+            if ($insuranceIntervalDays !== null && $insuranceIntervalDays <= 0) {
+                throw new Exception("Field 'insurance_renew_interval_days' must be greater than 0 when provided");
+            }
+            $data['insurance_renew_interval_days'] = $insuranceIntervalDays;
+        }
+
+        if (array_key_exists('last_insurance_renew_date', $data)) {
+            $lastInsuranceRenewDate = $this->normalizeDateInput($data['last_insurance_renew_date'], 'last_insurance_renew_date', false);
+            $this->ensureDateNotFuture($lastInsuranceRenewDate, 'last_insurance_renew_date');
+            $data['last_insurance_renew_date'] = $lastInsuranceRenewDate;
         }
         
         // Check if chassis number is being changed and if it conflicts
@@ -419,6 +466,91 @@ class VehicleService {
     public function getVehicleAssignedToDriver($driverId) {
         $vehicle = $this->vehicleModel->getVehicleByAssignedDriver($driverId);
         return $this->ensureFuelQrImageIsPubliclyServed($vehicle);
+    }
+
+    private function normalizeInsuranceType($value, bool $required): ?string {
+        $normalized = trim((string)($value ?? ''));
+        if ($normalized === '') {
+            if ($required) {
+                throw new Exception("Field 'insurance_type' is required");
+            }
+            return null;
+        }
+
+        $lower = strtolower($normalized);
+        if ($lower === 'full') {
+            return 'Full';
+        }
+
+        if ($lower === 'third-party' || $lower === 'third party') {
+            return 'Third-Party';
+        }
+
+        throw new Exception("Field 'insurance_type' must be either 'Full' or 'Third-Party'");
+    }
+
+    private function normalizeRequiredString($value, string $field): string {
+        $normalized = trim((string)($value ?? ''));
+        if ($normalized === '') {
+            throw new Exception("Field '{$field}' is required");
+        }
+
+        return $normalized;
+    }
+
+    private function normalizeOptionalString($value): ?string {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = trim((string)$value);
+        return $normalized !== '' ? $normalized : null;
+    }
+
+    private function normalizeDateInput($value, string $field, bool $required): ?string {
+        $normalized = trim((string)($value ?? ''));
+        if ($normalized === '') {
+            if ($required) {
+                throw new Exception("Field '{$field}' is required");
+            }
+            return null;
+        }
+
+        $date = DateTime::createFromFormat('Y-m-d', $normalized);
+        if (!$date || $date->format('Y-m-d') !== $normalized) {
+            throw new Exception("Field '{$field}' must be a valid date (YYYY-MM-DD)");
+        }
+
+        return $normalized;
+    }
+
+    private function ensureDateNotFuture($value, string $field): void {
+        if ($value === null || $value === '') {
+            return;
+        }
+
+        $inputDate = new DateTime((string)$value);
+        $today = new DateTime(date('Y-m-d'));
+        if ($inputDate > $today) {
+            throw new Exception("Field '{$field}' cannot be in the future");
+        }
+    }
+
+    private function parseNullableNonNegativeInteger($value, string $field): ?int {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (!is_numeric($value)) {
+            throw new Exception("Field '{$field}' must be a valid number");
+        }
+
+        $normalized = (int)$value;
+        if ($normalized < 0) {
+            throw new Exception("Field '{$field}' cannot be negative");
+        }
+
+        return $normalized;
     }
 
     private function deleteExistingFuelQrImage($previousPath, $currentPath) {

@@ -25,6 +25,21 @@ class MachineService {
             }
         }
 
+        $data['insurance_type'] = $this->normalizeInsuranceType($data['insurance_type'] ?? null, true);
+        $data['insurance_provider'] = $this->normalizeRequiredString($data['insurance_provider'] ?? null, 'insurance_provider');
+        $data['insurance_provider_details'] = $this->normalizeRequiredString($data['insurance_provider_details'] ?? null, 'insurance_provider_details');
+        $data['last_insurance_renew_details'] = $this->normalizeRequiredString($data['last_insurance_renew_details'] ?? null, 'last_insurance_renew_details');
+
+        $insuranceIntervalDays = $this->parseNullableNonNegativeInteger($data['insurance_renew_interval_days'] ?? null, 'insurance_renew_interval_days');
+        if ($insuranceIntervalDays === null || $insuranceIntervalDays <= 0) {
+            throw new Exception("Field 'insurance_renew_interval_days' must be a positive number");
+        }
+        $data['insurance_renew_interval_days'] = $insuranceIntervalDays;
+
+        $lastInsuranceRenewDate = $this->normalizeDateInput($data['last_insurance_renew_date'] ?? null, 'last_insurance_renew_date', true);
+        $this->ensureDateNotFuture($lastInsuranceRenewDate, 'last_insurance_renew_date');
+        $data['last_insurance_renew_date'] = $lastInsuranceRenewDate;
+
         $serviceIntervalDays = $this->parseNullableNonNegativeInteger($data['service_interval_days'] ?? null, 'service_interval_days');
         if ($serviceIntervalDays === null || $serviceIntervalDays <= 0) {
             throw new Exception("Field 'service_interval_days' must be a positive number");
@@ -58,12 +73,7 @@ class MachineService {
         
         // Validate last service date is not in the future
         if (!empty($data['last_service_date'])) {
-            $lastServiceDate = strtotime($data['last_service_date']);
-            $today = strtotime(date('Y-m-d'));
-            
-            if ($lastServiceDate > $today) {
-                throw new Exception("Last service date cannot be in the future");
-            }
+            $this->ensureDateNotFuture($data['last_service_date'], 'last_service_date');
         }
         
         // Add created_by
@@ -85,6 +95,36 @@ class MachineService {
         $machine = $this->machineModel->findById($id);
         if (!$machine) {
             throw new Exception("Machine not found");
+        }
+
+        if (array_key_exists('insurance_type', $data)) {
+            $data['insurance_type'] = $this->normalizeInsuranceType($data['insurance_type'], false);
+        }
+
+        if (array_key_exists('insurance_provider', $data)) {
+            $data['insurance_provider'] = $this->normalizeOptionalString($data['insurance_provider']);
+        }
+
+        if (array_key_exists('insurance_provider_details', $data)) {
+            $data['insurance_provider_details'] = $this->normalizeOptionalString($data['insurance_provider_details']);
+        }
+
+        if (array_key_exists('last_insurance_renew_details', $data)) {
+            $data['last_insurance_renew_details'] = $this->normalizeOptionalString($data['last_insurance_renew_details']);
+        }
+
+        if (array_key_exists('insurance_renew_interval_days', $data)) {
+            $insuranceIntervalDays = $this->parseNullableNonNegativeInteger($data['insurance_renew_interval_days'], 'insurance_renew_interval_days');
+            if ($insuranceIntervalDays !== null && $insuranceIntervalDays <= 0) {
+                throw new Exception("Field 'insurance_renew_interval_days' must be greater than 0 when provided");
+            }
+            $data['insurance_renew_interval_days'] = $insuranceIntervalDays;
+        }
+
+        if (array_key_exists('last_insurance_renew_date', $data)) {
+            $lastInsuranceRenewDate = $this->normalizeDateInput($data['last_insurance_renew_date'], 'last_insurance_renew_date', false);
+            $this->ensureDateNotFuture($lastInsuranceRenewDate, 'last_insurance_renew_date');
+            $data['last_insurance_renew_date'] = $lastInsuranceRenewDate;
         }
 
         if (array_key_exists('service_interval_days', $data)) {
@@ -133,12 +173,7 @@ class MachineService {
         
         // Validate last service date is not in the future
         if (!empty($data['last_service_date'])) {
-            $lastServiceDate = strtotime($data['last_service_date']);
-            $today = strtotime(date('Y-m-d'));
-            
-            if ($lastServiceDate > $today) {
-                throw new Exception("Last service date cannot be in the future");
-            }
+            $this->ensureDateNotFuture($data['last_service_date'], 'last_service_date');
         }
         
         // Add updated_by
@@ -208,6 +243,74 @@ class MachineService {
      */
     public function getMachinesDueForService() {
         return $this->machineModel->getMachinesDueForService();
+    }
+
+    private function normalizeInsuranceType($value, bool $required): ?string {
+        $normalized = trim((string)($value ?? ''));
+        if ($normalized === '') {
+            if ($required) {
+                throw new Exception("Field 'insurance_type' is required");
+            }
+            return null;
+        }
+
+        $lower = strtolower($normalized);
+        if ($lower === 'full') {
+            return 'Full';
+        }
+
+        if ($lower === 'third-party' || $lower === 'third party') {
+            return 'Third-Party';
+        }
+
+        throw new Exception("Field 'insurance_type' must be either 'Full' or 'Third-Party'");
+    }
+
+    private function normalizeRequiredString($value, string $field): string {
+        $normalized = trim((string)($value ?? ''));
+        if ($normalized === '') {
+            throw new Exception("Field '{$field}' is required");
+        }
+
+        return $normalized;
+    }
+
+    private function normalizeOptionalString($value): ?string {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = trim((string)$value);
+        return $normalized !== '' ? $normalized : null;
+    }
+
+    private function normalizeDateInput($value, string $field, bool $required): ?string {
+        $normalized = trim((string)($value ?? ''));
+        if ($normalized === '') {
+            if ($required) {
+                throw new Exception("Field '{$field}' is required");
+            }
+            return null;
+        }
+
+        $date = DateTime::createFromFormat('Y-m-d', $normalized);
+        if (!$date || $date->format('Y-m-d') !== $normalized) {
+            throw new Exception("Field '{$field}' must be a valid date (YYYY-MM-DD)");
+        }
+
+        return $normalized;
+    }
+
+    private function ensureDateNotFuture($value, string $field): void {
+        if ($value === null || $value === '') {
+            return;
+        }
+
+        $timestamp = strtotime((string)$value);
+        $today = strtotime(date('Y-m-d'));
+        if ($timestamp > $today) {
+            throw new Exception("Field '{$field}' cannot be in the future");
+        }
     }
 
     /**

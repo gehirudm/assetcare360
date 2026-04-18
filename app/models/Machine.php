@@ -22,6 +22,13 @@ class Machine extends BaseModel {
             'location' => 'VARCHAR(255) NOT NULL',
             'warranty_expiry' => 'DATE NULL',
             'warranty_provider' => 'VARCHAR(255) NULL',
+            'insurance_type' => "ENUM('Full', 'Third-Party') NULL",
+            'insurance_provider' => 'VARCHAR(255) NULL',
+            'insurance_provider_details' => 'TEXT NULL',
+            'insurance_renew_interval_days' => 'INT NULL',
+            'last_insurance_renew_date' => 'DATE NULL',
+            'last_insurance_renew_details' => 'TEXT NULL',
+            'next_insurance_renew_date' => 'DATE NULL',
             'supplier_name' => 'VARCHAR(255) NOT NULL',
             'supplier_contact' => 'VARCHAR(100) NULL',
             'service_interval_days' => 'INT NOT NULL DEFAULT 90',
@@ -49,7 +56,8 @@ class Machine extends BaseModel {
             'idx_status' => 'status',
             'idx_location' => 'location',
             'idx_next_service' => 'next_service_date',
-            'idx_next_service_hours' => 'next_service_hours'
+            'idx_next_service_hours' => 'next_service_hours',
+            'idx_next_insurance_renew' => 'next_insurance_renew_date'
         ];
     }
 
@@ -117,6 +125,12 @@ class Machine extends BaseModel {
         if ($lastServiceHours !== null && $this->hasNumericValue($data['service_interval_hours'] ?? null)) {
             $data['next_service_hours'] = $lastServiceHours + (int)$data['service_interval_hours'];
         }
+
+        if (!empty($data['last_insurance_renew_date']) && $this->hasNumericValue($data['insurance_renew_interval_days'] ?? null) && (int)$data['insurance_renew_interval_days'] > 0) {
+            $lastInsuranceRenew = new DateTime($data['last_insurance_renew_date']);
+            $lastInsuranceRenew->modify('+' . (int)$data['insurance_renew_interval_days'] . ' days');
+            $data['next_insurance_renew_date'] = $lastInsuranceRenew->format('Y-m-d');
+        }
         
         return $this->create($data);
     }
@@ -165,6 +179,24 @@ class Machine extends BaseModel {
                 $data['next_service_hours'] = (int)$lastServiceHours + (int)$intervalHours;
             } elseif (array_key_exists('service_interval_hours', $data) || array_key_exists('last_service_hours', $data)) {
                 $data['next_service_hours'] = null;
+            }
+        }
+
+        if (array_key_exists('last_insurance_renew_date', $data) || array_key_exists('insurance_renew_interval_days', $data)) {
+            $lastInsuranceRenewDate = array_key_exists('last_insurance_renew_date', $data)
+                ? $data['last_insurance_renew_date']
+                : ($current['last_insurance_renew_date'] ?? null);
+
+            $insuranceIntervalDays = array_key_exists('insurance_renew_interval_days', $data)
+                ? $data['insurance_renew_interval_days']
+                : ($current['insurance_renew_interval_days'] ?? null);
+
+            if (!empty($lastInsuranceRenewDate) && $this->hasNumericValue($insuranceIntervalDays) && (int)$insuranceIntervalDays > 0) {
+                $date = new DateTime($lastInsuranceRenewDate);
+                $date->modify('+' . (int)$insuranceIntervalDays . ' days');
+                $data['next_insurance_renew_date'] = $date->format('Y-m-d');
+            } else {
+                $data['next_insurance_renew_date'] = null;
             }
         }
         
