@@ -138,8 +138,9 @@ class MOEditFaultModal extends HTMLElement {
             }
 
             const ticket = response.data;
-            if (ticket.status !== 'Open') {
-                window.MOUtils.emitToast('Only pending tickets can be edited', 'error');
+            const normalizedStatus = String(ticket.status || '').trim().toLowerCase();
+            if (normalizedStatus !== 'open' && normalizedStatus !== 'pending') {
+                window.MOUtils.emitToast(`Edit is only available while the fault ticket is Open. Current status: ${ticket.status || 'Unknown'}.`, 'error');
                 return;
             }
 

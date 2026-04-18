@@ -85,7 +85,29 @@ class MOFaultReporting extends HTMLElement {
 
             if (action === 'edit-breakdown') {
                 this.closeDropdownMenus();
-                window.MOUtils.emitToast('Edit machine breakdown feature coming soon', 'info');
+
+                const isEditable = actionEl.dataset.editable === 'true';
+                const ticketStatus = String(actionEl.dataset.ticketStatus || '').trim();
+                const ticketId = Number.parseInt(actionEl.dataset.ticketId, 10);
+
+                if (!isEditable) {
+                    if (!Number.isFinite(ticketId) || ticketId <= 0) {
+                        window.MOUtils.emitToast('Edit is unavailable because this report has no linked fault ticket yet.', 'warning');
+                        return;
+                    }
+
+                    window.MOUtils.emitToast(`Edit is only available while the fault ticket is Open. Current status: ${ticketStatus || 'Unknown'}.`, 'warning');
+                    return;
+                }
+
+                if (!Number.isFinite(ticketId) || ticketId <= 0) {
+                    window.MOUtils.emitToast('This fault ticket cannot be edited right now.', 'warning');
+                    return;
+                }
+
+                document.dispatchEvent(new CustomEvent('mo:open-edit-fault', {
+                    detail: { ticketId },
+                }));
                 return;
             }
 
@@ -140,7 +162,11 @@ class MOFaultReporting extends HTMLElement {
     renderFaultCard(fault) {
         const statusInfo = window.MOUtils.getStatusInfo(fault.status);
         const normalizedStatus = window.MOUtils.normalizeFilterStatus(fault.status);
-        const isPending = normalizedStatus === 'open';
+        const normalizedTicketStatus = String(fault.ticket_status || fault.status || '').trim().toLowerCase();
+        const ticketStatusLabel = String(fault.ticket_status || 'No Ticket').trim() || 'No Ticket';
+        const safeTicketStatusLabel = ticketStatusLabel.replace(/"/g, '&quot;');
+        const hasEditableTicket = Number.isFinite(Number(fault.fault_ticket_id)) && Number(fault.fault_ticket_id) > 0;
+        const canEdit = hasEditableTicket && (normalizedTicketStatus === 'open' || normalizedTicketStatus === 'pending');
         const severity = fault.severity || 'Medium';
         const severityClass = severity.toLowerCase() === 'critical'
             ? 'status-danger'
@@ -176,21 +202,16 @@ class MOFaultReporting extends HTMLElement {
                         <button class="btn btn-primary btn-small" type="button" data-action="view-breakdown" data-breakdown-id="${fault.id}">
                             <i class="fas fa-eye"></i> VIEW
                         </button>
-                        ${isPending ? `
-                            <div class="dropdown-container">
-                                <button class="btn btn-small btn-secondary dropdown-trigger" type="button" data-action="toggle-dropdown" data-menu-id="fault-menu-${fault.id}">
-                                    <i class="fas fa-ellipsis-v"></i>
+                        <div class="dropdown-container">
+                            <button class="btn btn-small btn-secondary dropdown-trigger" type="button" data-action="toggle-dropdown" data-menu-id="fault-menu-${fault.id}">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div class="dropdown-menu" id="fault-menu-${fault.id}">
+                                <button class="dropdown-item" type="button" data-action="edit-breakdown" data-ticket-id="${fault.fault_ticket_id || ''}" data-editable="${canEdit ? 'true' : 'false'}" data-ticket-status="${safeTicketStatusLabel}">
+                                    <i class="fas fa-edit"></i> Edit
                                 </button>
-                                <div class="dropdown-menu" id="fault-menu-${fault.id}">
-                                    <button class="dropdown-item" type="button" data-action="edit-breakdown" data-breakdown-id="${fault.id}">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </button>
-                                    <button class="dropdown-item danger" type="button" data-action="delete-breakdown" data-breakdown-id="${fault.id}">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </button>
-                                </div>
                             </div>
-                        ` : ''}
+                        </div>
                     </div>
                 </div>
             </div>

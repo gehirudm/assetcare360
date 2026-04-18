@@ -560,6 +560,9 @@ class FaultTicketService {
                         'message' => 'Failed to update fault ticket'
                     ];
                 }
+
+                // Keep machine breakdown report fields in sync so MO list reflects edits immediately.
+                $this->syncMachineBreakdownDetailsFromTicket($ticket, $updateData);
                 
                 // If status is being changed to Resolved, sync the breakdown report status
                 if (isset($data['status']) && $data['status'] === 'Resolved') {
@@ -582,6 +585,51 @@ class FaultTicketService {
                 'success' => false,
                 'message' => 'Error updating fault ticket: ' . $e->getMessage()
             ];
+        }
+    }
+
+    /**
+     * Sync editable machine breakdown fields from fault ticket updates.
+     */
+    private function syncMachineBreakdownDetailsFromTicket($ticket, $updateData) {
+        $breakdownReportId = trim((string) ($ticket['breakdown_report_id'] ?? ''));
+        $breakdownType = strtolower(trim((string) ($ticket['breakdown_type'] ?? '')));
+
+        if ($breakdownReportId === '') {
+            return;
+        }
+
+        $isMachineBreakdown = $breakdownType === 'machine_breakdown' || strpos($breakdownReportId, 'MBD-') === 0;
+        if (!$isMachineBreakdown) {
+            return;
+        }
+
+        $fields = [];
+        $params = [];
+
+        if (array_key_exists('description', $updateData) && $updateData['description'] !== '') {
+            $fields[] = 'description = ?';
+            $params[] = $updateData['description'];
+        }
+
+        if (array_key_exists('priority', $updateData) && $updateData['priority'] !== '') {
+            $fields[] = 'severity = ?';
+            $params[] = $updateData['priority'];
+        }
+
+        if (empty($fields)) {
+            return;
+        }
+
+        try {
+            $db = Database::getInstance()->getConnection();
+            $params[] = $breakdownReportId;
+
+            $sql = 'UPDATE machine_breakdown SET ' . implode(', ', $fields) . ' WHERE breakdown_id = ?';
+            $stmt = $db->prepare($sql);
+            $stmt->execute($params);
+        } catch (\Exception $e) {
+            error_log('Error syncing machine breakdown details from fault ticket: ' . $e->getMessage());
         }
     }
     

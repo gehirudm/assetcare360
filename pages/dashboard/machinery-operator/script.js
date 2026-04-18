@@ -51,7 +51,6 @@ function syncCurrentUserToComponents(user) {
     const targets = [
         getComponent('mo-fault-reporting'),
         getComponent('mo-condition-updates'),
-        getComponent('mo-ticket-tracking'),
         getComponent('mo-report-fault-modal'),
         getComponent('mo-condition-update-modal'),
     ];
@@ -84,13 +83,6 @@ async function refreshConditionUpdates() {
     }
 }
 
-async function refreshTicketTracking() {
-    const section = getComponent('mo-ticket-tracking');
-    if (section && typeof section.refresh === 'function') {
-        await section.refresh();
-    }
-}
-
 function refreshNotifications() {
     const section = getComponent('mo-notifications');
     if (section && typeof section.refresh === 'function') {
@@ -103,7 +95,6 @@ async function refreshAllSections() {
         refreshDashboardOverview(),
         refreshFaultReporting(),
         refreshConditionUpdates(),
-        refreshTicketTracking(),
     ]);
 
     refreshNotifications();
@@ -122,11 +113,6 @@ async function refreshSection(sectionId) {
 
     if (sectionId === 'condition-updates') {
         await refreshConditionUpdates();
-        return;
-    }
-
-    if (sectionId === 'ticket-tracking') {
-        await refreshTicketTracking();
         return;
     }
 
@@ -175,6 +161,16 @@ function bindDashboardEvents() {
         getComponent('mo-condition-update-modal')?.open();
     });
 
+    document.addEventListener('mo:open-weekly-check-edit', (event) => {
+        const check = event.detail?.check || null;
+        const normalizedStatus = String(check?.status || '').trim().toLowerCase();
+        if (!check || normalizedStatus !== 'pending') {
+            return;
+        }
+
+        getComponent('mo-condition-update-modal')?.open({ mode: 'edit', check });
+    });
+
     document.addEventListener('mo:open-edit-fault', (event) => {
         const ticketId = event.detail?.ticketId;
         if (!ticketId) {
@@ -210,7 +206,6 @@ function bindDashboardEvents() {
         await Promise.all([
             refreshDashboardOverview(),
             refreshFaultReporting(),
-            refreshTicketTracking(),
         ]);
         refreshNotifications();
     });
@@ -218,11 +213,17 @@ function bindDashboardEvents() {
     document.addEventListener('mo:fault-updated', async () => {
         await Promise.all([
             refreshFaultReporting(),
-            refreshTicketTracking(),
         ]);
     });
 
     document.addEventListener('mo:weekly-check-submitted', async () => {
+        await Promise.all([
+            refreshDashboardOverview(),
+            refreshConditionUpdates(),
+        ]);
+    });
+
+    document.addEventListener('mo:weekly-check-updated', async () => {
         await Promise.all([
             refreshDashboardOverview(),
             refreshConditionUpdates(),

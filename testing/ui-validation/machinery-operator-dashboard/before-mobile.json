@@ -13,7 +13,7 @@
     "activeSection": "notifications",
     "visibleFaultCards": 2,
     "visibleUpdateCards": 2,
-    "visibleTicketCards": 2,
+    "ticketTrackingSectionPresent": false,
     "notificationsCount": 5,
     "modalStates": {
       "reportFaultOpen": false,
