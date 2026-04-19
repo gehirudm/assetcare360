@@ -9,6 +9,8 @@
 - _(none)_
 
 ## Completed
+- [TASK058] Block Driver Unassign When Active Trip Exists - Completed on 2026-04-19
+- [TASK057] Fix TM Assign-Driver Availability Labeling - Completed on 2026-04-19
 - [TASK054] Resolve Rebase Conflicts for Ticket-Detail Dashboard Stack - Completed on 2026-04-19
 - [TASK061] Add Machinery Operator Single-Page Analytics Hub Charts - Completed on 2026-04-19
 - [TASK060] Add Inventory Manager Single-Page Analytics Hub Charts - Completed on 2026-04-19

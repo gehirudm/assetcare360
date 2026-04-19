@@ -114,6 +114,22 @@
   - Resolved sequential conflict stops in shared ticket-detail runtime and dashboard/UI-validation files.
   - Preserved additive shared ticket-detail behavior (insurance panel + MO pending edit action).
   - Completed rebase with clean git state and no unresolved conflict markers/files.
+- ✅ Post-rebase merge-marker cleanup (April 19, 2026)
+  - Removed lingering conflict markers from `.agent_memory/activeContext.md`, `testing/openapi.yaml`, and `testing/ui-validation/to-ticket-routing/after-mobile.json`.
+  - Reconciled route-breakdown OpenAPI paths so both route-breakdown CRUD/stats and route-breakdown garage-list endpoints are documented consistently.
+  - Validation evidence: diagnostics clean for all touched cleanup files.
+- ✅ TM assign-driver modal availability labeling fix (TASK057)
+  - Updated `pages/dashboard/transportation-manager/components/page-modals/tm-assign-driver-modal.js` so `Available` only appears when a driver has no active trips and is not assigned to another vehicle.
+  - Drivers assigned to another vehicle now render non-available workload chips (`busy`/`heavy`) with explicit assignment text.
+  - Validation evidence: editor diagnostics clean for the touched modal file; Playwright after-stage TM fuel/fleet validation passed (`1/1`).
+- ✅ TM assign-driver warning-row cleanup (April 19, 2026)
+  - Removed the caution warning row (`Assigned to: ...`) under each driver name in the assign-driver list while preserving workload chip logic and current-driver badge behavior.
+  - Validation evidence: touched-file diagnostics clean; `VAL_STAGE=after` Playwright TM fuel/fleet validation passed (`1/1`).
+- ✅ Driver unassign block while active trip exists (TASK058)
+  - Updated `app/services/VehicleService.php` to prevent both unassigning a vehicle's driver and reassigning that driver to another vehicle when they have active trips.
+  - Active trip guard uses existing trip status semantics (`Pending`, `Accepted`, `In Progress`) via `Trip::getActiveTripCount(...)`.
+  - Updated `testing/openapi.yaml` to document `POST /vehicles/{id}/unassign-driver` 400 blocked response behavior.
+  - Validation evidence: PHP lint clean, direct service verification returned blocked errors for unassign and reassignment paths, and TM after-stage Playwright suite passed (`1/1`).
 - ✅ Supervisor fault-ticket-tracking now includes driver vehicle breakdown reports
   - Fixed missing driver-reported rows by updating `pages/dashboard/supervisor/components/fault-ticket-tracking/script.js` to fetch and normalize `/breakdown-reports` in addition to machine/route feeds.
   - Added `normalizeVehicleBreakdown(...)` mapping and merged vehicle data into newest-first sorted list rendering and source-filter views.

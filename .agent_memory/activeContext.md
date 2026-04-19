@@ -404,7 +404,6 @@ Dashboard Web Components refactor execution for the active Supervisor residual s
 	- Executed `VAL_STAGE=after` for `testing/ui-validation/transportation-cargo-lifecycle/validate-transportation-cargo-lifecycle.spec.js` (pass: 1/1).
 	- Editor diagnostics reported no errors for touched files.
 
-<<<<<<< Updated upstream
 ### Route-breakdown driver GPS + map-based garage approval completed (April 17, 2026)
 - Completed TASK042 end-to-end for driver coordinate capture and supervisor map-based garage approval.
 - Backend/data updates complete:
@@ -422,7 +421,7 @@ Dashboard Web Components refactor execution for the active Supervisor residual s
 		- `VAL_STAGE=before`: passed (2/2 desktop+mobile)
 		- `VAL_STAGE=after`: passed (2/2 desktop+mobile)
 		- PHP lint, JS syntax checks, and editor diagnostics passed for touched files.
-=======
+
 ### Transportation Manager garage management + supervisor map approval update (April 17, 2026)
 - Implemented backend garage creation endpoint in `app/controllers/GarageController.php` and registered `POST /garages` in `public/index.php`.
 - Added missing `GET /route-breakdowns/garages` route registration in `public/index.php` for route-breakdown garage workflows.
@@ -445,7 +444,6 @@ Dashboard Web Components refactor execution for the active Supervisor residual s
 - Validation status:
 	- `VAL_STAGE=before`: passed (desktop + mobile)
 	- `VAL_STAGE=after`: passed (desktop + mobile)
->>>>>>> Stashed changes
 
 ### Vehicle government fuel QR image flow completed (April 16, 2026)
 - Completed TASK041 for Sri Lanka external-fuel QR support across vehicle management, TM dashboard, and Driver dashboard.
