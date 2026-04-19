@@ -215,9 +215,7 @@ class TMAssignDriverModal extends HTMLElement {
         }
 
         driversList.innerHTML = this._drivers.map(driver => {
-            const activeTrips = driver.active_trip_count;
-            const workloadClass = activeTrips === 0 ? 'available' : (activeTrips <= 2 ? 'busy' : 'heavy');
-            const workloadText = activeTrips === 0 ? 'Available' : `${activeTrips} active trip${activeTrips === 1 ? '' : 's'}`;
+            const activeTrips = Number(driver.active_trip_count || 0);
             const name = driver.full_name || driver.username || `Driver #${driver.id}`;
             
             // Check if this driver is the current assigned driver for this vehicle
@@ -225,13 +223,25 @@ class TMAssignDriverModal extends HTMLElement {
             
             // Check if driver is assigned to another vehicle
             const otherAssignment = driverAssignments[driver.id];
-            const assignmentWarning = otherAssignment 
-                ? `<div class="assignment-warning">
-                       <i class="fas fa-exclamation-triangle"></i> 
-                       Assigned to: ${otherAssignment.number_plate}
-                   </div>`
-                : '';
-            
+            const hasActiveTrips = activeTrips > 0;
+            const isAssignedElsewhere = Boolean(otherAssignment);
+
+            let workloadClass = 'available';
+            let workloadText = 'Available';
+
+            if (hasActiveTrips) {
+                workloadClass = activeTrips <= 2 ? 'busy' : 'heavy';
+                workloadText = `${activeTrips} active trip${activeTrips === 1 ? '' : 's'}`;
+            }
+
+            if (isAssignedElsewhere) {
+                const assignedVehicleLabel = otherAssignment.number_plate || otherAssignment.vehicle_name || 'another vehicle';
+                workloadClass = hasActiveTrips && activeTrips > 2 ? 'heavy' : 'busy';
+                workloadText = hasActiveTrips
+                    ? `${activeTrips} active trip${activeTrips === 1 ? '' : 's'} + assigned`
+                    : `Assigned to ${assignedVehicleLabel}`;
+            }
+
             const currentBadge = isCurrentDriver 
                 ? '<span class="current-assignment-badge"><i class="fas fa-check"></i> Current</span>'
                 : '';
@@ -243,7 +253,6 @@ class TMAssignDriverModal extends HTMLElement {
                     <span class="technician-details">
                         <span class="technician-name">${name} ${currentBadge}</span>
                         <span class="technician-expertise"><i class="fas fa-id-badge"></i> ${driver.employee_id || 'N/A'}</span>
-                        ${assignmentWarning}
                     </span>
                     <span class="technician-workload ${workloadClass}">${workloadText}</span>
                 </label>
