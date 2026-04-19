@@ -27,6 +27,22 @@ function buildFixtures() {
                 reported_by_name: 'Supervisor One',
                 created_at: '2026-04-12T08:00:00Z',
                 updated_at: '2026-04-12T09:00:00Z',
+                insurance_claim: {
+                    asset_type: 'machine',
+                    asset_id: 11,
+                    asset_label: 'Excavator 320D',
+                    warranty_provider: 'CAT Warranty Services',
+                    warranty_expiry: '2027-06-30',
+                    insurance_type: 'Full',
+                    insurance_provider: 'Litro Insurance PLC',
+                    insurance_provider_details: 'Fleet hotline 011-5555555',
+                    insurance_renew_interval_days: 365,
+                    last_insurance_renew_date: '2026-04-01',
+                    last_insurance_renew_details: 'Annual comprehensive renewal',
+                    next_insurance_renew_date: '2027-04-01',
+                    eligible: true,
+                    eligibility_reason: 'Insurance policy is active until 2027-04-01.'
+                },
                 assignments: [
                     {
                         assigned_by_name: 'Supervisor One',
@@ -197,6 +213,11 @@ async function runFlow(page, viewportName) {
     const destinationPath = detailUrlObject.pathname;
 
     expect(destinationPath).toContain('/view-ticket/index.html');
+
+    await expect(page.locator('#ovInsurancePanel')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#ovInsuranceProvider')).toContainText('Litro Insurance PLC');
+    await expect(page.locator('#ovWarrantyProvider')).toContainText('CAT Warranty Services');
+    await expect(page.locator('#ovInsuranceEligibility')).toContainText('Eligible for Insurance Claim');
 
     await expect(page.locator('#backButton')).toBeVisible({ timeout: 15000 });
     await page.locator('#backButton').click();
