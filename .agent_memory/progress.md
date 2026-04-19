@@ -1,6 +1,110 @@
 # Progress
 
 ## What Works
+- ✅ Machinery Operator single-page analytics hub charts + reporting (TASK061)
+  - Added Machinery Operator `analytics` section in `pages/dashboard/machinery-operator/index.html` with Chart.js include and analytics component mount.
+  - Added new analytics component files:
+    - `pages/dashboard/machinery-operator/components/analytics-hub/script.js`
+    - `pages/dashboard/machinery-operator/components/analytics-hub/style.css`
+  - Implemented tabbed chart analytics views for:
+    - Fault Analytics
+    - Weekly Check Analytics
+    - Machine Health Analytics
+    - Workflow Analytics
+    - Notification Analytics
+  - Added report generation workflow with date-range filtering, scope selection, preview rendering, and CSV download.
+  - Updated MO parent orchestration in `pages/dashboard/machinery-operator/script.js` to bind/refresh analytics on section activation and relevant create/update events.
+  - Added Playwright validation suite:
+    - `testing/ui-validation/machinery-operator-analytics-hub/validate-machinery-operator-analytics-hub.spec.js`
+  - Validation evidence:
+    - `VAL_STAGE=before npx playwright test machinery-operator-analytics-hub/validate-machinery-operator-analytics-hub.spec.js --reporter=line` -> pass (2/2)
+    - `VAL_STAGE=after npx playwright test machinery-operator-dashboard/validate-machinery-operator-dashboard.spec.js machinery-operator-analytics-hub/validate-machinery-operator-analytics-hub.spec.js --reporter=line` -> pass (4/4)
+- ✅ Inventory Manager single-page analytics hub charts + reporting (TASK060)
+  - Added Inventory `analytics` dashboard section in `pages/dashboard/inventory-manager/index.html` with Chart.js include and analytics component mount.
+  - Added new analytics component files:
+    - `pages/dashboard/inventory-manager/components/analytics-hub/script.js`
+    - `pages/dashboard/inventory-manager/components/analytics-hub/style.css`
+  - Implemented tabbed chart analytics views for:
+    - Stock Analytics
+    - Stock Additions
+    - Usage Analytics
+    - Request Analytics
+    - Asset Coverage
+  - Added report generation workflow with date-range filtering, scope selection, preview rendering, and CSV download.
+  - Updated Inventory parent orchestration in `pages/dashboard/inventory-manager/script.js` to bind/refresh analytics on section activation.
+  - Added Playwright validation suite:
+    - `testing/ui-validation/inventory-analytics-hub/validate-inventory-analytics-hub.spec.js`
+  - Fixed reconnect lifecycle issue in analytics hub by rebinding click handlers in `connectedCallback()` so report actions remain functional after reattachment.
+  - Validation evidence:
+    - `VAL_STAGE=before npx playwright test inventory-analytics-hub/validate-inventory-analytics-hub.spec.js --reporter=line` -> pass (2/2)
+    - `VAL_STAGE=after npx playwright test inventory-analytics-hub/validate-inventory-analytics-hub.spec.js --reporter=line` -> pass (2/2)
+- ✅ Technical Officer single-page analytics hub charts (TASK059)
+  - Added new TO `analytics` section in dashboard shell with nav + section wiring and Chart.js include.
+  - Added new component files:
+    - `pages/dashboard/technical-officer/components/analytics-hub/script.js`
+    - `pages/dashboard/technical-officer/components/analytics-hub/style.css`
+  - Implemented tabbed Chart.js analytics views for:
+    - Tickets
+    - Spare Parts
+    - Work Updates
+    - Assets
+    - Notifications
+  - Updated TO parent orchestration (`pages/dashboard/technical-officer/script.js`) for analytics bind/refresh lifecycle.
+  - Updated TO shell-sidebar default nav (`pages/dashboard/technical-officer/components/layout/sidebar/script.js`) to include analytics for subpage consistency.
+  - Validation evidence:
+    - Editor diagnostics: no errors in touched TO files.
+    - `VAL_BASE_URL=http://127.0.0.1:3000 VAL_STAGE=after npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js --reporter=line` -> pass (2/2)
+- ✅ Supervisor single-page analytics hub charts (TASK058)
+  - Added new Supervisor `analytics` section and linked it into dashboard navigation + section activation refresh flow.
+  - Added new component files:
+    - `pages/dashboard/supervisor/components/analytics-hub/script.js`
+    - `pages/dashboard/supervisor/components/analytics-hub/style.css`
+  - Implemented tabbed Chart.js analytics views for:
+    - Fault Tickets
+    - Breakdowns
+    - Weekly Checks
+    - Budget Queue
+    - Technicians
+  - Added defensive API response parsing and chart empty/error states for mixed backend response wrappers.
+  - Validation evidence:
+    - Editor diagnostics: no errors in touched Supervisor files.
+    - `VAL_STAGE=after npx playwright test supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js supervisor-daily-check-reports/validate-daily-check.spec.js --reporter=line` -> pass (4/4)
+- ✅ Transportation Manager analytics report generation + CSV download with time-period filtering (TASK057)
+  - Extended unified `tm-analytics-hub` with report toolbar controls: from-date, to-date, report scope selector, generate action, and download action.
+  - Implemented report generation for Trip, Fuel, Cargo, Driver, Garage, and All Analytics Summary modes using existing TM API contracts.
+  - Added report status feedback, summary-card preview, and tabular preview with CSV export support.
+  - Validation evidence:
+    - Editor diagnostics: no errors in touched files.
+    - `VAL_BASE_URL=http://127.0.0.1:3000 VAL_STAGE=after npx playwright test transportation-manager-fuel-fleet/validate-transportation-manager-fuel-fleet.spec.js transportation-cargo-section-split/validate-transportation-cargo-section-split.spec.js --reporter=line` -> pass (2/2)
+- ✅ Transportation Manager analytics unified into a single page with top selector options (TASK056)
+  - TM dashboard now has one `Analytics` section instead of five separate analytics pages.
+  - Added `tm-analytics-hub` with top options to select:
+    - Trip Analytics
+    - Fuel Analytics
+    - Cargo Analytics
+    - Driver Analytics
+    - Garage Analytics
+  - Existing analytics components are reused inside the hub, preserving backend contracts and chart logic.
+  - Added legacy URL section normalization (`trip-analytics`/`fuel-analytics`/etc. -> `analytics`) to keep deep links stable.
+  - Validation evidence: `VAL_STAGE=after` Playwright suites passed for:
+    - `testing/ui-validation/transportation-manager-fuel-fleet/validate-transportation-manager-fuel-fleet.spec.js`
+    - `testing/ui-validation/transportation-cargo-section-split/validate-transportation-cargo-section-split.spec.js`
+- ✅ Transportation Manager separate analytics pages implemented (TASK055)
+  - Added dedicated TM sidebar sections/pages for `Trip Analytics`, `Fuel Analytics`, `Cargo Analytics`, `Driver Analytics`, and `Garage Analytics`.
+  - Implemented chart components with summary cards, empty-state handling, and response-shape-safe API parsing:
+    - `pages/dashboard/transportation-manager/components/trip-analytics/script.js`
+    - `pages/dashboard/transportation-manager/components/fuel-analytics/script.js`
+    - `pages/dashboard/transportation-manager/components/cargo-analytics/script.js`
+    - `pages/dashboard/transportation-manager/components/driver-analytics/script.js`
+    - `pages/dashboard/transportation-manager/components/garage-analytics/script.js`
+  - Updated TM shell/orchestration to load sections and trigger analytics refresh on section activation + modal completion events.
+  - Validation evidence: `VAL_STAGE=after` Playwright runs passed for:
+    - `testing/ui-validation/transportation-manager-fuel-fleet/validate-transportation-manager-fuel-fleet.spec.js`
+    - `testing/ui-validation/transportation-cargo-section-split/validate-transportation-cargo-section-split.spec.js`
+- ✅ Dashboard chart recommendation roadmap documented (TASK054)
+  - Mapped existing chart infrastructure and chart-ready insertion points across role dashboards.
+  - Confirmed Chart.js is currently loaded in Transportation Manager and identified summary/report sections in other roles for phased chart expansion.
+  - Delivered prioritized chart-type guidance for Transportation Manager, Supervisor, Technical Officer, Inventory, Driver, Machinery Operator, SysAdministration, Maintenance, and Auction modules.
 - ✅ JWT auth with HTTP-only cookies; login/logout flow
 - ✅ Role-based access control (8 roles, including Transportation Manager)
 - ✅ API request logging with analytics (Admin)

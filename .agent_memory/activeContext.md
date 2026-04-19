@@ -1,7 +1,115 @@
 # Active Context
 
 ## Current Focus
-Dashboard Web Components refactor execution for the active Supervisor residual slice remains complete (TASK034, TASK035, TASK036). TASK033 and TASK032 are also complete. Route-breakdown workflow correction (TASK039), GPS/map approval (TASK042), transportation cargo lifecycle + dangerous escalation (TASK043), TM cargo section split/navigation cleanup (TASK044), TM cargo catalogue/details UX refinement (TASK045), dangerous in-route priority lock + supervisor dangerous visibility hardening (TASK046), breakdown-view/ticket-flow unification with create-time linked fault-ticket creation (TASK047), Inventory insurance flow implementation (TASK048), Supervisor insurance-claim ticket flow implementation (TASK049), Driver/Machinery Operator fault-reporting 500 fix (TASK050), Machinery Operator duplicate ticket creation fix (TASK051), and newest-first ticket rendering stabilization (TASK052) are now complete. Active remaining backlog is TASK003 migration verification plus pending monolith-final-decomposition cleanup tasks (TASK037, TASK038).
+Dashboard Web Components refactor execution for the active Supervisor residual slice remains complete (TASK034, TASK035, TASK036). TASK033 and TASK032 are also complete. Route-breakdown workflow correction (TASK039), GPS/map approval (TASK042), transportation cargo lifecycle + dangerous escalation (TASK043), TM cargo section split/navigation cleanup (TASK044), TM cargo catalogue/details UX refinement (TASK045), dangerous in-route priority lock + supervisor dangerous visibility hardening (TASK046), breakdown-view/ticket-flow unification with create-time linked fault-ticket creation (TASK047), Inventory insurance flow implementation (TASK048), Supervisor insurance-claim ticket flow implementation (TASK049), Driver/Machinery Operator fault-reporting 500 fix (TASK050), Machinery Operator duplicate ticket creation fix (TASK051), newest-first ticket rendering stabilization (TASK052), and Inventory single-page analytics/reporting hub delivery (TASK060) are now complete. Active remaining backlog is TASK003 migration verification plus pending monolith-final-decomposition cleanup tasks (TASK037, TASK038).
+
+### Machinery Operator single-page analytics hub charts completed (April 19, 2026)
+- Completed TASK061 by adding a dedicated Machinery Operator `analytics` section with TM-style top tab options in one page.
+- Added new `mo-analytics-hub` component with five chart sections:
+	- Fault Analytics
+	- Weekly Check Analytics
+	- Machine Health Analytics
+	- Workflow Analytics
+	- Notification Analytics
+- Implemented report toolbar support in the analytics hub:
+	- From Date / To Date filters
+	- Report scope selector
+	- Apply time filter, generate report, and download CSV actions
+- Wired section routing/refresh lifecycle in `pages/dashboard/machinery-operator/script.js` and shell updates in `pages/dashboard/machinery-operator/index.html`.
+- Added and validated dedicated UI suite:
+	- `testing/ui-validation/machinery-operator-analytics-hub/validate-machinery-operator-analytics-hub.spec.js`
+- Validation evidence:
+	- Passed: `VAL_STAGE=before npx playwright test machinery-operator-analytics-hub/validate-machinery-operator-analytics-hub.spec.js --reporter=line` (2/2)
+	- Passed: `VAL_STAGE=after npx playwright test machinery-operator-dashboard/validate-machinery-operator-dashboard.spec.js machinery-operator-analytics-hub/validate-machinery-operator-analytics-hub.spec.js --reporter=line` (4/4)
+
+### Inventory Manager single-page analytics hub charts completed (April 19, 2026)
+- Completed TASK060 by adding a dedicated Inventory Manager `analytics` section with TM-style tabbed chart views in one page.
+- Added new `inventory-analytics-hub` component with five chart sections:
+	- Stock Analytics
+	- Stock Additions
+	- Usage Analytics
+	- Request Analytics
+	- Asset Coverage
+- Implemented report toolbar support in the analytics hub:
+	- From Date / To Date filters
+	- Report scope selector
+	- Generate report and Download CSV actions
+- Wired section routing/refresh lifecycle in `pages/dashboard/inventory-manager/script.js` and shell updates in `pages/dashboard/inventory-manager/index.html`.
+- Added and stabilized UI validation suite:
+	- `testing/ui-validation/inventory-analytics-hub/validate-inventory-analytics-hub.spec.js`
+	- fixed analytics-hub reconnect click-binding issue in `pages/dashboard/inventory-manager/components/analytics-hub/script.js`
+- Validation evidence:
+	- Passed: `VAL_STAGE=before npx playwright test inventory-analytics-hub/validate-inventory-analytics-hub.spec.js --reporter=line` (2/2)
+	- Passed: `VAL_STAGE=after npx playwright test inventory-analytics-hub/validate-inventory-analytics-hub.spec.js --reporter=line` (2/2)
+
+### Technical Officer single-page analytics hub charts completed (April 19, 2026)
+- Completed TASK059 by adding a dedicated Technical Officer `analytics` section with TM-style tabbed chart views in one page.
+- Added new `to-analytics-hub` component with five chart sections:
+	- Tickets
+	- Spare Parts
+	- Work Updates
+	- Assets
+	- Notifications
+- Wired section routing/refresh lifecycle in `pages/dashboard/technical-officer/script.js` and shell updates in `pages/dashboard/technical-officer/index.html`.
+- Added TO sidebar parity update in `pages/dashboard/technical-officer/components/layout/sidebar/script.js` so subpage shell navigation includes `analytics`.
+- Validation evidence:
+	- Editor diagnostics clean for touched TO files.
+	- Passed: `VAL_BASE_URL=http://127.0.0.1:3000 VAL_STAGE=after npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js --reporter=line` (2/2).
+
+### Supervisor single-page analytics hub charts completed (April 19, 2026)
+- Completed TASK058 by adding a dedicated Supervisor `analytics` section with TM-style tabbed chart views in one page.
+- Added new `supervisor-analytics-hub` component with five chart sections:
+	- Fault Tickets
+	- Breakdowns
+	- Weekly Checks
+	- Budget Queue
+	- Technicians
+- Wired section routing/refresh lifecycle in `pages/dashboard/supervisor/script.js` and shell updates in `pages/dashboard/supervisor/index.html`.
+- Validation evidence:
+	- Editor diagnostics clean for touched Supervisor files.
+	- Passed: `VAL_STAGE=after npx playwright test supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js supervisor-daily-check-reports/validate-daily-check.spec.js --reporter=line` (4/4).
+
+### Transportation Manager analytics report generation + download completed (April 19, 2026)
+- Completed TASK057 by extending the unified TM analytics hub with report generation controls and downloadable exports.
+- Added report toolbar in `tm-analytics-hub`:
+	- From Date / To Date filters
+	- Report scope selector (active tab, per-domain, and all-summary)
+	- Generate report and Download CSV actions
+- Implemented API-backed report builders for Trip, Fuel, Cargo, Driver, Garage, and All Analytics Summary scopes with summary metrics and preview table rendering.
+- Added in-page report status messaging and CSV export file generation.
+- Validation evidence:
+	- Editor diagnostics clean for touched analytics-hub files.
+	- Passed: `VAL_BASE_URL=http://127.0.0.1:3000 VAL_STAGE=after npx playwright test transportation-manager-fuel-fleet/validate-transportation-manager-fuel-fleet.spec.js transportation-cargo-section-split/validate-transportation-cargo-section-split.spec.js --reporter=line`
+
+### Transportation Manager analytics consolidated into single page (April 19, 2026)
+- Completed TASK056 by replacing five separate analytics sections with one unified `analytics` page in the TM dashboard.
+- Added `tm-analytics-hub` with top selector options:
+	- Trip Analytics
+	- Fuel Analytics
+	- Cargo Analytics
+	- Driver Analytics
+	- Garage Analytics
+- Updated TM orchestration so section activation refreshes the unified analytics page and old analytics query-section ids normalize to `analytics`.
+- Validation evidence:
+	- Passed: `VAL_STAGE=after npx playwright test transportation-manager-fuel-fleet/validate-transportation-manager-fuel-fleet.spec.js --reporter=line`
+	- Passed: `VAL_STAGE=after npx playwright test transportation-cargo-section-split/validate-transportation-cargo-section-split.spec.js --reporter=line`
+
+### Transportation Manager separate analytics pages implementation completed (April 19, 2026)
+- Completed TASK055 by implementing dedicated TM analytics sections/pages for Trip, Fuel, Cargo, Driver, and Garage analytics.
+- Updated TM dashboard shell and orchestration to refresh analytics pages on section activation and relevant modal completion events.
+- Added shared analytics-page styling and component-level Chart.js rendering with empty-state fallbacks and API-response guards.
+- Validation evidence:
+	- Passed: `VAL_STAGE=after npx playwright test transportation-manager-fuel-fleet/validate-transportation-manager-fuel-fleet.spec.js --reporter=line`
+	- Passed: `VAL_STAGE=after npx playwright test transportation-cargo-section-split/validate-transportation-cargo-section-split.spec.js --reporter=line`
+
+### Dashboard chart recommendation roadmap completed (April 19, 2026)
+- Completed TASK054 as an advisory discovery/recommendation slice (no production code changes).
+- Verified current chart infrastructure and insertion points:
+	- Existing Chart.js bootstrapping in Transportation Manager dashboard.
+	- Existing chart renderers in TM fleet details and TM cargo details.
+	- Chart-ready summary/report sections across Supervisor, Technical Officer, Inventory, Driver, Machinery Operator, SysAdministration, Maintenance, and Auction dashboards.
+- Produced prioritized where-to-update + chart-type guidance focused on quick wins first, then cross-dashboard expansion.
+- Expanded recommendations to an all-project practical chart catalog with decision/report-focused chart choices per dashboard module and section.
 
 ### Cross-dashboard newest-first fault ticket ordering + sort/filter toolbar alignment completed (April 19, 2026)
 - Implemented explicit sort controls (`Created Date`, `Priority`) and default newest-first behavior across active fault-ticket/fault-reporting list components:
