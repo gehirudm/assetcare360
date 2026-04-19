@@ -324,6 +324,17 @@ function bindSupervisorTicketDetailView() {
 
         showToast(message, type);
     });
+
+    component.addEventListener('supervisor-ticket-detail-view:back', (event) => {
+        const requestedSection = normalizeSupervisorSection(
+            event.detail?.returnSection
+            || supervisorTicketDetailsReturnSection
+            || 'fault-ticket-tracking'
+        );
+
+        component.closeView?.();
+        navigateSupervisorSection(requestedSection);
+    });
 }
 
 function bindSupervisorBreakdownDetailView() {
@@ -939,6 +950,9 @@ function viewTicketDetails(ticketId) {
     if (requestedReturnSection !== 'ticket-details') {
         supervisorTicketDetailsReturnSection = requestedReturnSection;
     }
+
+    navigateSupervisorSection('ticket-details');
+    scrollSupervisorViewportToTop();
 
     ticketDetailView.open(numericTicketId, {
         returnSection: supervisorTicketDetailsReturnSection,

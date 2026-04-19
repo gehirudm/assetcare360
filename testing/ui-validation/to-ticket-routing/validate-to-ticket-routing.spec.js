@@ -187,19 +187,21 @@ async function runFlow(page, viewportName) {
     await page.locator('to-tickets #allTicketsList .ticket-item').first().click();
 
     await page.waitForURL((url) => {
-        return url.pathname.includes('/view-ticket/index.html')
-            && url.searchParams.get('id') === '501'
-            && url.searchParams.get('role_override') === 'TECHNICAL_OFFICER';
+        return url.pathname.includes('/dashboard/technical-officer/index.html')
+            && url.searchParams.get('section') === 'ticket-details';
     }, { timeout: 15000 });
 
-    const detailUrl = page.url();
-    const detailUrlObject = new URL(detailUrl);
-    const destinationPath = detailUrlObject.pathname;
+    const detailHost = page.locator('#ticket-details to-ticket-detail-view');
+    await expect(detailHost).toBeVisible({ timeout: 15000 });
+    await expect(detailHost.locator('iframe')).toHaveCount(0);
 
-    expect(destinationPath).toContain('/view-ticket/index.html');
+    await expect(detailHost.locator('#mainContent')).toBeVisible({ timeout: 15000 });
+    await expect(detailHost.locator('#ovTicketId')).toContainText('TKT-501');
+    const detailTicketLabel = await detailHost.locator('#ovTicketId').innerText();
+    const detailHasIframe = (await detailHost.locator('iframe').count()) > 0;
 
-    await expect(page.locator('#backButton')).toBeVisible({ timeout: 15000 });
-    await page.locator('#backButton').click();
+    await expect(detailHost.locator('#backButton')).toBeVisible({ timeout: 15000 });
+    await detailHost.locator('#backButton').click();
 
     await page.waitForURL((url) => {
         return url.pathname.includes('/dashboard/technical-officer/index.html')
@@ -239,9 +241,9 @@ async function runFlow(page, viewportName) {
         console: state.console,
         failedRequests: state.failedRequests,
         interactionSummary: {
-            detailUrl,
-            destinationPath,
-            destinationSearch: detailUrlObject.search,
+            detailMode: 'dashboard-component',
+            detailTicketLabel,
+            detailHasIframe,
             returnUrl: page.url(),
             returnPath,
             returnSearch
