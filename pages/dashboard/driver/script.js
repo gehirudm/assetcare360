@@ -19,6 +19,7 @@ function showToast(message, type = 'success') {
 function componentSelectorBySection(sectionId) {
     const selectors = {
         dashboard: 'driver-dashboard-overview',
+        analytics: 'driver-analytics-hub',
         'trip-log': 'driver-trip-log',
         'vehicle-check': 'driver-vehicle-check',
         breakdown: 'driver-breakdown',
@@ -46,6 +47,7 @@ async function refreshSection(sectionId) {
 async function refreshAllSections() {
     const sections = [
         'dashboard',
+        'analytics',
         'trip-log',
         'vehicle-check',
         'breakdown',
@@ -91,6 +93,7 @@ function bindOrchestrationEvents() {
 
     document.addEventListener('driver:data-summary-updated', () => {
         refreshSection('dashboard');
+        refreshSection('analytics');
     });
 
     document.addEventListener('keydown', (event) => {
@@ -119,6 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 refreshIntervalId = window.setInterval(() => {
+                    refreshSection('analytics');
                     refreshSection('trip-log');
                     refreshSection('transport-ticket');
                     refreshSection('vehicle-check');

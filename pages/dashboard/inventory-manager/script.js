@@ -43,6 +43,12 @@ async function initializeApp() {
             console.warn('Initial insurance management refresh failed:', err);
         });
 
+        // Wire analytics section and initialize report/chart shell
+        bindInventoryAnalyticsHub();
+        await refreshInventoryAnalyticsHub().catch(err => {
+            console.warn('Initial analytics refresh failed:', err);
+        });
+
         // Wire catalog section events
         bindCatalog();
 
@@ -312,6 +318,34 @@ async function refreshInsuranceManagement() {
     await insuranceModel.refresh();
 }
 
+function bindInventoryAnalyticsHub() {
+    const analyticsModel = document.querySelector('inventory-analytics-hub');
+    if (!analyticsModel || analyticsModel._inventoryAnalyticsHubBound) {
+        return;
+    }
+
+    analyticsModel._inventoryAnalyticsHubBound = true;
+
+    analyticsModel.addEventListener('inventory-analytics-hub:toast', event => {
+        const message = String(event.detail?.message || '').trim();
+        if (!message) {
+            return;
+        }
+
+        const type = String(event.detail?.type || 'info').trim() || 'info';
+        Utils.showToast(message, type);
+    });
+}
+
+async function refreshInventoryAnalyticsHub() {
+    const analyticsModel = document.querySelector('inventory-analytics-hub');
+    if (!analyticsModel || typeof analyticsModel.refresh !== 'function') {
+        return;
+    }
+
+    await analyticsModel.refresh();
+}
+
 function bindCatalog() {
     const catalogModel = document.querySelector('inventory-catalog');
     if (!catalogModel || catalogModel._inventoryCatalogBound) {
@@ -456,6 +490,9 @@ async function loadSectionData(sectionId) {
         switch (sectionId) {
             case 'dashboard':
                 await refreshDashboardOverview();
+                break;
+            case 'analytics':
+                await refreshInventoryAnalyticsHub();
                 break;
             case 'machines':
                 refreshMachines();

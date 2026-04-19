@@ -17,6 +17,7 @@
         active-section="dashboard"
         nav='[
             {"section":"dashboard","icon":"fas fa-chart-bar","label":"Dashboard"},
+            {"section":"analytics","icon":"fas fa-chart-line","label":"Analytics"},
             {"section":"fault-tickets","icon":"fas fa-ticket-alt","label":"Fault Tickets"},
             {"section":"service-records","icon":"fas fa-file-alt","label":"Service Records"},
             {"section":"cost-approvals","icon":"fas fa-money-bill-wave","label":"Cost Approvals"},
@@ -27,6 +28,11 @@
                 <!-- Dashboard Section -->
                 <section class="content-section active" id="dashboard">
                     <maintenance-dashboard-overview></maintenance-dashboard-overview>
+                </section>
+
+                <!-- Analytics Section -->
+                <section class="content-section" id="analytics">
+                    <maintenance-analytics-hub></maintenance-analytics-hub>
                 </section>
 
                 <!-- Fault Tickets Section -->
@@ -90,6 +96,7 @@
     <script src="../../components/styles/buttons.js"></script>
     <script src="../../components/styles/icons.js"></script>
     <script src="../../components/shared/confirm-dialog.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="./components/page-modals/maintenance-approve-cost-modal.js"></script>
     <script src="./components/page-modals/maintenance-reject-cost-modal.js"></script>
     <script src="./components/page-modals/maintenance-cost-details-modal.js"></script>
@@ -98,6 +105,7 @@
     <script src="./components/page-modals/maintenance-warranty-details-modal.js"></script>
     <script src="./components/page-modals/maintenance-service-schedule-modal.js"></script>
     <script src="./components/page-modals/maintenance-add-service-record-modal.js"></script>
+    <script src="./components/analytics-hub/script.js"></script>
     <script src="./components/maintenance-dashboard-overview.js"></script>
     <script src="./components/maintenance-fault-tickets.js"></script>
     <script src="./components/maintenance-service-records.js"></script>

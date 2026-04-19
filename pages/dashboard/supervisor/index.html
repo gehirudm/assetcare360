@@ -20,6 +20,7 @@
         active-section="dashboard"
         nav='[
             {"section":"dashboard","icon":"fas fa-chart-line","label":"Dashboard"},
+            {"section":"analytics","icon":"fas fa-chart-pie","label":"Analytics"},
             {"section":"daily-check-reports","icon":"fas fa-clipboard-check","label":"Weekly Check Reports"},
             {"section":"fault-ticket-tracking","icon":"fas fa-ticket-alt","label":"Fault Tickets"},
             {"section":"repair-management","icon":"fas fa-tools","label":"Repair Management"},
@@ -29,6 +30,10 @@
         ]'>
                 <section class="content-section active" id="dashboard">
                     <supervisor-dashboard-overview></supervisor-dashboard-overview>
+                </section>
+
+                <section class="content-section" id="analytics">
+                    <supervisor-analytics-hub></supervisor-analytics-hub>
                 </section>
 
                 <!-- Weekly Check Reports Section -->
@@ -99,8 +104,10 @@
     <script src="../../components/styles/buttons.js"></script>
     <script src="../../components/styles/icons.js"></script>
     <script src="../../components/shared/confirm-dialog.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="../../js/dashboard-init.js"></script>
     <script src="./components/dashboard-overview/script.js"></script>
+    <script src="./components/analytics-hub/script.js"></script>
     <script src="./components/asset-status/script.js"></script>
     <script src="./components/fault-ticket-tracking/script.js"></script>
     <script src="./components/ticket-details/script.js"></script>

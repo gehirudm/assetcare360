@@ -21,6 +21,7 @@
         active-section="dashboard"
         nav='[
             {"section":"dashboard","icon":"fas fa-chart-line","label":"Dashboard"},
+            {"section":"analytics","icon":"fas fa-chart-pie","label":"Analytics"},
             {"section":"tickets","icon":"fas fa-ticket-alt","label":"Fault &amp; Repair Tickets"},
             {"section":"spare-parts","icon":"fas fa-boxes","label":"Spare Part Management"},
             {"section":"inventory","icon":"fas fa-warehouse","label":"Inventory Management"},
@@ -101,6 +102,11 @@
                         </div>
                     </div>
 
+                </section>
+
+                <!-- Analytics -->
+                <section class="content-section" id="analytics">
+                    <to-analytics-hub></to-analytics-hub>
                 </section>
 
                 <!-- Fault & Repair Tickets -->
@@ -444,7 +450,9 @@
     <script src="../../components/shared/ac-layout.js"></script>
     <script src="../../components/styles/buttons.js"></script>
     <script src="../../components/styles/icons.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="./components/tickets/script.js"></script>
+    <script src="./components/analytics-hub/script.js"></script>
     <script src="./components/ticket-details/script.js"></script>
     <script src="./components/notifications/script.js"></script>
     <script src="./components/inventory/script.js"></script>

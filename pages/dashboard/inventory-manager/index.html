@@ -22,6 +22,7 @@
     <script src="../../components/styles/buttons.js"></script>
     <script src="../../components/styles/icons.js"></script>
     <script src="../../components/shared/confirm-dialog.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="../../js/dashboard-init.js"></script>
     
 </head>
@@ -37,6 +38,7 @@
         active-section="dashboard"
         nav='[
             {"section":"dashboard","icon":"fas fa-tachometer-alt","label":"Dashboard"},
+            {"section":"analytics","icon":"fas fa-chart-pie","label":"Analytics"},
             {"section":"machines","icon":"fas fa-cogs","label":"Manage Machines"},
             {"section":"vehicles","icon":"fas fa-truck","label":"Manage Vehicles"},
             {"section":"insurance-management","icon":"fas fa-shield-alt","label":"Insurance Management"},
@@ -49,6 +51,11 @@
                 <!-- Dashboard Section -->
                 <section class="content-section active" id="dashboard">
                     <inventory-dashboard-overview></inventory-dashboard-overview>
+                </section>
+
+                <!-- Analytics Section -->
+                <section class="content-section" id="analytics">
+                    <inventory-analytics-hub></inventory-analytics-hub>
                 </section>
 
                 <!-- Machines Section -->
@@ -108,6 +115,7 @@
 
     <!-- Load JavaScript -->
     <script src="./components/dashboard-overview/script.js"></script>
+    <script src="./components/analytics-hub/script.js"></script>
     <script src="./components/usage-tracking/script.js"></script>
     <script src="./components/notifications/script.js"></script>
     <script src="./components/orders-approvals/script.js"></script>

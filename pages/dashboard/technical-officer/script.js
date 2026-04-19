@@ -30,6 +30,12 @@ function handleSectionActivation(sectionId) {
         refreshTOSpareParts();
     }
 
+    if (sectionId === 'analytics') {
+        refreshTOAnalyticsHub().catch(error => {
+            console.error('Failed to refresh analytics section:', error);
+        });
+    }
+
     if (sectionId === 'ticket-details') {
         const ticketDetailView = document.querySelector('#ticket-details to-ticket-detail-view');
         if (ticketDetailView && typeof ticketDetailView.refresh === 'function') {
@@ -310,6 +316,33 @@ function bindTONotifications() {
         if (!section) return;
         navigateToSection(section);
     });
+}
+
+function bindTOAnalyticsHub() {
+    const analyticsComponent = document.querySelector('to-analytics-hub');
+    if (!analyticsComponent || analyticsComponent.dataset.bound === 'true') return;
+
+    analyticsComponent.dataset.bound = 'true';
+    analyticsComponent.addEventListener('technical-officer-analytics-hub:toast', (event) => {
+        const message = event.detail?.message;
+        const type = event.detail?.type || 'info';
+        if (!message) return;
+
+        showToast(message, type);
+    });
+}
+
+async function refreshTOAnalyticsHub() {
+    const analyticsComponent = document.querySelector('to-analytics-hub');
+    if (!analyticsComponent) return;
+
+    if (typeof analyticsComponent.setCurrentUser === 'function') {
+        analyticsComponent.setCurrentUser(currentUser);
+    }
+
+    if (typeof analyticsComponent.refresh === 'function') {
+        await analyticsComponent.refresh();
+    }
 }
 
 function bindTOTickets() {
@@ -1628,12 +1661,19 @@ function toggleSidebar() {
         bindTOTicketDetails();
         bindTOSpareParts();
         bindTOServiceWarranty();
+        bindTOAnalyticsHub();
 
         // Load tickets and inventory after user data is loaded
         console.log('Loading tickets and inventory...');
         await loadTickets();
         await refreshTOInventory();
         await refreshTONotifications();
+
+        const activeSection = new URLSearchParams(window.location.search).get('section');
+        if (activeSection === 'analytics') {
+            await refreshTOAnalyticsHub();
+        }
+
         console.log('Tickets and inventory loaded');
     } catch (error) {
         console.error('Error initializing dashboard:', error);
@@ -1651,6 +1691,7 @@ document.addEventListener('DOMContentLoaded', function () {
     bindTOFeedback();
     bindTOSpareParts();
     bindTOServiceWarranty();
+    bindTOAnalyticsHub();
 
     // Set today's date as default for date inputs
     const today = new Date().toISOString().split('T')[0];
