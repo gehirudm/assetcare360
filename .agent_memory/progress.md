@@ -6,6 +6,10 @@
 - ✅ API request logging with analytics (Admin)
 - ✅ User management (CRUD, search, filters, force-password-change)
 - ✅ Machine & vehicle inventory management
+- ✅ Interrupted rebase conflict stack recovery on `spare-parts-and-garage` (April 19, 2026)
+  - Resolved sequential conflict stops in shared ticket-detail runtime and dashboard/UI-validation files.
+  - Preserved additive shared ticket-detail behavior (insurance panel + MO pending edit action).
+  - Completed rebase with clean git state and no unresolved conflict markers/files.
 - ✅ Supervisor fault-ticket-tracking now includes driver vehicle breakdown reports
   - Fixed missing driver-reported rows by updating `pages/dashboard/supervisor/components/fault-ticket-tracking/script.js` to fetch and normalize `/breakdown-reports` in addition to machine/route feeds.
   - Added `normalizeVehicleBreakdown(...)` mapping and merged vehicle data into newest-first sorted list rendering and source-filter views.
