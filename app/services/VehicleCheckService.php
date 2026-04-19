@@ -48,6 +48,8 @@ class VehicleCheckService {
         if (!is_numeric($data['odometer_reading']) || $data['odometer_reading'] <= 0) {
             throw new Exception("Invalid odometer reading");
         }
+
+        $data['week_end_date'] = $this->normalizeWeekEndDate($data['week_end_date']);
         
         // Validate odometer against vehicle's current mileage
         $vehicle = $this->vehicleModel->findByNumberPlate($data['vehicle_registration']);
@@ -164,5 +166,24 @@ class VehicleCheckService {
      */
     public function getNextCheckId() {
         return $this->vehicleCheckModel->getNextCheckId();
+    }
+
+    private function normalizeWeekEndDate($value): string {
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            throw new Exception('week_end_date is required');
+        }
+
+        $date = DateTime::createFromFormat('Y-m-d', $raw);
+        if (!$date || $date->format('Y-m-d') !== $raw) {
+            throw new Exception('week_end_date must be in YYYY-MM-DD format');
+        }
+
+        $today = new DateTime(date('Y-m-d'));
+        if ($date > $today) {
+            throw new Exception('week_end_date cannot be in the future');
+        }
+
+        return $date->format('Y-m-d');
     }
 }

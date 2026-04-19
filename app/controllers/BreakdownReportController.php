@@ -153,6 +153,11 @@ class BreakdownReportController {
         RoleMiddleware::requireMinRole('Driver');
         
         $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            Response::error('Invalid JSON payload', 400);
+        }
+
+        $breakdownDate = $this->normalizeBreakdownDate($input['breakdown_date'] ?? null, false);
         $currentUser = RoleMiddleware::getCurrentUser();
         
         try {
@@ -174,7 +179,7 @@ class BreakdownReportController {
                 $breakdownId,
                 $input['vehicle_id'],
                 $currentUser['id'],
-                $input['breakdown_date'] ?? date('Y-m-d'),
+                $breakdownDate,
                 $input['breakdown_type'],
                 $input['severity'],
                 $input['description']
@@ -186,7 +191,9 @@ class BreakdownReportController {
                 'breakdown_report_id' => $breakdownId,
                 'breakdown_type' => 'vehicle_breakdown',
                 'priority' => $this->mapSeverityToPriority($input['severity'] ?? null),
-                'description' => $this->buildAutoTicketDescription($breakdownId, $input)
+                'description' => $this->buildAutoTicketDescription($breakdownId, array_merge($input, [
+                    'breakdown_date' => $breakdownDate,
+                ]))
             ];
 
             $ticketResult = $this->faultTicketService->create($ticketPayload);
@@ -280,6 +287,9 @@ class BreakdownReportController {
         $allowedFields = ['severity', 'breakdown_type', 'description', 'status', 'breakdown_date'];
         foreach ($allowedFields as $field) {
             if (isset($input[$field])) {
+                if ($field === 'breakdown_date') {
+                    $input[$field] = $this->normalizeBreakdownDate($input[$field], true);
+                }
                 $fields[] = "$field = ?";
                 $params[] = $input[$field];
             }
@@ -330,6 +340,28 @@ class BreakdownReportController {
         $stmt->execute([$id]);
         
         Response::success(null, 'Breakdown report deleted successfully');
+    }
+
+    private function normalizeBreakdownDate($value, bool $required): string {
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            if ($required) {
+                Response::error('breakdown_date is required', 400);
+            }
+            return date('Y-m-d');
+        }
+
+        $date = DateTime::createFromFormat('Y-m-d', $raw);
+        if (!$date || $date->format('Y-m-d') !== $raw) {
+            Response::error('breakdown_date must be in YYYY-MM-DD format', 400);
+        }
+
+        $today = new DateTime(date('Y-m-d'));
+        if ($date > $today) {
+            Response::error('breakdown_date cannot be in the future', 400);
+        }
+
+        return $date->format('Y-m-d');
     }
     
     /**

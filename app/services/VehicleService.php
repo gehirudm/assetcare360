@@ -62,14 +62,10 @@ class VehicleService {
             }
         }
         
-        // Validate last service date
-        if (!empty($data['last_service_date'])) {
-            $lastServiceDate = new DateTime($data['last_service_date']);
-            $currentDate = new DateTime();
-            
-            if ($lastServiceDate > $currentDate) {
-                throw new Exception("Last service date cannot be in the future");
-            }
+        if (array_key_exists('last_service_date', $data)) {
+            $lastServiceDate = $this->normalizeDateInput($data['last_service_date'], 'last_service_date', false);
+            $this->ensureDateNotFuture($lastServiceDate, 'last_service_date');
+            $data['last_service_date'] = $lastServiceDate;
         }
         
         // Check if chassis number already exists
@@ -160,14 +156,10 @@ class VehicleService {
             throw new Exception("Last service mileage cannot be greater than current mileage");
         }
         
-        // Validate last service date
-        if (isset($data['last_service_date']) && !empty($data['last_service_date'])) {
-            $lastServiceDate = new DateTime($data['last_service_date']);
-            $currentDate = new DateTime();
-            
-            if ($lastServiceDate > $currentDate) {
-                throw new Exception("Last service date cannot be in the future");
-            }
+        if (array_key_exists('last_service_date', $data)) {
+            $lastServiceDate = $this->normalizeDateInput($data['last_service_date'], 'last_service_date', false);
+            $this->ensureDateNotFuture($lastServiceDate, 'last_service_date');
+            $data['last_service_date'] = $lastServiceDate;
         }
         
         // Add updated_by
@@ -529,7 +521,12 @@ class VehicleService {
             return;
         }
 
-        $inputDate = new DateTime((string)$value);
+        $normalized = trim((string)$value);
+        $inputDate = DateTime::createFromFormat('Y-m-d', $normalized);
+        if (!$inputDate || $inputDate->format('Y-m-d') !== $normalized) {
+            throw new Exception("Field '{$field}' must be a valid date (YYYY-MM-DD)");
+        }
+
         $today = new DateTime(date('Y-m-d'));
         if ($inputDate > $today) {
             throw new Exception("Field '{$field}' cannot be in the future");

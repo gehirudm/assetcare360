@@ -428,6 +428,10 @@ class TripService {
         $fromDate = $this->normalizeDateInput($filters['from_date'] ?? null);
         $toDate = $this->normalizeDateInput($filters['to_date'] ?? null);
 
+        if ($fromDate !== null && $toDate !== null && strcmp($fromDate, $toDate) > 0) {
+            throw new Exception('from_date must be earlier than or equal to to_date');
+        }
+
         if ($fromDate) {
             $where[] = 'DATE(COALESCE(t.end_time, t.updated_at, t.created_at)) >= ?';
             $params[] = $fromDate;
