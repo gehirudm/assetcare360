@@ -1,0 +1,20 @@
+{
+  "stage": "after",
+  "viewport": "mobile",
+  "url": "http://127.0.0.1:3000/dashboard/driver/index.html",
+  "title": "Driver Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \"Driver Analytics\" [level=2]\n  - paragraph: Track trips, checks, breakdowns, fuel, and route-garage workflow from one analytics hub.\n  - tablist \"Driver analytics views\":\n    - tab \"Trip Analytics\"\n    - tab \"Vehicle Check Analytics\"\n    - tab \"Breakdown Analytics\"\n    - tab \"Fuel Analytics\"\n    - tab \"Workflow Analytics\" [selected]\n  - text: From Date\n  - textbox \"From Date\": 2026-04-01\n  - text: To Date\n  - textbox \"To Date\": 2026-04-30\n  - text: Report Type\n  - combobox \"Report Type\":\n    - option \"Active Analytics View\" [selected]\n    - option \"Trip Analytics\"\n    - option \"Vehicle Check Analytics\"\n    - option \"Breakdown Analytics\"\n    - option \"Fuel Analytics\"\n    - option \"Workflow Analytics\"\n    - option \"All Analytics Summary\"\n  - button \"Apply Time Filter\"\n  - button \"Generate Report\"\n  - button \"Download CSV\"\n  - text: Analytics updated for selected period. Report downloaded successfully.\n  - heading \"Workflow Analytics\" [level=3]\n  - paragraph: \"Period: 2026-04-01 to 2026-04-30 | Generated: Apr 19, 2026, 03:13 PM\"\n  - text: Workflow Cases 0 Garage Approved 0 In Progress 0 Completed 0\n  - table:\n    - rowgroup:\n      - row \"Route Breakdown ID Breakdown Type Workflow Status Ticket Status Approved Garage Bill Amount Reported At\":\n        - columnheader \"Route Breakdown ID\"\n        - columnheader \"Breakdown Type\"\n        - columnheader \"Workflow Status\"\n        - columnheader \"Ticket Status\"\n        - columnheader \"Approved Garage\"\n        - columnheader \"Bill Amount\"\n        - columnheader \"Reported At\"\n    - rowgroup\n  - tabpanel: Route Breakdown Workflow Cases 0 Garage Approved 0 In Progress 0 Completed 0 Garage Workflow Status Current status distribution of route breakdown workflow. No garage workflow status data found for selected period. Top Approved Garages Garages most frequently approved for route breakdowns. No approved garage records found for selected period.",
+    "snapshotLength": 1931
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "stage": "after",
+    "analyticsNavPresent": true,
+    "analyticsSectionPresent": true,
+    "activeSection": "analytics",
+    "reportRows": 0,
+    "downloadSuggestedFilename": "driver-active-report-20260419-1513.csv"
+  }
+}

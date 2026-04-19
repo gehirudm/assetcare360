@@ -1,0 +1,18 @@
+{
+  "stage": "after",
+  "viewport": "mobile",
+  "url": "http://127.0.0.1:3000/dashboard/inventory-manager/index.html",
+  "title": "Inventory Manager Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \" Inventory Analytics\" [level=2]\n  - paragraph: Analyze stock movement, requests, and asset insurance coverage from one hub.\n  - tablist \"Inventory analytics sections\":\n    - tab \"Stock Analytics\" [selected]\n    - tab \"Stock Additions\"\n    - tab \"Usage Analytics\"\n    - tab \"Request Analytics\"\n    - tab \"Asset Coverage\"\n  - text: From Date\n  - textbox \"From Date\": 2026-04-01\n  - text: To Date\n  - textbox \"To Date\": 2026-04-30\n  - text: Report Type\n  - combobox \"Report Type\":\n    - option \"Active Analytics View\"\n    - option \"Stock Analytics\"\n    - option \"Stock Additions\"\n    - option \"Usage Analytics\" [selected]\n    - option \"Request Analytics\"\n    - option \"Asset Coverage\"\n    - option \"All Analytics Summary\"\n  - button \" Generate Report\"\n  - button \" Download CSV\"\n  - text: Report downloaded successfully.\n  - heading \"Usage Analytics\" [level=3]\n  - paragraph: \"Period: 2026-04-01 to 2026-04-30 | Generated: Apr 19, 2026, 02:15 PM\"\n  - text: Issuance Records 2 Total Quantity Issued 5 Machine Issuances 1 Vehicle Issuances 1\n  - table:\n    - rowgroup:\n      - row \"Usage ID Spare Part ID Spare Part Name Quantity Issued Issue Date Machine ID Vehicle ID Issued By Notes\":\n        - columnheader \"Usage ID\"\n        - columnheader \"Spare Part ID\"\n        - columnheader \"Spare Part Name\"\n        - columnheader \"Quantity Issued\"\n        - columnheader \"Issue Date\"\n        - columnheader \"Machine ID\"\n        - columnheader \"Vehicle ID\"\n        - columnheader \"Issued By\"\n        - columnheader \"Notes\"\n    - rowgroup:\n      - row \"801 SPR-001 Hydraulic Pump Seal 3 2026-04-10 MCH-011 34 Preventive maintenance\":\n        - cell \"801\"\n        - cell \"SPR-001\"\n        - cell \"Hydraulic Pump Seal\"\n        - cell \"3\"\n        - cell \"2026-04-10\"\n        - cell \"MCH-011\"\n        - cell\n        - cell \"34\"\n        - cell \"Preventive maintenance\"\n      - row \"802 SPR-002 Brake Pad Set 2 2026-04-09 VEH-021 34 Service issue\":\n        - cell \"802\"\n        - cell \"SPR-002\"\n        - cell \"Brake Pad Set\"\n        - cell \"2\"\n        - cell \"2026-04-09\"\n        - cell\n        - cell \"VEH-021\"\n        - cell \"34\"\n        - cell \"Service issue\"\n  - text: Stock analytics updated at 02:15:58 PM.\n  - tabpanel:\n    - text: Total Spare Parts 3 Total Quantity 21 Low Stock Parts 1 Out of Stock Parts 1 Estimated Stock Value LKR 87,300.00\n    - article:\n      - heading \"Stock Status Mix\" [level=3]\n      - paragraph: In-stock, low-stock, and out-of-stock distribution.\n    - article:\n      - heading \"Top Stock Quantities\" [level=3]\n      - paragraph: Highest quantity spare parts currently on hand.",
+    "snapshotLength": 2620
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "tabsVisible": 5,
+    "reportToolbarVisible": 1,
+    "previewCards": 1,
+    "reportStatus": "Report downloaded successfully."
+  }
+}
