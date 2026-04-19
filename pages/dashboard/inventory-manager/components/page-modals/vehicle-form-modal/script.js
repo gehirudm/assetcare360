@@ -192,44 +192,45 @@ function createVehicleModal(vehicle = null, nextVehicleId = 'VEH-001') {
 
                 <div class="form-section">
                     <h5><i class="fas fa-shield-alt"></i> Insurance</h5>
+                    <small style="color: var(--muted); display: block; margin-bottom: 10px;">Optional during vehicle creation. You can add or update insurance details later from Insurance Management.</small>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Insurance Type *</label>
-                            <select class="form-select" id="vehicleInsuranceType" required>
+                            <label class="form-label">Insurance Type</label>
+                            <select class="form-select" id="vehicleInsuranceType">
                                 <option value="">Select Insurance Type</option>
                                 <option value="Full" ${vehicle?.insurance_type === 'Full' ? 'selected' : ''}>Full</option>
                                 <option value="Third-Party" ${vehicle?.insurance_type === 'Third-Party' ? 'selected' : ''}>Third-Party</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Insurance Provider *</label>
+                            <label class="form-label">Insurance Provider</label>
                             <input type="text" class="form-input" id="vehicleInsuranceProvider"
-                                   value="${vehicle?.insurance_provider || ''}" required>
+                                   value="${vehicle?.insurance_provider || ''}">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Insurance Provider Details *</label>
-                            <textarea class="form-textarea" id="vehicleInsuranceProviderDetails" rows="2" required>${vehicle?.insurance_provider_details || ''}</textarea>
+                            <label class="form-label">Insurance Provider Details</label>
+                            <textarea class="form-textarea" id="vehicleInsuranceProviderDetails" rows="2">${vehicle?.insurance_provider_details || ''}</textarea>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Insurance Renew Interval (Days) *</label>
+                            <label class="form-label">Insurance Renew Interval (Days)</label>
                             <input type="number" class="form-input" id="vehicleInsuranceRenewIntervalDays"
-                                   value="${vehicle?.insurance_renew_interval_days || ''}" min="1" required>
+                                   value="${vehicle?.insurance_renew_interval_days || ''}" min="1">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Last Insurance Renew Date *</label>
+                            <label class="form-label">Last Insurance Renew Date</label>
                             <input type="date" class="form-input" id="vehicleLastInsuranceRenewDate"
                                    value="${vehicle?.last_insurance_renew_date || ''}"
-                                   max="${new Date().toISOString().split('T')[0]}" required>
+                                   max="${new Date().toISOString().split('T')[0]}">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Last Insurance Renew Details *</label>
-                            <textarea class="form-textarea" id="vehicleLastInsuranceRenewDetails" rows="2" required>${vehicle?.last_insurance_renew_details || ''}</textarea>
+                            <label class="form-label">Last Insurance Renew Details</label>
+                            <textarea class="form-textarea" id="vehicleLastInsuranceRenewDetails" rows="2">${vehicle?.last_insurance_renew_details || ''}</textarea>
                         </div>
                     </div>
                 </div>
@@ -415,6 +416,15 @@ async function handleEditVehicle(e) {
     }
 }
 
+function parsePositiveIntegerOrNull(value) {
+    const parsed = Number.parseInt(String(value || '').trim(), 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+        return null;
+    }
+
+    return parsed;
+}
+
 function getVehicleFormData() {
     const serviceType = document.getElementById('serviceIntervalType').value;
 
@@ -432,12 +442,12 @@ function getVehicleFormData() {
         service_interval_type: serviceType,
         warranty_expiry: document.getElementById('vehicleWarrantyExpiry').value || null,
         warranty_provider: document.getElementById('vehicleWarrantyProvider').value,
-        insurance_type: document.getElementById('vehicleInsuranceType').value,
-        insurance_provider: document.getElementById('vehicleInsuranceProvider').value,
-        insurance_provider_details: document.getElementById('vehicleInsuranceProviderDetails').value,
-        insurance_renew_interval_days: parseInt(document.getElementById('vehicleInsuranceRenewIntervalDays').value, 10),
+        insurance_type: document.getElementById('vehicleInsuranceType').value || null,
+        insurance_provider: (document.getElementById('vehicleInsuranceProvider').value || '').trim(),
+        insurance_provider_details: (document.getElementById('vehicleInsuranceProviderDetails').value || '').trim(),
+        insurance_renew_interval_days: parsePositiveIntegerOrNull(document.getElementById('vehicleInsuranceRenewIntervalDays').value),
         last_insurance_renew_date: document.getElementById('vehicleLastInsuranceRenewDate').value || null,
-        last_insurance_renew_details: document.getElementById('vehicleLastInsuranceRenewDetails').value,
+        last_insurance_renew_details: (document.getElementById('vehicleLastInsuranceRenewDetails').value || '').trim(),
         last_service_date: document.getElementById('vehicleLastServiceDate').value || null,
         last_service_mileage: document.getElementById('lastServiceMileage').value ? parseInt(document.getElementById('lastServiceMileage').value) : null,
         notes: document.getElementById('vehicleNotes').value
