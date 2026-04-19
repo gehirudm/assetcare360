@@ -3,6 +3,7 @@
 DashboardInit.init('Supervisor', {
     onSuccess: () => {
         bindSupervisorDashboardOverview();
+        bindSupervisorAnalyticsHub();
         bindSupervisorDailyCheckReports();
         bindSupervisorFaultTickets();
         bindSupervisorTicketModals();
@@ -28,6 +29,7 @@ DashboardInit.init('Supervisor', {
 
 const SUPERVISOR_SECTIONS = new Set([
     'dashboard',
+    'analytics',
     'daily-check-reports',
     'fault-ticket-tracking',
     'ticket-details',
@@ -111,6 +113,9 @@ function loadSectionData(sectionId) {
         case 'dashboard':
             // Dashboard already shows static summary
             break;
+        case 'analytics':
+            refreshSupervisorAnalyticsHub();
+            break;
         case 'daily-check-reports':
             refreshSupervisorDailyCheckReports();
             break;
@@ -147,6 +152,26 @@ function bindSupervisorDashboardOverview() {
         if (!section || !layout || typeof layout.navigateTo !== 'function') return;
         layout.navigateTo(section);
     });
+}
+
+function bindSupervisorAnalyticsHub() {
+    const component = document.querySelector('supervisor-analytics-hub');
+    if (!component || component.dataset.bound === 'true') return;
+
+    component.dataset.bound = 'true';
+
+    component.addEventListener('supervisor-analytics-hub:toast', (event) => {
+        const message = event.detail?.message;
+        const type = event.detail?.type || 'info';
+        if (!message) return;
+        showToast(message, type);
+    });
+}
+
+function refreshSupervisorAnalyticsHub() {
+    const component = document.querySelector('supervisor-analytics-hub');
+    if (!component || typeof component.refresh !== 'function') return;
+    component.refresh();
 }
 
 function bindSupervisorDailyCheckReports() {

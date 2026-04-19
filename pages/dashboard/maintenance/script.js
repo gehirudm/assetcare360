@@ -22,6 +22,10 @@ function getMaintenanceFaultTicketsComponent() {
     return document.querySelector('maintenance-fault-tickets');
 }
 
+function getMaintenanceAnalyticsHubComponent() {
+    return document.querySelector('maintenance-analytics-hub');
+}
+
 function getTicketDetailsModalComponent() {
     return document.querySelector('maintenance-ticket-details-modal');
 }
@@ -34,6 +38,33 @@ async function refreshMaintenanceCostApprovals() {
     const component = getMaintenanceCostApprovalsComponent();
     if (component && typeof component.refresh === 'function') {
         await component.refresh();
+    }
+}
+
+async function refreshMaintenanceAnalyticsHub() {
+    const component = getMaintenanceAnalyticsHubComponent();
+    if (!component) {
+        return;
+    }
+
+    if (typeof component.refreshActive === 'function') {
+        await component.refreshActive();
+        return;
+    }
+
+    if (typeof component.refresh === 'function') {
+        await component.refresh();
+    }
+}
+
+async function refreshMaintenanceSection(sectionId) {
+    if (sectionId === 'cost-approvals') {
+        await refreshMaintenanceCostApprovals();
+        return;
+    }
+
+    if (sectionId === 'analytics') {
+        await refreshMaintenanceAnalyticsHub();
     }
 }
 
@@ -284,6 +315,18 @@ function setupMobileMenu() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     await DashboardInit.init(['Maintenance Manager'], { updateUserDisplay: true });
+
+    const layout = document.querySelector('ac-layout');
+    if (layout) {
+        layout.addEventListener('section-change', async (event) => {
+            const section = event.detail?.section;
+            if (!section) {
+                return;
+            }
+
+            await refreshMaintenanceSection(section);
+        });
+    }
 
     await refreshMaintenanceCostApprovals();
     setupMobileMenu();

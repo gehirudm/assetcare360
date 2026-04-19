@@ -70,6 +70,13 @@ async function refreshDashboardOverview() {
     }
 }
 
+async function refreshAnalyticsHub() {
+    const hub = getComponent('mo-analytics-hub');
+    if (hub && typeof hub.refreshActive === 'function') {
+        await hub.refreshActive();
+    }
+}
+
 async function refreshFaultReporting() {
     const section = getComponent('mo-fault-reporting');
     if (section && typeof section.refresh === 'function') {
@@ -101,6 +108,7 @@ function refreshNotifications() {
 async function refreshAllSections() {
     await Promise.all([
         refreshDashboardOverview(),
+        refreshAnalyticsHub(),
         refreshFaultReporting(),
         refreshTicketDetails(),
         refreshConditionUpdates(),
@@ -112,6 +120,11 @@ async function refreshAllSections() {
 async function refreshSection(sectionId) {
     if (sectionId === 'dashboard') {
         await refreshDashboardOverview();
+        return;
+    }
+
+    if (sectionId === 'analytics') {
+        await refreshAnalyticsHub();
         return;
     }
 
@@ -288,6 +301,7 @@ function bindDashboardEvents() {
     document.addEventListener('mo:fault-created', async () => {
         await Promise.all([
             refreshDashboardOverview(),
+            refreshAnalyticsHub(),
             refreshFaultReporting(),
         ]);
         refreshNotifications();
@@ -295,6 +309,7 @@ function bindDashboardEvents() {
 
     document.addEventListener('mo:fault-updated', async () => {
         await Promise.all([
+            refreshAnalyticsHub(),
             refreshFaultReporting(),
             refreshTicketDetails(),
         ]);
@@ -314,6 +329,7 @@ function bindDashboardEvents() {
     document.addEventListener('mo:weekly-check-submitted', async () => {
         await Promise.all([
             refreshDashboardOverview(),
+            refreshAnalyticsHub(),
             refreshConditionUpdates(),
         ]);
     });
@@ -321,6 +337,7 @@ function bindDashboardEvents() {
     document.addEventListener('mo:weekly-check-updated', async () => {
         await Promise.all([
             refreshDashboardOverview(),
+            refreshAnalyticsHub(),
             refreshConditionUpdates(),
         ]);
     });

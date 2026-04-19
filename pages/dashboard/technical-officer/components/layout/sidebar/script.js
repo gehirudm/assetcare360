@@ -1,5 +1,6 @@
 const TO_SIDEBAR_DEFAULT_NAV = [
     { section: 'dashboard', icon: 'fas fa-chart-line', label: 'Dashboard' },
+    { section: 'analytics', icon: 'fas fa-chart-pie', label: 'Analytics' },
     { section: 'tickets', icon: 'fas fa-ticket-alt', label: 'Fault & Repair Tickets' },
     { section: 'spare-parts', icon: 'fas fa-boxes', label: 'Spare Part Management' },
     { section: 'inventory', icon: 'fas fa-warehouse', label: 'Inventory Management' },

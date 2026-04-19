@@ -47,6 +47,52 @@ async function refreshDashboardOverview() {
     }
 }
 
+async function refreshAnalyticsHub() {
+    const hub = getComponent('tm-analytics-hub');
+    if (hub && typeof hub.refreshActive === 'function') {
+        await hub.refreshActive();
+        return;
+    }
+
+    // Fallback for partial load states.
+    await refreshTripAnalytics();
+}
+
+async function refreshTripAnalytics() {
+    const section = getComponent('tm-trip-analytics');
+    if (section && typeof section.refresh === 'function') {
+        await section.refresh();
+    }
+}
+
+async function refreshFuelAnalytics() {
+    const section = getComponent('tm-fuel-analytics');
+    if (section && typeof section.refresh === 'function') {
+        await section.refresh();
+    }
+}
+
+async function refreshCargoAnalytics() {
+    const section = getComponent('tm-cargo-analytics');
+    if (section && typeof section.refresh === 'function') {
+        await section.refresh();
+    }
+}
+
+async function refreshDriverAnalytics() {
+    const section = getComponent('tm-driver-analytics');
+    if (section && typeof section.refresh === 'function') {
+        await section.refresh();
+    }
+}
+
+async function refreshGarageAnalytics() {
+    const section = getComponent('tm-garage-analytics');
+    if (section && typeof section.refresh === 'function') {
+        await section.refresh();
+    }
+}
+
 async function refreshTrips() {
     const section = getComponent('tm-trips');
     if (section && typeof section.refresh === 'function') {
@@ -129,6 +175,27 @@ function navigateToSection(section) {
     if (layout && typeof layout.navigateTo === 'function') {
         layout.navigateTo(section);
     }
+}
+
+function normalizeLegacyAnalyticsSectionParam() {
+    const params = new URLSearchParams(window.location.search);
+    const section = String(params.get('section') || '').trim();
+    const legacySections = new Set([
+        'trip-analytics',
+        'fuel-analytics',
+        'cargo-analytics',
+        'driver-analytics',
+        'garage-analytics',
+    ]);
+
+    if (!legacySections.has(section)) {
+        return;
+    }
+
+    params.set('section', 'analytics');
+    const query = params.toString();
+    const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+    window.history.replaceState({}, '', nextUrl);
 }
 
 // ─── Event Handlers ─────────────────────────────────────────────────────────
@@ -403,6 +470,9 @@ function setupModalEvents() {
         await refreshTrips();
         await refreshCargoManagement();
         await refreshCargoDetails();
+        await refreshTripAnalytics();
+        await refreshDriverAnalytics();
+        await refreshCargoAnalytics();
         await refreshDashboardOverview();
     });
 
@@ -410,6 +480,9 @@ function setupModalEvents() {
         await refreshTrips();
         await refreshCargoManagement();
         await refreshCargoDetails();
+        await refreshTripAnalytics();
+        await refreshDriverAnalytics();
+        await refreshCargoAnalytics();
         await refreshDashboardOverview();
     });
 
@@ -418,16 +491,21 @@ function setupModalEvents() {
         await refreshCargoManagement();
         await refreshCargoDetails();
         await refreshTripLog();
+        await refreshTripAnalytics();
+        await refreshDriverAnalytics();
+        await refreshCargoAnalytics();
         await refreshDashboardOverview();
     });
 
     document.addEventListener('tm-modal:fuel-added', async () => {
         await refreshFuelLog();
+        await refreshFuelAnalytics();
         await refreshDashboardOverview();
     });
 
     document.addEventListener('tm-modal:garage-added', async () => {
         await refreshGarages();
+        await refreshGarageAnalytics();
     });
 
     document.addEventListener('tm-modal:cargo-item-saved', async (event) => {
@@ -440,12 +518,18 @@ function setupModalEvents() {
         if (document.getElementById('cargo-details')?.classList.contains('active')) {
             await refreshCargoDetails();
         }
+        await refreshCargoAnalytics();
     });
 
     // Refresh fuel log whenever the section becomes visible
     document.addEventListener('section-change', async (event) => {
         if (event.detail?.section === 'fuel-log') {
             await refreshFuelLog();
+            return;
+        }
+
+        if (event.detail?.section === 'analytics') {
+            await refreshAnalyticsHub();
             return;
         }
 
@@ -480,6 +564,8 @@ function setupModalEvents() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        normalizeLegacyAnalyticsSectionParam();
+
         currentUser = await DashboardInit.init(['Transportation Manager', 'Admin'], {
             updateUserDisplay: true,
         });

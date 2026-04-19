@@ -15,6 +15,7 @@
         active-section="dashboard"
         nav='[
             {"section":"dashboard","icon":"fas fa-chart-line","label":"Dashboard"},
+            {"section":"analytics","icon":"fas fa-chart-bar","label":"Analytics"},
             {"section":"driver-assignment","icon":"fas fa-user-cog","label":"Driver Assignment"},
             {"section":"trips","icon":"fas fa-route","label":"Trips"},
             {"section":"cargo-management","icon":"fas fa-boxes-stacked","label":"Cargo Management"},
@@ -25,6 +26,10 @@
         ]'>
         <section class="content-section active" id="dashboard">
             <tm-dashboard-overview></tm-dashboard-overview>
+        </section>
+
+        <section class="content-section" id="analytics">
+            <tm-analytics-hub></tm-analytics-hub>
         </section>
 
         <section class="content-section" id="driver-assignment">
@@ -102,6 +107,12 @@
     <script src="./components/page-modals/tm-view-trip-modal.js"></script>
     <script src="./components/page-modals/tm-view-fuel-modal.js"></script>
     <script src="./components/dashboard-overview/script.js"></script>
+    <script src="./components/trip-analytics/script.js"></script>
+    <script src="./components/fuel-analytics/script.js"></script>
+    <script src="./components/cargo-analytics/script.js"></script>
+    <script src="./components/driver-analytics/script.js"></script>
+    <script src="./components/garage-analytics/script.js"></script>
+    <script src="./components/analytics-hub/script.js"></script>
     <script src="./components/trips/script.js"></script>
     <script src="./components/cargo-management/script.js"></script>
     <script src="./components/cargo-details/script.js"></script>
