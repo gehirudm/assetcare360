@@ -2293,7 +2293,6 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-<<<<<<< Updated upstream
   /route-breakdowns:
     get:
       tags:
@@ -2310,21 +2309,10 @@ paths:
         - cookieAuth: []
       parameters:
         - name: status
-=======
-  /route-breakdowns/garages:
-    get:
-      tags:
-        - Route Breakdowns
-      summary: List active garages for route-breakdown workflow
-      description: Returns active garages used by driver nearby garage views and supervisor approval flows.
-      parameters:
-        - name: q
->>>>>>> Stashed changes
           in: query
           required: false
           schema:
             type: string
-<<<<<<< Updated upstream
         - name: severity
           in: query
           required: false
@@ -2332,20 +2320,13 @@ paths:
             type: string
             enum: [low, medium, high, critical]
         - name: breakdown_type
-=======
-        - name: city
->>>>>>> Stashed changes
           in: query
           required: false
           schema:
             type: string
       responses:
         '200':
-<<<<<<< Updated upstream
           description: Route breakdown reports retrieved successfully
-=======
-          description: Route-breakdown garages fetched successfully
->>>>>>> Stashed changes
           content:
             application/json:
               schema:
@@ -2357,7 +2338,6 @@ paths:
                   data:
                     type: object
                     properties:
-<<<<<<< Updated upstream
                       breakdowns:
                         type: array
                         items:
@@ -2365,6 +2345,10 @@ paths:
                       count:
                         type: integer
                         example: 3
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
     post:
       tags:
@@ -2406,6 +2390,10 @@ paths:
                         example: RBD-001
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /route-breakdowns/{id}:
     get:
@@ -2448,6 +2436,10 @@ paths:
                                 type: array
                                 items:
                                   type: object
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -2479,6 +2471,12 @@ paths:
           description: Route breakdown updated successfully
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
     delete:
       tags:
@@ -2496,6 +2494,10 @@ paths:
       responses:
         '200':
           description: Route breakdown deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -2520,7 +2522,82 @@ paths:
                     example: success
                   data:
                     type: object
-=======
+                    properties:
+                      total:
+                        type: integer
+                        example: 12
+                      by_status:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            status:
+                              type: string
+                              example: Pending
+                            count:
+                              type: integer
+                              example: 5
+                      by_severity:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            severity:
+                              type: string
+                              example: high
+                            count:
+                              type: integer
+                              example: 3
+                      by_type:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            breakdown_type:
+                              type: string
+                              example: Mechanical
+                            count:
+                              type: integer
+                              example: 4
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /route-breakdowns/garages:
+    get:
+      tags:
+        - Route Breakdowns
+      summary: List active garages for route-breakdown workflow
+      description: Returns active garages used by driver nearby garage views and supervisor approval flows.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: city
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Route-breakdown garages fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
                       garages:
                         type: array
                         items:
@@ -2558,7 +2635,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
->>>>>>> Stashed changes
 
   # ==================== ROUTE BREAKDOWN GARAGE WORKFLOW ====================
   /route-breakdowns/{id}/garage-approval:
@@ -3732,7 +3808,7 @@ components:
                       vehicle:
                         $ref: '#/components/schemas/Vehicle'
         '400':
-          description: Invalid driver (not active, not a driver role, etc.)
+          description: Invalid assignment request (for example, not a driver, inactive driver, or driver has active trips and cannot be reassigned)
         '404':
           description: Vehicle or driver not found
 
@@ -3771,6 +3847,8 @@ components:
                     properties:
                       vehicle:
                         $ref: '#/components/schemas/Vehicle'
+        '400':
+          description: Unassignment blocked (for example, driver currently has active trips)
         '404':
           description: Vehicle not found
 

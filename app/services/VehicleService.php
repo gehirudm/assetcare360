@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../models/Vehicle.php';
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../models/Trip.php';
 
 /**
  * Vehicle Service
@@ -10,10 +11,12 @@ require_once __DIR__ . '/../models/User.php';
 class VehicleService {
     private $vehicleModel;
     private $userModel;
+    private $tripModel;
     
     public function __construct() {
         $this->vehicleModel = new Vehicle();
         $this->userModel = new User();
+        $this->tripModel = new Trip();
     }
     
     /**
@@ -378,6 +381,11 @@ class VehicleService {
         $previousVehicle = null;
         
         if ($existingVehicle && $existingVehicle['id'] !== $vehicleId) {
+            $activeTripCount = (int) $this->tripModel->getActiveTripCount((int) $driverId);
+            if ($activeTripCount > 0) {
+                throw new Exception("Cannot reassign driver while they have active trips");
+            }
+
             // Unassign from the previous vehicle (driver can only be assigned to one vehicle)
             $previousVehicle = $existingVehicle;
             $this->vehicleModel->unassignDriver($existingVehicle['id']);
@@ -420,6 +428,11 @@ class VehicleService {
         
         if (empty($vehicle['assigned_driver_id'])) {
             throw new Exception("Vehicle has no assigned driver");
+        }
+
+        $activeTripCount = (int) $this->tripModel->getActiveTripCount((int) $vehicle['assigned_driver_id']);
+        if ($activeTripCount > 0) {
+            throw new Exception("Cannot unassign driver while they have active trips");
         }
         
         $success = $this->vehicleModel->unassignDriver($vehicleId);
