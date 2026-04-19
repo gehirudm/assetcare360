@@ -774,6 +774,8 @@ class FaultTicketService {
             'asset_type' => null,
             'asset_id' => null,
             'asset_label' => null,
+            'warranty_provider' => null,
+            'warranty_expiry' => null,
             'insurance_type' => null,
             'insurance_provider' => null,
             'insurance_provider_details' => null,
@@ -900,17 +902,17 @@ class FaultTicketService {
             }
         }
 
+        $selectColumns = $requiredColumns;
+        if ($this->columnExists($db, $tableName, 'warranty_provider')) {
+            $selectColumns[] = 'warranty_provider';
+        }
+        if ($this->columnExists($db, $tableName, 'warranty_expiry')) {
+            $selectColumns[] = 'warranty_expiry';
+        }
+
         $stmt = $db->prepare(
-            "SELECT insurance_type,
-                    insurance_provider,
-                    insurance_provider_details,
-                    insurance_renew_interval_days,
-                    last_insurance_renew_date,
-                    last_insurance_renew_details,
-                    next_insurance_renew_date
-             FROM {$tableName}
-             WHERE id = ?
-             LIMIT 1"
+            'SELECT ' . implode(', ', $selectColumns)
+            . " FROM {$tableName} WHERE id = ? LIMIT 1"
         );
         $stmt->execute([$assetId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -930,6 +932,8 @@ class FaultTicketService {
             'last_insurance_renew_date' => $row['last_insurance_renew_date'] ?? null,
             'last_insurance_renew_details' => $row['last_insurance_renew_details'] ?? null,
             'next_insurance_renew_date' => $row['next_insurance_renew_date'] ?? null,
+            'warranty_provider' => $row['warranty_provider'] ?? null,
+            'warranty_expiry' => $row['warranty_expiry'] ?? null,
         ];
 
         $this->assetInsuranceCache[$cacheKey] = $insuranceDetails;

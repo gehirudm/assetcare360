@@ -388,6 +388,22 @@ async function mockApi(page, fixtures) {
                         machine_id: null,
                         machine_name: 'Route Vehicle',
                         reporter_full_name: 'Driver One',
+                        insurance_claim: {
+                            asset_type: 'vehicle',
+                            asset_id: 21,
+                            asset_label: 'WP-CAB-2010',
+                            warranty_provider: 'Fleet Warranty Ltd',
+                            warranty_expiry: '2027-12-31',
+                            insurance_type: 'Full',
+                            insurance_provider: 'Transit Assurance Ltd',
+                            insurance_provider_details: '24/7 claim desk',
+                            insurance_renew_interval_days: 365,
+                            last_insurance_renew_date: '2026-01-01',
+                            last_insurance_renew_details: 'Renewed with route breakdown rider',
+                            next_insurance_renew_date: '2027-01-01',
+                            eligible: false,
+                            eligibility_reason: 'Insurance policy is active, but this damage type is outside claim coverage.'
+                        },
                         created_at: '2026-04-14T10:00:00Z'
                     }
                 });
@@ -583,6 +599,11 @@ async function runFlow(page, viewportName) {
     await expect(page.locator('#routeLocationMap')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('#routeLocationHint')).toContainText('map', { timeout: 15000 });
     await expect(page.locator('#approveGarageBtn')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#ovInsurancePanel')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#ovInsuranceProvider')).toContainText('Transit Assurance Ltd');
+    await expect(page.locator('#ovWarrantyProvider')).toContainText('Fleet Warranty Ltd');
+    await expect(page.locator('#ovInsuranceEligibility')).toContainText('Not Eligible for Insurance Claim');
+
 
     await page.locator('#approveGarageBtn').click();
     await expect(page.locator('#garageApprovalModal')).toBeVisible({ timeout: 10000 });

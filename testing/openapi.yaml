@@ -5684,11 +5684,14 @@ components:
           type: string
         insurance_type:
           type: string
+          nullable: true
           enum: [Full, Third-Party]
         insurance_provider:
           type: string
+          nullable: true
         insurance_provider_details:
           type: string
+          nullable: true
         insurance_renew_interval_days:
           type: integer
           nullable: true
@@ -5699,6 +5702,7 @@ components:
           nullable: true
         last_insurance_renew_details:
           type: string
+          nullable: true
         next_insurance_renew_date:
           type: string
           format: date
@@ -5758,12 +5762,6 @@ components:
         - location
         - supplier_name
         - service_interval_days
-        - insurance_type
-        - insurance_provider
-        - insurance_provider_details
-        - insurance_renew_interval_days
-        - last_insurance_renew_date
-        - last_insurance_renew_details
       properties:
         model_number:
           type: string
@@ -5778,20 +5776,27 @@ components:
           type: string
         insurance_type:
           type: string
+          nullable: true
           enum: [Full, Third-Party]
+          description: Optional on create. Provide all insurance fields when setting a policy.
         insurance_provider:
           type: string
+          nullable: true
         insurance_provider_details:
           type: string
+          nullable: true
         insurance_renew_interval_days:
           type: integer
+          nullable: true
           minimum: 1
         last_insurance_renew_date:
           type: string
           format: date
-          description: Must not be in the future
+          nullable: true
+          description: Must not be in the future when provided
         last_insurance_renew_details:
           type: string
+          nullable: true
         supplier_name:
           type: string
         supplier_contact:
@@ -5859,11 +5864,14 @@ components:
           type: string
         insurance_type:
           type: string
+          nullable: true
           enum: [Full, Third-Party]
         insurance_provider:
           type: string
+          nullable: true
         insurance_provider_details:
           type: string
+          nullable: true
         insurance_renew_interval_days:
           type: integer
           nullable: true
@@ -5874,6 +5882,7 @@ components:
           nullable: true
         last_insurance_renew_details:
           type: string
+          nullable: true
         next_insurance_renew_date:
           type: string
           format: date
@@ -5929,12 +5938,6 @@ components:
         - fuel_type
         - supplier_name
         - service_interval_type
-        - insurance_type
-        - insurance_provider
-        - insurance_provider_details
-        - insurance_renew_interval_days
-        - last_insurance_renew_date
-        - last_insurance_renew_details
       properties:
         vehicle_name:
           type: string
@@ -5964,20 +5967,27 @@ components:
           type: string
         insurance_type:
           type: string
+          nullable: true
           enum: [Full, Third-Party]
+          description: Optional on create. Provide all insurance fields when setting a policy.
         insurance_provider:
           type: string
+          nullable: true
         insurance_provider_details:
           type: string
+          nullable: true
         insurance_renew_interval_days:
           type: integer
+          nullable: true
           minimum: 1
         last_insurance_renew_date:
           type: string
           format: date
-          description: Must not be in the future
+          nullable: true
+          description: Must not be in the future when provided
         last_insurance_renew_details:
           type: string
+          nullable: true
         supplier_name:
           type: string
         supplier_contact:
@@ -6651,6 +6661,13 @@ components:
           nullable: true
         asset_label:
           type: string
+          nullable: true
+        warranty_provider:
+          type: string
+          nullable: true
+        warranty_expiry:
+          type: string
+          format: date
           nullable: true
         insurance_type:
           type: string

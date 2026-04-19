@@ -140,44 +140,45 @@ function createMachineModal(machine = null, nextMachineId = 'MCH-001') {
 
                 <div class="form-section">
                     <h5><i class="fas fa-shield-alt"></i> Insurance</h5>
+                    <small style="color: var(--muted); display: block; margin-bottom: 10px;">Optional during machine creation. You can add or update insurance details later from Insurance Management.</small>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Insurance Type *</label>
-                            <select class="form-select" id="insuranceType" required>
+                            <label class="form-label">Insurance Type</label>
+                            <select class="form-select" id="insuranceType">
                                 <option value="">Select Insurance Type</option>
                                 <option value="Full" ${machine?.insurance_type === 'Full' ? 'selected' : ''}>Full</option>
                                 <option value="Third-Party" ${machine?.insurance_type === 'Third-Party' ? 'selected' : ''}>Third-Party</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Insurance Provider *</label>
+                            <label class="form-label">Insurance Provider</label>
                             <input type="text" class="form-input" id="insuranceProvider"
-                                   value="${machine?.insurance_provider || ''}" required>
+                                   value="${machine?.insurance_provider || ''}">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Insurance Provider Details *</label>
-                            <textarea class="form-textarea" id="insuranceProviderDetails" rows="2" required>${machine?.insurance_provider_details || ''}</textarea>
+                            <label class="form-label">Insurance Provider Details</label>
+                            <textarea class="form-textarea" id="insuranceProviderDetails" rows="2">${machine?.insurance_provider_details || ''}</textarea>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Insurance Renew Interval (Days) *</label>
+                            <label class="form-label">Insurance Renew Interval (Days)</label>
                             <input type="number" class="form-input" id="insuranceRenewIntervalDays"
-                                   value="${machine?.insurance_renew_interval_days || ''}" min="1" required>
+                                   value="${machine?.insurance_renew_interval_days || ''}" min="1">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Last Insurance Renew Date *</label>
+                            <label class="form-label">Last Insurance Renew Date</label>
                             <input type="date" class="form-input" id="lastInsuranceRenewDate"
                                    value="${machine?.last_insurance_renew_date || ''}"
-                                   max="${new Date().toISOString().split('T')[0]}" required>
+                                   max="${new Date().toISOString().split('T')[0]}">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Last Insurance Renew Details *</label>
-                            <textarea class="form-textarea" id="lastInsuranceRenewDetails" rows="2" required>${machine?.last_insurance_renew_details || ''}</textarea>
+                            <label class="form-label">Last Insurance Renew Details</label>
+                            <textarea class="form-textarea" id="lastInsuranceRenewDetails" rows="2">${machine?.last_insurance_renew_details || ''}</textarea>
                         </div>
                     </div>
                 </div>
@@ -366,6 +367,15 @@ async function handleEditMachine(e) {
     }
 }
 
+function parsePositiveIntegerOrNull(value) {
+    const parsed = Number.parseInt(String(value || '').trim(), 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+        return null;
+    }
+
+    return parsed;
+}
+
 function getMachineFormData(form) {
     const selectedComponents = Array.from(form.querySelectorAll('input[name="machineComponent"]:checked'))
         .map(cb => cb.value);
@@ -381,12 +391,12 @@ function getMachineFormData(form) {
         last_service_date: form.querySelector('#lastServiceDate')?.value || null,
         warranty_expiry: form.querySelector('#warrantyExpiry')?.value || null,
         warranty_provider: form.querySelector('#warrantyProvider')?.value || '',
-        insurance_type: form.querySelector('#insuranceType')?.value || '',
-        insurance_provider: form.querySelector('#insuranceProvider')?.value || '',
-        insurance_provider_details: form.querySelector('#insuranceProviderDetails')?.value || '',
-        insurance_renew_interval_days: parseInt(form.querySelector('#insuranceRenewIntervalDays')?.value || '0', 10),
+        insurance_type: form.querySelector('#insuranceType')?.value || null,
+        insurance_provider: (form.querySelector('#insuranceProvider')?.value || '').trim(),
+        insurance_provider_details: (form.querySelector('#insuranceProviderDetails')?.value || '').trim(),
+        insurance_renew_interval_days: parsePositiveIntegerOrNull(form.querySelector('#insuranceRenewIntervalDays')?.value),
         last_insurance_renew_date: form.querySelector('#lastInsuranceRenewDate')?.value || null,
-        last_insurance_renew_details: form.querySelector('#lastInsuranceRenewDetails')?.value || '',
+        last_insurance_renew_details: (form.querySelector('#lastInsuranceRenewDetails')?.value || '').trim(),
         components: selectedComponents,
         notes: form.querySelector('#notes')?.value || ''
     };

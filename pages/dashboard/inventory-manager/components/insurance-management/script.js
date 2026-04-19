@@ -8,7 +8,7 @@ class InventoryInsuranceManagement extends HTMLElement {
         super();
         this.assets = [];
         this.filteredAssets = [];
-        this.currentFilter = 'upcoming';
+        this.currentFilter = 'all';
         this.currentSearch = '';
         this.currentRenewalAsset = null;
     }
@@ -50,10 +50,10 @@ class InventoryInsuranceManagement extends HTMLElement {
                     placeholder="Search by asset name, ID, provider, or number plate..."
                 >
                 <div class="insurance-filter-buttons" id="insuranceFilterButtons">
-                    <button class="insurance-filter-btn active" data-filter="upcoming" type="button">Upcoming</button>
+                    <button class="insurance-filter-btn" data-filter="upcoming" type="button">Upcoming</button>
                     <button class="insurance-filter-btn" data-filter="overdue" type="button">Overdue</button>
                     <button class="insurance-filter-btn" data-filter="missing" type="button">Missing Data</button>
-                    <button class="insurance-filter-btn" data-filter="all" type="button">All</button>
+                    <button class="insurance-filter-btn active" data-filter="all" type="button">All</button>
                 </div>
             </div>
 
@@ -345,6 +345,15 @@ class InventoryInsuranceManagement extends HTMLElement {
                         </div>
                         <div class="insurance-item-meta">
                             Insurance: ${this.escapeHtml(asset.insurance_type || 'N/A')} | Provider: ${this.escapeHtml(asset.insurance_provider || 'N/A')}
+                        </div>
+                        <div class="insurance-item-meta">
+                            Provider Details: ${this.escapeHtml(asset.insurance_provider_details || 'N/A')}
+                        </div>
+                        <div class="insurance-item-meta">
+                            Last Renewed: ${this.formatDate(asset.last_insurance_renew_date)} | Interval: ${asset.insurance_renew_interval_days ? `${asset.insurance_renew_interval_days} day(s)` : 'N/A'}
+                        </div>
+                        <div class="insurance-item-meta">
+                            Renewal Notes: ${this.escapeHtml(asset.last_insurance_renew_details || 'N/A')}
                         </div>
                         <div class="insurance-status-row">
                             <span class="insurance-status-chip ${renewalState.key}">${renewalState.label}</span>

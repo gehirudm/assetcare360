@@ -24,30 +24,15 @@ class VehicleService {
      */
     public function createVehicle($data, $userId) {
         // Validate required fields
-        $required = ['vehicle_name', 'number_plate', 
-                     'vehicle_type', 'fuel_type', 'supplier_name', 'service_interval_type',
-                     'insurance_type', 'insurance_provider', 'insurance_provider_details',
-                     'insurance_renew_interval_days', 'last_insurance_renew_date', 'last_insurance_renew_details'];
+        $required = ['vehicle_name', 'number_plate',
+                     'vehicle_type', 'fuel_type', 'supplier_name', 'service_interval_type'];
         foreach ($required as $field) {
             if (empty($data[$field])) {
                 throw new Exception("Field '$field' is required");
             }
         }
 
-        $data['insurance_type'] = $this->normalizeInsuranceType($data['insurance_type'] ?? null, true);
-        $data['insurance_provider'] = $this->normalizeRequiredString($data['insurance_provider'] ?? null, 'insurance_provider');
-        $data['insurance_provider_details'] = $this->normalizeRequiredString($data['insurance_provider_details'] ?? null, 'insurance_provider_details');
-        $data['last_insurance_renew_details'] = $this->normalizeRequiredString($data['last_insurance_renew_details'] ?? null, 'last_insurance_renew_details');
-
-        $insuranceIntervalDays = $this->parseNullableNonNegativeInteger($data['insurance_renew_interval_days'] ?? null, 'insurance_renew_interval_days');
-        if ($insuranceIntervalDays === null || $insuranceIntervalDays <= 0) {
-            throw new Exception("Field 'insurance_renew_interval_days' must be a positive number");
-        }
-        $data['insurance_renew_interval_days'] = $insuranceIntervalDays;
-
-        $lastInsuranceRenewDate = $this->normalizeDateInput($data['last_insurance_renew_date'] ?? null, 'last_insurance_renew_date', true);
-        $this->ensureDateNotFuture($lastInsuranceRenewDate, 'last_insurance_renew_date');
-        $data['last_insurance_renew_date'] = $lastInsuranceRenewDate;
+        $this->normalizeCreateInsuranceFields($data);
         
         // Validate service intervals based on type
         if (in_array($data['service_interval_type'], ['Time-Based', 'Both']) && empty($data['service_interval_days'])) {
@@ -492,6 +477,63 @@ class VehicleService {
         }
 
         throw new Exception("Field 'insurance_type' must be either 'Full' or 'Third-Party'");
+    }
+
+    private function normalizeCreateInsuranceFields(array &$data): void {
+        if (!$this->hasAnyInsuranceInput($data)) {
+            $data['insurance_type'] = null;
+            $data['insurance_provider'] = null;
+            $data['insurance_provider_details'] = null;
+            $data['insurance_renew_interval_days'] = null;
+            $data['last_insurance_renew_date'] = null;
+            $data['last_insurance_renew_details'] = null;
+            return;
+        }
+
+        $data['insurance_type'] = $this->normalizeInsuranceType($data['insurance_type'] ?? null, true);
+        $data['insurance_provider'] = $this->normalizeRequiredString($data['insurance_provider'] ?? null, 'insurance_provider');
+        $data['insurance_provider_details'] = $this->normalizeRequiredString($data['insurance_provider_details'] ?? null, 'insurance_provider_details');
+        $data['last_insurance_renew_details'] = $this->normalizeRequiredString($data['last_insurance_renew_details'] ?? null, 'last_insurance_renew_details');
+
+        $insuranceIntervalDays = $this->parseNullableNonNegativeInteger($data['insurance_renew_interval_days'] ?? null, 'insurance_renew_interval_days');
+        if ($insuranceIntervalDays === null || $insuranceIntervalDays <= 0) {
+            throw new Exception("Field 'insurance_renew_interval_days' must be a positive number");
+        }
+        $data['insurance_renew_interval_days'] = $insuranceIntervalDays;
+
+        $lastInsuranceRenewDate = $this->normalizeDateInput($data['last_insurance_renew_date'] ?? null, 'last_insurance_renew_date', true);
+        $this->ensureDateNotFuture($lastInsuranceRenewDate, 'last_insurance_renew_date');
+        $data['last_insurance_renew_date'] = $lastInsuranceRenewDate;
+    }
+
+    private function hasAnyInsuranceInput(array $data): bool {
+        $insuranceFields = [
+            'insurance_type',
+            'insurance_provider',
+            'insurance_provider_details',
+            'insurance_renew_interval_days',
+            'last_insurance_renew_date',
+            'last_insurance_renew_details',
+        ];
+
+        foreach ($insuranceFields as $field) {
+            if (!array_key_exists($field, $data)) {
+                continue;
+            }
+
+            $value = $data[$field];
+            if ($value === null) {
+                continue;
+            }
+
+            if (is_string($value) && trim($value) === '') {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     private function normalizeRequiredString($value, string $field): string {

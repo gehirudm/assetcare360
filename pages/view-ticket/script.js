@@ -125,6 +125,24 @@ function isSupervisorLike() {
     return roleKey === 'SUPERVISOR' || roleKey === 'ADMIN';
 }
 
+function isAssignedTechnicalOfficer() {
+    if (!isTechnicalOfficer()) {
+        return false;
+    }
+
+    const currentUserId = Number(currentUser?.id || 0);
+    if (!Number.isFinite(currentUserId) || currentUserId <= 0) {
+        return false;
+    }
+
+    const assignments = Array.isArray(ticketData?.assignments) ? ticketData.assignments : [];
+    return assignments.some((assignment) => Number(assignment?.assigned_to || assignment?.technician_id || 0) === currentUserId);
+}
+
+function canViewInsuranceClaimContext() {
+    return isSupervisorLike() || isAssignedTechnicalOfficer();
+}
+  
 function isMachinaryOperator() {
     const roleKey = currentRoleContext?.roleKey || getRoleOverrideKey() || toRoleKey(currentUser?.role);
     return roleKey === 'MACHINARY_OPERATOR';
@@ -161,6 +179,8 @@ function getInsuranceClaimContext() {
         assetLabel: String(context.asset_label || '').trim(),
         insuranceProvider: String(context.insurance_provider || '').trim(),
         insuranceType: String(context.insurance_type || '').trim(),
+        warrantyProvider: String(context.warranty_provider || '').trim(),
+        warrantyExpiry: String(context.warranty_expiry || '').trim(),
         nextRenewalDate: String(context.next_insurance_renew_date || '').trim(),
         eligibilityReason: String(context.eligibility_reason || '').trim(),
         eligible: context.eligible === true || String(context.eligible || '').toLowerCase() === 'true' || Number(context.eligible || 0) === 1,
@@ -584,6 +604,8 @@ function renderOverview(ticketIdFormatted) {
     const insuranceProviderEl = document.getElementById('ovInsuranceProvider');
     const insuranceTypeEl = document.getElementById('ovInsuranceType');
     const insuranceRenewalDateEl = document.getElementById('ovInsuranceRenewalDate');
+    const warrantyProviderEl = document.getElementById('ovWarrantyProvider');
+    const warrantyExpiryEl = document.getElementById('ovWarrantyExpiry');
     const insuranceEligibilityEl = document.getElementById('ovInsuranceEligibility');
     const insuranceReasonEl = document.getElementById('ovInsuranceReason');
 
@@ -593,10 +615,12 @@ function renderOverview(ticketIdFormatted) {
         && insuranceProviderEl
         && insuranceTypeEl
         && insuranceRenewalDateEl
+        && warrantyProviderEl
+        && warrantyExpiryEl
         && insuranceEligibilityEl
         && insuranceReasonEl
     ) {
-        if (isSupervisorLike() && insuranceContext) {
+        if (canViewInsuranceClaimContext() && insuranceContext) {
             const renewalDateText = insuranceContext.nextRenewalDate
                 ? fmtDateShort(insuranceContext.nextRenewalDate)
                 : 'N/A';
@@ -605,6 +629,10 @@ function renderOverview(ticketIdFormatted) {
             insuranceProviderEl.textContent = insuranceContext.insuranceProvider || 'N/A';
             insuranceTypeEl.textContent = insuranceContext.insuranceType || 'N/A';
             insuranceRenewalDateEl.textContent = renewalDateText;
+            warrantyProviderEl.textContent = insuranceContext.warrantyProvider || 'N/A';
+            warrantyExpiryEl.textContent = insuranceContext.warrantyExpiry
+                ? fmtDateShort(insuranceContext.warrantyExpiry)
+                : 'N/A';
 
             insuranceEligibilityEl.textContent = insuranceContext.eligible
                 ? 'Eligible for Insurance Claim'
