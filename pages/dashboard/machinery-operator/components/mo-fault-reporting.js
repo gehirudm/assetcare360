@@ -30,7 +30,7 @@ class MOFaultReporting extends HTMLElement {
                 <p class="page-subtitle">Submit machine fault tickets with details and photos</p>
             </div>
 
-            <div style="margin-bottom: 20px;">
+            <div class="mo-fault-actions">
                 <button class="btn btn-primary" type="button" data-action="open-report-modal">
                     <i class="fas fa-plus"></i> Report New Fault
                 </button>
@@ -86,9 +86,25 @@ class MOFaultReporting extends HTMLElement {
             }
 
             if (action === 'view-breakdown') {
-                document.dispatchEvent(new CustomEvent('mo:open-machine-breakdown-details', {
-                    detail: { breakdownId: Number.parseInt(actionEl.dataset.breakdownId, 10) },
-                }));
+                const ticketId = Number.parseInt(actionEl.dataset.ticketId, 10);
+                const breakdownId = Number.parseInt(actionEl.dataset.breakdownId, 10);
+
+                if (Number.isFinite(ticketId) && ticketId > 0) {
+                    document.dispatchEvent(new CustomEvent('mo:open-ticket-details', {
+                        detail: {
+                            ticketId,
+                            returnSection: 'fault-reporting',
+                        },
+                    }));
+                    return;
+                }
+
+                if (Number.isFinite(breakdownId) && breakdownId > 0) {
+                    window.MOUtils.emitToast('Linked fault ticket not found yet. Showing breakdown details instead.', 'warning');
+                    document.dispatchEvent(new CustomEvent('mo:open-machine-breakdown-details', {
+                        detail: { breakdownId },
+                    }));
+                }
                 return;
             }
 
@@ -328,7 +344,7 @@ class MOFaultReporting extends HTMLElement {
                 </div>
                 <div class="item-actions">
                     <div class="action-buttons">
-                        <button class="btn btn-primary btn-small" type="button" data-action="view-breakdown" data-breakdown-id="${fault.id}">
+                        <button class="btn btn-primary btn-small" type="button" data-action="view-breakdown" data-breakdown-id="${fault.id}" data-ticket-id="${fault.fault_ticket_id || ''}">
                             <i class="fas fa-eye"></i> VIEW
                         </button>
                         <div class="dropdown-container">

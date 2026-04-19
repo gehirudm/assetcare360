@@ -202,11 +202,11 @@ async function mockMachineryOperatorApis(page) {
         });
     });
 
-    await page.route('**/api/budget-reports/ticket/*', (route) => {
+    await page.route('**/api/budget-reports/ticket/**', (route) => {
         route.fulfill({
             status: 200,
             contentType: 'application/json',
-            body: JSON.stringify({ status: 'success', data: { reports: [] } }),
+            body: JSON.stringify({ status: 'success', data: { report: null } }),
         });
     });
 
@@ -268,6 +268,8 @@ async function mockMachineryOperatorApis(page) {
                     ticket_id: isEditableTicket ? 'TKT-4501' : 'TKT-4502',
                     machine_id: isEditableTicket ? 45 : 128,
                     machine_name: isEditableTicket ? 'Excavator #045' : 'Loader #128',
+                    breakdown_type: 'machine_breakdown',
+                    breakdown_report_id: isEditableTicket ? 'MBD-001' : 'MBD-002',
                     location: 'Site A',
                     created_at: '2026-04-11T08:40:00Z',
                     updated_at: '2026-04-12T09:00:00Z',
@@ -341,8 +343,16 @@ async function runFlow(page, viewportName) {
     await page.locator('#reportFaultModal .btn.btn-secondary', { hasText: 'Cancel' }).click();
 
     await page.locator('#faultReportsList .btn.btn-primary, #faultsContainer .btn.btn-primary').filter({ hasText: 'VIEW' }).first().click();
-    await expect(page.locator('#machineBreakdownModal')).toBeVisible();
-    await page.locator('#machineBreakdownModal .btn.btn-secondary', { hasText: 'Close' }).click();
+    await expect(page.locator('#ticket-details')).toHaveClass(/active/);
+    await expect(page.locator('#ticket-details #mainContent')).toBeVisible();
+    await expect(page.locator('#ticket-details #ticketIdBadge')).toContainText('MBD-001');
+
+    await page.locator('#ticket-details #editFaultTicketBtn').click();
+    await expect(page.locator('#editFaultModal')).toHaveClass(/active/);
+    await page.locator('#editFaultModal .btn.btn-secondary', { hasText: 'Cancel' }).click();
+
+    await page.locator('#ticket-details #backButton').click();
+    await expect(page.locator('#fault-reporting')).toHaveClass(/active/);
 
     const editableFaultCard = page.locator('#faultReportsList .inventory-item:has([data-action="edit-breakdown"]), #faultsContainer .inventory-item:has([data-action="edit-breakdown"])').first();
     await editableFaultCard.locator('[data-action="toggle-dropdown"]').click();

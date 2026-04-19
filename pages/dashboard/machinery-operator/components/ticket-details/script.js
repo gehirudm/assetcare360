@@ -1,4 +1,4 @@
-class TOTicketDetailView extends HTMLElement {
+class MOTicketDetailView extends HTMLElement {
     connectedCallback() {
         if (this._mounted) {
             return;
@@ -15,30 +15,30 @@ class TOTicketDetailView extends HTMLElement {
     }
 
     get defaultReturnSection() {
-        return String(this.getAttribute('default-return-section') || 'tickets').trim() || 'tickets';
+        return String(this.getAttribute('default-return-section') || 'fault-reporting').trim() || 'fault-reporting';
     }
 
     ensureScopedStyles() {
-        if (document.getElementById('to-ticket-detail-component-style')) {
+        if (document.getElementById('mo-ticket-detail-component-style')) {
             return;
         }
 
         const style = document.createElement('style');
-        style.id = 'to-ticket-detail-component-style';
+        style.id = 'mo-ticket-detail-component-style';
         style.textContent = `
-            to-ticket-detail-view {
+            mo-ticket-detail-view {
                 display: block;
             }
 
-            to-ticket-detail-view .container {
+            mo-ticket-detail-view .container {
                 min-height: auto;
             }
 
-            to-ticket-detail-view .main-wrapper {
+            mo-ticket-detail-view .main-wrapper {
                 display: block;
             }
 
-            to-ticket-detail-view .main-content.detail-page-content {
+            mo-ticket-detail-view .main-content.detail-page-content {
                 width: 100%;
                 max-width: none;
                 padding: 0 0 24px;
@@ -47,22 +47,22 @@ class TOTicketDetailView extends HTMLElement {
                 overflow: visible;
             }
 
-            to-ticket-detail-view .detail-subheader {
+            mo-ticket-detail-view .detail-subheader {
                 position: relative;
                 z-index: 3;
             }
 
-            to-ticket-detail-view .route-location-map,
-            to-ticket-detail-view .garage-approval-map,
-            to-ticket-detail-view .leaflet-container,
-            to-ticket-detail-view .leaflet-pane,
-            to-ticket-detail-view .leaflet-top,
-            to-ticket-detail-view .leaflet-bottom {
+            mo-ticket-detail-view .route-location-map,
+            mo-ticket-detail-view .garage-approval-map,
+            mo-ticket-detail-view .leaflet-container,
+            mo-ticket-detail-view .leaflet-pane,
+            mo-ticket-detail-view .leaflet-top,
+            mo-ticket-detail-view .leaflet-bottom {
                 z-index: 1 !important;
             }
 
-            to-ticket-detail-view to-shell-header,
-            to-ticket-detail-view to-shell-sidebar {
+            mo-ticket-detail-view to-shell-header,
+            mo-ticket-detail-view to-shell-sidebar {
                 display: none !important;
             }
         `;
@@ -75,7 +75,7 @@ class TOTicketDetailView extends HTMLElement {
             <div class="card" style="padding:20px;">
                 <div style="display:flex; align-items:center; gap:10px; color: var(--muted);">
                     <i class="fas fa-ticket-alt"></i>
-                    <span>Select a ticket from the list to open details.</span>
+                    <span>Select a fault report to open its linked ticket details.</span>
                 </div>
             </div>
         `;
@@ -121,11 +121,11 @@ class TOTicketDetailView extends HTMLElement {
     }
 
     async ensureViewTicketAssets() {
-        this.loadStyleOnce('../../view-ticket/style.css', 'to-ticket-detail-view-style');
-        this.loadStyleOnce('./view-ticket/style.css', 'to-ticket-detail-view-overrides-style');
+        this.loadStyleOnce('../../view-ticket/style.css', 'mo-ticket-detail-view-style');
+        this.loadStyleOnce('../technical-officer/view-ticket/style.css', 'mo-ticket-detail-view-overrides-style');
 
-        await this.loadScriptOnce('../../js/fault-ticket-detail-template.js', 'to-ticket-detail-template-script');
-        await this.loadScriptOnce('../../view-ticket/script.js', 'to-ticket-detail-runtime-script');
+        await this.loadScriptOnce('../../js/fault-ticket-detail-template.js', 'mo-ticket-detail-template-script');
+        await this.loadScriptOnce('../../view-ticket/script.js', 'mo-ticket-detail-runtime-script');
     }
 
     async ensureViewTicketTemplate() {
@@ -169,14 +169,23 @@ class TOTicketDetailView extends HTMLElement {
     buildRuntimeContext() {
         return {
             ticketId: this._ticketId,
-            roleOverride: 'TECHNICAL_OFFICER',
+            roleOverride: 'MACHINARY_OPERATOR',
             returnTo: this.buildReturnPath(this._returnSection),
             dashboardComponentMode: true,
             onBack: () => {
-                this.dispatchEvent(new CustomEvent('to-ticket-detail-view:back', {
+                this.dispatchEvent(new CustomEvent('mo-ticket-detail-view:back', {
                     bubbles: true,
                     detail: {
                         returnSection: this._returnSection || this.defaultReturnSection,
+                    }
+                }));
+            },
+            onRequestEdit: (detail = {}) => {
+                this.dispatchEvent(new CustomEvent('mo-ticket-detail-view:edit-request', {
+                    bubbles: true,
+                    detail: {
+                        ticketId: Number(detail.ticketId || this._ticketId || 0),
+                        status: String(detail.status || '').trim(),
                     }
                 }));
             },
@@ -186,7 +195,7 @@ class TOTicketDetailView extends HTMLElement {
     async open(ticketId, options = {}) {
         const numericTicketId = Number(ticketId);
         if (!Number.isFinite(numericTicketId) || numericTicketId <= 0) {
-            this.dispatchEvent(new CustomEvent('to-ticket-detail-view:toast', {
+            this.dispatchEvent(new CustomEvent('mo-ticket-detail-view:toast', {
                 bubbles: true,
                 detail: {
                     message: 'Invalid ticket ID.',
@@ -221,10 +230,10 @@ class TOTicketDetailView extends HTMLElement {
                 }, 60);
             }
         } catch (error) {
-            console.error('TO ticket detail open error:', error);
+            console.error('Machinery Operator ticket detail open error:', error);
             this.renderPlaceholder();
             this._templateReady = false;
-            this.dispatchEvent(new CustomEvent('to-ticket-detail-view:toast', {
+            this.dispatchEvent(new CustomEvent('mo-ticket-detail-view:toast', {
                 bubbles: true,
                 detail: {
                     message: 'Unable to open ticket details right now.',
@@ -255,6 +264,6 @@ class TOTicketDetailView extends HTMLElement {
     }
 }
 
-if (!customElements.get('to-ticket-detail-view')) {
-    customElements.define('to-ticket-detail-view', TOTicketDetailView);
+if (!customElements.get('mo-ticket-detail-view')) {
+    customElements.define('mo-ticket-detail-view', MOTicketDetailView);
 }

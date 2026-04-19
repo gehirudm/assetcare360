@@ -1,5 +1,6 @@
 let currentUser = null;
 let refreshIntervalId = null;
+let moTicketDetailsReturnSection = 'fault-reporting';
 
 function getComponent(selector) {
     return document.querySelector(selector);
@@ -83,6 +84,13 @@ async function refreshFaultReporting() {
     }
 }
 
+async function refreshTicketDetails() {
+    const section = getComponent('mo-ticket-detail-view');
+    if (section && typeof section.refresh === 'function') {
+        await section.refresh();
+    }
+}
+
 async function refreshConditionUpdates() {
     const section = getComponent('mo-condition-updates');
     if (section && typeof section.refresh === 'function') {
@@ -102,6 +110,7 @@ async function refreshAllSections() {
         refreshDashboardOverview(),
         refreshAnalyticsHub(),
         refreshFaultReporting(),
+        refreshTicketDetails(),
         refreshConditionUpdates(),
     ]);
 
@@ -124,6 +133,11 @@ async function refreshSection(sectionId) {
         return;
     }
 
+    if (sectionId === 'ticket-details') {
+        await refreshTicketDetails();
+        return;
+    }
+
     if (sectionId === 'condition-updates') {
         await refreshConditionUpdates();
         return;
@@ -139,6 +153,75 @@ function closeActiveModal() {
     if (activeModal) {
         activeModal.classList.remove('active');
     }
+}
+
+function bindMOTicketDetailView() {
+    const ticketDetailView = document.querySelector('#ticket-details mo-ticket-detail-view');
+    if (!ticketDetailView || ticketDetailView.dataset.bound === 'true') {
+        return;
+    }
+
+    ticketDetailView.dataset.bound = 'true';
+
+    ticketDetailView.addEventListener('mo-ticket-detail-view:toast', (event) => {
+        const message = event.detail?.message;
+        const type = event.detail?.type || 'info';
+        if (!message) {
+            return;
+        }
+
+        showToast(message, type);
+    });
+
+    ticketDetailView.addEventListener('mo-ticket-detail-view:back', (event) => {
+        const requestedSection = String(
+            event.detail?.returnSection
+            || moTicketDetailsReturnSection
+            || 'fault-reporting'
+        ).trim() || 'fault-reporting';
+
+        ticketDetailView.closeView?.();
+        const layout = document.querySelector('ac-layout');
+        layout?.navigateTo?.(requestedSection);
+    });
+
+    ticketDetailView.addEventListener('mo-ticket-detail-view:edit-request', (event) => {
+        const ticketId = Number(event.detail?.ticketId || 0);
+        if (!Number.isFinite(ticketId) || ticketId <= 0) {
+            showToast('Invalid ticket selected for edit.', 'warning');
+            return;
+        }
+
+        document.dispatchEvent(new CustomEvent('mo:open-edit-fault', {
+            detail: { ticketId },
+        }));
+    });
+}
+
+function viewMOTicketDetails(ticketId, options = {}) {
+    const numericTicketId = Number(ticketId);
+    if (!Number.isFinite(numericTicketId) || numericTicketId <= 0) {
+        showToast('Linked ticket is not available for this report yet.', 'warning');
+        return;
+    }
+
+    const ticketDetailView = document.querySelector('#ticket-details mo-ticket-detail-view');
+    if (!ticketDetailView || typeof ticketDetailView.open !== 'function') {
+        showToast('Ticket details component is unavailable.', 'error');
+        return;
+    }
+
+    const returnSection = String(options.returnSection || 'fault-reporting').trim() || 'fault-reporting';
+    moTicketDetailsReturnSection = returnSection;
+
+    const layout = document.querySelector('ac-layout');
+    layout?.navigateTo?.('ticket-details');
+    window.scrollTo(0, 0);
+
+    ticketDetailView.open(numericTicketId, {
+        returnSection,
+        focusHash: String(options.focusHash || '').trim(),
+    });
 }
 
 function bindDashboardEvents() {
@@ -228,7 +311,19 @@ function bindDashboardEvents() {
         await Promise.all([
             refreshAnalyticsHub(),
             refreshFaultReporting(),
+            refreshTicketDetails(),
         ]);
+    });
+
+    document.addEventListener('mo:open-ticket-details', (event) => {
+        const ticketId = event.detail?.ticketId;
+        const returnSection = event.detail?.returnSection || 'fault-reporting';
+        const focusHash = event.detail?.focusHash || '';
+
+        viewMOTicketDetails(ticketId, {
+            returnSection,
+            focusHash,
+        });
     });
 
     document.addEventListener('mo:weekly-check-submitted', async () => {
@@ -309,6 +404,7 @@ window.addEventListener('resize', handleResize);
 
 document.addEventListener('DOMContentLoaded', async () => {
     bindDashboardEvents();
+    bindMOTicketDetailView();
 
     try {
         await DashboardInit.init(['Machinary Operator', 'Admin'], {

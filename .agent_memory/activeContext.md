@@ -111,6 +111,12 @@ Dashboard Web Components refactor execution for the active Supervisor residual s
 - Produced prioritized where-to-update + chart-type guidance focused on quick wins first, then cross-dashboard expansion.
 - Expanded recommendations to an all-project practical chart catalog with decision/report-focused chart choices per dashboard module and section.
 
+### Rebase conflict recovery completed (April 19, 2026)
+- Recovered an interrupted rebase on `spare-parts-and-garage` with multiple conflict stops across shared ticket detail runtime, role dashboard files, UI validation artifacts, and memory docs.
+- Preserved additive behavior in shared ticket detail runtime by keeping both supervisor insurance assessment rendering and machinery-operator pending edit action handling.
+- Completed rebase successfully after resolving code conflicts and skipping stale memory/testing conflict commits that were superseded by current branch state.
+- Final state verified clean: branch restored to `spare-parts-and-garage` with no unresolved files (`UU`) and ahead-of-origin status.
+
 ### Cross-dashboard newest-first fault ticket ordering + sort/filter toolbar alignment completed (April 19, 2026)
 - Implemented explicit sort controls (`Created Date`, `Priority`) and default newest-first behavior across active fault-ticket/fault-reporting list components:
 	- `pages/dashboard/supervisor/components/fault-ticket-tracking/script.js`
@@ -398,7 +404,6 @@ Dashboard Web Components refactor execution for the active Supervisor residual s
 	- Executed `VAL_STAGE=after` for `testing/ui-validation/transportation-cargo-lifecycle/validate-transportation-cargo-lifecycle.spec.js` (pass: 1/1).
 	- Editor diagnostics reported no errors for touched files.
 
-<<<<<<< Updated upstream
 ### Route-breakdown driver GPS + map-based garage approval completed (April 17, 2026)
 - Completed TASK042 end-to-end for driver coordinate capture and supervisor map-based garage approval.
 - Backend/data updates complete:
@@ -416,7 +421,7 @@ Dashboard Web Components refactor execution for the active Supervisor residual s
 		- `VAL_STAGE=before`: passed (2/2 desktop+mobile)
 		- `VAL_STAGE=after`: passed (2/2 desktop+mobile)
 		- PHP lint, JS syntax checks, and editor diagnostics passed for touched files.
-=======
+
 ### Transportation Manager garage management + supervisor map approval update (April 17, 2026)
 - Implemented backend garage creation endpoint in `app/controllers/GarageController.php` and registered `POST /garages` in `public/index.php`.
 - Added missing `GET /route-breakdowns/garages` route registration in `public/index.php` for route-breakdown garage workflows.
@@ -439,7 +444,6 @@ Dashboard Web Components refactor execution for the active Supervisor residual s
 - Validation status:
 	- `VAL_STAGE=before`: passed (desktop + mobile)
 	- `VAL_STAGE=after`: passed (desktop + mobile)
->>>>>>> Stashed changes
 
 ### Vehicle government fuel QR image flow completed (April 16, 2026)
 - Completed TASK041 for Sri Lanka external-fuel QR support across vehicle management, TM dashboard, and Driver dashboard.

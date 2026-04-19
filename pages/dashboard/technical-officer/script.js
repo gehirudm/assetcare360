@@ -748,6 +748,17 @@ function bindTOTicketDetails() {
 
         showToast(message, type);
     });
+
+    ticketDetailView.addEventListener('to-ticket-detail-view:back', (event) => {
+        const requestedSection = String(
+            event.detail?.returnSection
+            || technicalOfficerTicketDetailReturnSection
+            || 'tickets'
+        ).trim() || 'tickets';
+
+        ticketDetailView.closeView?.();
+        navigateToSection(requestedSection);
+    });
 }
 
 // View ticket details in the dashboard-local details section component.
@@ -766,6 +777,9 @@ function viewTicket(ticketId, options = {}) {
 
     const returnSection = String(options.returnSection || 'tickets').trim() || 'tickets';
     technicalOfficerTicketDetailReturnSection = returnSection;
+
+    navigateToSection('ticket-details');
+    window.scrollTo(0, 0);
 
     ticketDetailView.open(numericTicketId, {
         returnSection,

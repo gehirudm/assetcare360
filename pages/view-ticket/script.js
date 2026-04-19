@@ -1,5 +1,7 @@
 'use strict';
 
+(() => {
+
 let ticketData = null;
 let currentUser = null;
 let budgetReport = null;
@@ -46,7 +48,25 @@ const SUPERVISOR_NAV_ITEMS = [
     { section: 'technicians', icon: 'fas fa-user-cog', label: 'Technicians' }
 ];
 
+function getViewTicketContext() {
+    const context = window.__ACViewTicketContext;
+    if (context && typeof context === 'object') {
+        return context;
+    }
+
+    return {};
+}
+
+function isDashboardComponentMode() {
+    return getViewTicketContext().dashboardComponentMode === true;
+}
+
 function getTicketId() {
+    const contextTicketId = getViewTicketContext().ticketId;
+    if (contextTicketId !== undefined && contextTicketId !== null && String(contextTicketId).trim() !== '') {
+        return String(contextTicketId).trim();
+    }
+
     return new URLSearchParams(window.location.search).get('id');
 }
 
@@ -55,11 +75,21 @@ function toRoleKey(roleName) {
 }
 
 function getRoleOverrideKey() {
+    const contextRoleOverride = getViewTicketContext().roleOverride;
+    if (contextRoleOverride !== undefined && contextRoleOverride !== null && String(contextRoleOverride).trim() !== '') {
+        return toRoleKey(contextRoleOverride);
+    }
+
     const overrideParam = new URLSearchParams(window.location.search).get('role_override');
     return toRoleKey(overrideParam);
 }
 
 function isEmbeddedMode() {
+    const contextEmbedded = getViewTicketContext().embedded;
+    if (typeof contextEmbedded === 'boolean') {
+        return contextEmbedded;
+    }
+
     return new URLSearchParams(window.location.search).get('embedded') === '1';
 }
 
@@ -111,6 +141,11 @@ function isAssignedTechnicalOfficer() {
 
 function canViewInsuranceClaimContext() {
     return isSupervisorLike() || isAssignedTechnicalOfficer();
+}
+  
+function isMachinaryOperator() {
+    const roleKey = currentRoleContext?.roleKey || getRoleOverrideKey() || toRoleKey(currentUser?.role);
+    return roleKey === 'MACHINARY_OPERATOR';
 }
 
 function isRouteBreakdownTicket() {
@@ -274,6 +309,17 @@ function markStep(stepId, state) {
 }
 
 function getSafeReturnToPath() {
+    const contextReturnTo = getViewTicketContext().returnTo;
+    if (typeof contextReturnTo === 'string' && contextReturnTo.trim()) {
+        try {
+            const resolved = new URL(contextReturnTo, window.location.origin);
+            if (resolved.origin !== window.location.origin) return null;
+            return `${resolved.pathname}${resolved.search}`;
+        } catch (_error) {
+            return null;
+        }
+    }
+
     const raw = new URLSearchParams(window.location.search).get('return_to');
     if (!raw) return null;
 
@@ -294,10 +340,12 @@ function resolveRoleContext(user) {
 
     const defaultSection = roleKey === 'SUPERVISOR' ? 'fault-tickets'
         : roleKey === 'TECHNICAL_OFFICER' ? 'tickets'
+            : roleKey === 'MACHINARY_OPERATOR' ? 'fault-reporting'
             : 'dashboard';
 
     const title = roleKey === 'SUPERVISOR' ? 'Supervisor Dashboard'
         : roleKey === 'TECHNICAL_OFFICER' ? 'Technical Officer Dashboard'
+            : roleKey === 'MACHINARY_OPERATOR' ? 'Machinery Operator Dashboard'
             : `${user?.role || 'User'} Dashboard`;
 
     return {
@@ -321,30 +369,41 @@ function applyRoleShellAndNavigation() {
     if (!currentRoleContext) return;
 
     const embeddedMode = isEmbeddedMode();
-    if (embeddedMode && document.body) {
+    const dashboardComponentMode = isDashboardComponentMode();
+
+    if (embeddedMode && !dashboardComponentMode && document.body) {
         document.body.classList.add('ticket-detail-embedded');
     }
 
-    const header = document.querySelector('to-shell-header');
-    if (header) {
-        header.setAttribute('title', currentRoleContext.title);
-        header.setAttribute('icon', currentRoleContext.roleKey === 'SUPERVISOR' ? 'fa-user-tie' : 'fa-tools');
-        if (embeddedMode) {
-            header.style.display = 'none';
+    if (!dashboardComponentMode) {
+        const header = document.querySelector('to-shell-header');
+        if (header) {
+            header.setAttribute('title', currentRoleContext.title);
+            const headerIcon = currentRoleContext.roleKey === 'SUPERVISOR'
+                ? 'fa-user-tie'
+                : currentRoleContext.roleKey === 'DRIVER'
+                    ? 'fa-steering-wheel'
+                    : currentRoleContext.roleKey === 'MACHINARY_OPERATOR'
+                        ? 'fa-cogs'
+                    : 'fa-tools';
+            header.setAttribute('icon', headerIcon);
+            if (embeddedMode) {
+                header.style.display = 'none';
+            }
         }
-    }
 
-    const sidebar = document.querySelector('to-shell-sidebar');
-    if (sidebar) {
-        sidebar.setAttribute('mode', 'subpage');
-        sidebar.setAttribute('active-section', currentRoleContext.defaultSection);
-        sidebar.setAttribute('base-path', currentRoleContext.dashboardPath);
+        const sidebar = document.querySelector('to-shell-sidebar');
+        if (sidebar) {
+            sidebar.setAttribute('mode', 'subpage');
+            sidebar.setAttribute('active-section', currentRoleContext.defaultSection);
+            sidebar.setAttribute('base-path', currentRoleContext.dashboardPath);
 
-        if (currentRoleContext.navItems) sidebar.setAttribute('nav', JSON.stringify(currentRoleContext.navItems));
-        else sidebar.removeAttribute('nav');
+            if (currentRoleContext.navItems) sidebar.setAttribute('nav', JSON.stringify(currentRoleContext.navItems));
+            else sidebar.removeAttribute('nav');
 
-        if (embeddedMode) {
-            sidebar.style.display = 'none';
+            if (embeddedMode) {
+                sidebar.style.display = 'none';
+            }
         }
     }
 
@@ -363,25 +422,40 @@ function applyRoleShellAndNavigation() {
         ticketsCrumb.href = ticketsPath;
         ticketsCrumb.textContent = currentRoleContext.roleKey === 'SUPERVISOR'
             ? 'Technician Assignment'
-            : 'Fault & Repair Tickets';
+            : currentRoleContext.roleKey === 'DRIVER'
+                ? 'Breakdown Reports'
+                : currentRoleContext.roleKey === 'MACHINARY_OPERATOR'
+                    ? 'Fault Reporting'
+                : 'Fault & Repair Tickets';
     }
 
     if (embeddedMode) {
-        const detailSubheader = document.getElementById('detailSubheader');
-        const errorBackButton = document.getElementById('errorBackButton');
+        if (!dashboardComponentMode) {
+            const detailSubheader = document.getElementById('detailSubheader');
+            const embeddedErrorBackButton = document.getElementById('errorBackButton');
 
-        if (detailSubheader) {
-            detailSubheader.style.display = 'none';
+            if (detailSubheader) {
+                detailSubheader.style.display = 'none';
+            }
+
+            if (embeddedErrorBackButton) {
+                embeddedErrorBackButton.style.display = 'none';
+            }
+
+            return;
         }
-
-        if (errorBackButton) {
-            errorBackButton.style.display = 'none';
-        }
-
-        return;
     }
 
     const navigateBack = () => {
+        const context = getViewTicketContext();
+        if (dashboardComponentMode && typeof context.onBack === 'function') {
+            context.onBack({
+                ticketsPath,
+                roleKey: currentRoleContext.roleKey,
+            });
+            return;
+        }
+
         window.location.href = ticketsPath;
     };
 
@@ -572,6 +646,40 @@ function renderOverview(ticketIdFormatted) {
             insurancePanel.style.display = 'none';
             insuranceEligibilityEl.classList.remove('eligible', 'not-eligible');
         }
+    }
+
+    const overviewActions = document.getElementById('overviewActions');
+    const editFaultTicketBtn = document.getElementById('editFaultTicketBtn');
+    if (overviewActions && editFaultTicketBtn) {
+        const normalizedTicketStatus = normaliseStatus(ticketData?.status);
+        const canEditPendingTicket = isMachinaryOperator()
+            && Number(ticketData?.id || 0) > 0
+            && (normalizedTicketStatus === 'open' || normalizedTicketStatus === 'pending');
+
+        overviewActions.style.display = canEditPendingTicket ? 'flex' : 'none';
+        editFaultTicketBtn.style.display = canEditPendingTicket ? 'inline-flex' : 'none';
+
+        editFaultTicketBtn.onclick = canEditPendingTicket
+            ? () => {
+                const context = getViewTicketContext();
+                const ticketId = Number(ticketData?.id || 0);
+
+                if (!Number.isFinite(ticketId) || ticketId <= 0) {
+                    showToast('Invalid ticket selected for edit.', 'warning');
+                    return;
+                }
+
+                if (isDashboardComponentMode() && typeof context.onRequestEdit === 'function') {
+                    context.onRequestEdit({
+                        ticketId,
+                        status: ticketData?.status || '',
+                    });
+                    return;
+                }
+
+                showToast('Edit is available from the Machinery Operator dashboard view.', 'warning');
+            }
+            : null;
     }
 }
 
@@ -2378,7 +2486,41 @@ document.addEventListener('change', (event) => {
     }
 });
 
-document.addEventListener('DOMContentLoaded', async () => {
+function exposeInlineTemplateHandlers() {
+    const handlerMap = {
+        openAssignModal,
+        openGarageApprovalModal,
+        openBudgetModal,
+        reviewBudget,
+        openPartsModal,
+        openCompleteModal,
+        closeBudgetModal,
+        submitBudget,
+        addPartRow,
+        closePartsModal,
+        submitPartsRequest,
+        closeCompleteModal,
+        submitComplete,
+        closeAssignModal,
+        submitAssignment,
+        closeGarageApprovalModal,
+        submitGarageApproval,
+    };
+
+    Object.entries(handlerMap).forEach(([name, handler]) => {
+        if (typeof handler === 'function') {
+            window[name] = handler;
+        }
+    });
+}
+
+exposeInlineTemplateHandlers();
+
+async function initializeViewTicketPage(context = null) {
+    if (context && typeof context === 'object') {
+        window.__ACViewTicketContext = context;
+    }
+
     try {
         currentUser = await Auth.checkAuth();
         if (!currentUser) {
@@ -2398,9 +2540,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const shellSidebar = document.querySelector('to-shell-sidebar');
-    if (shellSidebar && typeof shellSidebar.refreshNotificationBadge === 'function') {
+    if (shellSidebar && !isDashboardComponentMode() && typeof shellSidebar.refreshNotificationBadge === 'function') {
         await shellSidebar.refreshNotificationBadge();
     }
 
     await loadAll();
-});
+}
+
+window.ViewTicketPage = window.ViewTicketPage || {};
+window.ViewTicketPage.initialize = initializeViewTicketPage;
+
+function shouldAutoInitializeViewTicketPage() {
+    if (isDashboardComponentMode()) {
+        return false;
+    }
+
+    return Boolean(document.getElementById('loadingState') && document.getElementById('mainContent'));
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (!shouldAutoInitializeViewTicketPage()) {
+            return;
+        }
+
+        await initializeViewTicketPage();
+    });
+} else if (shouldAutoInitializeViewTicketPage()) {
+    void initializeViewTicketPage();
+}
+
+})();
