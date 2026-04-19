@@ -1,0 +1,20 @@
+{
+  "stage": "before",
+  "viewport": "mobile",
+  "url": "http://127.0.0.1:3000/dashboard/driver/index.html",
+  "title": "Driver Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \"Dashboard Overview\" [level=2]\n  - paragraph: Welcome! Here's your daily summary\n  - text: Assigned Vehicle - - - - - Today's Trips 0 trips scheduled today Weekly Checks 2 check records available Distance Today 0 KM total distance covered Breakdown Reports 0 active breakdown report\n  - heading \"Recent Activities\" [level=3]\n  - text: \"Daily Check Approved Vehicle: LKA-1234 | 2 hours ago All safety checks passed successfully APPROVED Trip Completed TRP-001 | Galle to Colombo | 3 hours ago Successfully completed cargo delivery COMPLETED Service Due Alert Vehicle: LKA-1234 | Due in 250 KM Regular maintenance service required soon PENDING\"",
+    "snapshotLength": 662
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "stage": "before",
+    "analyticsNavPresent": false,
+    "analyticsSectionPresent": false,
+    "activeSection": "dashboard",
+    "reportRows": 0,
+    "downloadSuggestedFilename": null
+  }
+}

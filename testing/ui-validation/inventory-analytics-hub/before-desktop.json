@@ -1,0 +1,18 @@
+{
+  "stage": "before",
+  "viewport": "desktop",
+  "url": "http://127.0.0.1:3000/dashboard/inventory-manager/index.html",
+  "title": "Inventory Manager Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \" Inventory Analytics\" [level=2]\n  - paragraph: Analyze stock movement, requests, and asset insurance coverage from one hub.\n  - tablist \"Inventory analytics sections\":\n    - tab \"Stock Analytics\" [selected]\n    - tab \"Stock Additions\"\n    - tab \"Usage Analytics\"\n    - tab \"Request Analytics\"\n    - tab \"Asset Coverage\"\n  - text: From Date\n  - textbox \"From Date\": 2026-03-20\n  - text: To Date\n  - textbox \"To Date\": 2026-04-19\n  - text: Report Type\n  - combobox \"Report Type\":\n    - option \"Active Analytics View\" [selected]\n    - option \"Stock Analytics\"\n    - option \"Stock Additions\"\n    - option \"Usage Analytics\"\n    - option \"Request Analytics\"\n    - option \"Asset Coverage\"\n    - option \"All Analytics Summary\"\n  - button \" Generate Report\"\n  - button \" Download CSV\" [disabled]\n  - text: Choose a time period and generate a downloadable report. Stock analytics updated at 02:15:48 PM.\n  - tabpanel:\n    - text: Total Spare Parts 3 Total Quantity 21 Low Stock Parts 1 Out of Stock Parts 1 Estimated Stock Value LKR 87,300.00\n    - article:\n      - heading \"Stock Status Mix\" [level=3]\n      - paragraph: In-stock, low-stock, and out-of-stock distribution.\n    - article:\n      - heading \"Top Stock Quantities\" [level=3]\n      - paragraph: Highest quantity spare parts currently on hand.",
+    "snapshotLength": 1318
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "tabsVisible": 5,
+    "reportToolbarVisible": 1,
+    "previewCards": 0,
+    "reportStatus": ""
+  }
+}

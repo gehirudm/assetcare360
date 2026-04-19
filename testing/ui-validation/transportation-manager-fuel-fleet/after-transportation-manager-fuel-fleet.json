@@ -1,0 +1,18 @@
+{
+  "stage": "after",
+  "transportationManager": {
+    "fleetViewMode": "section",
+    "fuelModal": {
+      "hasFuelTypeField": false,
+      "hasFuelSourceField": true
+    }
+  },
+  "driver": {
+    "hasFuelTypeField": false,
+    "hasFuelSourceField": true,
+    "internalCostRequired": false
+  },
+  "console": [],
+  "failedRequests": [],
+  "fuelCreateCalls": 0
+}
