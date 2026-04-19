@@ -54,6 +54,8 @@ class SparepartAdditionController {
                     return;
                 }
             }
+
+            $data['received_date'] = $this->normalizeReceivedDate($data['received_date'], true);
             
             $sparepartId = trim((string)$data['sparepart_id']);
             $quantityAdded = (int)$data['quantity_added'];
@@ -180,6 +182,10 @@ class SparepartAdditionController {
             // Remove id from data to avoid updating the primary key
             unset($data['id']);
 
+            if (array_key_exists('received_date', $data)) {
+                $data['received_date'] = $this->normalizeReceivedDate($data['received_date'], true);
+            }
+
             // Compatibility is catalog-level metadata only.
             unset($data['compatible_machines'], $data['compatible_vehicles']);
             
@@ -223,5 +229,27 @@ class SparepartAdditionController {
         } catch (Exception $e) {
             Response::error('Failed to delete addition: ' . $e->getMessage());
         }
+    }
+
+    private function normalizeReceivedDate($value, bool $required): string {
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            if ($required) {
+                Response::error('received_date is required', 400);
+            }
+            return '';
+        }
+
+        $date = DateTime::createFromFormat('Y-m-d', $raw);
+        if (!$date || $date->format('Y-m-d') !== $raw) {
+            Response::error('received_date must be in YYYY-MM-DD format', 400);
+        }
+
+        $today = new DateTime(date('Y-m-d'));
+        if ($date > $today) {
+            Response::error('received_date cannot be in the future', 400);
+        }
+
+        return $date->format('Y-m-d');
     }
 }

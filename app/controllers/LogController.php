@@ -33,10 +33,12 @@ class LogController {
         $method = $_GET['method'] ?? null;
         $responseCode = $_GET['response_code'] ?? null;
         $period = $_GET['period'] ?? 'all'; // today, week, month, year, all
-        $dateFrom = $_GET['date_from'] ?? null;
-        $dateTo = $_GET['date_to'] ?? null;
+        $dateFrom = $this->normalizeDateFilter($_GET['date_from'] ?? null, 'date_from');
+        $dateTo = $this->normalizeDateFilter($_GET['date_to'] ?? null, 'date_to');
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
+
+        $this->ensureDateRange($dateFrom, $dateTo);
         
         // Validate limit
         if ($limit < 1 || $limit > 200) {
@@ -66,6 +68,32 @@ class LogController {
             'pagination' => $result['pagination'],
             'filters_applied' => $filters
         ]);
+    }
+
+    private function normalizeDateFilter($value, string $field): ?string {
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            return null;
+        }
+
+        $date = DateTime::createFromFormat('Y-m-d', $raw);
+        if (!$date || $date->format('Y-m-d') !== $raw) {
+            Response::error($field . ' must be in YYYY-MM-DD format', 400);
+        }
+
+        return $date->format('Y-m-d');
+    }
+
+    private function ensureDateRange(?string $dateFrom, ?string $dateTo): void {
+        if (!$dateFrom || !$dateTo) {
+            return;
+        }
+
+        $from = DateTime::createFromFormat('Y-m-d', $dateFrom);
+        $to = DateTime::createFromFormat('Y-m-d', $dateTo);
+        if (!$from || !$to || $from > $to) {
+            Response::error('date_from must be earlier than or equal to date_to', 400);
+        }
     }
     
     /**

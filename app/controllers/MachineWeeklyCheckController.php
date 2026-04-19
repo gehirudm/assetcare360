@@ -121,6 +121,10 @@ class MachineWeeklyCheckController {
         if (empty($input['week_start_date']) || empty($input['week_end_date'])) {
             Response::error('Week start and end dates are required', 400);
         }
+
+        $input['week_start_date'] = $this->normalizeCheckDate($input['week_start_date'], 'week_start_date', true);
+        $input['week_end_date'] = $this->normalizeCheckDate($input['week_end_date'], 'week_end_date', true);
+        $this->ensureWeekDateOrder($input['week_start_date'], $input['week_end_date']);
         
         // Set operator ID to current user
         $currentUser = RoleMiddleware::getCurrentUser();
@@ -164,6 +168,23 @@ class MachineWeeklyCheckController {
         // Cannot update if already approved/rejected (unless supervisor)
         if ($existingCheck['status'] !== 'pending' && !in_array($currentUser['role'], ['Supervisor', 'Admin'])) {
             Response::error('Cannot update a check that has been reviewed', 400);
+        }
+
+        $weekStart = $existingCheck['week_start_date'] ?? null;
+        $weekEnd = $existingCheck['week_end_date'] ?? null;
+
+        if (array_key_exists('week_start_date', $input)) {
+            $weekStart = $this->normalizeCheckDate($input['week_start_date'], 'week_start_date', true);
+            $input['week_start_date'] = $weekStart;
+        }
+
+        if (array_key_exists('week_end_date', $input)) {
+            $weekEnd = $this->normalizeCheckDate($input['week_end_date'], 'week_end_date', true);
+            $input['week_end_date'] = $weekEnd;
+        }
+
+        if (array_key_exists('week_start_date', $input) || array_key_exists('week_end_date', $input)) {
+            $this->ensureWeekDateOrder((string) $weekStart, (string) $weekEnd);
         }
         
         $check = $this->model->updateCheck($id, $input);
@@ -268,6 +289,32 @@ class MachineWeeklyCheckController {
         }
         
         Response::success(null, 'Weekly check deleted successfully');
+    }
+
+    private function normalizeCheckDate($value, string $field, bool $required): string {
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            if ($required) {
+                Response::error($field . ' is required', 400);
+            }
+            return '';
+        }
+
+        $date = DateTime::createFromFormat('Y-m-d', $raw);
+        if (!$date || $date->format('Y-m-d') !== $raw) {
+            Response::error($field . ' must be in YYYY-MM-DD format', 400);
+        }
+
+        return $date->format('Y-m-d');
+    }
+
+    private function ensureWeekDateOrder(string $weekStartDate, string $weekEndDate): void {
+        $start = DateTime::createFromFormat('Y-m-d', $weekStartDate);
+        $end = DateTime::createFromFormat('Y-m-d', $weekEndDate);
+
+        if (!$start || !$end || $start > $end) {
+            Response::error('week_start_date must be earlier than or equal to week_end_date', 400);
+        }
     }
     
     /**

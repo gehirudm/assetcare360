@@ -158,6 +158,11 @@ class MachineBreakdownController {
         RoleMiddleware::requireMinRole('Machinary Operator');
         
         $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            Response::error('Invalid JSON payload', 400);
+        }
+
+        $breakdownDate = $this->normalizeBreakdownDateTime($input['breakdown_date'] ?? null, false);
         $currentUser = RoleMiddleware::getCurrentUser();
         
         try {
@@ -182,15 +187,6 @@ class MachineBreakdownController {
                     VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')";
             
             $stmt = $this->conn->prepare($sql);
-            
-            // Convert ISO 8601 datetime to MySQL format
-            $breakdownDate = date('Y-m-d H:i:s');
-            if (!empty($input['breakdown_date'])) {
-                $parsed = strtotime($input['breakdown_date']);
-                if ($parsed !== false) {
-                    $breakdownDate = date('Y-m-d H:i:s', $parsed);
-                }
-            }
             
             $stmt->execute([
                 $breakdownId,
@@ -267,5 +263,27 @@ class MachineBreakdownController {
             . "Severity: {$severity}\n"
             . "Reported At: {$reportedDate}\n"
             . "Details: {$details}";
+    }
+
+    private function normalizeBreakdownDateTime($value, bool $required): string {
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            if ($required) {
+                Response::error('breakdown_date is required', 400);
+            }
+            return date('Y-m-d H:i:s');
+        }
+
+        $timestamp = strtotime($raw);
+        if ($timestamp === false) {
+            Response::error('breakdown_date must be a valid date/time value', 400);
+        }
+
+        $now = time();
+        if ($timestamp > $now) {
+            Response::error('breakdown_date cannot be in the future', 400);
+        }
+
+        return date('Y-m-d H:i:s', $timestamp);
     }
 }

@@ -71,9 +71,10 @@ class MachineService {
             $data['current_operating_hours'] = $lastServiceHours;
         }
         
-        // Validate last service date is not in the future
-        if (!empty($data['last_service_date'])) {
-            $this->ensureDateNotFuture($data['last_service_date'], 'last_service_date');
+        if (array_key_exists('last_service_date', $data)) {
+            $lastServiceDate = $this->normalizeDateInput($data['last_service_date'], 'last_service_date', false);
+            $this->ensureDateNotFuture($lastServiceDate, 'last_service_date');
+            $data['last_service_date'] = $lastServiceDate;
         }
         
         // Add created_by
@@ -171,9 +172,10 @@ class MachineService {
             $data['last_service_hours'] = $lastServiceHours;
         }
         
-        // Validate last service date is not in the future
-        if (!empty($data['last_service_date'])) {
-            $this->ensureDateNotFuture($data['last_service_date'], 'last_service_date');
+        if (array_key_exists('last_service_date', $data)) {
+            $lastServiceDate = $this->normalizeDateInput($data['last_service_date'], 'last_service_date', false);
+            $this->ensureDateNotFuture($lastServiceDate, 'last_service_date');
+            $data['last_service_date'] = $lastServiceDate;
         }
         
         // Add updated_by
@@ -306,9 +308,14 @@ class MachineService {
             return;
         }
 
-        $timestamp = strtotime((string)$value);
-        $today = strtotime(date('Y-m-d'));
-        if ($timestamp > $today) {
+        $normalized = trim((string)$value);
+        $date = DateTime::createFromFormat('Y-m-d', $normalized);
+        if (!$date || $date->format('Y-m-d') !== $normalized) {
+            throw new Exception("Field '{$field}' must be a valid date (YYYY-MM-DD)");
+        }
+
+        $today = new DateTime(date('Y-m-d'));
+        if ($date > $today) {
             throw new Exception("Field '{$field}' cannot be in the future");
         }
     }

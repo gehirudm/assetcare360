@@ -214,6 +214,7 @@ class RouteBreakdownController {
             Response::error('vehicle_id, breakdown_location, breakdown_datetime, breakdown_type, severity and description are required', 400);
         }
 
+        $breakdownDateTime = $this->normalizeBreakdownDateTime($input['breakdown_datetime'], true);
         $breakdownLatitude = $this->parseCoordinate($input['breakdown_latitude'] ?? null, 'breakdown_latitude', -90, 90, true);
         $breakdownLongitude = $this->parseCoordinate($input['breakdown_longitude'] ?? null, 'breakdown_longitude', -180, 180, true);
         $severity = $this->normalizeSeverityInput($input['severity']);
@@ -254,7 +255,7 @@ class RouteBreakdownController {
                     trim((string) $input['breakdown_location']),
                     $breakdownLatitude,
                     $breakdownLongitude,
-                    $input['breakdown_datetime'],
+                    $breakdownDateTime,
                     trim((string) $input['breakdown_type']),
                     $severity,
                     trim((string) $input['description']),
@@ -277,7 +278,7 @@ class RouteBreakdownController {
                     trim((string) $input['breakdown_location']),
                     $breakdownLatitude,
                     $breakdownLongitude,
-                    $input['breakdown_datetime'],
+                    $breakdownDateTime,
                     trim((string) $input['breakdown_type']),
                     $severity,
                     trim((string) $input['description']),
@@ -293,7 +294,7 @@ class RouteBreakdownController {
                 'description' => $this->buildAutoTicketDescription($routeBreakdownId, [
                     'breakdown_type' => $input['breakdown_type'] ?? 'Route Breakdown',
                     'severity' => $severity,
-                    'breakdown_datetime' => $input['breakdown_datetime'] ?? null,
+                    'breakdown_datetime' => $breakdownDateTime,
                     'breakdown_location' => $input['breakdown_location'] ?? null,
                     'description' => $input['description'] ?? '',
                     'dangerous_cargo_present' => $dangerousCargoPresent,
@@ -388,6 +389,9 @@ class RouteBreakdownController {
         $allowedFields = ['breakdown_type', 'description', 'status', 'breakdown_location', 'breakdown_datetime'];
         foreach ($allowedFields as $field) {
             if (isset($input[$field])) {
+                if ($field === 'breakdown_datetime') {
+                    $input[$field] = $this->normalizeBreakdownDateTime($input[$field], true);
+                }
                 $fields[] = "$field = ?";
                 $params[] = is_string($input[$field]) ? trim($input[$field]) : $input[$field];
             }
@@ -1123,6 +1127,27 @@ class RouteBreakdownController {
         }
 
         return $normalized;
+    }
+
+    private function normalizeBreakdownDateTime($value, bool $required): string {
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            if ($required) {
+                Response::error('breakdown_datetime is required', 400);
+            }
+            return date('Y-m-d H:i:s');
+        }
+
+        $timestamp = strtotime($raw);
+        if ($timestamp === false) {
+            Response::error('breakdown_datetime must be a valid date/time value', 400);
+        }
+
+        if ($timestamp > time()) {
+            Response::error('breakdown_datetime cannot be in the future', 400);
+        }
+
+        return date('Y-m-d H:i:s', $timestamp);
     }
 
     private function parseCoordinate($value, string $field, float $min, float $max, bool $required): ?float {
