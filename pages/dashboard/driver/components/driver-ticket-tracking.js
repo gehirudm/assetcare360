@@ -461,6 +461,11 @@ class DriverTicketTracking extends HTMLElement {
     }
 
     getGarageWorkflowStatus(breakdown) {
+        const ticketStatus = String(breakdown?.ticket_status || '').trim().toLowerCase();
+        if (ticketStatus === 'insurance claimed') {
+            return 'insurance_claimed';
+        }
+
         const status = breakdown?.garage_workflow?.status || breakdown?.garage_workflow_status || null;
         if (status) {
             return status;
@@ -480,6 +485,7 @@ class DriverTicketTracking extends HTMLElement {
 
         const labels = {
             awaiting_supervisor_approval: 'Awaiting Supervisor Approval',
+            insurance_claimed: 'Insurance Claimed',
             garage_approved: 'Garage Approved',
             garage_entry_logged: 'Garage Entry Logged',
             repair_in_progress: 'Repair In Progress',
@@ -496,6 +502,10 @@ class DriverTicketTracking extends HTMLElement {
 
         if (status === 'completed') {
             return 'status-resolved';
+        }
+
+        if (status === 'insurance_claimed') {
+            return 'status-in-progress';
         }
 
         if (status === 'garage_approved' || status === 'garage_entry_logged' || status === 'repair_in_progress') {

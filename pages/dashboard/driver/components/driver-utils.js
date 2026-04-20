@@ -174,7 +174,7 @@
         if (value === 'rejected' || value === 'critical' || value === 'cancelled') {
             return '#e74c3c';
         }
-        if (value === 'in progress' || value === 'in-progress' || value === 'assigned') {
+        if (value === 'in progress' || value === 'in-progress' || value === 'assigned' || value === 'insurance claimed') {
             return '#2563eb';
         }
         if (value === 'pending') {
@@ -192,6 +192,7 @@
             'Waiting for Spare Parts': { label: 'Awaiting Parts', class: 'status-in-progress', text: 'Awaiting Parts' },
             'Parts Approved': { label: 'Parts Approved', class: 'status-in-progress', text: 'Parts Approved' },
             'Parts Rejected': { label: 'Parts Rejected', class: 'status-rejected', text: 'Parts Rejected' },
+            'Insurance Claimed': { label: 'Insurance Claimed', class: 'status-in-progress', text: 'Insurance Claimed' },
             'In Progress': { label: 'In Progress', class: 'status-in-progress', text: 'In Progress' },
             Resolved: { label: 'Resolved', class: 'status-resolved', text: 'Resolved' },
             Closed: { label: 'Closed', class: 'status-closed', text: 'Closed' },
@@ -209,6 +210,7 @@
             'Waiting for Spare Parts': 'Waiting for spare parts to be approved',
             'Parts Approved': 'Spare parts approved, repair to begin soon',
             'Parts Rejected': 'Spare parts request was rejected and needs revision',
+            'Insurance Claimed': 'Supervisor submitted this ticket to insurance claim workflow',
             'In Progress': 'Being investigated and repaired',
             Resolved: 'Work completed and ticket resolved',
             Closed: 'Ticket closed',
@@ -224,7 +226,7 @@
             return 'open';
         }
 
-        if (value === 'assigned' || value.includes('progress') || value.includes('spare') || value.includes('parts') || value.includes('budget')) {
+        if (value === 'assigned' || value === 'insurance claimed' || value.includes('progress') || value.includes('spare') || value.includes('parts') || value.includes('budget')) {
             return 'in-progress';
         }
 

@@ -189,6 +189,9 @@ class DriverBreakdown extends HTMLElement {
         const id = item.id;
         const breakdownId = type === 'in-route' ? item.route_breakdown_id : item.breakdown_id;
         const dateRaw = type === 'in-route' ? item.breakdown_datetime : item.breakdown_date;
+        const approvedGarageName = type === 'in-route'
+            ? (item?.garage_workflow?.approved_garage?.name || item.approved_garage_name || null)
+            : null;
 
         return {
             ...item,
@@ -196,6 +199,7 @@ class DriverBreakdown extends HTMLElement {
             type,
             breakdownId,
             dateRaw,
+            approvedGarageName,
             displayDate: DriverUtils.formatDateTime(dateRaw),
             status: item.ticket_status || item.status || 'Pending',
             severity: item.severity || 'medium',
@@ -226,6 +230,9 @@ class DriverBreakdown extends HTMLElement {
     renderItem(item) {
         const statusColor = DriverUtils.getStatusColor(item.status);
         const severityColor = DriverUtils.getStatusColor(item.severity);
+        const approvedGarageLine = item.type === 'in-route' && item.approvedGarageName
+            ? `<div class="item-meta" style="margin-top:6px;"><i class="fas fa-warehouse" style="color:#0f766e;"></i> <span style="color:#0f766e;font-weight:600;">Nearby Garage: ${DriverUtils.escapeHtml(item.approvedGarageName)}</span></div>`
+            : '';
         const overflowMenu = `
             <div class="dropdown-container">
                 <button class="btn btn-small btn-secondary dropdown-trigger" type="button" data-action="toggle-actions-menu" aria-label="More actions">
@@ -254,6 +261,7 @@ class DriverBreakdown extends HTMLElement {
                         <br>
                         ${item.summary}
                     </div>
+                    ${approvedGarageLine}
                 </div>
                 <div class="item-actions">
                     <div class="action-buttons">
