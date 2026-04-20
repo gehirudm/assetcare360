@@ -255,6 +255,113 @@ function resolveSameOriginAssetUrl(pathValue) {
     }
 }
 
+function normalizeRouteBreakdownImagePaths(rawValue) {
+    if (Array.isArray(rawValue)) {
+        return rawValue
+            .map((value) => String(value || '').trim())
+            .filter((value) => value !== '');
+    }
+
+    if (typeof rawValue === 'string') {
+        const text = rawValue.trim();
+        if (!text) {
+            return [];
+        }
+
+        try {
+            const decoded = JSON.parse(text);
+            if (Array.isArray(decoded)) {
+                return decoded
+                    .map((value) => String(value || '').trim())
+                    .filter((value) => value !== '');
+            }
+        } catch (_error) {
+            return [text];
+        }
+
+        return [text];
+    }
+
+    return [];
+}
+
+function getRouteBreakdownReportImagePaths() {
+    if (!isRouteBreakdownTicket()) {
+        return [];
+    }
+
+    const candidates = [
+        routeBreakdownContext?.breakdown_images,
+        routeBreakdownContext?.breakdown_images_json,
+        ticketData?.breakdown_context?.breakdown_images,
+        ticketData?.breakdown_context?.breakdown_images_json,
+    ];
+
+    const merged = candidates.flatMap((candidate) => normalizeRouteBreakdownImagePaths(candidate));
+    return Array.from(new Set(merged.filter((pathValue) => pathValue !== '')));
+}
+
+function renderRouteBreakdownImagesPanel() {
+    const panelEl = document.getElementById('routeBreakdownImagesPanel');
+    const gridEl = document.getElementById('routeBreakdownImagesGrid');
+    const hintEl = document.getElementById('routeBreakdownImagesHint');
+
+    if (!panelEl || !gridEl || !hintEl) {
+        return;
+    }
+
+    const reset = () => {
+        panelEl.style.display = 'none';
+        gridEl.innerHTML = '';
+        hintEl.style.display = 'none';
+        hintEl.textContent = '';
+    };
+
+    if (!isRouteBreakdownTicket()) {
+        reset();
+        return;
+    }
+
+    const storedPaths = getRouteBreakdownReportImagePaths();
+    if (!storedPaths.length) {
+        reset();
+        return;
+    }
+
+    const previewableImages = storedPaths
+        .map((imagePath) => ({
+            path: imagePath,
+            url: resolveSameOriginAssetUrl(imagePath),
+        }))
+        .filter((imageMeta) => Boolean(imageMeta.url));
+
+    panelEl.style.display = 'flex';
+
+    if (!previewableImages.length) {
+        gridEl.innerHTML = '';
+        hintEl.style.display = 'block';
+        hintEl.textContent = 'Breakdown images were uploaded, but preview URLs are unavailable.';
+        return;
+    }
+
+    gridEl.innerHTML = previewableImages.map((imageMeta, index) => {
+        const imageUrl = escapeHtml(imageMeta.url);
+        return `
+            <a class="route-breakdown-image-item" href="${imageUrl}" target="_blank" rel="noopener noreferrer">
+                <img src="${imageUrl}" alt="Breakdown report image ${index + 1}">
+            </a>
+        `;
+    }).join('');
+
+    if (previewableImages.length < storedPaths.length) {
+        hintEl.style.display = 'block';
+        hintEl.textContent = 'Some uploaded breakdown images are not available for preview.';
+    } else {
+        hintEl.style.display = 'none';
+        hintEl.textContent = '';
+    }
+}
+
 function getRouteGarageCompletionDetails() {
     if (!isRouteBreakdownTicket()) {
         return null;
@@ -817,6 +924,7 @@ function renderPage() {
 
     renderOverview(ticketIdFormatted);
     void renderRouteLocationPanel();
+    renderRouteBreakdownImagesPanel();
     renderFlow();
     bindAssignModalFallbackHandlers();
 }

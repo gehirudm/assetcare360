@@ -150,6 +150,29 @@
             font-size: 0.8rem;
         }
 
+        .route-breakdown-images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+        }
+
+        .route-breakdown-image-item {
+            border: 1px solid #dbeafe;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #f8fafc;
+            text-decoration: none;
+            min-height: 140px;
+            display: block;
+        }
+
+        .route-breakdown-image-item img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            display: block;
+        }
+
         .route-bill-summary-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -385,6 +408,17 @@
             </div>
             <div id="routeLocationMap" class="route-location-map"></div>
             <p id="routeLocationHint" class="route-location-hint">Loading reported location map...</p>
+        </section>
+
+        <section class="route-location-panel" id="routeBreakdownImagesPanel" style="display:none;">
+            <div class="route-location-header">
+                <h3 class="route-location-title">
+                    <i class="fas fa-camera"></i>
+                    Breakdown Report Images
+                </h3>
+            </div>
+            <div class="route-breakdown-images-grid" id="routeBreakdownImagesGrid"></div>
+            <p id="routeBreakdownImagesHint" class="route-location-hint" style="display:none;"></p>
         </section>
 
         <!-- Step-by-Step Flow -->

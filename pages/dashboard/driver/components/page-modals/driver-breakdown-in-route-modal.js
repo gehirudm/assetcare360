@@ -93,6 +93,17 @@ class DriverBreakdownInRouteModal extends HTMLElement {
                             <textarea id="routeBreakdownDescription" class="form-textarea" required></textarea>
                         </div>
 
+                        <div class="form-section">
+                            <h5><i class="fas fa-camera"></i> Breakdown Images (Optional)</h5>
+                            <div class="photo-upload" data-action="open-photo-picker">
+                                <div style="font-size: 2rem; margin-bottom: 10px;"><i class="fas fa-camera"></i></div>
+                                <div style="font-weight: 600; margin-bottom: 5px;">Click to upload images</div>
+                                <div style="font-size: 12px; color: var(--muted);">JPG, PNG, WEBP • up to 5 images • max 5MB each</div>
+                                <input type="file" id="routeBreakdownImages" multiple accept="image/png,image/jpeg,image/webp" style="display: none;">
+                            </div>
+                            <div id="routeBreakdownImageList" style="margin-top: 10px;"></div>
+                        </div>
+
                         <button type="submit" class="btn btn-danger" id="routeBreakdownSubmit">Submit Breakdown in Route Report</button>
                     </form>
                 </div>
@@ -103,6 +114,8 @@ class DriverBreakdownInRouteModal extends HTMLElement {
     bindEvents() {
         const modal = this.querySelector('#breakdownInRouteModal');
         const form = this.querySelector('#breakdownInRouteForm');
+        const imageInput = this.querySelector('#routeBreakdownImages');
+        const imageList = this.querySelector('#routeBreakdownImageList');
 
         this.addEventListener('click', (event) => {
             const actionEl = event.target.closest('[data-action]');
@@ -113,7 +126,22 @@ class DriverBreakdownInRouteModal extends HTMLElement {
 
             if (actionEl && actionEl.dataset.action === 'capture-location') {
                 this.captureCurrentLocation();
+                return;
             }
+
+            if (actionEl && actionEl.dataset.action === 'open-photo-picker') {
+                imageInput?.click();
+            }
+        });
+
+        imageInput?.addEventListener('change', () => {
+            const selectedFiles = Array.from(imageInput.files || []);
+            imageList.innerHTML = selectedFiles.map((file) => `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:#f8f9fa;border-radius:6px;margin-bottom:5px;">
+                    <span style="font-size:14px;">${file.name}</span>
+                    <span style="font-size:12px;color:var(--muted);">${(file.size / (1024 * 1024)).toFixed(2)} MB</span>
+                </div>
+            `).join('');
         });
 
         form.addEventListener('submit', async (event) => {
@@ -162,6 +190,30 @@ class DriverBreakdownInRouteModal extends HTMLElement {
                 payload.breakdown_longitude = longitude;
             }
 
+            const selectedImages = Array.from(imageInput?.files || []);
+            if (this.editingId && selectedImages.length > 0) {
+                DriverUtils.showToast('Image upload is only available when creating a new route breakdown report.', 'warning');
+                return;
+            }
+
+            if (selectedImages.length > 5) {
+                DriverUtils.showToast('You can upload up to 5 breakdown images.', 'error');
+                return;
+            }
+
+            for (const image of selectedImages) {
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+                if (!allowedTypes.includes(image.type)) {
+                    DriverUtils.showToast('Only JPG, PNG, and WEBP images are allowed.', 'error');
+                    return;
+                }
+
+                if (image.size > 5 * 1024 * 1024) {
+                    DriverUtils.showToast('Each breakdown image must be 5MB or smaller.', 'error');
+                    return;
+                }
+            }
+
             try {
                 this.isSubmitting = true;
                 if (submitButton) {
@@ -169,15 +221,30 @@ class DriverBreakdownInRouteModal extends HTMLElement {
                     submitButton.textContent = this.editingId ? 'Updating...' : 'Submitting...';
                 }
 
-                const response = this.editingId
-                    ? await DriverUtils.apiPut(`/route-breakdowns/${encodeURIComponent(this.editingId)}`, payload)
-                    : await DriverUtils.apiPost('/route-breakdowns', payload);
+                let response = null;
+                if (this.editingId) {
+                    response = await DriverUtils.apiPut(`/route-breakdowns/${encodeURIComponent(this.editingId)}`, payload);
+                } else {
+                    const formData = new FormData();
+                    Object.entries(payload).forEach(([key, value]) => {
+                        formData.append(key, value);
+                    });
+
+                    selectedImages.forEach((image) => {
+                        formData.append('breakdown_images[]', image);
+                    });
+
+                    response = await DriverUtils.apiPostFormData('/route-breakdowns', formData);
+                }
 
                 if (response && (response.success || response.status === 'success')) {
                     DriverUtils.showToast(this.editingId ? 'Route breakdown updated.' : 'Route breakdown submitted.');
                     this.close();
                     form.reset();
                     this.editingId = null;
+                    if (imageList) {
+                        imageList.innerHTML = '';
+                    }
                     DriverUtils.emit('driver:data-breakdowns-changed');
                     return;
                 }
@@ -228,6 +295,14 @@ class DriverBreakdownInRouteModal extends HTMLElement {
             longitudeField.value = '';
         }
         this.updateLocationCaptureStatus('GPS location not captured yet.', 'neutral');
+        const imageInput = this.querySelector('#routeBreakdownImages');
+        const imageList = this.querySelector('#routeBreakdownImageList');
+        if (imageInput) {
+            imageInput.value = '';
+        }
+        if (imageList) {
+            imageList.innerHTML = '';
+        }
 
         // Check for assigned vehicle first
         try {

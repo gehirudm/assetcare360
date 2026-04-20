@@ -3005,6 +3005,18 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/RouteBreakdownInput'
+          multipart/form-data:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/RouteBreakdownInput'
+                - type: object
+                  properties:
+                    breakdown_images:
+                      type: array
+                      maxItems: 5
+                      items:
+                        type: string
+                        format: binary
       responses:
         '201':
           description: Route breakdown created successfully
@@ -3421,7 +3433,7 @@ paths:
       tags:
         - File Uploads
       summary: Retrieve route breakdown uploaded image
-      description: Serves uploaded route breakdown progress and bill images.
+      description: Serves uploaded route breakdown report, progress, and bill images.
       security: []
       parameters:
         - name: folder
@@ -3429,7 +3441,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [progress, bills]
+            enum: [reports, progress, bills]
         - name: filename
           in: path
           required: true
@@ -7913,6 +7925,12 @@ components:
           type: string
           nullable: true
           description: Trip identifier associated with dangerous cargo at report time.
+        breakdown_images:
+          type: array
+          description: Uploaded route-breakdown report image paths.
+          items:
+            type: string
+            example: uploads/route-breakdowns/reports/report_20260420102030_ab12cd34ef56.jpg
         created_at:
           type: string
           format: date-time

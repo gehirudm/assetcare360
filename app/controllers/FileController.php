@@ -77,7 +77,7 @@ class FileController {
                 return;
             }
 
-            if (!in_array($folder, ['progress', 'bills'], true)) {
+            if (!in_array($folder, ['progress', 'bills', 'reports'], true)) {
                 Response::error('Invalid folder', 400);
                 return;
             }

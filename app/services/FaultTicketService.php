@@ -627,6 +627,7 @@ class FaultTicketService {
         $hasDangerousSnapshotColumns = $this->columnExists($conn, 'vehicle_breakdown_inroute', 'dangerous_cargo_present')
             && $this->columnExists($conn, 'vehicle_breakdown_inroute', 'dangerous_cargo_summary')
             && $this->columnExists($conn, 'vehicle_breakdown_inroute', 'dangerous_cargo_trip_id');
+        $hasRouteBreakdownImagesColumn = $this->columnExists($conn, 'vehicle_breakdown_inroute', 'breakdown_images_json');
 
         $hasGarageWorkflowTable = $this->tableExists($conn, 'route_breakdown_garage_workflow');
         $hasGaragesTable = $this->tableExists($conn, 'garages');
@@ -664,6 +665,10 @@ class FaultTicketService {
             if ($hasGaragesTable) {
                 $selectParts[] = 'g.name as route_approved_garage_name';
             }
+        }
+
+        if ($hasRouteBreakdownImagesColumn) {
+            $selectParts[] = 'rb.breakdown_images_json';
         }
 
         $sql = 'SELECT ' . implode(', ', $selectParts)
@@ -717,7 +722,33 @@ class FaultTicketService {
             'dangerous_cargo_present' => isset($row['dangerous_cargo_present']) ? (int) $row['dangerous_cargo_present'] : 0,
             'dangerous_cargo_summary' => $row['dangerous_cargo_summary'] ?? null,
             'dangerous_cargo_trip_id' => $row['dangerous_cargo_trip_id'] ?? null,
+            'breakdown_images' => $this->normalizeRouteBreakdownImagePaths($row['breakdown_images_json'] ?? null),
         ];
+    }
+
+    private function normalizeRouteBreakdownImagePaths($rawValue): array {
+        if (is_array($rawValue)) {
+            $values = $rawValue;
+        } elseif (is_string($rawValue)) {
+            $decoded = json_decode($rawValue, true);
+            if (is_array($decoded)) {
+                $values = $decoded;
+            } elseif (trim($rawValue) !== '') {
+                $values = [$rawValue];
+            } else {
+                $values = [];
+            }
+        } else {
+            $values = [];
+        }
+
+        $normalized = array_map(static function ($value) {
+            return trim((string) $value);
+        }, $values);
+
+        return array_values(array_filter(array_unique($normalized), static function ($value) {
+            return $value !== '';
+        }));
     }
 
     private function getMachineBreakdownContext(string $breakdownReportId): ?array {

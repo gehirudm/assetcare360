@@ -16,6 +16,7 @@ class RouteBreakdownController {
     private TripService $tripService;
     private FaultTicketService $faultTicketService;
     private ?bool $dangerousSnapshotColumnsAvailable = null;
+    private ?bool $routeBreakdownImagesColumnAvailable = null;
     private ?bool $faultTicketVehicleIdColumnAvailable = null;
 
     public function __construct() {
@@ -106,6 +107,7 @@ class RouteBreakdownController {
 
             $breakdown['garage_workflow'] = $this->extractGarageWorkflowSummary($breakdown);
             $breakdown['has_garage_workflow'] = !empty($breakdown['garage_workflow']);
+            $breakdown['breakdown_images'] = $this->normalizeStoredImagePaths($breakdown['breakdown_images_json'] ?? null);
         }
 
         Response::success(['breakdowns' => $breakdowns, 'count' => count($breakdowns)]);
@@ -198,6 +200,7 @@ class RouteBreakdownController {
         $breakdown['garage_workflow'] = $this->extractGarageWorkflowSummary($breakdown);
         $breakdown['garage_updates'] = $this->getGarageUpdates($id);
         $breakdown['available_garages'] = $this->getActiveGarages();
+        $breakdown['breakdown_images'] = $this->normalizeStoredImagePaths($breakdown['breakdown_images_json'] ?? null);
 
         Response::success(['breakdown' => $breakdown]);
     }
@@ -209,7 +212,9 @@ class RouteBreakdownController {
     public function create() {
         RoleMiddleware::requireMinRole('Driver');
 
-        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        $input = !empty($_POST)
+            ? $_POST
+            : (json_decode(file_get_contents('php://input'), true) ?? []);
 
         if (empty($input['vehicle_id']) || empty($input['breakdown_location']) || empty($input['breakdown_datetime']) || empty($input['breakdown_type']) || empty($input['severity']) || empty($input['description'])) {
             Response::error('vehicle_id, breakdown_location, breakdown_datetime, breakdown_type, severity and description are required', 400);
@@ -237,6 +242,16 @@ class RouteBreakdownController {
 
         $routeBreakdownId = '';
         $routeBreakdownLockAcquired = false;
+        $uploadedBreakdownImagePaths = [];
+        $breakdownImageFiles = $this->normalizeUploadedFileArray($_FILES['breakdown_images'] ?? ($_FILES['breakdown_images[]'] ?? null));
+
+        if (count($breakdownImageFiles) > 5) {
+            Response::error('A maximum of 5 breakdown images is allowed per report', 400);
+        }
+
+        if (!empty($breakdownImageFiles) && !$this->hasRouteBreakdownImagesColumn()) {
+            Response::error('Breakdown image storage is unavailable. Please apply the latest database migrations.', 500);
+        }
 
         try {
             $this->conn->beginTransaction();
@@ -288,52 +303,68 @@ class RouteBreakdownController {
                 );
                 return;
             }
+
+            if (!empty($breakdownImageFiles)) {
+                $uploadedBreakdownImagePaths = $this->storeUploadedImages($breakdownImageFiles, 'reports', 'report');
+            }
+
             $temporaryRouteBreakdownId = 'TMP-' . str_replace('.', '', uniqid('', true));
 
+            $insertColumns = [
+                'route_breakdown_id',
+                'breakdown_id',
+                'vehicle_id',
+                'driver_id',
+                'breakdown_location',
+                'breakdown_latitude',
+                'breakdown_longitude',
+                'breakdown_datetime',
+                'breakdown_type',
+                'severity',
+                'description',
+            ];
+            $insertValues = [
+                $temporaryRouteBreakdownId,
+                $input['breakdown_id'] ?? null,
+                $vehicleId,
+                (int) $currentUser['id'],
+                trim((string) $input['breakdown_location']),
+                $breakdownLatitude,
+                $breakdownLongitude,
+                $breakdownDateTime,
+                trim((string) $input['breakdown_type']),
+                $severity,
+                trim((string) $input['description']),
+            ];
+
             if ($this->hasDangerousSnapshotColumns()) {
-                $sql = "INSERT INTO vehicle_breakdown_inroute
-                        (route_breakdown_id, breakdown_id, vehicle_id, driver_id, breakdown_location, breakdown_latitude, breakdown_longitude,
-                         breakdown_datetime, breakdown_type, severity, description, dangerous_cargo_present, dangerous_cargo_summary, dangerous_cargo_trip_id, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')";
-
-                $stmt = $this->conn->prepare($sql);
-                $stmt->execute([
-                    $temporaryRouteBreakdownId,
-                    $input['breakdown_id'] ?? null,
-                    $vehicleId,
-                    (int) $currentUser['id'],
-                    trim((string) $input['breakdown_location']),
-                    $breakdownLatitude,
-                    $breakdownLongitude,
-                    $breakdownDateTime,
-                    trim((string) $input['breakdown_type']),
-                    $severity,
-                    trim((string) $input['description']),
-                    $dangerousCargoPresent,
-                    $dangerousCargoSummary,
-                    $dangerousCargoTripId,
-                ]);
-            } else {
-                $sql = "INSERT INTO vehicle_breakdown_inroute
-                        (route_breakdown_id, breakdown_id, vehicle_id, driver_id, breakdown_location, breakdown_latitude, breakdown_longitude,
-                         breakdown_datetime, breakdown_type, severity, description, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')";
-
-                $stmt = $this->conn->prepare($sql);
-                $stmt->execute([
-                    $temporaryRouteBreakdownId,
-                    $input['breakdown_id'] ?? null,
-                    $vehicleId,
-                    (int) $currentUser['id'],
-                    trim((string) $input['breakdown_location']),
-                    $breakdownLatitude,
-                    $breakdownLongitude,
-                    $breakdownDateTime,
-                    trim((string) $input['breakdown_type']),
-                    $severity,
-                    trim((string) $input['description']),
-                ]);
+                $insertColumns[] = 'dangerous_cargo_present';
+                $insertColumns[] = 'dangerous_cargo_summary';
+                $insertColumns[] = 'dangerous_cargo_trip_id';
+                $insertValues[] = $dangerousCargoPresent;
+                $insertValues[] = $dangerousCargoSummary;
+                $insertValues[] = $dangerousCargoTripId;
             }
+
+            if ($this->hasRouteBreakdownImagesColumn()) {
+                $insertColumns[] = 'breakdown_images_json';
+                $insertValues[] = !empty($uploadedBreakdownImagePaths)
+                    ? json_encode(array_values($uploadedBreakdownImagePaths))
+                    : null;
+            }
+
+            $insertColumns[] = 'status';
+            $insertValues[] = 'Pending';
+
+            $placeholders = implode(', ', array_fill(0, count($insertColumns), '?'));
+            $insertSql = sprintf(
+                'INSERT INTO vehicle_breakdown_inroute (%s) VALUES (%s)',
+                implode(', ', $insertColumns),
+                $placeholders
+            );
+
+            $insertStmt = $this->conn->prepare($insertSql);
+            $insertStmt->execute($insertValues);
 
             $routeBreakdownNumericId = (int) $this->conn->lastInsertId();
             if ($routeBreakdownNumericId <= 0) {
@@ -370,11 +401,13 @@ class RouteBreakdownController {
 
                 $ticketErrors = $ticketResult['errors'] ?? null;
                 if (is_array($ticketErrors) && !empty($ticketErrors)) {
+                    $this->cleanupUploadedPaths($uploadedBreakdownImagePaths);
                     Response::validationError($ticketErrors, 'Failed to auto-create linked fault ticket');
                 }
 
                 $ticketError = trim((string) ($ticketResult['message'] ?? 'Failed to auto-create linked fault ticket'));
                 $statusCode = stripos($ticketError, 'not found') !== false ? 404 : 400;
+                $this->cleanupUploadedPaths($uploadedBreakdownImagePaths);
                 Response::error($ticketError, $statusCode);
             }
 
@@ -386,6 +419,7 @@ class RouteBreakdownController {
                 $this->conn->rollBack();
             }
 
+            $this->cleanupUploadedPaths($uploadedBreakdownImagePaths);
             Response::error('Failed to create route breakdown report: ' . $e->getMessage(), 500);
             return;
         } finally {
@@ -599,6 +633,7 @@ class RouteBreakdownController {
         $routeBreakdownCode = trim((string) ($record['route_breakdown_id'] ?? ''));
         $linkedFaultTicketId = (int) ($record['fault_ticket_id'] ?? 0);
         $linkedFaultTicketImagePaths = [];
+        $routeBreakdownImagePaths = $this->normalizeStoredImagePaths($record['breakdown_images_json'] ?? null);
 
         if ($routeBreakdownCode !== '') {
             $linkedFaultTicketImagePaths = $this->getLinkedFaultTicketImagePaths($routeBreakdownCode);
@@ -634,7 +669,10 @@ class RouteBreakdownController {
             Response::serverError('Failed to delete route breakdown');
         }
 
-        $this->cleanupUploadedPaths($linkedFaultTicketImagePaths);
+        $this->cleanupUploadedPaths(array_values(array_unique(array_merge(
+            $linkedFaultTicketImagePaths,
+            $routeBreakdownImagePaths
+        ))));
 
         Response::success(null, 'Route breakdown deleted successfully');
     }
@@ -1212,18 +1250,30 @@ class RouteBreakdownController {
     }
 
     private function getRouteBreakdownRecord(int $routeBreakdownId): ?array {
-        $sql = "SELECT rb.id, rb.route_breakdown_id, rb.driver_id, rb.status, rb.vehicle_id,
-                       rb.dangerous_cargo_present,
-                       rb.dangerous_cargo_summary,
-                       rb.dangerous_cargo_trip_id,
-                       v.number_plate,
-                       ft.id as fault_ticket_id,
-                       ft.ticket_id as fault_ticket_number
-                FROM vehicle_breakdown_inroute rb
-                LEFT JOIN vehicles v ON rb.vehicle_id = v.id
-                LEFT JOIN fault_tickets ft ON ft.breakdown_report_id = rb.route_breakdown_id AND ft.breakdown_type = 'route_breakdown'
-                WHERE rb.id = ?
-                LIMIT 1";
+        $selectParts = [
+            'rb.id',
+            'rb.route_breakdown_id',
+            'rb.driver_id',
+            'rb.status',
+            'rb.vehicle_id',
+            'rb.dangerous_cargo_present',
+            'rb.dangerous_cargo_summary',
+            'rb.dangerous_cargo_trip_id',
+            'v.number_plate',
+            'ft.id as fault_ticket_id',
+            'ft.ticket_id as fault_ticket_number',
+        ];
+
+        if ($this->hasRouteBreakdownImagesColumn()) {
+            $selectParts[] = 'rb.breakdown_images_json';
+        }
+
+        $sql = 'SELECT ' . implode(', ', $selectParts)
+            . ' FROM vehicle_breakdown_inroute rb'
+            . ' LEFT JOIN vehicles v ON rb.vehicle_id = v.id'
+            . " LEFT JOIN fault_tickets ft ON ft.breakdown_report_id = rb.route_breakdown_id AND ft.breakdown_type = 'route_breakdown'"
+            . ' WHERE rb.id = ?'
+            . ' LIMIT 1';
 
         $stmt = $this->conn->prepare($sql);
         $stmt->execute([$routeBreakdownId]);
@@ -1357,6 +1407,53 @@ class RouteBreakdownController {
         }
 
         return $this->dangerousSnapshotColumnsAvailable;
+    }
+
+    private function hasRouteBreakdownImagesColumn(): bool {
+        if ($this->routeBreakdownImagesColumnAvailable !== null) {
+            return $this->routeBreakdownImagesColumnAvailable;
+        }
+
+        try {
+            $stmt = $this->conn->prepare(
+                "SELECT COUNT(*)
+                 FROM information_schema.columns
+                 WHERE table_schema = DATABASE()
+                   AND table_name = 'vehicle_breakdown_inroute'
+                   AND column_name = 'breakdown_images_json'"
+            );
+            $stmt->execute();
+            $this->routeBreakdownImagesColumnAvailable = ((int) $stmt->fetchColumn()) === 1;
+        } catch (Throwable $e) {
+            $this->routeBreakdownImagesColumnAvailable = false;
+        }
+
+        return $this->routeBreakdownImagesColumnAvailable;
+    }
+
+    private function normalizeStoredImagePaths($rawValue): array {
+        if (is_array($rawValue)) {
+            $values = $rawValue;
+        } elseif (is_string($rawValue)) {
+            $decoded = json_decode($rawValue, true);
+            if (is_array($decoded)) {
+                $values = $decoded;
+            } elseif (trim($rawValue) !== '') {
+                $values = [$rawValue];
+            } else {
+                $values = [];
+            }
+        } else {
+            $values = [];
+        }
+
+        $normalized = array_map(static function ($value) {
+            return trim((string) $value);
+        }, $values);
+
+        return array_values(array_filter(array_unique($normalized), static function ($value) {
+            return $value !== '';
+        }));
     }
 
     private function shouldForceCriticalSeverity(array $routeBreakdownRecord): bool {

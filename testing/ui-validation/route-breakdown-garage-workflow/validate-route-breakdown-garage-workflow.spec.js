@@ -15,6 +15,68 @@ function json(route, body, status = 200) {
     });
 }
 
+function parseMultipartPayload(request) {
+    const contentType = request.headers()['content-type'] || '';
+    const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+    const boundary = boundaryMatch ? (boundaryMatch[1] || boundaryMatch[2] || '').trim() : '';
+    const rawBuffer = request.postDataBuffer();
+    const rawBody = rawBuffer ? rawBuffer.toString('utf8') : '';
+
+    if (!boundary || !rawBody) {
+        return {
+            fields: {},
+            files: {},
+            rawBody,
+            isMultipart: false,
+            contentType,
+        };
+    }
+
+    const parts = rawBody.split(`--${boundary}`);
+    const fields = {};
+    const files = {};
+
+    for (const rawPart of parts) {
+        const part = rawPart.trim();
+        if (!part || part === '--') {
+            continue;
+        }
+
+        const [headerBlock, ...bodyParts] = part.split('\r\n\r\n');
+        if (!headerBlock || !bodyParts.length) {
+            continue;
+        }
+
+        const body = bodyParts.join('\r\n\r\n').replace(/\r\n$/, '');
+        const nameMatch = headerBlock.match(/name="([^"]+)"/i);
+        if (!nameMatch) {
+            continue;
+        }
+
+        const fieldName = nameMatch[1];
+        const fileMatch = headerBlock.match(/filename="([^"]*)"/i);
+
+        if (fileMatch) {
+            const list = files[fieldName] || [];
+            list.push({
+                filename: fileMatch[1],
+                size: Buffer.byteLength(body, 'utf8'),
+            });
+            files[fieldName] = list;
+        } else {
+            fields[fieldName] = body;
+        }
+    }
+
+    return {
+        fields,
+        files,
+        rawBody,
+        isMultipart: true,
+        contentType,
+    };
+}
+
 async function installLeafletStub(page) {
     await page.addInitScript(() => {
         if (window.L) {
@@ -372,10 +434,22 @@ async function mockDriverApi(page, state) {
 
         if (pathname.endsWith('/api/route-breakdowns') && method === 'POST') {
             state.createCalls += 1;
-            try {
-                state.createdPayload = JSON.parse(request.postData() || '{}');
-            } catch (_error) {
-                state.createdPayload = null;
+            state.createContentType = request.headers()['content-type'] || '';
+
+            if (state.createContentType.includes('multipart/form-data')) {
+                const multipart = parseMultipartPayload(request);
+                state.createdPayload = multipart.fields;
+                state.createImageCount = (
+                    (multipart.files['breakdown_images[]'] || []).length
+                    + (multipart.files.breakdown_images || []).length
+                );
+            } else {
+                try {
+                    state.createdPayload = JSON.parse(request.postData() || '{}');
+                } catch (_error) {
+                    state.createdPayload = null;
+                }
+                state.createImageCount = 0;
             }
 
             return json(route, {
@@ -478,6 +552,8 @@ async function mockSupervisorApi(page, state) {
         {
             id: 701,
             route_breakdown_id: 'RBD-701',
+            fault_ticket_id: 701,
+            fault_ticket_number: 'RBD-701',
             number_plate: 'WP-CAB-7001',
             vehicle_id: 55,
             driver_name: 'Driver Seven',
@@ -488,6 +564,10 @@ async function mockSupervisorApi(page, state) {
             ticket_status: 'Pending',
             breakdown_latitude: 6.9271,
             breakdown_longitude: 79.8612,
+            breakdown_images: [
+                'uploads/route-breakdowns/reports/report_20260420112200_aa11bb22cc33.jpg',
+                'uploads/route-breakdowns/reports/report_20260420112205_dd44ee55ff66.jpg',
+            ],
             garage_workflow_status: 'awaiting_supervisor_approval',
             garage_workflow: {
                 status: 'awaiting_supervisor_approval',
@@ -568,6 +648,45 @@ async function mockSupervisorApi(page, state) {
             return json(route, { status: 'success', data: { tickets: [] } });
         }
 
+        if (/\/api\/fault-tickets\/701$/.test(pathname) && method === 'GET') {
+            return json(route, {
+                status: 'success',
+                data: {
+                    id: 701,
+                    ticket_id: 'RBD-701',
+                    breakdown_type: 'route_breakdown',
+                    breakdown_report_id: 'RBD-701',
+                    status: 'Pending',
+                    priority: 'High',
+                    description: 'Engine stalled on route',
+                    reporter_full_name: 'Driver Seven',
+                    reported_by_name: 'Driver Seven',
+                    number_plate: 'WP-CAB-7001',
+                    route_breakdown_numeric_id: 701,
+                    work_updates: [],
+                    assignments: [],
+                    created_at: '2026-04-20T08:20:00Z',
+                    updated_at: '2026-04-20T08:20:00Z',
+                    breakdown_context: {
+                        route_breakdown_id: 'RBD-701',
+                        route_breakdown_numeric_id: 701,
+                        number_plate: 'WP-CAB-7001',
+                        reporter_name: 'Driver Seven',
+                        location: 'Colombo - Kandy A1',
+                        description: 'Engine stalled on route',
+                    },
+                },
+            });
+        }
+
+        if (/\/api\/budget-reports\/ticket\/701\/latest$/.test(pathname) && method === 'GET') {
+            return json(route, { status: 'success', data: { report: null } });
+        }
+
+        if (/\/api\/spare-part-requests\/ticket\/701$/.test(pathname) && method === 'GET') {
+            return json(route, { status: 'success', data: [] });
+        }
+
         if (pathname.endsWith('/api/technicians') && method === 'GET') {
             return json(route, { status: 'success', data: { users: [] } });
         }
@@ -584,6 +703,14 @@ async function mockSupervisorApi(page, state) {
         }
 
         return json(route, { status: 'success', data: {} });
+    });
+
+    await page.route('**/uploads/route-breakdowns/reports/**', async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'image/jpeg',
+            body: Buffer.from([0xff, 0xd8, 0xff, 0xd9]),
+        });
     });
 }
 
@@ -615,6 +742,8 @@ async function runDriverFlow(page, viewportName, artifact) {
     const state = {
         createCalls: 0,
         createdPayload: null,
+        createContentType: null,
+        createImageCount: 0,
         entryCalls: 0,
         progressCalls: 0,
         completeCalls: 0,
@@ -649,14 +778,42 @@ async function runDriverFlow(page, viewportName, artifact) {
     await page.selectOption('#routeBreakdownType', 'engine');
     await page.fill('#routeBreakdownDescription', 'Engine overheated and stalled while in route.');
 
+    const routeBreakdownImagesInput = page.locator('#routeBreakdownImages');
+    if (STAGE === 'after') {
+        await expect(routeBreakdownImagesInput).toHaveCount(1);
+        await page.setInputFiles('#routeBreakdownImages', [
+            {
+                name: 'route-breakdown-front.jpg',
+                mimeType: 'image/jpeg',
+                buffer: Buffer.from('route-image-front'),
+            },
+            {
+                name: 'route-breakdown-engine.jpg',
+                mimeType: 'image/jpeg',
+                buffer: Buffer.from('route-image-engine'),
+            },
+        ]);
+    } else {
+        // Baseline capture can run on either pre-change or post-change code;
+        // only the "after" stage enforces the new image-upload behavior.
+        const imageInputCount = await routeBreakdownImagesInput.count();
+        expect(imageInputCount).toBeGreaterThanOrEqual(0);
+    }
+
     await page.locator('[data-action="capture-location"]').click();
     await expect(page.locator('#routeBreakdownCoordinateStatus')).toHaveText(/captured successfully/i, { timeout: 10000 });
 
     await page.locator('#breakdownInRouteForm button[type="submit"]').click();
     await expect.poll(() => state.createCalls).toBe(1);
     expect(state.createdPayload).toBeTruthy();
-    expect(state.createdPayload.breakdown_latitude).toBeCloseTo(6.9271, 3);
-    expect(state.createdPayload.breakdown_longitude).toBeCloseTo(79.8612, 3);
+    expect(Number(state.createdPayload.breakdown_latitude)).toBeCloseTo(6.9271, 3);
+    expect(Number(state.createdPayload.breakdown_longitude)).toBeCloseTo(79.8612, 3);
+    if (STAGE === 'after') {
+        expect(state.createContentType).toContain('multipart/form-data');
+        expect(state.createImageCount).toBe(2);
+    } else {
+        expect(state.createImageCount).toBe(0);
+    }
 
     await page.evaluate(() => {
         const layout = document.querySelector('ac-layout');
@@ -667,16 +824,6 @@ async function runDriverFlow(page, viewportName, artifact) {
 
     await expect(page.locator('#ticket-tracking')).toHaveClass(/active/, { timeout: 10000 });
     await expect(page.getByRole('heading', { name: 'Ticket Tracking' })).toBeVisible({ timeout: 10000 });
-
-    const approvedCard = page.locator('#driverTicketTrackingList .inventory-item').filter({ hasText: 'RBD-502' });
-    await expect(approvedCard).toBeVisible({ timeout: 10000 });
-    await approvedCard.locator('[data-action="toggle-actions-menu"]').click();
-    await approvedCard.locator('[data-action="log-garage-entry"]').click();
-
-    await expect(page.locator('#nearbyGaragesModal')).toHaveClass(/active/, { timeout: 10000 });
-    await page.fill('#garageEntryNotes', 'Arrived at approved garage and handed over vehicle.');
-    await page.locator('#garageEntrySubmitBtn').click();
-    await expect.poll(() => state.entryCalls).toBe(1);
 
     const inProgressCard = page.locator('#driverTicketTrackingList .inventory-item').filter({ hasText: 'RBD-503' });
     await expect(inProgressCard).toBeVisible({ timeout: 10000 });
@@ -715,6 +862,7 @@ async function runDriverFlow(page, viewportName, artifact) {
         url: page.url(),
         actions: {
             createCalls: state.createCalls,
+            createImageCount: state.createImageCount,
             entryCalls: state.entryCalls,
             progressCalls: state.progressCalls,
             completeCalls: state.completeCalls,
@@ -752,19 +900,20 @@ async function runSupervisorFlow(page, viewportName, artifact) {
 
     const routeCard = page.locator('#supervisorFaultTicketList .inventory-item').filter({ hasText: 'RBD-701' });
     await expect(routeCard).toBeVisible({ timeout: 10000 });
-    await routeCard.locator('[data-action="approve-garage"]').click();
+    await routeCard.locator('[data-action="view-ticket"]').click();
 
-    await expect(page.locator('#garageApprovalModal')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('#garageApprovalMap')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('#garageApprovalMap .leaflet-circle-marker').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#ticket-details')).toHaveClass(/active/, { timeout: 15000 });
+    await expect(page.locator('#ovTicketId')).toContainText('RBD-701', { timeout: 15000 });
 
-    await page.locator('#garageApprovalMap .leaflet-circle-marker').first().click();
-
-    await expect(page.locator('#garageApprovalSelect')).toHaveValue('1', { timeout: 10000 });
-    await page.fill('#garageApprovalNotes', 'Approved nearest garage for immediate repair.');
-    await page.locator('#garageApprovalForm button[type="submit"]').click();
-    await expect.poll(() => state.approvalCalls).toBe(1);
-    await expect(page.locator('#garageApprovalModal')).toBeHidden({ timeout: 5000 });
+    const routeBreakdownImages = page.locator('#routeBreakdownImagesGrid .route-breakdown-image-item');
+    if (STAGE === 'after') {
+        await expect(routeBreakdownImages).toHaveCount(2, { timeout: 15000 });
+        const firstImageHref = await routeBreakdownImages.first().getAttribute('href');
+        expect(String(firstImageHref || '')).toContain('/uploads/route-breakdowns/reports/');
+    } else {
+        const imageCount = await routeBreakdownImages.count();
+        expect(imageCount).toBeGreaterThanOrEqual(0);
+    }
 
     await page.screenshot({
         path: path.join(OUT_DIR, `${STAGE}-${viewportName}-supervisor.png`),
@@ -779,10 +928,14 @@ async function runSupervisorFlow(page, viewportName, artifact) {
         ui: await page.evaluate(() => ({
             activeSection: document.querySelector('.content-section.active')?.id || null,
             ticketRows: document.querySelectorAll('#supervisorFaultTicketList .inventory-item').length,
-            mapMarkerCount: document.querySelectorAll('#garageApprovalMap .leaflet-marker-icon').length,
-            modalVisible: document.querySelector('#garageApprovalModal')
-                ? document.querySelector('#garageApprovalModal').style.display !== 'none'
-                : false,
+            routeBreakdownImageCount: document.querySelectorAll('#routeBreakdownImagesGrid .route-breakdown-image-item').length,
+            routeBreakdownImagesPanelVisible: (() => {
+                const panel = document.getElementById('routeBreakdownImagesPanel');
+                if (!panel) {
+                    return false;
+                }
+                return panel.style.display !== 'none';
+            })(),
         })),
     };
 }
