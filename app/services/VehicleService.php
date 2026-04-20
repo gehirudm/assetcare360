@@ -33,6 +33,7 @@ class VehicleService {
         }
 
         $this->normalizeCreateInsuranceFields($data);
+        $this->normalizeCreateInsuranceFields($data);
         
         // Validate service intervals based on type
         if (in_array($data['service_interval_type'], ['Time-Based', 'Both']) && empty($data['service_interval_days'])) {
