@@ -65,6 +65,8 @@ tags:
     description: Spare part request workflow. Technical Officers create requests for fault or service tickets, Inventory Managers approve or reject.
   - name: Sparepart Additions
     description: Stock addition tracking. Auto-updates spare part catalog quantities and can auto-create new spare parts.
+  - name: Vehicle Breakdowns
+    description: Vehicle breakdown reporting for driver-submitted non-route incidents.
   - name: Route Breakdowns
     description: Route breakdown reporting and approved garage repair workflow.
   - name: Garages
@@ -2929,6 +2931,283 @@ paths:
                         type: object
         '404':
           $ref: '#/components/responses/NotFound'
+
+  /breakdown-reports:
+    get:
+      tags:
+        - Vehicle Breakdowns
+      summary: List vehicle breakdown reports
+      description: |
+        Retrieve vehicle breakdown reports.
+
+        Role behavior:
+        - Driver: only own reports
+        - Supervisor/Admin and higher roles: all reports
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: severity
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [low, medium, high, critical]
+        - name: breakdown_type
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Vehicle breakdown reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      reports:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/VehicleBreakdown'
+                      count:
+                        type: integer
+                        example: 5
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags:
+        - Vehicle Breakdowns
+      summary: Create vehicle breakdown report
+      description: |
+        Submit a non-route vehicle breakdown report.
+
+        A linked fault ticket is created automatically for every new breakdown report.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleBreakdownInput'
+      responses:
+        '201':
+          description: Breakdown report created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Breakdown report created successfully
+                  data:
+                    type: object
+                    properties:
+                      breakdown_id:
+                        type: string
+                        example: VBD-001
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /breakdown-reports/{id}:
+    get:
+      tags:
+        - Vehicle Breakdowns
+      summary: Get vehicle breakdown details
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Vehicle breakdown details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      report:
+                        $ref: '#/components/schemas/VehicleBreakdown'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Vehicle Breakdowns
+      summary: Update vehicle breakdown report
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehicleBreakdownUpdateInput'
+      responses:
+        '200':
+          description: Breakdown report updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Breakdown report updated successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Vehicle Breakdowns
+      summary: Delete vehicle breakdown report
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Breakdown report deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Breakdown report deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /breakdown-reports/stats:
+    get:
+      tags:
+        - Vehicle Breakdowns
+      summary: Get vehicle breakdown statistics
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Breakdown statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        example: 12
+                      by_status:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            status:
+                              type: string
+                              example: Pending
+                            count:
+                              type: integer
+                              example: 7
+                      by_severity:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            severity:
+                              type: string
+                              example: high
+                            count:
+                              type: integer
+                              example: 4
+                      by_type:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            breakdown_type:
+                              type: string
+                              example: engine
+                            count:
+                              type: integer
+                              example: 3
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /route-breakdowns:
     get:
@@ -7841,6 +8120,106 @@ components:
           type: string
           format: binary
           description: Required for external fueling.
+
+    VehicleBreakdown:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 15
+        breakdown_id:
+          type: string
+          example: VBD-015
+        vehicle_id:
+          type: integer
+          example: 4
+        driver_id:
+          type: integer
+          example: 17
+        breakdown_date:
+          type: string
+          format: date
+          example: '2026-04-20'
+        breakdown_type:
+          type: string
+          example: engine
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+          example: high
+        description:
+          type: string
+          example: Engine warning light and unusual vibration while driving.
+        status:
+          type: string
+          example: Pending
+        number_plate:
+          type: string
+          nullable: true
+          example: LK-1234
+        driver_name:
+          type: string
+          nullable: true
+          example: Nimal Perera
+        fault_ticket_id:
+          type: integer
+          nullable: true
+        fault_ticket_number:
+          type: string
+          nullable: true
+        ticket_status:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    VehicleBreakdownInput:
+      type: object
+      required:
+        - vehicle_id
+        - breakdown_date
+        - breakdown_type
+        - severity
+        - description
+      properties:
+        vehicle_id:
+          type: integer
+          example: 4
+        breakdown_date:
+          type: string
+          format: date
+          example: '2026-04-20'
+        breakdown_type:
+          type: string
+          example: engine
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+          example: high
+        description:
+          type: string
+          example: Engine warning light and unusual vibration while driving.
+
+    VehicleBreakdownUpdateInput:
+      type: object
+      properties:
+        breakdown_date:
+          type: string
+          format: date
+        breakdown_type:
+          type: string
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        description:
+          type: string
+        status:
+          type: string
+          example: In Progress
 
     RouteBreakdown:
       type: object

@@ -157,8 +157,18 @@ class BreakdownReportController {
             Response::error('Invalid JSON payload', 400);
         }
 
-        // Always use server date for new breakdown reports.
-        $breakdownDate = date('Y-m-d');
+        $requiredFields = ['vehicle_id', 'breakdown_type', 'severity', 'description'];
+        foreach ($requiredFields as $field) {
+            if (!array_key_exists($field, $input) || trim((string) $input[$field]) === '') {
+                Response::error("{$field} is required", 400);
+            }
+        }
+
+        if (!is_numeric($input['vehicle_id'])) {
+            Response::error('vehicle_id must be numeric', 400);
+        }
+
+        $breakdownDate = $this->normalizeBreakdownDate($input['breakdown_date'] ?? null, false);
         $currentUser = RoleMiddleware::getCurrentUser();
         
         try {

@@ -47,6 +47,10 @@ class DriverBreakdownModal extends HTMLElement {
                                         <option value="critical">Critical</option>
                                     </select>
                                 </div>
+                                <div class="form-group">
+                                    <label class="form-label">Breakdown Date *</label>
+                                    <input type="date" id="breakdownDate" class="form-input" required>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Problem Category *</label>
@@ -131,10 +135,17 @@ class DriverBreakdownModal extends HTMLElement {
                 return;
             }
 
+            const breakdownDate = form.querySelector('#breakdownDate')?.value || '';
+            if (!breakdownDate) {
+                DriverUtils.showToast('Please select the breakdown date.', 'error');
+                return;
+            }
+
             const payload = {
                 vehicle_id: selectedVehicle.id,
                 severity: form.querySelector('#breakdownSeverity').value,
                 breakdown_type: form.querySelector('#breakdownType').value,
+                breakdown_date: breakdownDate,
                 description: form.querySelector('#breakdownDescription').value.trim(),
             };
 
@@ -172,17 +183,59 @@ class DriverBreakdownModal extends HTMLElement {
         return null;
     }
 
+    getTodayDateString() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    toDateInputValue(rawValue) {
+        const raw = String(rawValue || '').trim();
+        if (!raw) {
+            return '';
+        }
+
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+            return raw;
+        }
+
+        const prefixedMatch = raw.match(/^(\d{4}-\d{2}-\d{2})[T\s]/);
+        if (prefixedMatch && prefixedMatch[1]) {
+            return prefixedMatch[1];
+        }
+
+        const timestamp = Date.parse(raw);
+        if (Number.isNaN(timestamp)) {
+            return '';
+        }
+
+        const parsed = new Date(timestamp);
+        const year = parsed.getFullYear();
+        const month = String(parsed.getMonth() + 1).padStart(2, '0');
+        const day = String(parsed.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     async open(payload) {
         const form = this.querySelector('#breakdownForm');
         const title = this.querySelector('#breakdownModalTitle');
         const submit = this.querySelector('#breakdownSubmitBtn');
         const vehicleFieldContainer = this.querySelector('#breakdownVehicleContainer');
+        const breakdownDateInput = form.querySelector('#breakdownDate');
         const editItem = payload?.editItem || null;
 
         form.reset();
         this.querySelector('#breakdownPhotoList').innerHTML = '';
         this.assignedVehicle = null;
         this.allVehicles = [];
+
+        const todayDate = this.getTodayDateString();
+        if (breakdownDateInput) {
+            breakdownDateInput.max = todayDate;
+            breakdownDateInput.value = todayDate;
+        }
 
         // Check for assigned vehicle first
         try {
@@ -210,6 +263,9 @@ class DriverBreakdownModal extends HTMLElement {
             form.querySelector('#breakdownSeverity').value = editItem.severity || '';
             form.querySelector('#breakdownType').value = editItem.category || editItem.breakdown_type || '';
             form.querySelector('#breakdownDescription').value = editItem.description || '';
+            if (breakdownDateInput) {
+                breakdownDateInput.value = this.toDateInputValue(editItem.breakdown_date || editItem.created_at) || todayDate;
+            }
         } else {
             this.editingId = null;
             title.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Report Vehicle Breakdown';
