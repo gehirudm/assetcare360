@@ -56,8 +56,10 @@ class DriverBreakdown extends HTMLElement {
                         <span class="driver-breakdown-filter-label">Status:</span>
                         <div class="filter-controls">
                             <button class="filter-btn active" type="button" data-action="set-status-filter" data-filter="all">All</button>
+                            <button class="filter-btn" type="button" data-action="set-status-filter" data-filter="open">Pending</button>
                             <button class="filter-btn" type="button" data-action="set-status-filter" data-filter="in-progress">In Progress</button>
                             <button class="filter-btn" type="button" data-action="set-status-filter" data-filter="resolved">Resolved</button>
+                            <button class="filter-btn" type="button" data-action="set-status-filter" data-filter="closed">Closed</button>
                         </div>
                     </div>
                 </div>
@@ -117,6 +119,44 @@ class DriverBreakdown extends HTMLElement {
 
             const id = actionEl.dataset.id;
             const item = this.items.find((entry) => String(entry.id) === String(id));
+
+            if (this.isGarageWorkflowAction(action) && item) {
+                if (item.type !== 'in-route') {
+                    DriverUtils.showToast('Garage workflow is available only for route breakdown reports.', 'warning');
+                    return;
+                }
+
+                if (action === 'log-garage-entry' && !this.canLogGarageEntry(item)) {
+                    DriverUtils.showToast('Garage entry can be logged only after a nearby garage is approved.', 'warning');
+                    return;
+                }
+
+                if (action === 'add-garage-progress' && !this.canAddGarageProgress(item)) {
+                    DriverUtils.showToast('Garage progress can be updated after garage entry is logged.', 'warning');
+                    return;
+                }
+
+                if (action === 'complete-garage-breakdown' && !this.canCompleteGarageBreakdown(item)) {
+                    DriverUtils.showToast('Complete repair is available only when garage repair is in progress.', 'warning');
+                    return;
+                }
+
+                if (action === 'add-garage-progress') {
+                    DriverUtils.openModal('garageProgressModal', { breakdown: item });
+                    return;
+                }
+
+                if (action === 'complete-garage-breakdown') {
+                    DriverUtils.openModal('completeBreakdownModal', { breakdown: item });
+                    return;
+                }
+
+                DriverUtils.openModal('nearbyGaragesModal', {
+                    mode: action === 'log-garage-entry' ? 'entry' : 'browse',
+                    breakdown: item,
+                });
+                return;
+            }
 
             if (action === 'view-breakdown' && item) {
                 const linkedTicketId = Number.parseInt(item.fault_ticket_id, 10);
@@ -200,6 +240,7 @@ class DriverBreakdown extends HTMLElement {
             breakdownId,
             dateRaw,
             approvedGarageName,
+            garageWorkflowStatus: type === 'in-route' ? this.getGarageWorkflowStatus(item) : '',
             displayDate: DriverUtils.formatDateTime(dateRaw),
             status: item.ticket_status || item.status || 'Pending',
             severity: item.severity || 'medium',
@@ -228,17 +269,64 @@ class DriverBreakdown extends HTMLElement {
     }
 
     renderItem(item) {
-        const statusColor = DriverUtils.getStatusColor(item.status);
-        const severityColor = DriverUtils.getStatusColor(item.severity);
+        const actualStatus = item.ticket_status || item.status;
+        const statusInfo = DriverUtils.getTicketStatusInfo(actualStatus);
+        const updateText = DriverUtils.getTicketUpdateText(actualStatus);
+        const normalizedStatus = DriverUtils.normalizeTicketFilterStatus(actualStatus);
+        const severityText = String(item.severity || 'medium').toUpperCase();
+        const severityClass = String(item.severity || 'medium').toLowerCase();
         const approvedGarageLine = item.type === 'in-route' && item.approvedGarageName
             ? `<div class="item-meta" style="margin-top:6px;"><i class="fas fa-warehouse" style="color:#0f766e;"></i> <span style="color:#0f766e;font-weight:600;">Nearby Garage: ${DriverUtils.escapeHtml(item.approvedGarageName)}</span></div>`
             : '';
+        const workflowStatus = item.type === 'in-route' ? this.getGarageWorkflowStatus(item) : '';
+        const workflowLabel = this.getGarageWorkflowLabel(workflowStatus);
+        const workflowClass = this.getGarageWorkflowClass(workflowStatus);
+        const assignedTechniciansLine = ((item.type !== 'in-route') || !['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(workflowStatus))
+            && Array.isArray(item.assigned_technicians)
+            && item.assigned_technicians.length
+            ? `<div class="item-meta" style="margin-top: 4px;"><i class="fas fa-user-cog" style="color: #2563eb;"></i> <span style="color: #2563eb; font-weight: 600;">Assigned to: ${item.assigned_technicians.map((assigned) => assigned.technician_name).join(', ')}</span></div>`
+            : '';
+        const routeGarageMenuItems = [];
+
+        if (item.type === 'in-route') {
+            routeGarageMenuItems.push(`
+                <button class="dropdown-item" type="button" data-action="view-garages" data-id="${item.id}">
+                    <i class="fas fa-map-marker-alt"></i> Nearby Garages
+                </button>
+            `);
+
+            if (this.canLogGarageEntry(item)) {
+                routeGarageMenuItems.push(`
+                    <button class="dropdown-item" type="button" data-action="log-garage-entry" data-id="${item.id}">
+                        <i class="fas fa-sign-in-alt"></i> Log Garage Entry
+                    </button>
+                `);
+            }
+
+            if (this.canAddGarageProgress(item)) {
+                routeGarageMenuItems.push(`
+                    <button class="dropdown-item" type="button" data-action="add-garage-progress" data-id="${item.id}">
+                        <i class="fas fa-camera"></i> Add Progress
+                    </button>
+                `);
+            }
+
+            if (this.canCompleteGarageBreakdown(item)) {
+                routeGarageMenuItems.push(`
+                    <button class="dropdown-item" type="button" data-action="complete-garage-breakdown" data-id="${item.id}">
+                        <i class="fas fa-check-circle"></i> Complete Repair
+                    </button>
+                `);
+            }
+        }
+
         const overflowMenu = `
             <div class="dropdown-container">
                 <button class="btn btn-small btn-secondary dropdown-trigger" type="button" data-action="toggle-actions-menu" aria-label="More actions">
                     <i class="fas fa-ellipsis-v"></i>
                 </button>
                 <div class="dropdown-menu">
+                    ${routeGarageMenuItems.join('')}
                     <button class="dropdown-item" type="button" data-action="edit-breakdown" data-id="${item.id}">
                         <i class="fas fa-edit"></i> Edit
                     </button>
@@ -250,18 +338,30 @@ class DriverBreakdown extends HTMLElement {
         `;
 
         return `
-            <div class="inventory-item" data-type="${item.type}" data-status="${this.statusToFilterValue(item.status)}">
+            <div class="inventory-item" data-type="${item.type}" data-status="${normalizedStatus}">
                 <div class="item-details">
                     <strong><i class="fas fa-exclamation-triangle"></i> ${item.breakdownId}</strong>
                     <div class="item-meta"><i class="fas fa-clock"></i> ${item.displayDate}</div>
                     <div class="item-description">
-                        <span style="color: ${statusColor}; font-weight: 700; text-transform: uppercase;">${item.status}</span> |
-                        <span style="color: ${severityColor}; font-weight: 600;">${String(item.severity).toUpperCase()}</span> |
+                        <span class="status-text ${statusInfo.class}">${statusInfo.label}</span> |
+                        <span class="status-text status-${severityClass}">${severityText}</span> |
                         <span style="color: #555; font-weight: 600;">${item.category}</span>
                         <br>
                         ${item.summary}
                     </div>
+                    ${item.fault_ticket_number ? `<div class="item-meta" style="margin-top: 4px; color: #6b7280;"><i class="fas fa-ticket-alt"></i> Ticket: ${item.fault_ticket_number}</div>` : ''}
+                    ${assignedTechniciansLine}
                     ${approvedGarageLine}
+                    ${item.type === 'in-route' ? `
+                        <div class="item-meta" style="margin-top: 4px;">
+                            <i class="fas fa-warehouse" style="color: #0f766e;"></i>
+                            <span class="status-text ${workflowClass}">${workflowLabel}</span>
+                            ${item.approvedGarageName ? `| <span style="font-weight: 600; color: #0f766e;">${DriverUtils.escapeHtml(item.approvedGarageName)}</span>` : ''}
+                        </div>
+                    ` : ''}
+                    ${actualStatus !== 'Pending' && actualStatus !== 'Open'
+                        ? `<div class="item-meta" style="margin-top: 4px; color: #059669; font-weight: 500;">${updateText}</div>`
+                        : ''}
                 </div>
                 <div class="item-actions">
                     <div class="action-buttons">
@@ -301,17 +401,83 @@ class DriverBreakdown extends HTMLElement {
     }
 
     statusToFilterValue(status) {
-        const value = String(status || '').toLowerCase();
+        return DriverUtils.normalizeTicketFilterStatus(status);
+    }
 
-        if (value.includes('resolved') || value.includes('completed') || value.includes('closed')) {
-            return 'resolved';
+    isGarageWorkflowAction(action) {
+        return action === 'view-garages'
+            || action === 'log-garage-entry'
+            || action === 'add-garage-progress'
+            || action === 'complete-garage-breakdown';
+    }
+
+    getGarageWorkflowStatus(item) {
+        const ticketStatus = String(item?.ticket_status || '').trim().toLowerCase();
+        if (ticketStatus === 'insurance claimed') {
+            return 'insurance_claimed';
         }
 
-        if (value.includes('progress') || value.includes('assigned') || value.includes('parts')) {
-            return 'in-progress';
+        const workflowStatus = item?.garage_workflow?.status || item?.garage_workflow_status || null;
+        if (workflowStatus) {
+            return String(workflowStatus).trim().toLowerCase();
         }
 
-        return 'in-progress';
+        if (item?.completed_at) {
+            return 'completed';
+        }
+
+        return 'awaiting_supervisor_approval';
+    }
+
+    getGarageWorkflowLabel(status) {
+        if (!status) {
+            return '';
+        }
+
+        const labels = {
+            awaiting_supervisor_approval: 'Awaiting Supervisor Approval',
+            insurance_claimed: 'Insurance Claimed',
+            garage_approved: 'Garage Approved',
+            garage_entry_logged: 'Garage Entry Logged',
+            repair_in_progress: 'Repair In Progress',
+            completed: 'Completed',
+        };
+
+        return labels[status] || String(status).replace(/_/g, ' ');
+    }
+
+    getGarageWorkflowClass(status) {
+        if (!status) {
+            return '';
+        }
+
+        if (status === 'completed') {
+            return 'status-resolved';
+        }
+
+        if (status === 'insurance_claimed') {
+            return 'status-in-progress';
+        }
+
+        if (status === 'garage_approved' || status === 'garage_entry_logged' || status === 'repair_in_progress') {
+            return 'status-in-progress';
+        }
+
+        return 'status-pending';
+    }
+
+    canAddGarageProgress(item) {
+        const status = this.getGarageWorkflowStatus(item);
+        return status === 'garage_entry_logged' || status === 'repair_in_progress';
+    }
+
+    canCompleteGarageBreakdown(item) {
+        return this.canAddGarageProgress(item);
+    }
+
+    canLogGarageEntry(item) {
+        const status = this.getGarageWorkflowStatus(item);
+        return status === 'garage_approved';
     }
 
     getFallbackItems() {

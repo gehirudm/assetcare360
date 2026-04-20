@@ -130,6 +130,36 @@ function buildFixtures() {
                 },
             },
             {
+                id: 23,
+                route_breakdown_id: 'RBR-003',
+                vehicle_id: 1,
+                number_plate: 'LKA-1234',
+                driver_id: 701,
+                driver_name: 'Driver One',
+                severity: 'high',
+                breakdown_type: 'engine',
+                breakdown_location: 'Southern Expressway KM 40',
+                breakdown_datetime: '2026-04-09T12:15:00Z',
+                description: 'Engine belt alignment in progress at approved garage',
+                status: 'In Progress',
+                ticket_status: 'In Progress',
+                fault_ticket_id: 905,
+                fault_ticket_number: 'RBD-905',
+                garage_workflow_status: 'repair_in_progress',
+                approved_garage_name: 'Highway Service Hub',
+                garage_workflow: {
+                    status: 'repair_in_progress',
+                    approved_at: '2026-04-09T13:00:00Z',
+                    approved_by: 'Supervisor One',
+                    approval_notes: 'Proceed with repairs and provide updates.',
+                    approved_garage: {
+                        id: 42,
+                        name: 'Highway Service Hub',
+                        address: '40 KM Post, Southern Expressway',
+                    },
+                },
+            },
+            {
                 id: 22,
                 route_breakdown_id: 'RBR-002',
                 vehicle_id: 1,
@@ -145,6 +175,22 @@ function buildFixtures() {
                 ticket_status: 'Insurance Claimed',
                 fault_ticket_id: 904,
                 fault_ticket_number: 'RBD-904',
+            },
+        ],
+        garages: [
+            {
+                id: 101,
+                name: 'Colombo Central Garage',
+                address: '45 Main Street, Colombo 01',
+                city: 'Colombo',
+                phone: '+94 11 222 3344',
+            },
+            {
+                id: 102,
+                name: 'Southern Fleet Garage',
+                address: '12 Galle Road, Exit 12',
+                city: 'Galle',
+                phone: '+94 91 555 6677',
             },
         ],
         ticketsById: {
@@ -174,9 +220,28 @@ function buildFixtures() {
             903: {
                 id: 903,
                 ticket_id: 'RBD-903',
+                breakdown_type: 'route_breakdown',
+                breakdown_report_id: 'RBR-001',
                 status: 'Resolved',
                 priority: 'Medium',
+                description: 'Front tire puncture',
+                location: 'Galle Highway Exit 12',
+                number_plate: 'LKA-1234',
+                reporter_full_name: 'Driver One',
+                reported_by_name: 'Driver One',
                 created_at: '2026-04-11T14:30:00Z',
+                route_breakdown_numeric_id: 21,
+                route_garage_workflow_status: 'garage_approved',
+                route_approved_garage_id: 41,
+                route_approved_garage_name: 'Southern Fleet Garage',
+                breakdown_context: {
+                    route_breakdown_numeric_id: 21,
+                    route_breakdown_id: 'RBR-001',
+                    number_plate: 'LKA-1234',
+                    location: 'Galle Highway Exit 12',
+                    description: 'Front tire puncture',
+                    reporter_name: 'Driver One',
+                },
                 assignments: [
                     {
                         technician_name: 'Technician Two',
@@ -201,6 +266,47 @@ function buildFixtures() {
                 created_at: '2026-04-10T10:30:00Z',
                 assignments: [],
                 work_updates: [],
+            },
+            905: {
+                id: 905,
+                ticket_id: 'RBD-905',
+                breakdown_type: 'route_breakdown',
+                breakdown_report_id: 'RBR-003',
+                status: 'In Progress',
+                priority: 'High',
+                description: 'Engine belt alignment in progress at approved garage',
+                location: 'Southern Expressway KM 40',
+                number_plate: 'LKA-1234',
+                reporter_full_name: 'Driver One',
+                reported_by_name: 'Driver One',
+                created_at: '2026-04-09T12:30:00Z',
+                route_breakdown_numeric_id: 23,
+                route_garage_workflow_status: 'repair_in_progress',
+                route_approved_garage_id: 42,
+                route_approved_garage_name: 'Highway Service Hub',
+                breakdown_context: {
+                    route_breakdown_numeric_id: 23,
+                    route_breakdown_id: 'RBR-003',
+                    number_plate: 'LKA-1234',
+                    location: 'Southern Expressway KM 40',
+                    description: 'Engine belt alignment in progress at approved garage',
+                    reporter_name: 'Driver One',
+                },
+                assignments: [
+                    {
+                        technician_name: 'Technician Three',
+                        assigned_at: '2026-04-09T13:30:00Z',
+                    },
+                ],
+                work_updates: [
+                    {
+                        technician_name: 'Technician Three',
+                        machine_description: 'Initial diagnostics completed, belt adjustment ongoing.',
+                        parts_used: 'Belt tensioner kit',
+                        time_spent: 1.0,
+                        created_at: '2026-04-09T15:00:00Z',
+                    },
+                ],
             },
         },
     };
@@ -324,6 +430,14 @@ async function mockApi(page, fixtures) {
             });
         }
 
+        if (normalizedPath === '/garages' && method === 'GET') {
+            return json({
+                status: 'success',
+                success: true,
+                data: { garages: fixtures.garages },
+            });
+        }
+
         if (normalizedPath.match(/^\/route-breakdowns\/\d+$/) && method === 'GET') {
             const id = Number.parseInt(normalizedPath.split('/').pop(), 10);
             const breakdown = fixtures.routeBreakdowns.find((item) => Number(item.id) === id) || null;
@@ -378,6 +492,39 @@ async function mockApi(page, fixtures) {
             return json({ status: 'success', success: true, data: {} });
         }
 
+        if (normalizedPath.match(/^\/route-breakdowns\/\d+\/garage-complete$/) && method === 'POST') {
+            const routeBreakdownId = Number.parseInt(normalizedPath.split('/')[2], 10);
+            const routeBreakdown = fixtures.routeBreakdowns.find((item) => Number(item.id) === routeBreakdownId) || null;
+
+            if (routeBreakdown) {
+                routeBreakdown.status = 'Resolved';
+                routeBreakdown.ticket_status = 'Resolved';
+                routeBreakdown.garage_workflow_status = 'completed';
+                routeBreakdown.completed_at = '2026-04-09T16:45:00Z';
+                routeBreakdown.garage_workflow = {
+                    ...(routeBreakdown.garage_workflow || {}),
+                    status: 'completed',
+                    completed_at: '2026-04-09T16:45:00Z',
+                };
+
+                const linkedTicketId = Number(routeBreakdown.fault_ticket_id || 0);
+                const linkedTicket = linkedTicketId > 0 ? fixtures.ticketsById[linkedTicketId] : null;
+                if (linkedTicket) {
+                    linkedTicket.status = 'Resolved';
+                    linkedTicket.route_garage_workflow_status = 'completed';
+                }
+            }
+
+            return json({
+                status: 'success',
+                success: true,
+                message: 'Breakdown marked as completed.',
+                data: {
+                    route_breakdown_id: routeBreakdownId,
+                },
+            });
+        }
+
         if (normalizedPath.match(/\/(breakdown-reports|route-breakdowns)\/[^/]+$/) && (method === 'PUT' || method === 'DELETE')) {
             return json({ status: 'success', success: true, data: {} });
         }
@@ -420,6 +567,102 @@ async function runFlow(page, viewportName) {
 
     await page.goto(`${BASE_URL}/dashboard/driver/index.html`, { waitUntil: 'domcontentloaded' });
     await expect(page.locator('ac-layout')).toBeVisible();
+
+    await page.evaluate(() => {
+        const layout = document.querySelector('ac-layout');
+        if (layout && typeof layout.navigateTo === 'function') {
+            layout.navigateTo('breakdown');
+        }
+    });
+
+    await expect(page.locator('#breakdown')).toHaveClass(/active/);
+
+    await expect(page.locator('#breakdown [data-action="set-status-filter"][data-filter="open"]')).toBeVisible();
+    await expect(page.locator('#breakdown [data-action="set-status-filter"][data-filter="closed"]')).toBeVisible();
+
+    await page.locator('#breakdown [data-action="set-status-filter"][data-filter="open"]').click();
+    await expect(page.locator('#driverBreakdownList .inventory-item')).toHaveCount(1);
+    await expect(page.locator('#driverBreakdownList .inventory-item').first()).toContainText('BR-002');
+
+    await page.locator('#breakdown [data-action="set-status-filter"][data-filter="resolved"]').click();
+    await expect(page.locator('#driverBreakdownList .inventory-item')).toHaveCount(1);
+    await expect(page.locator('#driverBreakdownList .inventory-item').first()).toContainText('RBR-001');
+
+    await page.locator('#breakdown [data-action="set-status-filter"][data-filter="closed"]').click();
+    await expect(page.locator('#driverBreakdownList')).toContainText('No breakdown reports found for the selected filters.');
+
+    await page.locator('#breakdown [data-action="set-status-filter"][data-filter="all"]').click();
+
+    const breakdownRouteCard = page.locator('#driverBreakdownList .inventory-item').filter({ hasText: 'RBR-001' }).first();
+    await expect(breakdownRouteCard).toBeVisible();
+
+    await breakdownRouteCard.locator('[data-action="toggle-actions-menu"]').click();
+    await breakdownRouteCard.locator('[data-action="view-garages"]').click();
+    await expect(page.locator('#nearbyGaragesModal')).toHaveClass(/active/);
+    await expect(page.locator('#nearbyGaragesTitle')).toContainText('Nearby Garages');
+    await page.locator('#nearbyGaragesModal [data-action="close-modal"]').first().click();
+    await expect(page.locator('#nearbyGaragesModal')).not.toHaveClass(/active/);
+
+    await breakdownRouteCard.locator('[data-action="toggle-actions-menu"]').click();
+    await breakdownRouteCard.locator('[data-action="log-garage-entry"]').click();
+    await expect(page.locator('#nearbyGaragesModal')).toHaveClass(/active/);
+    await expect(page.locator('#nearbyGaragesTitle')).toContainText('Log Garage Entry');
+    await page.locator('#nearbyGaragesModal [data-action="close-modal"]').first().click();
+    await expect(page.locator('#nearbyGaragesModal')).not.toHaveClass(/active/);
+
+    await breakdownRouteCard.locator('button[data-action="view-breakdown"]').click();
+    await expect(page.locator('#ticket-details')).toHaveClass(/active/, { timeout: 15000 });
+    await expect(page.locator('#viewNearbyGaragesBtn')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#logGarageEntryBtn')).toBeVisible({ timeout: 15000 });
+
+    await page.locator('#viewNearbyGaragesBtn').click();
+    await expect(page.locator('#nearbyGaragesModal')).toHaveClass(/active/);
+    const nearbyGaragesModalPaddingTop = await page.locator('#nearbyGaragesModal .modal-content').evaluate(
+        (node) => window.getComputedStyle(node).paddingTop
+    );
+    expect(nearbyGaragesModalPaddingTop).toBe('0px');
+    await page.locator('#nearbyGaragesModal [data-action="close-modal"]').first().click();
+    await expect(page.locator('#nearbyGaragesModal')).not.toHaveClass(/active/);
+
+    await page.locator('#logGarageEntryBtn').click();
+    await expect(page.locator('#nearbyGaragesModal')).toHaveClass(/active/);
+    await expect(page.locator('#nearbyGaragesTitle')).toContainText('Log Garage Entry');
+    await page.locator('#nearbyGaragesModal [data-action="close-modal"]').first().click();
+    await expect(page.locator('#nearbyGaragesModal')).not.toHaveClass(/active/);
+
+    await page.locator('#ticket-details #backButton').click();
+    await expect(page.locator('#breakdown')).toHaveClass(/active/, { timeout: 10000 });
+
+    const repairRouteCard = page.locator('#driverBreakdownList .inventory-item').filter({ hasText: 'RBR-003' }).first();
+    await expect(repairRouteCard).toBeVisible();
+    await repairRouteCard.locator('button[data-action="view-breakdown"]').click();
+
+    await expect(page.locator('#ticket-details')).toHaveClass(/active/, { timeout: 15000 });
+    await expect(page.locator('#addGarageProgressBtn')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#completeGarageRepairBtn')).toBeVisible({ timeout: 15000 });
+
+    await page.locator('#addGarageProgressBtn').click();
+    await expect(page.locator('#garageProgressModal')).toHaveClass(/active/);
+    await page.locator('#garageProgressModal [data-action="close-modal"]').first().click();
+    await expect(page.locator('#garageProgressModal')).not.toHaveClass(/active/);
+
+    await page.locator('#completeGarageRepairBtn').click();
+    await expect(page.locator('#completeBreakdownModal')).toHaveClass(/active/);
+
+    await page.locator('#completeBillAmount').fill('24500');
+    await page.locator('#completeRemarks').fill('Repair completed and vehicle is ready for dispatch.');
+    await page.setInputFiles('#completeBillImage', {
+        name: 'bill.png',
+        mimeType: 'image/png',
+        buffer: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    });
+
+    await page.locator('#completeBreakdownForm button[type="submit"]').click();
+    await expect(page.locator('#completeBreakdownModal')).not.toHaveClass(/active/);
+
+    await expect(page.locator('#ovStatus')).toContainText('Resolved', { timeout: 15000 });
+    await expect(page.locator('#addGarageProgressBtn')).toBeHidden({ timeout: 15000 });
+    await expect(page.locator('#completeGarageRepairBtn')).toBeHidden({ timeout: 15000 });
 
     await page.evaluate(() => {
         const layout = document.querySelector('ac-layout');
@@ -479,6 +722,23 @@ async function runFlow(page, viewportName) {
 
     await page.locator('#breakdownDetailsModal [data-action="close-modal"]').first().click();
     await expect(page.locator('#breakdownDetailsModal')).not.toHaveClass(/active/);
+
+    await page.evaluate(() => {
+        const layout = document.querySelector('ac-layout');
+        if (layout && typeof layout.navigateTo === 'function') {
+            layout.navigateTo('garages');
+        }
+    });
+
+    await expect(page.locator('#garages')).toHaveClass(/active/);
+    await expect(page.locator('#driverGaragesList')).toContainText('Colombo Central Garage');
+
+    const refreshButton = page.locator('#garages [data-action="refresh"]');
+    if (STAGE === 'before') {
+        await expect(refreshButton).toHaveCount(1);
+    } else {
+        await expect(refreshButton).toHaveCount(0);
+    }
 
     let ariaSnapshot = '';
     try {

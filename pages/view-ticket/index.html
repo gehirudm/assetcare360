@@ -150,9 +150,79 @@
             font-size: 0.8rem;
         }
 
+        .route-bill-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .route-bill-summary-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 10px;
+        }
+
+        .route-bill-summary-item span {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .route-bill-summary-item strong {
+            font-size: 0.9rem;
+            color: #0f172a;
+        }
+
+        .route-bill-remarks {
+            margin: 0;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            color: #334155;
+        }
+
+        .route-bill-image-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #1d4ed8;
+            text-decoration: none;
+            font-size: 0.83rem;
+            font-weight: 600;
+            width: fit-content;
+        }
+
+        .route-bill-image-link:hover {
+            text-decoration: underline;
+        }
+
+        .route-bill-image-preview {
+            border: 1px solid #dbeafe;
+            border-radius: 8px;
+            background: #f8fafc;
+            overflow: hidden;
+            max-width: 320px;
+        }
+
+        .route-bill-image-preview img {
+            display: block;
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+
         @media (max-width: 768px) {
             .route-location-map {
                 height: 260px;
+            }
+
+            .route-bill-summary-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -289,6 +359,18 @@
             <div class="overview-actions" id="overviewActions" style="display:none;">
                 <button class="btn btn-action" id="editFaultTicketBtn" type="button" style="display:none;">
                     <i class="fas fa-edit"></i> Edit Fault Ticket
+                </button>
+                <button class="btn btn-action" id="viewNearbyGaragesBtn" type="button" onclick="openDriverNearbyGarages()" style="display:none; margin-left:8px;">
+                    <i class="fas fa-map-marker-alt"></i> Nearby Garages
+                </button>
+                <button class="btn btn-action" id="logGarageEntryBtn" type="button" onclick="openDriverGarageEntry()" style="display:none; margin-left:8px;">
+                    <i class="fas fa-sign-in-alt"></i> Log Garage Entry
+                </button>
+                <button class="btn btn-action" id="addGarageProgressBtn" type="button" onclick="openDriverGarageProgress()" style="display:none; margin-left:8px;">
+                    <i class="fas fa-camera"></i> Add Progress
+                </button>
+                <button class="btn btn-action" id="completeGarageRepairBtn" type="button" onclick="openDriverCompleteRepair()" style="display:none; margin-left:8px;">
+                    <i class="fas fa-check-circle"></i> Complete Repair
                 </button>
             </div>
         </section>
@@ -537,12 +619,45 @@
                                     <div class="participant-chip success">
                                         <i class="fas fa-check"></i>
                                         <span id="step6-resolver">-</span>
-                                        <span class="chip-role">Technical Officer</span>
+                                        <span class="chip-role" id="step6-resolver-role">Technical Officer</span>
                                     </div>
                                 </div>
                                 <div class="resolution-box" id="resolution-notes-box">
                                     <div class="resolution-label"><i class="fas fa-clipboard-check"></i> Resolution Notes</div>
                                     <p id="resolution-notes-text">-</p>
+                                </div>
+                                <div class="resolution-box route-bill-box" id="routeGarageBillBox" style="display:none;">
+                                    <div class="resolution-label"><i class="fas fa-file-invoice-dollar"></i> Garage Completion Bill</div>
+                                    <div class="route-bill-summary-grid">
+                                        <div class="route-bill-summary-item">
+                                            <span>Bill Amount</span>
+                                            <strong id="routeGarageBillAmount">N/A</strong>
+                                        </div>
+                                        <div class="route-bill-summary-item">
+                                            <span>Completed At</span>
+                                            <strong id="routeGarageCompletedAt">N/A</strong>
+                                        </div>
+                                        <div class="route-bill-summary-item">
+                                            <span>Completed By</span>
+                                            <strong id="routeGarageCompletedBy">N/A</strong>
+                                        </div>
+                                    </div>
+                                    <p class="route-bill-remarks" id="routeGarageCompletionRemarks" style="display:none;"></p>
+                                    <a
+                                        class="route-bill-image-link"
+                                        id="routeGarageBillImageLink"
+                                        href="#"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style="display:none;"
+                                    >
+                                        <i class="fas fa-external-link-alt"></i>
+                                        View Uploaded Bill Image
+                                    </a>
+                                    <p class="step-hint" id="routeGarageBillImageHint" style="display:none; margin:0;"></p>
+                                    <div class="route-bill-image-preview" id="routeGarageBillImagePreviewWrap" style="display:none;">
+                                        <img id="routeGarageBillImagePreview" alt="Garage bill image preview">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -591,7 +706,7 @@
     <div class="modal-overlay" id="budgetModal">
         <div class="modal">
             <div class="modal-header">
-                <h3><i class="fas fa-file-invoice-dollar"></i> Submit Budget Report</h3>
+                <h3><i class="fas fa-file-invoice-dollar"></i> Request Budget Report</h3>
                 <button class="modal-close" onclick="closeBudgetModal()"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
@@ -628,7 +743,7 @@
          SPARE PARTS MODAL
     ============================= -->
     <div class="modal-overlay" id="partsModal">
-        <div class="modal">
+        <div class="modal modal-wide modal-parts">
             <div class="modal-header">
                 <h3><i class="fas fa-clipboard-list"></i> Request Spare Parts</h3>
                 <button class="modal-close" onclick="closePartsModal()"><i class="fas fa-times"></i></button>

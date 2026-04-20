@@ -148,6 +148,11 @@ function isMachinaryOperator() {
     return roleKey === 'MACHINARY_OPERATOR';
 }
 
+function isDriver() {
+    const roleKey = currentRoleContext?.roleKey || getRoleOverrideKey() || toRoleKey(currentUser?.role);
+    return roleKey === 'DRIVER';
+}
+
 function isRouteBreakdownTicket() {
     return normaliseStatus(ticketData?.breakdown_type) === 'route_breakdown';
 }
@@ -158,6 +163,10 @@ function getRouteGarageWorkflowStatus() {
         || routeBreakdownContext?.garage_workflow?.status
         || ticketData?.route_garage_workflow_status
     );
+}
+
+function isDriverGarageRepairStage(status = getRouteGarageWorkflowStatus()) {
+    return status === 'garage_entry_logged' || status === 'repair_in_progress';
 }
 
 function hasRouteGarageAssignment() {
@@ -205,6 +214,87 @@ function getApprovedRouteGarageName() {
         || routeBreakdownContext?.garage_workflow?.approved_garage?.name
         || ticketData?.route_approved_garage_name
         || null;
+}
+
+function formatLkrAmount(amountValue) {
+    const amount = Number(amountValue);
+    if (!Number.isFinite(amount) || amount <= 0) {
+        return 'N/A';
+    }
+
+    if (window.FaultTicketDetailTemplate?.formatLkrCurrency) {
+        return window.FaultTicketDetailTemplate.formatLkrCurrency(amount);
+    }
+
+    return `LKR ${amount.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    })}`;
+}
+
+function resolveSameOriginAssetUrl(pathValue) {
+    const rawPath = String(pathValue || '').trim();
+    if (!rawPath) {
+        return null;
+    }
+
+    const hasScheme = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(rawPath);
+    const candidatePath = hasScheme
+        ? rawPath
+        : (rawPath.startsWith('/') ? rawPath : `/${rawPath}`);
+
+    try {
+        const resolved = new URL(candidatePath, window.location.origin);
+        if (resolved.origin !== window.location.origin) {
+            return null;
+        }
+
+        return resolved.toString();
+    } catch (_error) {
+        return null;
+    }
+}
+
+function getRouteGarageCompletionDetails() {
+    if (!isRouteBreakdownTicket()) {
+        return null;
+    }
+
+    const workflow = routeBreakdownContext?.garage_workflow || null;
+    const workflowStatus = normaliseStatus(
+        workflow?.status
+        || routeBreakdownContext?.garage_workflow_status
+        || ticketData?.route_garage_workflow_status
+    );
+
+    const billAmountRaw = workflow?.bill_amount ?? routeBreakdownContext?.bill_amount ?? null;
+    const completionRemarks = String(
+        workflow?.completion_remarks
+        || routeBreakdownContext?.completion_remarks
+        || ''
+    ).trim();
+    const billImagePath = String(
+        workflow?.bill_image_path
+        || routeBreakdownContext?.bill_image_path
+        || ''
+    ).trim();
+
+    const hasBillData = (Number.isFinite(Number(billAmountRaw)) && Number(billAmountRaw) > 0)
+        || completionRemarks !== ''
+        || billImagePath !== '';
+
+    if (workflowStatus !== 'completed' && !hasBillData) {
+        return null;
+    }
+
+    return {
+        billAmount: Number.isFinite(Number(billAmountRaw)) ? Number(billAmountRaw) : null,
+        completionRemarks,
+        billImagePath,
+        billImageUrl: resolveSameOriginAssetUrl(billImagePath),
+        completedAt: workflow?.completed_at || routeBreakdownContext?.completed_at || null,
+        completedBy: String(workflow?.completed_by || routeBreakdownContext?.completed_by_name || '').trim(),
+    };
 }
 
 function getRouteBreakdownNumericId() {
@@ -863,14 +953,34 @@ function renderOverview(ticketIdFormatted) {
 
     const overviewActions = document.getElementById('overviewActions');
     const editFaultTicketBtn = document.getElementById('editFaultTicketBtn');
-    if (overviewActions && editFaultTicketBtn) {
+    const viewNearbyGaragesBtn = document.getElementById('viewNearbyGaragesBtn');
+    const logGarageEntryBtn = document.getElementById('logGarageEntryBtn');
+    const addGarageProgressBtn = document.getElementById('addGarageProgressBtn');
+    const completeGarageRepairBtn = document.getElementById('completeGarageRepairBtn');
+
+    if (
+        overviewActions
+        && editFaultTicketBtn
+        && viewNearbyGaragesBtn
+        && logGarageEntryBtn
+        && addGarageProgressBtn
+        && completeGarageRepairBtn
+    ) {
         const normalizedTicketStatus = normaliseStatus(ticketData?.status);
+        const routeWorkflowStatus = getRouteGarageWorkflowStatus();
         const canEditPendingTicket = isMachinaryOperator()
             && Number(ticketData?.id || 0) > 0
             && (normalizedTicketStatus === 'open' || normalizedTicketStatus === 'pending');
+        const canDriverOpenNearbyGarages = isDriver() && routeTicket;
+        const canDriverLogGarageEntry = canDriverOpenNearbyGarages && routeWorkflowStatus === 'garage_approved';
+        const canDriverAddGarageProgress = canDriverOpenNearbyGarages && isDriverGarageRepairStage(routeWorkflowStatus);
+        const canDriverCompleteRepair = canDriverAddGarageProgress;
 
-        overviewActions.style.display = canEditPendingTicket ? 'flex' : 'none';
         editFaultTicketBtn.style.display = canEditPendingTicket ? 'inline-flex' : 'none';
+        viewNearbyGaragesBtn.style.display = canDriverOpenNearbyGarages ? 'inline-flex' : 'none';
+        logGarageEntryBtn.style.display = canDriverLogGarageEntry ? 'inline-flex' : 'none';
+        addGarageProgressBtn.style.display = canDriverAddGarageProgress ? 'inline-flex' : 'none';
+        completeGarageRepairBtn.style.display = canDriverCompleteRepair ? 'inline-flex' : 'none';
 
         editFaultTicketBtn.onclick = canEditPendingTicket
             ? () => {
@@ -893,6 +1003,40 @@ function renderOverview(ticketIdFormatted) {
                 showToast('Edit is available from the Machinery Operator dashboard view.', 'warning');
             }
             : null;
+
+        viewNearbyGaragesBtn.onclick = canDriverOpenNearbyGarages
+            ? () => {
+                void openDriverNearbyGarages();
+            }
+            : null;
+
+        logGarageEntryBtn.onclick = canDriverLogGarageEntry
+            ? () => {
+                void openDriverGarageEntry();
+            }
+            : null;
+
+        addGarageProgressBtn.onclick = canDriverAddGarageProgress
+            ? () => {
+                void openDriverGarageProgress();
+            }
+            : null;
+
+        completeGarageRepairBtn.onclick = canDriverCompleteRepair
+            ? () => {
+                void openDriverCompleteRepair();
+            }
+            : null;
+
+        overviewActions.style.display = (
+            canEditPendingTicket
+            || canDriverOpenNearbyGarages
+            || canDriverLogGarageEntry
+            || canDriverAddGarageProgress
+            || canDriverCompleteRepair
+        )
+            ? 'flex'
+            : 'none';
     }
 }
 
@@ -1411,21 +1555,131 @@ function renderInProgressStep(status) {
     }
 }
 
+function renderRouteGarageCompletionSection(completionDetails = getRouteGarageCompletionDetails()) {
+    const billBox = document.getElementById('routeGarageBillBox');
+    const billAmountEl = document.getElementById('routeGarageBillAmount');
+    const completedAtEl = document.getElementById('routeGarageCompletedAt');
+    const completedByEl = document.getElementById('routeGarageCompletedBy');
+    const remarksEl = document.getElementById('routeGarageCompletionRemarks');
+    const billImageLinkEl = document.getElementById('routeGarageBillImageLink');
+    const billImageHintEl = document.getElementById('routeGarageBillImageHint');
+    const billImagePreviewWrapEl = document.getElementById('routeGarageBillImagePreviewWrap');
+    const billImagePreviewEl = document.getElementById('routeGarageBillImagePreview');
+
+    if (!billBox
+        || !billAmountEl
+        || !completedAtEl
+        || !completedByEl
+        || !remarksEl
+        || !billImageLinkEl
+        || !billImageHintEl
+        || !billImagePreviewWrapEl
+        || !billImagePreviewEl
+    ) {
+        return;
+    }
+
+    const reset = () => {
+        billBox.style.display = 'none';
+        billAmountEl.textContent = 'N/A';
+        completedAtEl.textContent = 'N/A';
+        completedByEl.textContent = 'N/A';
+
+        remarksEl.style.display = 'none';
+        remarksEl.textContent = '';
+
+        billImageLinkEl.style.display = 'none';
+        billImageLinkEl.removeAttribute('href');
+
+        billImageHintEl.style.display = 'none';
+        billImageHintEl.textContent = '';
+
+        billImagePreviewWrapEl.style.display = 'none';
+        billImagePreviewEl.removeAttribute('src');
+    };
+
+    if (!completionDetails) {
+        reset();
+        return;
+    }
+
+    billBox.style.display = 'flex';
+    billAmountEl.textContent = formatLkrAmount(completionDetails.billAmount);
+    completedAtEl.textContent = completionDetails.completedAt ? fmtDate(completionDetails.completedAt) : 'N/A';
+    completedByEl.textContent = completionDetails.completedBy || 'N/A';
+
+    if (completionDetails.completionRemarks) {
+        remarksEl.style.display = 'block';
+        remarksEl.textContent = completionDetails.completionRemarks;
+    } else {
+        remarksEl.style.display = 'none';
+        remarksEl.textContent = '';
+    }
+
+    if (completionDetails.billImageUrl) {
+        billImageLinkEl.style.display = 'inline-flex';
+        billImageLinkEl.href = completionDetails.billImageUrl;
+
+        billImagePreviewWrapEl.style.display = 'block';
+        billImagePreviewEl.src = completionDetails.billImageUrl;
+
+        billImageHintEl.style.display = 'none';
+        billImageHintEl.textContent = '';
+    } else {
+        billImageLinkEl.style.display = 'none';
+        billImageLinkEl.removeAttribute('href');
+
+        billImagePreviewWrapEl.style.display = 'none';
+        billImagePreviewEl.removeAttribute('src');
+
+        if (completionDetails.billImagePath) {
+            billImageHintEl.style.display = 'flex';
+            billImageHintEl.textContent = 'Bill image upload exists, but the file URL is not available to preview.';
+        } else {
+            billImageHintEl.style.display = 'none';
+            billImageHintEl.textContent = '';
+        }
+    }
+}
+
 function renderResolvedStep(status) {
-    if (statusAtOrPast(status, 'resolved')) {
+    const routeGarageCompletion = getRouteGarageCompletionDetails();
+    const hasRouteCompletion = Boolean(routeGarageCompletion);
+    const resolvedStepReached = statusAtOrPast(status, 'resolved') || hasRouteCompletion;
+    const resolverRoleEl = document.getElementById('step6-resolver-role');
+
+    if (resolvedStepReached) {
         markStep('step-resolved', 'completed');
         document.getElementById('resolved-hint').style.display = 'none';
         document.getElementById('resolved-info').style.display = 'block';
 
         document.getElementById('step6-resolver').textContent =
-            ticketData?.resolved_by_name || currentUser?.full_name || currentUser?.name || 'Technical Officer';
+            routeGarageCompletion?.completedBy
+            || ticketData?.resolved_by_name
+            || currentUser?.full_name
+            || currentUser?.name
+            || 'Technical Officer';
+
+        if (resolverRoleEl) {
+            resolverRoleEl.textContent = hasRouteCompletion ? 'Driver' : 'Technical Officer';
+        }
 
         const resolutionText = document.getElementById('resolution-notes-text');
-        resolutionText.textContent = ticketData?.resolution_notes || 'No resolution notes were provided.';
+        resolutionText.textContent = ticketData?.resolution_notes
+            || routeGarageCompletion?.completionRemarks
+            || 'No resolution notes were provided.';
+
+        renderRouteGarageCompletionSection(routeGarageCompletion);
     } else {
         markStep('step-resolved', 'pending');
         document.getElementById('resolved-hint').style.display = 'flex';
         document.getElementById('resolved-info').style.display = 'none';
+
+        if (resolverRoleEl) {
+            resolverRoleEl.textContent = 'Technical Officer';
+        }
+
+        renderRouteGarageCompletionSection(null);
     }
 }
 
@@ -2299,6 +2553,209 @@ function closeAssignModal() {
     }
 }
 
+async function openDriverNearbyGarages() {
+    if (!isDriver()) {
+        showToast('Nearby garages can be viewed from the Driver role only.', 'warning');
+        return;
+    }
+
+    if (!ticketData?.id || !isRouteBreakdownTicket()) {
+        showToast('Nearby garages are available only for route breakdown tickets.', 'warning');
+        return;
+    }
+
+    await loadRouteBreakdownContext();
+
+    const routeBreakdownId = getRouteBreakdownNumericId();
+    const breakdownPayload = buildGarageApprovalBreakdownPayload(routeBreakdownId || null);
+    const context = getViewTicketContext();
+
+    if (isDashboardComponentMode() && typeof context.onRequestNearbyGarages === 'function') {
+        try {
+            const handled = context.onRequestNearbyGarages({
+                ticketId: Number(ticketData.id),
+                routeBreakdownId: routeBreakdownId > 0 ? routeBreakdownId : null,
+                breakdown: breakdownPayload,
+            });
+
+            if (handled !== false) {
+                return;
+            }
+        } catch (error) {
+            console.error('Failed to delegate nearby garages to dashboard modal:', error);
+        }
+    }
+
+    if (window.DriverUtils && typeof window.DriverUtils.openModal === 'function') {
+        window.DriverUtils.openModal('nearbyGaragesModal', {
+            mode: 'browse',
+            breakdown: breakdownPayload,
+        });
+        return;
+    }
+
+    showToast('Nearby garages are available only from the Driver dashboard.', 'warning');
+}
+
+async function openDriverGarageEntry() {
+    if (!isDriver()) {
+        showToast('Garage entry can be logged from the Driver role only.', 'warning');
+        return;
+    }
+
+    if (!ticketData?.id || !isRouteBreakdownTicket()) {
+        showToast('Garage entry is available only for route breakdown tickets.', 'warning');
+        return;
+    }
+
+    await loadRouteBreakdownContext();
+
+    if (getRouteGarageWorkflowStatus() !== 'garage_approved') {
+        showToast('Garage entry can be logged only after nearby garage approval.', 'warning');
+        return;
+    }
+
+    const approvedGarageId = Number(
+        routeBreakdownContext?.garage_workflow?.approved_garage?.id
+        || routeBreakdownContext?.approved_garage_id
+        || ticketData?.route_approved_garage_id
+        || 0
+    );
+
+    if (!approvedGarageId) {
+        showToast('No approved garage found for this route breakdown.', 'warning');
+        return;
+    }
+
+    const routeBreakdownId = getRouteBreakdownNumericId();
+    const breakdownPayload = buildGarageApprovalBreakdownPayload(routeBreakdownId || null);
+    const context = getViewTicketContext();
+
+    if (isDashboardComponentMode() && typeof context.onRequestGarageEntry === 'function') {
+        try {
+            const handled = context.onRequestGarageEntry({
+                ticketId: Number(ticketData.id),
+                routeBreakdownId: routeBreakdownId > 0 ? routeBreakdownId : null,
+                breakdown: breakdownPayload,
+            });
+
+            if (handled !== false) {
+                return;
+            }
+        } catch (error) {
+            console.error('Failed to delegate garage entry to dashboard modal:', error);
+        }
+    }
+
+    if (window.DriverUtils && typeof window.DriverUtils.openModal === 'function') {
+        window.DriverUtils.openModal('nearbyGaragesModal', {
+            mode: 'entry',
+            breakdown: breakdownPayload,
+        });
+        return;
+    }
+
+    showToast('Garage entry logging is available only from the Driver dashboard.', 'warning');
+}
+
+async function openDriverGarageProgress() {
+    if (!isDriver()) {
+        showToast('Garage progress updates can be submitted from the Driver role only.', 'warning');
+        return;
+    }
+
+    if (!ticketData?.id || !isRouteBreakdownTicket()) {
+        showToast('Garage progress updates are available only for route breakdown tickets.', 'warning');
+        return;
+    }
+
+    await loadRouteBreakdownContext();
+
+    const routeWorkflowStatus = getRouteGarageWorkflowStatus();
+    if (!isDriverGarageRepairStage(routeWorkflowStatus)) {
+        showToast('Garage progress can be updated after garage entry is logged.', 'warning');
+        return;
+    }
+
+    const routeBreakdownId = getRouteBreakdownNumericId();
+    const breakdownPayload = buildGarageApprovalBreakdownPayload(routeBreakdownId || null);
+    const context = getViewTicketContext();
+
+    if (isDashboardComponentMode() && typeof context.onRequestGarageProgress === 'function') {
+        try {
+            const handled = context.onRequestGarageProgress({
+                ticketId: Number(ticketData.id),
+                routeBreakdownId: routeBreakdownId > 0 ? routeBreakdownId : null,
+                breakdown: breakdownPayload,
+            });
+
+            if (handled !== false) {
+                return;
+            }
+        } catch (error) {
+            console.error('Failed to delegate garage progress modal to dashboard context:', error);
+        }
+    }
+
+    if (window.DriverUtils && typeof window.DriverUtils.openModal === 'function') {
+        window.DriverUtils.openModal('garageProgressModal', {
+            breakdown: breakdownPayload,
+        });
+        return;
+    }
+
+    showToast('Garage progress updates are available only from the Driver dashboard.', 'warning');
+}
+
+async function openDriverCompleteRepair() {
+    if (!isDriver()) {
+        showToast('Repair completion can be submitted from the Driver role only.', 'warning');
+        return;
+    }
+
+    if (!ticketData?.id || !isRouteBreakdownTicket()) {
+        showToast('Repair completion is available only for route breakdown tickets.', 'warning');
+        return;
+    }
+
+    await loadRouteBreakdownContext();
+
+    const routeWorkflowStatus = getRouteGarageWorkflowStatus();
+    if (!isDriverGarageRepairStage(routeWorkflowStatus)) {
+        showToast('Complete repair is available only when garage repair is in progress.', 'warning');
+        return;
+    }
+
+    const routeBreakdownId = getRouteBreakdownNumericId();
+    const breakdownPayload = buildGarageApprovalBreakdownPayload(routeBreakdownId || null);
+    const context = getViewTicketContext();
+
+    if (isDashboardComponentMode() && typeof context.onRequestGarageComplete === 'function') {
+        try {
+            const handled = context.onRequestGarageComplete({
+                ticketId: Number(ticketData.id),
+                routeBreakdownId: routeBreakdownId > 0 ? routeBreakdownId : null,
+                breakdown: breakdownPayload,
+            });
+
+            if (handled !== false) {
+                return;
+            }
+        } catch (error) {
+            console.error('Failed to delegate complete repair modal to dashboard context:', error);
+        }
+    }
+
+    if (window.DriverUtils && typeof window.DriverUtils.openModal === 'function') {
+        window.DriverUtils.openModal('completeBreakdownModal', {
+            breakdown: breakdownPayload,
+        });
+        return;
+    }
+
+    showToast('Repair completion is available only from the Driver dashboard.', 'warning');
+}
+
 function buildGarageApprovalBreakdownPayload(routeBreakdownId = null) {
     const numericRouteBreakdownId = Number(routeBreakdownId || getRouteBreakdownNumericId() || 0);
     const coordinates = getRouteTicketCoordinates();
@@ -3042,6 +3499,10 @@ function exposeInlineTemplateHandlers() {
     const handlerMap = {
         openAssignModal,
         openGarageApprovalModal,
+        openDriverNearbyGarages,
+        openDriverGarageEntry,
+        openDriverGarageProgress,
+        openDriverCompleteRepair,
         openBudgetModal,
         reviewBudget,
         submitInsuranceClaim,

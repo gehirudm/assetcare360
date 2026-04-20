@@ -3,6 +3,82 @@
 ## Current Focus
 Dashboard Web Components refactor execution for the active Supervisor residual slice remains complete (TASK034, TASK035, TASK036). TASK033 and TASK032 are also complete. Route-breakdown workflow correction (TASK039), GPS/map approval (TASK042), transportation cargo lifecycle + dangerous escalation (TASK043), TM cargo section split/navigation cleanup (TASK044), TM cargo catalogue/details UX refinement (TASK045), dangerous in-route priority lock + supervisor dangerous visibility hardening (TASK046), breakdown-view/ticket-flow unification with create-time linked fault-ticket creation (TASK047), Inventory insurance flow implementation (TASK048), Supervisor insurance-claim ticket flow implementation (TASK049), Driver/Machinery Operator fault-reporting 500 fix (TASK050), Machinery Operator duplicate ticket creation fix (TASK051), newest-first ticket rendering stabilization (TASK052), Inventory single-page analytics/reporting hub delivery (TASK060), and service-ticket workflow implementation (TASK062) are now complete. Active remaining backlog is TASK003 migration verification plus pending monolith-final-decomposition cleanup tasks (TASK037, TASK038). New active workstream: TASK063 service-ticket requirement compliance audit and remediation planning.
 
+### TO view-ticket modal layout/header alignment fixed (April 20, 2026)
+- Completed TASK104 to fix Technical Officer ticket-detail modal UI issues.
+- Updated `pages/view-ticket/index.html`:
+	- changed budget modal header text to `Request Budget Report`.
+	- widened spare-parts modal by applying `modal modal-wide modal-parts` container class.
+- Updated `pages/dashboard/technical-officer/view-ticket/style.css`:
+	- added modal-specific width rule `#partsModal > .modal.modal-parts { max-width: 860px; }` to prevent compressed parts form layout.
+- Updated validation `testing/ui-validation/to-request-spare-parts-modal/validate-to-request-spare-parts-modal.spec.js`:
+	- added budget modal header assertion.
+	- added desktop parts-modal width assertion to prevent regressions.
+- Validation evidence:
+	- `cd testing/ui-validation && npx playwright test to-request-spare-parts-modal/validate-to-request-spare-parts-modal.spec.js --reporter=line` passed (2/2).
+
+### Supervisor route breakdown bill visibility fixed (April 20, 2026)
+- Completed TASK103 to expose Driver-submitted garage completion bill details in Supervisor fault-ticket detail view for route breakdown tickets.
+- Updated shared detail UI/runtime:
+	- `pages/view-ticket/index.html`: added Step 6 route bill section (amount, completed-at/by, remarks, bill image link/preview).
+	- `pages/view-ticket/script.js`: added route completion detail extraction/rendering from `routeBreakdownContext` + `garage_workflow` and safe same-origin bill image URL resolution.
+- Added focused regression coverage:
+	- `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-ticket-detail-route-bill-visibility.spec.js`.
+	- Validates desktop/mobile Supervisor detail rendering for bill amount, remarks, completed-by role, link, and preview.
+- Validation evidence:
+	- `cd testing/ui-validation && npx playwright test supervisor-fault-ticket-tracking/validate-supervisor-ticket-detail-route-bill-visibility.spec.js --reporter=line` passed (2/2).
+	- Broader existing `validate-supervisor-fault-ticket-tracking.spec.js` currently fails due pre-existing missing component locator (`supervisor-fault-ticket-tracking`), unrelated to this fix.
+
+### Driver ticket-detail realtime progress-flow refresh completed (April 20, 2026)
+- Completed TASK102 to ensure Driver ticket-detail progress flow updates immediately after Add Progress / Complete Repair modal submissions.
+- Updated `pages/dashboard/driver/components/ticket-details/script.js`:
+	- subscribed detail host to `driver:data-breakdowns-changed` and added coalesced in-place refresh for active detail tickets.
+	- added timer cleanup in `closeView()`.
+- Updated `testing/ui-validation/driver-dashboard/validate-driver-dashboard.spec.js`:
+	- mocked `garage-complete` endpoint now mutates route/ticket state to resolved.
+	- detail scenario now submits complete-repair form and asserts realtime status/action updates without manual refresh.
+- Validation evidence:
+	- `cd testing/ui-validation && npx playwright test driver-dashboard/validate-driver-dashboard.spec.js --reporter=line` passed (desktop/mobile).
+
+### Driver ticket detail action parity completed (April 20, 2026)
+- Completed TASK101 to align Driver View Ticket detail actions with fault-ticket list actions.
+- Updated `pages/view-ticket/index.html` and `pages/view-ticket/script.js`:
+	- added detail buttons for `Add Progress` and `Complete Repair`.
+	- mirrored route-workflow visibility gates used by list actions.
+	- routed actions to same dashboard modals via context delegation.
+- Updated `pages/dashboard/driver/components/ticket-details/script.js`:
+	- added host callbacks for `garageProgressModal` and `completeBreakdownModal` delegation.
+- Updated `testing/ui-validation/driver-dashboard/validate-driver-dashboard.spec.js`:
+	- added repair-stage route fixture and assertions for new detail actions/modal opens.
+- Validation evidence:
+	- `cd testing/ui-validation && npx playwright test driver-dashboard/validate-driver-dashboard.spec.js --reporter=line` passed (desktop/mobile).
+
+### Driver ticket detail modal white-border fix completed (April 20, 2026)
+- Completed TASK100 to remove modal style bleed in Driver ticket detail context.
+- Updated `pages/dashboard/driver/components/ticket-details/script.js` to stop injecting legacy `pages/view-ticket/style.css` into the dashboard host.
+- Preserved current ticket detail runtime by keeping `pages/dashboard/technical-officer/view-ticket/style.css` and existing scripts.
+- Added regression guard in `testing/ui-validation/driver-dashboard/validate-driver-dashboard.spec.js` to assert `#nearbyGaragesModal .modal-content` keeps `padding-top: 0px` when opened from detail view.
+- Validation evidence:
+	- `cd testing/ui-validation && npx playwright test driver-dashboard/validate-driver-dashboard.spec.js --reporter=line` passed (desktop/mobile).
+
+### Driver breakdown status/action parity completed (April 20, 2026)
+- Completed TASK099 to align Driver Breakdown Report ticket status logic and ticket action logic with Driver Ticket Tracking.
+- Updated `pages/dashboard/driver/components/driver-breakdown.js`:
+	- status filter set now supports `open`, `in-progress`, `resolved`, and `closed` ticket semantics.
+	- status normalization now uses `DriverUtils.normalizeTicketFilterStatus(...)`.
+	- status rendering now uses ticket status helpers (`getTicketStatusInfo`, `getTicketUpdateText`).
+	- route workflow actions now include `Add Progress` and `Complete Repair` with workflow-gated availability.
+- Updated `testing/ui-validation/driver-dashboard/validate-driver-dashboard.spec.js` with explicit Breakdown status filter assertions.
+- Validation evidence:
+	- `cd testing/ui-validation && npx playwright test driver-dashboard/validate-driver-dashboard.spec.js --reporter=line` passed (desktop/mobile).
+
+### Driver garage-action relocation completed (April 20, 2026)
+- Completed TASK098 for Driver dashboard route-breakdown garage actions.
+- Moved `Nearby Garages` and `Log Garage Entry` actions from `Ticket Tracking` to the `Breakdown Report` list (`driver-breakdown`) for route reports.
+- Added the same actions in Driver `View Fault Ticket` detail overview and routed both to the existing `nearbyGaragesModal` (`browse` and `entry` modes) through dashboard context callbacks.
+- Preserved modal styling by reusing existing modal components and avoiding CSS changes.
+- Validation evidence:
+	- `cd testing/ui-validation && npx playwright test driver-dashboard/validate-driver-dashboard.spec.js --reporter=line` passed (desktop/mobile).
+
 ### Supervisor ticket detail toast style hardening completed (April 20, 2026)
 - Completed TASK097 to resolve remaining toast styling issues in Supervisor fault ticket detail view.
 - Updated `pages/dashboard/supervisor/style.css`:

@@ -10,6 +10,13 @@
 - _(none)_
 
 ## Completed
+- [TASK104] TO View-Ticket Modal Layout and Budget Header Alignment - Widened TO Request Spare Parts modal to prevent compressed layout and aligned budget modal header text, with passing desktop/mobile UI validation
+- [TASK103] Supervisor Route Breakdown Bill Visibility in Ticket Detail - Added shared route completion bill rendering in ticket detail (amount, remarks, image link/preview) and validated via focused supervisor desktop/mobile UI spec
+- [TASK102] Driver Ticket Detail Realtime Progress Flow Refresh - Subscribed embedded Driver detail view to breakdown-change events so Add Progress/Complete Repair updates reflect immediately without page refresh, with passing driver UI regression coverage
+- [TASK101] Driver Ticket Detail Actions Parity With Fault Ticket List - Added Driver detail-view Add Progress/Complete Repair actions with workflow-gated visibility and dashboard modal delegation parity, validated with updated driver UI suite
+- [TASK100] Driver Ticket Detail Modal White Border Fix - Removed legacy embedded view-ticket stylesheet bleed that overrode Driver modal padding and added regression assertion for modal content padding in Driver dashboard validation
+- [TASK099] Driver Breakdown Status and Action Logic Parity - Ported Ticket Tracking ticket-status normalization/filter semantics and workflow-gated ticket actions into Driver Breakdown Report, with updated Driver dashboard UI validation coverage
+- [TASK098] Driver Garage Actions Relocated to Fault Reporting + Detail View - Moved Nearby Garages and Log Garage Entry actions from Driver Ticket Tracking to Driver Breakdown list for route reports, added same actions in Driver ticket detail view using existing nearby-garages modal, and validated with driver dashboard Playwright suite
 - [TASK097] Supervisor Ticket Detail Toast Style Hardening - Hardened supervisor/detail toast CSS against cross-file `.toast` overrides and added focused detail-view toast geometry regression coverage
 - [TASK096] Supervisor Resolved Route Breakdown Visibility Fix - Updated supervisor fault-ticket categorization to treat route garage workflow `completed` as resolved (without requiring technician assignments), with targeted UI regression coverage
 - [TASK095] Supervisor Ticket Detail Toast Position Fix - Scoped supervisor toast positioning to global #toast and reset conflicting bottom/left edges to prevent stretched toast rendering in ticket detail view

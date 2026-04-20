@@ -9,6 +9,24 @@ class DriverTicketDetailView extends HTMLElement {
         this._returnSection = this.defaultReturnSection;
         this._focusHash = '';
         this._templateReady = false;
+        this._refreshAfterBreakdownChangeTimer = null;
+        this._onBreakdownsChanged = () => {
+            if (!this._ticketId || !this._templateReady) {
+                return;
+            }
+
+            if (this._refreshAfterBreakdownChangeTimer) {
+                window.clearTimeout(this._refreshAfterBreakdownChangeTimer);
+            }
+
+            // Coalesce rapid modal-submit events into a single detail refresh.
+            this._refreshAfterBreakdownChangeTimer = window.setTimeout(() => {
+                this._refreshAfterBreakdownChangeTimer = null;
+                this.refresh();
+            }, 80);
+        };
+
+        document.addEventListener('driver:data-breakdowns-changed', this._onBreakdownsChanged);
 
         this.ensureScopedStyles();
         this.renderPlaceholder();
@@ -16,10 +34,6 @@ class DriverTicketDetailView extends HTMLElement {
 
     get defaultReturnSection() {
         return String(this.getAttribute('default-return-section') || 'breakdown').trim() || 'breakdown';
-    }
-
-    get detailStyleLinkId() {
-        return 'driver-ticket-detail-view-style';
     }
 
     get detailOverridesStyleLinkId() {
@@ -133,7 +147,6 @@ class DriverTicketDetailView extends HTMLElement {
     }
 
     async ensureViewTicketAssets() {
-        this.loadStyleOnce('../../view-ticket/style.css', this.detailStyleLinkId);
         this.loadStyleOnce('../technical-officer/view-ticket/style.css', this.detailOverridesStyleLinkId);
 
         await this.loadScriptOnce('../../js/fault-ticket-detail-template.js', 'driver-ticket-detail-template-script');
@@ -180,7 +193,6 @@ class DriverTicketDetailView extends HTMLElement {
 
     cleanupViewTicketAssets() {
         [
-            this.detailStyleLinkId,
             this.detailOverridesStyleLinkId,
             this.detailInlineStyleId,
         ].forEach((id) => {
@@ -191,12 +203,68 @@ class DriverTicketDetailView extends HTMLElement {
         });
     }
 
+    emitToast(message, type = 'warning') {
+        this.dispatchEvent(new CustomEvent('driver-ticket-detail-view:toast', {
+            bubbles: true,
+            detail: {
+                message,
+                type,
+            }
+        }));
+    }
+
+    openGarageWorkflowModal(mode, payload = {}) {
+        const breakdown = payload?.breakdown && typeof payload.breakdown === 'object'
+            ? payload.breakdown
+            : null;
+
+        if (!breakdown) {
+            this.emitToast('Route breakdown details are unavailable for garage actions.', 'warning');
+            return false;
+        }
+
+        if (!window.DriverUtils || typeof window.DriverUtils.openModal !== 'function') {
+            this.emitToast('Garage workflow modal is not available right now.', 'error');
+            return false;
+        }
+
+        window.DriverUtils.openModal('nearbyGaragesModal', {
+            mode,
+            breakdown,
+        });
+
+        return true;
+    }
+
+    openDriverGarageModal(modalId, payload = {}) {
+        const breakdown = payload?.breakdown && typeof payload.breakdown === 'object'
+            ? payload.breakdown
+            : null;
+
+        if (!breakdown) {
+            this.emitToast('Route breakdown details are unavailable for garage actions.', 'warning');
+            return false;
+        }
+
+        if (!window.DriverUtils || typeof window.DriverUtils.openModal !== 'function') {
+            this.emitToast('Garage workflow modal is not available right now.', 'error');
+            return false;
+        }
+
+        window.DriverUtils.openModal(modalId, { breakdown });
+        return true;
+    }
+
     buildRuntimeContext() {
         return {
             ticketId: this._ticketId,
             roleOverride: 'DRIVER',
             returnTo: this.buildReturnPath(this._returnSection),
             dashboardComponentMode: true,
+            onRequestNearbyGarages: (payload = {}) => this.openGarageWorkflowModal('browse', payload),
+            onRequestGarageEntry: (payload = {}) => this.openGarageWorkflowModal('entry', payload),
+            onRequestGarageProgress: (payload = {}) => this.openDriverGarageModal('garageProgressModal', payload),
+            onRequestGarageComplete: (payload = {}) => this.openDriverGarageModal('completeBreakdownModal', payload),
             onBack: () => {
                 this.dispatchEvent(new CustomEvent('driver-ticket-detail-view:back', {
                     bubbles: true,
@@ -275,6 +343,10 @@ class DriverTicketDetailView extends HTMLElement {
         this._ticketId = null;
         this._focusHash = '';
         this._templateReady = false;
+        if (this._refreshAfterBreakdownChangeTimer) {
+            window.clearTimeout(this._refreshAfterBreakdownChangeTimer);
+            this._refreshAfterBreakdownChangeTimer = null;
+        }
         delete window.__ACViewTicketContext;
         this.cleanupViewTicketAssets();
         this.renderPlaceholder();

@@ -4,16 +4,14 @@
   "url": "http://127.0.0.1:3000/dashboard/driver/index.html",
   "title": "Driver Dashboard - AssetCare360",
   "accessibility": {
-    "ariaSnapshot": "- text: AssetCare360\n- heading \"Driver Dashboard\" [level=1]\n- button \"DO\"\n- navigation: Dashboard Trip Log Vehicle Check Breakdown Report Fuel & Mileage Transport Ticket Nearby Garages\n- main:\n  - heading \"Transport Ticket\" [level=2]\n  - paragraph: Create and manage cargo transport documentation\n  - button \"Create Transport Ticket\"\n  - text: My Transport Tickets\n  - strong: TT-001\n  - text: \"Colombo → Kandy | Aug 25, 2024 COMPLETED | Spare parts crates (350 kg) | Trip: TRP-001\"\n  - button \"VIEW\"\n  - button \"PRINT\"\n  - button \"EXPORT\"\n  - strong: TT-002\n  - text: \"Kandy → Galle | Aug 25, 2024 IN TRANSIT | Machinery components (500 kg) | Trip: TRP-002\"\n  - button \"VIEW\"\n  - button \"PRINT\"\n  - button \"UPDATE\"",
-    "snapshotLength": 715
+    "ariaSnapshot": "- text: AssetCare360\n- heading \"Driver Dashboard\" [level=1]\n- button \"U\"\n- navigation: Dashboard Analytics Trip Log Vehicle Check Breakdown Report Ticket Tracking Fuel & Mileage Transport Ticket Nearby Garages\n- main:\n  - heading \"Nearby Company Garages\" [level=2]\n  - paragraph: Find registered service centers for emergency support\n  - text: Active Garages\n  - button \"Refresh\"\n  - text: Colombo Central Garage\n  - strong: \"Address:\"\n  - text: 45 Main Street, Colombo 01\n  - strong: \"City:\"\n  - text: Colombo\n  - strong: \"Contact:\"\n  - text: +94 11 222 3344\n  - button \"Get Directions\"\n  - button \"Call\"\n  - text: Southern Fleet Garage\n  - strong: \"Address:\"\n  - text: 12 Galle Road, Exit 12\n  - strong: \"City:\"\n  - text: Galle\n  - strong: \"Contact:\"\n  - text: +94 91 555 6677\n  - button \"Get Directions\"\n  - button \"Call\"\n  - text: Emergency Support\n  - paragraph:\n    - text: \"For emergency breakdowns, contact the nearest registered garage or call the company hotline:\"\n    - strong: +94 11 999 0000\n  - strong: \"Important:\"\n  - text: Always report breakdowns through the system and wait for supervisor approval before proceeding with repairs at external garages.",
+    "snapshotLength": 1168
   },
   "console": [],
   "failedRequests": [],
   "interactionSummary": {
-    "activeSection": "transport-ticket",
+    "activeSection": "garages",
     "openModalCount": 0,
-    "tripRows": 2,
-    "checkRows": 2,
-    "breakdownRows": 2
+    "ticketTrackingRows": 5
   }
 }
