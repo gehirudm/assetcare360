@@ -83,6 +83,25 @@
           "response": []
         },
         {
+          "name": "Get Login Activities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/login-activities?limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login-activities"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Validate Token",
           "request": {
             "method": "GET",

@@ -51,6 +51,8 @@ tags:
     description: Budget report submission and approval workflow for fault tickets. Budgets within petty cash limit are approved by Supervisors; amounts exceeding the limit require Maintenance Manager approval.
   - name: Ticket Work Updates
     description: Technical Officer work completion updates for fault tickets.
+  - name: Service Tickets
+    description: Service ticket lifecycle management for Maintenance Manager and Technical Officer workflows.
   - name: System Settings
     description: System-wide configuration settings (Admin only). Includes petty cash limit for budget approval routing.
   - name: Trips
@@ -60,7 +62,7 @@ tags:
   - name: Notifications
     description: User notification listing and read-state updates.
   - name: Spare Part Requests
-    description: Spare part request workflow. Technical Officers create requests for fault tickets, Inventory Managers approve/reject.
+    description: Spare part request workflow. Technical Officers create requests for fault or service tickets, Inventory Managers approve or reject.
   - name: Sparepart Additions
     description: Stock addition tracking. Auto-updates spare part catalog quantities and can auto-create new spare parts.
   - name: Route Breakdowns
@@ -83,6 +85,13 @@ paths:
       summary: User login
       description: Authenticate user and receive JWT token. Token is automatically set in HTTP-only cookie.
       security: []
+      parameters:
+        - name: X-CSRF-Token
+          in: header
+          required: true
+          schema:
+            type: string
+          description: CSRF token value returned by GET /auth/csrf
       requestBody:
         required: true
         content:
@@ -139,8 +148,50 @@ paths:
                         example: false
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
         '400':
           $ref: '#/components/responses/BadRequest'
+
+  /auth/csrf:
+    get:
+      tags:
+        - Authentication
+      summary: Issue CSRF token
+      description: |
+        Issue a CSRF token for login and other protected authentication requests.
+        The token is returned in response payload and also set in a cookie.
+      security: []
+      responses:
+        '200':
+          description: CSRF token generated
+          headers:
+            Set-Cookie:
+              description: CSRF token cookie
+              schema:
+                type: string
+                example: csrf_token=6f2c...; Path=/; SameSite=Lax
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [success, error]
+                    example: success
+                  message:
+                    type: string
+                    example: "CSRF token generated"
+                  data:
+                    type: object
+                    properties:
+                      csrf_token:
+                        type: string
+                        description: CSRF token value to send in X-CSRF-Token header
+                        example: "6f2cb64f5f8c5b2d9d6f3cb6e4fdb5f53bcbe3f0db5e2d40ca4b621ee0f0f7a1"
 
   /auth/me:
     get:
@@ -378,6 +429,81 @@ paths:
                     $ref: '#/components/schemas/User'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/login-activities:
+    get:
+      tags:
+        - Authentication
+      summary: Get recent login activities
+      description: Retrieve recent successful login events for the currently authenticated user.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Maximum number of login records to return.
+      responses:
+        '200':
+          description: Login activities retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Login activities retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      activities:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 9124
+                            endpoint:
+                              type: string
+                              example: /api/auth/login
+                            action:
+                              type: string
+                              example: User Login
+                            response_code:
+                              type: integer
+                              example: 200
+                            ip_address:
+                              type: string
+                              example: 10.20.30.40
+                            user_agent:
+                              type: string
+                              example: Mozilla/5.0 (Macintosh; Intel Mac OS X 13_7)...
+                            created_at:
+                              type: string
+                              format: date-time
+                              example: '2026-04-20 09:10:00'
+                            login_method:
+                              type: string
+                              enum: [password, passkey]
+                              example: password
+                      count:
+                        type: integer
+                        example: 2
+                      limit:
+                        type: integer
+                        example: 20
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -1903,6 +2029,509 @@ paths:
           $ref: '#/components/responses/Unauthorized'
 
   # ==================== SPARE PART REQUESTS ====================
+  /spare-part-requests:
+    get:
+      tags:
+        - Spare Part Requests
+      summary: List spare part requests
+      description: Returns spare part requests with optional filtering by status, requester, fault ticket, or service ticket.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [Pending, Approved, Rejected, Issued]
+        - name: requested_by
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: fault_ticket_id
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: service_ticket_id
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Spare part requests loaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 14
+                        request_id:
+                          type: string
+                          example: "SPR-014"
+                        request_context:
+                          type: string
+                          enum: [fault_ticket, service_ticket]
+                          example: service_ticket
+                        fault_ticket_id:
+                          type: integer
+                          nullable: true
+                          example: null
+                        service_ticket_id:
+                          type: integer
+                          nullable: true
+                          example: 22
+                        linked_ticket_code:
+                          type: string
+                          nullable: true
+                          example: "SVT-022"
+                        ticket_description:
+                          type: string
+                          nullable: true
+                        ticket_priority:
+                          type: string
+                          nullable: true
+                        ticket_status:
+                          type: string
+                          nullable: true
+                        requested_by:
+                          type: integer
+                          example: 19
+                        requested_by_name:
+                          type: string
+                          nullable: true
+                        status:
+                          type: string
+                          enum: [Pending, Approved, Rejected, Issued]
+                          example: Pending
+                        created_at:
+                          type: string
+                          format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Spare Part Requests
+      summary: Create a spare part request
+      description: |
+        Creates a spare part request linked to exactly one ticket context:
+        either a fault ticket or a service ticket.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - type: object
+                  required:
+                    - items
+                  properties:
+                    fault_ticket_id:
+                      type: integer
+                      nullable: true
+                      example: 128
+                    service_ticket_id:
+                      type: integer
+                      nullable: true
+                      example: 22
+                    requested_by:
+                      type: integer
+                      nullable: true
+                      description: Optional; when omitted, backend derives requester from authenticated user context.
+                      example: 19
+                    ticket_id_formatted:
+                      type: string
+                      nullable: true
+                      example: "SVT-022"
+                    equipment_name:
+                      type: string
+                      nullable: true
+                      example: "Excavator X120"
+                    location:
+                      type: string
+                      nullable: true
+                      example: "Site A"
+                    priority:
+                      type: string
+                      example: high
+                    additional_notes:
+                      type: string
+                      nullable: true
+                    items:
+                      type: array
+                      minItems: 1
+                      items:
+                        type: object
+                        required:
+                          - part_code
+                          - quantity
+                        properties:
+                          part_code:
+                            type: string
+                            example: "SPR-001"
+                          part_name:
+                            type: string
+                            nullable: true
+                            example: "Hydraulic Pump"
+                          quantity:
+                            type: integer
+                            minimum: 1
+                            example: 2
+              oneOf:
+                - required: [fault_ticket_id]
+                - required: [service_ticket_id]
+      responses:
+        '200':
+          description: Spare part request created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Spare part request created successfully
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 14
+                      request_id:
+                        type: string
+                        example: "SPR-014"
+                      request_context:
+                        type: string
+                        enum: [fault_ticket, service_ticket]
+                        example: service_ticket
+                      fault_ticket_id:
+                        type: integer
+                        nullable: true
+                      service_ticket_id:
+                        type: integer
+                        nullable: true
+                      status:
+                        type: string
+                        example: Pending
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /spare-part-requests/{id}:
+    get:
+      tags:
+        - Spare Part Requests
+      summary: Get spare part request details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Request details loaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 14
+                      request_id:
+                        type: string
+                        example: "SPR-014"
+                      request_context:
+                        type: string
+                        enum: [fault_ticket, service_ticket]
+                      fault_ticket_id:
+                        type: integer
+                        nullable: true
+                      service_ticket_id:
+                        type: integer
+                        nullable: true
+                      status:
+                        type: string
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            part_code:
+                              type: string
+                            part_name:
+                              type: string
+                            quantity:
+                              type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Request not found
+
+  /spare-part-requests/ticket/{id}:
+    get:
+      tags:
+        - Spare Part Requests
+      summary: List requests by fault ticket
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Requests for fault ticket
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        request_id:
+                          type: string
+                        status:
+                          type: string
+                        fault_ticket_id:
+                          type: integer
+                        service_ticket_id:
+                          type: integer
+                          nullable: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /spare-part-requests/service-ticket/{id}:
+    get:
+      tags:
+        - Spare Part Requests
+      summary: List requests by service ticket
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Requests for service ticket
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        request_id:
+                          type: string
+                        status:
+                          type: string
+                        fault_ticket_id:
+                          type: integer
+                          nullable: true
+                        service_ticket_id:
+                          type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /spare-part-requests/{id}/approve:
+    post:
+      tags:
+        - Spare Part Requests
+      summary: Approve spare part request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reviewed_by
+              properties:
+                reviewed_by:
+                  type: integer
+                  example: 7
+                review_notes:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: Request approved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      request_id:
+                        type: string
+                      request_context:
+                        type: string
+                      fault_ticket_id:
+                        type: integer
+                        nullable: true
+                      service_ticket_id:
+                        type: integer
+                        nullable: true
+                      status:
+                        type: string
+                        example: Approved
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /spare-part-requests/{id}/reject:
+    post:
+      tags:
+        - Spare Part Requests
+      summary: Reject spare part request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reviewed_by
+              properties:
+                reviewed_by:
+                  type: integer
+                  example: 7
+                review_notes:
+                  type: string
+                  nullable: true
+      responses:
+        '200':
+          description: Request rejected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      request_id:
+                        type: string
+                      request_context:
+                        type: string
+                      fault_ticket_id:
+                        type: integer
+                        nullable: true
+                      service_ticket_id:
+                        type: integer
+                        nullable: true
+                      status:
+                        type: string
+                        example: Rejected
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /spare-part-requests/stats:
+    get:
+      tags:
+        - Spare Part Requests
+      summary: Get spare part request status counts
+      responses:
+        '200':
+          description: Request counts by status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      Pending:
+                        type: integer
+                      Approved:
+                        type: integer
+                      Rejected:
+                        type: integer
+                      Issued:
+                        type: integer
+                      total:
+                        type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /spare-part-requests/check-availability:
     post:
       tags:
@@ -3154,6 +3783,33 @@ components:
           example:
             status: error
             message: "Access denied. Admin role required."
+
+    TooManyRequests:
+      description: Too many requests - Rate limit exceeded
+      headers:
+        Retry-After:
+          description: Seconds to wait before retrying
+          schema:
+            type: integer
+            example: 900
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status:
+                type: string
+                enum: [error]
+                example: error
+              message:
+                type: string
+                example: "Too many login attempts. Please try again later."
+              errors:
+                type: object
+                properties:
+                  retry_after_seconds:
+                    type: integer
+                    example: 900
 
     NotFound:
       description: Not found - Resource does not exist
@@ -5006,6 +5662,415 @@ components:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  # ==================== SERVICE TICKETS ====================
+  /service-tickets/technicians:
+    get:
+      tags:
+        - Service Tickets
+      summary: List Technical Officers for assignment
+      description: |
+        Returns active Technical Officers and their active ticket workload.
+        Accessible to Maintenance Manager, Supervisor, and Admin roles.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Technicians retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /service-tickets/stats:
+    get:
+      tags:
+        - Service Tickets
+      summary: Get service ticket status summary
+      description: |
+        Returns service ticket counters grouped by status.
+        Technical Officer responses are automatically scoped to their queue
+        (tickets assigned to them plus unassigned tickets).
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Service ticket stats retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/ServiceTicketStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /service-tickets:
+    get:
+      tags:
+        - Service Tickets
+      summary: List service tickets
+      description: |
+        Returns service tickets with filter support for status, asset type, assignee, and free-text search.
+        Technical Officer responses are automatically scoped to their queue
+        (tickets assigned to them plus unassigned tickets).
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [Pending Assignment, Assigned, In Progress, Completed, Cancelled]
+        - name: asset_type
+          in: query
+          schema:
+            type: string
+            enum: [vehicle, machine]
+        - name: assigned_to
+          in: query
+          schema:
+            type: integer
+        - name: reported_by
+          in: query
+          schema:
+            type: integer
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [created, priority, scheduled_date]
+        - name: sort_dir
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+      responses:
+        '200':
+          description: Service tickets retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      tickets:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ServiceTicket'
+                      counts:
+                        $ref: '#/components/schemas/ServiceTicketStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Service Tickets
+      summary: Create service ticket
+      description: Create a new service ticket. Allowed for Maintenance Manager and Admin roles.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceTicketCreateInput'
+      responses:
+        '201':
+          description: Service ticket created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  message:
+                    type: string
+                    example: Service ticket created successfully
+                  data:
+                    $ref: '#/components/schemas/ServiceTicket'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /service-tickets/{id}:
+    get:
+      tags:
+        - Service Tickets
+      summary: Get service ticket by ID
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Service ticket retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/ServiceTicket'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Service Tickets
+      summary: Update service ticket
+      description: Update assignment, schedule, priority, and notes. Allowed for Maintenance Manager and Admin roles.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceTicketUpdateInput'
+      responses:
+        '200':
+          description: Service ticket updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/ServiceTicket'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /service-tickets/{id}/start:
+    post:
+      tags:
+        - Service Tickets
+      summary: Start service ticket work
+      description: |
+        Move an assigned service ticket into In Progress.
+        Technical Officers must provide an expected completion date when starting work.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceTicketStartInput'
+      responses:
+        '200':
+          description: Service ticket moved to In Progress
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/ServiceTicket'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /service-tickets/{id}/complete:
+    post:
+      tags:
+        - Service Tickets
+      summary: Complete service ticket
+      description: |
+        Mark a service ticket as completed and persist service/warranty changes on the linked asset.
+        Completion payload can include component-level comments for detailed service reporting.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceTicketCompletionInput'
+      responses:
+        '200':
+          description: Service ticket completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/ServiceTicket'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /service-tickets/warranty/{assetType}/{assetId}:
+    post:
+      tags:
+        - Service Tickets
+      summary: Update asset warranty status
+      description: |
+        Updates warranty status for a machine or vehicle.
+        Allowed for Maintenance Manager and Admin roles.
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: assetType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [vehicle, machine]
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WarrantyStatusUpdateInput'
+      responses:
+        '200':
+          description: Warranty status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    oneOf:
+                      - $ref: '#/components/schemas/Vehicle'
+                      - $ref: '#/components/schemas/Machine'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   # ==================== TICKET WORK UPDATES ====================
   /ticket-work-updates:
     post:
@@ -5682,6 +6747,27 @@ components:
           format: date
         warranty_provider:
           type: string
+        warranty_status:
+          type: string
+          enum: [Active, Expired, Voided]
+        warranty_void_reason:
+          type: string
+          nullable: true
+        warranty_status:
+          type: string
+          enum: [Active, Expired, Voided]
+          description: Warranty lifecycle state.
+        warranty_void_reason:
+          type: string
+          nullable: true
+          description: Recorded when warranty is voided.
+        warranty_voided_at:
+          type: string
+          format: date-time
+          nullable: true
+        warranty_voided_by:
+          type: integer
+          nullable: true
         insurance_type:
           type: string
           enum: [Full, Third-Party]
@@ -5776,6 +6862,25 @@ components:
           format: date
         warranty_provider:
           type: string
+        warranty_status:
+          type: string
+          enum: [Active, Expired, Voided]
+        warranty_void_reason:
+          type: string
+          nullable: true
+        warranty_status:
+          type: string
+          enum: [Active, Expired, Voided]
+        warranty_void_reason:
+          type: string
+          nullable: true
+        warranty_voided_at:
+          type: string
+          format: date-time
+          nullable: true
+        warranty_voided_by:
+          type: integer
+          nullable: true
         insurance_type:
           type: string
           enum: [Full, Third-Party]
@@ -6012,6 +7117,297 @@ components:
           description: List of vehicle components
         notes:
           type: string
+
+    ServiceTicket:
+      type: object
+      properties:
+        id:
+          type: integer
+        service_ticket_id:
+          type: string
+          example: SVT-001
+        asset_type:
+          type: string
+          enum: [vehicle, machine]
+        asset_id:
+          type: integer
+        asset_code:
+          type: string
+          nullable: true
+        asset_name:
+          type: string
+          nullable: true
+        asset_reference:
+          type: string
+          nullable: true
+        asset_model:
+          type: string
+          nullable: true
+        asset_warranty_expiry:
+          type: string
+          format: date
+          nullable: true
+        asset_warranty_status:
+          type: string
+          enum: [Active, Expired, Voided]
+          nullable: true
+        asset_warranty_provider:
+          type: string
+          nullable: true
+        asset_components:
+          type: array
+          description: Normalized list of asset component labels captured on the linked machine/vehicle.
+          items:
+            type: string
+        title:
+          type: string
+        description:
+          type: string
+        service_type:
+          type: string
+          example: Preventive Maintenance
+        priority:
+          type: string
+          enum: [Low, Medium, High, Critical]
+        status:
+          type: string
+          enum: [Pending Assignment, Assigned, In Progress, Completed, Cancelled]
+        scheduled_date:
+          type: string
+          format: date
+          nullable: true
+          description: Expected completion date for the service ticket.
+        reported_by:
+          type: integer
+        reported_by_name:
+          type: string
+          nullable: true
+        assigned_to:
+          type: integer
+          nullable: true
+        assigned_to_name:
+          type: string
+          nullable: true
+        assigned_by:
+          type: integer
+          nullable: true
+        assigned_by_name:
+          type: string
+          nullable: true
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        completion_notes:
+          type: string
+          nullable: true
+          description: Overall asset status notes captured when service is completed.
+        component_comments:
+          type: array
+          nullable: true
+          description: Component-level findings captured in the completion report.
+          items:
+            $ref: '#/components/schemas/ServiceTicketComponentComment'
+        maintenance_notes:
+          type: string
+          nullable: true
+        estimated_cost:
+          type: number
+          format: float
+          nullable: true
+        actual_cost:
+          type: number
+          format: float
+          nullable: true
+        next_service_date:
+          type: string
+          format: date
+          nullable: true
+        service_meter_reading:
+          type: integer
+          nullable: true
+        warranty_action:
+          type: string
+          enum: [none, covered, voided]
+        warranty_void_reason:
+          type: string
+          nullable: true
+        warranty_voided_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ServiceTicketStats:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 25
+        pending_assignment:
+          type: integer
+          example: 4
+        assigned:
+          type: integer
+          example: 8
+        in_progress:
+          type: integer
+          example: 6
+        completed:
+          type: integer
+          example: 7
+        cancelled:
+          type: integer
+          example: 0
+
+    ServiceTicketCreateInput:
+      type: object
+      required:
+        - asset_type
+        - asset_id
+        - description
+        - service_type
+      properties:
+        asset_type:
+          type: string
+          enum: [vehicle, machine]
+        asset_id:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+          nullable: true
+        description:
+          type: string
+        service_type:
+          type: string
+          example: Breakdown Repair
+        priority:
+          type: string
+          enum: [Low, Medium, High, Critical]
+          default: Medium
+        scheduled_date:
+          type: string
+          format: date
+          nullable: true
+          description: Expected completion date targeted by maintenance planning.
+        assigned_to:
+          type: integer
+          nullable: true
+        maintenance_notes:
+          type: string
+          nullable: true
+        estimated_cost:
+          type: number
+          format: float
+          nullable: true
+
+    ServiceTicketUpdateInput:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        service_type:
+          type: string
+        priority:
+          type: string
+          enum: [Low, Medium, High, Critical]
+        status:
+          type: string
+          enum: [Pending Assignment, Assigned, In Progress, Completed, Cancelled]
+        scheduled_date:
+          type: string
+          format: date
+          nullable: true
+          description: Expected completion date targeted by maintenance planning.
+
+    ServiceTicketStartInput:
+      type: object
+      properties:
+        expected_completion_date:
+          type: string
+          format: date
+          nullable: true
+          description: Required for Technical Officers when starting service work.
+        assigned_to:
+          type: integer
+          nullable: true
+        maintenance_notes:
+          type: string
+          nullable: true
+        estimated_cost:
+          type: number
+          format: float
+          nullable: true
+
+    ServiceTicketCompletionInput:
+      type: object
+      required:
+        - completion_notes
+      properties:
+        completion_notes:
+          type: string
+          description: Overall asset status notes for the completed service operation.
+        component_comments:
+          type: array
+          nullable: true
+          description: Individual component comments captured during completion.
+          items:
+            $ref: '#/components/schemas/ServiceTicketComponentComment'
+        actual_cost:
+          type: number
+          format: float
+          nullable: true
+        next_service_date:
+          type: string
+          format: date
+          nullable: true
+        service_meter_reading:
+          type: integer
+          nullable: true
+        warranty_action:
+          type: string
+          enum: [none, covered, voided]
+          default: none
+        warranty_void_reason:
+          type: string
+          nullable: true
+
+    ServiceTicketComponentComment:
+      type: object
+      required:
+        - comment
+      properties:
+        component:
+          type: string
+          nullable: true
+          example: Hydraulic Pump
+        comment:
+          type: string
+          example: Replaced leaking seal and restored pressure to operating range.
+
+    WarrantyStatusUpdateInput:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [Active, Expired, Voided]
+        reason:
+          type: string
+          nullable: true
 
     Trip:
       type: object

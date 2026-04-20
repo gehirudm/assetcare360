@@ -30,7 +30,7 @@ if (!empty($allowedOrigin)) {
     header('Access-Control-Allow-Origin: *');
 }
 header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-CSRF-Token');
 header('Vary: Origin'); // Important for caching
 
 // Handle preflight requests
@@ -79,6 +79,7 @@ require_once __DIR__ . '/../app/controllers/MachineBreakdownController.php';
 require_once __DIR__ . '/../app/controllers/TecFaultRepairTicketController.php';
 require_once __DIR__ . '/../app/controllers/SparePartRequestController.php';
 require_once __DIR__ . '/../app/controllers/NotificationController.php';
+require_once __DIR__ . '/../app/controllers/ServiceTicketController.php';
 
 // Initialize request logger
 $requestLogger = new RequestLogger();
@@ -88,10 +89,12 @@ $router = new Router();
 
 // Define routes
 // Authentication routes
+$router->get('/auth/csrf', 'AuthController', 'csrfToken');
 $router->post('/auth/login', 'AuthController', 'login');
 $router->post('/auth/logout', 'AuthController', 'logout');
 $router->get('/auth/me', 'AuthController', 'me');
 $router->get('/auth/profile', 'AuthController', 'getProfile');
+$router->get('/auth/login-activities', 'AuthController', 'getLoginActivities');
 $router->put('/auth/profile', 'AuthController', 'updateProfile');
 $router->post('/auth/change-password', 'AuthController', 'changePassword');
 $router->get('/auth/validate', 'AuthController', 'validateToken');
@@ -306,11 +309,23 @@ $router->patch('/tec-repair-tickets/:id/status', 'TecFaultRepairTicketController
 $router->get('/spare-part-requests/stats', 'SparePartRequestController', 'stats');
 $router->post('/spare-part-requests/check-availability', 'SparePartRequestController', 'checkAvailability');
 $router->get('/spare-part-requests/ticket/:id', 'SparePartRequestController', 'getByTicket');
+$router->get('/spare-part-requests/service-ticket/:id', 'SparePartRequestController', 'getByServiceTicket');
 $router->get('/spare-part-requests', 'SparePartRequestController', 'index');
 $router->get('/spare-part-requests/:id', 'SparePartRequestController', 'show');
 $router->post('/spare-part-requests', 'SparePartRequestController', 'create');
 $router->post('/spare-part-requests/:id/approve', 'SparePartRequestController', 'approve');
 $router->post('/spare-part-requests/:id/reject', 'SparePartRequestController', 'reject');
+
+// Service ticket routes (Maintenance Manager and Technical Officer)
+$router->get('/service-tickets/technicians', 'ServiceTicketController', 'technicians');
+$router->get('/service-tickets/stats', 'ServiceTicketController', 'stats');
+$router->get('/service-tickets', 'ServiceTicketController', 'index');
+$router->post('/service-tickets', 'ServiceTicketController', 'create');
+$router->get('/service-tickets/:id', 'ServiceTicketController', 'show');
+$router->put('/service-tickets/:id', 'ServiceTicketController', 'update');
+$router->post('/service-tickets/:id/start', 'ServiceTicketController', 'start');
+$router->post('/service-tickets/:id/complete', 'ServiceTicketController', 'complete');
+$router->post('/service-tickets/warranty/:assetType/:assetId', 'ServiceTicketController', 'updateWarranty');
 
 // Dispatch the request
 try {

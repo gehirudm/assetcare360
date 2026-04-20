@@ -4,6 +4,8 @@
  */
 
 const API = {
+    csrfToken: null,
+
     /**
      * Make an authenticated API request
      */
@@ -85,6 +87,29 @@ const API = {
             method: 'POST',
             body: JSON.stringify(data)
         });
+    },
+
+    /**
+     * Fetch and cache CSRF token for protected auth requests.
+     */
+    async getCsrfToken(forceRefresh = false) {
+        if (this.csrfToken && !forceRefresh) {
+            return this.csrfToken;
+        }
+
+        const response = await this.request('/auth/csrf', {
+            method: 'GET',
+            skipAuth: true,
+            skipAuthRedirect: true
+        });
+
+        const token = response?.data?.csrf_token;
+        if (response?.status !== 'success' || !token) {
+            throw new Error(response?.message || 'Failed to fetch CSRF token');
+        }
+
+        this.csrfToken = token;
+        return this.csrfToken;
     },
     
     /**
