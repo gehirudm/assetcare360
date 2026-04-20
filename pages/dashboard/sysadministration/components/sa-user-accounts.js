@@ -249,26 +249,135 @@ class SAUserAccounts extends HTMLElement {
 
     async loadUsers(filters = {}) {
         try {
-            const params = new URLSearchParams();
-            if (filters.search) params.append('search', filters.search);
-            if (filters.role) params.append('role', filters.role);
-            if (filters.status) {
-                params.append('is_active', filters.status === 'active' ? '1' : '0');
-            }
+            const pageSize = 100;
+            let page = 1;
+            let totalPages = 1;
+            const collectedUsers = [];
 
-            const endpoint = params.toString() ? `/users?${params.toString()}` : '/users';
-            const response = await API.get(endpoint);
+            do {
+                const params = new URLSearchParams();
+                params.append('page', String(page));
+                params.append('limit', String(pageSize));
+                if (filters.search) params.append('search', filters.search);
+                if (filters.role) params.append('role', filters.role);
+                if (filters.status) {
+                    params.append('is_active', filters.status === 'active' ? '1' : '0');
+                }
 
-            if (response.status === 'success' && response.data) {
-                this.currentUsers = response.data.users || [];
-                this.renderUsers(this.currentUsers);
-            } else {
-                Utils.showToast('Failed to load users', 'error');
-            }
+                const endpoint = `/users?${params.toString()}`;
+                const response = await API.get(endpoint);
+
+                if (!response || response.status !== 'success') {
+                    throw new Error(response?.message || 'Failed to load users');
+                }
+
+                const users = this.extractUsersFromResponse(response);
+                collectedUsers.push(...users);
+
+                const totalPagesValue = Number.parseInt(
+                    response.data?.pagination?.pages
+                        ?? response.data?.pagination?.total_pages
+                        ?? '1',
+                    10
+                );
+                totalPages = Number.isFinite(totalPagesValue) && totalPagesValue > 0 ? totalPagesValue : 1;
+                page += 1;
+
+                if (users.length === 0) {
+                    break;
+                }
+            } while (page <= totalPages);
+
+            this.currentUsers = this.dedupeUsersById(collectedUsers);
+            this.renderUsers(this.currentUsers);
         } catch (error) {
             console.error('Error loading users:', error);
-            Utils.showToast('Error loading users. Please try again.', 'error');
+            this.currentUsers = [];
+            this.renderUsers([]);
+            Utils.showToast(error?.message || 'Error loading users. Please try again.', 'error');
         }
+    }
+
+    extractUsersFromResponse(response) {
+        if (!response) {
+            return [];
+        }
+
+        if (Array.isArray(response.data?.users)) {
+            return response.data.users;
+        }
+
+        if (Array.isArray(response.data)) {
+            return response.data;
+        }
+
+        if (Array.isArray(response.users)) {
+            return response.users;
+        }
+
+        return [];
+    }
+
+    dedupeUsersById(users) {
+        const seen = new Set();
+
+        return (Array.isArray(users) ? users : []).filter((user) => {
+            const key = String(user?.id ?? user?.employee_id ?? '');
+            if (key === '' || seen.has(key)) {
+                return false;
+            }
+
+            seen.add(key);
+            return true;
+        });
+    }
+
+    normalizeRole(role) {
+        return String(role || '')
+            .toLowerCase()
+            .replace(/machinary/g, 'machinery')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    isRoleMatch(role) {
+        if (this.currentRoleFilter === 'all') {
+            return true;
+        }
+
+        return this.normalizeRole(role) === this.normalizeRole(this.currentRoleFilter);
+    }
+
+    isUserActive(user) {
+        const value = user?.is_active;
+
+        if (typeof value === 'boolean') {
+            return value;
+        }
+
+        if (value === null || value === undefined || value === '') {
+            return true;
+        }
+
+        if (typeof value === 'number') {
+            return value === 1;
+        }
+
+        const normalized = String(value).toLowerCase().trim();
+        if (['1', 'true', 'active', 'yes'].includes(normalized)) {
+            return true;
+        }
+
+        if (['0', 'false', 'inactive', 'no'].includes(normalized)) {
+            return false;
+        }
+
+        const parsed = Number.parseInt(normalized, 10);
+        if (Number.isFinite(parsed)) {
+            return parsed === 1;
+        }
+
+        return true;
     }
 
     renderUsers(users) {
@@ -291,8 +400,11 @@ class SAUserAccounts extends HTMLElement {
             userCount.textContent = `${users.length} user${users.length !== 1 ? 's' : ''}`;
         }
 
-        userList.innerHTML = users.map((user) => `
-            <div class="user-item inventory-item" data-role="${user.role}" data-status="${user.is_active ? 'active' : 'inactive'}">
+        userList.innerHTML = users.map((user) => {
+            const isActive = this.isUserActive(user);
+
+            return `
+            <div class="user-item inventory-item" data-role="${user.role}" data-status="${isActive ? 'active' : 'inactive'}">
                 <div class="item-details">
                     <strong><i class="fas fa-user"></i> ${user.full_name}</strong>
                     <div class="item-meta">
@@ -301,7 +413,7 @@ class SAUserAccounts extends HTMLElement {
                         ${user.role === 'Technical Officer' ? `| <i class="fas fa-wrench"></i> ${user.technical_expertise || 'General'}` : ''}
                     </div>
                     <div class="item-description">
-                        <span class="status-text ${user.is_active ? 'status-active' : 'status-inactive'}">${user.is_active ? 'Active' : 'Inactive'}</span> |
+                        <span class="status-text ${isActive ? 'status-active' : 'status-inactive'}">${isActive ? 'Active' : 'Inactive'}</span> |
                         <i class="fas fa-envelope"></i> ${user.email}
                     </div>
                 </div>
@@ -321,7 +433,7 @@ class SAUserAccounts extends HTMLElement {
                                 <button class="dropdown-item" type="button" data-action="reset-password" data-user-id="${user.id}">
                                     <i class="fas fa-key"></i> Reset Password
                                 </button>
-                                ${user.is_active
+                                ${isActive
                                     ? `<button class="dropdown-item" type="button" data-action="suspend-user" data-user-id="${user.id}"><i class="fas fa-ban"></i> Suspend</button>`
                                     : `<button class="dropdown-item" type="button" data-action="activate-user" data-user-id="${user.id}"><i class="fas fa-check-circle"></i> Activate</button>`
                                 }
@@ -333,7 +445,8 @@ class SAUserAccounts extends HTMLElement {
                     </div>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
 
         this.applyFilters();
     }
@@ -655,7 +768,7 @@ class SAUserAccounts extends HTMLElement {
         users.forEach((user) => {
             const userRole = user.getAttribute('data-role');
             const userStatus = user.getAttribute('data-status');
-            const roleMatch = this.currentRoleFilter === 'all' || userRole === this.currentRoleFilter;
+            const roleMatch = this.isRoleMatch(userRole);
             const statusMatch = !statusFilter || userStatus === statusFilter;
             const searchMatch = !searchValue || user.textContent.toLowerCase().includes(searchValue);
             const visible = roleMatch && statusMatch && searchMatch;
@@ -667,7 +780,7 @@ class SAUserAccounts extends HTMLElement {
         });
 
         if (userListDiv) {
-            userListDiv.style.display = visibleCount === 0 ? 'none' : 'block';
+            userListDiv.style.display = visibleCount === 0 ? 'none' : '';
         }
 
         if (noUsersMessage) {

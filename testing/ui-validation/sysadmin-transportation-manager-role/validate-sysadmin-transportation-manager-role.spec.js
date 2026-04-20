@@ -47,6 +47,19 @@ function buildUsers() {
             created_at: '2026-01-10 09:00:00',
             updated_at: '2026-04-01 09:00:00',
         },
+        {
+            id: 4,
+            full_name: 'Transport Manager Inactive',
+            employee_id: 'LITRO-TRANSPORT-002',
+            email: 'tm2@assetcare360.test',
+            phone: '+94770000019',
+            role: 'Transportation Manager',
+            technical_expertise: null,
+            is_active: '0',
+            require_password_change: 0,
+            created_at: '2026-01-18 09:00:00',
+            updated_at: '2026-04-01 09:00:00',
+        },
     ];
 }
 
@@ -211,6 +224,7 @@ async function runFlow(page, viewportName) {
     await expect(page.locator('#editUserModal')).not.toBeVisible({ timeout: 15000 });
 
     let visibleUsersAfterFilter = null;
+    let visibleInactiveTransportationUsers = null;
     if (filterHasTransportation) {
         await page.locator('#userFilterTabs [data-role-filter="Transportation Manager"]').click();
 
@@ -220,6 +234,16 @@ async function runFlow(page, viewportName) {
                 return style.display !== 'none' && style.visibility !== 'hidden';
             }).length
         );
+
+        await page.selectOption('#statusFilter', 'inactive');
+        visibleInactiveTransportationUsers = await page.$$eval('#userList .user-item', (rows) =>
+            rows.filter((row) => {
+                const style = window.getComputedStyle(row);
+                return style.display !== 'none' && style.visibility !== 'hidden';
+            }).length
+        );
+
+        await page.selectOption('#statusFilter', '');
     }
 
     if (STAGE === 'after') {
@@ -227,6 +251,7 @@ async function runFlow(page, viewportName) {
         expect(editHasTransportation).toBeTruthy();
         expect(filterHasTransportation).toBeTruthy();
         expect((visibleUsersAfterFilter || 0) > 0).toBeTruthy();
+        expect((visibleInactiveTransportationUsers || 0) > 0).toBeTruthy();
     }
 
     let ariaSnapshot = '';
@@ -247,6 +272,7 @@ async function runFlow(page, viewportName) {
         createHasTransportation,
         editHasTransportation,
         visibleUsersAfterFilter,
+        visibleInactiveTransportationUsers,
         createRoleOptionsCount: createRoleOptions.length,
         editRoleOptionsCount: editRoleOptions.length,
     };
