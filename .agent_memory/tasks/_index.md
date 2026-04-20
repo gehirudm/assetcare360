@@ -2,15 +2,33 @@
 
 ## In Progress
 - [TASK003] Run Migration 047 and Update OpenAPI Spec
-- [TASK037] Supervisor Script Monolith Final Decomposition - Ticket-detail flow uses actor-specific components; breakdown actions follow unified ticket-flow create-or-open behavior; Technician Assignment section removed and active fault-ticket-tracking now owns source filtering + newest-first ordering + route status formatting; list map actions removed and route map context embedded in detail view; latest supervisor detail-page garage-approval modal centering/map-selection regression fixed, and missing driver vehicle breakdown feed restored in active list with desktop/mobile validation pass (broader decomposition pending)
-- [TASK038] Technical Officer Script Monolith Final Decomposition - TO ticket detail flow now uses actor-specific component and direct view-ticket navigation; shared view-ticket Request Spare Parts and Finish Work modal/logic now aligned to TO list flow with focused before/after desktop/mobile validation suites passing; broader decomposition pending
+- [TASK037] Supervisor Script Monolith Final Decomposition - Ticket-detail flow uses actor-specific components; breakdown actions follow unified ticket-flow create-or-open behavior; active fault-ticket-tracking owns source filtering + newest-first ordering + route status formatting; shared modal hydration/budget guard hotfixes landed; shared `partsModal` card-visibility structure fix plus Supervisor ticket-detail fallback/style-cleanup fix are applied to keep View flow reliable and prevent post-detail button enlargement; embedded detail Assign Technician now reuses `supervisor-assign-ticket-modal` from list flow and assign-modal geometry parity is restored across list/detail triggers; latest follow-up normalizes route issue/location mapping so detail-triggered garage approval metadata matches list flow (broader decomposition pending)
+- [TASK038] Technical Officer Script Monolith Final Decomposition - TO ticket detail flow uses actor-specific component + direct view-ticket navigation; shared view-ticket Request Spare Parts and Finish Work parity work is complete; latest hotfixes include modal-node hydration, budget DOM hardening, dashboard toast fallback, and shared `partsModal` structure repair verified by focused Playwright pass (broader decomposition pending)
+- [TASK081] Driver Breakdown Detail Form Clarity - Refactor Driver ticket-tracking breakdown details modal (RBD/VBD) into clearer machinery-style form sections/rows; preserve workflow + garage data and validate desktop/mobile behavior
 
 ## Pending
 - _(none)_
 
 ## Completed
-- [TASK058] Block Driver Unassign When Active Trip Exists - Completed on 2026-04-19
-- [TASK057] Fix TM Assign-Driver Availability Labeling - Completed on 2026-04-19
+- [TASK080] Reset Route Breakdown Sequence and Unify Supervisor View-Ticket Garage Approval Form - Completed on 2026-04-20
+- [TASK079] Fix Route Breakdown ID Reuse and Purge RBD Data - Completed on 2026-04-20
+- [TASK078] Prune In-Route Breakdown Reports Data to One Resolved Record - Completed on 2026-04-20
+- [TASK077] Fix Route Breakdown Create 500 on Linked Ticket Validation - Completed on 2026-04-20 (follow-up schema-safe hardening completed same day)
+- [TASK076] Restore Route Breakdown Garage Workflow Continuity - Completed on 2026-04-20
+- [TASK075] Fix Ticket-Detail Return Button Size Bleed Across Dashboards - Completed on 2026-04-20
+- [TASK074] Fix Supervisor Nearby Garage Modal In Ticket Detail - Completed on 2026-04-20
+- [TASK073] Fix Supervisor View-Ticket Vehicle Details Rendering - Completed on 2026-04-20
+- [TASK072] Prevent Duplicate Active Route Breakdown Tickets Per Vehicle - Completed on 2026-04-20
+- [TASK071] Fix Driver In-Route Breakdown False Success Toast and Transaction Error - Completed on 2026-04-20
+- [TASK070] Enable workflow recovery after spare-part rejection - Completed on 2026-04-20
+- [TASK069] Fix Maintenance Manager budget approval internal server error - Completed on 2026-04-20
+- [TASK068] Fix Inventory spare-part reject status and remove view-modal actions - Completed on 2026-04-20
+- [TASK067] Inventory Vehicle Insurance Real-Data Mapping Fix - Completed on 2026-04-19
+- [TASK066] Spare Part Approval Insufficient Stock Blocking - Completed on 2026-04-19
+- [TASK065] Inventory Orders Approvals Modal Form Rendering Fix - Completed on 2026-04-19 (follow-up view-form alignment + light-blue background cleanup + approve-form parity for spare-parts request view completed on 2026-04-20)
+- [TASK064] SysAdmin User Accounts List and Filter Fix - Completed on 2026-04-19
+- [TASK063] Optional Insurance and Remove Last Service Date in Asset Add - Completed on 2026-04-19
+- [TASK062] Driver Insurance-Claim Status and Supervisor Assignment Option - Completed on 2026-04-19
 - [TASK054] Resolve Rebase Conflicts for Ticket-Detail Dashboard Stack - Completed on 2026-04-19
 - [TASK061] Add Machinery Operator Single-Page Analytics Hub Charts - Completed on 2026-04-19
 - [TASK060] Add Inventory Manager Single-Page Analytics Hub Charts - Completed on 2026-04-19
