@@ -2,7 +2,7 @@
 
 **Status:** In Progress  
 **Added:** April 14, 2026  
-**Updated:** April 18, 2026
+**Updated:** April 19, 2026
 
 ## Original Request
 Supervisor and technical officer JS scripts are still monolithic. Analyze them and figure out why, and create tasks to address those issues via proper refactoring.
@@ -32,7 +32,7 @@ High-level audit shows `pages/dashboard/technical-officer/script.js` is still la
 
 ## Progress Tracking
 
-**Overall Status:** In Progress - 45%
+**Overall Status:** In Progress - 50%
 
 ### Subtasks
 | ID | Description | Status | Updated | Notes |
@@ -40,7 +40,7 @@ High-level audit shows `pages/dashboard/technical-officer/script.js` is still la
 | 38.1 | TO ownership audit and decomposition map | Not Started | April 14, 2026 | Identify all remaining parent-owned section/modal logic |
 | 38.2 | Legacy TO modal extraction to page-modals | Not Started | April 14, 2026 | Remove page-level modal markup and inline handlers |
 | 38.3 | Ticket workflow migration to components | In Progress | April 18, 2026 | TO ticket detail flow now uses actor-specific `to-ticket-detail-view` component that opens standalone view-ticket page directly (no iframe) with role override + return path, preserving existing view-ticket UI. Shared `pages/view-ticket` Request Spare Parts modal + submit flow and Finish Work modal + resolve workflow are now aligned with TO dashboard list modal semantics and payload contract. |
-| 38.4 | Parent script cleanup and bootstrap consolidation | Not Started | April 14, 2026 | Keep only orchestration responsibilities |
+| 38.4 | Parent script cleanup and bootstrap consolidation | In Progress | April 19, 2026 | Removed TO Asset Feedback section bindings and section mount from main shell/index and parent script event wiring. |
 | 38.5 | Validation and regression guard | In Progress | April 18, 2026 | Updated TO routing assertions for direct detail-page navigation/back-return flow and revalidated desktop/mobile after removing shared iframe host files. Added focused TO request-spare-parts and finish-work validation suites with before/after desktop/mobile passes (`2/2` each stage per suite). |
 
 ## Progress Log
@@ -68,3 +68,11 @@ High-level audit shows `pages/dashboard/technical-officer/script.js` is still la
 - Replaced shared `pages/view-ticket` complete modal with TO fault-ticket list Finish Work modal structure (ticket ID, parts-used checklist, time spent, machine update description).
 - Updated shared `submitComplete` workflow in `pages/view-ticket/script.js` to mirror TO list behavior by creating a ticket work update (`POST /ticket-work-updates`) and then resolving the ticket (`PUT /fault-tickets/{id}` with `status: Resolved` and `resolution_notes`).
 - Added focused validation spec `testing/ui-validation/to-finish-work-modal/validate-to-finish-work-modal.spec.js` and executed both `VAL_STAGE=before` and `VAL_STAGE=after` runs with desktop/mobile pass (`2/2` each), zero console warnings/errors, and zero failed requests.
+
+### April 19, 2026
+- Removed Technical Officer `Asset Feedback` section from dashboard shell and sidebar navigation:
+	- Updated `pages/dashboard/technical-officer/index.html` to remove feedback nav item, section host, and feedback component script include.
+	- Updated `pages/dashboard/technical-officer/components/layout/sidebar/script.js` default nav to remove feedback entry.
+	- Updated `pages/dashboard/technical-officer/script.js` to remove `bindTOFeedback` wiring and add legacy `?section=feedback` normalization fallback to `dashboard`.
+- Validation evidence:
+	- `VAL_STAGE=after npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js --reporter=line` -> passed (2/2).
