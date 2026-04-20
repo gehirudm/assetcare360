@@ -191,6 +191,20 @@ class SparePartRequestService {
             $db = Database::getInstance()->getConnection();
             $db->beginTransaction();
 
+            $items = $this->itemModel->getByRequestId($id);
+            $stockValidation = $this->validateApprovalStockAvailability($db, $items);
+
+            if (!empty($stockValidation['unavailable_items'])) {
+                $db->rollBack();
+                return [
+                    'status' => 'error',
+                    'message' => 'Cannot approve request. Insufficient stock for one or more requested spare parts.',
+                    'data' => [
+                        'unavailable_items' => $stockValidation['unavailable_items']
+                    ]
+                ];
+            }
+
             // Update request status to Approved
             $this->requestModel->update($id, [
                 'status' => SparePartRequest::STATUS_APPROVED,
@@ -199,25 +213,16 @@ class SparePartRequestService {
                 'reviewed_at' => date('Y-m-d H:i:s')
             ]);
 
-            // Deduct stock for each approved item and update last_issue_date
-            $items = $this->itemModel->getByRequestId($id);
-            foreach ($items as $item) {
-                if (!empty($item['part_code'])) {
-                    $product = $this->productModel->findOne([
-                        'sparepart_id' => $item['part_code'],
-                        'is_active'    => 1
-                    ]);
-                    if ($product) {
-                        $this->productModel->updateQuantity(
-                            $product['id'],
-                            (int)$item['quantity'],
-                            'subtract'
-                        );
-                        $this->productModel->update($product['id'], [
-                            'last_issue_date' => date('Y-m-d')
-                        ]);
-                    }
-                }
+            // Deduct stock once per part code after validated availability.
+            $deductionStmt = $db->prepare('UPDATE `spareparts` SET quantity = quantity - ?, last_issue_date = ? WHERE id = ?');
+            $issueDate = date('Y-m-d');
+
+            foreach ($stockValidation['deductions'] as $deduction) {
+                $deductionStmt->execute([
+                    $deduction['requested_qty'],
+                    $issueDate,
+                    $deduction['product_id']
+                ]);
             }
 
             $this->workflowService->syncTicketStatus((int) $request['fault_ticket_id']);
@@ -238,7 +243,7 @@ class SparePartRequestService {
                 ]
             ];
         } catch (Exception $e) {
-            if (isset($db)) {
+            if (isset($db) && $db->inTransaction()) {
                 $db->rollBack();
             }
             error_log("Error approving spare part request: " . $e->getMessage());
@@ -286,6 +291,97 @@ class SparePartRequestService {
             error_log("Error rejecting spare part request: " . $e->getMessage());
             return ['status' => 'error', 'message' => 'Failed to reject request: ' . $e->getMessage()];
         }
+    }
+
+    /**
+     * Validate and lock stock rows before approving a request.
+     * Returns stock deductions and unavailable item list.
+     */
+    private function validateApprovalStockAvailability($db, $items) {
+        $requestedByCode = [];
+        $unavailableItems = [];
+
+        foreach ($items as $item) {
+            $partCode = trim((string) ($item['part_code'] ?? ''));
+            $partName = $item['part_name'] ?? $partCode;
+            $requestedQty = isset($item['quantity']) ? (int) $item['quantity'] : 1;
+            if ($requestedQty < 1) {
+                $requestedQty = 1;
+            }
+
+            if ($partCode === '') {
+                $unavailableItems[] = [
+                    'part_code' => '',
+                    'part_name' => $partName,
+                    'status' => 'invalid',
+                    'available_qty' => 0,
+                    'requested_qty' => $requestedQty,
+                    'message' => 'Part code is missing in the request item.'
+                ];
+                continue;
+            }
+
+            if (!isset($requestedByCode[$partCode])) {
+                $requestedByCode[$partCode] = [
+                    'part_code' => $partCode,
+                    'part_name' => $partName,
+                    'requested_qty' => 0
+                ];
+            }
+
+            $requestedByCode[$partCode]['requested_qty'] += $requestedQty;
+        }
+
+        $deductions = [];
+        $lookupStmt = $db->prepare('SELECT id, name, quantity FROM `spareparts` WHERE sparepart_id = ? AND is_active = 1 LIMIT 1 FOR UPDATE');
+
+        foreach ($requestedByCode as $partCode => $requestedItem) {
+            $lookupStmt->execute([$partCode]);
+            $product = $lookupStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$product) {
+                $unavailableItems[] = [
+                    'part_code' => $partCode,
+                    'part_name' => $requestedItem['part_name'],
+                    'status' => 'not_found',
+                    'available_qty' => 0,
+                    'requested_qty' => (int) $requestedItem['requested_qty'],
+                    'message' => 'Spare part not found in catalog.'
+                ];
+                continue;
+            }
+
+            $availableQty = (int) $product['quantity'];
+            $requestedQty = (int) $requestedItem['requested_qty'];
+
+            if ($availableQty < $requestedQty) {
+                $status = $availableQty === 0 ? 'out_of_stock' : 'insufficient';
+                $message = $availableQty === 0
+                    ? 'Out of stock.'
+                    : "Insufficient stock ({$availableQty} available, {$requestedQty} requested).";
+
+                $unavailableItems[] = [
+                    'part_code' => $partCode,
+                    'part_name' => $product['name'] ?? $requestedItem['part_name'],
+                    'status' => $status,
+                    'available_qty' => $availableQty,
+                    'requested_qty' => $requestedQty,
+                    'message' => $message
+                ];
+                continue;
+            }
+
+            $deductions[] = [
+                'product_id' => (int) $product['id'],
+                'part_code' => $partCode,
+                'requested_qty' => $requestedQty
+            ];
+        }
+
+        return [
+            'deductions' => $deductions,
+            'unavailable_items' => $unavailableItems
+        ];
     }
 
     /**
