@@ -78,6 +78,8 @@ function buildFixtures() {
                 breakdown_date: '2026-04-12',
                 status: 'Assigned',
                 ticket_status: 'Assigned',
+                fault_ticket_id: 901,
+                fault_ticket_number: 'VBD-901',
             },
             {
                 id: 12,
@@ -92,6 +94,8 @@ function buildFixtures() {
                 breakdown_date: '2026-04-13',
                 status: 'Pending',
                 ticket_status: 'Open',
+                fault_ticket_id: 902,
+                fault_ticket_number: 'VBD-902',
             },
         ],
         routeBreakdowns: [
@@ -109,6 +113,21 @@ function buildFixtures() {
                 description: 'Front tire puncture',
                 status: 'Resolved',
                 ticket_status: 'Resolved',
+                fault_ticket_id: 903,
+                fault_ticket_number: 'RBD-903',
+                garage_workflow_status: 'garage_approved',
+                approved_garage_name: 'Southern Fleet Garage',
+                garage_workflow: {
+                    status: 'garage_approved',
+                    approved_at: '2026-04-11T15:00:00Z',
+                    approved_by: 'Supervisor One',
+                    approval_notes: 'Nearest garage selected for quick response.',
+                    approved_garage: {
+                        id: 41,
+                        name: 'Southern Fleet Garage',
+                        address: '12 Galle Road, Exit 12',
+                    },
+                },
             },
             {
                 id: 22,
@@ -123,9 +142,67 @@ function buildFixtures() {
                 breakdown_datetime: '2026-04-10T10:00:00Z',
                 description: 'Brake pressure dropped suddenly',
                 status: 'In Progress',
-                ticket_status: 'In Progress',
+                ticket_status: 'Insurance Claimed',
+                fault_ticket_id: 904,
+                fault_ticket_number: 'RBD-904',
             },
         ],
+        ticketsById: {
+            901: {
+                id: 901,
+                ticket_id: 'VBD-901',
+                status: 'Assigned',
+                priority: 'High',
+                created_at: '2026-04-12T08:30:00Z',
+                assignments: [
+                    {
+                        technician_name: 'Technician One',
+                        assigned_at: '2026-04-12T09:00:00Z',
+                    },
+                ],
+                work_updates: [],
+            },
+            902: {
+                id: 902,
+                ticket_id: 'VBD-902',
+                status: 'Open',
+                priority: 'Low',
+                created_at: '2026-04-13T08:00:00Z',
+                assignments: [],
+                work_updates: [],
+            },
+            903: {
+                id: 903,
+                ticket_id: 'RBD-903',
+                status: 'Resolved',
+                priority: 'Medium',
+                created_at: '2026-04-11T14:30:00Z',
+                assignments: [
+                    {
+                        technician_name: 'Technician Two',
+                        assigned_at: '2026-04-11T15:30:00Z',
+                    },
+                ],
+                work_updates: [
+                    {
+                        technician_name: 'Technician Two',
+                        machine_description: 'Tire replaced and pressure tested.',
+                        parts_used: 'Front tire set',
+                        time_spent: 1.5,
+                        created_at: '2026-04-11T17:00:00Z',
+                    },
+                ],
+            },
+            904: {
+                id: 904,
+                ticket_id: 'RBD-904',
+                status: 'Insurance Claimed',
+                priority: 'Critical',
+                created_at: '2026-04-10T10:30:00Z',
+                assignments: [],
+                work_updates: [],
+            },
+        },
     };
 }
 
@@ -247,6 +324,52 @@ async function mockApi(page, fixtures) {
             });
         }
 
+        if (normalizedPath.match(/^\/route-breakdowns\/\d+$/) && method === 'GET') {
+            const id = Number.parseInt(normalizedPath.split('/').pop(), 10);
+            const breakdown = fixtures.routeBreakdowns.find((item) => Number(item.id) === id) || null;
+            return json({
+                status: breakdown ? 'success' : 'error',
+                success: Boolean(breakdown),
+                data: { breakdown },
+            }, breakdown ? 200 : 404);
+        }
+
+        if (normalizedPath.match(/^\/breakdown-reports\/\d+$/) && method === 'GET') {
+            const id = Number.parseInt(normalizedPath.split('/').pop(), 10);
+            const report = fixtures.reports.find((item) => Number(item.id) === id) || null;
+            return json({
+                status: report ? 'success' : 'error',
+                success: Boolean(report),
+                data: { report },
+            }, report ? 200 : 404);
+        }
+
+        if (normalizedPath.match(/^\/fault-tickets\/\d+$/) && method === 'GET') {
+            const id = Number.parseInt(normalizedPath.split('/').pop(), 10);
+            const ticket = fixtures.ticketsById[id] || null;
+            return json({
+                status: ticket ? 'success' : 'error',
+                success: Boolean(ticket),
+                data: ticket,
+            }, ticket ? 200 : 404);
+        }
+
+        if (normalizedPath.match(/^\/budget-reports\/ticket\/\d+$/) && method === 'GET') {
+            return json({
+                status: 'success',
+                success: true,
+                data: { reports: [] },
+            });
+        }
+
+        if (normalizedPath.match(/^\/spare-part-requests\/ticket\/\d+$/) && method === 'GET') {
+            return json({
+                status: 'success',
+                success: true,
+                data: [],
+            });
+        }
+
         if (normalizedPath === '/breakdown-reports' && method === 'POST') {
             return json({ status: 'success', success: true, data: {} });
         }
@@ -316,8 +439,46 @@ async function runFlow(page, viewportName) {
     await driverSortSelect.selectOption('created');
     await expect(page.locator('#driverTicketTrackingList .inventory-item').first()).toContainText('BR-002');
 
+    const insuranceClaimedCard = page.locator('#driverTicketTrackingList .inventory-item').filter({ hasText: 'RBR-002' }).first();
+    await expect(insuranceClaimedCard).toContainText('Insurance Claimed');
+
+    await page.locator('#ticket-tracking .filter-btn', { hasText: 'In Progress' }).click();
+    await expect(insuranceClaimedCard).toBeVisible();
+
     await page.locator('#ticket-tracking .filter-btn', { hasText: 'Pending' }).click();
     await page.locator('#ticket-tracking .filter-btn', { hasText: 'All Tickets' }).click();
+
+    const approvedRouteCard = page.locator('#driverTicketTrackingList .inventory-item').filter({ hasText: 'RBR-001' }).first();
+    await expect(approvedRouteCard).toBeVisible();
+    await approvedRouteCard.locator('button[data-action="view-breakdown"]').click();
+
+    await expect(page.locator('#breakdownDetailsModal')).toHaveClass(/active/);
+    await expect(page.locator('#trackWorkflowButton')).toBeVisible();
+    await expect(page.locator('#driverWorkflowSection')).toBeHidden();
+
+    await page.locator('#trackWorkflowButton').click();
+    await expect(page.locator('#driverWorkflowSection')).toBeVisible();
+    await expect(page.locator('#driverWorkflowSection')).toContainText('Route Breakdown Ticket Workflow (RBD)');
+    await expect(page.locator('#driverWorkflowSection')).toContainText('Supervisor Garage Approval');
+    await expect(page.locator('#driverWorkflowSection')).toContainText('Approved Garage: Southern Fleet Garage');
+
+    await page.locator('#breakdownDetailsModal [data-action="close-modal"]').first().click();
+    await expect(page.locator('#breakdownDetailsModal')).not.toHaveClass(/active/);
+
+    const vehicleBreakdownCard = page.locator('#driverTicketTrackingList .inventory-item').filter({ hasText: 'BR-001' }).first();
+    await expect(vehicleBreakdownCard).toBeVisible();
+    await vehicleBreakdownCard.locator('button[data-action="view-breakdown"]').click();
+
+    await expect(page.locator('#breakdownDetailsModal')).toHaveClass(/active/);
+    await expect(page.locator('#driverWorkflowSection')).toBeHidden();
+
+    await page.locator('#trackWorkflowButton').click();
+    await expect(page.locator('#driverWorkflowSection')).toBeVisible();
+    await expect(page.locator('#driverWorkflowSection')).toContainText('Vehicle Breakdown Ticket Workflow (VBD)');
+    await expect(page.locator('#driverWorkflowSection')).toContainText('Budget Review');
+
+    await page.locator('#breakdownDetailsModal [data-action="close-modal"]').first().click();
+    await expect(page.locator('#breakdownDetailsModal')).not.toHaveClass(/active/);
 
     let ariaSnapshot = '';
     try {
