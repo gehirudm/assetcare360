@@ -46,61 +46,99 @@ class FaultTicketWorkflowService {
      * Recalculate and sync fault ticket status based on workflow artifacts.
      */
     public function syncTicketStatus($ticketId, $options = []) {
-        $ticket = $this->faultTicketModel->findById($ticketId);
-        if (!$ticket) {
-            return [
-                'success' => false,
-                'message' => 'Fault ticket not found'
+        try {
+            $ticket = $this->faultTicketModel->findById($ticketId);
+            if (!$ticket) {
+                return [
+                    'success' => false,
+                    'message' => 'Fault ticket not found'
+                ];
+            }
+
+            $currentStatus = $ticket['status'] ?? FaultTicket::STATUS_OPEN;
+            $terminalStatuses = [
+                FaultTicket::STATUS_INSURANCE_CLAIMED,
+                FaultTicket::STATUS_IN_PROGRESS,
+                FaultTicket::STATUS_RESOLVED,
+                FaultTicket::STATUS_CLOSED,
             ];
-        }
 
-        $currentStatus = $ticket['status'] ?? FaultTicket::STATUS_OPEN;
-        $terminalStatuses = [
-            FaultTicket::STATUS_INSURANCE_CLAIMED,
-            FaultTicket::STATUS_IN_PROGRESS,
-            FaultTicket::STATUS_RESOLVED,
-            FaultTicket::STATUS_CLOSED,
-        ];
+            $force = !empty($options['force']);
+            if (!$force && in_array($currentStatus, $terminalStatuses, true)) {
+                return [
+                    'success' => true,
+                    'changed' => false,
+                    'status' => $currentStatus,
+                    'workflow' => $this->getWorkflowIndicators($ticketId),
+                ];
+            }
 
-        $force = !empty($options['force']);
-        if (!$force && in_array($currentStatus, $terminalStatuses, true)) {
+            $targetStatus = $this->deriveTargetStatus($ticketId);
+            if ($targetStatus === $currentStatus) {
+                return [
+                    'success' => true,
+                    'changed' => false,
+                    'status' => $currentStatus,
+                    'workflow' => $this->getWorkflowIndicators($ticketId),
+                ];
+            }
+
+            $appliedStatus = $targetStatus;
+            $updated = $this->attemptStatusUpdate($ticketId, $targetStatus);
+
+            if (!$updated && $targetStatus === FaultTicket::STATUS_PARTS_REJECTED) {
+                // Older databases may not yet include "Parts Rejected" in the enum.
+                $fallbackStatus = FaultTicket::STATUS_WAITING_PARTS;
+
+                if ($fallbackStatus === $currentStatus) {
+                    return [
+                        'success' => true,
+                        'changed' => false,
+                        'status' => $currentStatus,
+                        'workflow' => $this->getWorkflowIndicators($ticketId),
+                    ];
+                }
+
+                $updated = $this->attemptStatusUpdate($ticketId, $fallbackStatus);
+                if ($updated) {
+                    $appliedStatus = $fallbackStatus;
+                    error_log("FaultTicketWorkflowService: Fallback applied for ticket {$ticketId} (target '{$targetStatus}' unsupported, used '{$fallbackStatus}').");
+                }
+            }
+
+            if (!$updated) {
+                return [
+                    'success' => false,
+                    'message' => 'Failed to sync fault ticket status',
+                    'status' => $currentStatus,
+                    'target_status' => $targetStatus,
+                ];
+            }
+
             return [
                 'success' => true,
-                'changed' => false,
-                'status' => $currentStatus,
+                'changed' => true,
+                'status' => $appliedStatus,
+                'previous_status' => $currentStatus,
                 'workflow' => $this->getWorkflowIndicators($ticketId),
             ];
-        }
+        } catch (Throwable $e) {
+            error_log("FaultTicketWorkflowService sync error for ticket {$ticketId}: " . $e->getMessage());
 
-        $targetStatus = $this->deriveTargetStatus($ticketId);
-
-        if ($targetStatus === $currentStatus) {
-            return [
-                'success' => true,
-                'changed' => false,
-                'status' => $currentStatus,
-                'workflow' => $this->getWorkflowIndicators($ticketId),
-            ];
-        }
-
-        $updated = $this->faultTicketModel->updateTicket($ticketId, ['status' => $targetStatus]);
-
-        if (!$updated) {
             return [
                 'success' => false,
                 'message' => 'Failed to sync fault ticket status',
-                'status' => $currentStatus,
-                'target_status' => $targetStatus,
             ];
         }
+    }
 
-        return [
-            'success' => true,
-            'changed' => true,
-            'status' => $targetStatus,
-            'previous_status' => $currentStatus,
-            'workflow' => $this->getWorkflowIndicators($ticketId),
-        ];
+    private function attemptStatusUpdate($ticketId, $status) {
+        try {
+            return $this->faultTicketModel->updateTicket($ticketId, ['status' => $status]);
+        } catch (Throwable $e) {
+            error_log("FaultTicketWorkflowService failed status update for ticket {$ticketId} to '{$status}': " . $e->getMessage());
+            return false;
+        }
     }
 
     private function deriveTargetStatus($ticketId) {
@@ -130,8 +168,13 @@ class FaultTicketWorkflowService {
             return FaultTicket::STATUS_PARTS_APPROVED;
         }
 
-        // If parts request was rejected, surface that clearly on the ticket.
+        // If parts were rejected, keep the rejected state unless budget is approved.
+        // Approved budget means repair can proceed without spare parts procurement.
         if ($partsStatus === 'rejected') {
+            if ($budgetStatus === 'approved') {
+                return $baseStatus;
+            }
+
             return FaultTicket::STATUS_PARTS_REJECTED;
         }
 
