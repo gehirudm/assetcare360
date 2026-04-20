@@ -18,6 +18,31 @@ inventory-orders-approvals .modal.active {
     display: flex;
 }
 
+inventory-orders-approvals .order-action-modal-content,
+inventory-orders-approvals .orders-details-modal-content {
+    width: min(96vw, 760px);
+    max-height: 92vh;
+    overflow: hidden;
+}
+
+inventory-orders-approvals .order-action-modal-content {
+    max-width: 760px;
+}
+
+inventory-orders-approvals .orders-details-modal-content {
+    max-width: 700px;
+}
+
+inventory-orders-approvals .modal-body {
+    padding: 20px 24px 24px;
+    max-height: calc(92vh - 92px);
+    overflow-y: auto;
+}
+
+inventory-orders-approvals .order-details-modal-body {
+    padding-bottom: 28px;
+}
+
 /* Form section spacing inside modals */
 inventory-orders-approvals .form-section h5 {
     margin-top: 0;
@@ -65,7 +90,62 @@ inventory-orders-approvals .form-section {
     border-radius: 10px;
     padding: 16px;
     margin: 16px 0;
-    background: #fafcff;
+    background: var(--card, #ffffff);
+}
+
+inventory-orders-approvals .order-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    align-items: start;
+}
+
+inventory-orders-approvals .order-detail-field {
+    border: 1px solid var(--stone-200, #e5e7eb);
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #ffffff;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+inventory-orders-approvals .order-detail-label {
+    color: var(--text-600, #6b7280);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+inventory-orders-approvals .order-detail-value {
+    color: var(--text-900, #1a1a1a);
+    font-size: 0.92rem;
+    font-weight: 600;
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+inventory-orders-approvals .order-detail-value .status-text {
+    display: inline-flex;
+    align-self: flex-start;
+}
+
+inventory-orders-approvals .order-detail-block {
+    border: 1px solid var(--stone-200, #e5e7eb);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-top: 12px;
+    background: #ffffff;
+}
+
+inventory-orders-approvals .order-detail-text {
+    color: var(--text-700, #374151);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 inventory-orders-approvals .form-row {
@@ -141,6 +221,10 @@ inventory-orders-approvals .modal-actions .btn {
 /* Responsive adjustments */
 @media (max-width: 600px) {
     inventory-orders-approvals .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    inventory-orders-approvals .order-details-grid {
         grid-template-columns: 1fr;
     }
     

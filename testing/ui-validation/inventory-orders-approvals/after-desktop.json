@@ -1,0 +1,26 @@
+{
+  "stage": "after",
+  "viewport": "desktop",
+  "url": "http://127.0.0.1:3000/dashboard/inventory-manager/index.html",
+  "title": "Inventory Manager Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \" Orders & Approvals\" [level=2]\n  - paragraph: Manage spare part requests from Technical Officers\n  - text: 3 Total Requests 2 Pending 1 Approved 0 Rejected\n  - textbox \"Search by request ID, ticket, equipment, or parts...\"\n  - button \"All Orders\"\n  - button \"Pending\"\n  - button \"Approved\"\n  - button \"Issued\"\n  - button \"Rejected\"\n  - strong:  SPR-2001\n  - text: Pending High \n  - strong: VBD-1001\n  - text: — Vehicle Breakdown |  LPG Distribution Truck  1 part (7 units) |  Technical Officer One |  Apr 17, 2026\n  - button \" VIEW\"\n  - button \"Open request actions\": \n  - strong:  SPR-2003\n  - text: Pending Medium \n  - strong: MBD-1003\n  - text: — Machine Breakdown |  Compressor Unit B  1 part (1 units) |  Technical Officer Three |  Apr 16, 2026\n  - button \" VIEW\"\n  - button \"Open request actions\": \n  - button \" Approve Request\"\n  - button \" Reject Request\"\n  - strong:  SPR-2002\n  - text: Approved Medium \n  - strong: MBD-1002\n  - text: — Machine Breakdown |  Compressor Unit  1 part (4 units) |  Technical Officer Two |  Apr 16, 2026\n  - button \" VIEW\"",
+    "snapshotLength": 1107
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "pendingRows": 2,
+    "approvalFormVisible": true,
+    "approvalBlockedByStock": true,
+    "rejectionFormVisible": true,
+    "approveApiCalls": 0,
+    "lastModalMetrics": {
+      "modalVisible": true,
+      "contentVisible": true,
+      "contentWidth": 760,
+      "contentHeight": 812,
+      "background": "rgb(255, 255, 255)"
+    }
+  }
+}
