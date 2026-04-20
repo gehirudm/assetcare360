@@ -131,12 +131,26 @@ function viewDriverTicketDetails(ticketId, options = {}) {
     });
 }
 
+function cleanupDriverTicketDetailsOnSectionChange(sectionId) {
+    if (sectionId === 'ticket-details') {
+        return;
+    }
+
+    const ticketDetailView = document.querySelector('#ticket-details driver-ticket-detail-view');
+    if (!ticketDetailView || typeof ticketDetailView.closeView !== 'function') {
+        return;
+    }
+
+    ticketDetailView.closeView();
+}
+
 function bindOrchestrationEvents() {
     const layout = document.querySelector('ac-layout');
     if (layout) {
         layout.addEventListener('section-change', async (event) => {
             const section = event.detail?.section;
             if (section) {
+                cleanupDriverTicketDetailsOnSectionChange(section);
                 await refreshSection(section);
             }
         });

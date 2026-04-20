@@ -44,6 +44,19 @@ function handleSectionActivation(sectionId) {
     }
 }
 
+function cleanupTOTicketDetailsOnSectionChange(sectionId) {
+    if (sectionId === 'ticket-details') {
+        return;
+    }
+
+    const ticketDetailView = document.querySelector('#ticket-details to-ticket-detail-view');
+    if (!ticketDetailView || typeof ticketDetailView.closeView !== 'function') {
+        return;
+    }
+
+    ticketDetailView.closeView();
+}
+
 function navigateToSection(sectionId) {
     const layout = document.querySelector('ac-layout');
     if (!layout || typeof layout.navigateTo !== 'function') return;
@@ -98,6 +111,7 @@ document.querySelector('ac-layout')?.addEventListener('section-change', (event) 
         syncSectionInUrl(section);
     }
 
+    cleanupTOTicketDetailsOnSectionChange(section);
     handleSectionActivation(section);
 });
 

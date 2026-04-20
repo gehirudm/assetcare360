@@ -18,6 +18,18 @@ class DriverTicketDetailView extends HTMLElement {
         return String(this.getAttribute('default-return-section') || 'breakdown').trim() || 'breakdown';
     }
 
+    get detailStyleLinkId() {
+        return 'driver-ticket-detail-view-style';
+    }
+
+    get detailOverridesStyleLinkId() {
+        return 'driver-ticket-detail-view-overrides-style';
+    }
+
+    get detailInlineStyleId() {
+        return 'driver-ticket-detail-view-inline-style';
+    }
+
     ensureScopedStyles() {
         if (document.getElementById('driver-ticket-detail-component-style')) {
             return;
@@ -121,8 +133,8 @@ class DriverTicketDetailView extends HTMLElement {
     }
 
     async ensureViewTicketAssets() {
-        this.loadStyleOnce('../../view-ticket/style.css', 'driver-ticket-detail-view-style');
-        this.loadStyleOnce('../technical-officer/view-ticket/style.css', 'driver-ticket-detail-view-overrides-style');
+        this.loadStyleOnce('../../view-ticket/style.css', this.detailStyleLinkId);
+        this.loadStyleOnce('../technical-officer/view-ticket/style.css', this.detailOverridesStyleLinkId);
 
         await this.loadScriptOnce('../../js/fault-ticket-detail-template.js', 'driver-ticket-detail-template-script');
         await this.loadScriptOnce('../../view-ticket/script.js', 'driver-ticket-detail-runtime-script');
@@ -150,9 +162,9 @@ class DriverTicketDetailView extends HTMLElement {
         }
 
         const inlineStyle = doc.querySelector('head style');
-        if (inlineStyle && !document.getElementById('view-ticket-inline-style')) {
+        if (inlineStyle && !document.getElementById(this.detailInlineStyleId)) {
             const style = document.createElement('style');
-            style.id = 'view-ticket-inline-style';
+            style.id = this.detailInlineStyleId;
             style.textContent = inlineStyle.textContent;
             document.head.appendChild(style);
         }
@@ -164,6 +176,19 @@ class DriverTicketDetailView extends HTMLElement {
         this.appendChild(container);
 
         this._templateReady = true;
+    }
+
+    cleanupViewTicketAssets() {
+        [
+            this.detailStyleLinkId,
+            this.detailOverridesStyleLinkId,
+            this.detailInlineStyleId,
+        ].forEach((id) => {
+            const node = document.getElementById(id);
+            if (node && node.parentNode) {
+                node.parentNode.removeChild(node);
+            }
+        });
     }
 
     buildRuntimeContext() {
@@ -251,6 +276,7 @@ class DriverTicketDetailView extends HTMLElement {
         this._focusHash = '';
         this._templateReady = false;
         delete window.__ACViewTicketContext;
+        this.cleanupViewTicketAssets();
         this.renderPlaceholder();
     }
 }

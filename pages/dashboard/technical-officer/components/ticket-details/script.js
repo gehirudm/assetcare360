@@ -18,6 +18,18 @@ class TOTicketDetailView extends HTMLElement {
         return String(this.getAttribute('default-return-section') || 'tickets').trim() || 'tickets';
     }
 
+    get detailStyleLinkId() {
+        return 'to-ticket-detail-view-style';
+    }
+
+    get detailOverridesStyleLinkId() {
+        return 'to-ticket-detail-view-overrides-style';
+    }
+
+    get detailInlineStyleId() {
+        return 'to-ticket-detail-view-inline-style';
+    }
+
     ensureScopedStyles() {
         if (document.getElementById('to-ticket-detail-component-style')) {
             return;
@@ -121,8 +133,8 @@ class TOTicketDetailView extends HTMLElement {
     }
 
     async ensureViewTicketAssets() {
-        this.loadStyleOnce('../../view-ticket/style.css', 'to-ticket-detail-view-style');
-        this.loadStyleOnce('./view-ticket/style.css', 'to-ticket-detail-view-overrides-style');
+        this.loadStyleOnce('../../view-ticket/style.css', this.detailStyleLinkId);
+        this.loadStyleOnce('./view-ticket/style.css', this.detailOverridesStyleLinkId);
 
         await this.loadScriptOnce('../../js/fault-ticket-detail-template.js', 'to-ticket-detail-template-script');
         await this.loadScriptOnce('../../view-ticket/script.js', 'to-ticket-detail-runtime-script');
@@ -144,15 +156,25 @@ class TOTicketDetailView extends HTMLElement {
         const html = await response.text();
         const doc = new DOMParser().parseFromString(html, 'text/html');
         const container = doc.querySelector('body > .container');
+        const templateNodeSelectors = [
+            '#budgetModal',
+            '#partsModal',
+            '#completeModal',
+            '#assignModal',
+            '#garageApprovalModal'
+        ];
+        const templateNodes = templateNodeSelectors
+            .map((selector) => doc.querySelector(selector))
+            .filter(Boolean);
 
         if (!container) {
             throw new Error('Ticket detail template is invalid.');
         }
 
         const inlineStyle = doc.querySelector('head style');
-        if (inlineStyle && !document.getElementById('view-ticket-inline-style')) {
+        if (inlineStyle && !document.getElementById(this.detailInlineStyleId)) {
             const style = document.createElement('style');
-            style.id = 'view-ticket-inline-style';
+            style.id = this.detailInlineStyleId;
             style.textContent = inlineStyle.textContent;
             document.head.appendChild(style);
         }
@@ -162,8 +184,22 @@ class TOTicketDetailView extends HTMLElement {
 
         this.innerHTML = '';
         this.appendChild(container);
+        templateNodes.forEach((node) => this.appendChild(node));
 
         this._templateReady = true;
+    }
+
+    cleanupViewTicketAssets() {
+        [
+            this.detailStyleLinkId,
+            this.detailOverridesStyleLinkId,
+            this.detailInlineStyleId,
+        ].forEach((id) => {
+            const node = document.getElementById(id);
+            if (node && node.parentNode) {
+                node.parentNode.removeChild(node);
+            }
+        });
     }
 
     buildRuntimeContext() {
@@ -251,6 +287,7 @@ class TOTicketDetailView extends HTMLElement {
         this._focusHash = '';
         this._templateReady = false;
         delete window.__ACViewTicketContext;
+        this.cleanupViewTicketAssets();
         this.renderPlaceholder();
     }
 }

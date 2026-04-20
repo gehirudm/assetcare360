@@ -224,12 +224,26 @@ function viewMOTicketDetails(ticketId, options = {}) {
     });
 }
 
+function cleanupMOTicketDetailsOnSectionChange(sectionId) {
+    if (sectionId === 'ticket-details') {
+        return;
+    }
+
+    const ticketDetailView = document.querySelector('#ticket-details mo-ticket-detail-view');
+    if (!ticketDetailView || typeof ticketDetailView.closeView !== 'function') {
+        return;
+    }
+
+    ticketDetailView.closeView();
+}
+
 function bindDashboardEvents() {
     const layout = document.querySelector('ac-layout');
     if (layout) {
         layout.addEventListener('section-change', async (event) => {
             const section = event.detail?.section;
             if (section) {
+                cleanupMOTicketDetailsOnSectionChange(section);
                 await refreshSection(section);
             }
         });
