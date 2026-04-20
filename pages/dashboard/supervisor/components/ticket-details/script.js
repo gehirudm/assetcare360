@@ -18,6 +18,18 @@ class SupervisorTicketDetailView extends HTMLElement {
         return String(this.getAttribute('default-return-section') || 'fault-ticket-tracking').trim() || 'fault-ticket-tracking';
     }
 
+    get detailStyleLinkId() {
+        return 'supervisor-ticket-detail-view-style';
+    }
+
+    get detailOverridesStyleLinkId() {
+        return 'supervisor-ticket-detail-view-overrides-style';
+    }
+
+    get detailInlineStyleId() {
+        return 'supervisor-ticket-detail-view-inline-style';
+    }
+
     ensureScopedStyles() {
         if (document.getElementById('supervisor-ticket-detail-component-style')) {
             return;
@@ -121,8 +133,8 @@ class SupervisorTicketDetailView extends HTMLElement {
     }
 
     async ensureViewTicketAssets() {
-        this.loadStyleOnce('../../view-ticket/style.css', 'supervisor-ticket-detail-view-style');
-        this.loadStyleOnce('../technical-officer/view-ticket/style.css', 'supervisor-ticket-detail-view-overrides-style');
+        this.loadStyleOnce('../../view-ticket/style.css', this.detailStyleLinkId);
+        this.loadStyleOnce('../technical-officer/view-ticket/style.css', this.detailOverridesStyleLinkId);
 
         await this.loadScriptOnce('../../js/fault-ticket-detail-template.js', 'supervisor-ticket-detail-template-script');
         await this.loadScriptOnce('../../view-ticket/script.js', 'supervisor-ticket-detail-runtime-script');
@@ -144,15 +156,25 @@ class SupervisorTicketDetailView extends HTMLElement {
         const html = await response.text();
         const doc = new DOMParser().parseFromString(html, 'text/html');
         const container = doc.querySelector('body > .container');
+        const templateNodeSelectors = [
+            '#budgetModal',
+            '#partsModal',
+            '#completeModal',
+            '#assignModal',
+            '#garageApprovalModal'
+        ];
+        const templateNodes = templateNodeSelectors
+            .map((selector) => doc.querySelector(selector))
+            .filter(Boolean);
 
         if (!container) {
             throw new Error('Ticket detail template is invalid.');
         }
 
         const inlineStyle = doc.querySelector('head style');
-        if (inlineStyle && !document.getElementById('view-ticket-inline-style')) {
+        if (inlineStyle && !document.getElementById(this.detailInlineStyleId)) {
             const style = document.createElement('style');
-            style.id = 'view-ticket-inline-style';
+            style.id = this.detailInlineStyleId;
             style.textContent = inlineStyle.textContent;
             document.head.appendChild(style);
         }
@@ -162,8 +184,22 @@ class SupervisorTicketDetailView extends HTMLElement {
 
         this.innerHTML = '';
         this.appendChild(container);
+        templateNodes.forEach((node) => this.appendChild(node));
 
         this._templateReady = true;
+    }
+
+    cleanupViewTicketAssets() {
+        [
+            this.detailStyleLinkId,
+            this.detailOverridesStyleLinkId,
+            this.detailInlineStyleId,
+        ].forEach((id) => {
+            const node = document.getElementById(id);
+            if (node && node.parentNode) {
+                node.parentNode.removeChild(node);
+            }
+        });
     }
 
     buildRuntimeContext() {
@@ -180,6 +216,69 @@ class SupervisorTicketDetailView extends HTMLElement {
                     }
                 }));
             },
+            onRequestAssignment: ({ ticketId, isEdit = false } = {}) => {
+                const resolvedTicketId = Number(ticketId || this._ticketId);
+                if (!Number.isFinite(resolvedTicketId) || resolvedTicketId <= 0) {
+                    this.dispatchEvent(new CustomEvent('supervisor-ticket-detail-view:toast', {
+                        bubbles: true,
+                        detail: {
+                            message: 'Invalid ticket ID',
+                            type: 'error',
+                        }
+                    }));
+                    return false;
+                }
+
+                this.dispatchEvent(new CustomEvent('supervisor-ticket-detail-view:request-assignment', {
+                    bubbles: true,
+                    detail: {
+                        ticketId: resolvedTicketId,
+                        isEdit: Boolean(isEdit),
+                    },
+                }));
+
+                return true;
+            },
+            onRequestGarageApproval: ({ ticketId, routeBreakdownId, breakdown } = {}) => {
+                const resolvedTicketId = Number(ticketId || this._ticketId);
+                const resolvedRouteBreakdownId = Number(routeBreakdownId || breakdown?.id || 0);
+
+                if (!Number.isFinite(resolvedTicketId) || resolvedTicketId <= 0) {
+                    this.dispatchEvent(new CustomEvent('supervisor-ticket-detail-view:toast', {
+                        bubbles: true,
+                        detail: {
+                            message: 'Invalid ticket ID',
+                            type: 'error',
+                        }
+                    }));
+                    return false;
+                }
+
+                if (!Number.isFinite(resolvedRouteBreakdownId) || resolvedRouteBreakdownId <= 0) {
+                    this.dispatchEvent(new CustomEvent('supervisor-ticket-detail-view:toast', {
+                        bubbles: true,
+                        detail: {
+                            message: 'Unable to resolve route breakdown details for garage approval.',
+                            type: 'error',
+                        }
+                    }));
+                    return false;
+                }
+
+                this.dispatchEvent(new CustomEvent('supervisor-ticket-detail-view:request-garage-approval', {
+                    bubbles: true,
+                    detail: {
+                        ticketId: resolvedTicketId,
+                        routeBreakdownId: resolvedRouteBreakdownId,
+                        breakdown: {
+                            ...(breakdown || {}),
+                            id: resolvedRouteBreakdownId,
+                        },
+                    },
+                }));
+
+                return true;
+            },
         };
     }
 
@@ -193,7 +292,7 @@ class SupervisorTicketDetailView extends HTMLElement {
                     type: 'error',
                 }
             }));
-            return;
+            return false;
         }
 
         const returnSection = String(options.returnSection || this.defaultReturnSection).trim() || this.defaultReturnSection;
@@ -220,6 +319,8 @@ class SupervisorTicketDetailView extends HTMLElement {
                     }
                 }, 60);
             }
+
+            return true;
         } catch (error) {
             console.error('Supervisor ticket detail open error:', error);
             this.renderPlaceholder();
@@ -231,6 +332,7 @@ class SupervisorTicketDetailView extends HTMLElement {
                     type: 'error',
                 }
             }));
+            return false;
         }
     }
 
@@ -251,6 +353,7 @@ class SupervisorTicketDetailView extends HTMLElement {
         this._focusHash = '';
         this._templateReady = false;
         delete window.__ACViewTicketContext;
+        this.cleanupViewTicketAssets();
         this.renderPlaceholder();
     }
 }

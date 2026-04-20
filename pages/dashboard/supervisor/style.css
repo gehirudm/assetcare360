@@ -1435,6 +1435,12 @@ body {
     overflow-y: auto;
 }
 
+/* Keep assign-ticket modal geometry stable even when shared view-ticket styles are loaded. */
+#assignTicketModal .modal-content {
+    max-width: min(700px, 95vw);
+    padding: 0;
+}
+
 /* View Ticket Content Scrolling */
 #viewTicketContent {
     flex: 1;

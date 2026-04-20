@@ -86,9 +86,24 @@ function scrollSupervisorViewportToTop() {
     }
 }
 
+function cleanupSupervisorDetailViewsOnSectionChange(sectionId) {
+    const normalizedSection = normalizeSupervisorSection(sectionId);
+
+    if (normalizedSection !== 'ticket-details') {
+        const ticketDetailView = document.querySelector('#ticket-details supervisor-ticket-detail-view');
+        ticketDetailView?.closeView?.();
+    }
+
+    if (normalizedSection !== 'breakdown-details') {
+        const breakdownDetailView = document.querySelector('#breakdown-details ac-breakdown-detail-view');
+        breakdownDetailView?.closeView?.();
+    }
+}
+
 document.querySelector('ac-layout')
     ?.addEventListener('section-change', (event) => {
         const section = normalizeSupervisorSection(event.detail?.section);
+        cleanupSupervisorDetailViewsOnSectionChange(section);
         syncSupervisorSectionInUrl(section);
         loadSectionData(section);
     });
@@ -201,9 +216,13 @@ function refreshSupervisorDailyCheckReports() {
 }
 
 function refreshSupervisorFaultTicketTracking() {
-    const component = document.querySelector('supervisor-fault-ticket-tracking');
-    if (!component || typeof component.refresh !== 'function') return;
-    component.refresh();
+    const trackingComponent = document.querySelector('supervisor-fault-ticket-tracking');
+    if (trackingComponent && typeof trackingComponent.refresh === 'function') {
+        trackingComponent.refresh();
+        return;
+    }
+
+    refreshSupervisorFaultTickets();
 }
 
 function bindSupervisorFaultTickets() {
@@ -251,6 +270,13 @@ function bindSupervisorFaultTickets() {
             case 'view-ticket':
                 if (!detail.ticketId) return;
                 viewTicketDetails(detail.ticketId);
+                break;
+            case 'approve-garage':
+                if (!detail.ticketId && !detail.routeBreakdownId) return;
+                void openGarageApprovalModalFromDetail({
+                    ticketId: detail.ticketId,
+                    routeBreakdownId: detail.routeBreakdownId,
+                });
                 break;
             case 'assign-ticket':
                 if (!detail.ticketId) return;
@@ -316,6 +342,11 @@ function bindSupervisorTicketModals() {
 
         assignTicketModal.addEventListener('supervisor-assign-ticket-modal:assigned', () => {
             loadFaultTickets();
+
+            const ticketDetailView = document.querySelector('#ticket-details supervisor-ticket-detail-view');
+            if (ticketDetailView && typeof ticketDetailView.refresh === 'function') {
+                ticketDetailView.refresh();
+            }
         });
     }
 
@@ -328,6 +359,27 @@ function bindSupervisorTicketModals() {
             const type = event.detail?.type || 'info';
             if (!message) return;
             showToast(message, type);
+        });
+    }
+
+    const garageApprovalModal = document.querySelector('supervisor-garage-approval-modal');
+    if (garageApprovalModal && garageApprovalModal.dataset.bound !== 'true') {
+        garageApprovalModal.dataset.bound = 'true';
+
+        garageApprovalModal.addEventListener('supervisor-ui:toast', (event) => {
+            const message = event.detail?.message;
+            const type = event.detail?.type || 'info';
+            if (!message) return;
+            showToast(message, type);
+        });
+
+        garageApprovalModal.addEventListener('supervisor-garage-approval-modal:approved', async () => {
+            await loadFaultTickets();
+
+            const ticketDetailView = document.querySelector('#ticket-details supervisor-ticket-detail-view');
+            if (ticketDetailView && typeof ticketDetailView.refresh === 'function') {
+                ticketDetailView.refresh();
+            }
         });
     }
 }
@@ -359,6 +411,25 @@ function bindSupervisorTicketDetailView() {
 
         component.closeView?.();
         navigateSupervisorSection(requestedSection);
+    });
+
+    component.addEventListener('supervisor-ticket-detail-view:request-assignment', (event) => {
+        const ticketId = Number(event.detail?.ticketId);
+        if (!Number.isFinite(ticketId) || ticketId <= 0) {
+            showToast('Invalid ticket ID', 'error');
+            return;
+        }
+
+        if (event.detail?.isEdit === true) {
+            editTicketAssignment(ticketId);
+            return;
+        }
+
+        assignTicket(ticketId);
+    });
+
+    component.addEventListener('supervisor-ticket-detail-view:request-garage-approval', (event) => {
+        void openGarageApprovalModalFromDetail(event.detail || {});
     });
 }
 
@@ -565,8 +636,12 @@ let currentTicketSourceFilter = 'all';
 let allTickets = []; // Store all tickets for filtering
 let allBreakdownItems = []; // Store breakdown reports for unassigned list
 
-function isRouteGarageWorkflowAssigned(status) {
-    const normalized = String(status || '').toLowerCase();
+function isRouteGarageWorkflowAssigned(status, approvedGarageId = null) {
+    const normalized = String(status || '').toLowerCase().replace(/[-\s]+/g, '_');
+    if (Number(approvedGarageId || 0) > 0) {
+        return true;
+    }
+
     return ['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(normalized);
 }
 
@@ -575,7 +650,7 @@ function isTicketCoveredByGarageWorkflow(ticket) {
         return false;
     }
 
-    return isRouteGarageWorkflowAssigned(ticket.route_garage_workflow_status);
+    return isRouteGarageWorkflowAssigned(ticket.route_garage_workflow_status, ticket.route_approved_garage_id);
 }
 
 async function loadFaultTickets() {
@@ -690,8 +765,18 @@ async function loadFaultTickets() {
                 if (reportKey) {
                     routeWorkflowByReportId.set(reportKey, {
                         route_garage_workflow_status: breakdown?.garage_workflow?.status || breakdown.garage_workflow_status || null,
+                        route_approved_garage_id: Number(
+                            breakdown?.garage_workflow?.approved_garage?.id
+                            || breakdown.approved_garage_id
+                            || 0
+                        ) || null,
                         route_approved_garage_name: breakdown?.garage_workflow?.approved_garage?.name || breakdown.approved_garage_name || null,
                         route_breakdown_numeric_id: breakdown.id,
+                        breakdown_location: breakdown.breakdown_location || '',
+                        breakdown_latitude: breakdown.breakdown_latitude ?? null,
+                        breakdown_longitude: breakdown.breakdown_longitude ?? null,
+                        driver_name: breakdown.driver_name || null,
+                        number_plate: breakdown.number_plate || null,
                         dangerous_cargo_present: Number(breakdown.dangerous_cargo_present || 0) === 1 ? 1 : 0,
                         dangerous_cargo_summary: breakdown.dangerous_cargo_summary || null,
                         dangerous_cargo_trip_id: breakdown.dangerous_cargo_trip_id || null,
@@ -741,8 +826,14 @@ async function loadFaultTickets() {
                 return {
                     ...ticket,
                     route_garage_workflow_status: workflowMeta.route_garage_workflow_status,
+                    route_approved_garage_id: workflowMeta.route_approved_garage_id,
                     route_approved_garage_name: workflowMeta.route_approved_garage_name,
                     route_breakdown_numeric_id: workflowMeta.route_breakdown_numeric_id,
+                    breakdown_location: ticket.breakdown_location || workflowMeta.breakdown_location || '',
+                    breakdown_latitude: ticket.breakdown_latitude ?? workflowMeta.breakdown_latitude ?? null,
+                    breakdown_longitude: ticket.breakdown_longitude ?? workflowMeta.breakdown_longitude ?? null,
+                    reported_by_name: ticket.reported_by_name || workflowMeta.driver_name || ticket.reporter_full_name || null,
+                    number_plate: ticket.number_plate || workflowMeta.number_plate || null,
                     dangerous_cargo_present: workflowMeta.dangerous_cargo_present,
                     dangerous_cargo_summary: workflowMeta.dangerous_cargo_summary,
                     dangerous_cargo_trip_id: workflowMeta.dangerous_cargo_trip_id,
@@ -955,16 +1046,217 @@ function closeAssignTicketModal() {
     modal?.close?.();
 }
 
-function viewTicketDetails(ticketId) {
-    const numericTicketId = Number(ticketId);
-    if (!Number.isFinite(numericTicketId) || numericTicketId <= 0) {
-        showToast('Invalid ticket ID', 'error');
+function parseLegacyRouteBreakdownDescription(description) {
+    const rawDescription = String(description || '').trim();
+    if (!rawDescription) {
+        return {
+            issueDescription: '',
+            locationText: '',
+        };
+    }
+
+    const normalized = rawDescription.replace(/\r\n/g, '\n');
+    const seemsLegacy = /^\[route breakdown\]/i.test(normalized)
+        || (/vehicle\s*:/i.test(normalized) && /driver\s*:/i.test(normalized) && /description\s*:/i.test(normalized));
+
+    if (!seemsLegacy) {
+        return {
+            issueDescription: rawDescription,
+            locationText: '',
+        };
+    }
+
+    const readField = (label, nextLabels = []) => {
+        const lookahead = nextLabels.length
+            ? `(?=(?:\\s*[|\\n]?\\s*(?:${nextLabels.join('|')})\\s*:)|$)`
+            : '$';
+        const pattern = new RegExp(`${label}\\s*:\\s*([\\s\\S]*?)${lookahead}`, 'i');
+        const match = normalized.match(pattern);
+        return match ? String(match[1] || '').trim() : '';
+    };
+
+    return {
+        issueDescription: readField('Description') || readField('Details') || rawDescription,
+        locationText: readField('Location', ['Description', 'Details']),
+    };
+}
+
+function resolveGarageApprovalIssueDescription(breakdown, fallbackTicket) {
+    const descriptionCandidates = [
+        breakdown?.description,
+        breakdown?.raw?.description,
+        fallbackTicket?.breakdown_context?.description,
+        fallbackTicket?.description,
+    ];
+
+    for (const candidate of descriptionCandidates) {
+        const parsed = parseLegacyRouteBreakdownDescription(candidate);
+        if (parsed.issueDescription) {
+            return parsed.issueDescription;
+        }
+    }
+
+    return '';
+}
+
+function resolveGarageApprovalLocationLabel(breakdown, fallbackTicket) {
+    const routeDescriptionLocation = parseLegacyRouteBreakdownDescription(breakdown?.description).locationText;
+    const routeRawDescriptionLocation = parseLegacyRouteBreakdownDescription(breakdown?.raw?.description).locationText;
+    const ticketDescriptionLocation = parseLegacyRouteBreakdownDescription(fallbackTicket?.description).locationText;
+    const ticketContextDescriptionLocation = parseLegacyRouteBreakdownDescription(fallbackTicket?.breakdown_context?.description).locationText;
+
+    return String(
+        breakdown?.breakdown_location
+        || breakdown?.location
+        || fallbackTicket?.breakdown_location
+        || fallbackTicket?.breakdown_context?.location
+        || routeDescriptionLocation
+        || routeRawDescriptionLocation
+        || ticketContextDescriptionLocation
+        || ticketDescriptionLocation
+        || fallbackTicket?.location
+        || ''
+    ).trim();
+}
+
+function buildGarageApprovalBreakdownPayload(detail = {}) {
+    const breakdown = detail?.breakdown && typeof detail.breakdown === 'object'
+        ? detail.breakdown
+        : {};
+    const ticketId = Number(detail?.ticketId || 0);
+    const fallbackTicket = allTickets.find((ticket) => Number(ticket?.id || 0) === ticketId) || null;
+
+    const routeBreakdownId = Number(
+        detail?.routeBreakdownId
+        || breakdown.id
+        || fallbackTicket?.route_breakdown_numeric_id
+        || fallbackTicket?.breakdown_context?.route_breakdown_numeric_id
+        || 0
+    );
+
+    if (!Number.isFinite(routeBreakdownId) || routeBreakdownId <= 0) {
+        return null;
+    }
+
+    const breakdownCode = breakdown.route_breakdown_id
+        || breakdown.breakdown_id
+        || fallbackTicket?.breakdown_context?.route_breakdown_id
+        || fallbackTicket?.breakdown_report_id
+        || `RBD-${routeBreakdownId}`;
+
+    const breakdownRaw = breakdown.raw && typeof breakdown.raw === 'object'
+        ? breakdown.raw
+        : breakdown;
+
+    const rawPayload = {
+        ...(fallbackTicket || {}),
+        ...(breakdownRaw || {}),
+        ...(breakdown || {}),
+    };
+
+    const fallbackApprovedGarageId = Number(fallbackTicket?.route_approved_garage_id || fallbackTicket?.approved_garage_id || 0);
+    const normalizedDescription = resolveGarageApprovalIssueDescription(breakdown, fallbackTicket);
+    const normalizedLocationLabel = resolveGarageApprovalLocationLabel(breakdown, fallbackTicket);
+
+    return {
+        ...breakdown,
+        id: routeBreakdownId,
+        route_breakdown_id: breakdownCode,
+        breakdownId: breakdown.breakdownId || breakdownCode,
+        number_plate: breakdown.number_plate
+            || fallbackTicket?.number_plate
+            || fallbackTicket?.breakdown_context?.number_plate
+            || '',
+        identifier: breakdown.identifier
+            || breakdown.number_plate
+            || fallbackTicket?.number_plate
+            || fallbackTicket?.breakdown_context?.number_plate
+            || `Vehicle #${breakdown.vehicle_id || fallbackTicket?.vehicle_id || 'N/A'}`,
+        reportedBy: breakdown.reportedBy
+            || breakdown.driver_name
+            || breakdown.raw?.driver_name
+            || fallbackTicket?.reported_by_name
+            || fallbackTicket?.reporter_full_name
+            || fallbackTicket?.breakdown_context?.reporter_name
+            || 'Unknown',
+        driver_name: breakdown.driver_name
+            || breakdown.reportedBy
+            || breakdown.raw?.driver_name
+            || fallbackTicket?.reported_by_name
+            || fallbackTicket?.reporter_full_name
+            || fallbackTicket?.breakdown_context?.reporter_name
+            || 'Unknown',
+        breakdown_location: normalizedLocationLabel,
+        breakdown_latitude: breakdown.breakdown_latitude
+            ?? fallbackTicket?.breakdown_latitude
+            ?? null,
+        breakdown_longitude: breakdown.breakdown_longitude
+            ?? fallbackTicket?.breakdown_longitude
+            ?? null,
+        approved_garage_id: Number(
+            breakdown?.approved_garage_id
+            || breakdown?.garage_workflow?.approved_garage?.id
+            || fallbackApprovedGarageId
+            || 0
+        ) || null,
+        description: normalizedDescription || breakdown.description || fallbackTicket?.description || '',
+        raw: rawPayload,
+    };
+}
+
+async function openGarageApprovalModalFromDetail(detail = {}) {
+    const modal = document.querySelector('supervisor-garage-approval-modal');
+    if (!modal || typeof modal.open !== 'function') {
+        showToast('Garage approval modal is not available', 'error');
         return;
     }
 
-    const ticketDetailView = document.querySelector('#ticket-details supervisor-ticket-detail-view');
-    if (!ticketDetailView || typeof ticketDetailView.open !== 'function') {
-        showToast('Ticket details component is unavailable', 'error');
+    const breakdownPayload = buildGarageApprovalBreakdownPayload(detail);
+    if (!breakdownPayload) {
+        showToast('Unable to resolve route breakdown details for garage approval.', 'error');
+        return;
+    }
+
+    try {
+        await modal.open({ breakdown: breakdownPayload });
+    } catch (error) {
+        console.error('Failed to open garage approval modal:', error);
+        showToast('Failed to open garage approval modal.', 'error');
+    }
+}
+
+function buildSupervisorTicketDetailFallbackUrl(ticketId, returnSection) {
+    const numericTicketId = Number(ticketId);
+    if (!Number.isFinite(numericTicketId) || numericTicketId <= 0) {
+        return null;
+    }
+
+    const safeReturnSection = normalizeSupervisorSection(returnSection || 'fault-ticket-tracking');
+    const returnUrl = new URL(window.location.pathname, window.location.origin);
+    returnUrl.searchParams.set('section', safeReturnSection);
+
+    const detailUrl = new URL('/view-ticket/index.html', window.location.origin);
+    detailUrl.searchParams.set('id', String(numericTicketId));
+    detailUrl.searchParams.set('role_override', 'SUPERVISOR');
+    detailUrl.searchParams.set('return_to', `${returnUrl.pathname}${returnUrl.search}`);
+
+    return `${detailUrl.pathname}${detailUrl.search}`;
+}
+
+function openSupervisorTicketDetailFallback(ticketId, returnSection) {
+    const fallbackUrl = buildSupervisorTicketDetailFallbackUrl(ticketId, returnSection);
+    if (!fallbackUrl) {
+        showToast('Unable to open ticket details', 'error');
+        return;
+    }
+
+    window.location.href = fallbackUrl;
+}
+
+async function viewTicketDetails(ticketId) {
+    const numericTicketId = Number(ticketId);
+    if (!Number.isFinite(numericTicketId) || numericTicketId <= 0) {
+        showToast('Invalid ticket ID', 'error');
         return;
     }
 
@@ -976,12 +1268,27 @@ function viewTicketDetails(ticketId) {
         supervisorTicketDetailsReturnSection = requestedReturnSection;
     }
 
+    const ticketDetailView = document.querySelector('#ticket-details supervisor-ticket-detail-view');
+    if (!ticketDetailView || typeof ticketDetailView.open !== 'function') {
+        openSupervisorTicketDetailFallback(numericTicketId, supervisorTicketDetailsReturnSection);
+        return;
+    }
+
     navigateSupervisorSection('ticket-details');
     scrollSupervisorViewportToTop();
 
-    ticketDetailView.open(numericTicketId, {
-        returnSection: supervisorTicketDetailsReturnSection,
-    });
+    try {
+        const opened = await ticketDetailView.open(numericTicketId, {
+            returnSection: supervisorTicketDetailsReturnSection,
+        });
+
+        if (opened === false) {
+            openSupervisorTicketDetailFallback(numericTicketId, supervisorTicketDetailsReturnSection);
+        }
+    } catch (error) {
+        console.error('Supervisor embedded ticket detail open failed:', error);
+        openSupervisorTicketDetailFallback(numericTicketId, supervisorTicketDetailsReturnSection);
+    }
 }
 
 function closeViewTicketModal() {
