@@ -1,0 +1,18 @@
+{
+  "stage": "before",
+  "viewport": "desktop",
+  "consoleErrors": [],
+  "failedRequests": [],
+  "orderDefault": [
+    "SPR-501",
+    "SPR-502",
+    "SPR-503",
+    "SPR-504"
+  ],
+  "orderCreatedAsc": [],
+  "orderCreatedDesc": [],
+  "orderQuantityDesc": [],
+  "orderNameAsc": [],
+  "lowStockCount": 0,
+  "ariaSnapshot": "- heading \" Spare Parts Catalog\" [level=2]\n- paragraph: Browse and manage spare parts inventory\n- textbox \"Search by sparepart name, number, or category...\"\n- button \"+ Add New Sparepart\"\n- button \"All Stock\"\n- button \"In Stock\"\n- button \"Low Stock\"\n- button \"Out of Stock\"\n- button \"All Categories\"\n- button \"Vehicles\"\n- button \"Machines\"\n- text:  Parts Catalog 4 items\n- strong:  Brake Pad Set\n- text: \"# SPR-501 |  Vehicles Parts In Stock |  34 units |  Threshold: 8\"\n- button \" VIEW\"\n- button \"Open spare part actions\": \n- strong:  Hydraulic Seal\n- text: \"# SPR-502 |  Machines Parts Low Stock |  3 units |  Threshold: 10\"\n- button \" VIEW\"\n- button \"Open spare part actions\": \n- strong:  Air Filter Cartridge\n- text: \"# SPR-503 |  Vehicles Parts Out of Stock |  0 units |  Threshold: 5\"\n- button \" VIEW\"\n- button \"Open spare part actions\": \n- strong:  Compressor Valve Kit\n- text: \"# SPR-504 |  Machines Parts In Stock |  15 units |  Threshold: 6\"\n- button \" VIEW\"\n- button \"Open spare part actions\": "
+}

@@ -372,31 +372,41 @@
          BUDGET REPORT MODAL
     ============================= -->
     <div class="modal-overlay" id="budgetModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3><i class="fas fa-file-invoice-dollar"></i> Submit Budget Report</h3>
-                <button class="modal-close" onclick="closeBudgetModal()"><i class="fas fa-times"></i></button>
+        <div class="modal budget-modal-shell">
+            <div class="modal-header budget-modal-header">
+                <div class="budget-modal-header-copy">
+                    <h3 id="budgetModalTitle"><i class="fas fa-file-invoice-dollar"></i> Submit Budget Report</h3>
+                    <p class="budget-modal-subtitle">Provide a clear cost breakdown and justification for approval.</p>
+                </div>
+                <button class="modal-close budget-modal-close" onclick="closeBudgetModal()" aria-label="Close budget modal"><i class="fas fa-times"></i></button>
             </div>
-            <div class="modal-body">
-                <form id="budgetForm" onsubmit="submitBudget(event)">
-                    <div class="form-group">
-                        <label class="form-label">Fault Ticket</label>
-                        <input type="text" class="form-input" id="budgetTicketDisplay" readonly>
+            <div class="modal-body budget-modal-body">
+                <form id="budgetForm" class="budget-form-layout" onsubmit="submitBudget(event)">
+                    <div class="budget-ticket-panel">
+                        <div class="form-group budget-ticket-field">
+                            <label class="form-label">Fault Ticket</label>
+                            <input type="text" class="form-input" id="budgetTicketDisplay" readonly>
+                        </div>
+                        <div class="form-group budget-ticket-field">
+                            <label class="form-label">Total Budget Amount (LKR) <span class="required">*</span></label>
+                            <input type="number" class="form-input" id="budgetTotalAmount" placeholder="e.g. 15000.00" min="0" step="0.01" required>
+                            <div class="form-hint" id="pettyCashHint"></div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Total Budget Amount (LKR) <span class="required">*</span></label>
-                        <input type="number" class="form-input" id="budgetTotalAmount" placeholder="e.g. 15000.00" min="0" step="0.01" required>
-                        <div class="form-hint" id="pettyCashHint"></div>
+
+                    <div class="budget-form-section">
+                        <h4 class="budget-form-section-title"><i class="fas fa-list-check"></i> Cost Details</h4>
+                        <div class="form-group">
+                            <label class="form-label">Quotation / Cost Breakdown <span class="required">*</span></label>
+                            <textarea class="form-textarea" id="budgetQuotation" placeholder="Describe the items and their costs..." rows="4" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Justification <span class="required">*</span></label>
+                            <textarea class="form-textarea" id="budgetJustification" placeholder="Why is this budget needed?" rows="3" required></textarea>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Quotation / Cost Breakdown <span class="required">*</span></label>
-                        <textarea class="form-textarea" id="budgetQuotation" placeholder="Describe the items and their costs..." rows="4" required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Justification <span class="required">*</span></label>
-                        <textarea class="form-textarea" id="budgetJustification" placeholder="Why is this budget needed?" rows="3" required></textarea>
-                    </div>
-                    <div class="form-actions">
+
+                    <div class="form-actions budget-form-actions">
                         <button type="button" class="btn btn-secondary" onclick="closeBudgetModal()">Cancel</button>
                         <button type="submit" class="btn btn-primary" id="budgetSubmitBtn">
                             <i class="fas fa-paper-plane"></i> Submit Report

@@ -261,3 +261,13 @@
   - verifies delete button hidden for non-pending tickets (`SVT-003`, `SVT-004`).
 - Validation evidence:
   - `VAL_STAGE=after npx playwright test maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js` -> passed (2/2).
+
+### 2026-04-20
+- Completed requested documentation synchronization for service-ticket workflow coverage.
+- Updated `docs/member-wise-test-scenarios.md`:
+  - Added Gehiru `Scenario 1.12: Service Ticket Workflow System` with sequential test cases `TC-GH-089` to `TC-GH-100`.
+  - Updated Gehiru scenario/case summary counts and overall totals.
+- Updated `docs/contributions/v2.md`:
+  - Added Service Ticket Workflow to Gehiru contribution areas.
+  - Added new `1.6 Service Ticket Workflow System` section (backend components, states, endpoints, notification integration).
+  - Renumbered Infrastructure subsection to `1.7`.

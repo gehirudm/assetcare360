@@ -1,0 +1,13 @@
+{
+  "stage": "before",
+  "consoleErrors": [],
+  "failedRequests": [],
+  "machineOptions": [
+    "Machine Alpha",
+    "Machine Beta"
+  ],
+  "vehicleOptions": [
+    "Fleet Unit 101",
+    "Fleet Unit 202"
+  ]
+}

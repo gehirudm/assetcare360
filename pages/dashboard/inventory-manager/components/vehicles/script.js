@@ -8,6 +8,7 @@ class InventoryVehicles extends HTMLElement {
         super();
         this.vehicles = [];
         this.currentFilter = 'all';
+        this.currentSort = 'created-desc';
     }
 
     connectedCallback() {
@@ -46,6 +47,13 @@ class InventoryVehicles extends HTMLElement {
                 <button class="filter-btn" data-status="Active">Active</button>
                 <button class="filter-btn" data-status="Under Maintenance">Under Maintenance</button>
                 <button class="filter-btn" data-status="Inactive">Inactive</button>
+                <div class="list-sort-controls">
+                    <label class="sort-label" for="vehicleCreatedSort">Sort</label>
+                    <select id="vehicleCreatedSort" class="form-select" aria-label="Sort vehicles by created date">
+                        <option value="created-desc">Created Date: Newest First</option>
+                        <option value="created-asc">Created Date: Oldest First</option>
+                    </select>
+                </div>
             </div>
 
             <div id="vehiclesList">
@@ -72,6 +80,15 @@ class InventoryVehicles extends HTMLElement {
             searchInput.addEventListener('input', () => this.applyFilters());
         }
 
+        // Sort input
+        const sortInput = this.querySelector('#vehicleCreatedSort');
+        if (sortInput) {
+            sortInput.addEventListener('change', () => {
+                this.currentSort = sortInput.value || 'created-desc';
+                this.applyFilters();
+            });
+        }
+
         // Add button
         const addBtn = this.querySelector('#addVehicleBtn');
         if (addBtn) {
@@ -86,7 +103,7 @@ class InventoryVehicles extends HTMLElement {
         try {
             const response = await API.get('/vehicles');
             this.vehicles = response.data?.vehicles || [];
-            this.displayVehicles(this.vehicles);
+            this.applyFilters();
         } catch (error) {
             console.error('Failed to load vehicles:', error);
             Utils.showToast('Failed to load vehicles', 'error');
@@ -127,7 +144,33 @@ class InventoryVehicles extends HTMLElement {
             return matchesStatus && matchesSearch;
         });
 
-        this.displayVehicles(filtered);
+        this.displayVehicles(this.sortByCreatedDate(filtered));
+    }
+
+    sortByCreatedDate(vehicleList) {
+        const direction = this.currentSort === 'created-asc' ? 1 : -1;
+
+        return [...vehicleList].sort((a, b) => {
+            const createdAtDifference = this.getCreatedTimestamp(a) - this.getCreatedTimestamp(b);
+            if (createdAtDifference !== 0) {
+                return direction === 1 ? createdAtDifference : -createdAtDifference;
+            }
+
+            const aId = Number.parseInt(a?.id, 10);
+            const bId = Number.parseInt(b?.id, 10);
+            if (Number.isFinite(aId) && Number.isFinite(bId) && aId !== bId) {
+                const idDifference = aId - bId;
+                return direction === 1 ? idDifference : -idDifference;
+            }
+
+            return 0;
+        });
+    }
+
+    getCreatedTimestamp(vehicle) {
+        const rawDate = vehicle?.created_at || vehicle?.createdAt || vehicle?.date_created;
+        const timestamp = Date.parse(rawDate || '');
+        return Number.isFinite(timestamp) ? timestamp : 0;
     }
 
     displayVehicles(vehicleList) {

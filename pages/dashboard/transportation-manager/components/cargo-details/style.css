@@ -63,6 +63,12 @@ tm-cargo-details {
     flex-direction: column;
 }
 
+.cargo-profile-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
 .cargo-profile-list {
     display: flex;
     flex-direction: column;
@@ -173,6 +179,10 @@ tm-cargo-details {
     .cargo-profile-item {
         flex-direction: column;
         align-items: flex-start;
+    }
+
+    .cargo-profile-actions {
+        justify-content: flex-start;
     }
 
     .cargo-profile-item strong {

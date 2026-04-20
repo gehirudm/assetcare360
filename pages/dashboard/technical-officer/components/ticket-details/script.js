@@ -77,6 +77,18 @@ class TOTicketDetailView extends HTMLElement {
             to-ticket-detail-view to-shell-sidebar {
                 display: none !important;
             }
+
+            /* Keep embedded detail modals isolated from legacy page-level modal defaults. */
+            to-ticket-detail-view :is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) > .modal {
+                align-items: stretch;
+                justify-content: flex-start;
+                backdrop-filter: none;
+            }
+
+            to-ticket-detail-view :is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .modal-header,
+            to-ticket-detail-view :is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .modal-body {
+                margin: 0;
+            }
         `;
 
         document.head.appendChild(style);
@@ -157,6 +169,7 @@ class TOTicketDetailView extends HTMLElement {
         const doc = new DOMParser().parseFromString(html, 'text/html');
         const container = doc.querySelector('body > .container');
         const templateNodeSelectors = [
+            '#processTicketModal',
             '#budgetModal',
             '#partsModal',
             '#completeModal',

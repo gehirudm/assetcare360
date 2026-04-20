@@ -218,6 +218,17 @@ function filterLogsByPeriod(logs, period) {
 async function ensureAdminSession(page) {
     const users = buildUsers();
     const logs = buildLogs();
+    let pettyCashSetting = {
+        id: 1,
+        setting_key: 'petty_cash_limit',
+        setting_value: '50000.00',
+        data_type: 'decimal',
+        description: 'Maximum budget amount that a Supervisor can approve. Amounts exceeding this require Maintenance Manager approval.',
+        updated_by: 1,
+        updated_by_name: 'Admin User',
+        created_at: '2026-01-01 09:00:00',
+        updated_at: '2026-04-01 09:00:00',
+    };
 
     await page.route('**/api/auth/me', (route) => {
         route.fulfill({
@@ -316,6 +327,84 @@ async function ensureAdminSession(page) {
         });
     });
 
+    await page.route('**/api/system-settings**', async (route) => {
+        const request = route.request();
+        const url = request.url();
+        const { pathname } = new URL(url);
+        const method = request.method();
+
+        if (method === 'GET' && pathname === '/api/system-settings') {
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    status: 'success',
+                    data: {
+                        settings: [pettyCashSetting],
+                    },
+                }),
+            });
+            return;
+        }
+
+        if (method === 'GET' && pathname === '/api/system-settings/petty_cash_limit') {
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    status: 'success',
+                    data: {
+                        setting: pettyCashSetting,
+                    },
+                }),
+            });
+            return;
+        }
+
+        if (method === 'PUT' && pathname === '/api/system-settings/petty_cash_limit') {
+            let requestedValue = pettyCashSetting.setting_value;
+            try {
+                const payload = request.postDataJSON();
+                if (payload && Object.prototype.hasOwnProperty.call(payload, 'value')) {
+                    const numericValue = Number(payload.value);
+                    if (Number.isFinite(numericValue)) {
+                        requestedValue = numericValue.toFixed(2);
+                    }
+                }
+            } catch (error) {
+                // Keep prior value when payload cannot be parsed.
+            }
+
+            pettyCashSetting = {
+                ...pettyCashSetting,
+                setting_value: requestedValue,
+                updated_at: new Date().toISOString(),
+            };
+
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    status: 'success',
+                    message: 'Setting updated successfully',
+                    data: {
+                        setting: pettyCashSetting,
+                    },
+                }),
+            });
+            return;
+        }
+
+        route.fulfill({
+            status: 404,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                status: 'error',
+                message: 'Setting not found',
+            }),
+        });
+    });
+
     await page.goto(`${BASE_URL}/dashboard/sysadministration/index.html`, { waitUntil: 'domcontentloaded' });
 }
 
@@ -353,6 +442,8 @@ async function runFlow(page, viewportName) {
 
     await navigateSection(page, 'petty-cash-config');
     await expect(page.getByRole('heading', { name: 'Petty Cash Configuration' })).toBeVisible();
+    await expect(page.locator('#saPettyCashLimitValue')).toContainText('LKR');
+    await expect(page.locator('#pettyCashRoutingSummary')).toContainText('Maintenance Manager approval');
     await page.getByRole('button', { name: 'Set New Limit' }).click();
     await expect(page.locator('#setPettyCashLimitModal')).toBeVisible();
     await page.locator('#setPettyCashLimitModal .close').click();

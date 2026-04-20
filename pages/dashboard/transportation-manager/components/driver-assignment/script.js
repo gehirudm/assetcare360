@@ -12,6 +12,7 @@ class TMDriverAssignment extends HTMLElement {
         this._vehicles = [];
         this._searchQuery = '';
         this._filter = 'all';
+        this._assignedTripLocks = new Set();
         this.loadStyles();
         this.render();
         this.bindEvents();
@@ -79,9 +80,13 @@ class TMDriverAssignment extends HTMLElement {
                 const action = actionEl.dataset.action;
                 const vehicleId = actionEl.dataset.vehicleId;
                 const numberPlate = actionEl.dataset.numberPlate;
+                const vehicle = vehicleId ? this._vehicles.find(v => v.id == vehicleId) : null;
+
+                if ((action === 'change' || action === 'unassign') && this._hasAssignedTripLock(vehicle)) {
+                    return;
+                }
 
                 if (action === 'assign' || action === 'change') {
-                    const vehicle = this._vehicles.find(v => v.id == vehicleId);
                     if (vehicle) {
                         this.dispatchEvent(new CustomEvent('tm-driver-assignment:assign', {
                             detail: { vehicle },
@@ -121,8 +126,18 @@ class TMDriverAssignment extends HTMLElement {
         `;
 
         try {
-            const res = await API.get('/vehicles/with-drivers');
-            this._vehicles = res.data?.vehicles || [];
+            const vehiclesRes = await API.get('/vehicles/with-drivers');
+            this._vehicles = vehiclesRes.data?.vehicles || [];
+
+            let trips = [];
+            try {
+                const tripsRes = await API.get('/trips');
+                trips = tripsRes.data?.trips || [];
+            } catch (tripError) {
+                console.warn('TM driver-assignment: unable to load trips for lock state checks', tripError);
+            }
+
+            this._buildAssignedTripLocks(trips);
             this._renderList();
         } catch (error) {
             container.innerHTML = `
@@ -133,6 +148,57 @@ class TMDriverAssignment extends HTMLElement {
                 </div>
             `;
         }
+    }
+
+    _normalizeVehicleRegistration(value) {
+        return String(value || '').trim().toLowerCase();
+    }
+
+    _normalizeTripStatus(value) {
+        return String(value || '').trim().toLowerCase();
+    }
+
+    _isAssignedTripStatus(status) {
+        return status === 'assigned' || status === 'pending' || status === 'accepted' || status === 'in progress';
+    }
+
+    _buildAssignedTripLocks(trips) {
+        const locks = new Set();
+        const entries = Array.isArray(trips) ? trips : [];
+
+        entries.forEach((trip) => {
+            const status = this._normalizeTripStatus(trip?.status);
+            if (!this._isAssignedTripStatus(status)) {
+                return;
+            }
+
+            const driverId = Number(trip?.driver_id || trip?.driver_user_id || trip?.assigned_driver_id || 0);
+            const vehicleRegistration = this._normalizeVehicleRegistration(
+                trip?.vehicle_registration || trip?.number_plate
+            );
+
+            if (driverId <= 0 || vehicleRegistration === '') {
+                return;
+            }
+
+            locks.add(`${driverId}:${vehicleRegistration}`);
+        });
+
+        this._assignedTripLocks = locks;
+    }
+
+    _hasAssignedTripLock(vehicle) {
+        if (!vehicle || !vehicle.assigned_driver_id) {
+            return false;
+        }
+
+        const driverId = Number(vehicle.assigned_driver_id || 0);
+        const vehicleRegistration = this._normalizeVehicleRegistration(vehicle.number_plate);
+        if (driverId <= 0 || vehicleRegistration === '') {
+            return false;
+        }
+
+        return this._assignedTripLocks.has(`${driverId}:${vehicleRegistration}`);
     }
 
     _getFiltered() {
@@ -179,6 +245,7 @@ class TMDriverAssignment extends HTMLElement {
 
         const items = vehicles.map(vehicle => {
             const hasDriver = !!vehicle.assigned_driver_id;
+            const hasAssignedTripLock = hasDriver && this._hasAssignedTripLock(vehicle);
             const statusClass = hasDriver ? 'completed' : 'pending';
             const numberPlate = vehicle.number_plate || '—';
             const vehicleName = vehicle.vehicle_name || '—';
@@ -195,18 +262,22 @@ class TMDriverAssignment extends HTMLElement {
                    </div>`;
 
             const actionButton = hasDriver
-                ? `<button class="btn btn-secondary btn-small" data-action="change" data-vehicle-id="${vehicle.id}" data-number-plate="${numberPlate}">
-                       <i class="fas fa-exchange-alt"></i> Change
-                   </button>
-                   <button class="btn btn-danger btn-small" data-action="unassign" data-vehicle-id="${vehicle.id}" data-number-plate="${numberPlate}">
-                       <i class="fas fa-user-minus"></i> Unassign
-                   </button>`
+                ? (hasAssignedTripLock
+                    ? `<span class="status-text status-assigned" data-driver-trip-lock-message="true">
+                           <i class="fas fa-lock"></i> Driver already has a trip assigned
+                       </span>`
+                    : `<button class="btn btn-secondary btn-small" data-action="change" data-vehicle-id="${vehicle.id}" data-number-plate="${numberPlate}">
+                           <i class="fas fa-exchange-alt"></i> Change
+                       </button>
+                       <button class="btn btn-danger btn-small" data-action="unassign" data-vehicle-id="${vehicle.id}" data-number-plate="${numberPlate}">
+                           <i class="fas fa-user-minus"></i> Unassign
+                       </button>`)
                 : `<button class="btn btn-primary btn-small" data-action="assign" data-vehicle-id="${vehicle.id}" data-number-plate="${numberPlate}">
                        <i class="fas fa-user-plus"></i> Assign Driver
                    </button>`;
 
             return `
-                <div class="inventory-item ${statusClass}" data-id="${vehicle.id}">
+                <div class="inventory-item ${statusClass}" data-id="${vehicle.id}" ${hasAssignedTripLock ? 'data-driver-assignment-locked="true"' : ''}>
                     <div class="item-details">
                         <strong><i class="fas fa-truck"></i> ${numberPlate}</strong>
                         <div class="item-meta">
@@ -218,6 +289,7 @@ class TMDriverAssignment extends HTMLElement {
                         <div class="item-description">
                             ${driverInfo}
                         </div>
+                        ${hasAssignedTripLock ? `<div class="item-meta"><span class="status-text status-assigned" data-driver-trip-lock-badge="true"><i class="fas fa-lock"></i> Trip assigned to this driver</span></div>` : ''}
                     </div>
                     <div class="item-actions">
                         ${actionButton}

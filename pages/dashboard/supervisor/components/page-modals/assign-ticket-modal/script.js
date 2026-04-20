@@ -69,6 +69,8 @@ class SupervisorAssignTicketModal extends HTMLElement {
                 this.applyExistingAssignment(ticket);
             }
 
+            this.applyExpectedCompletionDateConstraints({ defaultToToday: !this._isEditMode });
+
             this.updateTechnicianWarning();
             this.showModal();
         } catch (error) {
@@ -180,8 +182,20 @@ class SupervisorAssignTicketModal extends HTMLElement {
         });
 
         this.addEventListener('change', (event) => {
-            if (!event.target.matches('input[name="technicians"]')) return;
-            this.updateTechnicianWarning();
+            if (event.target.matches('input[name="technicians"]')) {
+                this.updateTechnicianWarning();
+                return;
+            }
+
+            if (event.target.id === 'expectedCompletion') {
+                this.validateExpectedCompletionDate();
+            }
+        });
+
+        this.addEventListener('input', (event) => {
+            if (event.target.id === 'expectedCompletion') {
+                this.validateExpectedCompletionDate();
+            }
         });
     }
 
@@ -248,6 +262,8 @@ class SupervisorAssignTicketModal extends HTMLElement {
         const form = this.formElement;
         form?.reset();
 
+        this.applyExpectedCompletionDateConstraints({ defaultToToday: !this._isEditMode });
+
         const techniciansList = this.querySelector('#techniciansList');
         if (techniciansList) {
             techniciansList.innerHTML = '';
@@ -257,6 +273,70 @@ class SupervisorAssignTicketModal extends HTMLElement {
         if (warningDiv) {
             warningDiv.style.display = 'none';
         }
+    }
+
+    getTodayDateString() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    applyExpectedCompletionDateConstraints({ defaultToToday = false } = {}) {
+        const expectedCompletionInput = this.querySelector('#expectedCompletion');
+        if (!expectedCompletionInput) {
+            return;
+        }
+
+        const today = this.getTodayDateString();
+        expectedCompletionInput.min = today;
+
+        if (defaultToToday && !String(expectedCompletionInput.value || '').trim()) {
+            expectedCompletionInput.value = today;
+        }
+
+        this.validateExpectedCompletionDate();
+    }
+
+    validateExpectedCompletionDate({ showToast = false, focusField = false } = {}) {
+        const expectedCompletionInput = this.querySelector('#expectedCompletion');
+        if (!expectedCompletionInput) {
+            return true;
+        }
+
+        const expectedCompletionDate = String(expectedCompletionInput.value || '').trim();
+        if (!expectedCompletionDate) {
+            expectedCompletionInput.setCustomValidity('Expected completion date is required.');
+
+            if (showToast) {
+                this.emitToast('Expected completion date is required', 'error');
+            }
+
+            if (focusField) {
+                expectedCompletionInput.reportValidity();
+            }
+
+            return false;
+        }
+
+        const today = this.getTodayDateString();
+        if (expectedCompletionDate < today) {
+            expectedCompletionInput.setCustomValidity('Expected completion date cannot be in the past.');
+
+            if (showToast) {
+                this.emitToast('Expected completion date cannot be in the past', 'error');
+            }
+
+            if (focusField) {
+                expectedCompletionInput.reportValidity();
+            }
+
+            return false;
+        }
+
+        expectedCompletionInput.setCustomValidity('');
+        return true;
     }
 
     showModal() {
@@ -371,13 +451,24 @@ class SupervisorAssignTicketModal extends HTMLElement {
         }
 
         const formData = new FormData(form);
+        const expectedCompletionDate = String(formData.get('expected_completion') || '').trim();
+
+        if (!expectedCompletionDate) {
+            this.emitToast('Expected completion date is required', 'error');
+            return;
+        }
+
+        if (!this.validateExpectedCompletionDate({ showToast: true, focusField: true })) {
+            return;
+        }
+
         const priority = String(formData.get('priority') || 'medium');
         const capitalizedPriority = priority.charAt(0).toUpperCase() + priority.slice(1);
 
         const assignmentData = {
             technician_ids: selectedTechnicians,
             priority: capitalizedPriority,
-            expected_completion_date: formData.get('expected_completion'),
+            expected_completion_date: expectedCompletionDate,
             notes: formData.get('notes')
         };
 

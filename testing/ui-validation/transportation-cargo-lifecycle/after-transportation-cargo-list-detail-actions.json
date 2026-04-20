@@ -1,0 +1,19 @@
+{
+  "stage": "after",
+  "desktop": {
+    "cargoStateMutationCalls": 1,
+    "hasCargoViewDetailsAction": true,
+    "hasCargoListDeactivateAction": false,
+    "hasCargoListStatusBadge": false,
+    "hasCargoDetailsStateAction": true
+  },
+  "mobile": {
+    "cargoStateMutationCalls": 1,
+    "hasCargoViewDetailsAction": true,
+    "hasCargoListDeactivateAction": false,
+    "hasCargoListStatusBadge": false,
+    "hasCargoDetailsStateAction": true
+  },
+  "console": [],
+  "failedRequests": []
+}

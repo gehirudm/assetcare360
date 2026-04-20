@@ -228,7 +228,43 @@ function buildMaintenanceFixtures() {
                 updated_at: '2026-04-15T16:30:00Z',
             },
         ],
+        notifications: [
+            {
+                notification_id: 'NTF-MAIN-001',
+                title: 'Budget review required',
+                message: 'Budget report BR-112 is awaiting your approval.',
+                type: 'warning',
+                is_read: 0,
+                source_event: 'BUDGET_REPORT_CREATED',
+                source_event_id: 'BR-112',
+                created_at: '2026-04-20T09:30:00Z',
+            },
+            {
+                notification_id: 'NTF-MAIN-002',
+                title: 'Service completed',
+                message: 'Service ticket SVT-004 has been completed and is ready for review.',
+                type: 'success',
+                is_read: 1,
+                source_event: 'SERVICE_TICKET_COMPLETED',
+                source_event_id: 'SVT-004',
+                created_at: '2026-04-20T07:15:00Z',
+            },
+            {
+                notification_id: 'NTF-MAIN-003',
+                title: 'Spare-part request updated',
+                message: 'Spare-part request SPR-223 was approved and inventory is preparing dispatch.',
+                type: 'info',
+                is_read: 0,
+                source_event: 'SPARE_PART_REQUEST_APPROVED',
+                source_event_id: 'SPR-223',
+                created_at: '2026-04-20T08:45:00Z',
+            },
+        ],
     };
+}
+
+function unreadCount(notifications) {
+    return notifications.filter((item) => Number(item.is_read) !== 1).length;
 }
 
 function attachMonitors(page, state) {
@@ -432,11 +468,51 @@ async function ensureMaintenanceSession(page) {
         }
 
         if (pathname.endsWith('/api/notifications') && method === 'GET') {
-            return json({ status: 'success', data: { notifications: [], unread_count: 0 } });
+            return json({
+                status: 'success',
+                data: {
+                    notifications: fixtures.notifications,
+                    unread_count: unreadCount(fixtures.notifications),
+                    pagination: {
+                        page: 1,
+                        limit: 50,
+                        total: fixtures.notifications.length,
+                        total_pages: 1,
+                    },
+                },
+            });
         }
 
         if (pathname.match(/\/api\/notifications\/read$/) && method === 'POST') {
-            return json({ status: 'success', data: {} });
+            let payload = {};
+            try {
+                payload = request.postDataJSON() || {};
+            } catch (_error) {
+                payload = {};
+            }
+
+            if (payload.mark_all === true) {
+                fixtures.notifications = fixtures.notifications.map((item) => ({
+                    ...item,
+                    is_read: 1,
+                }));
+            } else if (payload.notification_id) {
+                fixtures.notifications = fixtures.notifications.map((item) => {
+                    if (item.notification_id === payload.notification_id) {
+                        return { ...item, is_read: 1 };
+                    }
+
+                    return item;
+                });
+            }
+
+            return json({
+                status: 'success',
+                message: 'Notification read state updated',
+                data: {
+                    unread_count: unreadCount(fixtures.notifications),
+                },
+            });
         }
 
         return json({ status: 'success', data: {} });
@@ -599,10 +675,46 @@ async function runFlow(page, viewportName) {
     await expect(page.locator('#warrantyDetailsModal')).toBeHidden();
 
     await navigateSection(page, 'notifications');
-    await expect(page.getByRole('heading', { name: 'Notifications' })).toBeVisible();
-    await page.getByRole('button', { name: 'Cost Approvals' }).click();
-    await page.getByRole('button', { name: 'Service' }).click();
-    await page.getByRole('button', { name: 'All Notifications' }).click();
+    await expect(page.getByRole('heading', { name: 'Notifications', exact: true })).toBeVisible();
+
+    const notificationsRoot = page.locator('maintenance-notifications');
+    await expect(notificationsRoot.locator('.maintenance-notifications-filters')).toBeVisible();
+    await expect(notificationsRoot.locator('.notif-card')).toHaveCount(3);
+    await expect(notificationsRoot.locator('#maintenanceNotificationsFilterSummary')).toContainText('Showing all 3 notifications');
+
+    await notificationsRoot.locator('select[data-filter="readStatus"]').selectOption('unread');
+    await expect(notificationsRoot.locator('.notif-card')).toHaveCount(2);
+    await expect(notificationsRoot.locator('#maintenanceNotificationsFilterSummary')).toContainText('Showing 2 of 3 notifications');
+
+    await notificationsRoot.locator('select[data-filter="type"]').selectOption('warning');
+    await expect(notificationsRoot.locator('.notif-card')).toHaveCount(1);
+    await expect(notificationsRoot.locator('.notif-title').first()).toContainText('Budget review required');
+
+    await notificationsRoot.locator('button[data-action="clear-filters"]').click();
+    await expect(notificationsRoot.locator('.notif-card')).toHaveCount(3);
+
+    await notificationsRoot.locator('input[data-filter="search"]').fill('service');
+    await expect(notificationsRoot.locator('.notif-card')).toHaveCount(1);
+    await expect(notificationsRoot.locator('.notif-title').first()).toContainText('Service completed');
+
+    await notificationsRoot.locator('input[data-filter="search"]').fill('');
+    await notificationsRoot.locator('select[data-filter="sort"]').selectOption('oldest');
+    await expect(notificationsRoot.locator('.notif-card')).toHaveCount(3);
+    await expect(notificationsRoot.locator('.notif-title').first()).toContainText('Service completed');
+
+    await notificationsRoot.locator('button[data-action="clear-filters"]').click();
+    await expect(notificationsRoot.locator('.notif-card')).toHaveCount(3);
+
+    const badge = page.locator('ac-layout ac-sidebar #notifBadge');
+    await expect(badge).toHaveText('2');
+
+    await notificationsRoot.locator('button[data-notification-id]').first().click();
+    await expect(notificationsRoot.locator('button[data-notification-id]')).toHaveCount(1);
+    await expect(badge).toHaveText('1');
+
+    await notificationsRoot.locator('button[data-action="mark-all-read"]').click();
+    await expect(notificationsRoot.locator('button[data-notification-id]')).toHaveCount(0);
+    await expect(badge).toHaveText('0');
 
     let ariaSnapshot = '';
     try {

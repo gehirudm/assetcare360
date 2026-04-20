@@ -1,0 +1,11 @@
+{
+  "stage": "after",
+  "consoleErrors": [],
+  "failedRequests": [],
+  "machineFirstDefaultId": "102",
+  "machineFirstAscId": "103",
+  "machineFirstDescId": "102",
+  "vehicleFirstDefaultId": "202",
+  "vehicleFirstAscId": "201",
+  "vehicleFirstDescId": "202"
+}

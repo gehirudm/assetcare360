@@ -1,0 +1,20 @@
+{
+  "stage": "after",
+  "consoleErrors": [],
+  "failedRequests": [],
+  "assignmentPostCalls": 0,
+  "lockedVehicle": {
+    "hasLockedAttribute": true,
+    "hasLockBadge": true,
+    "hasLockMessage": true,
+    "hasChangeButton": false,
+    "hasUnassignButton": false
+  },
+  "unlockedVehicle": {
+    "hasChangeButton": true,
+    "hasUnassignButton": true
+  },
+  "unassignedVehicle": {
+    "hasAssignButton": true
+  }
+}

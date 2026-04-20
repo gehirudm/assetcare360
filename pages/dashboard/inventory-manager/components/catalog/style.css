@@ -22,3 +22,69 @@
 .catalog-item {
     cursor: default;
 }
+
+.catalog-filter-sort-panel {
+    border: 1px solid var(--stone-200);
+    border-radius: 14px;
+    background: linear-gradient(180deg, #fbfcff 0%, #f7f9ff 100%);
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.catalog-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.catalog-filter-group {
+    flex: 1 1 auto;
+    margin-bottom: 0;
+    gap: 8px;
+}
+
+.catalog-sort-group {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+.catalog-sort-label {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+#catalogSort {
+    min-width: 260px;
+    padding: 9px 12px;
+    border-radius: 22px;
+    font-size: 13px;
+}
+
+@media (max-width: 768px) {
+    .catalog-filter-sort-panel {
+        padding: 12px;
+    }
+
+    .catalog-filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .catalog-sort-group {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    #catalogSort {
+        min-width: 0;
+        width: 100%;
+    }
+}

@@ -217,6 +217,53 @@
     line-height: 1.6;
 }
 
+.overview-machine {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border: 1px solid #dbe5f1;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.overview-machine-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.overview-machine-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.overview-machine-item span {
+    font-size: 0.73rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.overview-machine-item strong {
+    color: #0f172a;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+    .overview-machine-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .overview-machine-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 .overview-dangerous {
     display: flex;
     flex-direction: column;
@@ -732,7 +779,7 @@
 /* ============================================================
    MODALS
    ============================================================ */
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal).modal-overlay {
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal).modal-overlay {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.5);
@@ -744,9 +791,9 @@
     overflow-y: auto;
 }
 
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal).modal-overlay.active { display: flex; }
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal).modal-overlay.active { display: flex; }
 
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) > .modal {
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) > .modal {
     position: relative;
     top: auto;
     left: auto;
@@ -762,9 +809,13 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    backdrop-filter: none;
+    padding: 0;
 }
 
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) > .modal.modal-wide { max-width: 680px; }
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) > .modal.modal-wide { max-width: 680px; }
 
 #partsModal > .modal.modal-parts {
     max-width: 860px;
@@ -785,7 +836,7 @@
     font-size: 12px;
 }
 
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .modal-header {
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .modal-header {
     padding: 20px 24px 16px;
     border-bottom: 1px solid var(--stone-200);
     display: flex;
@@ -795,9 +846,10 @@
     top: 0;
     background: var(--card);
     z-index: 1;
+    margin: 0;
 }
 
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .modal-header h3 {
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .modal-header h3 {
     font-size: 1.1rem;
     font-weight: 700;
     display: flex;
@@ -805,7 +857,7 @@
     gap: 8px;
 }
 
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .modal-close {
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .modal-close {
     background: none;
     border: none;
     font-size: 1.1rem;
@@ -815,40 +867,43 @@
     border-radius: 4px;
     transition: color 0.2s;
 }
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .modal-close:hover { color: var(--text-900); }
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .modal-close:hover { color: var(--text-900); }
 
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .modal-body { padding: 20px 24px 24px; }
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .modal-body {
+    padding: 20px 24px 24px;
+    margin: 0;
+}
 
 /* ============================================================
    FORM ELEMENTS
    ============================================================ */
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .form-group {
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .form-group {
     display: flex;
     flex-direction: column;
     gap: 6px;
     margin-bottom: 16px;
 }
 
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .form-row {
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
 }
 
 @media (max-width: 480px) {
-    :is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .form-row { grid-template-columns: 1fr; }
+    :is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .form-row { grid-template-columns: 1fr; }
 }
 
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .form-label {
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .form-label {
     font-size: 0.875rem;
     font-weight: 600;
     color: var(--text-700);
 }
 
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .required { color: var(--danger); margin-left: 2px; }
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .required { color: var(--danger); margin-left: 2px; }
 
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .form-input,
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .form-textarea {
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .form-input,
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .form-textarea {
     padding: 10px 14px;
     border: 1.5px solid var(--stone-200);
     border-radius: var(--radius-sm);
@@ -860,32 +915,186 @@
     width: 100%;
 }
 
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .form-input:focus,
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .form-textarea:focus {
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .form-input:focus,
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .form-textarea:focus {
     outline: none;
     border-color: var(--royal-blue);
     box-shadow: var(--ring);
 }
 
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .form-input[readonly] { background: var(--stone-100); color: var(--muted); cursor: default; }
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .form-textarea { resize: vertical; min-height: 80px; }
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .form-input[readonly] { background: var(--stone-100); color: var(--muted); cursor: default; }
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .form-textarea { resize: vertical; min-height: 80px; }
 
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .form-hint {
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .form-hint {
     font-size: 0.78rem;
     color: var(--muted);
     margin-top: 2px;
 }
 
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .form-hint.warn  { color: #92400e; }
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .form-hint.info  { color: #1d4ed8; }
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .form-hint.warn  { color: #92400e; }
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .form-hint.info  { color: #1d4ed8; }
 
-:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal) .form-actions {
+:is(#budgetModal, #partsModal, #completeModal, #assignModal, #garageApprovalModal, #processTicketModal) .form-actions {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
     margin-top: 20px;
     padding-top: 16px;
     border-top: 1px solid var(--stone-200);
+}
+
+/* ============================================================
+   BUDGET MODAL POLISH
+   ============================================================ */
+#budgetModal > .modal.budget-modal-shell {
+    max-width: 760px;
+}
+
+#budgetModal .budget-modal-header {
+    background: var(--gradient-blue);
+    color: #fff;
+    border-bottom: none;
+    border-radius: var(--radius) var(--radius) 0 0;
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.2);
+    align-items: flex-start;
+    gap: 14px;
+}
+
+#budgetModal .budget-modal-header-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+#budgetModal .budget-modal-header h3 {
+    color: #fff;
+    margin: 0;
+    font-size: 1.15rem;
+    line-height: 1.25;
+}
+
+#budgetModal .budget-modal-subtitle {
+    margin: 0;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.45;
+}
+
+#budgetModal .budget-modal-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.38);
+    color: #fff;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+#budgetModal .budget-modal-close:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+#budgetModal .budget-modal-body {
+    background: linear-gradient(180deg, #f9fbff 0%, #ffffff 42%);
+}
+
+#budgetModal .budget-form-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+#budgetModal .budget-ticket-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid #dbe7ff;
+    background: #eef4ff;
+}
+
+#budgetModal .budget-ticket-field {
+    margin-bottom: 0;
+}
+
+#budgetModal .budget-ticket-field .form-input[readonly] {
+    background: #fff;
+    color: var(--text-900);
+    border-color: #c7d8fb;
+    font-weight: 600;
+}
+
+#budgetModal .budget-form-section {
+    border: 1px solid var(--stone-200);
+    border-radius: 12px;
+    background: #fff;
+    padding: 14px;
+}
+
+#budgetModal .budget-form-section-title {
+    margin: 0 0 12px;
+    color: var(--tang-blue);
+    font-size: 0.92rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+#budgetModal .budget-form-section .form-group:last-child {
+    margin-bottom: 0;
+}
+
+#budgetModal .budget-form-actions {
+    margin-top: 4px;
+    border-top-color: #dfe8f7;
+}
+
+#partsModal > .modal {
+    max-width: 1040px;
+}
+
+#partsModal .modal-header {
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 55%, #38bdf8 100%);
+    border-bottom: none;
+    border-radius: var(--radius) var(--radius) 0 0;
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.25);
+}
+
+#partsModal .modal-header h3 {
+    color: #fff;
+    margin: 0;
+    font-size: 1.08rem;
+}
+
+#partsModal .modal-close {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.38);
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+#partsModal .modal-close:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+#partsModal .modal-body {
+    background: linear-gradient(180deg, #f9fbff 0%, #ffffff 36%);
 }
 
 /* ============================================================
@@ -930,6 +1139,26 @@
 @media (max-width: 480px) {
     #partsModal .part-row { grid-template-columns: 1fr 80px 32px; }
     #partsModal .part-row .part-unit { display: none; }
+
+    #budgetModal .budget-ticket-panel {
+        grid-template-columns: 1fr;
+    }
+
+    #budgetModal .budget-modal-header {
+        padding: 18px 18px 14px;
+    }
+
+    #budgetModal .budget-modal-body {
+        padding: 18px;
+    }
+
+    #partsModal .modal-header {
+        padding: 18px 18px 14px;
+    }
+
+    #partsModal .modal-body {
+        padding: 18px;
+    }
 }
 
 #partsModal .part-row input,

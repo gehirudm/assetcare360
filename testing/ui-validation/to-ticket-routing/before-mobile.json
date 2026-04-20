@@ -2,19 +2,23 @@
   "stage": "before",
   "viewport": "mobile",
   "startUrl": "http://127.0.0.1:3000/dashboard/technical-officer/index.html?section=tickets",
-  "finalUrl": "http://127.0.0.1:3000/dashboard/technical-officer/index.html?section=tickets",
+  "finalUrl": "http://127.0.0.1:3000/dashboard/technical-officer/index.html?section=service-tickets",
   "title": "Technical Officer Dashboard - AssetCare360",
   "accessibility": {
-    "ariaSnapshot": "- text: AssetCare360\n- heading \"Technical Officer Dashboard\" [level=1]\n- button \"TO\"\n- navigation: Dashboard Fault & Repair Tickets Spare Part Management Inventory Management Service & Warranty Asset Feedback Notifications\n- main:\n  - heading \"Fault & Repair Tickets\" [level=1]\n  - paragraph: Manage tickets assigned by supervisors\n  - button \"Create New Repair Ticket\"\n  - button \"All Tickets\"\n  - button \"Pending\"\n  - button \"Waiting for Parts\"\n  - button \"Parts Approved\"\n  - button \"Parts Rejected\"\n  - button \"In Progress\"\n  - button \"Completed\"\n  - text: Tickets 1 ticket\n  - strong: TKT-501\n  - text: \"Equipment: CAT-320D | Reporter: Supervisor One Hydraulic pressure drop under load Assigned by: Supervisor One | HIGH | PENDING\"\n  - button \"Request Spare Parts\"\n  - button \"Add Budget\"\n- button \"☰\"",
-    "snapshotLength": 806
+    "ariaSnapshot": "- text: AssetCare360\n- heading \"Technical Officer Dashboard\" [level=1]\n- button \"TO\"\n- navigation: Dashboard Analytics Fault & Repair Tickets Spare Part Management Inventory Lookup Service Tickets Notifications\n- main:\n  - heading \"Service Tickets\" [level=1]\n  - paragraph: Track machine and vehicle service work assigned to you or waiting assignment\n  - text: Status\n  - button \"All\"\n  - button \"Assigned\"\n  - button \"In Progress\"\n  - button \"Completed\"\n  - text: Search\n  - textbox \"Search\":\n    - /placeholder: Search by ticket ID, asset, or service type\n  - text: Sort by\n  - combobox \"Sort by\":\n    - option \"Created Date\" [selected]\n    - option \"Priority\"\n  - text: Service Ticket Queue Loading... Loading service tickets...\n- text: Service ticket moved to In Progress.\n- button \"☰\"",
+    "snapshotLength": 789
   },
   "console": [],
   "failedRequests": [],
   "interactionSummary": {
-    "detailUrl": "http://127.0.0.1:3000/view-ticket/index.html?id=501&embedded=1&return_to=%2Fdashboard%2Ftechnical-officer%2Findex.html%3Fsection%3Dtickets&role_override=TECHNICAL_OFFICER",
-    "destinationPath": "/view-ticket/index.html",
-    "destinationSearch": "?id=501&embedded=1&return_to=%2Fdashboard%2Ftechnical-officer%2Findex.html%3Fsection%3Dtickets&role_override=TECHNICAL_OFFICER",
-    "returnUrl": "http://127.0.0.1:3000/dashboard/technical-officer/index.html?section=tickets",
+    "detailMode": "dashboard-component",
+    "detailTicketLabel": "TKT-501",
+    "detailHasIframe": false,
+    "serviceDetailTicketLabel": "SVT-901",
+    "serviceDetailFlowStepCount": 4,
+    "serviceSpareRequestSubmitted": true,
+    "serviceStartTransitionClickableWithoutRefresh": true,
+    "returnUrl": "http://127.0.0.1:3000/dashboard/technical-officer/index.html?section=service-tickets",
     "returnPath": "/dashboard/technical-officer/index.html",
     "returnSearch": "?section=tickets"
   }

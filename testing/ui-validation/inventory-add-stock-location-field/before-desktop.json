@@ -1,0 +1,27 @@
+{
+  "stage": "before",
+  "viewport": "desktop",
+  "consoleErrors": [],
+  "failedRequests": [],
+  "postedAdditions": [
+    {
+      "sparepart_id": "SPR-123",
+      "sparepart_name": "Brake Pads",
+      "category": "vehicles",
+      "location": "LOCATION 1",
+      "quantity_added": 4,
+      "received_date": "2026-04-21",
+      "supplier": "Parts Supplier Ltd",
+      "supplier_contact": "supplier@example.com",
+      "supplier_address": "Industrial Zone",
+      "warranty_period": null,
+      "warranty_start": null,
+      "warranty_terms": null,
+      "reference": null,
+      "notes": null
+    }
+  ],
+  "locationFieldVisible": true,
+  "locationFieldValue": "LOCATION 1",
+  "ariaSnapshot": "- main:\n  - heading \" Sparepart Addition\" [level=2]\n  - paragraph: Add stock only to spareparts already created in the catalog\n  - textbox \"Search by sparepart name, ID, or supplier...\"\n  - button \"+ Add Stock\"\n  - button \"All Categories\"\n  - button \"Vehicles\"\n  - button \"Machines\"\n  - text:  Stock Additions 0 items \n  - paragraph: No stock additions found."
+}

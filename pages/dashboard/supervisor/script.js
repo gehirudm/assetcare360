@@ -13,13 +13,28 @@ DashboardInit.init('Supervisor', {
         bindSupervisorRepairManagement();
         bindSupervisorBudgetApproval();
         bindSupervisorTechnicians();
+        bindSupervisorNotifications();
         loadDashboardData();
 
-        // Refresh weekly check reports every 30 seconds
+        if (getInitialSupervisorSection() === 'notifications') {
+            setTimeout(() => {
+                refreshSupervisorNotifications();
+            }, 0);
+        }
+
+        refreshSupervisorNotificationBadge();
+
+        // Refresh active dashboard feeds and notification badge every 30 seconds.
         setInterval(() => {
             const currentSection = document.querySelector('.content-section.active')?.id;
             if (currentSection === 'daily-check-reports') {
                 refreshSupervisorDailyCheckReports();
+            }
+
+            if (currentSection === 'notifications') {
+                refreshSupervisorNotifications();
+            } else {
+                refreshSupervisorNotificationBadge();
             }
         }, 30000);
     }
@@ -37,7 +52,8 @@ const SUPERVISOR_SECTIONS = new Set([
     'repair-management',
     'budget-approval',
     'asset-status',
-    'technicians'
+    'technicians',
+    'notifications'
 ]);
 
 let supervisorTicketDetailsReturnSection = 'fault-ticket-tracking';
@@ -152,6 +168,9 @@ function loadSectionData(sectionId) {
         case 'technicians':
             loadTechnicians();
             break;
+        case 'notifications':
+            refreshSupervisorNotifications();
+            break;
     }
 }
 
@@ -241,6 +260,11 @@ function bindSupervisorFaultTickets() {
         const source = event.detail?.source;
         if (!source) return;
         filterTicketsBySource(source);
+    });
+
+    component.addEventListener('supervisor-fault-tickets:sort', (event) => {
+        const sort = event.detail?.sort;
+        filterTicketsBySort(sort);
     });
 
     component.addEventListener('supervisor-fault-tickets:create-ticket', () => {
@@ -471,6 +495,9 @@ function refreshSupervisorFaultTickets() {
     if (component && typeof component.setSourceFilter === 'function') {
         component.setSourceFilter(currentTicketSourceFilter);
     }
+    if (component && typeof component.setSortOption === 'function') {
+        component.setSortOption(currentTicketSortOption);
+    }
 
     loadFaultTickets();
 }
@@ -618,6 +645,74 @@ function bindSupervisorTechnicians() {
     });
 }
 
+function bindSupervisorNotifications() {
+    const component = document.querySelector('supervisor-notifications');
+    if (!component || component.dataset.bound === 'true') return;
+
+    component.dataset.bound = 'true';
+
+    if (window.Auth && typeof window.Auth.getCurrentUser === 'function' && typeof component.setCurrentUser === 'function') {
+        const user = window.Auth.getCurrentUser();
+        if (user) {
+            component.setCurrentUser(user);
+        }
+    }
+
+    component.addEventListener('supervisor-notifications:toast', (event) => {
+        const message = event.detail?.message;
+        const type = event.detail?.type || 'info';
+        if (!message) return;
+        showToast(message, type);
+    });
+}
+
+async function refreshSupervisorNotifications() {
+    const component = document.querySelector('supervisor-notifications');
+    if (!component || typeof component.refresh !== 'function') {
+        await refreshSupervisorNotificationBadge();
+        return;
+    }
+
+    if (window.Auth && typeof window.Auth.getCurrentUser === 'function' && typeof component.setCurrentUser === 'function') {
+        const user = window.Auth.getCurrentUser();
+        if (user) {
+            component.setCurrentUser(user);
+        }
+    }
+
+    await component.refresh();
+}
+
+async function refreshSupervisorNotificationBadge() {
+    try {
+        const response = await API.get('/notifications?limit=1');
+        if (!response || response.status !== 'success') {
+            throw new Error(response?.message || 'Failed to load notification badge count');
+        }
+
+        const unreadCountRaw = Number(response?.data?.unread_count);
+        const notifications = Array.isArray(response?.data?.notifications) ? response.data.notifications : [];
+        const unreadCount = Number.isFinite(unreadCountRaw)
+            ? unreadCountRaw
+            : notifications.filter((item) => Number(item?.is_read) !== 1).length;
+
+        setSupervisorNotificationBadge(unreadCount);
+    } catch (error) {
+        console.error('refreshSupervisorNotificationBadge error:', error);
+        setSupervisorNotificationBadge(0);
+    }
+}
+
+function setSupervisorNotificationBadge(count) {
+    const sidebar = document.querySelector('ac-layout ac-sidebar') || document.querySelector('ac-sidebar');
+    if (!sidebar || typeof sidebar.setNotifBadge !== 'function') {
+        return;
+    }
+
+    const safeCount = Number.isFinite(Number(count)) ? Math.max(0, Number(count)) : 0;
+    sidebar.setNotifBadge(safeCount);
+}
+
 // ==================== WEEKLY CHECK REPORTS ====================
 
 function updateDashboardSummary(pendingCount) {
@@ -633,8 +728,13 @@ function updateDashboardSummary(pendingCount) {
 
 let currentTicketStatusFilter = 'all';
 let currentTicketSourceFilter = 'all';
+let currentTicketSortOption = 'date';
 let allTickets = []; // Store all tickets for filtering
 let allBreakdownItems = []; // Store breakdown reports for unassigned list
+
+function normalizeTicketSortOption(sortOption) {
+    return sortOption === 'priority' ? 'priority' : 'date';
+}
 
 function isRouteGarageWorkflowAssigned(status, approvedGarageId = null) {
     const normalized = String(status || '').toLowerCase().replace(/[-\s]+/g, '_');
@@ -1020,7 +1120,8 @@ function displayFilteredTickets() {
         unassignedBreakdowns: filteredBreakdowns,
         unassignedTickets,
         assignedTickets,
-        resolvedTickets
+        resolvedTickets,
+        sortOption: currentTicketSortOption,
     });
 }
 
@@ -1046,6 +1147,22 @@ function filterTicketsBySource(source) {
 
     displayFilteredTickets();
     showToast(`Showing ${source === 'all' ? 'all sources' : source + ' tickets'}`);
+}
+
+function filterTicketsBySort(sortOption) {
+    currentTicketSortOption = normalizeTicketSortOption(sortOption);
+
+    const component = document.querySelector('supervisor-fault-tickets');
+    if (component && typeof component.setSortOption === 'function') {
+        component.setSortOption(currentTicketSortOption);
+    }
+
+    displayFilteredTickets();
+    showToast(
+        currentTicketSortOption === 'priority'
+            ? 'Sorted by priority (high to low)'
+            : 'Sorted by date (newest first)'
+    );
 }
 
 async function createNewTicket() {

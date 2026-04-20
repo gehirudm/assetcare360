@@ -3,6 +3,7 @@
 (() => {
 
 let ticketData = null;
+let machineDetails = null;
 let currentUser = null;
 let budgetReport = null;
 let sparePartRequests = [];
@@ -572,6 +573,52 @@ function getFallbackEquipmentLabel(ticket) {
     return ticket.machine_model_number || ticket.machine_name || (ticket.machine_id ? `Machine #${ticket.machine_id}` : 'N/A');
 }
 
+function getMachineReferenceId(ticket = ticketData) {
+    const machineId = Number(ticket?.machine_id || ticket?.breakdown_context?.machine_id || 0);
+    return Number.isFinite(machineId) && machineId > 0 ? machineId : null;
+}
+
+function isMachineFaultTicket(ticket = ticketData) {
+    if (!ticket || typeof ticket !== 'object') {
+        return false;
+    }
+
+    const breakdownType = normaliseStatus(ticket.breakdown_type);
+    if (breakdownType === 'machine_breakdown') {
+        return true;
+    }
+
+    if (breakdownType === 'vehicle_breakdown' || breakdownType === 'route_breakdown') {
+        return false;
+    }
+
+    const machineId = getMachineReferenceId(ticket);
+    const vehicleId = Number(ticket?.vehicle_id || ticket?.breakdown_context?.vehicle_id || 0);
+    return machineId !== null && (!Number.isFinite(vehicleId) || vehicleId <= 0);
+}
+
+async function loadMachineDetailsForTicket() {
+    machineDetails = null;
+
+    if (!isMachineFaultTicket(ticketData)) {
+        return;
+    }
+
+    const machineId = getMachineReferenceId(ticketData);
+    if (!machineId) {
+        return;
+    }
+
+    try {
+        const machineResp = await API.get(`/machines/${machineId}`);
+        if (machineResp?.status === 'success' && machineResp.data && typeof machineResp.data === 'object') {
+            machineDetails = machineResp.data;
+        }
+    } catch (error) {
+        console.warn('Failed to load machine details for ticket view:', error);
+    }
+}
+
 function markStep(stepId, state) {
     const el = document.getElementById(stepId);
     if (!el) return;
@@ -756,6 +803,7 @@ async function loadAll() {
 
         ticketData = ticketResp.data;
         await loadRouteBreakdownContext();
+    await loadMachineDetailsForTicket();
 
         const budgetPayload = (budgetResp && budgetResp.status === 'success')
             ? budgetResp.data
@@ -853,6 +901,8 @@ function renderOverview(ticketIdFormatted) {
 
     document.getElementById('ovStatus').innerHTML = `<span class="badge badge-${statusClass}">${ticketData.status || 'Unknown'}</span>`;
     document.getElementById('ovPriority').innerHTML = `<span class="badge badge-priority-${priorityClass}">${ticketData.priority || 'Medium'}</span>`;
+
+    renderMachineOverviewPanel();
 
     const dangerousPanel = document.getElementById('ovDangerousCargoPanel');
     const dangerousBadges = document.getElementById('ovDangerousCargoBadges');
@@ -1038,6 +1088,60 @@ function renderOverview(ticketIdFormatted) {
             ? 'flex'
             : 'none';
     }
+}
+
+function renderMachineOverviewPanel() {
+    const machinePanel = document.getElementById('ovMachinePanel');
+    if (!machinePanel) {
+        return;
+    }
+
+    if (!isMachineFaultTicket(ticketData)) {
+        machinePanel.style.display = 'none';
+        return;
+    }
+
+    const machineData = machineDetails && typeof machineDetails === 'object' ? machineDetails : null;
+    const machineRefId = getMachineReferenceId(ticketData);
+
+    const machineCode = String(machineData?.machine_id || '').trim() || (machineRefId ? `Machine #${machineRefId}` : 'N/A');
+    const machineName = String(machineData?.machine_name || ticketData?.machine_name || ticketData?.breakdown_context?.equipment_label || '').trim() || 'N/A';
+    const machineSerial = String(machineData?.serial_number || '').trim() || 'N/A';
+    const machineModel = String(machineData?.model_number || ticketData?.machine_model_number || ticketData?.breakdown_context?.equipment_model || '').trim() || 'N/A';
+    const machineSupplier = String(machineData?.supplier_name || '').trim() || 'N/A';
+    const machineStatus = String(machineData?.status || '').trim() || 'N/A';
+
+    const hoursValue = machineData?.current_operating_hours;
+    const machineHours = hoursValue !== null
+        && hoursValue !== undefined
+        && String(hoursValue).trim() !== ''
+        && Number.isFinite(Number(hoursValue))
+        ? `${Number(hoursValue).toLocaleString('en-US')} hrs`
+        : 'N/A';
+
+    const lastService = machineData?.last_service_date ? fmtDateShort(machineData.last_service_date) : 'N/A';
+    const nextService = machineData?.next_service_date ? fmtDateShort(machineData.next_service_date) : 'N/A';
+
+    const values = {
+        ovMachineCode: machineCode,
+        ovMachineName: machineName,
+        ovMachineSerial: machineSerial,
+        ovMachineModel: machineModel,
+        ovMachineSupplier: machineSupplier,
+        ovMachineStatus: machineStatus,
+        ovMachineHours: machineHours,
+        ovMachineLastService: lastService,
+        ovMachineNextService: nextService,
+    };
+
+    Object.entries(values).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+        }
+    });
+
+    machinePanel.style.display = 'flex';
 }
 
 function parseCoordinatePair(latitudeValue, longitudeValue) {
@@ -1521,11 +1625,16 @@ function renderPartsStep(status) {
 function renderInProgressStep(status) {
     const currentIdx = statusIndex(status);
     const inProgressIdx = statusIndex('in progress');
+    const startWorkAction = document.getElementById('start-work-action');
 
     if (currentIdx >= inProgressIdx) {
         markStep('step-inprogress', statusAtOrPast(status, 'resolved') ? 'completed' : 'active');
         document.getElementById('inprogress-hint').style.display = 'none';
         document.getElementById('inprogress-info').style.display = 'block';
+
+        if (startWorkAction) {
+            startWorkAction.style.display = 'none';
+        }
 
         document.getElementById('step5-tech').textContent =
             currentUser ? (currentUser.full_name || currentUser.name || 'Technical Officer') : 'Technical Officer';
@@ -1548,10 +1657,16 @@ function renderInProgressStep(status) {
         const completeAction = document.getElementById('complete-action');
         completeAction.style.display = (isTechnicalOfficer() && normaliseStatus(status) === 'in progress') ? 'block' : 'none';
     } else {
-        markStep('step-inprogress', 'pending');
+        const canStartWork = isTechnicalOfficer() && normaliseStatus(status) === 'parts approved';
+
+        markStep('step-inprogress', canStartWork ? 'active' : 'pending');
         document.getElementById('inprogress-hint').style.display = 'flex';
         document.getElementById('inprogress-info').style.display = 'none';
         document.getElementById('complete-action').style.display = 'none';
+
+        if (startWorkAction) {
+            startWorkAction.style.display = canStartWork ? 'block' : 'none';
+        }
     }
 }
 
@@ -2297,6 +2412,120 @@ async function submitPartsRequest(event) {
     }
 }
 
+function openStartWorkModal() {
+    if (!isTechnicalOfficer()) {
+        showToast('Only Technical Officers can start fault ticket work from this page.', 'warning');
+        return;
+    }
+
+    if (!ticketData?.id) {
+        showToast('Ticket data is not ready yet.', 'warning');
+        return;
+    }
+
+    const normalizedStatus = normaliseStatus(ticketData.status);
+    if (normalizedStatus !== 'parts approved') {
+        showToast('Work can only be started after spare parts are approved.', 'warning');
+        return;
+    }
+
+    const ticketIdFormatted = window.FaultTicketDetailTemplate?.formatTicketDisplayId
+        ? window.FaultTicketDetailTemplate.formatTicketDisplayId(ticketData)
+        : (ticketData.breakdown_report_id || ticketData.ticket_id || `#${ticketData.id}`);
+
+    const processTicketId = document.getElementById('processTicketId');
+    const assessmentField = document.getElementById('processInitialAssessment');
+    const estimatedCompletionField = document.getElementById('processEstimatedCompletion');
+
+    if (processTicketId) processTicketId.value = ticketIdFormatted;
+    if (assessmentField) assessmentField.value = '';
+
+    if (estimatedCompletionField) {
+        const now = new Date();
+        now.setSeconds(0, 0);
+        const localDateTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
+            .toISOString()
+            .slice(0, 16);
+
+        estimatedCompletionField.min = localDateTime;
+        estimatedCompletionField.value = '';
+    }
+
+    document.getElementById('processTicketModal')?.classList.add('active');
+}
+
+function closeStartWorkModal() {
+    document.getElementById('processTicketModal')?.classList.remove('active');
+}
+
+async function submitStartWork(event) {
+    event.preventDefault();
+
+    if (!isTechnicalOfficer()) {
+        showToast('Only Technical Officers can start fault ticket work from this page.', 'warning');
+        return;
+    }
+
+    if (!ticketData?.id) {
+        showToast('Ticket data is not ready yet.', 'warning');
+        return;
+    }
+
+    const normalizedStatus = normaliseStatus(ticketData.status);
+    if (normalizedStatus !== 'parts approved') {
+        showToast('Work can only be started after spare parts are approved.', 'warning');
+        return;
+    }
+
+    const assessment = String(document.getElementById('processInitialAssessment')?.value || '').trim();
+    const estimatedCompletion = String(document.getElementById('processEstimatedCompletion')?.value || '').trim();
+    const submitButton = document.getElementById('processTicketSubmitBtn');
+
+    if (!assessment) {
+        showToast('Initial assessment is required.', 'error');
+        return;
+    }
+
+    if (!estimatedCompletion) {
+        showToast('Estimated completion time is required.', 'error');
+        return;
+    }
+
+    const estimatedDate = new Date(estimatedCompletion);
+    if (Number.isNaN(estimatedDate.getTime())) {
+        showToast('Estimated completion time is invalid.', 'error');
+        return;
+    }
+
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+    }
+
+    try {
+        const response = await API.put(`/fault-tickets/${ticketData.id}`, {
+            status: 'In Progress'
+        });
+
+        if (response?.status !== 'success') {
+            showToast(response?.message || 'Failed to start work. Please try again.', 'error');
+            return;
+        }
+
+        closeStartWorkModal();
+        showToast('Work started! Status changed to In Progress.', 'success');
+        await loadAll();
+    } catch (error) {
+        console.error('submitStartWork error:', error);
+        showToast('Failed to start work. Please try again.', 'error');
+    } finally {
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="fas fa-play"></i> Start Work &amp; Update Status';
+        }
+    }
+}
+
 function openCompleteModal() {
     if (!isTechnicalOfficer()) {
         showToast('Only Technical Officers can resolve tickets from this page.', 'warning');
@@ -2443,6 +2672,35 @@ function getAssignModalElements() {
     };
 }
 
+function getTodayDateString() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function applyAssignExpectedCompletionConstraints({ defaultToToday = false } = {}) {
+    const expectedDateInput = document.getElementById('assignExpectedCompletion');
+    if (!expectedDateInput) {
+        return;
+    }
+
+    const today = getTodayDateString();
+    expectedDateInput.min = today;
+
+    if (defaultToToday && !String(expectedDateInput.value || '').trim()) {
+        expectedDateInput.value = today;
+    }
+
+    if (expectedDateInput.value && expectedDateInput.value < today) {
+        expectedDateInput.setCustomValidity('Expected completion date cannot be in the past.');
+        return;
+    }
+
+    expectedDateInput.setCustomValidity('');
+}
+
 function bindAssignModalFallbackHandlers() {
     const assignElements = getAssignModalElements();
 
@@ -2472,6 +2730,17 @@ function bindAssignModalFallbackHandlers() {
         assignElements.form.dataset.assignFallbackBound = 'true';
         assignElements.form.addEventListener('submit', (event) => {
             void submitAssignment(event);
+        });
+    }
+
+    if (assignElements.expectedCompletion
+        && assignElements.expectedCompletion.dataset.assignDateValidationBound !== 'true') {
+        assignElements.expectedCompletion.dataset.assignDateValidationBound = 'true';
+        assignElements.expectedCompletion.addEventListener('input', () => {
+            applyAssignExpectedCompletionConstraints();
+        });
+        assignElements.expectedCompletion.addEventListener('change', () => {
+            applyAssignExpectedCompletionConstraints();
         });
     }
 }
@@ -2540,6 +2809,8 @@ async function openAssignModal() {
     if (existingAssignment?.notes) {
         assignElements.notes.value = existingAssignment.notes;
     }
+
+    applyAssignExpectedCompletionConstraints({ defaultToToday: !existingAssignment });
 
     await loadTechniciansForAssignment();
     updateAssignSelectionWarning();
@@ -3386,8 +3657,19 @@ async function submitAssignment(event) {
     const expectedCompletionDate = assignElements.expectedCompletion.value;
     if (!expectedCompletionDate) {
         showToast('Expected completion date is required.', 'error');
+        assignElements.expectedCompletion.reportValidity();
         return;
     }
+
+    const today = getTodayDateString();
+    if (expectedCompletionDate < today) {
+        assignElements.expectedCompletion.setCustomValidity('Expected completion date cannot be in the past.');
+        assignElements.expectedCompletion.reportValidity();
+        showToast('Expected completion date cannot be in the past.', 'error');
+        return;
+    }
+
+    assignElements.expectedCompletion.setCustomValidity('');
 
     const payload = {
         technician_ids: selectedIds,
@@ -3497,6 +3779,9 @@ document.addEventListener('change', (event) => {
 
 function exposeInlineTemplateHandlers() {
     const handlerMap = {
+        openStartWorkModal,
+        closeStartWorkModal,
+        submitStartWork,
         openAssignModal,
         openGarageApprovalModal,
         openDriverNearbyGarages,

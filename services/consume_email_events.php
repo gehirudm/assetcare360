@@ -84,6 +84,18 @@ $supervisorsByTicketStmt = $db->prepare(
      ORDER BY fta.assigned_at DESC"
 );
 
+$spareRequestByIdStmt = $db->prepare(
+    'SELECT id, request_id, requested_by FROM spare_part_requests WHERE id = ? LIMIT 1'
+);
+
+$spareRequestByCodeStmt = $db->prepare(
+    'SELECT id, request_id, requested_by FROM spare_part_requests WHERE request_id = ? LIMIT 1'
+);
+
+$budgetReportByIdStmt = $db->prepare(
+    'SELECT id, submitted_by FROM budget_reports WHERE id = ? LIMIT 1'
+);
+
 $fetchUserById = function (int $userId) use ($getUserByIdStmt): ?array {
     if ($userId <= 0) {
         return null;
@@ -123,12 +135,99 @@ $buildBody = function (string $headline, string $message): string {
     </html>";
 };
 
+$resolveSparePartRequester = function (array $data) use ($spareRequestByIdStmt, $spareRequestByCodeStmt): array {
+    $requestDbId = isset($data['request_db_id']) ? (int)$data['request_db_id'] : 0;
+    $requestId = trim((string)($data['request_id'] ?? ''));
+    $requestedBy = isset($data['requested_by']) ? (int)$data['requested_by'] : 0;
+
+    if ($requestedBy > 0) {
+        return [
+            'requested_by' => $requestedBy,
+            'request_db_id' => $requestDbId > 0 ? $requestDbId : null,
+            'request_id' => $requestId !== '' ? $requestId : null,
+        ];
+    }
+
+    try {
+        if ($requestDbId > 0) {
+            $spareRequestByIdStmt->execute([$requestDbId]);
+            $row = $spareRequestByIdStmt->fetch(PDO::FETCH_ASSOC);
+            if (is_array($row)) {
+                return [
+                    'requested_by' => isset($row['requested_by']) ? (int)$row['requested_by'] : 0,
+                    'request_db_id' => isset($row['id']) ? (int)$row['id'] : $requestDbId,
+                    'request_id' => isset($row['request_id']) ? (string)$row['request_id'] : ($requestId !== '' ? $requestId : null),
+                ];
+            }
+        }
+
+        if ($requestId !== '') {
+            $spareRequestByCodeStmt->execute([$requestId]);
+            $row = $spareRequestByCodeStmt->fetch(PDO::FETCH_ASSOC);
+            if (is_array($row)) {
+                return [
+                    'requested_by' => isset($row['requested_by']) ? (int)$row['requested_by'] : 0,
+                    'request_db_id' => isset($row['id']) ? (int)$row['id'] : ($requestDbId > 0 ? $requestDbId : null),
+                    'request_id' => isset($row['request_id']) ? (string)$row['request_id'] : $requestId,
+                ];
+            }
+        }
+    } catch (Throwable $lookupError) {
+        error_log('[email] Spare-part requester lookup failed: ' . $lookupError->getMessage());
+    }
+
+    return [
+        'requested_by' => 0,
+        'request_db_id' => $requestDbId > 0 ? $requestDbId : null,
+        'request_id' => $requestId !== '' ? $requestId : null,
+    ];
+};
+
+$resolveBudgetSubmitter = function (array $data) use ($budgetReportByIdStmt): array {
+    $reportId = isset($data['report_id']) ? (int)$data['report_id'] : 0;
+    $submittedBy = isset($data['submitted_by']) ? (int)$data['submitted_by'] : 0;
+
+    if ($submittedBy > 0) {
+        return [
+            'report_id' => $reportId > 0 ? $reportId : null,
+            'submitted_by' => $submittedBy,
+        ];
+    }
+
+    if ($reportId <= 0) {
+        return [
+            'report_id' => null,
+            'submitted_by' => 0,
+        ];
+    }
+
+    try {
+        $budgetReportByIdStmt->execute([$reportId]);
+        $row = $budgetReportByIdStmt->fetch(PDO::FETCH_ASSOC);
+        if (is_array($row)) {
+            return [
+                'report_id' => isset($row['id']) ? (int)$row['id'] : $reportId,
+                'submitted_by' => isset($row['submitted_by']) ? (int)$row['submitted_by'] : 0,
+            ];
+        }
+    } catch (Throwable $lookupError) {
+        error_log('[email] Budget submitter lookup failed: ' . $lookupError->getMessage());
+    }
+
+    return [
+        'report_id' => $reportId,
+        'submitted_by' => 0,
+    ];
+};
+
 $buildEmailRecords = function (array $event) use (
     $fetchUserById,
     $fetchUsersByRole,
     $supervisorsBySubmittedTechStmt,
     $supervisorsByTicketStmt,
-    $buildBody
+    $buildBody,
+    $resolveSparePartRequester,
+    $resolveBudgetSubmitter
 ): array {
     $data = $event['data'] ?? [];
     $records = [];
@@ -222,8 +321,141 @@ $buildEmailRecords = function (array $event) use (
             }
             break;
 
+        case DomainEvents::FAULT_TICKET_RESOLVED:
+            $ticketId = $data['ticket_id'] ?? (($data['ticket_db_id'] ?? null) ? ('#' . $data['ticket_db_id']) : 'Unknown');
+            $subject = 'Ticket resolved: ' . $ticketId;
+            $headline = 'Fault Ticket Resolved';
+            $message = "Your fault ticket {$ticketId} has been resolved.";
+            $reportedBy = isset($data['reported_by']) ? (int)$data['reported_by'] : null;
+            $addUserById($reportedBy, $subject, $headline, $message);
+            break;
+
+        case DomainEvents::SERVICE_TICKET_ASSIGNED:
+            $ticketId = $data['service_ticket_id'] ?? (($data['ticket_db_id'] ?? null) ? ('#' . $data['ticket_db_id']) : 'Unknown');
+            $subject = 'Service ticket assigned: ' . $ticketId;
+            $headline = 'Service Ticket Assignment';
+            $message = "Service ticket {$ticketId} has been assigned to you. Please review and proceed.";
+            $userIds = isset($data['technician_user_ids']) && is_array($data['technician_user_ids']) ? $data['technician_user_ids'] : [];
+            $assignedTo = isset($data['assigned_to']) ? (int)$data['assigned_to'] : 0;
+            if ($assignedTo > 0) {
+                $userIds[] = $assignedTo;
+            }
+
+            $userIds = array_values(array_unique(array_map(static fn($userId): int => (int)$userId, $userIds)));
+            foreach ($userIds as $userId) {
+                if ($userId <= 0) {
+                    continue;
+                }
+
+                $addUserById($userId, $subject, $headline, $message);
+            }
+            break;
+
+        case DomainEvents::SERVICE_TICKET_COMPLETED:
+            $ticketId = $data['service_ticket_id'] ?? (($data['ticket_db_id'] ?? null) ? ('#' . $data['ticket_db_id']) : 'Unknown');
+            $serviceType = trim((string)($data['service_type'] ?? ''));
+            $completedByName = trim((string)($data['completed_by_name'] ?? ''));
+            $subject = 'Service ticket completed: ' . $ticketId;
+            $headline = 'Service Ticket Completed';
+            $message = "Service ticket {$ticketId} has been completed and the service report was submitted.";
+            if ($serviceType !== '') {
+                $message .= " Service type: {$serviceType}.";
+            }
+            if ($completedByName !== '') {
+                $message .= " Completed by {$completedByName}.";
+            }
+            $addRoleUsers('Maintenance Manager', $subject, $headline, $message);
+            break;
+
+        case DomainEvents::TRIP_ASSIGNED:
+            $tripId = $data['trip_id'] ?? (($data['trip_db_id'] ?? null) ? ('#' . $data['trip_db_id']) : 'Unknown');
+            $origin = trim((string)($data['origin'] ?? ''));
+            $destination = trim((string)($data['destination'] ?? ''));
+
+            $subject = 'New trip assigned: ' . $tripId;
+            $headline = 'Trip Assignment';
+            $message = "Trip {$tripId} has been assigned to you.";
+            if ($origin !== '' || $destination !== '') {
+                $routeLabel = trim($origin . (($origin !== '' && $destination !== '') ? ' to ' : '') . $destination);
+                if ($routeLabel !== '') {
+                    $message .= " Route: {$routeLabel}.";
+                }
+            }
+
+            $userIds = isset($data['driver_user_ids']) && is_array($data['driver_user_ids']) ? $data['driver_user_ids'] : [];
+            $driverId = isset($data['driver_id']) ? (int)$data['driver_id'] : 0;
+            if ($driverId > 0) {
+                $userIds[] = $driverId;
+            }
+
+            $userIds = array_values(array_unique(array_map(static fn($userId): int => (int)$userId, $userIds)));
+            foreach ($userIds as $userId) {
+                if ($userId <= 0) {
+                    continue;
+                }
+
+                $addUserById($userId, $subject, $headline, $message);
+            }
+            break;
+
+        case DomainEvents::TRIP_ACCEPTED:
+            $tripId = $data['trip_id'] ?? (($data['trip_db_id'] ?? null) ? ('#' . $data['trip_db_id']) : 'Unknown');
+            $driverName = trim((string)($data['driver_name'] ?? $data['accepted_by_name'] ?? ''));
+            $origin = trim((string)($data['origin'] ?? ''));
+            $destination = trim((string)($data['destination'] ?? ''));
+
+            $subject = 'Trip accepted: ' . $tripId;
+            $headline = 'Trip Accepted';
+            $message = "Trip {$tripId} was accepted by the driver.";
+            if ($driverName !== '') {
+                $message = "Trip {$tripId} was accepted by {$driverName}.";
+            }
+            if ($origin !== '' || $destination !== '') {
+                $routeLabel = trim($origin . (($origin !== '' && $destination !== '') ? ' to ' : '') . $destination);
+                if ($routeLabel !== '') {
+                    $message .= " Route: {$routeLabel}.";
+                }
+            }
+
+            $addRoleUsers('Transportation Manager', $subject, $headline, $message);
+            break;
+
+        case DomainEvents::TRIP_COMPLETED:
+            $tripId = $data['trip_id'] ?? (($data['trip_db_id'] ?? null) ? ('#' . $data['trip_db_id']) : 'Unknown');
+            $driverName = trim((string)($data['driver_name'] ?? $data['completed_by_name'] ?? ''));
+            $origin = trim((string)($data['origin'] ?? ''));
+            $destination = trim((string)($data['destination'] ?? ''));
+            $finalOdometer = isset($data['final_odometer']) && is_numeric($data['final_odometer']) ? (int)$data['final_odometer'] : null;
+            $completionNotes = trim((string)($data['completion_notes'] ?? ''));
+
+            $subject = 'Trip completed: ' . $tripId;
+            $headline = 'Trip Completed';
+            $message = "Trip {$tripId} was completed by the driver.";
+            if ($driverName !== '') {
+                $message = "Trip {$tripId} was completed by {$driverName}.";
+            }
+            if ($origin !== '' || $destination !== '') {
+                $routeLabel = trim($origin . (($origin !== '' && $destination !== '') ? ' to ' : '') . $destination);
+                if ($routeLabel !== '') {
+                    $message .= " Route: {$routeLabel}.";
+                }
+            }
+            if ($finalOdometer !== null) {
+                $message .= " Final odometer: {$finalOdometer} km.";
+            }
+            if ($completionNotes !== '') {
+                $noteSummary = strlen($completionNotes) > 120
+                    ? substr($completionNotes, 0, 117) . '...'
+                    : $completionNotes;
+                $message .= " Notes: {$noteSummary}";
+            }
+
+            $addRoleUsers('Transportation Manager', $subject, $headline, $message);
+            break;
+
         case DomainEvents::BUDGET_REPORT_CREATED:
-            $approvalRole = strtolower(str_replace(' ', '_', trim((string)($data['approval_role'] ?? 'Supervisor'))));
+            $approvalRoleRaw = (string)($data['approval_role'] ?? $data['approval_level'] ?? 'Supervisor');
+            $approvalRole = strtolower(str_replace([' ', '-'], '_', trim($approvalRoleRaw)));
             $reportId = (string)($data['report_id'] ?? 'N/A');
             $subject = 'Budget review required: ' . $reportId;
             $headline = 'Budget Approval Required';
@@ -232,10 +464,11 @@ $buildEmailRecords = function (array $event) use (
             // Maintenance Manager can approve all budget requests, so always notify this role.
             $addRoleUsers('Maintenance Manager', $subject, $headline, $message);
 
-            if ($approvalRole === 'supervisor') {
+            if ($approvalRole !== 'maintenance_manager') {
                 $ticketId = isset($data['fault_ticket_id']) ? (int)$data['fault_ticket_id'] : 0;
                 $submittedBy = isset($data['submitted_by']) ? (int)$data['submitted_by'] : null;
                 $supervisorIds = [];
+                $supervisorRecipientAdded = false;
 
                 try {
                     if ($ticketId > 0 && $submittedBy !== null && $submittedBy > 0) {
@@ -260,23 +493,27 @@ $buildEmailRecords = function (array $event) use (
 
                 foreach ($supervisorIds as $supervisorId) {
                     $addUserById((int)$supervisorId, $subject, $headline, $message);
+                    $supervisorRecipientAdded = true;
                 }
 
-                if (empty($records)) {
+                if (!$supervisorRecipientAdded) {
                     $addRoleUsers('Supervisor', $subject, $headline, $message);
                 }
-
-                break;
             }
             break;
 
         case DomainEvents::BUDGET_REPORT_REVIEWED:
             $status = strtoupper((string)($data['status'] ?? 'PENDING'));
-            $reportId = (string)($data['report_id'] ?? 'N/A');
+            $resolvedSubmitter = $resolveBudgetSubmitter($data);
+            $reportId = (string)($resolvedSubmitter['report_id'] ?? ($data['report_id'] ?? 'N/A'));
             $subject = 'Budget decision received: ' . $reportId;
             $headline = 'Budget Decision: ' . $status;
             $message = 'Your submitted budget report has been reviewed.';
-            $submittedBy = isset($data['submitted_by']) ? (int)$data['submitted_by'] : null;
+            $submittedBy = isset($resolvedSubmitter['submitted_by']) ? (int)$resolvedSubmitter['submitted_by'] : null;
+            if (!$submittedBy || $submittedBy <= 0) {
+                error_log('[email] Skipping budget review email due to unresolved submitter for report ' . $reportId);
+                break;
+            }
             $addUserById($submittedBy, $subject, $headline, $message);
             break;
 
@@ -291,11 +528,22 @@ $buildEmailRecords = function (array $event) use (
         case DomainEvents::SPARE_PART_REQUEST_APPROVED:
         case DomainEvents::SPARE_PART_REQUEST_REJECTED:
             $status = $event['event'] === DomainEvents::SPARE_PART_REQUEST_APPROVED ? 'APPROVED' : 'REJECTED';
-            $requestId = (string)($data['request_id'] ?? $data['request_db_id'] ?? 'N/A');
+            $resolvedRequester = $resolveSparePartRequester($data);
+            $requestId = (string)($resolvedRequester['request_id'] ?? '');
+            if ($requestId === '' && !empty($resolvedRequester['request_db_id'])) {
+                $requestId = '#' . (int)$resolvedRequester['request_db_id'];
+            }
+            if ($requestId === '') {
+                $requestId = 'N/A';
+            }
             $subject = 'Spare-part request ' . strtolower($status) . ': ' . $requestId;
             $headline = 'Spare-Part Request ' . $status;
-            $message = 'Your spare-part request has been ' . strtolower($status) . '.';
-            $requestedBy = isset($data['requested_by']) ? (int)$data['requested_by'] : null;
+            $message = 'Your spare-part request ' . $requestId . ' has been ' . strtolower($status) . '.';
+            $requestedBy = isset($resolvedRequester['requested_by']) ? (int)$resolvedRequester['requested_by'] : null;
+            if (!$requestedBy || $requestedBy <= 0) {
+                error_log('[email] Skipping spare-part decision email due to unresolved requester for request ' . $requestId);
+                break;
+            }
             $addUserById($requestedBy, $subject, $headline, $message);
             break;
 
@@ -316,12 +564,19 @@ $buildEmailRecords = function (array $event) use (
             break;
 
         case DomainEvents::ASSET_SERVICE_DUE_SOON:
+            // Due-soon notifications are in-app only by requirement.
+            break;
+
+        case DomainEvents::ASSET_SERVICE_OVERDUE:
             $assetCode = (string)($data['asset_code'] ?? $data['asset_id'] ?? 'N/A');
-            $dueDate = (string)($data['due_date'] ?? 'soon');
-            $subject = 'Asset service due soon: ' . $assetCode;
-            $headline = 'Service Due Reminder';
-            $message = "Asset {$assetCode} requires service on {$dueDate}.";
-            $addRoleUsers('Inventory Manager', $subject, $headline, $message);
+            $statusMessage = trim((string)($data['status_message'] ?? ''));
+            if ($statusMessage === '') {
+                $statusMessage = 'Service is overdue and requires immediate attention.';
+            }
+            $subject = 'Asset maintenance overdue: ' . $assetCode;
+            $headline = 'Overdue Maintenance Alert';
+            $message = "Asset {$assetCode} is overdue for maintenance. {$statusMessage}";
+            $addRoleUsers('Maintenance Manager', $subject, $headline, $message);
             break;
     }
 

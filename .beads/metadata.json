@@ -1,7 +1,0 @@
-{
-  "database": "dolt",
-  "backend": "dolt",
-  "dolt_mode": "embedded",
-  "dolt_database": "assetcare_backend_new",
-  "project_id": "1f2570f2-179a-499d-886b-30e7918d01e6"
-}

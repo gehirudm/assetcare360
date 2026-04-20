@@ -23,7 +23,7 @@ function buildFixtures() {
                 machine_name: 'Excavator 320D',
                 description: 'Hydraulic pressure drop under load',
                 priority: 'High',
-                status: 'Assigned',
+                status: 'Parts Approved',
                 reported_by_name: 'Supervisor One',
                 created_at: '2026-04-12T08:00:00Z',
                 updated_at: '2026-04-12T09:00:00Z',
@@ -143,6 +143,49 @@ function buildFixtures() {
                 asset_warranty_status: 'Active'
             }
         ],
+        vehicles: [
+            {
+                id: 201,
+                vehicle_id: 'VEH-201',
+                vehicle_name: 'Service Truck Alpha',
+                number_plate: 'WP-CAB-1001',
+                model_number: 'Mitsubishi Fuso',
+                supplier_name: 'Litro Fleet Partners',
+                status: 'Active'
+            },
+            {
+                id: 202,
+                vehicle_id: 'VEH-202',
+                vehicle_name: 'Service Van Beta',
+                number_plate: 'WP-CAB-2002',
+                model_number: 'Toyota HiAce',
+                supplier_name: 'City Logistics',
+                status: 'Maintenance'
+            }
+        ],
+        machines: [
+            {
+                id: 11,
+                machine_id: 'MCH-011',
+                machine_name: 'Excavator 320D',
+                model_number: 'CAT-320D',
+                serial_number: 'SN-320D-01',
+                supplier_name: 'CAT Dealer Lanka',
+                status: 'Active',
+                current_operating_hours: 12540,
+                last_service_date: '2026-03-15',
+                next_service_date: '2026-06-13'
+            },
+            {
+                id: 302,
+                machine_id: 'MCH-302',
+                machine_name: 'Wheel Loader 950M',
+                model_number: 'CAT-950M',
+                serial_number: 'SN-950M-88',
+                supplier_name: 'CAT Dealer Lanka',
+                status: 'Inactive'
+            }
+        ],
         products: [
             {
                 id: 301,
@@ -213,6 +256,19 @@ async function mockApi(page, fixtures) {
             return json({ status: 'success', success: true, data: ticket });
         }
 
+        if (pathname.match(/\/api\/fault-tickets\/\d+$/) && method === 'PUT') {
+            const ticketId = Number(pathname.split('/').pop());
+            const payload = request.postDataJSON() || {};
+            const ticket = fixtures.tickets.find((item) => Number(item.id) === ticketId);
+
+            if (ticket && payload.status) {
+                ticket.status = payload.status;
+                ticket.updated_at = '2026-04-16T10:05:00Z';
+            }
+
+            return json({ status: 'success', success: true, data: ticket || {} });
+        }
+
         if (pathname.endsWith('/api/notifications') && method === 'GET') {
             return json({ status: 'success', success: true, data: { notifications: [], unread_count: 0 } });
         }
@@ -244,11 +300,22 @@ async function mockApi(page, fixtures) {
         }
 
         if (pathname.endsWith('/api/vehicles') && method === 'GET') {
-            return json({ status: 'success', success: true, data: [] });
+            return json({ status: 'success', success: true, data: { vehicles: fixtures.vehicles } });
         }
 
         if (pathname.endsWith('/api/machines') && method === 'GET') {
-            return json({ status: 'success', success: true, data: { machines: [] } });
+            return json({ status: 'success', success: true, data: { machines: fixtures.machines } });
+        }
+
+        if (pathname.match(/\/api\/machines\/\d+$/) && method === 'GET') {
+            const machineId = Number(pathname.split('/').pop());
+            const machine = fixtures.machines.find((item) => Number(item.id) === machineId) || null;
+
+            if (!machine) {
+                return json({ status: 'error', success: false, message: 'Machine not found' }, 404);
+            }
+
+            return json({ status: 'success', success: true, data: machine });
         }
 
         if (pathname.endsWith('/api/spare-part-requests') && method === 'GET') {
@@ -394,6 +461,14 @@ async function runFlow(page, viewportName) {
 
     await expect(detailHost.locator('#mainContent')).toBeVisible({ timeout: 15000 });
     await expect(detailHost.locator('#ovTicketId')).toContainText('TKT-501');
+    await expect(detailHost.locator('#ovMachinePanel')).toBeVisible({ timeout: 15000 });
+    await expect(detailHost.locator('#ovMachineCode')).toContainText('MCH-011');
+    await expect(detailHost.locator('#ovMachineName')).toContainText('Excavator 320D');
+    await expect(detailHost.locator('#ovMachineSerial')).toContainText('SN-320D-01');
+    await expect(detailHost.locator('#ovMachineModel')).toContainText('CAT-320D');
+    await expect(detailHost.locator('#ovMachineSupplier')).toContainText('CAT Dealer Lanka');
+    await expect(detailHost.locator('#ovMachineStatus')).toContainText('Active');
+    await expect(detailHost.locator('#ovMachineHours')).toContainText('12,540 hrs');
     const detailTicketLabel = await detailHost.locator('#ovTicketId').innerText();
     const detailHasIframe = (await detailHost.locator('iframe').count()) > 0;
 
@@ -402,10 +477,99 @@ async function runFlow(page, viewportName) {
     await expect(page.locator('#ovWarrantyProvider')).toContainText('CAT Warranty Services');
     await expect(page.locator('#ovInsuranceEligibility')).toContainText('Eligible for Insurance Claim');
 
+    await expect(detailHost.locator('#submitBudgetBtn')).toBeVisible({ timeout: 15000 });
+    await detailHost.locator('#submitBudgetBtn').click();
+
+    const budgetModal = detailHost.locator('#budgetModal');
+    const budgetModalShell = budgetModal.locator('.budget-modal-shell');
+    const budgetModalHeader = budgetModal.locator('.budget-modal-header');
+
+    await expect(budgetModal).toBeVisible({ timeout: 15000 });
+    await expect(budgetModalHeader).toBeVisible({ timeout: 15000 });
+    await expect(budgetModalHeader.locator('#budgetModalTitle')).toContainText('Submit Budget Report');
+    await expect(budgetModalHeader.locator('.budget-modal-subtitle')).toContainText('Provide a clear cost breakdown and justification for approval.');
+    await expect(budgetModal.locator('.budget-ticket-panel')).toBeVisible({ timeout: 15000 });
+
+    const budgetHeaderBackground = await budgetModalHeader.evaluate((element) => {
+        return window.getComputedStyle(element).backgroundImage;
+    });
+    expect(budgetHeaderBackground).not.toBe('none');
+
+    const budgetBodyMargin = await budgetModal.locator('.budget-modal-body').evaluate((element) => {
+        const style = window.getComputedStyle(element);
+        return {
+            left: style.marginLeft,
+            right: style.marginRight,
+            bottom: style.marginBottom
+        };
+    });
+    expect(budgetBodyMargin.left).toBe('0px');
+    expect(budgetBodyMargin.right).toBe('0px');
+    expect(budgetBodyMargin.bottom).toBe('0px');
+
+    if (viewportName === 'desktop') {
+        const budgetModalWidth = await budgetModalShell.evaluate((element) => {
+            return Math.round(element.getBoundingClientRect().width);
+        });
+        expect(budgetModalWidth).toBeGreaterThanOrEqual(740);
+    }
+
+    await budgetModal.locator('.budget-modal-close').click();
+    await expect(budgetModal).not.toBeVisible({ timeout: 15000 });
+
+    const openPartsModalButton = detailHost.getByRole('button', { name: /request spare parts/i }).first();
+    await expect(openPartsModalButton).toBeVisible({ timeout: 15000 });
+    await openPartsModalButton.click();
+
+    const partsModal = detailHost.locator('#partsModal');
+    const partsModalHeader = partsModal.locator('.modal-header');
+
+    await expect(partsModal).toBeVisible({ timeout: 15000 });
+    await expect(partsModalHeader).toBeVisible({ timeout: 15000 });
+    await expect(partsModalHeader.locator('h3')).toContainText('Request Spare Parts');
+
+    const partsHeaderBackground = await partsModalHeader.evaluate((element) => {
+        return window.getComputedStyle(element).backgroundImage;
+    });
+    expect(partsHeaderBackground).not.toBe('none');
+
+    if (viewportName === 'desktop') {
+        const partsModalWidth = await partsModal.locator(':scope > .modal').evaluate((element) => {
+            return Math.round(element.getBoundingClientRect().width);
+        });
+        expect(partsModalWidth).toBeGreaterThanOrEqual(980);
+    }
+
+    await partsModal.locator('.modal-close').click();
+    await expect(partsModal).not.toBeVisible({ timeout: 15000 });
+
+    const startWorkAction = detailHost.locator('#start-work-action');
+    const startWorkButton = startWorkAction.getByRole('button', { name: /start fault ticket work/i });
+
+    await expect(startWorkAction).toBeVisible({ timeout: 15000 });
+    await expect(startWorkButton).toBeVisible({ timeout: 15000 });
+    await startWorkButton.click();
+
+    const processTicketModal = detailHost.locator('#processTicketModal');
+    await expect(processTicketModal).toBeVisible({ timeout: 15000 });
+    await expect(processTicketModal.locator('#processTicketId')).toHaveValue('TKT-501');
+
+    const estimatedCompletionInput = processTicketModal.locator('#processEstimatedCompletion');
+    const completionDate = new Date(Date.now() + (3 * 24 * 60 * 60 * 1000));
+    const completionDateValue = new Date(completionDate.getTime() - (completionDate.getTimezoneOffset() * 60000))
+        .toISOString()
+        .slice(0, 16);
+
+    await processTicketModal.locator('#processInitialAssessment').fill('Initial diagnosis complete and repair workflow started.');
+    await estimatedCompletionInput.fill(completionDateValue);
+    await processTicketModal.locator('#processTicketForm button[type="submit"]').click();
+
+    await expect(processTicketModal).not.toBeVisible({ timeout: 15000 });
+    await expect(detailHost.locator('#complete-action')).toBeVisible({ timeout: 15000 });
+    await expect(detailHost.locator('#start-work-action')).not.toBeVisible({ timeout: 15000 });
+
     await expect(page.locator('#backButton')).toBeVisible({ timeout: 15000 });
     await page.locator('#backButton').click();
-    await expect(detailHost.locator('#backButton')).toBeVisible({ timeout: 15000 });
-    await detailHost.locator('#backButton').click();
 
     await page.waitForURL((url) => {
         return url.pathname.includes('/dashboard/technical-officer/index.html')
@@ -419,6 +583,40 @@ async function runFlow(page, viewportName) {
 
     expect(returnPath).toContain('/dashboard/technical-officer/');
     expect(returnSearch).toContain('section=tickets');
+
+    await expect(page.locator('.nav-item[data-section="inventory"]')).toContainText('Inventory Lookup');
+
+    await page.evaluate(() => {
+        const layout = document.querySelector('ac-layout');
+        if (layout && typeof layout.navigateTo === 'function') {
+            layout.navigateTo('inventory');
+        }
+    });
+
+    await expect(page.locator('#inventory')).toBeVisible({ timeout: 15000 });
+
+    const inventoryHost = page.locator('#inventory to-inventory');
+    const inventoryItems = inventoryHost.locator('[data-role="list"] .inventory-item');
+    const inventorySearchInput = inventoryHost.locator('input[data-role="search-input"]');
+
+    await expect(inventoryHost.locator('.page-title')).toContainText('Inventory Lookup');
+    await expect(inventorySearchInput).toBeVisible({ timeout: 15000 });
+    await expect(inventoryItems).toHaveCount(4, { timeout: 15000 });
+
+    await inventoryHost.locator('button[data-filter-type="vehicle"]').click();
+    await expect(inventoryItems).toHaveCount(2, { timeout: 15000 });
+
+    await inventorySearchInput.fill('WP-CAB-1001');
+    await expect(inventoryItems).toHaveCount(1, { timeout: 15000 });
+    await expect(inventoryItems.first()).toContainText('WP-CAB-1001');
+
+    await inventorySearchInput.fill('missing asset');
+    await expect(inventoryItems).toHaveCount(0, { timeout: 15000 });
+    await expect(inventoryHost.locator('[data-role="empty"]')).toContainText('No vehicles match "missing asset"');
+
+    await inventorySearchInput.fill('');
+    await inventoryHost.locator('button[data-filter-type="all"]').click();
+    await expect(inventoryItems).toHaveCount(4, { timeout: 15000 });
 
     await page.evaluate(() => {
         const layout = document.querySelector('ac-layout');

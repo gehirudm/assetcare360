@@ -63,7 +63,7 @@ class TMDashboardOverview extends HTMLElement {
                     </div>
                 </div>
 
-                <div class="summary-card clickable" data-action="navigate" data-section="trip-log">
+                <div class="summary-card clickable" data-action="navigate" data-section="trips">
                     <div class="summary-card-content">
                         <div class="summary-icon total">
                             <i class="fas fa-route"></i>
@@ -111,9 +111,9 @@ class TMDashboardOverview extends HTMLElement {
                         <i class="fas fa-gas-pump"></i>
                         <span>Log Fuel</span>
                     </button>
-                    <button class="quick-action-btn" data-action="navigate" data-section="trip-log">
-                        <i class="fas fa-history"></i>
-                        <span>View Trip Log</span>
+                    <button class="quick-action-btn" data-action="navigate" data-section="trips">
+                        <i class="fas fa-route"></i>
+                        <span>View Trips</span>
                     </button>
                     <button class="quick-action-btn" data-action="navigate" data-section="fleet">
                         <i class="fas fa-truck"></i>

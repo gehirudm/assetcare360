@@ -3,6 +3,9 @@
 require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 require_once __DIR__ . '/../services/FaultTicketService.php';
+require_once __DIR__ . '/../models/FaultTicket.php';
+require_once __DIR__ . '/../services/EventEmitter.php';
+require_once __DIR__ . '/../events/DomainEvents.php';
 
 /**
  * Machine Breakdown Controller
@@ -11,11 +14,15 @@ require_once __DIR__ . '/../services/FaultTicketService.php';
 class MachineBreakdownController {
     private $conn;
     private $faultTicketService;
+    private $faultTicketModel;
+    private $eventEmitter;
     
     public function __construct() {
         $db = Database::getInstance();
         $this->conn = $db->getConnection();
         $this->faultTicketService = new FaultTicketService();
+        $this->faultTicketModel = new FaultTicket();
+        $this->eventEmitter = new EventEmitter();
     }
     
     /**
@@ -218,9 +225,32 @@ class MachineBreakdownController {
                 $ticketError = $ticketResult['message'] ?? 'Failed to auto-create linked fault ticket';
                 throw new RuntimeException($ticketError);
             }
+
+            $createdTicketDbId = empty($ticketResult['data']['existing'])
+                ? (int) ($ticketResult['data']['id'] ?? 0)
+                : 0;
             
             if ($this->conn->inTransaction()) {
                 $this->conn->commit();
+            }
+
+            if ($createdTicketDbId > 0) {
+                $ticket = $this->faultTicketModel->findById($createdTicketDbId);
+                $this->eventEmitter->emit(
+                    DomainEvents::FAULT_TICKET_CREATED,
+                    [
+                        'ticket_db_id' => $createdTicketDbId,
+                        'ticket_id' => $ticket['ticket_id'] ?? null,
+                        'priority' => $ticket['priority'] ?? ($ticketPayload['priority'] ?? null),
+                        'status' => $ticket['status'] ?? null,
+                        'breakdown_type' => $ticket['breakdown_type'] ?? ($ticketPayload['breakdown_type'] ?? null),
+                    ],
+                    [
+                        'user_id' => $currentUser['id'] ?? null,
+                        'role' => $currentUser['role'] ?? null,
+                        'source' => 'controller:MachineBreakdownController::create',
+                    ]
+                );
             }
             
             Response::success([

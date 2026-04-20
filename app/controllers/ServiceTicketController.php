@@ -1,6 +1,8 @@
 <?php
 
 require_once __DIR__ . '/../services/ServiceTicketService.php';
+require_once __DIR__ . '/../services/EventEmitter.php';
+require_once __DIR__ . '/../events/DomainEvents.php';
 require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 
@@ -9,13 +11,107 @@ require_once __DIR__ . '/../middleware/RoleMiddleware.php';
  */
 class ServiceTicketController {
     private $serviceTicketService;
+    private $eventEmitter;
 
     public function __construct() {
         $this->serviceTicketService = new ServiceTicketService();
+        $this->eventEmitter = new EventEmitter();
     }
 
     private function getAuthenticatedUser() {
         return RoleMiddleware::getCurrentUser();
+    }
+
+    private function normalizePositiveInt($value): ?int {
+        if ($value === null || $value === '' || !is_numeric($value)) {
+            return null;
+        }
+
+        $normalized = (int)$value;
+        return $normalized > 0 ? $normalized : null;
+    }
+
+    private function maybeEmitServiceTicketAssignedEvent(?array $previousTicket, array $updatedTicket, array $actor, string $source): void {
+        $currentAssignedTo = $this->normalizePositiveInt($updatedTicket['assigned_to'] ?? null);
+        if ($currentAssignedTo === null) {
+            return;
+        }
+
+        $previousAssignedTo = null;
+        if (is_array($previousTicket)) {
+            $previousAssignedTo = $this->normalizePositiveInt($previousTicket['assigned_to'] ?? null);
+        }
+
+        // Emit only when assignment is newly created or changed to a different technician.
+        if ($previousAssignedTo !== null && $previousAssignedTo === $currentAssignedTo) {
+            return;
+        }
+
+        $serviceTicketId = trim((string)($updatedTicket['service_ticket_id'] ?? ''));
+        if ($serviceTicketId === '') {
+            $serviceTicketId = !empty($updatedTicket['id']) ? ('#' . (int)$updatedTicket['id']) : 'Unknown';
+        }
+
+        $this->eventEmitter->emit(
+            DomainEvents::SERVICE_TICKET_ASSIGNED,
+            [
+                'service_ticket_id' => $updatedTicket['service_ticket_id'] ?? null,
+                'ticket_db_id' => isset($updatedTicket['id']) ? (int)$updatedTicket['id'] : null,
+                'assigned_to' => $currentAssignedTo,
+                'technician_user_ids' => [$currentAssignedTo],
+                'assigned_by' => isset($updatedTicket['assigned_by'])
+                    ? (int)$updatedTicket['assigned_by']
+                    : (int)($actor['id'] ?? 0),
+                'status' => $updatedTicket['status'] ?? null,
+                'asset_type' => $updatedTicket['asset_type'] ?? null,
+                'asset_id' => isset($updatedTicket['asset_id']) ? (int)$updatedTicket['asset_id'] : null,
+                'service_type' => $updatedTicket['service_type'] ?? null,
+            ],
+            [
+                'source' => $source,
+                'actor_user_id' => isset($actor['id']) ? (int)$actor['id'] : null,
+                'actor_role' => $actor['role'] ?? null,
+                'ticket_ref' => $serviceTicketId,
+            ]
+        );
+    }
+
+    private function emitServiceTicketCompletedEvent(array $completedTicket, array $actor): void {
+        $serviceTicketId = trim((string)($completedTicket['service_ticket_id'] ?? ''));
+        if ($serviceTicketId === '') {
+            $serviceTicketId = !empty($completedTicket['id']) ? ('#' . (int)$completedTicket['id']) : 'Unknown';
+        }
+
+        $completionNotes = trim((string)($completedTicket['completion_notes'] ?? ''));
+        $componentComments = $completedTicket['component_comments'] ?? [];
+        $componentCommentCount = 0;
+        if (is_array($componentComments)) {
+            $componentCommentCount = count($componentComments);
+        }
+
+        $this->eventEmitter->emit(
+            DomainEvents::SERVICE_TICKET_COMPLETED,
+            [
+                'service_ticket_id' => $completedTicket['service_ticket_id'] ?? null,
+                'ticket_db_id' => isset($completedTicket['id']) ? (int)$completedTicket['id'] : null,
+                'status' => $completedTicket['status'] ?? null,
+                'service_type' => $completedTicket['service_type'] ?? null,
+                'asset_type' => $completedTicket['asset_type'] ?? null,
+                'asset_id' => isset($completedTicket['asset_id']) ? (int)$completedTicket['asset_id'] : null,
+                'completed_at' => $completedTicket['completed_at'] ?? null,
+                'completed_by' => isset($actor['id']) ? (int)$actor['id'] : null,
+                'completed_by_name' => $actor['full_name'] ?? null,
+                'service_report_submitted' => true,
+                'completion_notes' => $completionNotes,
+                'component_comment_count' => $componentCommentCount,
+            ],
+            [
+                'source' => 'controller:ServiceTicketController:complete',
+                'actor_user_id' => isset($actor['id']) ? (int)$actor['id'] : null,
+                'actor_role' => $actor['role'] ?? null,
+                'ticket_ref' => $serviceTicketId,
+            ]
+        );
     }
 
     public function technicians() {
@@ -132,6 +228,15 @@ class ServiceTicketController {
                 Response::error($result['message'], (int) ($result['status'] ?? 400), $result['errors'] ?? null);
             }
 
+            if (!empty($result['data']) && is_array($result['data'])) {
+                $this->maybeEmitServiceTicketAssignedEvent(
+                    null,
+                    $result['data'],
+                    $user,
+                    'controller:ServiceTicketController:create'
+                );
+            }
+
             Response::success($result['data'], $result['message'] ?? 'Service ticket created', (int) ($result['status'] ?? 201));
         } catch (Exception $e) {
             Response::error('Failed to create service ticket: ' . $e->getMessage(), 500);
@@ -157,9 +262,24 @@ class ServiceTicketController {
                 Response::unauthorized('Authentication required');
             }
 
+            $existingTicketResult = $this->serviceTicketService->getById($id, $user);
+            $existingTicket = null;
+            if (!empty($existingTicketResult['success']) && !empty($existingTicketResult['data']) && is_array($existingTicketResult['data'])) {
+                $existingTicket = $existingTicketResult['data'];
+            }
+
             $result = $this->serviceTicketService->update($id, $data, $user);
             if (!$result['success']) {
                 Response::error($result['message'], (int) ($result['status'] ?? 400), $result['errors'] ?? null);
+            }
+
+            if (!empty($result['data']) && is_array($result['data'])) {
+                $this->maybeEmitServiceTicketAssignedEvent(
+                    $existingTicket,
+                    $result['data'],
+                    $user,
+                    'controller:ServiceTicketController:update'
+                );
             }
 
             Response::success($result['data'], $result['message'] ?? 'Service ticket updated');
@@ -225,6 +345,10 @@ class ServiceTicketController {
             $result = $this->serviceTicketService->complete($id, $data, $user);
             if (!$result['success']) {
                 Response::error($result['message'], (int) ($result['status'] ?? 400), $result['errors'] ?? null);
+            }
+
+            if (!empty($result['data']) && is_array($result['data'])) {
+                $this->emitServiceTicketCompletedEvent($result['data'], $user);
             }
 
             Response::success($result['data'], $result['message'] ?? 'Service ticket completed');

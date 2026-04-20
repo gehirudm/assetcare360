@@ -1,133 +1,70 @@
 class SAPettyCashConfig extends HTMLElement {
+    constructor() {
+        super();
+        this._handleSettingUpdated = this._handleSettingUpdated.bind(this);
+    }
+
     connectedCallback() {
         if (this._mounted) {
             return;
         }
 
         this._mounted = true;
+        this._setting = null;
+        this._loading = false;
+        this._loadError = '';
         this.render();
         this.bindEvents();
+        document.addEventListener('sa-petty-cash:updated', this._handleSettingUpdated);
+        this.loadPettyCashSetting();
+    }
+
+    disconnectedCallback() {
+        document.removeEventListener('sa-petty-cash:updated', this._handleSettingUpdated);
     }
 
     render() {
         this.innerHTML = `
             <div class="page-header">
                 <h1 class="page-title">Petty Cash Configuration</h1>
-                <p class="page-subtitle">Manage petty cash allowances and limits</p>
+                <p class="page-subtitle">Manage the global approval threshold for petty cash requests</p>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <button class="btn btn-primary" type="button" data-action="open-limit-modal">
                     <i class="fas fa-money-bill-wave"></i> Set New Limit
                 </button>
+                <button class="btn btn-secondary" type="button" data-action="refresh-setting">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
             </div>
 
             <div class="card">
-                <div class="card-header"><i class="fas fa-cog"></i> Global Petty Cash Settings</div>
-                <div class="form-section">
-                    <h5><i class="fas fa-dollar-sign"></i> Default Allowances</h5>
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Role</th>
-                                <th>Daily Limit</th>
-                                <th>Monthly Limit</th>
-                                <th>Requires Approval</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><span class="status-text status-supervisor">Supervisor</span></td>
-                                <td>LKR 500</td>
-                                <td>LKR 5,000</td>
-                                <td>Above LKR 200</td>
-                                <td>
-                                    <button class="btn btn-secondary btn-small" type="button" data-action="edit-limit" data-role="supervisor">Edit</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><span class="status-text status-officer">Technical Officer</span></td>
-                                <td>LKR 200</td>
-                                <td>LKR 2,000</td>
-                                <td>Above LKR 100</td>
-                                <td>
-                                    <button class="btn btn-secondary btn-small" type="button" data-action="edit-limit" data-role="technical-officer">Edit</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><span class="status-text status-manager">Maintenance Manager</span></td>
-                                <td>LKR 1,000</td>
-                                <td>LKR 10,000</td>
-                                <td>Above LKR 500</td>
-                                <td>
-                                    <button class="btn btn-secondary btn-small" type="button" data-action="edit-limit" data-role="maintenance-manager">Edit</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header"><i class="fas fa-chart-bar"></i> Current Month Usage Overview</div>
-                <div class="grid">
-                    <div class="stat-card">
-                        <div class="stat-number" style="color: var(--royal-blue);">LKR 12,450</div>
-                        <div class="stat-label">Total Disbursed</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" style="color: var(--kelly-green);">LKR 8,200</div>
-                        <div class="stat-label">Approved Requests</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" style="color: var(--warn);">LKR 1,500</div>
-                        <div class="stat-label">Pending Approval</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header"><i class="fas fa-user"></i> Individual User Allowances</div>
-                <div class="search-bar">
-                    <input type="text" class="search-input" placeholder="Search by employee name or ID..." id="pettyCashUserSearch">
-                </div>
+                <div class="card-header"><i class="fas fa-cog"></i> Global Petty Cash Setting</div>
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Employee</th>
-                            <th>Role</th>
-                            <th>Current Month Usage</th>
-                            <th>Remaining Limit</th>
-                            <th>Status</th>
+                            <th>Setting</th>
+                            <th>Current Value</th>
+                            <th>Last Updated</th>
+                            <th>Updated By</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="pettyCashSettingRows">
                         <tr>
-                            <td>John Smith (EMP-001)</td>
-                            <td><span class="status-text status-supervisor">Supervisor</span></td>
-                            <td>LKR 3,200 / LKR 5,000</td>
-                            <td>LKR 1,800</td>
-                            <td><span class="status-text status-active">Normal</span></td>
-                            <td>
-                                <button class="btn btn-secondary btn-small" type="button" data-action="view-history" data-employee-id="EMP-001">View History</button>
-                                <button class="btn btn-primary btn-small" type="button" data-action="adjust-limit" data-employee-id="EMP-001">Adjust Limit</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Michael Chen (EMP-003)</td>
-                            <td><span class="status-text status-officer">Technical Officer</span></td>
-                            <td>LKR 1,850 / LKR 2,000</td>
-                            <td>LKR 150</td>
-                            <td><span class="status-text status-pending">Near Limit</span></td>
-                            <td>
-                                <button class="btn btn-secondary btn-small" type="button" data-action="view-history" data-employee-id="EMP-003">View History</button>
-                                <button class="btn btn-primary btn-small" type="button" data-action="adjust-limit" data-employee-id="EMP-003">Adjust Limit</button>
-                            </td>
+                            <td colspan="5" style="text-align: center; color: var(--muted);">Loading petty cash configuration...</td>
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><i class="fas fa-route"></i> Approval Routing</div>
+                <div class="notification-item info">
+                    <span class="notification-icon"><i class="fas fa-info-circle"></i></span>
+                    <div id="pettyCashRoutingSummary">Loading petty cash approval routing...</div>
+                </div>
             </div>
         `;
     }
@@ -145,24 +82,209 @@ class SAPettyCashConfig extends HTMLElement {
             }
 
             if (action === 'open-limit-modal') {
-                this.openModal('setPettyCashLimitModal');
+                this.openLimitModal();
+                return;
+            }
+
+            if (action === 'refresh-setting') {
+                this.loadPettyCashSetting();
                 return;
             }
 
             if (action === 'edit-limit') {
-                this.openEditLimit(button.dataset.role);
-                return;
-            }
-
-            if (action === 'view-history') {
-                this.openPettyCashHistory(button.dataset.employeeId);
-                return;
-            }
-
-            if (action === 'adjust-limit') {
-                this.openAdjustLimit(button.dataset.employeeId);
+                this.openEditLimit();
             }
         });
+    }
+
+    async loadPettyCashSetting() {
+        this._loading = true;
+        this._loadError = '';
+        this.renderSettingRows();
+        this.renderRoutingSummary();
+
+        try {
+            const setting = await this.fetchPettyCashSetting();
+            this._setting = setting;
+            this._loadError = '';
+            this.renderSettingRows();
+            this.renderRoutingSummary();
+        } catch (error) {
+            console.error('Failed to load petty cash configuration:', error);
+            this._setting = null;
+            this._loadError = error.message || 'Failed to load petty cash configuration.';
+            this.renderSettingRows(this._loadError);
+            this.renderRoutingSummary();
+            this.emitToast(this._loadError, 'error');
+        } finally {
+            this._loading = false;
+            this.renderSettingRows(this._loadError);
+            this.renderRoutingSummary();
+        }
+    }
+
+    async fetchPettyCashSetting() {
+        const directResponse = await API.get('/system-settings/petty_cash_limit');
+        if (directResponse?.status === 'success' && directResponse?.data?.setting) {
+            return directResponse.data.setting;
+        }
+
+        const allSettingsResponse = await API.get('/system-settings');
+        if (allSettingsResponse?.status === 'success' && Array.isArray(allSettingsResponse?.data?.settings)) {
+            const found = allSettingsResponse.data.settings.find((setting) => setting.setting_key === 'petty_cash_limit');
+            if (found) {
+                return found;
+            }
+        }
+
+        const failureMessage = directResponse?.message || allSettingsResponse?.message || 'Petty cash limit setting is not available.';
+        throw new Error(failureMessage);
+    }
+
+    renderSettingRows(errorMessage = '') {
+        const rowsContainer = this.querySelector('#pettyCashSettingRows');
+        if (!rowsContainer) {
+            return;
+        }
+
+        if (this._loading) {
+            rowsContainer.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--muted);">Loading petty cash configuration...</td>
+                </tr>
+            `;
+            return;
+        }
+
+        if (errorMessage) {
+            rowsContainer.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; color: var(--danger);">${this.escapeHtml(errorMessage)}</td>
+                </tr>
+            `;
+            return;
+        }
+
+        if (!this._setting) {
+            rowsContainer.innerHTML = `
+                <tr>
+                    <td>petty_cash_limit</td>
+                    <td id="saPettyCashLimitValue">Not configured</td>
+                    <td>Not available</td>
+                    <td>Not available</td>
+                    <td>
+                        <button class="btn btn-primary btn-small" type="button" data-action="open-limit-modal">Set Limit</button>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        const settingValue = this.formatCurrency(this.parseNumericValue(this._setting.setting_value));
+        const updatedAt = this.formatDateTime(this._setting.updated_at);
+        const updatedBy = this._setting.updated_by_name || this._setting.updated_by || 'System';
+        const description = this._setting.description
+            ? `<div style="font-size: 12px; color: var(--muted); margin-top: 4px;">${this.escapeHtml(this._setting.description)}</div>`
+            : '';
+
+        rowsContainer.innerHTML = `
+            <tr>
+                <td>
+                    <strong>petty_cash_limit</strong>
+                    ${description}
+                </td>
+                <td id="saPettyCashLimitValue">${settingValue}</td>
+                <td>${updatedAt}</td>
+                <td>${this.escapeHtml(String(updatedBy))}</td>
+                <td>
+                    <button class="btn btn-secondary btn-small" type="button" data-action="edit-limit">Edit</button>
+                </td>
+            </tr>
+        `;
+    }
+
+    renderRoutingSummary() {
+        const summaryElement = this.querySelector('#pettyCashRoutingSummary');
+        if (!summaryElement) {
+            return;
+        }
+
+        if (this._loadError) {
+            summaryElement.textContent = 'Unable to load petty cash approval routing right now.';
+            return;
+        }
+
+        const limitValue = this.parseNumericValue(this._setting?.setting_value);
+        if (!Number.isFinite(limitValue)) {
+            summaryElement.textContent = 'Set a petty cash limit to enforce Supervisor and Maintenance Manager approval routing.';
+            return;
+        }
+
+        summaryElement.textContent = `Supervisor can approve budgets up to ${this.formatCurrency(limitValue)}. Budgets above this threshold require Maintenance Manager approval.`;
+    }
+
+    _handleSettingUpdated(event) {
+        const updatedSetting = event?.detail?.setting;
+        if (!updatedSetting || updatedSetting.setting_key !== 'petty_cash_limit') {
+            return;
+        }
+
+        this._setting = updatedSetting;
+        this._loadError = '';
+        this.renderSettingRows();
+        this.renderRoutingSummary();
+    }
+
+    parseNumericValue(value) {
+        if (value === null || value === undefined || String(value).trim() === '') {
+            return NaN;
+        }
+
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : NaN;
+    }
+
+    formatCurrency(value) {
+        if (!Number.isFinite(value)) {
+            return 'Not configured';
+        }
+
+        return `LKR ${value.toLocaleString('en-LK', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        })}`;
+    }
+
+    formatDateTime(value) {
+        if (!value) {
+            return 'Not available';
+        }
+
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+            return this.escapeHtml(String(value));
+        }
+
+        return parsed.toLocaleString('en-LK');
+    }
+
+    escapeHtml(text) {
+        return String(text)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    openLimitModal() {
+        const modalComponent = document.querySelector('sa-set-petty-cash-limit-modal');
+        if (modalComponent && typeof modalComponent.openWithSetting === 'function') {
+            modalComponent.openWithSetting(this._setting);
+            return;
+        }
+
+        this.openModal('setPettyCashLimitModal');
     }
 
     openModal(modalId) {
@@ -220,43 +342,27 @@ class SAPettyCashConfig extends HTMLElement {
         }));
     }
 
-    openEditLimit(role) {
-        const limitsData = {
-            supervisor: { daily: 500, monthly: 5000, approval: 200 },
-            'technical-officer': { daily: 200, monthly: 2000, approval: 100 },
-            'maintenance-manager': { daily: 1000, monthly: 10000, approval: 500 },
-        };
-
-        const data = limitsData[role] || { daily: 0, monthly: 0, approval: 0 };
-
+    openEditLimit() {
+        const currentLimit = this.parseNumericValue(this._setting?.setting_value);
+        const prefilledValue = Number.isFinite(currentLimit) ? currentLimit.toFixed(2) : '';
         this.openDetailsModal(
-            `Edit Petty Cash Limit: ${String(role || '').replace(/-/g, ' ').toUpperCase()}`,
+            'Edit Petty Cash Limit',
             `
                 <form id="editPettyCashForm">
                     <div class="form-section">
-                        <h5>Allowance Configuration</h5>
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label class="form-label">Daily Limit (LKR)</label>
-                                <input type="number" class="form-input" value="${data.daily}" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Monthly Limit (LKR)</label>
-                                <input type="number" class="form-input" value="${data.monthly}" required>
-                            </div>
-                        </div>
+                        <h5>Global Approval Threshold</h5>
                         <div class="form-group">
-                            <label class="form-label">Approval Required Above (LKR)</label>
-                            <input type="number" class="form-input" value="${data.approval}" required>
+                            <label class="form-label" for="editPettyCashLimitInput">Petty Cash Limit (LKR)</label>
+                            <input id="editPettyCashLimitInput" type="number" class="form-input" step="0.01" min="0" value="${prefilledValue}" required>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Notes</label>
-                            <textarea class="form-textarea" placeholder="Any special conditions or notes"></textarea>
+                        <div class="notification-item info" style="margin-top: 12px;">
+                            <span class="notification-icon"><i class="fas fa-info-circle"></i></span>
+                            <div>Budgets above this value require Maintenance Manager approval.</div>
                         </div>
                     </div>
                     <div style="text-align: right; margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
                         <button type="button" class="btn btn-secondary" data-action="close-details">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <button id="editPettyCashSubmit" type="submit" class="btn btn-primary">Save Changes</button>
                     </div>
                 </form>
             `,
@@ -265,109 +371,49 @@ class SAPettyCashConfig extends HTMLElement {
                     this.closeModal('detailsModal');
                 });
 
-                content.querySelector('#editPettyCashForm')?.addEventListener('submit', (event) => {
+                content.querySelector('#editPettyCashForm')?.addEventListener('submit', async (event) => {
                     event.preventDefault();
-                    this.emitToast(`Petty cash limits updated for ${role}!`, 'success');
-                    this.closeModal('detailsModal');
-                });
-            }
-        );
-    }
 
-    openPettyCashHistory(employeeId) {
-        this.openDetailsModal(
-            `Petty Cash History: ${employeeId}`,
-            `
-                <div class="form-section">
-                    <h5>Transaction History</h5>
-                    <table class="table" style="margin-top: 15px;">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Amount</th>
-                                <th>Purpose</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Oct 18, 2025</td>
-                                <td>LKR 150</td>
-                                <td>Vehicle parts procurement</td>
-                                <td><span class="status-text status-completed">Approved</span></td>
-                            </tr>
-                            <tr>
-                                <td>Oct 15, 2025</td>
-                                <td>LKR 85</td>
-                                <td>Tool maintenance</td>
-                                <td><span class="status-text status-completed">Approved</span></td>
-                            </tr>
-                            <tr>
-                                <td>Oct 12, 2025</td>
-                                <td>LKR 220</td>
-                                <td>Emergency repairs</td>
-                                <td><span class="status-text status-pending">Pending</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div style="text-align: right; margin-top: 20px;">
-                    <button type="button" class="btn btn-primary" data-action="close-details">Close</button>
-                </div>
-            `,
-            (content) => {
-                content.querySelector('[data-action="close-details"]')?.addEventListener('click', () => {
-                    this.closeModal('detailsModal');
-                });
-            }
-        );
-    }
+                    const limitInput = content.querySelector('#editPettyCashLimitInput');
+                    const submitButton = content.querySelector('#editPettyCashSubmit');
+                    const nextLimit = Number(limitInput?.value);
 
-    openAdjustLimit(employeeId) {
-        this.openDetailsModal(
-            `Adjust Petty Cash Limit: ${employeeId}`,
-            `
-                <form id="adjustLimitForm">
-                    <div class="form-section">
-                        <h5>Individual Limit Adjustment</h5>
-                        <div class="form-group">
-                            <label class="form-label">Current Monthly Limit</label>
-                            <input type="text" class="form-input" value="LKR 2,000" readonly disabled>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">New Monthly Limit (LKR)</label>
-                            <input type="number" class="form-input" placeholder="e.g., 3000" required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Adjustment Reason</label>
-                            <select class="form-select" required>
-                                <option value="">Select Reason</option>
-                                <option value="project">Special Project</option>
-                                <option value="promotion">Role Change/Promotion</option>
-                                <option value="temporary">Temporary Increase</option>
-                                <option value="permanent">Permanent Adjustment</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Justification Notes</label>
-                            <textarea class="form-textarea" placeholder="Provide detailed justification for this adjustment" required></textarea>
-                        </div>
-                    </div>
-                    <div style="text-align: right; margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
-                        <button type="button" class="btn btn-secondary" data-action="close-details">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Adjust Limit</button>
-                    </div>
-                </form>
-            `,
-            (content) => {
-                content.querySelector('[data-action="close-details"]')?.addEventListener('click', () => {
-                    this.closeModal('detailsModal');
-                });
+                    if (!Number.isFinite(nextLimit) || nextLimit < 0) {
+                        this.emitToast('Please enter a valid non-negative petty cash limit.', 'warning');
+                        return;
+                    }
 
-                content.querySelector('#adjustLimitForm')?.addEventListener('submit', (event) => {
-                    event.preventDefault();
-                    this.emitToast(`Limit adjusted successfully for ${employeeId}!`, 'success');
-                    this.closeModal('detailsModal');
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.textContent = 'Saving...';
+                    }
+
+                    try {
+                        const response = await API.put('/system-settings/petty_cash_limit', { value: nextLimit.toFixed(2) });
+                        if (response?.status !== 'success' || !response?.data?.setting) {
+                            this.emitToast(response?.message || 'Failed to update petty cash limit.', 'error');
+                            return;
+                        }
+
+                        this._setting = response.data.setting;
+                        this.renderSettingRows();
+                        this.renderRoutingSummary();
+
+                        document.dispatchEvent(new CustomEvent('sa-petty-cash:updated', {
+                            detail: { setting: this._setting },
+                        }));
+
+                        this.emitToast(response.message || 'Petty cash limit updated.', 'success');
+                        this.closeModal('detailsModal');
+                    } catch (error) {
+                        console.error('Failed to update petty cash limit from details modal:', error);
+                        this.emitToast(error.message || 'Failed to update petty cash limit.', 'error');
+                    } finally {
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            submitButton.textContent = 'Save Changes';
+                        }
+                    }
                 });
             }
         );

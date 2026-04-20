@@ -35,16 +35,7 @@ class TripService {
         $normalizedCargoAssignments = $this->normalizeCargoAssignments($rawCargoAssignments);
 
         // Generate trip ID
-        $lastTrip = $this->tripModel->getAllTrips(['limit' => 1]);
-        $counter = 1;
-        
-        if (!empty($lastTrip)) {
-            $lastId = $lastTrip[0]['trip_id'];
-            preg_match('/TRP-(\d+)/', $lastId, $matches);
-            if (!empty($matches[1])) {
-                $counter = intval($matches[1]) + 1;
-            }
-        }
+        $counter = $this->getNextTripSequence();
         
         $data['trip_id'] = 'TRP-' . str_pad($counter, 3, '0', STR_PAD_LEFT);
         $data['status'] = 'Pending';
@@ -147,6 +138,22 @@ class TripService {
         }
         
         return $this->getTripById($trip['trip_id']);
+    }
+
+    private function getNextTripSequence(): int {
+        $query = "SELECT COALESCE(MAX(
+                    CASE
+                        WHEN trip_id REGEXP '^TRP-[0-9]+$' THEN CAST(SUBSTRING(trip_id, 5) AS UNSIGNED)
+                        ELSE 0
+                    END
+                  ), 0) AS max_trip_sequence
+                  FROM trips";
+
+        $stmt = $this->db->query($query);
+        $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+        $maxSequence = (int) ($row['max_trip_sequence'] ?? 0);
+
+        return $maxSequence + 1;
     }
     
     public function updateTrip($trip_id, $data) {

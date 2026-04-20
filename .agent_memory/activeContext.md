@@ -78,6 +78,490 @@ Dashboard Web Components refactor execution for the active Supervisor residual s
 - Preserved modal styling by reusing existing modal components and avoiding CSS changes.
 - Validation evidence:
 	- `cd testing/ui-validation && npx playwright test driver-dashboard/validate-driver-dashboard.spec.js --reporter=line` passed (desktop/mobile).
+### Inventory catalog filter/sort toolbar enhancement completed (April 21, 2026)
+- Completed TASK130 for request: add sorting options and improve filter/sort layout in Inventory Manager Spare Parts Catalog section.
+- Frontend updates:
+	- `pages/dashboard/inventory-manager/components/catalog/script.js`: added sort state/control and comparators (created date, quantity, name) while preserving stock/category/search filter behavior.
+	- `pages/dashboard/inventory-manager/components/catalog/style.css`: added dedicated filter/sort panel structure and responsive desktop/mobile layout styling.
+- Validation updates:
+	- Added `testing/ui-validation/inventory-catalog-filter-sort/validate-inventory-catalog-filter-sort.spec.js` with stage-based desktop/mobile assertions.
+- Validation evidence:
+	- `VAL_STAGE=before` passed (2/2).
+	- `VAL_STAGE=after` passed (2/2).
+
+### Trips table ID format normalization completed (April 21, 2026)
+- Completed TASK129 for request: normalize `trips.trip_id` records to `TRP-###` style (`TRP-007` likewise).
+- Backend/data updates:
+	- Added `migrations/064_normalize_trip_ids_to_trp_dash_sequence.php` to convert legacy non-dash trip IDs into `TRP-###` format safely with collision handling.
+	- Updated `app/services/TripService.php` sequence generation to derive next trip number from max normalized `TRP-###` suffix.
+- Migration and verification evidence:
+	- `php scripts/migrate.php migrate` applied `064_normalize_trip_ids_to_trp_dash_sequence.php` successfully.
+	- Post-check: `LEGACY_NO_DASH=0`, `DASH_FORMAT=60`, `MAX_NUMERIC=60`.
+
+### Inventory machine/vehicle created-date sorting completed (April 21, 2026)
+- Completed TASK128 for request: add sorting options in Inventory Manager machine and vehicle lists for created date ascending/descending.
+- Frontend updates:
+	- `pages/dashboard/inventory-manager/components/machines/script.js`: added `#machineCreatedSort` with created-date sort comparators.
+	- `pages/dashboard/inventory-manager/components/vehicles/script.js`: added `#vehicleCreatedSort` with created-date sort comparators.
+	- `pages/dashboard/inventory-manager/style.css`: added shared sort control styles and mobile responsiveness.
+- Validation updates:
+	- Added `testing/ui-validation/inventory-machine-vehicle-created-sort/validate-inventory-machine-vehicle-created-sort.spec.js` with before/after assertions.
+	- `VAL_STAGE=before` and `VAL_STAGE=after` runs passed (1/1 each).
+
+### Inventory add-part compatibility switched to system type catalogs (April 21, 2026)
+- Completed TASK127 for request: in Inventory Manager Add New Spare Part modal, Compatibility section now shows machine/vehicle types in the system instead of currently existing asset records.
+- Frontend updates:
+	- `pages/dashboard/inventory-manager/components/page-modals/add-part-modal/script.js`: added system type-catalog resolver (`MACHINE_TYPES`/`VEHICLE_TYPES`) and switched compatibility options to catalog-first source with API fallback.
+	- Updated labels/empty states to type-focused wording (`Compatible Machine Types` / `Compatible Vehicle Types`).
+- Validation updates:
+	- Added `testing/ui-validation/inventory-add-part-compatibility/validate-inventory-add-part-compatibility.spec.js` with stage-based baseline/after assertions and artifact output.
+- Validation evidence:
+	- `VAL_STAGE=before ... validate-inventory-add-part-compatibility.spec.js` passed (1/1).
+	- `VAL_STAGE=after ... validate-inventory-add-part-compatibility.spec.js` passed (1/1).
+
+### Supervisor fault tickets filter toolbar and sorting enhancement completed (April 21, 2026)
+- Completed TASK126 for request: improve Supervisor Fault Tickets filter layout and add sorting by date and priority.
+- Frontend updates:
+	- `pages/dashboard/supervisor/components/fault-tickets/script.js`: reworked filter section into grouped toolbar layout, added sort select (`date`/`priority`), added sort event emission, and applied shared comparators for list sorting.
+	- `pages/dashboard/supervisor/script.js`: added parent sort state (`currentTicketSortOption`), sort-event handling, and render payload wiring (`sortOption`) for filtered ticket lists.
+	- `pages/dashboard/supervisor/style.css`: added scoped toolbar action styles and responsive behavior refinements for filter chips/actions/sort select.
+- Validation updates:
+	- `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-tickets-resolved-route.spec.js`: added sort-control and ordering assertions with expanded active-ticket fixtures.
+- Validation evidence:
+	- `VAL_STAGE=before npx playwright test supervisor-fault-ticket-tracking/validate-supervisor-fault-tickets-resolved-route.spec.js --reporter=line` passed (1/1).
+	- `VAL_STAGE=after npx playwright test supervisor-fault-ticket-tracking/validate-supervisor-fault-tickets-resolved-route.spec.js --reporter=line` passed (1/1).
+
+### Technical Officer machine fault ticket detail metadata enhancement completed (April 21, 2026)
+- Completed TASK125 for request: show more machine details when viewing machine fault tickets in TO dashboard ticket details.
+- Frontend updates:
+	- `pages/view-ticket/index.html`: added `#ovMachinePanel` with machine metadata fields in the overview section.
+	- `pages/view-ticket/script.js`: added machine-ticket detection helpers, `GET /machines/:id` loader, and conditional machine panel render logic with fallback values.
+	- `pages/dashboard/technical-officer/view-ticket/style.css`: added responsive machine panel/grid styling.
+- Validation updates:
+	- `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js`: added machine endpoint mock + assertions for machine panel values in ticket detail view.
+- Validation evidence:
+	- `VAL_STAGE=before npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js --reporter=line` passed (2/2).
+	- `VAL_STAGE=after npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js --reporter=line` passed (2/2).
+
+### Technical Officer ticket-detail start-work button/modal fix completed (April 21, 2026)
+- Completed TASK124 for request: restore missing `Start Fault Ticket Work` action in TO dashboard ticket-detail view and reuse list-style start-work modal flow.
+- Frontend updates:
+	- `pages/view-ticket/index.html`: added Step-5 start action button and `#processTicketModal` (initial assessment + estimated completion fields).
+	- `pages/view-ticket/script.js`: added start-work modal handlers (`openStartWorkModal`, `closeStartWorkModal`, `submitStartWork`), Step-5 visibility logic (`parts approved` => start action), and start transition (`PUT /fault-tickets/:id` to `In Progress`).
+	- `pages/dashboard/technical-officer/components/ticket-details/script.js`: added `#processTicketModal` to injected modal node list and scoped modal reset selectors.
+	- `pages/dashboard/technical-officer/view-ticket/style.css`: included `#processTicketModal` in shared TO modal selectors for consistent modal styling in component mode.
+- Validation updates:
+	- `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js`: added start-work button/modal assertions and mocked `PUT /api/fault-tickets/:id` status mutation for flow verification.
+- Validation evidence:
+	- `VAL_STAGE=before npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js --reporter=line` passed (2/2).
+	- `VAL_STAGE=after npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js --reporter=line` passed (2/2).
+
+### Technical Officer ticket-detail modal width/header fix completed (April 21, 2026)
+- Completed TASK123 for request: in TO dashboard ticket detail view, widen Request Budget modal, remove visible white side/bottom gaps, and widen/style Request Spare Parts modal header.
+- Frontend updates:
+	- `pages/dashboard/technical-officer/components/ticket-details/script.js`: added scoped modal isolation resets in `to-ticket-detail-view` to neutralize inherited legacy modal alignment/margin bleed.
+	- `pages/dashboard/technical-officer/view-ticket/style.css`: reset modal header/body margins, widened budget modal shell (`760px`), widened parts modal shell (`1040px`), and added styled gradient parts header + close treatment with mobile refinements.
+- Validation updates:
+	- `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js`: added assertions for budget body margins (`0px`), desktop budget width threshold, spare-parts modal open/header-style checks, and desktop parts width threshold.
+- Validation evidence:
+	- `VAL_STAGE=before npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js --reporter=line` passed (2/2).
+	- `VAL_STAGE=after npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js --reporter=line` passed (2/2).
+
+### Technical Officer Inventory Lookup rename and search completed (April 21, 2026)
+- Completed TASK122 for request: rename Technical Officer `Inventory Management` section to `Inventory Lookup` and add search in that section.
+- Frontend updates:
+	- `pages/dashboard/technical-officer/index.html`: TO sidebar/nav label updated to `Inventory Lookup`.
+	- `pages/dashboard/technical-officer/components/inventory/script.js`: added search input UI, search query state, input handling, and combined filter+search matching across vehicle/machine inventory fields.
+	- `pages/dashboard/technical-officer/style.css`: added inventory toolbar/search styles with responsive behavior.
+- Validation updates:
+	- `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js`: extended with Inventory Lookup nav/title assertions plus filter + search interaction assertions.
+- Validation evidence:
+	- `VAL_STAGE=before npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js --reporter=line` passed (2/2).
+	- `VAL_STAGE=after npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js --reporter=line` passed (2/2).
+
+### Technical Officer Request Budget modal layout/header polish completed (April 21, 2026)
+- Completed TASK121 for request: improve TO fault-ticket detail Request Budget modal layout and style its header like other TO modals.
+- Frontend updates:
+	- `pages/view-ticket/index.html`: upgraded `#budgetModal` structure with enriched header content (title + subtitle), grouped ticket/amount panel, and sectioned cost-details form layout.
+	- `pages/dashboard/technical-officer/view-ticket/style.css`: added scoped `#budgetModal` polish styles (gradient header, rounded shell top, close-button treatment, layout grid/section refinements, mobile adjustments).
+	- `pages/dashboard/technical-officer/view-ticket/index.html`: mirrored improved budget-modal markup for TO-specific template parity.
+- Validation updates:
+	- `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js`: added budget-modal open/header/layout assertions and gradient-header computed-style check.
+	- stabilized existing back-navigation assertion in the same spec by replacing brittle double-click behavior with single-click + URL expectation.
+- Validation evidence:
+	- `VAL_STAGE=before npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js --reporter=line` passed (2/2).
+	- `VAL_STAGE=after npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js --reporter=line` passed (2/2).
+
+### Transportation Manager cargo list deactivate action relocation completed (April 21, 2026)
+- Completed TASK120 for request: remove cargo-list deactivate button, move deactivate/activate action into cargo details view, and remove cargo-item status badge from cargo list.
+- Frontend updates:
+	- `pages/dashboard/transportation-manager/components/cargo-management/script.js`: removed row-level deactivate/reactivate actions and removed status-badge row from cargo list items.
+	- `pages/dashboard/transportation-manager/components/cargo-details/script.js`: added details-level deactivate/reactivate action in Cargo Profile and API mutation handling.
+	- `pages/dashboard/transportation-manager/script.js`: added `tm-cargo-details:active-state-updated` listener to refresh cargo management and cargo analytics after details-level state changes.
+- Styling updates:
+	- `pages/dashboard/transportation-manager/components/cargo-management/style.css`: removed unused list badge-row styles.
+	- `pages/dashboard/transportation-manager/components/cargo-details/style.css`: added profile action area styling for deactivate/reactivate control.
+- Validation evidence:
+	- `node --check` passed for touched TM scripts and new validation spec.
+	- diagnostics clean for touched files.
+	- `VAL_STAGE=before` and `VAL_STAGE=after` passed for `testing/ui-validation/transportation-cargo-lifecycle/validate-transportation-cargo-list-detail-actions.spec.js`.
+
+### SysAdmin reset-password email and session-stability hardening (April 20, 2026)
+- TASK119 added for request: Admin dashboard reset-password should not log out admin and must send temporary-password email to the target user.
+- Backend updates:
+	- `app/services/UserService.php`: added `resetUserPassword(...)` and `sendTemporaryPasswordEmail(...)` using `MailhogEmailService`.
+	- `app/controllers/UserController.php`: reset endpoint now delegates to service flow, supports optional `send_email_notification`, and blocks self-reset from user-management panel.
+- Frontend updates:
+	- `pages/dashboard/sysadministration/components/sa-user-accounts.js`: reset call now sends `send_email_notification: true`, uses `skipAuthRedirect: true` for this action, and shows explicit email/auth-failure toasts.
+- Contract update:
+	- `testing/openapi.yaml`: `/users/{id}/reset-password` updated to `post` with optional request body and `temporary_password`/`email_sent` response fields.
+- Validation status:
+	- `php -l` passed for `UserService.php` and `UserController.php`.
+	- `node --check` passed for `sa-user-accounts.js`.
+	- diagnostics clean for touched files.
+	- runtime browser/API smoke still pending.
+
+### Supervisor assign modal past-date guard mostly complete (April 20, 2026)
+- TASK118 added for request: Supervisor Assign Ticket modal expected completion date cannot be in the past.
+- Implemented in both assignment entry points:
+	- `pages/dashboard/supervisor/components/page-modals/assign-ticket-modal/script.js`
+	- `pages/view-ticket/script.js`
+- Behavior now enforced:
+	- expected completion date input minimum is set to today.
+	- submit is rejected when a past date is selected.
+	- validation messaging is shown via native field validity + toast feedback.
+- Validation status:
+	- `node --check` and diagnostics passed for touched files.
+	- Playwright `supervisor-fault-ticket-tracking` before/after runs are blocked by pre-existing failure (`supervisor-fault-ticket-tracking` element not visible) before new assertions execute.
+
+### SysAdmin petty-cash configuration live-settings fix completed (April 20, 2026)
+- Completed TASK117 for request: Admin dashboard petty cash configuration should show properly.
+- Frontend updates:
+	- `pages/dashboard/sysadministration/components/sa-petty-cash-config.js` now reads live `petty_cash_limit` via `/system-settings/petty_cash_limit` (with `/system-settings` fallback), renders current value + metadata, and shows approval-routing summary based on the configured limit.
+	- `pages/dashboard/sysadministration/components/page-modals/sa-set-petty-cash-limit-modal.js` now persists updates through `PUT /system-settings/petty_cash_limit` with validation, loading state, and toast feedback.
+	- details-modal edit flow in petty-cash component also persists through the same setting endpoint.
+- Validation updates:
+	- `testing/ui-validation/sysadmin-dashboard/validate-sysadmin-dashboard.spec.js` now mocks system-settings API endpoints and asserts live petty-cash value/routing text.
+- Validation evidence:
+	- `node --check` passed for all touched JS files.
+	- diagnostics clean for touched files.
+	- Playwright `sysadmin-dashboard` suite passed for both `VAL_STAGE=before` and `VAL_STAGE=after` (desktop and mobile).
+
+### Database cleanup for inconsistent active driver trips completed (April 20, 2026)
+- Completed TASK116 for request: remove active trip assignments where driver has no assigned vehicle.
+- Tables audited: `trips`, `users`, `vehicles`.
+- Inconsistency rule used:
+	- active status in `Assigned`, `Pending`, `Accepted`, `In Progress`
+	- `trips.driver_id` present
+	- no matching `vehicles.assigned_driver_id = trips.driver_id`
+- Cleanup action applied transactionally:
+	- set `status='Cancelled'`
+	- set `end_time=NOW()` where null
+	- append `completion_notes` audit note (`Auto-cancelled during data cleanup: driver has no assigned vehicle.`)
+- Validation evidence:
+	- before cleanup: `3` inconsistent active rows (`TRP260014`, `TRP260028`, `TRP260042`).
+	- update result: `UPDATED_ROWS=3`.
+	- post-check: `REMAINING_INCONSISTENT=0`.
+	- row-level verification confirms ids `25`, `39`, `53` now `Cancelled`.
+
+### Transportation Manager driver assignment UI lock for assigned trips completed (April 20, 2026)
+- Completed TASK115 for request: hide Driver Assignment `Unassign` and `Change` actions when assigned driver already has a trip assigned.
+- Frontend updates:
+	- `pages/dashboard/transportation-manager/components/driver-assignment/script.js` now fetches `/trips` and derives lock states per `(driver_id, vehicle_registration)` for statuses `Assigned`, `Pending`, `Accepted`, `In Progress`.
+	- locked rows now hide `Change` and `Unassign` buttons and show lock badge/message (`Driver already has a trip assigned`).
+	- click handler guards now no-op for `change`/`unassign` when a row is trip-locked.
+- Validation updates:
+	- added `testing/ui-validation/transportation-manager-driver-assignment/validate-transportation-manager-driver-assignment.spec.js`.
+	- spec validates locked/unlocked/unassigned row actions and lock indicators.
+- Validation evidence:
+	- `node --check pages/dashboard/transportation-manager/components/driver-assignment/script.js` passed.
+	- `node --check testing/ui-validation/transportation-manager-driver-assignment/validate-transportation-manager-driver-assignment.spec.js` passed.
+	- diagnostics clean for touched files.
+	- `VAL_STAGE=before` spec run passed (1/1).
+	- `VAL_STAGE=after` spec run passed (1/1).
+
+### Transportation Manager Trip Log section removal completed (April 20, 2026)
+- Completed TASK114 for request: remove Trip Log section from Transportation Manager dashboard.
+- Frontend updates:
+	- `pages/dashboard/transportation-manager/index.html`: removed Trip Log nav item, section mount, and component script include.
+	- `pages/dashboard/transportation-manager/script.js`: removed trip-log refresh/event wiring and added legacy section remap (`trip-log` -> `trips`).
+	- `pages/dashboard/transportation-manager/components/dashboard-overview/script.js`: repointed total-trips card and quick action to Trips.
+- Validation evidence:
+	- `node --check pages/dashboard/transportation-manager/script.js` passed.
+	- `node --check pages/dashboard/transportation-manager/components/dashboard-overview/script.js` passed.
+	- diagnostics clean for touched TM files.
+	- `VAL_STAGE=after` transportation-manager-fuel-fleet Playwright suite passed.
+	- `VAL_STAGE=before` suite currently fails on pre-existing stale baseline assertion (`fleetViewMode: modal` vs `section`).
+
+### Driver unassign vehicle-scoped active-trip guard completed (April 20, 2026)
+- Completed TASK113 for request: in Transportation Manager Driver Assignment, unassign must fail when assigned driver has an active trip for that same vehicle.
+- Backend updates:
+	- `app/models/Trip.php`: added `getActiveTripCountByDriverAndVehicle(...)` using active statuses `Pending`, `Accepted`, `In Progress`.
+	- `app/services/VehicleService.php`: `unassignDriverFromVehicle(...)` now enforces vehicle-scoped active-trip blocking with explicit error message.
+	- `app/services/VehicleService.php`: `assignDriverToVehicle(...)` now blocks replacing a vehicle's currently assigned driver when that driver has an active trip for the same vehicle.
+- Contract update:
+	- `testing/openapi.yaml`: assign/unassign endpoint 400 descriptions now reflect vehicle-scoped active-trip blocking behavior.
+- Validation evidence:
+	- `php -l app/models/Trip.php` passed.
+	- `php -l app/services/VehicleService.php` passed.
+	- `php -l app/controllers/VehicleController.php` passed.
+	- diagnostics clean for touched files.
+
+### Service-ticket documentation sync completed (April 20, 2026)
+- Updated `docs/member-wise-test-scenarios.md` to append Gehiru `Scenario 1.12` for Service Ticket Workflow System (`TC-GH-089` to `TC-GH-100`) and refreshed summary totals.
+- Updated `docs/contributions/v2.md` to include Service Ticket Workflow under Gehiru contributions with a dedicated subsection (backend components, state flow, endpoints, and notification integration).
+
+### Trip lifecycle driver/TM notifications completed (April 20, 2026)
+- Completed TASK112 for request:
+	- Trip assigned -> notification to driver.
+	- Trip accepted by driver -> notification to transportation manager.
+	- Trip completed by driver -> notification to transportation manager.
+- Event contract updates:
+	- added `TRIP_ASSIGNED`, `TRIP_ACCEPTED`, and `TRIP_COMPLETED` in `app/events/DomainEvents.php` and `DomainEvents::all()`.
+- Producer updates (`app/controllers/TripController.php`):
+	- integrated `EventEmitter` and domain-event helpers for trip workflows.
+	- emits `TRIP_ASSIGNED` after successful trip create/update assignment changes to driver recipients.
+	- emits `TRIP_ACCEPTED` after successful `acceptTrip()` when accepted by assigned driver.
+	- emits `TRIP_COMPLETED` after successful `endTrip()` when completed by assigned driver.
+- Notification consumer updates (`services/consume_notification_events.php`):
+	- added routing binds for `trip.assigned`, `trip.accepted`, and `trip.completed`.
+	- `TRIP_ASSIGNED` maps to user-targeted driver notifications.
+	- `TRIP_ACCEPTED` and `TRIP_COMPLETED` map to `target_role = Transportation Manager`.
+- Email consumer updates (`services/consume_email_events.php`):
+	- added `TRIP_ASSIGNED` user-targeted driver email delivery.
+	- added `TRIP_ACCEPTED` and `TRIP_COMPLETED` Transportation Manager role email fanout.
+- Validation evidence:
+	- `php -l app/events/DomainEvents.php` passed.
+	- `php -l app/controllers/TripController.php` passed.
+	- `php -l services/consume_notification_events.php` passed.
+	- `php -l services/consume_email_events.php` passed.
+	- diagnostics clean for all touched backend files.
+
+### Service-ticket completed/report submitted Maintenance Manager notification completed (April 20, 2026)
+- Completed TASK111 for request: service ticket completed and service report submitted -> notification to maintenance manager.
+- Event contract update:
+	- added `SERVICE_TICKET_COMPLETED` in `app/events/DomainEvents.php` and `DomainEvents::all()`.
+- Producer update (`app/controllers/ServiceTicketController.php`):
+	- added completion emit helper and emit call after successful `complete()` result.
+	- event emits only after completion/report persistence succeeds.
+	- payload includes service ticket identifiers, completion metadata, actor context, and report summary fields.
+- Notification consumer update (`services/consume_notification_events.php`):
+	- added routing bind for `service.ticket.completed`.
+	- mapped `SERVICE_TICKET_COMPLETED` to `target_role = Maintenance Manager` in-app notification records.
+- Email consumer update (`services/consume_email_events.php`):
+	- added `SERVICE_TICKET_COMPLETED` email mapping to all `Maintenance Manager` recipients.
+- Validation evidence:
+	- `php -l app/events/DomainEvents.php` passed.
+	- `php -l app/controllers/ServiceTicketController.php` passed.
+	- `php -l services/consume_notification_events.php` passed.
+	- `php -l services/consume_email_events.php` passed.
+	- diagnostics clean for all touched files.
+
+### Service-ticket assignment notification delivery completed (April 20, 2026)
+- Completed TASK110 for request: service ticket assigned -> notify assigned technician.
+- Event contract update:
+	- added `SERVICE_TICKET_ASSIGNED` in `app/events/DomainEvents.php` and `DomainEvents::all()`.
+- Producer update (`app/controllers/ServiceTicketController.php`):
+	- added `EventEmitter` integration and assignment transition detection.
+	- emits `SERVICE_TICKET_ASSIGNED` after successful create/update when `assigned_to` is newly set or changed.
+	- payload includes service ticket identifiers and assigned technician recipient ids.
+- Notification consumer update (`services/consume_notification_events.php`):
+	- added routing bind for `service.ticket.assigned`.
+	- mapped `SERVICE_TICKET_ASSIGNED` to user-targeted in-app notifications for assigned technical officer(s).
+- Email consumer update (`services/consume_email_events.php`):
+	- added `SERVICE_TICKET_ASSIGNED` user-targeted email fanout for assigned technical officer(s).
+- Dashboard surface alignment:
+	- `pages/dashboard/technical-officer/components/notifications/script.js` now routes `SERVICE_TICKET_ASSIGNED` action button to `service-tickets` section.
+- Validation evidence:
+	- `php -l app/events/DomainEvents.php` passed.
+	- `php -l app/controllers/ServiceTicketController.php` passed.
+	- `php -l services/consume_notification_events.php` passed.
+	- `php -l services/consume_email_events.php` passed.
+	- `node --check pages/dashboard/technical-officer/components/notifications/script.js` passed.
+	- diagnostics clean for all touched files.
+
+### Asset service due/overdue Maintenance Manager routing completed (April 20, 2026)
+- Completed TASK109 to deliver requested routing behavior:
+	- due maintenance -> in-app notification to Maintenance Manager.
+	- overdue maintenance -> in-app notification to Maintenance Manager + email to all Maintenance Manager recipients.
+- Event contract updates:
+	- added `ASSET_SERVICE_OVERDUE` in `app/events/DomainEvents.php` and `DomainEvents::all()`.
+- Producer updates (`services/check_service_due.php`):
+	- added explicit due vs overdue classification across date and usage thresholds.
+	- emits `ASSET_SERVICE_DUE_SOON` for due assets and `ASSET_SERVICE_OVERDUE` for overdue assets.
+	- payload now includes `service_status`, `service_basis`, `status_message`, remaining/overdue metrics.
+	- lock key now includes status + metric reference so due and overdue can each emit once.
+- Notification consumer updates (`services/consume_notification_events.php`):
+	- added routing bind for `asset.service.overdue`.
+	- both due and overdue cases target role `Maintenance Manager`.
+- Email consumer updates (`services/consume_email_events.php`):
+	- due-soon case is in-app only (no email fanout).
+	- overdue case sends email to all `Maintenance Manager` users.
+- Validation evidence:
+	- `php -l app/events/DomainEvents.php` passed.
+	- `php -l services/check_service_due.php` passed.
+	- `php -l services/consume_notification_events.php` passed.
+	- `php -l services/consume_email_events.php` passed.
+	- diagnostics clean for touched files.
+
+### Maintenance notifications Supervisor parity completed (April 20, 2026)
+- Completed TASK108 to align Maintenance notifications UX with Supervisor notifications (styling, filtering, and read-state behavior).
+- Updated `pages/dashboard/maintenance/components/maintenance-notifications.js`:
+	- replaced static category-button cards with API-backed `/notifications` rendering.
+	- added filter controls/state (`readStatus`, `type`, `sort`, `search`) with reset and summary text.
+	- added read-state actions (`Mark as Read`, `Mark All Read`) via `/notifications/read` and badge synchronization.
+- Updated Maintenance shell wiring:
+	- `pages/dashboard/maintenance/script.js`: added notifications bind/refresh/badge orchestration and section-aware polling.
+	- `pages/dashboard/maintenance/index.html`: enabled notifications nav badge (`badge: true`).
+	- `pages/dashboard/maintenance/style.css`: added Supervisor-parity notification filter/list/card styles and typed toast variants.
+- Updated validation:
+	- `testing/ui-validation/maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js` now asserts filter/search/sort/read interactions and badge transitions using notifications API mocks.
+	- resolved strict-mode heading ambiguity by switching to exact heading match for `Notifications`.
+- Validation evidence:
+	- diagnostics clean for all touched files.
+	- `cd testing/ui-validation && VAL_STAGE=before npx playwright test maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js` passed (2/2).
+	- `cd testing/ui-validation && VAL_STAGE=after npx playwright test maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js` passed (2/2).
+
+### Machinery Operator notifications render fix completed (April 20, 2026)
+- Completed TASK107 to restore Machinery Operator notifications section rendering.
+- Root cause:
+	- `pages/dashboard/machinery-operator/components/mo-notifications.js` had an extra closing brace, causing `SyntaxError: Unexpected token '}'` and preventing `mo-notifications` custom-element registration.
+- Fix applied:
+	- removed the stray brace in `pages/dashboard/machinery-operator/components/mo-notifications.js`.
+- Validation evidence:
+	- `node --check pages/dashboard/machinery-operator/components/mo-notifications.js` passed.
+	- diagnostics clean for the touched file.
+	- focused Playwright render check with stubbed API confirmed notification card rendering in `mo-notifications`.
+
+### Technical Officer notification filter/sort parity completed (April 20, 2026)
+- Completed TASK106 to align Technical Officer notifications filter/sort behavior with Supervisor notifications.
+- Updated `pages/dashboard/technical-officer/components/notifications/script.js`:
+	- added local filter controls and state (`readStatus`, `type`, `sort`, `search`) with reset support.
+	- added filtered/sorted/search rendering pipeline, no-match handling, and result summary text.
+	- retained TO-specific notification action navigation (`technical-officer-notifications:navigate`) and read-state actions.
+- Updated `pages/dashboard/technical-officer/style.css`:
+	- added Supervisor-style notification filter toolbar/panel layout adapted for TO classes.
+	- added responsive filter-grid behavior and scoped TO notification card/list styles.
+- Updated `testing/ui-validation/budget-notification-routing/validate-budget-notification-routing.spec.js`:
+	- added stage-aware filter/sort assertions (`before`: baseline smoke with filter panel visible, `after`: full filter interactions).
+	- retained assignment navigation and read-state assertions.
+- Validation evidence:
+	- `cd testing/ui-validation && VAL_STAGE=before npx playwright test budget-notification-routing/validate-budget-notification-routing.spec.js --reporter=line` passed (2/2).
+	- `cd testing/ui-validation && VAL_STAGE=after npx playwright test budget-notification-routing/validate-budget-notification-routing.spec.js --reporter=line` passed (2/2).
+
+### Spare-part approval requester notification hardening completed (April 20, 2026)
+- Completed TASK104 to ensure approved/rejected spare-part request notifications go to the requesting technician even when event payload is incomplete.
+- Producer updates:
+	- `app/controllers/SparePartRequestController.php` now includes `request_id`, `fault_ticket_id`, `service_ticket_id`, and `request_context` in both approve/reject event payloads.
+- Consumer updates:
+	- `services/consume_notification_events.php` now resolves requester fallback via `spare_part_requests` lookup (`request_db_id` / `request_id`) before creating in-app records.
+	- `services/consume_email_events.php` applies the same fallback for email parity.
+- Runtime validation evidence:
+	- published `SPARE_PART_REQUEST_APPROVED` without `requested_by` (`request_db_id=11`, `request_id=SPR-010`).
+	- consumer log confirmed recipient resolution: `recipient=user:8`.
+	- persisted notification row: `id=23 | user_id=8 | source_event=SPARE_PART_REQUEST_APPROVED | source_event_id=SPR-010`.
+
+### Budget approval requester notification hardening completed (April 20, 2026)
+- Completed TASK105 to ensure approved budget decisions notify the requesting technician.
+- Producer updates:
+	- `app/controllers/BudgetReportController.php` now emits `BUDGET_REPORT_REVIEWED` from `review()` after successful review write/workflow sync.
+	- emit payload includes `report_id`, `fault_ticket_id`, `status`, `reviewed_by`, `submitted_by`, and `approval_level`.
+- Consumer updates:
+	- `services/consume_notification_events.php` now resolves missing `submitted_by` via `budget_reports` lookup by `report_id` before creating in-app notifications.
+	- `services/consume_email_events.php` applies the same `budget_reports` submitter fallback for email parity.
+- Runtime validation evidence:
+	- published `BUDGET_REPORT_REVIEWED` without `submitted_by` for `report_id=6`.
+	- notification consumer persisted recipient `user:30`.
+	- DB row verified: `id=24 | user_id=30 | source_event=BUDGET_REPORT_REVIEWED | source_event_id=6`.
+
+### Fault-ticket resolved reporter notification completed (April 20, 2026)
+- Completed TASK103 to notify the original fault-ticket reporter when a ticket is resolved.
+- Event contract updates:
+	- added `FAULT_TICKET_RESOLVED` to `app/events/DomainEvents.php` and `DomainEvents::all()`.
+- Producer updates:
+	- `app/controllers/FaultTicketController.php` now emits `FAULT_TICKET_RESOLVED` when status transitions into `Resolved` in both `update()` and `complete()` flows.
+- Consumer updates:
+	- `services/consume_notification_events.php` binds `fault.ticket.resolved` and creates user-targeted in-app notification for `reported_by`.
+	- `services/consume_email_events.php` sends resolved email notification to `reported_by`.
+- Dashboard surface updates:
+	- migrated `pages/dashboard/machinery-operator/components/mo-notifications.js` from static mock data to `/notifications` API-backed list with mark-read and mark-all-read actions plus unread badge sync.
+- Validation evidence:
+	- `php -l` passed for all touched backend files.
+	- diagnostics clean for touched backend and MO notifications files.
+	- attempted MO dashboard Playwright suite currently redirects to `/auth/login.html` before notifications assertions (auth fixture mismatch in existing test harness).
+	- live pipeline check passed: consumer processed `fault.ticket.resolved` and persisted row `id=20` for `user_id=7` (`source_event=FAULT_TICKET_RESOLVED`, `src=MBD-003`).
+
+### Technician spare-part and budget notification recipient hardening completed (April 20, 2026)
+- Completed TASK102 to harden recipient delivery for technician spare-part and budget-notification workflows.
+- Updated `services/consume_notification_events.php` and `services/consume_email_events.php`:
+	- budget recipient routing now accepts `approval_role` with fallback to `approval_level`.
+	- supervisor-routing branch now safely treats non-`maintenance_manager` approvals as supervisor-routed.
+	- fixed supervisor fallback condition by tracking supervisor-recipient delivery instead of checking `empty($records)` after Maintenance Manager recipient insertion.
+- Resulting policy now holds for both in-app and email channels:
+	- `SPARE_PART_REQUEST_CREATED` -> Inventory Manager.
+	- `BUDGET_REPORT_CREATED` -> Maintenance Manager always; Supervisor fallback guaranteed when supervisor approval path is expected.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `php -l services/consume_notification_events.php` passed.
+	- `php -l services/consume_email_events.php` passed.
+	- runtime DB verification for target events:
+		- `SPARE_PART_REQUEST_CREATED` -> `target_role=Inventory Manager` record present.
+		- `BUDGET_REPORT_CREATED` -> `target_role=Maintenance Manager` and user-targeted supervisor record (`user_id=5`) present.
+		- recent persisted rows confirm delivery (`id=12`, `id=17`, `id=18`) and read-state flow (`id=18` marked read).
+
+### Supervisor-to-Technical Officer assignment notification delivery completed (April 20, 2026)
+- Completed TASK101 to ensure Technical Officer notification list reflects real in-app notification records for Supervisor assignment events.
+- Updated `pages/dashboard/technical-officer/components/notifications/script.js`:
+	- switched from fault-ticket-derived pseudo notifications to `/notifications?limit=50` API source.
+	- added source-event-driven ticket navigation action for `FAULT_TICKET_ASSIGNED` notifications.
+	- added read-state actions (`Mark as Read`, `Mark All Read`) using `/notifications/read` and unread badge sync.
+- Updated `pages/dashboard/technical-officer/style.css`:
+	- added notification header action, read-card, metadata, and read-pill styles.
+- Updated `testing/ui-validation/budget-notification-routing/validate-budget-notification-routing.spec.js`:
+	- aligned fixtures and assertions to API-backed assignment notifications and read-state transitions.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `cd testing/ui-validation && npx playwright test budget-notification-routing/validate-budget-notification-routing.spec.js --reporter=line` passed (2/2).
+
+### Supervisor notifications filtering and layout completed (April 20, 2026)
+- Completed TASK100 to add richer filtering controls and improve filter-section presentation in Supervisor Notifications panel.
+- Updated `pages/dashboard/supervisor/components/notifications/script.js`:
+	- added filter controls (`readStatus`, `type`, `sort`, `search`) with reset support.
+	- added local filter state and filtered list rendering with summary text + no-match handling.
+	- retained existing read-state actions (`mark as read`, `mark all read`) and unread badge updates.
+- Updated `pages/dashboard/supervisor/style.css`:
+	- added responsive filter toolbar/card layout, form-control styling, and mobile stacking behavior.
+- Updated `testing/ui-validation/supervisor-notifications/validate-supervisor-notifications.spec.js`:
+	- added filter-interaction assertions (status/type/search/sort/reset) and retained read-state/badge validations.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `VAL_STAGE=before` supervisor notifications validation passed (2/2).
+	- `VAL_STAGE=after` supervisor notifications validation passed (2/2).
+
+### Notification consumer console logging completed (April 20, 2026)
+- Completed TASK099 to improve runtime observability of in-app notifications consumer processing.
+- Updated `services/consume_notification_events.php` with structured timestamped console logs for:
+	- startup and topology setup (routing-key binds, DLQ, queue wait state)
+	- message lifecycle (receive, envelope validation, duplicate-skip, persistence, ack)
+	- failure path (error context + nack with requeue)
+- Added env-controlled verbosity via `NOTIFICATION_CONSUMER_DEBUG` (default `true`).
+- Validation evidence:
+	- `php -l services/consume_notification_events.php` passed.
+	- `php services/consume_notification_events.php` startup output verified with expected info/debug lines.
+
+### Supervisor fault-ticket-created notifications delivered (April 20, 2026)
+- Completed TASK098 for end-to-end supervisor notification delivery when new fault tickets are created from Vehicle Breakdown, Route Breakdown, and Machine Breakdown workflows.
+- Backend pipeline updates:
+	- `services/consume_notification_events.php` now binds `fault.ticket.created` and creates Supervisor in-app notification records for `FAULT_TICKET_CREATED`.
+	- auto-ticket creation in `BreakdownReportController::create`, `MachineBreakdownController::create`, and `RouteBreakdownController::create` now emits `DomainEvents::FAULT_TICKET_CREATED` after successful transaction commit.
+- Supervisor dashboard updates:
+	- added notifications section + sidebar item/badge in `pages/dashboard/supervisor/index.html`.
+	- added `supervisor-notifications` component (`pages/dashboard/supervisor/components/notifications/script.js`) using `/notifications` and `/notifications/read`.
+	- wired section refresh + unread badge sync in `pages/dashboard/supervisor/script.js`.
+	- added notification card styles in `pages/dashboard/supervisor/style.css`.
+- Validation evidence:
+	- `php -l` passed for touched backend controller/consumer files.
+	- `cd testing/ui-validation && npx playwright test supervisor-notifications/validate-supervisor-notifications.spec.js --reporter=line` passed (desktop/mobile).
 
 ### Supervisor ticket detail toast style hardening completed (April 20, 2026)
 - Completed TASK097 to resolve remaining toast styling issues in Supervisor fault ticket detail view.

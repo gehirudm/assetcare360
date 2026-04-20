@@ -365,6 +365,14 @@ class VehicleService {
         if ($driver['role'] !== 'Driver') {
             throw new Exception("User is not a driver");
         }
+
+        $currentAssignedDriverId = isset($vehicle['assigned_driver_id']) ? (int) $vehicle['assigned_driver_id'] : 0;
+        if ($currentAssignedDriverId > 0 && $currentAssignedDriverId !== (int) $driverId) {
+            $currentDriverActiveTrips = $this->getActiveTripCountForVehicleDriver($currentAssignedDriverId, $vehicle);
+            if ($currentDriverActiveTrips > 0) {
+                throw new Exception("Cannot replace assigned driver while they have an active trip for this vehicle");
+            }
+        }
         
         // Check if driver is already assigned to another vehicle
         $existingVehicle = $this->vehicleModel->getVehicleByAssignedDriver($driverId);
@@ -420,9 +428,9 @@ class VehicleService {
             throw new Exception("Vehicle has no assigned driver");
         }
 
-        $activeTripCount = (int) $this->tripModel->getActiveTripCount((int) $vehicle['assigned_driver_id']);
+        $activeTripCount = $this->getActiveTripCountForVehicleDriver((int) $vehicle['assigned_driver_id'], $vehicle);
         if ($activeTripCount > 0) {
-            throw new Exception("Cannot unassign driver while they have active trips");
+            throw new Exception("Cannot unassign driver while they have an active trip for this vehicle");
         }
         
         $success = $this->vehicleModel->unassignDriver($vehicleId);
@@ -461,6 +469,19 @@ class VehicleService {
     public function getVehicleAssignedToDriver($driverId) {
         $vehicle = $this->vehicleModel->getVehicleByAssignedDriver($driverId);
         return $this->ensureFuelQrImageIsPubliclyServed($vehicle);
+    }
+
+    private function getActiveTripCountForVehicleDriver(int $driverId, array $vehicle): int {
+        if ($driverId <= 0) {
+            return 0;
+        }
+
+        $vehicleRegistration = trim((string) ($vehicle['number_plate'] ?? ''));
+        if ($vehicleRegistration === '') {
+            return (int) $this->tripModel->getActiveTripCount($driverId);
+        }
+
+        return (int) $this->tripModel->getActiveTripCountByDriverAndVehicle($driverId, $vehicleRegistration);
     }
 
     private function normalizeVehicleTypePayload(array &$data, bool $isCreate): void {

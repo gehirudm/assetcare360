@@ -168,6 +168,8 @@ class FaultTicketController {
                 Response::error('Unauthorized', 401);
                 return;
             }
+
+            $ticketBeforeUpdate = $this->faultTicketModel->findById((int) $id);
             
             // Check if FormData (multipart) or JSON
             $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
@@ -199,6 +201,9 @@ class FaultTicketController {
                 }
                 return;
             }
+
+            $ticketAfterUpdate = $this->faultTicketModel->findById((int) $id);
+            $this->emitResolvedNotificationEventIfNeeded($ticketBeforeUpdate, $ticketAfterUpdate, $user);
             
             Response::success(null, $result['message']);
             
@@ -282,6 +287,8 @@ class FaultTicketController {
                 Response::error('Unauthorized', 401);
                 return;
             }
+
+            $ticketBeforeCompletion = $this->faultTicketModel->findById((int) $id);
             
             $data = json_decode(file_get_contents('php://input'), true) ?? [];
             
@@ -291,12 +298,58 @@ class FaultTicketController {
                 Response::error($result['message'] ?? 'Failed to complete ticket', 400);
                 return;
             }
+
+            $ticketAfterCompletion = $this->faultTicketModel->findById((int) $id);
+            $this->emitResolvedNotificationEventIfNeeded($ticketBeforeCompletion, $ticketAfterCompletion, $user);
             
             Response::success(null, $result['message']);
             
         } catch (\Exception $e) {
             Response::error('Error completing fault ticket: ' . $e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Emit a domain event when a ticket transitions into Resolved status.
+     */
+    private function emitResolvedNotificationEventIfNeeded($beforeTicket, $afterTicket, $actorUser = null) {
+        if (!is_array($afterTicket)) {
+            return;
+        }
+
+        $resolvedStatus = strtolower(FaultTicket::STATUS_RESOLVED);
+        $afterStatus = strtolower(trim((string) ($afterTicket['status'] ?? '')));
+        if ($afterStatus !== $resolvedStatus) {
+            return;
+        }
+
+        $beforeStatus = strtolower(trim((string) ($beforeTicket['status'] ?? '')));
+        if ($beforeStatus === $resolvedStatus) {
+            return;
+        }
+
+        $reportedBy = isset($afterTicket['reported_by']) ? (int) $afterTicket['reported_by'] : 0;
+        if ($reportedBy <= 0) {
+            return;
+        }
+
+        $ticketDbId = isset($afterTicket['id']) ? (int) $afterTicket['id'] : 0;
+
+        $this->eventEmitter->emit(
+            DomainEvents::FAULT_TICKET_RESOLVED,
+            [
+                'ticket_db_id' => $ticketDbId,
+                'ticket_id' => $afterTicket['ticket_id'] ?? null,
+                'reported_by' => $reportedBy,
+                'status' => FaultTicket::STATUS_RESOLVED,
+                'resolved_at' => $afterTicket['resolved_at'] ?? null,
+                'resolved_by' => isset($actorUser['id']) ? (int) $actorUser['id'] : null,
+            ],
+            [
+                'user_id' => $actorUser['id'] ?? null,
+                'role' => $actorUser['role'] ?? null,
+            ]
+        );
     }
     
     /**

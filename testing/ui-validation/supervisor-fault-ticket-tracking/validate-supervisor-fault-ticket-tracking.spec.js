@@ -644,6 +644,27 @@ async function runFlow(page, viewportName) {
     await expect(page.locator('#assignModal')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#assignTechniciansList .assign-tech-item')).toHaveCount(2, { timeout: 10000 });
     await expect(page.locator('#assignExpectedCompletion')).toBeVisible({ timeout: 10000 });
+
+    const assignExpectedCompletion = page.locator('#assignExpectedCompletion');
+    await expect(assignExpectedCompletion).toHaveAttribute('min', /\d{4}-\d{2}-\d{2}/, { timeout: 10000 });
+
+    const pastDate = await page.evaluate(() => {
+        const now = new Date();
+        now.setDate(now.getDate() - 1);
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    });
+
+    await assignExpectedCompletion.fill(pastDate);
+    const pastDateValidity = await assignExpectedCompletion.evaluate((input) => ({
+        valid: input.checkValidity(),
+        rangeUnderflow: input.validity.rangeUnderflow
+    }));
+    expect(pastDateValidity.valid).toBe(false);
+    expect(pastDateValidity.rangeUnderflow).toBe(true);
+
     await page.locator('#assignModal .modal-close').click();
     await expect(page.locator('#assignModal')).not.toBeVisible({ timeout: 10000 });
 

@@ -121,13 +121,6 @@ async function refreshCargoDetails() {
     await section.refresh();
 }
 
-async function refreshTripLog() {
-    const section = getComponent('tm-trip-log');
-    if (section && typeof section.refresh === 'function') {
-        await section.refresh();
-    }
-}
-
 async function refreshFuelLog() {
     const section = getComponent('tm-fuel-log');
     if (section && typeof section.refresh === 'function') {
@@ -188,11 +181,14 @@ function normalizeLegacyAnalyticsSectionParam() {
         'garage-analytics',
     ]);
 
-    if (!legacySections.has(section)) {
+    if (legacySections.has(section)) {
+        params.set('section', 'analytics');
+    } else if (section === 'trip-log') {
+        params.set('section', 'trips');
+    } else {
         return;
     }
 
-    params.set('section', 'analytics');
     const query = params.toString();
     const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
     window.history.replaceState({}, '', nextUrl);
@@ -327,6 +323,16 @@ function setupCargoDetailsEvents() {
     cargoDetails.addEventListener('tm-cargo-details:back', () => {
         navigateToSection('cargo-management');
     });
+
+    cargoDetails.addEventListener('tm-cargo-details:active-state-updated', async (event) => {
+        const itemId = Number(event.detail?.itemId || 0);
+        if (itemId > 0) {
+            currentCargoItemId = itemId;
+        }
+
+        await refreshCargoManagement();
+        await refreshCargoAnalytics();
+    });
 }
 
 function setupFuelLogEvents() {
@@ -361,22 +367,6 @@ function setupGaragesEvents() {
         const modal = getComponent('tm-add-garage-modal');
         if (modal && typeof modal.open === 'function') {
             modal.open();
-        }
-    });
-}
-
-function setupTripLogEvents() {
-    const tripLog = getComponent('tm-trip-log');
-    if (!tripLog || tripLog._eventsBound) return;
-    tripLog._eventsBound = true;
-
-    tripLog.addEventListener('tm-trip-log:view', (event) => {
-        const tripId = event.detail?.tripId;
-        if (!tripId) return;
-
-        const modal = getComponent('tm-view-trip-modal');
-        if (modal && typeof modal.open === 'function') {
-            modal.open(tripId);
         }
     });
 }
@@ -490,7 +480,6 @@ function setupModalEvents() {
         await refreshTrips();
         await refreshCargoManagement();
         await refreshCargoDetails();
-        await refreshTripLog();
         await refreshTripAnalytics();
         await refreshDriverAnalytics();
         await refreshCargoAnalytics();
@@ -576,7 +565,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         setupCargoDetailsEvents();
         setupFuelLogEvents();
         setupGaragesEvents();
-        setupTripLogEvents();
         setupFleetEvents();
         setupFleetDetailsEvents();
         setupDriverAssignmentEvents();

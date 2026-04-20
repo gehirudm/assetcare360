@@ -1,0 +1,38 @@
+{
+  "stage": "after",
+  "viewport": "mobile",
+  "consoleErrors": [],
+  "failedRequests": [],
+  "orderDefault": [
+    "SPR-503",
+    "SPR-501",
+    "SPR-502",
+    "SPR-504"
+  ],
+  "orderCreatedAsc": [
+    "SPR-504",
+    "SPR-502",
+    "SPR-501",
+    "SPR-503"
+  ],
+  "orderCreatedDesc": [
+    "SPR-503",
+    "SPR-501",
+    "SPR-502",
+    "SPR-504"
+  ],
+  "orderQuantityDesc": [
+    "SPR-501",
+    "SPR-504",
+    "SPR-502",
+    "SPR-503"
+  ],
+  "orderNameAsc": [
+    "SPR-503",
+    "SPR-501",
+    "SPR-504",
+    "SPR-502"
+  ],
+  "lowStockCount": 1,
+  "ariaSnapshot": "- heading \" Spare Parts Catalog\" [level=2]\n- paragraph: Browse and manage spare parts inventory\n- textbox \"Search by sparepart name, number, or category...\"\n- button \"+ Add New Sparepart\"\n- button \"All Stock\"\n- button \"In Stock\"\n- button \"Low Stock\"\n- button \"Out of Stock\"\n- text: Sort\n- combobox \"Sort spare parts catalog\":\n  - 'option \"Created Date: Newest First\"'\n  - 'option \"Created Date: Oldest First\"'\n  - 'option \"Stock Quantity: High to Low\"'\n  - 'option \"Stock Quantity: Low to High\"'\n  - 'option \"Name: A to Z\" [selected]'\n  - 'option \"Name: Z to A\"'\n- button \"All Categories\"\n- button \"Vehicles\"\n- button \"Machines\"\n- text:  Parts Catalog 1 item\n- strong:  Hydraulic Seal\n- text: \"# SPR-502 |  Machines Parts Low Stock |  3 units |  Threshold: 10\"\n- button \" VIEW\"\n- button \"Open spare part actions\": "
+}
