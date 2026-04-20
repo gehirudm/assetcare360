@@ -137,12 +137,14 @@ class SupervisorGarageApprovalModal extends HTMLElement {
     renderMeta() {
         const meta = this.querySelector('#garageApprovalMeta');
         const breakdown = this.currentBreakdown || {};
+        const locationLabel = String(breakdown.breakdown_location || breakdown.location || '').trim();
 
         meta.innerHTML = `
             <div style="background:#f8fafc; border:1px solid #dbeafe; border-radius:8px; padding:12px;">
                 <div><strong>Route Breakdown:</strong> ${breakdown.breakdownId || breakdown.route_breakdown_id || `RBD-${breakdown.id}`}</div>
                 <div><strong>Vehicle:</strong> ${breakdown.identifier || breakdown.number_plate || `Vehicle #${breakdown.vehicle_id || 'N/A'}`}</div>
                 <div><strong>Driver:</strong> ${breakdown.reportedBy || breakdown.driver_name || 'N/A'}</div>
+                ${locationLabel ? `<div><strong>Reported Location:</strong> ${locationLabel}</div>` : ''}
                 ${breakdown.description ? `<div><strong>Description:</strong> ${breakdown.description}</div>` : ''}
             </div>
         `;
@@ -154,9 +156,11 @@ class SupervisorGarageApprovalModal extends HTMLElement {
 
         try {
             const response = await API.get('/garages');
-            this.garages = Array.isArray(response?.data?.garages)
+            const rawGarages = Array.isArray(response?.data?.garages)
                 ? response.data.garages
                 : (Array.isArray(response?.data) ? response.data : []);
+
+            this.garages = this.rankGaragesByDistance(rawGarages, this.getDriverCoordinates());
 
             if (!this.garages.length) {
                 select.innerHTML = '<option value="">No garages available</option>';
@@ -173,7 +177,7 @@ class SupervisorGarageApprovalModal extends HTMLElement {
                 <option value="">Select a garage</option>
                 ${this.garages.map((garage) => `
                     <option value="${garage.id}" ${preselectedId === Number(garage.id) ? 'selected' : ''}>
-                        ${garage.name} - ${garage.address}
+                        ${garage.name} - ${garage.address}${garage.distance_km !== null ? ` (${this.formatDistanceKm(garage.distance_km)} away)` : ''}
                     </option>
                 `).join('')}
             `;
@@ -288,7 +292,10 @@ class SupervisorGarageApprovalModal extends HTMLElement {
                 weight: 2,
             }).addTo(this.map);
 
-            marker.bindPopup(`<strong>${garage.name || 'Garage'}</strong><br>${garage.address || 'Address not available'}`);
+            const distanceLabel = garage.distance_km !== null
+                ? `<br><span style="color:#475569;">Approx. ${this.formatDistanceKm(garage.distance_km)} from breakdown</span>`
+                : '';
+            marker.bindPopup(`<strong>${garage.name || 'Garage'}</strong><br>${garage.address || 'Address not available'}${distanceLabel}`);
             marker.on('click', () => {
                 const select = this.querySelector('#garageApprovalSelect');
                 if (select) {
@@ -322,7 +329,7 @@ class SupervisorGarageApprovalModal extends HTMLElement {
             } else if (!this.garageMarkers.length) {
                 hintEl.textContent = 'No garages with coordinates were found. Use the dropdown to select a garage.';
             } else {
-                hintEl.textContent = 'Click a garage marker or use the dropdown to select a garage for approval.';
+                hintEl.textContent = 'Garages are sorted by distance from the reported breakdown location. Click a marker or use the dropdown to select.';
             }
         }
 
@@ -355,14 +362,112 @@ class SupervisorGarageApprovalModal extends HTMLElement {
 
     getDriverCoordinates() {
         const source = this.currentBreakdown?.raw || this.currentBreakdown || {};
-        const latitude = Number(source.breakdown_latitude);
-        const longitude = Number(source.breakdown_longitude);
+        const directCoordinates = this.toCoordinatePair(source.breakdown_latitude, source.breakdown_longitude)
+            || this.toCoordinatePair(source.latitude, source.longitude)
+            || this.toCoordinatePair(this.currentBreakdown?.breakdown_latitude, this.currentBreakdown?.breakdown_longitude);
+
+        if (directCoordinates) {
+            return directCoordinates;
+        }
+
+        return this.parseCoordinatesFromText(source.breakdown_location)
+            || this.parseCoordinatesFromText(source.location)
+            || this.parseCoordinatesFromText(source.description)
+            || null;
+    }
+
+    toCoordinatePair(latitudeValue, longitudeValue) {
+        const latitude = Number(latitudeValue);
+        const longitude = Number(longitudeValue);
 
         if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
             return null;
         }
 
+        if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+            return null;
+        }
+
         return [latitude, longitude];
+    }
+
+    parseCoordinatesFromText(value) {
+        const text = String(value || '').trim();
+        if (!text) {
+            return null;
+        }
+
+        const labelledMatch = text.match(/lat(?:itude)?\s*[:=]?\s*(-?\d+(?:\.\d+)?)\s*[,|]\s*lng(?:itude)?\s*[:=]?\s*(-?\d+(?:\.\d+)?)/i);
+        if (labelledMatch) {
+            return this.toCoordinatePair(labelledMatch[1], labelledMatch[2]);
+        }
+
+        const coordinatePairMatch = text.match(/(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/);
+        if (coordinatePairMatch) {
+            return this.toCoordinatePair(coordinatePairMatch[1], coordinatePairMatch[2]);
+        }
+
+        return null;
+    }
+
+    getGarageDistanceKm(garage, originCoordinates) {
+        if (!originCoordinates || !Array.isArray(originCoordinates)) {
+            return null;
+        }
+
+        const garageCoordinates = this.toCoordinatePair(garage.latitude, garage.longitude);
+        if (!garageCoordinates) {
+            return null;
+        }
+
+        const [originLatitude, originLongitude] = originCoordinates;
+        const [garageLatitude, garageLongitude] = garageCoordinates;
+
+        const toRadians = (degrees) => (degrees * Math.PI) / 180;
+        const earthRadiusKm = 6371;
+
+        const deltaLatitude = toRadians(garageLatitude - originLatitude);
+        const deltaLongitude = toRadians(garageLongitude - originLongitude);
+        const startLatitude = toRadians(originLatitude);
+        const endLatitude = toRadians(garageLatitude);
+
+        const a = Math.sin(deltaLatitude / 2) ** 2
+            + Math.cos(startLatitude) * Math.cos(endLatitude) * Math.sin(deltaLongitude / 2) ** 2;
+
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return earthRadiusKm * c;
+    }
+
+    rankGaragesByDistance(garages, originCoordinates) {
+        const normalizedGarages = Array.isArray(garages) ? garages : [];
+
+        return normalizedGarages
+            .map((garage) => ({
+                ...garage,
+                distance_km: this.getGarageDistanceKm(garage, originCoordinates),
+            }))
+            .sort((first, second) => {
+                const firstDistance = Number.isFinite(first.distance_km) ? first.distance_km : Number.POSITIVE_INFINITY;
+                const secondDistance = Number.isFinite(second.distance_km) ? second.distance_km : Number.POSITIVE_INFINITY;
+
+                if (firstDistance !== secondDistance) {
+                    return firstDistance - secondDistance;
+                }
+
+                return String(first.name || '').localeCompare(String(second.name || ''));
+            });
+    }
+
+    formatDistanceKm(distanceKm) {
+        if (!Number.isFinite(distanceKm)) {
+            return 'N/A';
+        }
+
+        if (distanceKm < 1) {
+            return `${Math.max(50, Math.round(distanceKm * 1000))} m`;
+        }
+
+        return `${distanceKm.toFixed(1)} km`;
     }
 
     destroyMap() {

@@ -568,6 +568,9 @@ class SupervisorFaultTicketTracking extends HTMLElement {
         const dangerousBadgeHtml = dangerousCargoPresent
             ? '<span class="dangerous-cargo-chip" style="font-size: 10px; background: #dc2626; color: white; padding: 1px 6px; border-radius: 4px; margin-left: 6px;"><i class="fas fa-radiation"></i> Dangerous Cargo</span>'
             : '';
+        const approvedGarageHtml = breakdown.reportType === 'route_breakdown' && breakdown.approvedGarageName
+            ? `<div class="item-meta" style="margin-top:4px;"><i class="fas fa-warehouse" style="color:#0f766e;"></i> <span style="color:#0f766e;font-weight:600;">Nearby Garage: ${this.escapeHtml(breakdown.approvedGarageName)}</span></div>`
+            : '';
         const routeDetailsHtml = isVehicleSource
             ? `<div class="item-meta" style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;">
                 <span class="status-text status-normal"><i class="fas fa-tools"></i> ${this.escapeHtml(breakdown.type || 'Route Breakdown')}</span>
@@ -587,6 +590,7 @@ class SupervisorFaultTicketTracking extends HTMLElement {
                     </div>
                     <div class="item-description">${this.escapeHtml(breakdown.description || 'No description provided.')}</div>
                     ${routeDetailsHtml}
+                    ${approvedGarageHtml}
                     <div class="item-meta" style="margin-top:6px;">
                         <span class="status-text ${statusInfo.className}">${this.escapeHtml(statusInfo.label)}</span> &nbsp;|&nbsp;
                         <span class="status-text ${severityInfo.className}">${this.escapeHtml(severityInfo.label)}</span> &nbsp;|&nbsp;

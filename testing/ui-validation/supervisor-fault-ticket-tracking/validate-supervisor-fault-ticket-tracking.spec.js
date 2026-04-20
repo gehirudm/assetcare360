@@ -134,6 +134,20 @@ function buildFixtures() {
                 longitude: 79.8683,
                 is_active: 1,
             },
+        ],
+        technicians: [
+            {
+                id: 41,
+                full_name: 'Technician Alpha',
+                technical_expertise: 'Engine Systems',
+                active_ticket_count: 1,
+            },
+            {
+                id: 42,
+                full_name: 'Technician Bravo',
+                technical_expertise: 'Electrical Diagnostics',
+                active_ticket_count: 3,
+            },
         ]
     };
 }
@@ -385,6 +399,14 @@ async function mockApi(page, fixtures) {
                         priority: 'High',
                         location: 'Lat 6.927079, Lng 79.861244',
                         description: 'Engine vibration and warning light remain active',
+                        insurance_claim: {
+                            asset_label: 'Route Vehicle - WP-CAB-2010',
+                            insurance_provider: 'Alpha Insurance',
+                            insurance_type: 'Comprehensive',
+                            next_insurance_renew_date: '2026-12-01',
+                            eligibility_reason: 'Within active coverage period.',
+                            eligible: true
+                        },
                         machine_id: null,
                         machine_name: 'Route Vehicle',
                         reporter_full_name: 'Driver One',
@@ -427,6 +449,17 @@ async function mockApi(page, fixtures) {
 
         if (pathname.endsWith('/api/fault-tickets') && method === 'GET') {
             return json(route, { status: 'success', success: true, data: { tickets: [] } });
+        }
+
+        if (pathname.endsWith('/api/technicians') && method === 'GET') {
+            return json(route, {
+                status: 'success',
+                success: true,
+                data: {
+                    users: fixtures.technicians,
+                    count: fixtures.technicians.length,
+                }
+            });
         }
 
         if (pathname.endsWith('/api/garages') && method === 'GET') {
@@ -598,12 +631,21 @@ async function runFlow(page, viewportName) {
     await expect(page.locator('#routeLocationPanel')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('#routeLocationMap')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('#routeLocationHint')).toContainText('map', { timeout: 15000 });
+    await expect(page.locator('#assignTicketBtn')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('#claimInsuranceBtn')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('#approveGarageBtn')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('#ovInsurancePanel')).toBeVisible({ timeout: 15000 });
     await expect(page.locator('#ovInsuranceProvider')).toContainText('Transit Assurance Ltd');
     await expect(page.locator('#ovWarrantyProvider')).toContainText('Fleet Warranty Ltd');
     await expect(page.locator('#ovInsuranceEligibility')).toContainText('Not Eligible for Insurance Claim');
 
+
+    await page.locator('#assignTicketBtn').click();
+    await expect(page.locator('#assignModal')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#assignTechniciansList .assign-tech-item')).toHaveCount(2, { timeout: 10000 });
+    await expect(page.locator('#assignExpectedCompletion')).toBeVisible({ timeout: 10000 });
+    await page.locator('#assignModal .modal-close').click();
+    await expect(page.locator('#assignModal')).not.toBeVisible({ timeout: 10000 });
 
     await page.locator('#approveGarageBtn').click();
     await expect(page.locator('#garageApprovalModal')).toBeVisible({ timeout: 10000 });
