@@ -5,7 +5,7 @@ class MaintenanceAnalyticsHub extends HTMLElement {
         }
 
         this._mounted = true;
-        this._views = ['tickets', 'breakdowns', 'cost', 'service', 'notifications'];
+        this._views = ['tickets', 'breakdowns', 'cost', 'service'];
         this._activeView = 'tickets';
         this._generatedReport = null;
         this._charts = {
@@ -16,9 +16,7 @@ class MaintenanceAnalyticsHub extends HTMLElement {
             costLevel: null,
             costTrend: null,
             serviceAssetRisk: null,
-            serviceActivity: null,
-            notificationType: null,
-            notificationTimeline: null,
+            serviceReportCost: null,
         };
         this._data = {
             tickets: [],
@@ -27,9 +25,9 @@ class MaintenanceAnalyticsHub extends HTMLElement {
             pendingBudgetReports: [],
             vehicles: [],
             machines: [],
-            notifications: [],
             repairTickets: [],
             weeklyChecks: [],
+            serviceTickets: [],
         };
 
         this.loadStyles();
@@ -68,7 +66,7 @@ class MaintenanceAnalyticsHub extends HTMLElement {
         this.innerHTML = `
             <div class="page-header">
                 <h1 class="page-title"><i class="fas fa-chart-line"></i> Maintenance Analytics</h1>
-                <p class="page-subtitle">Monitor ticket pipeline, breakdown intake, budget approvals, service risk, and notifications in one view.</p>
+                <p class="page-subtitle">Monitor ticket pipeline, breakdown intake, budget approvals, and service risk in one view.</p>
             </div>
 
             <div class="maintenance-analytics-nav" role="tablist" aria-label="Maintenance analytics views">
@@ -76,7 +74,6 @@ class MaintenanceAnalyticsHub extends HTMLElement {
                 <button type="button" class="analytics-option-btn" role="tab" data-view="breakdowns">Breakdown Analytics</button>
                 <button type="button" class="analytics-option-btn" role="tab" data-view="cost">Cost Approval Analytics</button>
                 <button type="button" class="analytics-option-btn" role="tab" data-view="service">Service & Warranty Analytics</button>
-                <button type="button" class="analytics-option-btn" role="tab" data-view="notifications">Notification Analytics</button>
             </div>
 
             <div class="maintenance-analytics-toolbar">
@@ -96,7 +93,6 @@ class MaintenanceAnalyticsHub extends HTMLElement {
                         <option value="breakdowns">Breakdown Analytics</option>
                         <option value="cost">Cost Approval Analytics</option>
                         <option value="service">Service & Warranty Analytics</option>
-                        <option value="notifications">Notification Analytics</option>
                         <option value="all">All Analytics Summary</option>
                     </select>
                 </div>
@@ -216,6 +212,10 @@ class MaintenanceAnalyticsHub extends HTMLElement {
                     <div class="maintenance-summary-item"><span class="summary-key">Expiring Soon</span><span class="summary-value" id="maintenanceServiceExpiring">0</span></div>
                     <div class="maintenance-summary-item"><span class="summary-key">Expired / Overdue</span><span class="summary-value" id="maintenanceServiceExpired">0</span></div>
                     <div class="maintenance-summary-item"><span class="summary-key">Service Activities (Period)</span><span class="summary-value" id="maintenanceServiceActivities">0</span></div>
+                    <div class="maintenance-summary-item"><span class="summary-key">Service Reports (Period)</span><span class="summary-value" id="maintenanceServiceReports">0</span></div>
+                    <div class="maintenance-summary-item"><span class="summary-key">Expected Cost Total</span><span class="summary-value" id="maintenanceServiceExpectedCost">LKR 0.00</span></div>
+                    <div class="maintenance-summary-item"><span class="summary-key">Actual Cost Total</span><span class="summary-value" id="maintenanceServiceActualCost">LKR 0.00</span></div>
+                    <div class="maintenance-summary-item"><span class="summary-key">Cost Variance</span><span class="summary-value" id="maintenanceServiceCostVariance">LKR 0.00</span></div>
                 </div>
                 <div class="maintenance-analytics-grid">
                     <div class="chart-card">
@@ -230,47 +230,17 @@ class MaintenanceAnalyticsHub extends HTMLElement {
                     </div>
                     <div class="chart-card">
                         <div class="chart-header">
-                            <span class="chart-title">Service Activity Distribution</span>
-                            <span class="chart-subtitle">Repair-ticket and weekly-check activity in selected period.</span>
+                            <span class="chart-title">Service Report Cost Details</span>
+                            <span class="chart-subtitle">Expected vs actual totals and net variance from completed service reports.</span>
                         </div>
                         <div class="chart-canvas-wrap">
-                            <canvas id="maintenanceServiceActivityChart"></canvas>
-                            <div class="chart-empty" id="maintenanceServiceActivityChartEmpty"></div>
+                            <canvas id="maintenanceServiceReportCostChart"></canvas>
+                            <div class="chart-empty" id="maintenanceServiceReportCostChartEmpty"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="maintenance-analytics-panel" data-view="notifications" role="tabpanel">
-                <div class="maintenance-summary-grid">
-                    <div class="maintenance-summary-item"><span class="summary-key">Notifications</span><span class="summary-value" id="maintenanceNotificationTotal">0</span></div>
-                    <div class="maintenance-summary-item"><span class="summary-key">Unread</span><span class="summary-value" id="maintenanceNotificationUnread">0</span></div>
-                    <div class="maintenance-summary-item"><span class="summary-key">Warning + Error</span><span class="summary-value" id="maintenanceNotificationWarningError">0</span></div>
-                    <div class="maintenance-summary-item"><span class="summary-key">Info + Success</span><span class="summary-value" id="maintenanceNotificationInfoSuccess">0</span></div>
-                </div>
-                <div class="maintenance-analytics-grid">
-                    <div class="chart-card">
-                        <div class="chart-header">
-                            <span class="chart-title">Notification Type Mix</span>
-                            <span class="chart-subtitle">Severity distribution of maintenance notifications.</span>
-                        </div>
-                        <div class="chart-canvas-wrap">
-                            <canvas id="maintenanceNotificationTypeChart"></canvas>
-                            <div class="chart-empty" id="maintenanceNotificationTypeChartEmpty"></div>
-                        </div>
-                    </div>
-                    <div class="chart-card">
-                        <div class="chart-header">
-                            <span class="chart-title">Notification Timeline</span>
-                            <span class="chart-subtitle">Daily notification volume for selected period.</span>
-                        </div>
-                        <div class="chart-canvas-wrap">
-                            <canvas id="maintenanceNotificationTimelineChart"></canvas>
-                            <div class="chart-empty" id="maintenanceNotificationTimelineChartEmpty"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         `;
     }
 
@@ -378,9 +348,9 @@ class MaintenanceAnalyticsHub extends HTMLElement {
             pendingBudgetResult,
             vehiclesResult,
             machinesResult,
-            notificationsResult,
             repairTicketsResult,
             weeklyChecksResult,
+            serviceTicketsResult,
         ] = await Promise.allSettled([
             this.fetchFaultTickets(),
             this.fetchMachineBreakdowns(),
@@ -388,9 +358,9 @@ class MaintenanceAnalyticsHub extends HTMLElement {
             this.fetchPendingBudgetReports(),
             this.fetchVehicles(),
             this.fetchMachines(),
-            this.fetchNotifications(),
             this.fetchRepairTickets(),
             this.fetchMachineWeeklyChecks(),
+            this.fetchServiceTickets(),
         ]);
 
         const errors = [];
@@ -437,13 +407,6 @@ class MaintenanceAnalyticsHub extends HTMLElement {
             errors.push('machines');
         }
 
-        if (notificationsResult.status === 'fulfilled') {
-            this._data.notifications = notificationsResult.value;
-        } else {
-            this._data.notifications = [];
-            errors.push('notifications');
-        }
-
         if (repairTicketsResult.status === 'fulfilled') {
             this._data.repairTickets = repairTicketsResult.value;
         } else {
@@ -456,6 +419,13 @@ class MaintenanceAnalyticsHub extends HTMLElement {
         } else {
             this._data.weeklyChecks = [];
             errors.push('weekly checks');
+        }
+
+        if (serviceTicketsResult.status === 'fulfilled') {
+            this._data.serviceTickets = serviceTicketsResult.value;
+        } else {
+            this._data.serviceTickets = [];
+            errors.push('service tickets');
         }
 
         if (errors.length === 9) {
@@ -488,10 +458,6 @@ class MaintenanceAnalyticsHub extends HTMLElement {
         if (this._activeView === 'service') {
             this.renderServiceView(period);
             return;
-        }
-
-        if (this._activeView === 'notifications') {
-            this.renderNotificationsView(period);
         }
     }
 
@@ -767,6 +733,7 @@ class MaintenanceAnalyticsHub extends HTMLElement {
         const assetRows = this.getAssetRows();
         const repairRows = this.getFilteredRepairTickets(period);
         const weeklyCheckRows = this.getFilteredWeeklyChecks(period);
+        const serviceReportRows = this.getFilteredServiceReports(period);
 
         const assetRiskCounts = {
             active: 0,
@@ -779,32 +746,25 @@ class MaintenanceAnalyticsHub extends HTMLElement {
             assetRiskCounts[risk] += 1;
         });
 
-        const repairStatusCounts = {
-            pending: 0,
-            diagnosed: 0,
-            parts_ordered: 0,
-            in_repair: 0,
-            testing: 0,
-            completed: 0,
-            cancelled: 0,
-            other: 0,
-        };
+        const serviceActivities = repairRows.length + weeklyCheckRows.length;
 
-        repairRows.forEach((row) => {
-            const status = this.normalizeRepairStatus(row.repair_status);
-            if (repairStatusCounts[status] === undefined) {
-                repairStatusCounts.other += 1;
-            } else {
-                repairStatusCounts[status] += 1;
-            }
+        let expectedTotal = 0;
+        let actualTotal = 0;
+        serviceReportRows.forEach((row) => {
+            expectedTotal += this.toNumber(row.estimated_cost);
+            actualTotal += this.toNumber(row.actual_cost);
         });
 
-        const serviceActivities = repairRows.length + weeklyCheckRows.length;
+        const costVariance = actualTotal - expectedTotal;
 
         this.setText('#maintenanceServiceAssets', String(assetRows.length));
         this.setText('#maintenanceServiceExpiring', String(assetRiskCounts.expiring));
         this.setText('#maintenanceServiceExpired', String(assetRiskCounts.expired));
         this.setText('#maintenanceServiceActivities', String(serviceActivities));
+        this.setText('#maintenanceServiceReports', String(serviceReportRows.length));
+        this.setText('#maintenanceServiceExpectedCost', this.formatCurrency(expectedTotal));
+        this.setText('#maintenanceServiceActualCost', this.formatCurrency(actualTotal));
+        this.setText('#maintenanceServiceCostVariance', this.formatCurrency(costVariance));
 
         const riskRows = [
             ['Active', assetRiskCounts.active],
@@ -831,119 +791,31 @@ class MaintenanceAnalyticsHub extends HTMLElement {
             'No asset service-risk data available.'
         );
 
-        const activityRows = [
-            ['Repair Tickets', repairRows.length],
-            ['Weekly Checks', weeklyCheckRows.length],
-            ['Repairs Completed', repairStatusCounts.completed],
-            ['Repairs In Progress', repairStatusCounts.in_repair + repairStatusCounts.diagnosed + repairStatusCounts.parts_ordered + repairStatusCounts.testing],
-        ].filter((row) => row[1] > 0);
+        const varianceColor = costVariance > 0 ? '#ef4444' : costVariance < 0 ? '#10b981' : '#94a3b8';
 
         this.renderChart(
-            'serviceActivity',
-            '#maintenanceServiceActivityChart',
-            '#maintenanceServiceActivityChartEmpty',
+            'serviceReportCost',
+            '#maintenanceServiceReportCostChart',
+            '#maintenanceServiceReportCostChartEmpty',
             {
                 type: 'bar',
                 data: {
-                    labels: activityRows.map((row) => row[0]),
+                    labels: ['Expected Total', 'Actual Total', 'Variance'],
                     datasets: [{
-                        label: 'Activities',
-                        data: activityRows.map((row) => row[1]),
-                        backgroundColor: ['#2563eb', '#0ea5e9', '#10b981', '#f59e0b'],
+                        label: 'LKR',
+                        data: [
+                            Number(expectedTotal.toFixed(2)),
+                            Number(actualTotal.toFixed(2)),
+                            Number(costVariance.toFixed(2)),
+                        ],
+                        backgroundColor: ['#2563eb', '#0ea5e9', varianceColor],
                         borderRadius: 8,
                     }],
                 },
                 options: this.getSharedChartOptions(),
             },
-            activityRows.length > 0,
-            'No service activities found for selected period.'
-        );
-    }
-
-    renderNotificationsView(period) {
-        const rows = this.getFilteredNotifications(period);
-
-        const typeCounts = {
-            info: 0,
-            success: 0,
-            warning: 0,
-            error: 0,
-        };
-
-        let unread = 0;
-        const timelineMap = new Map();
-
-        rows.forEach((row) => {
-            const type = this.normalizeNotificationType(row.type);
-            typeCounts[type] += 1;
-
-            if (Number(row.is_read) !== 1) {
-                unread += 1;
-            }
-
-            const date = this.extractNotificationDate(row);
-            if (date) {
-                const label = this.toInputDate(date);
-                timelineMap.set(label, (timelineMap.get(label) || 0) + 1);
-            }
-        });
-
-        this.setText('#maintenanceNotificationTotal', String(rows.length));
-        this.setText('#maintenanceNotificationUnread', String(unread));
-        this.setText('#maintenanceNotificationWarningError', String(typeCounts.warning + typeCounts.error));
-        this.setText('#maintenanceNotificationInfoSuccess', String(typeCounts.info + typeCounts.success));
-
-        const typeRows = [
-            ['Info', typeCounts.info],
-            ['Success', typeCounts.success],
-            ['Warning', typeCounts.warning],
-            ['Error', typeCounts.error],
-        ].filter((row) => row[1] > 0);
-
-        this.renderChart(
-            'notificationType',
-            '#maintenanceNotificationTypeChart',
-            '#maintenanceNotificationTypeChartEmpty',
-            {
-                type: 'doughnut',
-                data: {
-                    labels: typeRows.map((row) => row[0]),
-                    datasets: [{
-                        data: typeRows.map((row) => row[1]),
-                        backgroundColor: ['#60a5fa', '#10b981', '#f59e0b', '#ef4444'],
-                    }],
-                },
-                options: this.getSharedChartOptions(),
-            },
-            typeRows.length > 0,
-            'No notifications found for selected period.'
-        );
-
-        const timelineLabels = Array.from(timelineMap.keys()).sort();
-        const timelineValues = timelineLabels.map((label) => timelineMap.get(label));
-
-        this.renderChart(
-            'notificationTimeline',
-            '#maintenanceNotificationTimelineChart',
-            '#maintenanceNotificationTimelineChartEmpty',
-            {
-                type: 'line',
-                data: {
-                    labels: timelineLabels,
-                    datasets: [{
-                        label: 'Notifications',
-                        data: timelineValues,
-                        borderColor: '#0ea5e9',
-                        backgroundColor: 'rgba(14, 165, 233, 0.2)',
-                        fill: true,
-                        tension: 0.35,
-                        pointRadius: 3,
-                    }],
-                },
-                options: this.getSharedChartOptions(),
-            },
-            timelineLabels.length > 0,
-            'No notification timeline points for selected period.'
+            serviceReportRows.length > 0,
+            'No service report cost details found for selected period.'
         );
     }
 
@@ -1069,15 +941,6 @@ class MaintenanceAnalyticsHub extends HTMLElement {
         return this.extractList(response, 'machines');
     }
 
-    async fetchNotifications() {
-        const response = await API.get('/notifications?limit=100');
-        if (!this.isSuccessResponse(response)) {
-            throw new Error(response?.message || 'Failed to load notifications.');
-        }
-
-        return this.extractList(response, 'notifications');
-    }
-
     async fetchRepairTickets() {
         const response = await API.get('/tec-repair-tickets');
         if (!this.isSuccessResponse(response)) {
@@ -1094,6 +957,15 @@ class MaintenanceAnalyticsHub extends HTMLElement {
         }
 
         return this.extractList(response, 'checks');
+    }
+
+    async fetchServiceTickets() {
+        const response = await API.get('/service-tickets?status=Completed&sort_by=created&sort_dir=desc');
+        if (!this.isSuccessResponse(response)) {
+            throw new Error(response?.message || 'Failed to load service tickets.');
+        }
+
+        return this.extractList(response, 'tickets');
     }
 
     extractList(response, key) {
@@ -1154,14 +1026,6 @@ class MaintenanceAnalyticsHub extends HTMLElement {
         if (raw === 'high') return 'High';
         if (raw === 'low') return 'Low';
         return 'Medium';
-    }
-
-    normalizeNotificationType(value) {
-        const raw = String(value || '').trim().toLowerCase();
-        if (raw === 'success') return 'success';
-        if (raw === 'warning') return 'warning';
-        if (raw === 'error') return 'error';
-        return 'info';
     }
 
     normalizeRepairStatus(value) {
@@ -1238,8 +1102,8 @@ class MaintenanceAnalyticsHub extends HTMLElement {
         return this.extractDate(row?.submitted_date, row?.week_end_date, row?.created_at);
     }
 
-    extractNotificationDate(row) {
-        return this.extractDate(row?.created_at);
+    extractServiceTicketDate(row) {
+        return this.extractDate(row?.completed_at, row?.updated_at, row?.created_at);
     }
 
     extractDate(...values) {
@@ -1292,9 +1156,17 @@ class MaintenanceAnalyticsHub extends HTMLElement {
         return rows.filter((row) => this.isWithinPeriod(this.extractWeeklyCheckDate(row), period));
     }
 
-    getFilteredNotifications(period) {
-        const rows = Array.isArray(this._data.notifications) ? this._data.notifications : [];
-        return rows.filter((row) => this.isWithinPeriod(this.extractNotificationDate(row), period));
+    getFilteredServiceReports(period) {
+        const rows = Array.isArray(this._data.serviceTickets) ? this._data.serviceTickets : [];
+        return rows.filter((row) => {
+            const status = String(row.status || '').trim().toLowerCase();
+            const isCompleted = status === 'completed';
+            if (!isCompleted) {
+                return false;
+            }
+
+            return this.isWithinPeriod(this.extractServiceTicketDate(row), period);
+        });
     }
 
     getAssetRows() {
@@ -1476,10 +1348,6 @@ class MaintenanceAnalyticsHub extends HTMLElement {
             return this.buildServiceReport(period, selectedScope);
         }
 
-        if (scope === 'notifications') {
-            return this.buildNotificationsReport(period, selectedScope);
-        }
-
         if (scope === 'all') {
             return this.buildAllAnalyticsReport(period, selectedScope);
         }
@@ -1614,6 +1482,7 @@ class MaintenanceAnalyticsHub extends HTMLElement {
         const assets = this.getAssetRows();
         const repairRows = this.getFilteredRepairTickets(period);
         const weeklyRows = this.getFilteredWeeklyChecks(period);
+        const serviceReportRows = this.getFilteredServiceReports(period);
 
         const assetRisk = {
             active: 0,
@@ -1626,6 +1495,14 @@ class MaintenanceAnalyticsHub extends HTMLElement {
         });
 
         const activityRows = [
+            ...serviceReportRows.map((row) => ({
+                source: 'Service Report',
+                activity_id: row.service_ticket_id || row.id || '',
+                status: this.toLabel(String(row.status || 'completed').toLowerCase()),
+                asset: row.asset_name || row.asset_code || row.asset_id || '',
+                recorded_at: row.completed_at || row.updated_at || row.created_at || '',
+                amount: this.toNumber(row.actual_cost),
+            })),
             ...repairRows.map((row) => ({
                 source: 'Repair Ticket',
                 activity_id: row.repair_ticket_id || row.id || '',
@@ -1644,12 +1521,20 @@ class MaintenanceAnalyticsHub extends HTMLElement {
             })),
         ];
 
+        const expectedCostTotal = serviceReportRows.reduce((sum, row) => sum + this.toNumber(row.estimated_cost), 0);
+        const actualCostTotal = serviceReportRows.reduce((sum, row) => sum + this.toNumber(row.actual_cost), 0);
+        const costVarianceTotal = actualCostTotal - expectedCostTotal;
+
         const summary = {
             tracked_assets: assets.length,
             active_assets: assetRisk.active,
             expiring_assets: assetRisk.expiring,
             expired_overdue_assets: assetRisk.expired,
             service_activities: activityRows.length,
+            service_reports: serviceReportRows.length,
+            service_report_expected_cost_total: Number(expectedCostTotal.toFixed(2)),
+            service_report_actual_cost_total: Number(actualCostTotal.toFixed(2)),
+            service_report_cost_variance: Number(costVarianceTotal.toFixed(2)),
             open_repairs: repairRows.filter((row) => {
                 const status = this.normalizeRepairStatus(row.repair_status);
                 return status !== 'completed' && status !== 'cancelled';
@@ -1675,53 +1560,15 @@ class MaintenanceAnalyticsHub extends HTMLElement {
         };
     }
 
-    async buildNotificationsReport(period, selectedScope) {
-        const rows = this.getFilteredNotifications(period);
-
-        const reportRows = rows.map((row) => ({
-            notification_id: row.notification_id || row.id || '',
-            title: row.title || '',
-            type: this.normalizeNotificationType(row.type),
-            is_read: Number(row.is_read) === 1 ? 'Yes' : 'No',
-            created_at: row.created_at || '',
-            message: row.message || '',
-        }));
-
-        const summary = {
-            total_notifications: reportRows.length,
-            unread: reportRows.filter((row) => row.is_read === 'No').length,
-            warning_error: reportRows.filter((row) => row.type === 'warning' || row.type === 'error').length,
-            info_success: reportRows.filter((row) => row.type === 'info' || row.type === 'success').length,
-        };
-
-        return {
-            scope: selectedScope,
-            reportType: 'Notification Analytics',
-            generatedAt: new Date().toISOString(),
-            period,
-            summary,
-            columns: [
-                { key: 'notification_id', label: 'Notification ID' },
-                { key: 'title', label: 'Title' },
-                { key: 'type', label: 'Type' },
-                { key: 'is_read', label: 'Read' },
-                { key: 'created_at', label: 'Created At' },
-                { key: 'message', label: 'Message' },
-            ],
-            rows: reportRows,
-        };
-    }
-
     async buildAllAnalyticsReport(period, selectedScope) {
-        const [ticketsReport, breakdownsReport, costReport, serviceReport, notificationsReport] = await Promise.all([
+        const [ticketsReport, breakdownsReport, costReport, serviceReport] = await Promise.all([
             this.buildTicketsReport(period, 'tickets'),
             this.buildBreakdownsReport(period, 'breakdowns'),
             this.buildCostReport(period, 'cost'),
             this.buildServiceReport(period, 'service'),
-            this.buildNotificationsReport(period, 'notifications'),
         ]);
 
-        const reports = [ticketsReport, breakdownsReport, costReport, serviceReport, notificationsReport];
+        const reports = [ticketsReport, breakdownsReport, costReport, serviceReport];
         const rows = [];
 
         reports.forEach((report) => {
@@ -1927,6 +1774,13 @@ class MaintenanceAnalyticsHub extends HTMLElement {
 
     formatNumber(value) {
         return this.toNumber(value).toFixed(2);
+    }
+
+    formatCurrency(value) {
+        return `LKR ${this.toNumber(value).toLocaleString('en-LK', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        })}`;
     }
 
     escapeHtml(value) {

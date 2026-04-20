@@ -248,6 +248,36 @@ function buildFixtures() {
                 received_at: '2026-04-15T11:00:00Z',
             },
         ],
+        serviceTickets: [
+            {
+                id: 3001,
+                service_ticket_id: 'SVT-301',
+                status: 'Completed',
+                asset_type: 'vehicle',
+                asset_id: 10,
+                asset_name: 'Fleet Bus 10',
+                asset_code: 'VEH-010',
+                estimated_cost: 25000,
+                actual_cost: 23750,
+                completed_at: '2026-04-19T11:20:00Z',
+                updated_at: '2026-04-19T11:20:00Z',
+                created_at: '2026-04-12T09:00:00Z',
+            },
+            {
+                id: 3002,
+                service_ticket_id: 'SVT-302',
+                status: 'Completed',
+                asset_type: 'machine',
+                asset_id: 1,
+                asset_name: 'Excavator 320D',
+                asset_code: 'MCH-001',
+                estimated_cost: 16000,
+                actual_cost: 17400,
+                completed_at: '2026-04-22T14:30:00Z',
+                updated_at: '2026-04-22T14:30:00Z',
+                created_at: '2026-04-15T10:30:00Z',
+            },
+        ],
     };
 }
 
@@ -274,6 +304,28 @@ async function mockMaintenanceApis(page, fixtures) {
                 async function confirmAction() {}
                 function logout() {}
             `,
+        });
+    });
+
+    await page.route('**/api/**', (route) => {
+        const url = new URL(route.request().url());
+        if (url.pathname === '/api/service-tickets') {
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    status: 'success',
+                    success: true,
+                    data: { tickets: fixtures.serviceTickets },
+                }),
+            });
+            return;
+        }
+
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ status: 'success', success: true, data: {} }),
         });
     });
 
@@ -408,14 +460,6 @@ async function mockMaintenanceApis(page, fixtures) {
         });
     });
 
-    await page.route('**/api/**', (route) => {
-        route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify({ status: 'success', success: true, data: {} }),
-        });
-    });
-
     await page.route('**://localhost:8000/**', (route) => {
         route.fulfill({
             status: 200,
@@ -497,7 +541,9 @@ async function runFlow(page, viewportName) {
         await navigateSection(page, 'analytics', 'Analytics');
 
         await expect(page.locator('#analytics .page-title')).toContainText('Maintenance Analytics');
-        await expect(page.locator('#analytics .analytics-option-btn')).toHaveCount(5);
+        await expect(page.locator('#analytics .analytics-option-btn')).toHaveCount(4);
+        await expect(page.locator('#analytics .analytics-option-btn[data-view="notifications"]')).toHaveCount(0);
+        await expect(page.locator('#maintenanceReportScope option[value="notifications"]')).toHaveCount(0);
 
         await page.fill('#maintenanceAnalyticsFromDate', '2026-04-01');
         await page.fill('#maintenanceAnalyticsToDate', '2026-04-30');

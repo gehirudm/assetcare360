@@ -19,9 +19,9 @@
             {"section":"dashboard","icon":"fas fa-chart-bar","label":"Dashboard"},
             {"section":"analytics","icon":"fas fa-chart-line","label":"Analytics"},
             {"section":"fault-tickets","icon":"fas fa-ticket-alt","label":"Fault Tickets"},
-            {"section":"service-records","icon":"fas fa-file-alt","label":"Service Records"},
+            {"section":"service-tickets","icon":"fas fa-file-alt","label":"Service Management"},
             {"section":"cost-approvals","icon":"fas fa-money-bill-wave","label":"Cost Approvals"},
-            {"section":"service-warranty","icon":"fas fa-shield-alt","label":"Service &amp; Warranty Monitor"},
+            {"section":"warranty-management","icon":"fas fa-shield-alt","label":"Warranty Management"},
             {"section":"service-reports","icon":"fas fa-clipboard-list","label":"Service Report Management"},
             {"section":"notifications","icon":"fas fa-bell","label":"Notifications"}
         ]'>
@@ -40,9 +40,13 @@
                     <maintenance-fault-tickets></maintenance-fault-tickets>
                 </section>
 
-                <!-- Service Records Section -->
-                <section class="content-section" id="service-records">
-                    <maintenance-service-records></maintenance-service-records>
+                <!-- Service Tickets Section -->
+                <section class="content-section" id="service-tickets">
+                    <maintenance-service-tickets></maintenance-service-tickets>
+                </section>
+
+                <section class="content-section" id="service-ticket-details">
+                    <maintenance-service-ticket-detail-view default-return-section="service-tickets"></maintenance-service-ticket-detail-view>
                 </section>
 
                 <!-- Cost Approvals -->
@@ -50,8 +54,8 @@
                     <maintenance-cost-approvals></maintenance-cost-approvals>
                 </section>
 
-                <!-- Service & Warranty Monitoring -->
-                <section class="content-section" id="service-warranty">
+                <!-- Warranty Management -->
+                <section class="content-section" id="warranty-management">
                     <maintenance-service-warranty></maintenance-service-warranty>
                 </section>
 
@@ -77,6 +81,7 @@
     <maintenance-cost-details-modal></maintenance-cost-details-modal>
     <maintenance-service-schedule-modal></maintenance-service-schedule-modal>
     <maintenance-add-service-record-modal></maintenance-add-service-record-modal>
+    <maintenance-create-service-ticket-modal></maintenance-create-service-ticket-modal>
 
     <!-- Toast Notification -->
     <div id="toast" class="toast">
@@ -105,10 +110,12 @@
     <script src="./components/page-modals/maintenance-warranty-details-modal.js"></script>
     <script src="./components/page-modals/maintenance-service-schedule-modal.js"></script>
     <script src="./components/page-modals/maintenance-add-service-record-modal.js"></script>
+    <script src="./components/page-modals/maintenance-create-service-ticket-modal.js"></script>
     <script src="./components/analytics-hub/script.js"></script>
+    <script src="./components/service-ticket-details/script.js"></script>
     <script src="./components/maintenance-dashboard-overview.js"></script>
     <script src="./components/maintenance-fault-tickets.js"></script>
-    <script src="./components/maintenance-service-records.js"></script>
+    <script src="./components/maintenance-service-tickets.js"></script>
     <script src="./components/maintenance-cost-approvals.js"></script>
     <script src="./components/maintenance-service-warranty.js"></script>
     <script src="./components/maintenance-service-reports.js"></script>

@@ -194,6 +194,44 @@ class InventoryOrdersApprovals extends HTMLElement {
         this.displayOrders(filtered);
     }
 
+    resolveTicketType(order) {
+        const context = String(order?.request_context || '').toLowerCase();
+        if (context === 'service_ticket') {
+            return 'Service Ticket';
+        }
+
+        const ticketCode = String(order?.ticket_id_formatted || order?.service_ticket_code || order?.fault_ticket_code || '').toUpperCase();
+        if (ticketCode.startsWith('SVT-')) {
+            return 'Service Ticket';
+        }
+        if (ticketCode.startsWith('VBD')) {
+            return 'Vehicle Breakdown';
+        }
+        if (ticketCode.startsWith('MBD')) {
+            return 'Machine Breakdown';
+        }
+        if (ticketCode.startsWith('RBD')) {
+            return 'Routine Breakdown';
+        }
+
+        return 'Fault Ticket';
+    }
+
+    resolveLinkedTicketStatusClass(status) {
+        const normalized = String(status || '').toLowerCase();
+        if (normalized.includes('complete') || normalized.includes('approved') || normalized.includes('resolved') || normalized.includes('closed')) {
+            return 'status-approved';
+        }
+        if (normalized.includes('reject') || normalized.includes('cancel')) {
+            return 'status-rejected';
+        }
+        if (normalized.includes('progress')) {
+            return 'status-low-stock';
+        }
+
+        return 'status-pending';
+    }
+
     displayOrders(orderList) {
         const container = this.querySelector('#ordersList');
         if (!container) return;
@@ -219,9 +257,7 @@ class InventoryOrdersApprovals extends HTMLElement {
 
             const dateStr = new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-            const ticketType = (order.ticket_id_formatted || '').startsWith('VBD') ? 'Vehicle Breakdown' :
-                (order.ticket_id_formatted || '').startsWith('MBD') ? 'Machine Breakdown' :
-                    (order.ticket_id_formatted || '').startsWith('RBD') ? 'Routine Breakdown' : 'Fault Ticket';
+            const ticketType = this.resolveTicketType(order);
 
             const partsCount = (order.items || []).reduce((sum, i) => sum + i.quantity, 0);
             const partsLabel = `${(order.items || []).length} part${(order.items || []).length !== 1 ? 's' : ''} (${partsCount} units)`;
@@ -577,7 +613,7 @@ class InventoryOrdersApprovals extends HTMLElement {
             });
 
             if (response.status === 'success') {
-                Utils.showToast('Spare parts request approved! Fault ticket updated to Parts Approved.', 'success');
+                Utils.showToast('Spare parts request approved successfully.', 'success');
                 this.closeActionModal();
                 await this.loadOrders();
             } else {
@@ -633,9 +669,8 @@ class InventoryOrdersApprovals extends HTMLElement {
         const dateStr = new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         const reviewDate = order.reviewed_at ? new Date(order.reviewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
 
-        const ticketType = (order.ticket_id_formatted || '').startsWith('VBD') ? 'Vehicle Breakdown' :
-            (order.ticket_id_formatted || '').startsWith('MBD') ? 'Machine Breakdown' :
-                (order.ticket_id_formatted || '').startsWith('RBD') ? 'Routine Breakdown' : 'Fault Ticket';
+        const ticketType = this.resolveTicketType(order);
+        const linkedTicketStatusClass = this.resolveLinkedTicketStatusClass(order.ticket_status);
 
         const partsHTML = order.items && order.items.length > 0
             ? `<table style="width: 100%; border-collapse: collapse; margin-top: 8px;">
@@ -687,7 +722,7 @@ class InventoryOrdersApprovals extends HTMLElement {
                     <p><strong>Ticket ID:</strong> <span style="color: var(--tang-blue); font-weight: 700;">${order.ticket_id_formatted || '-'}</span></p>
                     <p><strong>Type:</strong> ${ticketType}</p>
                     <p><strong>Equipment:</strong> ${order.equipment_name || '-'}</p>
-                    <p><strong>Ticket Status:</strong> <span class="status-text ${order.ticket_status?.toLowerCase().includes('approved') ? 'status-approved' : 'status-pending'}">${order.ticket_status || '-'}</span></p>
+                    <p><strong>Ticket Status:</strong> <span class="status-text ${linkedTicketStatusClass}">${order.ticket_status || '-'}</span></p>
                 </div>
                 ${order.ticket_description ? `<p style="margin-top: 8px;"><strong>Description:</strong> ${order.ticket_description}</p>` : ''}
             </div>
