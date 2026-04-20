@@ -596,8 +596,45 @@ class RouteBreakdownController {
             Response::error('You can only delete your own reports', 403);
         }
 
-        $stmt = $this->conn->prepare('DELETE FROM vehicle_breakdown_inroute WHERE id = ?');
-        $stmt->execute([$id]);
+        $routeBreakdownCode = trim((string) ($record['route_breakdown_id'] ?? ''));
+        $linkedFaultTicketId = (int) ($record['fault_ticket_id'] ?? 0);
+        $linkedFaultTicketImagePaths = [];
+
+        if ($routeBreakdownCode !== '') {
+            $linkedFaultTicketImagePaths = $this->getLinkedFaultTicketImagePaths($routeBreakdownCode);
+        } elseif ($linkedFaultTicketId > 0) {
+            $linkedFaultTicketImagePaths = $this->getFaultTicketImagePathsByTicketId($linkedFaultTicketId);
+        }
+
+        try {
+            $this->conn->beginTransaction();
+
+            if ($routeBreakdownCode !== '') {
+                $deleteLinkedTicketsStmt = $this->conn->prepare(
+                    "DELETE FROM fault_tickets
+                     WHERE breakdown_type = 'route_breakdown'
+                       AND breakdown_report_id = ?"
+                );
+                $deleteLinkedTicketsStmt->execute([$routeBreakdownCode]);
+            } elseif ($linkedFaultTicketId > 0) {
+                $deleteLinkedTicketStmt = $this->conn->prepare('DELETE FROM fault_tickets WHERE id = ?');
+                $deleteLinkedTicketStmt->execute([$linkedFaultTicketId]);
+            }
+
+            $deleteRouteBreakdownStmt = $this->conn->prepare('DELETE FROM vehicle_breakdown_inroute WHERE id = ?');
+            $deleteRouteBreakdownStmt->execute([$id]);
+
+            $this->conn->commit();
+        } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+
+            error_log('RouteBreakdownController::delete error: ' . $e->getMessage());
+            Response::serverError('Failed to delete route breakdown');
+        }
+
+        $this->cleanupUploadedPaths($linkedFaultTicketImagePaths);
 
         Response::success(null, 'Route breakdown deleted successfully');
     }
@@ -1088,11 +1125,18 @@ class RouteBreakdownController {
             return null;
         }
 
-        $sql = "SELECT id, route_breakdown_id, status
-                FROM vehicle_breakdown_inroute
-                WHERE vehicle_id = ?
-                  AND LOWER(COALESCE(status, 'pending')) NOT IN ('resolved', 'closed')
-                ORDER BY id DESC
+        $sql = "SELECT rb.id, rb.route_breakdown_id, rb.status, ft.status AS ticket_status
+                FROM vehicle_breakdown_inroute rb
+                LEFT JOIN fault_tickets ft
+                    ON ft.breakdown_type = 'route_breakdown'
+                   AND ft.breakdown_report_id = rb.route_breakdown_id
+                WHERE rb.vehicle_id = ?
+                  AND LOWER(TRIM(COALESCE(rb.status, 'pending'))) NOT IN ('resolved', 'closed')
+                  AND (
+                      ft.id IS NULL
+                      OR LOWER(TRIM(COALESCE(ft.status, ''))) NOT IN ('resolved', 'closed')
+                  )
+                ORDER BY rb.id DESC, ft.created_at DESC
                 LIMIT 1";
 
         try {
@@ -1117,7 +1161,7 @@ class RouteBreakdownController {
                     LEFT JOIN vehicle_breakdown_inroute rb ON rb.route_breakdown_id = ft.breakdown_report_id
                     WHERE ft.breakdown_type = 'route_breakdown'
                       AND (ft.vehicle_id = ? OR rb.vehicle_id = ?)
-                      AND ft.status NOT IN ('Resolved', 'Closed')
+                                            AND LOWER(TRIM(COALESCE(ft.status, ''))) NOT IN ('resolved', 'closed')
                     ORDER BY ft.created_at DESC
                     LIMIT 1";
             $params = [$vehicleId, $vehicleId];
@@ -1127,7 +1171,7 @@ class RouteBreakdownController {
                     INNER JOIN vehicle_breakdown_inroute rb ON rb.route_breakdown_id = ft.breakdown_report_id
                     WHERE ft.breakdown_type = 'route_breakdown'
                       AND rb.vehicle_id = ?
-                      AND ft.status NOT IN ('Resolved', 'Closed')
+                                            AND LOWER(TRIM(COALESCE(ft.status, ''))) NOT IN ('resolved', 'closed')
                     ORDER BY ft.created_at DESC
                     LIMIT 1";
             $params = [$vehicleId];
@@ -1530,10 +1574,65 @@ class RouteBreakdownController {
                 continue;
             }
 
-            $absolutePath = __DIR__ . '/../../' . ltrim($safePath, '/');
+            $isAbsolutePath = preg_match('/^(?:[A-Za-z]:\\\\|\/)/', $safePath) === 1;
+            $absolutePath = $isAbsolutePath
+                ? $safePath
+                : (__DIR__ . '/../../' . ltrim($safePath, '/'));
+
             if (is_file($absolutePath)) {
                 @unlink($absolutePath);
             }
+        }
+    }
+
+    private function getLinkedFaultTicketImagePaths(string $routeBreakdownCode): array {
+        $code = trim($routeBreakdownCode);
+        if ($code === '') {
+            return [];
+        }
+
+        try {
+            $stmt = $this->conn->prepare(
+                "SELECT fti.file_path
+                 FROM fault_ticket_images fti
+                 INNER JOIN fault_tickets ft ON ft.id = fti.fault_ticket_id
+                 WHERE ft.breakdown_type = 'route_breakdown'
+                   AND ft.breakdown_report_id = ?"
+            );
+            $stmt->execute([$code]);
+
+            $paths = array_map(static function ($row) {
+                return (string) ($row['file_path'] ?? '');
+            }, $stmt->fetchAll() ?: []);
+
+            return array_values(array_filter(array_unique($paths), static function ($value) {
+                return trim((string) $value) !== '';
+            }));
+        } catch (Throwable $e) {
+            error_log('RouteBreakdownController::getLinkedFaultTicketImagePaths error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    private function getFaultTicketImagePathsByTicketId(int $faultTicketId): array {
+        if ($faultTicketId <= 0) {
+            return [];
+        }
+
+        try {
+            $stmt = $this->conn->prepare('SELECT file_path FROM fault_ticket_images WHERE fault_ticket_id = ?');
+            $stmt->execute([$faultTicketId]);
+
+            $paths = array_map(static function ($row) {
+                return (string) ($row['file_path'] ?? '');
+            }, $stmt->fetchAll() ?: []);
+
+            return array_values(array_filter(array_unique($paths), static function ($value) {
+                return trim((string) $value) !== '';
+            }));
+        } catch (Throwable $e) {
+            error_log('RouteBreakdownController::getFaultTicketImagePathsByTicketId error: ' . $e->getMessage());
+            return [];
         }
     }
 

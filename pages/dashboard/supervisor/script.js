@@ -653,6 +653,46 @@ function isTicketCoveredByGarageWorkflow(ticket) {
     return isRouteGarageWorkflowAssigned(ticket.route_garage_workflow_status, ticket.route_approved_garage_id);
 }
 
+function normalizeTicketWorkflowStatus(value) {
+    return String(value || '').toLowerCase().trim().replace(/[-\s]+/g, '_');
+}
+
+function isTicketResolvedState(ticket) {
+    const normalizedStatus = normalizeTicketWorkflowStatus(ticket?.status);
+    if (['resolved', 'closed', 'completed', 'insurance_claimed'].includes(normalizedStatus)) {
+        return true;
+    }
+
+    if (String(ticket?.breakdown_type || '').toLowerCase() === 'route_breakdown') {
+        const routeWorkflowStatus = normalizeTicketWorkflowStatus(ticket?.route_garage_workflow_status);
+        if (routeWorkflowStatus === 'completed') {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function isTicketInProgressState(ticket) {
+    if (isTicketResolvedState(ticket)) {
+        return false;
+    }
+
+    const normalizedStatus = normalizeTicketWorkflowStatus(ticket?.status);
+    if (['in_progress', 'waiting_for_spare_parts', 'waiting_for_budget_approval', 'parts_approved'].includes(normalizedStatus)) {
+        return true;
+    }
+
+    if (String(ticket?.breakdown_type || '').toLowerCase() === 'route_breakdown') {
+        const routeWorkflowStatus = normalizeTicketWorkflowStatus(ticket?.route_garage_workflow_status);
+        if (['garage_approved', 'garage_entry_logged', 'repair_in_progress'].includes(routeWorkflowStatus)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 async function loadFaultTickets() {
     try {
         const faultTickets = document.querySelector('supervisor-fault-tickets');
@@ -922,20 +962,21 @@ function displayFilteredTickets() {
 
     // Filter tickets based on current filters
     let filteredTickets = allTickets.filter(ticket => {
+        const hasAssignments = ticket.assignments && ticket.assignments.length > 0;
+        const coveredByGarage = isTicketCoveredByGarageWorkflow(ticket);
+        const isResolvedState = isTicketResolvedState(ticket);
+
         // Status filter
         let matchesStatus = true;
         if (currentTicketStatusFilter !== 'all') {
-            const ticketStatus = (ticket.status || '').toLowerCase().replace(' ', '-');
-            const hasAssignments = ticket.assignments && ticket.assignments.length > 0;
-
             if (currentTicketStatusFilter === 'unassigned') {
-                matchesStatus = !hasAssignments;
+                matchesStatus = !hasAssignments && !coveredByGarage && !isResolvedState;
             } else if (currentTicketStatusFilter === 'assigned') {
-                matchesStatus = hasAssignments && ticketStatus !== 'completed' && ticketStatus !== 'resolved';
+                matchesStatus = (hasAssignments || coveredByGarage) && !isResolvedState;
             } else if (currentTicketStatusFilter === 'in-progress') {
-                matchesStatus = ticketStatus === 'in-progress' || ticketStatus === 'in progress';
+                matchesStatus = isTicketInProgressState(ticket);
             } else if (currentTicketStatusFilter === 'completed') {
-                matchesStatus = ticketStatus === 'completed' || ticketStatus === 'resolved' || ticketStatus === 'closed';
+                matchesStatus = isResolvedState;
             }
         }
 
@@ -952,16 +993,17 @@ function displayFilteredTickets() {
     // Separate into unassigned, assigned (active), and resolved
     const unassignedTickets = filteredTickets.filter((ticket) => {
         const hasAssignments = ticket.assignments && ticket.assignments.length > 0;
-        return !hasAssignments && !isTicketCoveredByGarageWorkflow(ticket);
+        const coveredByGarage = isTicketCoveredByGarageWorkflow(ticket);
+        return !hasAssignments && !coveredByGarage && !isTicketResolvedState(ticket);
     });
 
     const assignedTickets = filteredTickets.filter((ticket) => {
         const hasAssignments = ticket.assignments && ticket.assignments.length > 0;
         const coveredByGarage = isTicketCoveredByGarageWorkflow(ticket);
-        return (hasAssignments || coveredByGarage) && ticket.status !== 'Resolved' && ticket.status !== 'Closed';
+        return (hasAssignments || coveredByGarage) && !isTicketResolvedState(ticket);
     });
 
-    const resolvedTickets = filteredTickets.filter(t => t.assignments && t.assignments.length > 0 && (t.status === 'Resolved' || t.status === 'Closed'));
+    const resolvedTickets = filteredTickets.filter(ticket => isTicketResolvedState(ticket));
 
     // Filter breakdown reports based on source filter
     let filteredBreakdowns = allBreakdownItems.filter(b => {

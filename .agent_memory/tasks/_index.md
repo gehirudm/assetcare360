@@ -10,6 +10,12 @@
 - _(none)_
 
 ## Completed
+- [TASK097] Supervisor Ticket Detail Toast Style Hardening - Hardened supervisor/detail toast CSS against cross-file `.toast` overrides and added focused detail-view toast geometry regression coverage
+- [TASK096] Supervisor Resolved Route Breakdown Visibility Fix - Updated supervisor fault-ticket categorization to treat route garage workflow `completed` as resolved (without requiring technician assignments), with targeted UI regression coverage
+- [TASK095] Supervisor Ticket Detail Toast Position Fix - Scoped supervisor toast positioning to global #toast and reset conflicting bottom/left edges to prevent stretched toast rendering in ticket detail view
+- [TASK094] Inventory Vehicle Modal vehicle_type Enum Normalization - Fixed add/edit vehicle modal SQL truncation by mapping business labels to DB enum values in frontend and normalizing vehicle_type in backend VehicleService
+- [TASK093] Driver Route Breakdown Delete Cascades Fault Ticket - Route-breakdown delete now removes linked route fault tickets transactionally and cleans linked image files
+- [TASK092] Driver In-Route Breakdown Resolved Ticket Unblock - Fixed route-breakdown create guards so resolved/closed linked tickets no longer block new in-route breakdown creation for drivers
 - [TASK091] Profile Activity Log Login Activities - Added authenticated login-activity API and dynamic profile Activity tab rendering with OpenAPI/Postman/test updates
 - [TASK090] Profile Page Breadcrumbs - Added profile content-subheader breadcrumb trail with role-aware dashboard link and validation coverage
 - [TASK089] Profile Header Styling and Back Button Relocation - Styled profile top header to match dashboard patterns and moved back navigation into content subheader with validation coverage

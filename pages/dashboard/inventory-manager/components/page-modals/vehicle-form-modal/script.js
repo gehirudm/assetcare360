@@ -21,6 +21,60 @@ function updateVehicleComponents() {
     `).join('');
 }
 
+const VEHICLE_NAME_TO_DB_TYPE = {
+    'LPG Distribution Truck': 'Truck',
+    'Cylinder Delivery Van': 'Van',
+    'Forklift': 'Other',
+    'Tanker Lorry': 'Tanker',
+    'Staff Car': 'Car',
+    'Pickup Truck': 'Truck',
+    'Three-Wheeler': 'Three-Wheeler',
+    'Motorcycle': 'Bike'
+};
+
+function mapVehicleNameToDbType(vehicleName) {
+    const selectedName = String(vehicleName || '').trim();
+    if (!selectedName) {
+        return '';
+    }
+
+    if (VEHICLE_NAME_TO_DB_TYPE[selectedName]) {
+        return VEHICLE_NAME_TO_DB_TYPE[selectedName];
+    }
+
+    if (Array.isArray(CONFIG?.VEHICLE_TYPES) && CONFIG.VEHICLE_TYPES.includes(selectedName)) {
+        return selectedName;
+    }
+
+    const lower = selectedName.toLowerCase();
+    if (lower.includes('tanker')) {
+        return 'Tanker';
+    }
+    if (lower.includes('truck')) {
+        return 'Truck';
+    }
+    if (lower.includes('van')) {
+        return 'Van';
+    }
+    if (lower.includes('car')) {
+        return 'Car';
+    }
+    if (lower.includes('bus')) {
+        return 'Bus';
+    }
+    if (lower.includes('bike') || lower.includes('motorcycle')) {
+        return 'Bike';
+    }
+    if (lower.includes('three') && lower.includes('wheel')) {
+        return 'Three-Wheeler';
+    }
+    if (lower.includes('lorry')) {
+        return 'Lorry';
+    }
+
+    return 'Other';
+}
+
 async function openAddVehicleModal() {
     // Fetch next vehicle ID before creating the modal
     let nextVehicleId = 'VEH-001';
@@ -396,13 +450,14 @@ function parsePositiveIntegerOrNull(value) {
 
 function getVehicleFormData() {
     const serviceType = document.getElementById('serviceIntervalType').value;
+    const selectedVehicleName = document.getElementById('vehicleName').value;
 
     const formData = {
-        vehicle_name: document.getElementById('vehicleName').value,
+        vehicle_name: selectedVehicleName,
         model_number: document.getElementById('vehicleModelNumber').value,
         number_plate: document.getElementById('numberPlate').value,
         chassis_number: document.getElementById('chassisNumber').value,
-        vehicle_type: document.getElementById('vehicleName').value,
+        vehicle_type: mapVehicleNameToDbType(selectedVehicleName),
         fuel_type: document.getElementById('fuelType').value,
         current_mileage: parseInt(document.getElementById('currentMileage').value) || 0,
         status: document.getElementById('vehicleStatus').value,

@@ -1985,10 +1985,15 @@ supervisor-view-ticket-modal #viewTicketContent {
 }
 
 /* ==================== TOAST NOTIFICATION ==================== */
-.toast {
+body > #toast.toast {
     position: fixed;
-    top: 20px;
-    right: 20px;
+    top: 20px !important;
+    right: 20px !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: auto;
+    height: auto;
+    max-width: min(420px, calc(100vw - 40px));
     padding: 15px 20px;
     border-radius: 8px;
     box-shadow: var(--shadow);
@@ -1996,6 +2001,15 @@ supervisor-view-ticket-modal #viewTicketContent {
     z-index: 1001;
     animation: slideIn 0.3s ease;
     font-weight: 500;
+}
+
+/* Keep supervisor toast stable even when detail-page assets inject generic `.toast` rules. */
+body > #toast.toast.show {
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    opacity: 1;
+    transform: translateX(0);
 }
 
 .toast-success {

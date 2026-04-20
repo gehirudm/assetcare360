@@ -23,6 +23,8 @@ class VehicleService {
      * Create a new vehicle
      */
     public function createVehicle($data, $userId) {
+        $this->normalizeVehicleTypePayload($data, true);
+
         // Validate required fields
         $required = ['vehicle_name', 'number_plate',
                      'vehicle_type', 'fuel_type', 'supplier_name', 'service_interval_type'];
@@ -90,6 +92,8 @@ class VehicleService {
         if (!$vehicle) {
             throw new Exception("Vehicle not found");
         }
+
+        $this->normalizeVehicleTypePayload($data, false);
 
         if (array_key_exists('insurance_type', $data)) {
             $data['insurance_type'] = $this->normalizeInsuranceType($data['insurance_type'], false);
@@ -457,6 +461,86 @@ class VehicleService {
     public function getVehicleAssignedToDriver($driverId) {
         $vehicle = $this->vehicleModel->getVehicleByAssignedDriver($driverId);
         return $this->ensureFuelQrImageIsPubliclyServed($vehicle);
+    }
+
+    private function normalizeVehicleTypePayload(array &$data, bool $isCreate): void {
+        if (array_key_exists('vehicle_name', $data)) {
+            $data['vehicle_name'] = trim((string)$data['vehicle_name']);
+        }
+
+        if ($isCreate && (!array_key_exists('vehicle_type', $data) || trim((string)$data['vehicle_type']) === '')) {
+            if (!empty($data['vehicle_name'])) {
+                $data['vehicle_type'] = $data['vehicle_name'];
+            }
+        }
+
+        if (array_key_exists('vehicle_type', $data)) {
+            if (trim((string)$data['vehicle_type']) === '') {
+                throw new Exception("Field 'vehicle_type' cannot be empty");
+            }
+
+            $data['vehicle_type'] = $this->normalizeVehicleTypeValue($data['vehicle_type']);
+        }
+    }
+
+    private function normalizeVehicleTypeValue($value): string {
+        $normalized = trim((string)$value);
+        if ($normalized === '') {
+            throw new Exception("Field 'vehicle_type' is required");
+        }
+
+        $allowedTypes = ['Truck', 'Van', 'Car', 'Bus', 'Bike', 'Three-Wheeler', 'Lorry', 'Tanker', 'Other'];
+        foreach ($allowedTypes as $allowedType) {
+            if (strcasecmp($normalized, $allowedType) === 0) {
+                return $allowedType;
+            }
+        }
+
+        $normalizedKey = strtolower(str_replace('_', ' ', $normalized));
+        $normalizedKey = preg_replace('/\s+/', ' ', $normalizedKey);
+
+        $vehicleTypeAliases = [
+            'lpg distribution truck' => 'Truck',
+            'cylinder delivery van' => 'Van',
+            'forklift' => 'Other',
+            'tanker lorry' => 'Tanker',
+            'staff car' => 'Car',
+            'pickup truck' => 'Truck',
+            'three wheeler' => 'Three-Wheeler',
+            'three-wheeler' => 'Three-Wheeler',
+            'motorcycle' => 'Bike',
+        ];
+
+        if (isset($vehicleTypeAliases[$normalizedKey])) {
+            return $vehicleTypeAliases[$normalizedKey];
+        }
+
+        if (strpos($normalizedKey, 'tanker') !== false) {
+            return 'Tanker';
+        }
+        if (strpos($normalizedKey, 'truck') !== false) {
+            return 'Truck';
+        }
+        if (strpos($normalizedKey, 'van') !== false) {
+            return 'Van';
+        }
+        if (strpos($normalizedKey, 'car') !== false) {
+            return 'Car';
+        }
+        if (strpos($normalizedKey, 'bus') !== false) {
+            return 'Bus';
+        }
+        if (strpos($normalizedKey, 'bike') !== false || strpos($normalizedKey, 'motorcycle') !== false) {
+            return 'Bike';
+        }
+        if (strpos($normalizedKey, 'three') !== false && strpos($normalizedKey, 'wheel') !== false) {
+            return 'Three-Wheeler';
+        }
+        if (strpos($normalizedKey, 'lorry') !== false) {
+            return 'Lorry';
+        }
+
+        throw new Exception("Field 'vehicle_type' must be one of: " . implode(', ', $allowedTypes));
     }
 
     private function normalizeInsuranceType($value, bool $required): ?string {

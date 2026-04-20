@@ -1,6 +1,71 @@
 # Progress
 
 ## What Works
+- ✅ Supervisor ticket detail toast styling now stays stable under detail-view asset overrides (TASK097)
+  - Fixed remaining toast styling conflict in Supervisor detail context with dual hardening:
+    - `pages/dashboard/supervisor/style.css`: strengthened `body > #toast.toast` geometry and added explicit `show` state styling.
+    - `pages/dashboard/technical-officer/view-ticket/style.css`: normalized toast anchor rules (`top: auto`, `left: auto`) and explicit display/show behavior.
+  - Result:
+    - toast remains anchored and non-stretched in Supervisor fault ticket detail view.
+    - cross-file generic `.toast` style bleed no longer distorts supervisor toast geometry.
+  - Validation evidence:
+    - diagnostics clean for touched files.
+    - `cd testing/ui-validation && npx playwright test supervisor-fault-ticket-tracking/validate-supervisor-ticket-detail-toast-style.spec.js --reporter=line` passed (1/1).
+    - `cd testing/ui-validation && npx playwright test supervisor-fault-ticket-tracking/validate-supervisor-fault-tickets-resolved-route.spec.js supervisor-fault-ticket-tracking/validate-supervisor-ticket-detail-toast-style.spec.js --reporter=line` passed (2/2).
+- ✅ Supervisor resolved list now includes route-breakdown tickets completed via garage workflow (TASK096)
+  - Fixed supervisor ticket categorization logic in `pages/dashboard/supervisor/script.js`:
+    - added normalized workflow/status helpers for resolved and in-progress detection.
+    - removed assignment-only dependency for resolved bucket membership.
+    - treated route garage workflow `completed` as resolved-equivalent.
+  - Result:
+    - completed route workflow tickets now render under Supervisor `Resolved / Finished` list even when no technician assignment exists.
+    - these tickets no longer leak into unassigned/assigned lists.
+  - Validation evidence:
+    - diagnostics clean for touched files.
+    - `cd testing/ui-validation && npx playwright test supervisor-fault-ticket-tracking/validate-supervisor-fault-tickets-resolved-route.spec.js --reporter=line` passed (1/1).
+- ✅ Supervisor fault-ticket detail view toast no longer stretches toward screen bottom (TASK095)
+  - Fixed supervisor toast style collision from injected detail-view `.toast` rules.
+  - Updated `pages/dashboard/supervisor/style.css`:
+    - changed selector from `.toast` to `body > #toast.toast`.
+    - explicitly set `bottom: auto;` and `left: auto;` while preserving top-right anchor.
+  - Result:
+    - supervisor global toast positioning is insulated from detail-view style bleed.
+    - toast in ticket detail context remains compact instead of vertically stretched.
+  - Validation evidence:
+    - diagnostics clean for touched CSS file.
+    - supervisor UI Playwright suites currently have unrelated fixture/component drift (documented in TASK095) and did not provide a clean automated pass signal.
+- ✅ Inventory Manager add/edit vehicle modal no longer fails with vehicle_type enum truncation (TASK094)
+  - Root cause fixed as a frontend/backend contract mismatch for `vehicle_type`:
+    - modal was submitting business labels (for example `LPG Distribution Truck`) not accepted by DB enum.
+  - Updated frontend payload mapping in `pages/dashboard/inventory-manager/components/page-modals/vehicle-form-modal/script.js`:
+    - added `VEHICLE_NAME_TO_DB_TYPE` + `mapVehicleNameToDbType(...)`.
+    - `getVehicleFormData()` now submits canonical `vehicle_type` enum values for create/update.
+  - Updated backend guardrails in `app/services/VehicleService.php`:
+    - create/update paths now normalize `vehicle_type` via `normalizeVehicleTypePayload(...)`.
+    - added `normalizeVehicleTypeValue(...)` with canonical matching, alias handling, keyword fallback, and explicit invalid-value error.
+  - Validation evidence:
+    - `php -l app/services/VehicleService.php` passed.
+    - diagnostics clean for touched files.
+- ✅ Driver route-breakdown delete now cascades linked route fault ticket deletion (TASK093)
+  - Updated backend delete flow in `app/controllers/RouteBreakdownController.php`:
+    - `delete()` now deletes linked `fault_tickets` (`breakdown_type='route_breakdown'`) and target `vehicle_breakdown_inroute` row in one transaction.
+    - Added rollback-safe error handling to prevent partial delete state.
+    - Added linked fault-ticket image-path collection + post-commit file cleanup.
+  - Improved cleanup handling:
+    - `cleanupUploadedPaths(...)` now supports absolute and relative file paths.
+  - Validation evidence:
+    - `php -l app/controllers/RouteBreakdownController.php` passed.
+    - diagnostics clean for touched file.
+- ✅ Driver can create a new in-route breakdown after previous route-breakdown ticket is resolved/closed (TASK092)
+  - Updated backend duplicate-guard checks in `app/controllers/RouteBreakdownController.php`:
+    - `findActiveRouteBreakdownTicketForVehicle(...)` now normalizes ticket status with `LOWER(TRIM(COALESCE(ft.status, '')))` before active-state filtering.
+    - `findActiveRouteBreakdownForVehicle(...)` now ignores route-breakdown report rows when linked route-breakdown ticket state is resolved/closed.
+  - Result:
+    - resolved/closed route-breakdown ticket states no longer incorrectly block new in-route breakdown creation.
+    - active in-route workflows are still blocked as intended.
+  - Validation evidence:
+    - `php -l app/controllers/RouteBreakdownController.php` passed.
+    - diagnostics clean for touched file.
 - ✅ Profile Activity tab now shows recent login activities (TASK091)
   - Updated backend auth endpoints:
     - `app/services/AuthService.php`: added login activity query service using `api_request_logs`.
