@@ -131,12 +131,15 @@ class DriverBreakdownModal extends HTMLElement {
                 return;
             }
 
+            const localNow = new Date();
+            localNow.setMinutes(localNow.getMinutes() - localNow.getTimezoneOffset());
+
             const payload = {
                 vehicle_id: selectedVehicle.id,
                 severity: form.querySelector('#breakdownSeverity').value,
                 breakdown_type: form.querySelector('#breakdownType').value,
                 description: form.querySelector('#breakdownDescription').value.trim(),
-                breakdown_date: new Date().toISOString().split('T')[0],
+                breakdown_date: localNow.toISOString().split('T')[0],
             };
 
             try {
