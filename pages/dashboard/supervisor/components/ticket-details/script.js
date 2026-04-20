@@ -216,6 +216,22 @@ class SupervisorTicketDetailView extends HTMLElement {
                     }
                 }));
             },
+            onToast: ({ message, type = 'info' } = {}) => {
+                const safeMessage = String(message || '').trim();
+                if (!safeMessage) {
+                    return false;
+                }
+
+                this.dispatchEvent(new CustomEvent('supervisor-ticket-detail-view:toast', {
+                    bubbles: true,
+                    detail: {
+                        message: safeMessage,
+                        type,
+                    }
+                }));
+
+                return true;
+            },
             onRequestAssignment: ({ ticketId, isEdit = false } = {}) => {
                 const resolvedTicketId = Number(ticketId || this._ticketId);
                 if (!Number.isFinite(resolvedTicketId) || resolvedTicketId <= 0) {
@@ -254,25 +270,18 @@ class SupervisorTicketDetailView extends HTMLElement {
                     return false;
                 }
 
-                if (!Number.isFinite(resolvedRouteBreakdownId) || resolvedRouteBreakdownId <= 0) {
-                    this.dispatchEvent(new CustomEvent('supervisor-ticket-detail-view:toast', {
-                        bubbles: true,
-                        detail: {
-                            message: 'Unable to resolve route breakdown details for garage approval.',
-                            type: 'error',
-                        }
-                    }));
-                    return false;
-                }
-
                 this.dispatchEvent(new CustomEvent('supervisor-ticket-detail-view:request-garage-approval', {
                     bubbles: true,
                     detail: {
                         ticketId: resolvedTicketId,
-                        routeBreakdownId: resolvedRouteBreakdownId,
+                        routeBreakdownId: Number.isFinite(resolvedRouteBreakdownId) && resolvedRouteBreakdownId > 0
+                            ? resolvedRouteBreakdownId
+                            : null,
                         breakdown: {
                             ...(breakdown || {}),
-                            id: resolvedRouteBreakdownId,
+                            id: Number.isFinite(resolvedRouteBreakdownId) && resolvedRouteBreakdownId > 0
+                                ? resolvedRouteBreakdownId
+                                : (breakdown?.id ?? null),
                         },
                     },
                 }));

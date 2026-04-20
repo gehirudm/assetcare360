@@ -1126,9 +1126,30 @@ function buildGarageApprovalBreakdownPayload(detail = {}) {
     const ticketId = Number(detail?.ticketId || 0);
     const fallbackTicket = allTickets.find((ticket) => Number(ticket?.id || 0) === ticketId) || null;
 
+    const routeBreakdownCodeCandidate = String(
+        breakdown.route_breakdown_id
+        || breakdown.breakdown_id
+        || breakdown.breakdownId
+        || fallbackTicket?.breakdown_context?.route_breakdown_id
+        || fallbackTicket?.breakdown_report_id
+        || ''
+    ).trim();
+
+    const matchedRouteBreakdown = routeBreakdownCodeCandidate
+        ? (allBreakdownItems || []).find((item) => {
+            if (normalizeBreakdownType(item?.type) !== 'route_breakdown') {
+                return false;
+            }
+
+            const itemCode = String(item?.breakdown_id || item?.route_breakdown_id || '').trim();
+            return itemCode !== '' && itemCode === routeBreakdownCodeCandidate;
+        })
+        : null;
+
     const routeBreakdownId = Number(
         detail?.routeBreakdownId
         || breakdown.id
+        || matchedRouteBreakdown?.id
         || fallbackTicket?.route_breakdown_numeric_id
         || fallbackTicket?.breakdown_context?.route_breakdown_numeric_id
         || 0
@@ -1957,23 +1978,35 @@ async function loadTechnicians() {
 // ==================== TOAST NOTIFICATIONS ====================
 
 function showToast(message, type = 'success') {
-    const toast = document.getElementById('toast');
+    const toast = document.querySelector('body > #toast') || document.getElementById('toast');
+    if (!toast) {
+        return;
+    }
+
     toast.textContent = message;
 
     toast.className = 'toast';
     if (type === 'error' || type === 'danger') {
         toast.classList.add('toast-error');
+        toast.classList.add('error');
     } else if (type === 'warning') {
         toast.classList.add('toast-warning');
+        toast.classList.add('warning');
     } else if (type === 'info') {
         toast.classList.add('toast-info');
+        toast.classList.add('info');
     } else {
         toast.classList.add('toast-success');
+        toast.classList.add('success');
     }
 
     toast.style.display = 'block';
+    requestAnimationFrame(() => {
+        toast.classList.add('show');
+    });
 
     setTimeout(() => {
+        toast.classList.remove('show');
         toast.style.display = 'none';
     }, 3000);
 }

@@ -388,8 +388,20 @@ function fmtDateShort(value) {
 }
 
 function showToast(message, type = 'success') {
-    const toast = document.getElementById('toast');
-    const msg = document.getElementById('toastMessage');
+    const context = getViewTicketContext();
+    if (typeof context.onToast === 'function') {
+        try {
+            const handled = context.onToast({ message, type });
+            if (handled !== false) {
+                return;
+            }
+        } catch (error) {
+            console.error('Failed to delegate toast to host context:', error);
+        }
+    }
+
+    const msg = document.querySelector('#toastMessage');
+    const toast = (msg && msg.closest('.toast')) || document.getElementById('toast');
     if (!toast) return;
 
     toast.classList.remove('toast-success', 'toast-warning', 'toast-error', 'show');
@@ -2287,18 +2299,19 @@ function closeAssignModal() {
     }
 }
 
-function buildGarageApprovalBreakdownPayload(routeBreakdownId) {
+function buildGarageApprovalBreakdownPayload(routeBreakdownId = null) {
+    const numericRouteBreakdownId = Number(routeBreakdownId || getRouteBreakdownNumericId() || 0);
     const coordinates = getRouteTicketCoordinates();
     const routeLocationLabel = getRouteTicketLocationLabel();
     const routeIssueDescription = getRouteTicketIssueDescription();
     const fallbackBreakdownCode = routeBreakdownContext?.route_breakdown_id
         || ticketData?.breakdown_context?.route_breakdown_id
         || ticketData?.breakdown_report_id
-        || `RBD-${routeBreakdownId}`;
+        || (numericRouteBreakdownId > 0 ? `RBD-${numericRouteBreakdownId}` : '');
 
     return {
         ...(routeBreakdownContext || {}),
-        id: routeBreakdownId,
+        id: numericRouteBreakdownId > 0 ? numericRouteBreakdownId : null,
         route_breakdown_id: fallbackBreakdownCode,
         breakdownId: fallbackBreakdownCode,
         identifier: routeBreakdownContext?.number_plate
@@ -2381,19 +2394,14 @@ async function openGarageApprovalModal() {
     }
 
     const routeBreakdownId = getRouteBreakdownNumericId();
-    if (!routeBreakdownId) {
-        showToast('Unable to resolve the route breakdown ID for garage approval.', 'error');
-        return;
-    }
-
-    const breakdownPayload = buildGarageApprovalBreakdownPayload(routeBreakdownId);
+    const breakdownPayload = buildGarageApprovalBreakdownPayload(routeBreakdownId || null);
 
     const context = getViewTicketContext();
     if (typeof context.onRequestGarageApproval === 'function') {
         try {
             const handled = context.onRequestGarageApproval({
                 ticketId: Number(ticketData.id),
-                routeBreakdownId,
+                routeBreakdownId: routeBreakdownId > 0 ? routeBreakdownId : null,
                 breakdown: breakdownPayload,
             });
 
@@ -2403,6 +2411,11 @@ async function openGarageApprovalModal() {
         } catch (error) {
             console.error('Failed to delegate garage approval to dashboard modal:', error);
         }
+    }
+
+    if (!routeBreakdownId) {
+        showToast('Unable to resolve the route breakdown ID for garage approval.', 'error');
+        return;
     }
 
     const modal = document.getElementById('garageApprovalModal');
