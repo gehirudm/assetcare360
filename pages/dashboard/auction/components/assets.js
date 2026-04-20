@@ -1,4 +1,10 @@
 class AuctionAssets extends HTMLElement {
+    constructor() {
+        super();
+        this.assets = [];
+        this.currentFilter = 'all';
+    }
+
     connectedCallback() {
         if (this._mounted) {
             return;
@@ -6,6 +12,7 @@ class AuctionAssets extends HTMLElement {
         this._mounted = true;
         this.render();
         this.bindEvents();
+        this.refresh();
     }
 
     render() {
@@ -26,44 +33,12 @@ class AuctionAssets extends HTMLElement {
             <div class="card">
                 <div class="card-header">
                     <span><i class="fas fa-truck"></i> Assets Ready for Auction</span>
-                    <span class="status-badge status-pending">8 available</span>
+                    <span class="status-badge status-pending" id="assetsAvailabilityBadge">0 available</span>
                 </div>
                 <div id="assetsContainer">
-                    <div class="item-card" data-status="fair" data-type="vehicles">
-                        <div class="item-details">
-                            <strong>Truck LKC-7890</strong>
-                            <div class="item-meta">2017 Mitsubishi Canter · 180,000 km</div>
-                            <div class="item-description">High maintenance cost | Fair condition</div>
-                        </div>
-                        <div class="item-actions">
-                            <span class="status-badge status-pending">Fair</span>
-                            <button class="btn btn-primary btn-small" type="button" data-action="view-asset" data-asset-id="Truck LKC-7890"><i class="fas fa-eye"></i> View</button>
-                            <button class="btn btn-success btn-small" type="button" data-action="schedule-asset" data-asset-id="Truck LKC-7890"><i class="fas fa-calendar-alt"></i> Schedule</button>
-                        </div>
-                    </div>
-                    <div class="item-card" data-status="good" data-type="equipment">
-                        <div class="item-details">
-                            <strong>Excavator EX-003</strong>
-                            <div class="item-meta">2016 Caterpillar 315D · 8,500 h</div>
-                            <div class="item-description">Fleet downsizing | Good condition</div>
-                        </div>
-                        <div class="item-actions">
-                            <span class="status-badge status-approved">Good</span>
-                            <button class="btn btn-primary btn-small" type="button" data-action="view-asset" data-asset-id="Excavator EX-003"><i class="fas fa-eye"></i> View</button>
-                            <button class="btn btn-success btn-small" type="button" data-action="schedule-asset" data-asset-id="Excavator EX-003"><i class="fas fa-calendar-alt"></i> Schedule</button>
-                        </div>
-                    </div>
-                    <div class="item-card" data-status="fair" data-type="equipment">
-                        <div class="item-details">
-                            <strong>Generator GEN-002</strong>
-                            <div class="item-meta">2015 Perkins 100kVA · 12,000 h</div>
-                            <div class="item-description">Replacement purchased | Fair condition</div>
-                        </div>
-                        <div class="item-actions">
-                            <span class="status-badge status-pending">Fair</span>
-                            <button class="btn btn-primary btn-small" type="button" data-action="view-asset" data-asset-id="Generator GEN-002"><i class="fas fa-eye"></i> View</button>
-                            <button class="btn btn-success btn-small" type="button" data-action="schedule-asset" data-asset-id="Generator GEN-002"><i class="fas fa-calendar-alt"></i> Schedule</button>
-                        </div>
+                    <div style="text-align:center; padding: 32px; color: var(--muted);">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 1.8rem; margin-bottom: 10px;"></i>
+                        <p>Loading assets marked for auction...</p>
                     </div>
                 </div>
             </div>
@@ -94,7 +69,82 @@ class AuctionAssets extends HTMLElement {
         });
     }
 
-    filterAssets(criteria, activeButton) {
+    async refresh() {
+        const container = this.querySelector('#assetsContainer');
+        if (container) {
+            container.innerHTML = `
+                <div style="text-align:center; padding: 32px; color: var(--muted);">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 1.8rem; margin-bottom: 10px;"></i>
+                    <p>Loading assets marked for auction...</p>
+                </div>
+            `;
+        }
+
+        try {
+            const [vehicleResponse, machineResponse] = await Promise.all([
+                API.get('/vehicles?status=For%20Auction&per_page=200'),
+                API.get('/machines?status=For%20Auction&per_page=200'),
+            ]);
+
+            const vehicles = this.extractList(vehicleResponse, 'vehicles')
+                .map((vehicle) => this.normalizeVehicle(vehicle));
+            const machines = this.extractList(machineResponse, 'machines')
+                .map((machine) => this.normalizeMachine(machine));
+
+            this.assets = [...vehicles, ...machines];
+            this.renderAssets(this.assets);
+            this.updateAvailabilityBadge(this.assets.length);
+
+            const activeFilterButton = this.querySelector(`.filter-btn[data-filter="${this.currentFilter}"]`);
+            this.filterAssets(this.currentFilter, activeFilterButton, { silent: true });
+        } catch (error) {
+            console.error('Failed to load auction assets:', error);
+            this.assets = [];
+            this.renderAssets([]);
+            this.updateAvailabilityBadge(0);
+            this.emitToast(error?.message || 'Failed to load auction assets', 'error');
+        }
+    }
+
+    renderAssets(assetRows) {
+        const container = this.querySelector('#assetsContainer');
+        if (!container) {
+            return;
+        }
+
+        if (!Array.isArray(assetRows) || assetRows.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center; padding: 32px; color: var(--muted);">
+                    <i class="fas fa-box-open" style="font-size: 1.8rem; margin-bottom: 10px;"></i>
+                    <p>No assets are currently marked for auction.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = assetRows.map((asset) => {
+            const statusBadgeClass = asset.condition === 'good' ? 'status-approved' : 'status-pending';
+            const statusLabel = asset.condition === 'good' ? 'Good' : 'Fair';
+
+            return `
+                <div class="item-card" data-status="${asset.condition}" data-type="${asset.type}">
+                    <div class="item-details">
+                        <strong>${asset.name}</strong>
+                        <div class="item-meta">${asset.meta}</div>
+                        <div class="item-description">${asset.description}</div>
+                    </div>
+                    <div class="item-actions">
+                        <span class="status-badge ${statusBadgeClass}">${statusLabel}</span>
+                        <button class="btn btn-primary btn-small" type="button" data-action="view-asset" data-asset-id="${asset.assetId}"><i class="fas fa-eye"></i> View</button>
+                        <button class="btn btn-success btn-small" type="button" data-action="schedule-asset" data-asset-id="${asset.assetId}"><i class="fas fa-calendar-alt"></i> Schedule</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    filterAssets(criteria, activeButton, options = {}) {
+        this.currentFilter = criteria;
         const cards = this.querySelectorAll('#assetsContainer .item-card');
         let visibleCount = 0;
 
@@ -121,11 +171,20 @@ class AuctionAssets extends HTMLElement {
             }
         });
 
-        this.updateFilterButtons(activeButton);
-        this.emitToast(`Showing ${visibleCount} assets`);
+        if (activeButton) {
+            this.updateFilterButtons(activeButton);
+        }
+
+        if (!options.silent) {
+            this.emitToast(`Showing ${visibleCount} assets`);
+        }
     }
 
     updateFilterButtons(activeButton) {
+        if (!activeButton) {
+            return;
+        }
+
         const group = activeButton.closest('[data-filter-group]');
         if (!group) {
             return;
@@ -144,6 +203,93 @@ class AuctionAssets extends HTMLElement {
 
     emitToast(message, type = 'success') {
         this.emit('auction-ui:toast', { message, type });
+    }
+
+    updateAvailabilityBadge(count) {
+        const badge = this.querySelector('#assetsAvailabilityBadge');
+        if (!badge) {
+            return;
+        }
+
+        badge.textContent = `${count} available`;
+    }
+
+    extractList(response, key) {
+        if (!response) {
+            return [];
+        }
+
+        if (Array.isArray(response)) {
+            return response;
+        }
+
+        if (Array.isArray(response.data?.[key])) {
+            return response.data[key];
+        }
+
+        if (Array.isArray(response[key])) {
+            return response[key];
+        }
+
+        return [];
+    }
+
+    normalizeVehicle(vehicle) {
+        const notes = this.cleanText(vehicle?.notes);
+        const condition = this.inferCondition(notes);
+        const mileage = this.toNumber(vehicle?.current_mileage ?? vehicle?.mileage);
+        const mileageText = mileage > 0 ? `${mileage.toLocaleString()} km` : 'Mileage not recorded';
+
+        return {
+            type: 'vehicles',
+            condition,
+            assetId: this.cleanText(vehicle?.vehicle_id) || `VEH-${vehicle?.id ?? 'N/A'}`,
+            name: this.cleanText(vehicle?.vehicle_name) || 'Unnamed Vehicle',
+            meta: `${this.cleanText(vehicle?.model_number) || 'Model not specified'} · ${this.cleanText(vehicle?.number_plate) || 'Number plate not set'}`,
+            description: notes
+                ? `${notes} | ${this.conditionLabel(condition)} condition`
+                : `${mileageText} | ${this.conditionLabel(condition)} condition`,
+        };
+    }
+
+    normalizeMachine(machine) {
+        const notes = this.cleanText(machine?.notes);
+        const condition = this.inferCondition(notes);
+        const hours = this.toNumber(machine?.current_operating_hours);
+        const hoursText = hours > 0 ? `${hours.toLocaleString()} h` : 'Operating hours not recorded';
+
+        return {
+            type: 'equipment',
+            condition,
+            assetId: this.cleanText(machine?.machine_id) || `MCH-${machine?.id ?? 'N/A'}`,
+            name: this.cleanText(machine?.machine_name) || 'Unnamed Machine',
+            meta: `${this.cleanText(machine?.model_number) || 'Model not specified'} · ${this.cleanText(machine?.location) || 'Location not set'}`,
+            description: notes
+                ? `${notes} | ${this.conditionLabel(condition)} condition`
+                : `${hoursText} | ${this.conditionLabel(condition)} condition`,
+        };
+    }
+
+    inferCondition(notes) {
+        const text = String(notes || '').toLowerCase();
+        if (text.includes('good') || text.includes('excellent') || text.includes('ready')) {
+            return 'good';
+        }
+
+        return 'fair';
+    }
+
+    conditionLabel(condition) {
+        return condition === 'good' ? 'Good' : 'Fair';
+    }
+
+    cleanText(value) {
+        return String(value || '').trim();
+    }
+
+    toNumber(value) {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : 0;
     }
 }
 

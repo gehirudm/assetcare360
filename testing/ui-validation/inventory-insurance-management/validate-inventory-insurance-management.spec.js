@@ -16,6 +16,7 @@ function buildFixtures() {
     };
 
     const nextRenewDate = toISODate(addDays(now, 10));
+    const scheduledRenewDate = toISODate(addDays(now, 45));
     const lastRenewDate = toISODate(addDays(now, -355));
 
     return {
@@ -57,6 +58,21 @@ function buildFixtures() {
                 last_insurance_renew_date: lastRenewDate,
                 last_insurance_renew_details: 'Third-party policy renewed with rider updates',
                 next_insurance_renew_date: nextRenewDate,
+            },
+            {
+                id: 22,
+                vehicle_id: 'VEH-022',
+                vehicle_name: 'LPG Long-Haul Trailer',
+                model_number: 'ISUZU-FVR',
+                number_plate: 'NB-3037',
+                status: 'Active',
+                insurance_type: 'Full',
+                insurance_provider: 'Transit Assurance Ltd',
+                insurance_provider_details: 'Fleet desk 011-8888888',
+                insurance_renew_interval_days: 365,
+                last_insurance_renew_date: lastRenewDate,
+                last_insurance_renew_details: 'Long-haul coverage renewed and validated',
+                next_insurance_renew_date: scheduledRenewDate,
             },
         ],
         products: [
@@ -150,8 +166,8 @@ async function runBeforeFlow(page, state) {
     const sectionCount = await page.locator('#insurance-management').count();
     state.flowSummary.insuranceSectionCount = sectionCount;
 
-    expect(insuranceNavCount).toBe(0);
-    expect(sectionCount).toBe(0);
+    expect(insuranceNavCount).toBeGreaterThan(0);
+    expect(sectionCount).toBeGreaterThan(0);
 }
 
 async function runAfterFlow(page, state) {
@@ -167,13 +183,36 @@ async function runAfterFlow(page, state) {
     const section = page.locator('#insurance-management');
     await expect(section).toHaveClass(/active/, { timeout: 10000 });
     await expect(page.getByRole('heading', { name: 'Insurance Management' })).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('.insurance-summary-title', { hasText: 'Upcoming Insurance Renewals' })).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#insuranceSummaryGrid')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Scheduled', exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('#insuranceSort')).toBeVisible({ timeout: 10000 });
+
+    await page.getByRole('button', { name: 'Scheduled', exact: true }).click();
+    await expect(page.locator('.insurance-item')).toHaveCount(1);
+    await expect(page.locator('.insurance-item .insurance-item-title').first()).toContainText('LPG Long-Haul Trailer');
+    state.flowSummary.scheduledFilterCount = await page.locator('.insurance-item').count();
+
+    await page.getByRole('button', { name: 'All', exact: true }).click();
+    await page.selectOption('#insuranceSort', 'asset-name-desc');
+
+    const firstSortedAsset = (await page.locator('.insurance-item .insurance-item-title span:last-child').first().textContent() || '').trim();
+    state.flowSummary.firstAssetAfterSort = firstSortedAsset;
+    expect(firstSortedAsset).toContain('LPG Long-Haul Trailer');
 
     const renewalButton = page.getByRole('button', { name: /Submit Renewal/i }).first();
     await expect(renewalButton).toBeVisible({ timeout: 10000 });
     await renewalButton.click();
 
     await expect(page.getByRole('heading', { name: /Submit Insurance Renewal/i })).toBeVisible({ timeout: 10000 });
+    const assetDetailsCard = page.locator('#insuranceRenewalAssetDetails');
+    await expect(assetDetailsCard).toBeVisible({ timeout: 10000 });
+    await expect(assetDetailsCard.locator('.insurance-modal-asset-item')).toHaveCount(6);
+    await expect(assetDetailsCard).toContainText('LPG Long-Haul Trailer');
+    await expect(assetDetailsCard).toContainText('VEH-022');
+    await expect(assetDetailsCard).toContainText('Number Plate');
+    await expect(assetDetailsCard).toContainText('NB-3037');
+    state.flowSummary.modalAssetDetailsVisible = (await assetDetailsCard.count()) > 0;
+    state.flowSummary.modalAssetDetailsFieldCount = await assetDetailsCard.locator('.insurance-modal-asset-item').count();
 
     await page.selectOption('#insuranceRenewalType', 'Full');
     await page.fill('#insuranceRenewalProvider', 'Litro Insurance PLC');
@@ -210,6 +249,10 @@ async function runFlow(page, viewportName) {
             insuranceSectionCount: 0,
             latestUpdatePath: null,
             latestUpdatePayloadKeys: [],
+            scheduledFilterCount: 0,
+            firstAssetAfterSort: null,
+            modalAssetDetailsVisible: false,
+            modalAssetDetailsFieldCount: 0,
         },
     };
 
@@ -251,6 +294,10 @@ async function runFlow(page, viewportName) {
             insuranceSectionCount: state.flowSummary.insuranceSectionCount,
             latestUpdatePath: state.flowSummary.latestUpdatePath,
             latestUpdatePayloadKeys: state.flowSummary.latestUpdatePayloadKeys,
+            scheduledFilterCount: state.flowSummary.scheduledFilterCount,
+            firstAssetAfterSort: state.flowSummary.firstAssetAfterSort,
+            modalAssetDetailsVisible: state.flowSummary.modalAssetDetailsVisible,
+            modalAssetDetailsFieldCount: state.flowSummary.modalAssetDetailsFieldCount,
             updateCalls: state.updateCalls.length,
         },
     };
