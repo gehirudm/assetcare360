@@ -227,8 +227,30 @@ class FaultTicketService {
             
             // Add breakdown report link if provided
             if (!empty($data['breakdown_report_id'])) {
-                $ticketData['breakdown_report_id'] = $data['breakdown_report_id'];
+                $ticketData['breakdown_report_id'] = trim((string) $data['breakdown_report_id']);
                 $ticketData['breakdown_type'] = $data['breakdown_type'] ?? null;
+            }
+
+            $breakdownType = strtolower(trim((string) ($ticketData['breakdown_type'] ?? '')));
+            $breakdownReportId = trim((string) ($ticketData['breakdown_report_id'] ?? ''));
+
+            if ($breakdownType === 'route_breakdown' && $breakdownReportId !== '') {
+                $existingTicket = $this->findExistingLinkedRouteBreakdownTicket($breakdownReportId);
+
+                if ($existingTicket) {
+                    return [
+                        'success' => true,
+                        'message' => 'Linked fault ticket already exists for this route breakdown report',
+                        'data' => [
+                            'id' => (int) ($existingTicket['id'] ?? 0),
+                            'ticket_id' => $existingTicket['ticket_id'] ?? null,
+                            'existing' => true,
+                            'is_dangerous_cargo' => !empty($dangerousCargoContext['is_dangerous']),
+                            'dangerous_cargo_summary' => $dangerousCargoContext['summary'] ?? null,
+                            'dangerous_cargo_trip_id' => $dangerousCargoContext['trip_id'] ?? null,
+                        ]
+                    ];
+                }
             }
             
             $ticketId = $this->faultTicketModel->createTicket($ticketData);
@@ -264,6 +286,26 @@ class FaultTicketService {
         }
     }
 
+    private function findExistingLinkedRouteBreakdownTicket(string $routeBreakdownId): ?array {
+        $routeBreakdownId = trim($routeBreakdownId);
+        if ($routeBreakdownId === '') {
+            return null;
+        }
+
+        $conn = Database::getInstance()->getConnection();
+        $stmt = $conn->prepare(
+            "SELECT id, ticket_id, status
+             FROM fault_tickets
+             WHERE breakdown_type = 'route_breakdown'
+               AND breakdown_report_id = ?
+             ORDER BY id DESC
+             LIMIT 1"
+        );
+        $stmt->execute([$routeBreakdownId]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
     private function getMachineForTicket(int $machineId): ?array {
         $conn = Database::getInstance()->getConnection();
         $stmt = $conn->prepare("SELECT id, location FROM machines WHERE id = ? LIMIT 1");
