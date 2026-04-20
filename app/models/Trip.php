@@ -250,6 +250,32 @@ class Trip extends BaseModel {
         return $result['count'];
     }
 
+    public function getActiveTripCountByDriverAndVehicle($driver_id, $vehicle_registration) {
+        $driverId = (int) $driver_id;
+        if ($driverId <= 0) {
+            return 0;
+        }
+
+        $vehicleRegistration = trim((string) $vehicle_registration);
+        if ($vehicleRegistration === '') {
+            return $this->getActiveTripCount($driverId);
+        }
+
+        $query = "SELECT COUNT(*) as count FROM {$this->table}
+                  WHERE status IN ('Pending', 'Accepted', 'In Progress')
+                  AND driver_id = :driver_id
+                  AND TRIM(LOWER(vehicle_registration)) = TRIM(LOWER(:vehicle_registration))";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([
+            ':driver_id' => $driverId,
+            ':vehicle_registration' => $vehicleRegistration,
+        ]);
+
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return (int) ($result['count'] ?? 0);
+    }
+
     public function getCargoItemsByTripIds($tripIds) {
         $tripIds = array_values(array_unique(array_map('intval', is_array($tripIds) ? $tripIds : [])));
         $tripIds = array_values(array_filter($tripIds, function ($id) {

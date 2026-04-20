@@ -502,6 +502,22 @@ class BudgetReportController {
                 }
                 
                 $report = $this->budgetReportModel->findById($id);
+
+                $this->eventEmitter->emit(
+                    DomainEvents::BUDGET_REPORT_REVIEWED,
+                    [
+                        'report_id' => (int) $id,
+                        'fault_ticket_id' => (int) ($existingReport['fault_ticket_id'] ?? 0),
+                        'status' => (string) ($report['status'] ?? $data['status']),
+                        'reviewed_by' => (int) $user['id'],
+                        'submitted_by' => (int) ($existingReport['submitted_by'] ?? 0),
+                        'approval_level' => (string) ($existingReport['approval_level'] ?? ''),
+                    ],
+                    [
+                        'user_id' => $user['id'] ?? null,
+                        'role' => $user['role'] ?? null,
+                    ]
+                );
                 
                 echo json_encode([
                     'status' => 'success',

@@ -91,6 +91,21 @@ function parseAddPartNameList(items, key) {
     return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
 }
 
+function getSystemCompatibilityTypeOptions(category) {
+    const source = category === 'machines'
+        ? (typeof MACHINE_TYPES !== 'undefined' ? MACHINE_TYPES : null)
+        : (category === 'vehicles' ? (typeof VEHICLE_TYPES !== 'undefined' ? VEHICLE_TYPES : null) : null);
+
+    if (!source || typeof source !== 'object' || Array.isArray(source)) {
+        return [];
+    }
+
+    return Object.keys(source)
+        .map(name => (name ?? '').toString().trim())
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b));
+}
+
 function escapeAddPartHtml(value) {
     return String(value)
         .replace(/&/g, '&amp;')
@@ -109,6 +124,12 @@ async function loadAddPartCompatibilityOptions(category) {
         return addPartModalState.compatibilityOptions[category];
     }
 
+    const typeCatalogOptions = getSystemCompatibilityTypeOptions(category);
+    if (typeCatalogOptions.length) {
+        addPartModalState.compatibilityOptions[category] = typeCatalogOptions;
+        return typeCatalogOptions;
+    }
+
     let endpoint = '';
     let responseKey = '';
     let nameKey = '';
@@ -120,7 +141,7 @@ async function loadAddPartCompatibilityOptions(category) {
     } else if (category === 'vehicles') {
         endpoint = '/vehicles';
         responseKey = 'vehicles';
-        nameKey = 'vehicle_name';
+        nameKey = 'vehicle_type';
     } else {
         return [];
     }
@@ -154,10 +175,10 @@ function renderAddPartCompatibilityOptions(category, selectedValues = []) {
     const selectedSet = new Set((Array.isArray(selectedValues) ? selectedValues : []).map(value => String(value)));
     const options = addPartModalState.compatibilityOptions[category] || [];
 
-    label.textContent = category === 'machines' ? 'Compatible Machines' : 'Compatible Vehicles';
+    label.textContent = category === 'machines' ? 'Compatible Machine Types' : 'Compatible Vehicle Types';
 
     if (!options.length) {
-        const emptyLabel = category === 'machines' ? 'machines' : 'vehicles';
+        const emptyLabel = category === 'machines' ? 'machine types' : 'vehicle types';
         container.innerHTML = `<p style="color: #999; grid-column: 1 / -1;">No ${emptyLabel} available for compatibility selection</p>`;
         return;
     }

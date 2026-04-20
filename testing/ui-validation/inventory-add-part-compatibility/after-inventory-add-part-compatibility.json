@@ -1,0 +1,29 @@
+{
+  "stage": "after",
+  "consoleErrors": [],
+  "failedRequests": [],
+  "machineOptions": [
+    "Cylinder Carousel System",
+    "Cylinder Painting Machine",
+    "Cylinder Washing Machine",
+    "Delivery Truck",
+    "Forklift",
+    "Gas Compressor",
+    "Gas Cylinder Testing Machine",
+    "Gas Leak Detector",
+    "LPG Cylinder Filling Machine",
+    "LPG Storage Tank",
+    "Valve Crimping Machine",
+    "Vaporizer"
+  ],
+  "vehicleOptions": [
+    "Cylinder Delivery Van",
+    "Forklift",
+    "LPG Distribution Truck",
+    "Motorcycle",
+    "Pickup Truck",
+    "Staff Car",
+    "Tanker Lorry",
+    "Three-Wheeler"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "stage": "before",
+  "consoleErrors": [],
+  "failedRequests": [],
+  "machineFirstDefaultId": null,
+  "machineFirstAscId": null,
+  "machineFirstDescId": null,
+  "vehicleFirstDefaultId": null,
+  "vehicleFirstAscId": null,
+  "vehicleFirstDescId": null
+}

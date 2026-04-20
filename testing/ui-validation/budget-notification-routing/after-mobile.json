@@ -5,15 +5,18 @@
   "finalUrl": "http://127.0.0.1:3000/dashboard/technical-officer/index.html?section=notifications",
   "title": "Technical Officer Dashboard - AssetCare360",
   "accessibility": {
-    "ariaSnapshot": "- text: AssetCare360\n- heading \"Technical Officer Dashboard\" [level=1]\n- button \"TO\"\n- navigation: Dashboard Fault & Repair Tickets Spare Part Management Inventory Management Service & Warranty Asset Feedback Notifications\n- main:\n  - heading \"Notifications\" [level=2]\n  - paragraph: Tickets and updates that require your attention\n  - text: Budget pending approval - TKT-601 Budget report for Hydraulic Excavator is awaiting supervisor review. New ticket assigned - TKT-602 Rear drum vibration anomaly | Compactor\n  - button \"View Ticket\"\n- button \"☰\"",
-    "snapshotLength": 552
+    "ariaSnapshot": "- text: AssetCare360\n- heading \"Technical Officer Dashboard\" [level=1]\n- button \"TO\"\n- navigation: Dashboard Analytics Fault & Repair Tickets Spare Part Management Inventory Management Service Tickets Notifications\n- main:\n  - heading \"Notifications\" [level=2]\n  - paragraph: Tickets and updates that require your attention\n  - button \"Mark All Read\" [disabled]\n  - heading \"Filter Notifications\" [level=3]\n  - button \"Reset Filters\"\n  - text: Read Status\n  - combobox \"Read Status\":\n    - option \"All\" [selected]\n    - option \"Unread\"\n    - option \"Read\"\n  - text: Notification Type\n  - combobox \"Notification Type\":\n    - option \"All\" [selected]\n    - option \"Info\"\n    - option \"Warning\"\n    - option \"Success\"\n    - option \"Error\"\n  - text: Sort By\n  - combobox \"Sort By\":\n    - option \"Newest First\" [selected]\n    - option \"Oldest First\"\n  - text: Search\n  - searchbox \"Search\"\n  - paragraph: Showing all 3 notifications\n  - text: New ticket assigned - TKT-602 You have been assigned to inspect the rear drum vibration issue. 4/10/2026, 2:30:00 PM Read\n  - button \"Open My Tickets\"\n  - text: Budget update - TKT-601 Budget review completed for your pending report. 4/9/2026, 10:15:00 PM Read\n  - button \"Open My Tickets\"\n  - text: Spare-part request approved - SPR-010 Your spare-part request was approved and is now ready for fulfillment. 4/8/2026, 5:00:00 PM Read\n  - button \"Open My Tickets\"\n- button \"☰\"",
+    "snapshotLength": 1413
   },
   "console": [],
   "failedRequests": [],
   "interactionSummary": {
     "notificationsVisible": true,
     "ticketSectionVisibleAfterAction": true,
-    "budgetCardCount": 1,
-    "actionableButtonCount": 1
+    "filterPanelVisible": true,
+    "filterSummaryText": "Showing all 3 notifications",
+    "assignedCardCount": 1,
+    "readPillCount": 3,
+    "actionableButtonCount": 3
   }
 }

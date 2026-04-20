@@ -649,15 +649,40 @@ class SAUserAccounts extends HTMLElement {
         }
 
         try {
-            const response = await API.post(`/users/${userId}/reset-password`);
+            const response = await API.post(
+                `/users/${userId}/reset-password`,
+                {
+                    send_email_notification: true,
+                },
+                {
+                    skipAuthRedirect: true,
+                }
+            );
+
             if (response.status === 'success') {
-                const tempPassword = response.data?.temporary_password || 'Check email';
-                Utils.showToast(`Password reset successfully! Temporary password: ${tempPassword}. User will be required to change password on next login.`, 'success');
+                const tempPassword = response.data?.temporary_password || 'Unavailable';
+                const emailSent = response.data?.email_sent === true;
+
+                if (emailSent) {
+                    Utils.showToast('Password reset successfully. The temporary password email has been sent to the user.', 'success');
+                } else {
+                    Utils.showToast(
+                        response.message || `Password reset successfully. Temporary password: ${tempPassword}`,
+                        'warning'
+                    );
+                }
             } else {
                 Utils.showToast(response.message || 'Failed to reset password', 'error');
             }
         } catch (error) {
             console.error('Error resetting password:', error);
+
+            const errorMessage = String(error?.message || '').toLowerCase();
+            if (errorMessage.includes('unauthorized') || errorMessage.includes('authentication required')) {
+                Utils.showToast('Session verification failed for this action. Please sign in again if needed.', 'error');
+                return;
+            }
+
             Utils.showToast('Error resetting password. Please try again.', 'error');
         }
     }

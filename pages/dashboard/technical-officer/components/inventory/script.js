@@ -3,9 +3,11 @@ class TOInventory extends HTMLElement {
         super();
         this.allInventory = [];
         this.currentFilter = 'all';
+        this.searchQuery = '';
         this._activeModal = null;
 
         this._onRootClick = this._onRootClick.bind(this);
+        this._onRootInput = this._onRootInput.bind(this);
     }
 
     connectedCallback() {
@@ -13,11 +15,13 @@ class TOInventory extends HTMLElement {
 
         this.render();
         this.addEventListener('click', this._onRootClick);
+        this.addEventListener('input', this._onRootInput);
         this._initialized = true;
     }
 
     disconnectedCallback() {
         this.removeEventListener('click', this._onRootClick);
+        this.removeEventListener('input', this._onRootInput);
         this.closeDetailsModal();
     }
 
@@ -28,19 +32,36 @@ class TOInventory extends HTMLElement {
     render() {
         this.innerHTML = `
             <div class="page-header">
-                <h1 class="page-title">Inventory Management</h1>
-                <p class="page-subtitle">Manage and view vehicles and machines</p>
+                <h1 class="page-title">Inventory Lookup</h1>
+                <p class="page-subtitle">Search and review vehicles and machines</p>
             </div>
 
-            <div class="filter-controls" data-role="filters">
-                <button type="button" class="filter-btn active" data-filter-type="all">All Assets</button>
-                <button type="button" class="filter-btn" data-filter-type="vehicle">Vehicles</button>
-                <button type="button" class="filter-btn" data-filter-type="machine">Machines</button>
+            <div class="inventory-toolbar">
+                <div class="filter-controls inventory-filter-controls" data-role="filters">
+                    <button type="button" class="filter-btn active" data-filter-type="all">All Assets</button>
+                    <button type="button" class="filter-btn" data-filter-type="vehicle">Vehicles</button>
+                    <button type="button" class="filter-btn" data-filter-type="machine">Machines</button>
+                </div>
+                <div class="inventory-search-control">
+                    <label class="inventory-search-label" for="toInventorySearch">Search Assets</label>
+                    <div class="inventory-search-input-wrap">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <input
+                            id="toInventorySearch"
+                            type="search"
+                            class="form-input inventory-search-input"
+                            data-role="search-input"
+                            placeholder="Search by name, ID, model, supplier, or status"
+                            aria-label="Search assets"
+                            autocomplete="off"
+                        >
+                    </div>
+                </div>
             </div>
 
             <div class="card">
                 <div class="card-header">
-                    <span><i class="fas fa-warehouse"></i> Assets Inventory</span>
+                    <span><i class="fas fa-warehouse"></i> Asset Lookup</span>
                     <span class="status-badge status-normal" data-role="count">Loading...</span>
                 </div>
                 <div class="inventory-list" data-role="list"></div>
@@ -92,10 +113,11 @@ class TOInventory extends HTMLElement {
             });
 
             this.allInventory = [...vehicles, ...machines];
-            this.applyFilter(this.currentFilter);
+            this.applyActiveFilters();
         } catch (error) {
             console.error('to-inventory load error:', error);
             this.allInventory = [];
+            this.searchQuery = '';
             this.setCount(0);
             this.setEmptyState(false, '');
             list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--danger);"><i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 15px;"></i><p>Failed to load inventory. Please try again.</p></div>';
@@ -122,11 +144,21 @@ class TOInventory extends HTMLElement {
 
     applyFilter(type) {
         this.currentFilter = type;
+        this.applyActiveFilters();
+    }
+
+    applyActiveFilters() {
         this.updateFilterButtons();
 
-        const filteredItems = type === 'all'
+        const query = this.searchQuery.trim().toLowerCase();
+
+        let filteredItems = this.currentFilter === 'all'
             ? this.allInventory
-            : this.allInventory.filter(item => item.type === type);
+            : this.allInventory.filter(item => item.type === this.currentFilter);
+
+        if (query) {
+            filteredItems = filteredItems.filter(item => this.matchesSearch(item, query));
+        }
 
         this.renderInventoryItems(filteredItems);
         this.setCount(filteredItems.length);
@@ -136,7 +168,46 @@ class TOInventory extends HTMLElement {
             return;
         }
 
-        this.setEmptyState(filteredItems.length === 0, 'No inventory items found for this filter');
+        if (filteredItems.length === 0) {
+            if (query && this.currentFilter !== 'all') {
+                const scope = this.currentFilter === 'vehicle' ? 'vehicles' : 'machines';
+                this.setEmptyState(true, `No ${scope} match "${this.searchQuery.trim()}"`);
+                return;
+            }
+
+            if (query) {
+                this.setEmptyState(true, `No assets match "${this.searchQuery.trim()}"`);
+                return;
+            }
+
+            this.setEmptyState(true, 'No inventory items found for this filter');
+            return;
+        }
+
+        this.setEmptyState(false, '');
+    }
+
+    matchesSearch(item, query) {
+        const searchableText = [
+            item.name,
+            item.identifier,
+            item.manufacturer,
+            item.model,
+            item.status,
+            item.type,
+            item.raw?.vehicle_id,
+            item.raw?.machine_id,
+            item.raw?.number_plate,
+            item.raw?.serial_number,
+            item.raw?.supplier_name,
+            item.raw?.vehicle_name,
+            item.raw?.machine_name
+        ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+
+        return searchableText.includes(query);
     }
 
     renderInventoryItems(items) {
@@ -224,6 +295,14 @@ class TOInventory extends HTMLElement {
         if (event.target.classList.contains('modal') && event.target.dataset.inventoryModal === 'true') {
             this.closeDetailsModal();
         }
+    }
+
+    _onRootInput(event) {
+        const searchInput = event.target.closest('input[data-role="search-input"]');
+        if (!searchInput) return;
+
+        this.searchQuery = searchInput.value || '';
+        this.applyActiveFilters();
     }
 
     viewInventoryItem(itemKey) {

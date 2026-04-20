@@ -1,13 +1,178 @@
 <?php
 
 require_once __DIR__ . '/../services/TripService.php';
+require_once __DIR__ . '/../services/EventEmitter.php';
+require_once __DIR__ . '/../events/DomainEvents.php';
 require_once __DIR__ . '/../helpers/Response.php';
+require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 
 class TripController {
     private $tripService;
+    private $eventEmitter;
     
     public function __construct() {
         $this->tripService = new TripService();
+        $this->eventEmitter = new EventEmitter();
+    }
+
+    private function getAuthenticatedUser() {
+        return RoleMiddleware::getCurrentUser();
+    }
+
+    private function normalizePositiveInt($value) {
+        if ($value === null || $value === '' || !is_numeric($value)) {
+            return null;
+        }
+
+        $normalized = (int)$value;
+        return $normalized > 0 ? $normalized : null;
+    }
+
+    private function maybeEmitTripAssignedEvent($previousTrip, $updatedTrip, $actor, $source) {
+        if (!is_array($updatedTrip)) {
+            return;
+        }
+
+        $currentDriverId = $this->normalizePositiveInt($updatedTrip['driver_id'] ?? null);
+        if ($currentDriverId === null) {
+            return;
+        }
+
+        $previousDriverId = null;
+        if (is_array($previousTrip)) {
+            $previousDriverId = $this->normalizePositiveInt($previousTrip['driver_id'] ?? null);
+        }
+
+        if ($previousDriverId !== null && $previousDriverId === $currentDriverId) {
+            return;
+        }
+
+        $actorId = $this->normalizePositiveInt($actor['id'] ?? null);
+        $actorRole = strtolower(trim((string)($actor['role'] ?? '')));
+
+        // Skip self-notify when a Driver creates their own trip.
+        if ($previousTrip === null && $actorRole === 'driver' && $actorId !== null && $actorId === $currentDriverId) {
+            return;
+        }
+
+        $tripRef = trim((string)($updatedTrip['trip_id'] ?? ''));
+        if ($tripRef === '') {
+            $tripRef = !empty($updatedTrip['id']) ? ('#' . (int)$updatedTrip['id']) : 'Unknown';
+        }
+
+        $this->eventEmitter->emit(
+            DomainEvents::TRIP_ASSIGNED,
+            [
+                'trip_id' => $updatedTrip['trip_id'] ?? null,
+                'trip_db_id' => isset($updatedTrip['id']) ? (int)$updatedTrip['id'] : null,
+                'driver_id' => $currentDriverId,
+                'driver_user_ids' => [$currentDriverId],
+                'status' => $updatedTrip['status'] ?? null,
+                'origin' => $updatedTrip['origin'] ?? null,
+                'destination' => $updatedTrip['destination'] ?? null,
+                'vehicle_registration' => $updatedTrip['vehicle_registration'] ?? null,
+                'assigned_by' => $actorId,
+            ],
+            [
+                'source' => $source,
+                'actor_user_id' => $actorId,
+                'actor_role' => $actor['role'] ?? null,
+                'trip_ref' => $tripRef,
+            ]
+        );
+    }
+
+    private function emitTripAcceptedEvent($trip, $actor) {
+        if (!is_array($trip)) {
+            return;
+        }
+
+        $driverId = $this->normalizePositiveInt($trip['driver_id'] ?? null);
+        if ($driverId === null) {
+            return;
+        }
+
+        $actorId = $this->normalizePositiveInt($actor['id'] ?? null);
+        if ($actorId !== null && $actorId !== $driverId) {
+            return;
+        }
+
+        $tripRef = trim((string)($trip['trip_id'] ?? ''));
+        if ($tripRef === '') {
+            $tripRef = !empty($trip['id']) ? ('#' . (int)$trip['id']) : 'Unknown';
+        }
+
+        $this->eventEmitter->emit(
+            DomainEvents::TRIP_ACCEPTED,
+            [
+                'trip_id' => $trip['trip_id'] ?? null,
+                'trip_db_id' => isset($trip['id']) ? (int)$trip['id'] : null,
+                'driver_id' => $driverId,
+                'driver_name' => $trip['driver_name'] ?? ($actor['full_name'] ?? null),
+                'status' => $trip['status'] ?? null,
+                'origin' => $trip['origin'] ?? null,
+                'destination' => $trip['destination'] ?? null,
+                'vehicle_registration' => $trip['vehicle_registration'] ?? null,
+                'accepted_by' => $actorId,
+                'accepted_by_name' => $actor['full_name'] ?? null,
+            ],
+            [
+                'source' => 'controller:TripController:acceptTrip',
+                'actor_user_id' => $actorId,
+                'actor_role' => $actor['role'] ?? null,
+                'trip_ref' => $tripRef,
+            ]
+        );
+    }
+
+    private function emitTripCompletedEvent($trip, $actor) {
+        if (!is_array($trip)) {
+            return;
+        }
+
+        $driverId = $this->normalizePositiveInt($trip['driver_id'] ?? null);
+        if ($driverId === null) {
+            return;
+        }
+
+        $actorId = $this->normalizePositiveInt($actor['id'] ?? null);
+        if ($actorId !== null && $actorId !== $driverId) {
+            return;
+        }
+
+        $tripRef = trim((string)($trip['trip_id'] ?? ''));
+        if ($tripRef === '') {
+            $tripRef = !empty($trip['id']) ? ('#' . (int)$trip['id']) : 'Unknown';
+        }
+
+        $finalOdometer = isset($trip['final_odometer']) && is_numeric($trip['final_odometer'])
+            ? (int)$trip['final_odometer']
+            : null;
+
+        $this->eventEmitter->emit(
+            DomainEvents::TRIP_COMPLETED,
+            [
+                'trip_id' => $trip['trip_id'] ?? null,
+                'trip_db_id' => isset($trip['id']) ? (int)$trip['id'] : null,
+                'driver_id' => $driverId,
+                'driver_name' => $trip['driver_name'] ?? ($actor['full_name'] ?? null),
+                'status' => $trip['status'] ?? null,
+                'origin' => $trip['origin'] ?? null,
+                'destination' => $trip['destination'] ?? null,
+                'vehicle_registration' => $trip['vehicle_registration'] ?? null,
+                'final_odometer' => $finalOdometer,
+                'completion_notes' => $trip['completion_notes'] ?? null,
+                'end_time' => $trip['end_time'] ?? null,
+                'completed_by' => $actorId,
+                'completed_by_name' => $actor['full_name'] ?? null,
+            ],
+            [
+                'source' => 'controller:TripController:endTrip',
+                'actor_user_id' => $actorId,
+                'actor_role' => $actor['role'] ?? null,
+                'trip_ref' => $tripRef,
+            ]
+        );
     }
     
     public function getAllTrips() {
@@ -63,8 +228,15 @@ class TripController {
                 return;
             }
             
-            $user = RoleMiddleware::getCurrentUser();
+            $user = $this->getAuthenticatedUser();
             $trip = $this->tripService->createTrip($data, $user);
+
+            $this->maybeEmitTripAssignedEvent(
+                null,
+                $trip,
+                $user,
+                'controller:TripController:createTrip'
+            );
             
             Response::json([
                 'success' => true,
@@ -91,8 +263,18 @@ class TripController {
                 Response::error('Invalid request data', 400);
                 return;
             }
+
+            $user = $this->getAuthenticatedUser();
+            $previousTrip = $this->tripService->getTripById($trip_id);
             
             $trip = $this->tripService->updateTrip($trip_id, $data);
+
+            $this->maybeEmitTripAssignedEvent(
+                $previousTrip,
+                $trip,
+                $user,
+                'controller:TripController:updateTrip'
+            );
             
             Response::json([
                 'success' => true,
@@ -113,7 +295,10 @@ class TripController {
                 return;
             }
             
+            $user = $this->getAuthenticatedUser();
             $trip = $this->tripService->acceptTrip($trip_id);
+
+            $this->emitTripAcceptedEvent($trip, $user);
             
             Response::json([
                 'success' => true,
@@ -196,8 +381,11 @@ class TripController {
             }
             
             $notes = $data['completion_notes'] ?? '';
+            $user = $this->getAuthenticatedUser();
             
             $trip = $this->tripService->endTrip($trip_id, $data['final_odometer'], $notes);
+
+            $this->emitTripCompletedEvent($trip, $user);
             
             Response::json([
                 'success' => true,

@@ -2,6 +2,7 @@ class SupervisorFaultTickets extends HTMLElement {
     constructor() {
         super();
         this._onRootClick = this._onRootClick.bind(this);
+        this._onRootChange = this._onRootChange.bind(this);
         this._onDocumentClick = this._onDocumentClick.bind(this);
     }
 
@@ -10,18 +11,35 @@ class SupervisorFaultTickets extends HTMLElement {
 
         this.render();
         this.addEventListener('click', this._onRootClick);
+        this.addEventListener('change', this._onRootChange);
         document.addEventListener('click', this._onDocumentClick);
         this._initialized = true;
     }
 
     disconnectedCallback() {
         this.removeEventListener('click', this._onRootClick);
+        this.removeEventListener('change', this._onRootChange);
         document.removeEventListener('click', this._onDocumentClick);
     }
 
     _onDocumentClick(event) {
         if (this.contains(event.target)) return;
         this.closeAllDropdowns();
+    }
+
+    _onRootChange(event) {
+        const sortSelect = event.target.closest('select[data-ticket-sort]');
+        if (!sortSelect) {
+            return;
+        }
+
+        const sort = this.normalizeSortOption(sortSelect.value);
+        this.setSortOption(sort);
+
+        this.dispatchEvent(new CustomEvent('supervisor-fault-tickets:sort', {
+            bubbles: true,
+            detail: { sort }
+        }));
     }
 
     _onRootClick(event) {
@@ -128,6 +146,18 @@ class SupervisorFaultTickets extends HTMLElement {
         });
     }
 
+    setSortOption(sortOption) {
+        const normalizedSort = this.normalizeSortOption(sortOption);
+        const sortSelect = this.querySelector('select[data-ticket-sort]');
+        if (sortSelect) {
+            sortSelect.value = normalizedSort;
+        }
+    }
+
+    normalizeSortOption(sortOption) {
+        return sortOption === 'priority' ? 'priority' : 'date';
+    }
+
     setLoading() {
         const unassignedList = this.querySelector('#unassignedTicketsList');
         const activeList = this.querySelector('#activeTicketsList');
@@ -165,7 +195,7 @@ class SupervisorFaultTickets extends HTMLElement {
         }
     }
 
-    renderFilteredTickets({ unassignedBreakdowns = [], unassignedTickets = [], assignedTickets = [], resolvedTickets = [] } = {}) {
+    renderFilteredTickets({ unassignedBreakdowns = [], unassignedTickets = [], assignedTickets = [], resolvedTickets = [], sortOption = 'date' } = {}) {
         const unassignedList = this.querySelector('#unassignedTicketsList');
         const activeList = this.querySelector('#activeTicketsList');
         const resolvedList = this.querySelector('#resolvedTicketsList');
@@ -174,20 +204,39 @@ class SupervisorFaultTickets extends HTMLElement {
             return;
         }
 
+        const normalizedSortOption = this.normalizeSortOption(sortOption);
+
         const combinedUnassigned = [
-            ...this.sortByNewest(unassignedBreakdowns, ['created_at', 'breakdown_datetime', 'breakdown_date', 'updated_at'])
+            ...unassignedBreakdowns
                 .map((report) => ({ type: 'breakdown', payload: report })),
-            ...this.sortByNewest(unassignedTickets, ['created_at', 'breakdown_datetime', 'breakdown_date', 'updated_at'])
+            ...unassignedTickets
                 .map((ticket) => ({ type: 'ticket', payload: ticket })),
-        ].sort((first, second) => this.getSortTimestamp(second.payload, ['created_at', 'breakdown_datetime', 'breakdown_date', 'updated_at']) - this.getSortTimestamp(first.payload, ['created_at', 'breakdown_datetime', 'breakdown_date', 'updated_at']));
+        ].sort((first, second) => this.compareItemsForSort(
+            first.payload,
+            second.payload,
+            normalizedSortOption,
+            ['created_at', 'breakdown_datetime', 'breakdown_date', 'updated_at'],
+            ['priority', 'severity']
+        ));
 
         const combinedUnassignedHtml = combinedUnassigned
             .map((entry) => (entry.type === 'breakdown' ? this.renderBreakdownItem(entry.payload) : this.renderUnassignedTicket(entry.payload)))
             .join('');
 
-        const assignedTicketHtml = this.sortByNewest(assignedTickets, ['created_at', 'breakdown_datetime', 'breakdown_date', 'updated_at'])
+        const assignedTicketHtml = this.sortItemsForDisplay(
+            assignedTickets,
+            normalizedSortOption,
+            ['created_at', 'breakdown_datetime', 'breakdown_date', 'updated_at'],
+            ['priority', 'severity']
+        )
             .map(ticket => this.renderAssignedTicket(ticket)).join('');
-        const resolvedTicketHtml = this.sortByNewest(resolvedTickets, ['updated_at', 'created_at', 'breakdown_datetime', 'breakdown_date'])
+
+        const resolvedTicketHtml = this.sortItemsForDisplay(
+            resolvedTickets,
+            normalizedSortOption,
+            ['updated_at', 'created_at', 'breakdown_datetime', 'breakdown_date'],
+            ['priority', 'severity']
+        )
             .map(ticket => this.renderResolvedTicket(ticket)).join('');
 
         unassignedList.innerHTML = combinedUnassignedHtml || '<p style="text-align: center; color: var(--muted); padding: 20px;">No unassigned tickets or breakdown reports match the current filters</p>';
@@ -195,14 +244,72 @@ class SupervisorFaultTickets extends HTMLElement {
         resolvedList.innerHTML = resolvedTicketHtml || '<p style="text-align: center; color: var(--muted); padding: 20px;">No resolved tickets</p>';
     }
 
-    sortByNewest(items = [], dateFields = ['created_at', 'updated_at']) {
+    sortItemsForDisplay(items = [], sortOption = 'date', dateFields = ['created_at', 'updated_at'], priorityFields = ['priority', 'severity']) {
         if (!Array.isArray(items)) {
             return [];
         }
 
         return [...items].sort((first, second) => {
-            return this.getSortTimestamp(second, dateFields) - this.getSortTimestamp(first, dateFields);
+            return this.compareItemsForSort(first, second, sortOption, dateFields, priorityFields);
         });
+    }
+
+    compareItemsForSort(first, second, sortOption = 'date', dateFields = ['created_at', 'updated_at'], priorityFields = ['priority', 'severity']) {
+        if (sortOption === 'priority') {
+            const priorityDiff = this.getItemPriorityRank(second, priorityFields) - this.getItemPriorityRank(first, priorityFields);
+            if (priorityDiff !== 0) {
+                return priorityDiff;
+            }
+        }
+
+        const timestampDiff = this.getSortTimestamp(second, dateFields) - this.getSortTimestamp(first, dateFields);
+        if (timestampDiff !== 0) {
+            return timestampDiff;
+        }
+
+        if (sortOption !== 'priority') {
+            const priorityDiff = this.getItemPriorityRank(second, priorityFields) - this.getItemPriorityRank(first, priorityFields);
+            if (priorityDiff !== 0) {
+                return priorityDiff;
+            }
+        }
+
+        return this.getItemNumericId(second) - this.getItemNumericId(first);
+    }
+
+    getItemPriorityRank(item, priorityFields = ['priority', 'severity']) {
+        for (const field of priorityFields) {
+            const rawValue = item?.[field];
+            if (!rawValue) {
+                continue;
+            }
+
+            return this.getPriorityRank(rawValue);
+        }
+
+        return 0;
+    }
+
+    getPriorityRank(priority) {
+        const normalized = String(priority || '').trim().toLowerCase();
+
+        if (normalized === 'critical') {
+            return 4;
+        }
+
+        if (normalized === 'high') {
+            return 3;
+        }
+
+        if (normalized === 'medium' || normalized === 'med') {
+            return 2;
+        }
+
+        if (normalized === 'low') {
+            return 1;
+        }
+
+        return 0;
     }
 
     getSortTimestamp(item, dateFields = ['created_at', 'updated_at']) {
@@ -220,6 +327,31 @@ class SupervisorFaultTickets extends HTMLElement {
 
         const numericId = Number(item?.id ?? 0);
         return Number.isFinite(numericId) ? numericId : 0;
+    }
+
+    getItemNumericId(item) {
+        const candidates = [
+            item?.id,
+            item?.ticket_id,
+            item?.breakdown_id,
+            item?.breakdown_report_id,
+        ];
+
+        for (const candidate of candidates) {
+            const numericValue = Number(candidate);
+            if (Number.isFinite(numericValue)) {
+                return numericValue;
+            }
+
+            if (typeof candidate === 'string') {
+                const matchedDigits = candidate.match(/(\d+)(?!.*\d)/);
+                if (matchedDigits) {
+                    return Number(matchedDigits[1]);
+                }
+            }
+        }
+
+        return 0;
     }
 
     renderBreakdownItem(report) {
@@ -568,24 +700,42 @@ class SupervisorFaultTickets extends HTMLElement {
                 <p class="page-subtitle">Assign technicians and track fault ticket progress</p>
             </div>
 
-            <div class="filter-controls" id="ticketStatusFilters">
-                <button class="filter-btn active" type="button" data-ticket-status="all">All</button>
-                <button class="filter-btn" type="button" data-ticket-status="unassigned">Unassigned</button>
-                <button class="filter-btn" type="button" data-ticket-status="assigned">Assigned</button>
-                <button class="filter-btn" type="button" data-ticket-status="in-progress">In Progress</button>
-                <button class="filter-btn" type="button" data-ticket-status="completed">Completed</button>
-            </div>
+            <div class="filter-toolbar filter-toolbar--stacked supervisor-ticket-filter-toolbar">
+                <div class="filter-toolbar__group">
+                    <span class="filter-toolbar__label-inline">Status</span>
+                    <div class="filter-controls filter-toolbar__filters" id="ticketStatusFilters">
+                        <button class="filter-btn active" type="button" data-ticket-status="all">All</button>
+                        <button class="filter-btn" type="button" data-ticket-status="unassigned">Unassigned</button>
+                        <button class="filter-btn" type="button" data-ticket-status="assigned">Assigned</button>
+                        <button class="filter-btn" type="button" data-ticket-status="in-progress">In Progress</button>
+                        <button class="filter-btn" type="button" data-ticket-status="completed">Completed</button>
+                    </div>
+                </div>
 
-            <div class="filter-controls" id="ticketSourceFilters">
-                <button class="filter-btn active" type="button" data-ticket-source="all">All Sources</button>
-                <button class="filter-btn" type="button" data-ticket-source="driver">Driver</button>
-                <button class="filter-btn" type="button" data-ticket-source="operator">Operator</button>
-                <button class="filter-btn" type="button" data-ticket-source="system">System</button>
-            </div>
+                <div class="filter-toolbar__group">
+                    <span class="filter-toolbar__label-inline">Source</span>
+                    <div class="filter-controls filter-toolbar__filters" id="ticketSourceFilters">
+                        <button class="filter-btn active" type="button" data-ticket-source="all">All Sources</button>
+                        <button class="filter-btn" type="button" data-ticket-source="driver">Driver</button>
+                        <button class="filter-btn" type="button" data-ticket-source="operator">Operator</button>
+                        <button class="filter-btn" type="button" data-ticket-source="system">System</button>
+                    </div>
+                </div>
 
-            <button class="btn btn-primary" type="button" data-ticket-action="create" style="margin-bottom: 20px;">
-                <i class="fas fa-plus"></i> Create New Ticket
-            </button>
+                <div class="filter-toolbar__actions">
+                    <div class="filter-toolbar__sort">
+                        <label class="filter-toolbar__label" for="supervisorTicketSortSelect">Sort by</label>
+                        <select id="supervisorTicketSortSelect" class="filter-toolbar__select" data-ticket-sort>
+                            <option value="date">Date (Newest First)</option>
+                            <option value="priority">Priority (High to Low)</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-primary supervisor-ticket-create-btn" type="button" data-ticket-action="create">
+                        <i class="fas fa-plus"></i> Create New Ticket
+                    </button>
+                </div>
+            </div>
 
             <div class="card">
                 <div class="card-header">

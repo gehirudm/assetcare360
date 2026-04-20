@@ -41,6 +41,17 @@ async function mockSupervisorApis(page) {
             updated_at: '2026-04-16T10:00:00Z',
             assignments: [],
         },
+        {
+            id: 5003,
+            ticket_id: 'TKT-5003',
+            breakdown_type: 'route_breakdown',
+            breakdown_report_id: 'RBD-903',
+            status: 'Assigned',
+            priority: 'High',
+            created_at: '2026-04-16T07:00:00Z',
+            updated_at: '2026-04-16T07:45:00Z',
+            assignments: [],
+        },
     ];
 
     const routeBreakdowns = [
@@ -83,6 +94,27 @@ async function mockSupervisorApis(page) {
                 approved_garage: {
                     id: 12,
                     name: 'Prime Repair Hub',
+                },
+            },
+        },
+        {
+            id: 903,
+            route_breakdown_id: 'RBD-903',
+            vehicle_id: 53,
+            number_plate: 'CAB-903',
+            driver_name: 'Driver Priority',
+            breakdown_type: 'electrical',
+            severity: 'high',
+            description: 'Electrical diagnostics required',
+            status: 'Assigned',
+            fault_ticket_id: 5003,
+            approved_garage_name: 'Lightning Garage',
+            garage_workflow_status: 'garage_approved',
+            garage_workflow: {
+                status: 'garage_approved',
+                approved_garage: {
+                    id: 13,
+                    name: 'Lightning Garage',
                 },
             },
         },
@@ -188,8 +220,21 @@ test('completed route garage workflow ticket appears in resolved list without as
     const component = page.locator('supervisor-fault-tickets');
     await expect(component).toBeVisible();
 
+    await expect(component.locator('.supervisor-ticket-filter-toolbar')).toBeVisible();
+    await expect(component.locator('#supervisorTicketSortSelect')).toBeVisible();
+
     await expect(component.locator('#resolvedTicketsList')).toContainText('TKT-5001');
     await expect(component.locator('#activeTicketsList')).toContainText('TKT-5002');
+    await expect(component.locator('#activeTicketsList')).toContainText('TKT-5003');
+
+    const activeTicketItems = component.locator('#activeTicketsList .inventory-item');
+    await expect(activeTicketItems.first()).toContainText('TKT-5002');
+
+    await component.locator('#supervisorTicketSortSelect').selectOption('priority');
+    await expect(activeTicketItems.first()).toContainText('TKT-5003');
+
+    await component.locator('#supervisorTicketSortSelect').selectOption('date');
+    await expect(activeTicketItems.first()).toContainText('TKT-5002');
 
     await expect(component.locator('#activeTicketsList')).not.toContainText('TKT-5001');
     await expect(component.locator('#unassignedTicketsList')).not.toContainText('TKT-5001');

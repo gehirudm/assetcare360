@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/MailhogEmailService.php';
 
 /**
  * User Service
@@ -8,9 +9,11 @@ require_once __DIR__ . '/../models/User.php';
  */
 class UserService {
     private $userModel;
+    private $emailService;
     
     public function __construct() {
         $this->userModel = new User();
+        $this->emailService = null;
     }
     
     /**
@@ -240,6 +243,73 @@ class UserService {
             ];
         }
     }
+
+    /**
+     * Reset user password and optionally send reset email notification
+     */
+    public function resetUserPassword($userId, $sendEmailNotification = true) {
+        $user = $this->userModel->getUserById($userId);
+
+        if (!$user) {
+            return [
+                'success' => false,
+                'message' => 'User not found',
+                'status_code' => 404,
+            ];
+        }
+
+        $temporaryPassword = $this->userModel->generateRandomPassword();
+        $passwordUpdated = $this->userModel->updatePassword($userId, $temporaryPassword);
+
+        if (!$passwordUpdated) {
+            return [
+                'success' => false,
+                'message' => 'Failed to reset password',
+                'status_code' => 500,
+            ];
+        }
+
+        $flagUpdated = $this->userModel->update($userId, ['force_password_change' => 1]);
+        if (!$flagUpdated) {
+            return [
+                'success' => false,
+                'message' => 'Password reset succeeded, but failed to enforce password change on next login',
+                'status_code' => 500,
+            ];
+        }
+
+        $emailSent = false;
+        $emailSkippedReason = null;
+
+        if ($sendEmailNotification) {
+            $email = trim((string)($user['email'] ?? ''));
+            if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $emailSkippedReason = 'User does not have a valid email address.';
+            } else {
+                $emailSent = $this->sendTemporaryPasswordEmail($user, $temporaryPassword);
+                if (!$emailSent) {
+                    $emailSkippedReason = 'Password was reset, but email notification could not be sent.';
+                }
+            }
+        } else {
+            $emailSkippedReason = 'Email notification disabled for this request.';
+        }
+
+        $message = 'Password reset successfully. User will be required to change password on next login.';
+        if ($sendEmailNotification && !$emailSent) {
+            $message .= ' Email delivery failed. Share the temporary password securely with the user.';
+        }
+
+        return [
+            'success' => true,
+            'message' => $message,
+            'data' => [
+                'temporary_password' => $temporaryPassword,
+                'email_sent' => $emailSent,
+                'email_skipped_reason' => $emailSkippedReason,
+            ],
+        ];
+    }
     
     /**
      * Get user statistics
@@ -249,6 +319,66 @@ class UserService {
             'success' => true,
             'data' => $this->userModel->getUserStats()
         ];
+    }
+
+    /**
+     * Send temporary password email using the MailHog email service
+     */
+    private function sendTemporaryPasswordEmail($user, $temporaryPassword) {
+        $recipientEmail = trim((string)($user['email'] ?? ''));
+        if ($recipientEmail === '' || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
+
+        if ($this->emailService === null) {
+            try {
+                $this->emailService = new MailhogEmailService();
+            } catch (Throwable $e) {
+                error_log('Failed to initialize MailhogEmailService: ' . $e->getMessage());
+                return false;
+            }
+        }
+
+        $recipientName = trim((string)($user['full_name'] ?? 'User'));
+        $employeeId = trim((string)($user['employee_id'] ?? 'N/A'));
+        $loginUrl = rtrim(FRONTEND_BASE_URL, '/') . '/auth/login.html';
+
+        $safeRecipientName = htmlspecialchars($recipientName, ENT_QUOTES, 'UTF-8');
+        $safeEmployeeId = htmlspecialchars($employeeId, ENT_QUOTES, 'UTF-8');
+        $safeTemporaryPassword = htmlspecialchars($temporaryPassword, ENT_QUOTES, 'UTF-8');
+        $safeLoginUrl = htmlspecialchars($loginUrl, ENT_QUOTES, 'UTF-8');
+
+        $subject = 'AssetCare360 - Password Reset by Administrator';
+        $body = "
+        <html>
+        <body style='font-family: Arial, sans-serif; background: #f7f9fb; margin: 0; padding: 20px;'>
+            <div style='max-width: 620px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;'>
+                <div style='background: #1d4ed8; color: #ffffff; padding: 18px 24px;'>
+                    <h2 style='margin: 0; font-size: 20px;'>AssetCare360 Password Reset</h2>
+                </div>
+                <div style='padding: 20px 24px;'>
+                    <p style='margin-top: 0;'>Hello {$safeRecipientName},</p>
+                    <p>Your password has been reset by an administrator.</p>
+                    <p style='margin: 16px 0;'>
+                        <strong>Employee ID:</strong> {$safeEmployeeId}<br>
+                        <strong>Temporary Password:</strong> {$safeTemporaryPassword}
+                    </p>
+                    <p>Please sign in using the temporary password and change it immediately.</p>
+                    <p>
+                        <a href='{$safeLoginUrl}' style='display: inline-block; background: #2563eb; color: #ffffff; padding: 10px 14px; border-radius: 6px; text-decoration: none;'>
+                            Open Login Page
+                        </a>
+                    </p>
+                    <p style='color: #6b7280; font-size: 13px; margin-bottom: 0;'>
+                        This is an automated message from AssetCare360.
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
+
+        return $this->emailService->send($recipientEmail, $subject, $body, $recipientName);
     }
 
     /**

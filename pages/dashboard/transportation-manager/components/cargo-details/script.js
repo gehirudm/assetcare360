@@ -11,6 +11,7 @@ class TMCargoDetails extends HTMLElement {
         this._monthlySeries = [];
         this._usageTrips = [];
         this._chart = null;
+        this._isUpdatingActiveState = false;
 
         this.loadStyles();
         this.render();
@@ -77,6 +78,16 @@ class TMCargoDetails extends HTMLElement {
 
             if (action === 'retry') {
                 this.refresh();
+                return;
+            }
+
+            if (action === 'deactivate-cargo-item') {
+                this._setCargoItemActiveState(false);
+                return;
+            }
+
+            if (action === 'activate-cargo-item') {
+                this._setCargoItemActiveState(true);
             }
         });
     }
@@ -333,6 +344,11 @@ class TMCargoDetails extends HTMLElement {
                     <div class="card-header">
                         <span><i class="fas fa-clipboard-list"></i> Cargo Profile</span>
                     </div>
+                    <div class="cargo-profile-actions">
+                        ${isActive
+                            ? '<button class="btn btn-danger btn-small" type="button" data-action="deactivate-cargo-item"><i class="fas fa-ban"></i> Deactivate Cargo Item</button>'
+                            : '<button class="btn btn-secondary btn-small" type="button" data-action="activate-cargo-item"><i class="fas fa-rotate-left"></i> Reactivate Cargo Item</button>'}
+                    </div>
                     <div class="cargo-profile-list">
                         <div class="cargo-profile-item">
                             <span class="cargo-profile-label">Cargo Code</span>
@@ -400,6 +416,50 @@ class TMCargoDetails extends HTMLElement {
         `;
 
         this._renderChart();
+    }
+
+    async _setCargoItemActiveState(shouldBeActive) {
+        if (this._isUpdatingActiveState) {
+            return;
+        }
+
+        const cargoItemId = Number(this._cargoItem?.id || this._cargoItemId || 0);
+        if (cargoItemId <= 0 || !this._cargoItem) {
+            TMUtils.emitToast('Cargo item not found', 'error');
+            return;
+        }
+
+        const actionLabel = shouldBeActive ? 'reactivate' : 'deactivate';
+        const confirmed = confirm(`Are you sure you want to ${actionLabel} "${this._cargoItem.name}"?`);
+        if (!confirmed) {
+            return;
+        }
+
+        this._isUpdatingActiveState = true;
+        try {
+            if (shouldBeActive) {
+                const response = await API.put(`/trips/cargo-items/${cargoItemId}`, { is_active: true });
+                this._assertSuccess(response, 'Failed to reactivate cargo item');
+                TMUtils.emitToast('Cargo item reactivated successfully', 'success');
+            } else {
+                const response = await API.delete(`/trips/cargo-items/${cargoItemId}`);
+                this._assertSuccess(response, 'Failed to deactivate cargo item');
+                TMUtils.emitToast('Cargo item deactivated successfully', 'success');
+            }
+
+            await this.refresh();
+            this.dispatchEvent(new CustomEvent('tm-cargo-details:active-state-updated', {
+                bubbles: true,
+                detail: {
+                    itemId: cargoItemId,
+                    isActive: shouldBeActive,
+                },
+            }));
+        } catch (error) {
+            TMUtils.emitToast(error.message || `Failed to ${actionLabel} cargo item`, 'error');
+        } finally {
+            this._isUpdatingActiveState = false;
+        }
     }
 
     _renderChart() {

@@ -68,13 +68,6 @@ tm-cargo-management .cargo-catalog-item .item-details strong {
     margin-bottom: 6px;
 }
 
-tm-cargo-management .cargo-badge-row {
-    margin-top: 10px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
 tm-cargo-management .cargo-catalog-item .item-actions {
     display: flex;
     flex-wrap: wrap;

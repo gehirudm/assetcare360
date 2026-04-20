@@ -254,35 +254,44 @@ class UserController {
      */
     public function resetPassword() {
         RoleMiddleware::requireRole('Admin');
-        
-        $userId = $_GET['id'] ?? null;
-        
-        if (!$userId) {
-            Response::error('User ID is required', 400);
+
+        $userIdParam = $_GET['id'] ?? null;
+        $userId = is_numeric($userIdParam) ? (int)$userIdParam : 0;
+
+        if ($userId <= 0) {
+            Response::error('Valid user ID is required', 400);
         }
-        
-        $userModel = new User();
-        $user = $userModel->getUserById($userId);
-        
-        if (!$user) {
-            Response::notFound('User not found');
+
+        $currentUser = RoleMiddleware::getCurrentUser();
+        if ($currentUser && (int)($currentUser['id'] ?? 0) === $userId) {
+            Response::error('You cannot reset your own password from user management. Use Change Password instead.', 400);
         }
-        
-        // Generate new temporary password
-        $temporaryPassword = $userModel->generateRandomPassword();
-        $success = $userModel->updatePassword($userId, $temporaryPassword);
-        
-        if ($success) {
-            // Set force password change flag
-            $userModel->update($userId, ['force_password_change' => 1]);
-            
-            Response::success([
-                'temporary_password' => $temporaryPassword,
-                'message' => 'Password reset successfully. User will be required to change password on next login.'
-            ]);
-        } else {
-            Response::serverError('Failed to reset password');
+
+        $sendEmailNotification = true;
+        $rawInput = trim((string) file_get_contents('php://input'));
+        if ($rawInput !== '') {
+            $input = json_decode($rawInput, true);
+            if (!is_array($input)) {
+                Response::error('Invalid JSON data', 400);
+            }
+
+            if (array_key_exists('send_email_notification', $input)) {
+                $sendEmailNotification = (bool)$input['send_email_notification'];
+            }
         }
+
+        $result = $this->userService->resetUserPassword($userId, $sendEmailNotification);
+
+        if ($result['success']) {
+            Response::success($result['data'], $result['message']);
+        }
+
+        $statusCode = $result['status_code'] ?? 400;
+        if ($statusCode === 404) {
+            Response::notFound($result['message']);
+        }
+
+        Response::error($result['message'], $statusCode);
     }
     
     /**

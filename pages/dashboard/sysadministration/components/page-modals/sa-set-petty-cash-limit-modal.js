@@ -5,6 +5,7 @@ class SASetPettyCashLimitModal extends HTMLElement {
         }
 
         this._mounted = true;
+        this._currentSetting = null;
         this.render();
         this.bindEvents();
     }
@@ -17,36 +18,23 @@ class SASetPettyCashLimitModal extends HTMLElement {
                     <h2 style="margin-bottom: 20px; color: var(--tang-blue);">Set Petty Cash Limit</h2>
                     <form id="setPettyCashLimitForm">
                         <div class="form-section">
-                            <h5><i class="fas fa-money-bill-wave"></i> Allowance Configuration</h5>
+                            <h5><i class="fas fa-money-bill-wave"></i> Global Budget Approval Threshold</h5>
                             <div class="form-group">
-                                <label class="form-label">Role</label>
-                                <select class="form-select" required>
-                                    <option value="">Select Role</option>
-                                    <option value="supervisor">Supervisor</option>
-                                    <option value="technical-officer">Technical Officer</option>
-                                    <option value="maintenance-manager">Maintenance Manager</option>
-                                </select>
+                                <label class="form-label">Current Limit</label>
+                                <input id="saCurrentPettyCashLimit" type="text" class="form-input" value="Loading..." readonly disabled>
                             </div>
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label class="form-label">Daily Limit (LKR)</label>
-                                    <input type="number" class="form-input" placeholder="e.g., 500" required>
+                            <div class="form-group">
+                                <label class="form-label">New Petty Cash Limit (LKR)</label>
+                                <input id="saPettyCashLimitInput" type="number" class="form-input" step="0.01" min="0" placeholder="e.g., 50000.00" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Routing Behavior</label>
+                                <div id="saPettyCashLimitDescription" class="form-hint">
+                                    Budgets above this limit require Maintenance Manager approval.
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label">Monthly Limit (LKR)</label>
-                                    <input type="number" class="form-input" placeholder="e.g., 5000" required>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Approval Required Above (LKR)</label>
-                                <input type="number" class="form-input" placeholder="e.g., 200" required>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Notes</label>
-                                <textarea class="form-textarea" placeholder="Any special conditions or notes"></textarea>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary">Set Limit</button>
+                        <button id="saSetPettyCashSubmit" type="submit" class="btn btn-primary">Save Limit</button>
                     </form>
                 </div>
             </div>
@@ -64,10 +52,113 @@ class SASetPettyCashLimitModal extends HTMLElement {
         });
 
         form?.addEventListener('submit', (event) => {
-            event.preventDefault();
-            this.emitToast('Petty cash limit updated.', 'success');
-            this.close();
+            this.handleSubmit(event);
         });
+    }
+
+    openWithSetting(setting = null) {
+        this._currentSetting = setting;
+        this.updateLimitFields();
+        this.open();
+    }
+
+    open() {
+        if (typeof window.openModal === 'function') {
+            window.openModal('setPettyCashLimitModal');
+            return;
+        }
+
+        const modal = this.querySelector('#setPettyCashLimitModal');
+        if (!modal) {
+            return;
+        }
+
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+    }
+
+    updateLimitFields() {
+        const currentLimitInput = this.querySelector('#saCurrentPettyCashLimit');
+        const limitInput = this.querySelector('#saPettyCashLimitInput');
+        const description = this.querySelector('#saPettyCashLimitDescription');
+
+        const numericValue = this.parseSettingValue(this._currentSetting?.setting_value);
+        const hasNumericValue = Number.isFinite(numericValue);
+
+        if (currentLimitInput) {
+            currentLimitInput.value = hasNumericValue ? this.formatCurrency(numericValue) : 'Not configured';
+        }
+
+        if (limitInput) {
+            limitInput.value = hasNumericValue ? numericValue.toFixed(2) : '';
+        }
+
+        if (description) {
+            description.textContent = hasNumericValue
+                ? `Budgets above ${this.formatCurrency(numericValue)} require Maintenance Manager approval.`
+                : 'Budgets above this limit require Maintenance Manager approval.';
+        }
+    }
+
+    parseSettingValue(value) {
+        if (value === null || value === undefined || String(value).trim() === '') {
+            return NaN;
+        }
+
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : NaN;
+    }
+
+    formatCurrency(value) {
+        if (!Number.isFinite(value)) {
+            return 'LKR 0.00';
+        }
+
+        return `LKR ${value.toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    async handleSubmit(event) {
+        event.preventDefault();
+
+        const limitInput = this.querySelector('#saPettyCashLimitInput');
+        const submitButton = this.querySelector('#saSetPettyCashSubmit');
+
+        const nextLimit = Number(limitInput?.value);
+        if (!Number.isFinite(nextLimit) || nextLimit < 0) {
+            this.emitToast('Please enter a valid non-negative petty cash limit.', 'warning');
+            return;
+        }
+
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = 'Saving...';
+        }
+
+        try {
+            const response = await API.put('/system-settings/petty_cash_limit', { value: nextLimit.toFixed(2) });
+            if (response?.status !== 'success' || !response?.data?.setting) {
+                this.emitToast(response?.message || 'Failed to update petty cash limit.', 'error');
+                return;
+            }
+
+            this._currentSetting = response.data.setting;
+            this.updateLimitFields();
+            this.emitToast(response.message || 'Petty cash limit updated.', 'success');
+
+            document.dispatchEvent(new CustomEvent('sa-petty-cash:updated', {
+                detail: { setting: this._currentSetting },
+            }));
+
+            this.close();
+        } catch (error) {
+            console.error('Failed to update petty cash limit:', error);
+            this.emitToast(error.message || 'Failed to update petty cash limit.', 'error');
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Save Limit';
+            }
+        }
     }
 
     emitToast(message, type = 'success') {

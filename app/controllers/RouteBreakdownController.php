@@ -3,8 +3,11 @@
 require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 require_once __DIR__ . '/../models/Notification.php';
+require_once __DIR__ . '/../models/FaultTicket.php';
 require_once __DIR__ . '/../services/TripService.php';
 require_once __DIR__ . '/../services/FaultTicketService.php';
+require_once __DIR__ . '/../services/EventEmitter.php';
+require_once __DIR__ . '/../events/DomainEvents.php';
 
 /**
  * Route Breakdown Controller
@@ -13,8 +16,10 @@ require_once __DIR__ . '/../services/FaultTicketService.php';
 class RouteBreakdownController {
     private $conn;
     private Notification $notificationModel;
+    private FaultTicket $faultTicketModel;
     private TripService $tripService;
     private FaultTicketService $faultTicketService;
+    private EventEmitter $eventEmitter;
     private ?bool $dangerousSnapshotColumnsAvailable = null;
     private ?bool $faultTicketVehicleIdColumnAvailable = null;
 
@@ -22,8 +27,10 @@ class RouteBreakdownController {
         $db = Database::getInstance();
         $this->conn = $db->getConnection();
         $this->notificationModel = new Notification();
+        $this->faultTicketModel = new FaultTicket();
         $this->tripService = new TripService();
         $this->faultTicketService = new FaultTicketService();
+        $this->eventEmitter = new EventEmitter();
     }
 
     /**
@@ -237,6 +244,7 @@ class RouteBreakdownController {
 
         $routeBreakdownId = '';
         $routeBreakdownLockAcquired = false;
+        $createdTicketDbId = 0;
 
         try {
             $this->conn->beginTransaction();
@@ -378,8 +386,31 @@ class RouteBreakdownController {
                 Response::error($ticketError, $statusCode);
             }
 
+            $createdTicketDbId = empty($ticketResult['data']['existing'])
+                ? (int) ($ticketResult['data']['id'] ?? 0)
+                : 0;
+
             if ($this->conn->inTransaction()) {
                 $this->conn->commit();
+            }
+
+            if ($createdTicketDbId > 0) {
+                $ticket = $this->faultTicketModel->findById($createdTicketDbId);
+                $this->eventEmitter->emit(
+                    DomainEvents::FAULT_TICKET_CREATED,
+                    [
+                        'ticket_db_id' => $createdTicketDbId,
+                        'ticket_id' => $ticket['ticket_id'] ?? null,
+                        'priority' => $ticket['priority'] ?? ($ticketPayload['priority'] ?? null),
+                        'status' => $ticket['status'] ?? null,
+                        'breakdown_type' => $ticket['breakdown_type'] ?? ($ticketPayload['breakdown_type'] ?? null),
+                    ],
+                    [
+                        'user_id' => $currentUser['id'] ?? null,
+                        'role' => $currentUser['role'] ?? null,
+                        'source' => 'controller:RouteBreakdownController::create',
+                    ]
+                );
             }
         } catch (Throwable $e) {
             if ($this->conn->inTransaction()) {

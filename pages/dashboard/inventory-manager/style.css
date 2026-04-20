@@ -844,6 +844,26 @@ body {
     border-color: var(--royal-blue);
 }
 
+.list-sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.list-sort-controls .sort-label {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.list-sort-controls .form-select {
+    min-width: 260px;
+    padding: 8px 12px;
+    font-size: 13px;
+    border-radius: 20px;
+}
+
 /* Statistics Cards */
 .stat-card {
     text-align: center;
@@ -1158,6 +1178,15 @@ body {
 
     .search-bar {
         flex-direction: column;
+    }
+
+    .list-sort-controls {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .list-sort-controls .form-select {
+        min-width: 0;
     }
 
     .action-buttons {

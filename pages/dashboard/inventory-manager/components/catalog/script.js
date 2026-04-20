@@ -9,6 +9,7 @@ class InventoryCatalog extends HTMLElement {
         this.products = [];
         this.currentStockFilter = 'all';
         this.currentCategoryFilter = 'all';
+        this.currentSort = 'created-desc';
         this._eventsBound = false;
         this._initialized = false;
     }
@@ -46,17 +47,34 @@ class InventoryCatalog extends HTMLElement {
                 </button>
             </div>
 
-            <div class="filter-controls" id="stockFilterTabs">
-                <button class="filter-btn active" data-stock="all">All Stock</button>
-                <button class="filter-btn" data-stock="in-stock">In Stock</button>
-                <button class="filter-btn" data-stock="low-stock">Low Stock</button>
-                <button class="filter-btn" data-stock="out-of-stock">Out of Stock</button>
-            </div>
+            <div class="catalog-filter-sort-panel">
+                <div class="catalog-filter-row">
+                    <div class="filter-controls catalog-filter-group" id="stockFilterTabs">
+                        <button class="filter-btn active" data-stock="all">All Stock</button>
+                        <button class="filter-btn" data-stock="in-stock">In Stock</button>
+                        <button class="filter-btn" data-stock="low-stock">Low Stock</button>
+                        <button class="filter-btn" data-stock="out-of-stock">Out of Stock</button>
+                    </div>
+                    <div class="catalog-sort-group">
+                        <label class="catalog-sort-label" for="catalogSort">Sort</label>
+                        <select id="catalogSort" class="form-select" aria-label="Sort spare parts catalog">
+                            <option value="created-desc">Created Date: Newest First</option>
+                            <option value="created-asc">Created Date: Oldest First</option>
+                            <option value="quantity-desc">Stock Quantity: High to Low</option>
+                            <option value="quantity-asc">Stock Quantity: Low to High</option>
+                            <option value="name-asc">Name: A to Z</option>
+                            <option value="name-desc">Name: Z to A</option>
+                        </select>
+                    </div>
+                </div>
 
-            <div class="filter-controls" id="categoryFilterTabs" style="margin-top:10px;">
-                <button class="filter-btn active" data-category="all">All Categories</button>
-                <button class="filter-btn" data-category="vehicles">Vehicles</button>
-                <button class="filter-btn" data-category="machines">Machines</button>
+                <div class="catalog-filter-row">
+                    <div class="filter-controls catalog-filter-group" id="categoryFilterTabs">
+                        <button class="filter-btn active" data-category="all">All Categories</button>
+                        <button class="filter-btn" data-category="vehicles">Vehicles</button>
+                        <button class="filter-btn" data-category="machines">Machines</button>
+                    </div>
+                </div>
             </div>
 
             <div class="card">
@@ -90,6 +108,14 @@ class InventoryCatalog extends HTMLElement {
                 this.dispatchEvent(new CustomEvent('inventory-catalog:add', {
                     bubbles: true
                 }));
+            });
+        }
+
+        const sortSelect = this.querySelector('#catalogSort');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', () => {
+                this.currentSort = sortSelect.value || 'created-desc';
+                this.applyFilters();
             });
         }
 
@@ -221,7 +247,7 @@ class InventoryCatalog extends HTMLElement {
             const quantity = parseInt(product.quantity, 10) || 0;
             const threshold = this.getLowStockThreshold(product);
             const stockStatus = this.getStockStatus(quantity, threshold);
-            const category = product.category || 'unknown';
+            const category = (product.category || 'unknown').toString().toLowerCase();
 
             const textSearch = `${product.name || ''} ${product.sparepart_id || ''} ${category}`.toLowerCase();
             const matchesSearch = !searchValue || textSearch.includes(searchValue);
@@ -231,8 +257,68 @@ class InventoryCatalog extends HTMLElement {
             return matchesSearch && matchesStock && matchesCategory;
         });
 
-        this.displaySpareParts(filtered);
-        this.updateCount(filtered.length);
+        const sorted = this.sortProducts(filtered);
+        this.displaySpareParts(sorted);
+        this.updateCount(sorted.length);
+    }
+
+    sortProducts(products) {
+        return [...products].sort((a, b) => {
+            switch (this.currentSort) {
+                case 'created-asc':
+                    return this.compareCreatedAt(a, b);
+                case 'created-desc':
+                    return this.compareCreatedAt(b, a);
+                case 'quantity-asc':
+                    return this.compareQuantity(a, b);
+                case 'quantity-desc':
+                    return this.compareQuantity(b, a);
+                case 'name-desc':
+                    return this.compareName(b, a);
+                case 'name-asc':
+                default:
+                    return this.compareName(a, b);
+            }
+        });
+    }
+
+    compareCreatedAt(first, second) {
+        const diff = this.getCreatedTimestamp(first) - this.getCreatedTimestamp(second);
+        if (diff !== 0) {
+            return diff;
+        }
+
+        return this.compareName(first, second);
+    }
+
+    compareQuantity(first, second) {
+        const firstQuantity = parseInt(first.quantity, 10) || 0;
+        const secondQuantity = parseInt(second.quantity, 10) || 0;
+        const diff = firstQuantity - secondQuantity;
+        if (diff !== 0) {
+            return diff;
+        }
+
+        return this.compareName(first, second);
+    }
+
+    compareName(first, second) {
+        const firstName = (first.name || '').toString().trim().toLowerCase();
+        const secondName = (second.name || '').toString().trim().toLowerCase();
+        const nameDiff = firstName.localeCompare(secondName);
+        if (nameDiff !== 0) {
+            return nameDiff;
+        }
+
+        const firstId = (first.sparepart_id || '').toString();
+        const secondId = (second.sparepart_id || '').toString();
+        return firstId.localeCompare(secondId);
+    }
+
+    getCreatedTimestamp(product) {
+        const rawDate = product?.created_at || product?.createdAt || product?.date_created;
+        const timestamp = Date.parse(rawDate || '');
+        return Number.isFinite(timestamp) ? timestamp : 0;
     }
 
     displaySpareParts(products) {
@@ -262,7 +348,7 @@ class InventoryCatalog extends HTMLElement {
 
             const partName = product.name || 'Unnamed Part';
             const partId = product.sparepart_id || '-';
-            const category = (product.category || 'Unknown');
+            const category = (product.category || 'Unknown').toString().toLowerCase();
             const categoryText = category.charAt(0).toUpperCase() + category.slice(1);
             const escapedPartId = this.escapeAttr(partId);
             const reorderActionHtml = quantity <= threshold

@@ -203,6 +203,10 @@ class SparePartRequestController {
                     DomainEvents::SPARE_PART_REQUEST_APPROVED,
                     [
                         'request_db_id' => (int) $id,
+                        'request_id' => $result['data']['request_id'] ?? null,
+                        'fault_ticket_id' => isset($result['data']['fault_ticket_id']) ? (int)$result['data']['fault_ticket_id'] : 0,
+                        'service_ticket_id' => isset($result['data']['service_ticket_id']) ? (int)$result['data']['service_ticket_id'] : 0,
+                        'request_context' => $result['data']['request_context'] ?? null,
                         'requested_by' => (int) ($result['data']['requested_by'] ?? 0),
                         'reviewed_by' => (int) ($reviewedBy ?? 0),
                     ],
@@ -245,6 +249,10 @@ class SparePartRequestController {
                     DomainEvents::SPARE_PART_REQUEST_REJECTED,
                     [
                         'request_db_id' => (int) $id,
+                        'request_id' => $result['data']['request_id'] ?? null,
+                        'fault_ticket_id' => isset($result['data']['fault_ticket_id']) ? (int)$result['data']['fault_ticket_id'] : 0,
+                        'service_ticket_id' => isset($result['data']['service_ticket_id']) ? (int)$result['data']['service_ticket_id'] : 0,
+                        'request_context' => $result['data']['request_context'] ?? null,
                         'requested_by' => (int) ($result['data']['requested_by'] ?? 0),
                         'reviewed_by' => (int) ($reviewedBy ?? 0),
                     ],

@@ -22,6 +22,11 @@ function getMaintenanceNotificationsComponent() {
     return document.querySelector('maintenance-notifications');
 }
 
+function getInitialMaintenanceSection() {
+    const section = new URLSearchParams(window.location.search).get('section');
+    return String(section || 'dashboard').trim() || 'dashboard';
+}
+
 function getMaintenanceFaultTicketsComponent() {
     return document.querySelector('maintenance-fault-tickets');
 }
@@ -98,6 +103,76 @@ async function refreshMaintenanceWarrantyManagement() {
     }
 }
 
+function bindMaintenanceNotifications() {
+    const component = getMaintenanceNotificationsComponent();
+    if (!component || component.dataset.bound === 'true') {
+        return;
+    }
+
+    component.dataset.bound = 'true';
+
+    if (window.Auth && typeof window.Auth.getCurrentUser === 'function' && typeof component.setCurrentUser === 'function') {
+        const user = window.Auth.getCurrentUser();
+        if (user) {
+            component.setCurrentUser(user);
+        }
+    }
+
+    component.addEventListener('maintenance-notifications:toast', (event) => {
+        const message = event.detail?.message;
+        const type = event.detail?.type || 'info';
+        if (!message) return;
+        showToast(message, type);
+    });
+}
+
+async function refreshMaintenanceNotifications() {
+    const component = getMaintenanceNotificationsComponent();
+    if (!component || typeof component.refresh !== 'function') {
+        await refreshMaintenanceNotificationBadge();
+        return;
+    }
+
+    if (window.Auth && typeof window.Auth.getCurrentUser === 'function' && typeof component.setCurrentUser === 'function') {
+        const user = window.Auth.getCurrentUser();
+        if (user) {
+            component.setCurrentUser(user);
+        }
+    }
+
+    await component.refresh();
+}
+
+async function refreshMaintenanceNotificationBadge() {
+    try {
+        const response = await API.get('/notifications?limit=1');
+        if (!response || response.status !== 'success') {
+            throw new Error(response?.message || 'Failed to load notification badge count');
+        }
+
+        const unreadCountRaw = Number(response?.data?.unread_count);
+        const notifications = Array.isArray(response?.data?.notifications) ? response.data.notifications : [];
+        const unreadCount = Number.isFinite(unreadCountRaw)
+            ? unreadCountRaw
+            : notifications.filter((item) => Number(item?.is_read) !== 1).length;
+
+        setMaintenanceNotificationBadge(unreadCount);
+    } catch (error) {
+        console.error('refreshMaintenanceNotificationBadge error:', error);
+        setMaintenanceNotificationBadge(0);
+    }
+}
+
+function setMaintenanceNotificationBadge(count) {
+    const sidebar = document.querySelector('ac-layout ac-sidebar') || document.querySelector('ac-sidebar');
+    if (!sidebar || typeof sidebar.setNotifBadge !== 'function') {
+        return;
+    }
+
+    const safeCount = Number.isFinite(Number(count)) ? Math.max(0, Number(count)) : 0;
+    sidebar.setNotifBadge(safeCount);
+}
+
 async function refreshMaintenanceSection(sectionId) {
     if (sectionId === 'cost-approvals') {
         await refreshMaintenanceCostApprovals();
@@ -129,6 +204,11 @@ async function refreshMaintenanceSection(sectionId) {
 
     if (sectionId === 'warranty-management') {
         await refreshMaintenanceWarrantyManagement();
+        return;
+    }
+
+    if (sectionId === 'notifications') {
+        await refreshMaintenanceNotifications();
     }
 }
 
@@ -196,10 +276,16 @@ function closeModal(modalId) {
     modal.style.display = 'none';
 }
 
-function showToast(message) {
+function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     if (!toast) {
         return;
+    }
+
+    const normalizedType = String(type || 'success').toLowerCase();
+    toast.className = 'toast';
+    if (['success', 'error', 'warning', 'info'].includes(normalizedType)) {
+        toast.classList.add(`toast-${normalizedType}`);
     }
 
     toast.textContent = message;
@@ -212,11 +298,12 @@ function showToast(message) {
 
 document.addEventListener('maintenance-ui:toast', (event) => {
     const message = event.detail?.message;
+    const type = event.detail?.type || 'success';
     if (!message) {
         return;
     }
 
-    showToast(message);
+    showToast(message, type);
 });
 
 function viewTicketDetails(ticketId) {
@@ -406,6 +493,8 @@ function setupMobileMenu() {
 document.addEventListener('DOMContentLoaded', async () => {
     await DashboardInit.init(['Maintenance Manager'], { updateUserDisplay: true });
 
+    bindMaintenanceNotifications();
+
     const layout = document.querySelector('ac-layout');
     if (layout) {
         layout.addEventListener('section-change', async (event) => {
@@ -453,5 +542,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     await refreshMaintenanceCostApprovals();
+
+    if (getInitialMaintenanceSection() === 'notifications') {
+        setTimeout(() => {
+            void refreshMaintenanceNotifications();
+        }, 0);
+    }
+
+    void refreshMaintenanceNotificationBadge();
+
+    setInterval(() => {
+        const currentSection = document.querySelector('.content-section.active')?.id;
+        if (currentSection === 'notifications') {
+            void refreshMaintenanceNotifications();
+            return;
+        }
+
+        void refreshMaintenanceNotificationBadge();
+    }, 30000);
+
     setupMobileMenu();
 });

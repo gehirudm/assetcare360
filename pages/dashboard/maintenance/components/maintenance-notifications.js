@@ -1,302 +1,507 @@
 class MaintenanceNotifications extends HTMLElement {
-    connectedCallback() {
-        if (this._mounted) {
-            return;
-        }
+    constructor() {
+        super();
+        this.currentUser = null;
+        this.notifications = [];
+        this.filters = this.getDefaultFilters();
+        this._initialized = false;
+        this._requestCounter = 0;
+        this._onRootClick = this._onRootClick.bind(this);
+        this._onRootChange = this._onRootChange.bind(this);
+        this._onRootInput = this._onRootInput.bind(this);
+    }
 
-        this._mounted = true;
-        this.currentFilter = 'all';
+    connectedCallback() {
+        if (this._initialized) return;
 
         this.render();
-        this.bindEvents();
-        this.applyFilter('all');
+        this.addEventListener('click', this._onRootClick);
+        this.addEventListener('change', this._onRootChange);
+        this.addEventListener('input', this._onRootInput);
+        this.syncFilterControls();
+        this._initialized = true;
+    }
+
+    disconnectedCallback() {
+        this.removeEventListener('click', this._onRootClick);
+        this.removeEventListener('change', this._onRootChange);
+        this.removeEventListener('input', this._onRootInput);
+    }
+
+    getDefaultFilters() {
+        return {
+            readStatus: 'all',
+            type: 'all',
+            sort: 'newest',
+            search: '',
+        };
+    }
+
+    setCurrentUser(user) {
+        this.currentUser = user || null;
+    }
+
+    async refresh() {
+        await this.loadNotifications();
     }
 
     render() {
         this.innerHTML = `
             <div class="page-header">
-                <h1 class="page-title">Notifications</h1>
-                <p class="page-subtitle">Categorized alerts and notifications</p>
-            </div>
-
-            <div class="filter-controls" id="notificationsFilterControls">
-                <button class="filter-btn active" type="button" data-action="set-filter" data-category="all">All Notifications</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-category="cost">Cost Approvals</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-category="service">Service</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-category="inventory">Inventory</button>
-            </div>
-
-            <div class="card" data-notification-category="critical">
-                <div class="card-header"><i class="fas fa-exclamation-circle"></i> Critical Alerts</div>
-                <div class="notification-item danger">
-                    <span class="notification-icon"><i class="fas fa-clock"></i></span>
-                    <div>
-                        <strong>Warranty Expiring:</strong> Vehicle #089 brake system warranty expires in 2 days
-                        <div style="margin-top: 5px;">
-                            <button class="btn btn-secondary btn-small" type="button" data-action="check-warranty" data-warranty-id="VH089-BRK">Check Warranty</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="notification-item danger">
-                    <span class="notification-icon"><i class="fas fa-clipboard-list"></i></span>
-                    <div>
-                        <strong>Overdue Service:</strong> Vehicle #089 routine check is 1 day overdue
-                        <div style="margin-top: 5px;">
-                            <button class="btn btn-primary btn-small" type="button" data-action="schedule-service" data-equipment-id="VH089">Schedule Now</button>
-                        </div>
-                    </div>
+                <div>
+                    <h2 class="page-title"><i class="fas fa-bell"></i> Notifications</h2>
+                    <p class="page-subtitle">Service and approval updates requiring maintenance attention</p>
                 </div>
             </div>
 
-            <div class="card" data-notification-category="warranty">
-                <div class="card-header"><i class="fas fa-shield-alt"></i> Warranty Notifications</div>
-                <div class="notification-item warning">
-                    <span class="notification-icon"><i class="fas fa-clock"></i></span>
-                    <div>
-                        <strong>Warranty Expiring:</strong> Vehicle #089 brake system warranty expires on Sep 30, 2025
-                    </div>
+            <div class="maintenance-notifications-toolbar">
+                <div class="maintenance-notifications-actions">
+                    <button class="btn btn-secondary btn-small" data-action="mark-all-read">Mark All Read</button>
                 </div>
-                <div class="notification-item danger">
-                    <span class="notification-icon"><i class="fas fa-times-circle"></i></span>
-                    <div>
-                        <strong>Warranty Expired:</strong> Machine #205 hydraulic pump warranty expired on Aug 10, 2025
+
+                <div class="maintenance-notifications-filters">
+                    <div class="maintenance-notifications-filters-head">
+                        <h3 class="maintenance-notifications-filters-title"><i class="fas fa-filter"></i> Filter Notifications</h3>
+                        <button class="btn btn-secondary btn-small" data-action="clear-filters">Reset Filters</button>
                     </div>
-                </div>
-                <div class="notification-item info">
-                    <span class="notification-icon"><i class="fas fa-check-circle"></i></span>
-                    <div>
-                        <strong>Warranty Active:</strong> Vehicle #101 engine warranty valid until Dec 15, 2025
+
+                    <div class="maintenance-notifications-filter-grid">
+                        <label class="notifications-filter-field" for="maintenanceNotifReadStatusFilter">
+                            <span>Read Status</span>
+                            <select class="notifications-filter-select" id="maintenanceNotifReadStatusFilter" data-filter="readStatus">
+                                <option value="all">All</option>
+                                <option value="unread">Unread</option>
+                                <option value="read">Read</option>
+                            </select>
+                        </label>
+
+                        <label class="notifications-filter-field" for="maintenanceNotifTypeFilter">
+                            <span>Notification Type</span>
+                            <select class="notifications-filter-select" id="maintenanceNotifTypeFilter" data-filter="type">
+                                <option value="all">All</option>
+                                <option value="info">Info</option>
+                                <option value="warning">Warning</option>
+                                <option value="success">Success</option>
+                                <option value="error">Error</option>
+                            </select>
+                        </label>
+
+                        <label class="notifications-filter-field" for="maintenanceNotifSortFilter">
+                            <span>Sort By</span>
+                            <select class="notifications-filter-select" id="maintenanceNotifSortFilter" data-filter="sort">
+                                <option value="newest">Newest First</option>
+                                <option value="oldest">Oldest First</option>
+                            </select>
+                        </label>
+
+                        <label class="notifications-filter-field notifications-filter-search" for="maintenanceNotifSearchInput">
+                            <span>Search</span>
+                            <input
+                                class="notifications-filter-input"
+                                id="maintenanceNotifSearchInput"
+                                data-filter="search"
+                                type="search"
+                                placeholder="Search title, message, ticket ID"
+                                autocomplete="off"
+                            />
+                        </label>
                     </div>
+
+                    <p class="maintenance-notifications-filter-summary" id="maintenanceNotificationsFilterSummary">No notifications available</p>
                 </div>
             </div>
 
-            <div class="card" data-notification-category="cost">
-                <div class="card-header"><i class="fas fa-money-bill-wave"></i> Cost Approval Notifications</div>
-                <div class="notification-item warning">
-                    <span class="notification-icon"><i class="fas fa-money-bill-wave"></i></span>
-                    <div>
-                        <strong>High Cost Approval:</strong> Engine repair cost LKR 45,000 awaiting approval (CA-001)
-                        <div style="margin-top: 5px;">
-                            <button class="btn btn-success btn-small" type="button" data-action="approve-cost" data-request-id="CA-001">Approve</button>
-                            <button class="btn btn-danger btn-small" type="button" data-action="reject-cost" data-request-id="CA-001">Reject</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="notification-item warning">
-                    <span class="notification-icon"><i class="fas fa-money-bill-wave"></i></span>
-                    <div>
-                        <strong>Cost Approval Pending:</strong> Hydraulic pump replacement LKR 32,000 (CA-002)
-                        <div style="margin-top: 5px;">
-                            <button class="btn btn-success btn-small" type="button" data-action="approve-cost" data-request-id="CA-002">Approve</button>
-                            <button class="btn btn-danger btn-small" type="button" data-action="reject-cost" data-request-id="CA-002">Reject</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card" data-notification-category="service">
-                <div class="card-header"><i class="fas fa-wrench"></i> Service Notifications</div>
-                <div class="notification-item info">
-                    <span class="notification-icon"><i class="fas fa-clipboard-list"></i></span>
-                    <div>
-                        <strong>Service Report Submitted:</strong> Technical Officer uploaded report for Machine #203
-                        <div style="margin-top: 5px;">
-                            <button class="btn btn-primary btn-small" type="button" data-action="review-report" data-report-id="SR-002">Review Report</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="notification-item success">
-                    <span class="notification-icon"><i class="fas fa-check-circle"></i></span>
-                    <div>
-                        <strong>Service Completed:</strong> Vehicle #089 brake system repair completed successfully
-                    </div>
-                </div>
-                <div class="notification-item warning">
-                    <span class="notification-icon"><i class="fas fa-calendar-alt"></i></span>
-                    <div>
-                        <strong>Service Due:</strong> Vehicle #101 preventive maintenance due on Sep 28, 2025
-                    </div>
-                </div>
-            </div>
-
-            <div class="card" data-notification-category="inventory">
-                <div class="card-header"><i class="fas fa-box"></i> Inventory Notifications</div>
-                <div class="notification-item warning">
-                    <span class="notification-icon"><i class="fas fa-box"></i></span>
-                    <div>
-                        <strong>Low Stock Alert:</strong> Brake pad stock running low (from Inventory Manager)
-                    </div>
-                </div>
-                <div class="notification-item info">
-                    <span class="notification-icon"><i class="fas fa-sync"></i></span>
-                    <div>
-                        <strong>Stock Update:</strong> Hydraulic oil restocked - 50 units added
-                    </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header"><i class="fas fa-chart-bar"></i> Notification Summary</div>
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
-                    <div class="stats-card stats-urgent">
-                        <div class="stats-number">4</div>
-                        <div class="stats-label">Critical Alerts</div>
-                    </div>
-                    <div class="stats-card stats-pending">
-                        <div class="stats-number">7</div>
-                        <div class="stats-label">Pending Actions</div>
-                    </div>
-                    <div class="stats-card stats-active">
-                        <div class="stats-number">15</div>
-                        <div class="stats-label">Today's Notifications</div>
-                    </div>
-                    <div style="text-align: center; padding: 15px; background: #f0f9ff; border: 1px solid #e0f2fe; border-radius: 8px;">
-                        <div style="font-size: 1.5rem; font-weight: bold; color: var(--royal-blue);">92%</div>
-                        <div style="color: var(--muted);">Response Rate</div>
-                    </div>
+            <div class="maintenance-notifications-list" id="maintenanceNotificationsList">
+                <div class="notif-empty" id="maintenanceNotificationsEmpty" style="display:none;">
+                    <i class="fas fa-check-circle"></i>
+                    <p id="maintenanceNotificationsEmptyText">You're all caught up. No pending notifications.</p>
                 </div>
             </div>
         `;
     }
 
-    bindEvents() {
-        this.addEventListener('click', (event) => {
-            const actionNode = event.target.closest('[data-action]');
-            if (!actionNode) {
+    syncFilterControls() {
+        const readStatusFilter = this.querySelector('#maintenanceNotifReadStatusFilter');
+        const typeFilter = this.querySelector('#maintenanceNotifTypeFilter');
+        const sortFilter = this.querySelector('#maintenanceNotifSortFilter');
+        const searchInput = this.querySelector('#maintenanceNotifSearchInput');
+
+        if (readStatusFilter) readStatusFilter.value = this.filters.readStatus;
+        if (typeFilter) typeFilter.value = this.filters.type;
+        if (sortFilter) sortFilter.value = this.filters.sort;
+        if (searchInput) searchInput.value = this.filters.search;
+    }
+
+    async loadNotifications() {
+        const markAllButton = this.querySelector('button[data-action="mark-all-read"]');
+
+        if (!markAllButton) return;
+
+        const requestId = ++this._requestCounter;
+
+        const resolvedUser = this.currentUser
+            || (window.Auth && typeof window.Auth.getCurrentUser === 'function' ? window.Auth.getCurrentUser() : null);
+        if (resolvedUser) {
+            this.currentUser = resolvedUser;
+        }
+
+        try {
+            const response = await API.get('/notifications?limit=50');
+            if (requestId !== this._requestCounter) {
                 return;
             }
 
-            const action = actionNode.dataset.action;
-            if (action === 'set-filter') {
-                this.applyFilter(actionNode.dataset.category, actionNode);
-                return;
+            if (!response || response.status !== 'success') {
+                throw new Error(response?.message || 'Failed to load notifications');
             }
 
-            if (action === 'check-warranty') {
-                this.checkWarranty(actionNode.dataset.warrantyId);
-                return;
+            const notifications = Array.isArray(response?.data?.notifications)
+                ? response.data.notifications
+                : [];
+
+            const unreadCountRaw = Number(response?.data?.unread_count);
+            const unreadCount = Number.isFinite(unreadCountRaw)
+                ? unreadCountRaw
+                : notifications.filter((item) => Number(item?.is_read) !== 1).length;
+
+            this.notifications = notifications;
+            this.updateBadge(unreadCount);
+            this.setMarkAllDisabled(markAllButton, unreadCount <= 0);
+            this.applyCurrentFilters();
+        } catch (error) {
+            console.error('maintenance-notifications load error:', error);
+            this.notifications = [];
+            this.updateBadge(0);
+            this.setMarkAllDisabled(markAllButton, true);
+            this.renderNotifications([], 0, 'Failed to load notifications');
+
+            const list = this.querySelector('#maintenanceNotificationsList');
+            if (!list) return;
+            const errorCard = document.createElement('div');
+            errorCard.className = 'notif-card notif-danger';
+            errorCard.innerHTML = `
+                <div class="notif-icon"><i class="fas fa-exclamation-circle"></i></div>
+                <div class="notif-body">
+                    <div class="notif-title">Failed to load notifications</div>
+                    <div class="notif-desc">Please refresh the page and try again.</div>
+                </div>
+            `;
+
+            list.appendChild(errorCard);
+        }
+    }
+
+    applyCurrentFilters() {
+        const filteredNotifications = this.getFilteredNotifications(this.notifications);
+        this.renderNotifications(filteredNotifications, this.notifications.length);
+    }
+
+    getFilteredNotifications(notifications) {
+        const source = Array.isArray(notifications) ? [...notifications] : [];
+        const readStatus = this.filters.readStatus;
+        const type = this.filters.type;
+        const sort = this.filters.sort;
+        const search = this.filters.search.trim().toLowerCase();
+
+        let filtered = source;
+
+        if (readStatus === 'read') {
+            filtered = filtered.filter((notification) => Number(notification?.is_read) === 1);
+        } else if (readStatus === 'unread') {
+            filtered = filtered.filter((notification) => Number(notification?.is_read) !== 1);
+        }
+
+        if (type !== 'all') {
+            filtered = filtered.filter((notification) => this.normalizeNotificationTypeForFilter(notification?.type) === type);
+        }
+
+        if (search !== '') {
+            filtered = filtered.filter((notification) => {
+                const searchable = [
+                    notification?.title,
+                    notification?.message,
+                    notification?.source_event_id,
+                    notification?.source_event,
+                ]
+                    .map((value) => String(value || '').toLowerCase())
+                    .join(' ');
+
+                return searchable.includes(search);
+            });
+        }
+
+        filtered.sort((left, right) => {
+            const leftTime = this.parseNotificationTimestamp(left?.created_at);
+            const rightTime = this.parseNotificationTimestamp(right?.created_at);
+
+            if (sort === 'oldest') {
+                return leftTime - rightTime;
             }
 
-            if (action === 'approve-cost') {
-                this.approveCost(actionNode.dataset.requestId);
-                return;
-            }
+            return rightTime - leftTime;
+        });
 
-            if (action === 'reject-cost') {
-                this.rejectCost(actionNode.dataset.requestId);
-                return;
-            }
+        return filtered;
+    }
 
-            if (action === 'review-report') {
-                this.reviewReport(actionNode.dataset.reportId);
-                return;
-            }
+    renderNotifications(notifications, totalNotifications, summaryOverride = '') {
+        const list = this.querySelector('#maintenanceNotificationsList');
+        const empty = this.querySelector('#maintenanceNotificationsEmpty');
+        const emptyText = this.querySelector('#maintenanceNotificationsEmptyText');
 
-            if (action === 'schedule-service') {
-                this.scheduleService(actionNode.dataset.equipmentId);
-            }
+        if (!list || !empty || !emptyText) return;
+
+        list.querySelectorAll('.notif-card').forEach((element) => element.remove());
+        empty.style.display = 'none';
+
+        this.updateFilterSummary(notifications.length, totalNotifications, summaryOverride);
+
+        if (totalNotifications === 0) {
+            emptyText.textContent = "You're all caught up. No pending notifications.";
+            empty.style.display = 'block';
+            return;
+        }
+
+        if (notifications.length === 0) {
+            emptyText.textContent = 'No notifications match the selected filters.';
+            empty.style.display = 'block';
+            return;
+        }
+
+        notifications.forEach((notification) => {
+            list.appendChild(this.createNotificationCard(notification));
         });
     }
 
-    emitToast(message, type = 'info') {
-        this.dispatchEvent(new CustomEvent('maintenance-ui:toast', {
+    updateFilterSummary(visibleCount, totalCount, overrideText = '') {
+        const summary = this.querySelector('#maintenanceNotificationsFilterSummary');
+        if (!summary) return;
+
+        if (overrideText) {
+            summary.textContent = overrideText;
+            return;
+        }
+
+        if (totalCount === 0) {
+            summary.textContent = 'No notifications available';
+            return;
+        }
+
+        if (visibleCount === totalCount) {
+            summary.textContent = `Showing all ${totalCount} notifications`;
+            return;
+        }
+
+        summary.textContent = `Showing ${visibleCount} of ${totalCount} notifications`;
+    }
+
+    createNotificationCard(notification) {
+        const card = document.createElement('div');
+        const typeClass = this.normalizeNotificationType(notification?.type);
+        const readClass = Number(notification?.is_read) === 1 ? 'notif-read' : '';
+        const title = this.escapeHtml(notification?.title || 'Notification');
+        const message = this.escapeHtml(notification?.message || 'No details available.');
+        const notificationId = String(notification?.notification_id || '').trim();
+        const timestamp = this.formatTimestamp(notification?.created_at);
+        const icon = this.resolveTypeIcon(typeClass);
+
+        card.className = `notif-card notif-${typeClass} ${readClass}`.trim();
+        card.innerHTML = `
+            <div class="notif-icon"><i class="fas ${icon}"></i></div>
+            <div class="notif-body">
+                <div class="notif-title">${title}</div>
+                <div class="notif-desc">${message}</div>
+                ${timestamp ? `<div class="notif-meta">${this.escapeHtml(timestamp)}</div>` : ''}
+                <div class="notif-action">
+                    ${Number(notification?.is_read) === 1
+                        ? '<span class="notif-read-pill">Read</span>'
+                        : `<button class="btn btn-small btn-secondary" data-notification-id="${this.escapeHtml(notificationId)}">Mark as Read</button>`}
+                </div>
+            </div>
+        `;
+
+        return card;
+    }
+
+    async _onRootClick(event) {
+        const clearFiltersButton = event.target.closest('button[data-action="clear-filters"]');
+        if (clearFiltersButton) {
+            this.resetFilters();
+            return;
+        }
+
+        const markAllButton = event.target.closest('button[data-action="mark-all-read"]');
+        if (markAllButton) {
+            await this.markAllAsRead(markAllButton);
+            return;
+        }
+
+        const markButton = event.target.closest('button[data-notification-id]');
+        if (!markButton) {
+            return;
+        }
+
+        const notificationId = String(markButton.dataset.notificationId || '').trim();
+        if (!notificationId) {
+            return;
+        }
+
+        await this.markAsRead(notificationId, markButton);
+    }
+
+    _onRootChange(event) {
+        const filterElement = event.target.closest('[data-filter]');
+        if (!filterElement) return;
+
+        const key = String(filterElement.dataset.filter || '');
+        if (key === '' || key === 'search') {
+            return;
+        }
+
+        this.filters[key] = String(filterElement.value || '');
+        this.applyCurrentFilters();
+    }
+
+    _onRootInput(event) {
+        const searchInput = event.target.closest('[data-filter="search"]');
+        if (!searchInput) return;
+
+        this.filters.search = String(searchInput.value || '');
+        this.applyCurrentFilters();
+    }
+
+    resetFilters() {
+        this.filters = this.getDefaultFilters();
+        this.syncFilterControls();
+        this.applyCurrentFilters();
+    }
+
+    async markAsRead(notificationId, buttonElement) {
+        const originalLabel = buttonElement ? buttonElement.textContent : '';
+        if (buttonElement) {
+            buttonElement.disabled = true;
+            buttonElement.textContent = 'Updating...';
+        }
+
+        try {
+            const response = await API.post('/notifications/read', {
+                notification_id: notificationId,
+            });
+
+            if (!response || response.status !== 'success') {
+                throw new Error(response?.message || 'Failed to update notification');
+            }
+
+            await this.loadNotifications();
+        } catch (error) {
+            console.error('maintenance-notifications markAsRead error:', error);
+            this.dispatchToast('Failed to mark notification as read', 'error');
+
+            if (buttonElement) {
+                buttonElement.disabled = false;
+                buttonElement.textContent = originalLabel || 'Mark as Read';
+            }
+        }
+    }
+
+    async markAllAsRead(buttonElement) {
+        if (buttonElement) {
+            buttonElement.disabled = true;
+            buttonElement.textContent = 'Updating...';
+        }
+
+        try {
+            const response = await API.post('/notifications/read', {
+                mark_all: true,
+            });
+
+            if (!response || response.status !== 'success') {
+                throw new Error(response?.message || 'Failed to update notifications');
+            }
+
+            await this.loadNotifications();
+        } catch (error) {
+            console.error('maintenance-notifications markAllAsRead error:', error);
+            this.dispatchToast('Failed to mark notifications as read', 'error');
+            this.setMarkAllDisabled(buttonElement, false, 'Mark All Read');
+        }
+    }
+
+    normalizeNotificationType(type) {
+        const normalized = this.normalizeNotificationTypeForFilter(type);
+
+        if (normalized === 'error') return 'danger';
+        if (normalized === 'success') return 'success';
+        if (normalized === 'warning') return 'warning';
+        return 'info';
+    }
+
+    normalizeNotificationTypeForFilter(type) {
+        const normalized = String(type || '').toLowerCase();
+
+        if (normalized === 'danger' || normalized === 'error') return 'error';
+        if (normalized === 'success') return 'success';
+        if (normalized === 'warning') return 'warning';
+        return 'info';
+    }
+
+    resolveTypeIcon(typeClass) {
+        if (typeClass === 'success') return 'fa-check-circle';
+        if (typeClass === 'warning') return 'fa-exclamation-triangle';
+        if (typeClass === 'danger') return 'fa-times-circle';
+        return 'fa-bell';
+    }
+
+    formatTimestamp(value) {
+        if (!value) return '';
+
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) return '';
+
+        return parsed.toLocaleString();
+    }
+
+    parseNotificationTimestamp(value) {
+        const parsed = new Date(value || '');
+        const timestamp = parsed.getTime();
+        return Number.isFinite(timestamp) ? timestamp : 0;
+    }
+
+    updateBadge(count) {
+        const safeCount = Number.isFinite(Number(count)) ? Math.max(0, Number(count)) : 0;
+        const sidebar = document.querySelector('ac-layout ac-sidebar') || document.querySelector('ac-sidebar');
+        if (sidebar && typeof sidebar.setNotifBadge === 'function') {
+            sidebar.setNotifBadge(safeCount);
+        }
+    }
+
+    setMarkAllDisabled(buttonElement, disabled, label = 'Mark All Read') {
+        if (!buttonElement) return;
+
+        buttonElement.disabled = Boolean(disabled);
+        buttonElement.textContent = label;
+    }
+
+    dispatchToast(message, type = 'info') {
+        this.dispatchEvent(new CustomEvent('maintenance-notifications:toast', {
             bubbles: true,
-            detail: { message, type },
+            detail: {
+                message,
+                type,
+            },
         }));
     }
 
-    setActiveFilterButton(button) {
-        this.querySelectorAll('#notificationsFilterControls .filter-btn').forEach((item) => {
-            item.classList.remove('active');
-        });
-
-        if (button) {
-            button.classList.add('active');
-        }
-    }
-
-    applyFilter(category, button) {
-        const nextCategory = category || this.currentFilter || 'all';
-        this.currentFilter = nextCategory;
-
-        if (button) {
-            this.setActiveFilterButton(button);
-        } else {
-            const activeButton = this.querySelector(`#notificationsFilterControls [data-category="${nextCategory}"]`);
-            this.setActiveFilterButton(activeButton);
-        }
-
-        this.querySelectorAll('[data-notification-category]').forEach((card) => {
-            const cardCategory = card.dataset.notificationCategory;
-            card.style.display = nextCategory === 'all' || cardCategory === nextCategory ? 'block' : 'none';
-        });
-    }
-
-    navigateToSection(section) {
-        const layout = document.querySelector('ac-layout');
-        if (layout && typeof layout.navigateTo === 'function') {
-            layout.navigateTo(section);
-            return;
-        }
-
-        if (typeof window.navigateToSection === 'function') {
-            window.navigateToSection(section);
-        }
-    }
-
-    checkWarranty(warrantyId) {
-        const warrantyModal = document.querySelector('maintenance-warranty-details-modal');
-        if (!warrantyModal || typeof warrantyModal.openById !== 'function') {
-            this.emitToast('Warranty details modal is unavailable.', 'error');
-            return;
-        }
-
-        warrantyModal.openById(String(warrantyId || ''));
-    }
-
-    approveCost(requestId) {
-        const costApprovals = document.querySelector('maintenance-cost-approvals');
-        if (!costApprovals || typeof costApprovals.openApproveModal !== 'function') {
-            this.emitToast(`Approve flow for ${requestId} is unavailable right now.`, 'error');
-            return;
-        }
-
-        this.navigateToSection('cost-approvals');
-        costApprovals.openApproveModal(String(requestId || ''));
-    }
-
-    rejectCost(requestId) {
-        const costApprovals = document.querySelector('maintenance-cost-approvals');
-        if (!costApprovals || typeof costApprovals.openRejectModal !== 'function') {
-            this.emitToast(`Reject flow for ${requestId} is unavailable right now.`, 'error');
-            return;
-        }
-
-        this.navigateToSection('cost-approvals');
-        costApprovals.openRejectModal(String(requestId || ''));
-    }
-
-    reviewReport(reportId) {
-        const reportComponent = document.querySelector('maintenance-service-reports');
-        if (!reportComponent || typeof reportComponent.reviewReport !== 'function') {
-            this.emitToast(`Review flow for service report ${reportId} is unavailable right now.`, 'error');
-            return;
-        }
-
-        this.navigateToSection('service-reports');
-        reportComponent.reviewReport(String(reportId || ''));
-    }
-
-    scheduleService(equipmentId) {
-        const serviceWarranty = document.querySelector('maintenance-service-warranty');
-        if (!serviceWarranty || typeof serviceWarranty.scheduleService !== 'function') {
-            this.emitToast(`Scheduling flow for ${equipmentId} is unavailable right now.`, 'error');
-            return;
-        }
-
-        this.navigateToSection('warranty-management');
-        serviceWarranty.scheduleService(String(equipmentId || ''));
+    escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 }
 
-customElements.define('maintenance-notifications', MaintenanceNotifications);
+if (!customElements.get('maintenance-notifications')) {
+    customElements.define('maintenance-notifications', MaintenanceNotifications);
+}

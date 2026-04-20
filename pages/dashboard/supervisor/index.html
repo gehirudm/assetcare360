@@ -26,7 +26,8 @@
             {"section":"repair-management","icon":"fas fa-tools","label":"Repair Management"},
             {"section":"budget-approval","icon":"fas fa-dollar-sign","label":"Budget Approval"},
             {"section":"asset-status","icon":"fas fa-truck","label":"Asset Status"},
-            {"section":"technicians","icon":"fas fa-user-cog","label":"Technicians"}
+            {"section":"technicians","icon":"fas fa-user-cog","label":"Technicians"},
+            {"section":"notifications","icon":"fas fa-bell","label":"Notifications","badge":true}
         ]'>
                 <section class="content-section active" id="dashboard">
                     <supervisor-dashboard-overview></supervisor-dashboard-overview>
@@ -80,6 +81,11 @@
                 <section class="content-section" id="technicians">
                     <supervisor-technicians></supervisor-technicians>
                 </section>
+
+                <!-- Notifications Section -->
+                <section class="content-section" id="notifications">
+                    <supervisor-notifications></supervisor-notifications>
+                </section>
     </ac-layout>
 
     <!-- Toast Notification -->
@@ -109,6 +115,7 @@
     <script src="./components/dashboard-overview/script.js"></script>
     <script src="./components/analytics-hub/script.js"></script>
     <script src="./components/asset-status/script.js"></script>
+    <script src="./components/notifications/script.js"></script>
     <script src="./components/fault-tickets/script.js"></script>
     <script src="./components/ticket-details/script.js"></script>
     <script src="./components/repair-management/script.js"></script>

@@ -1032,12 +1032,13 @@ paths:
           $ref: '#/components/responses/Forbidden'
 
   /users/{id}/reset-password:
-    put:
+    post:
       tags:
         - Users
       summary: Reset user password
       description: |
-        Generate a new random password for the user and set force_password_change flag.
+        Generate a new temporary password for the user, enforce password change on next login,
+        and send the temporary password using the configured email service.
         **Requires Admin role.**
       parameters:
         - name: id
@@ -1047,6 +1048,18 @@ paths:
           schema:
             type: integer
             example: 1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                send_email_notification:
+                  type: boolean
+                  default: true
+                  example: true
+                  description: When true, sends temporary password email to the user.
       responses:
         '200':
           description: Password reset successfully
@@ -1055,19 +1068,39 @@ paths:
               schema:
                 type: object
                 properties:
-                  success:
-                    type: boolean
-                    example: true
+                  status:
+                    type: string
+                    example: "success"
                   message:
                     type: string
-                    example: "Password reset successfully"
+                    example: "Password reset successfully. User will be required to change password on next login."
                   data:
                     type: object
                     properties:
-                      new_password:
+                      temporary_password:
                         type: string
                         example: "xZ7$pQ2m"
-                        description: New generated password
+                        description: New generated temporary password
+                      email_sent:
+                        type: boolean
+                        example: true
+                      email_skipped_reason:
+                        type: string
+                        nullable: true
+                        example: null
+        '400':
+          description: Invalid request (e.g. invalid user ID or self-reset attempt)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "error"
+                  message:
+                    type: string
+                    example: "You cannot reset your own password from user management. Use Change Password instead."
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -4472,7 +4505,7 @@ components:
                       vehicle:
                         $ref: '#/components/schemas/Vehicle'
         '400':
-          description: Invalid assignment request (for example, not a driver, inactive driver, or driver has active trips and cannot be reassigned)
+          description: Invalid assignment request (for example, not a driver, inactive driver, incoming driver has active trips, or currently assigned driver has an active trip for this vehicle and cannot be replaced)
         '404':
           description: Vehicle or driver not found
 
@@ -4512,7 +4545,7 @@ components:
                       vehicle:
                         $ref: '#/components/schemas/Vehicle'
         '400':
-          description: Unassignment blocked (for example, driver currently has active trips)
+          description: Unassignment blocked when the assigned driver has an active trip for this vehicle
         '404':
           description: Vehicle not found
 

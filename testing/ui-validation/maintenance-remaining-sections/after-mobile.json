@@ -4,20 +4,22 @@
   "url": "http://127.0.0.1:3000/dashboard/maintenance/index.html",
   "title": "Maintenance Manager Dashboard",
   "accessibility": {
-    "ariaSnapshot": "- main:\n  - heading \"Notifications\" [level=1]\n  - paragraph: Categorized alerts and notifications\n  - button \"All Notifications\"\n  - button \"Cost Approvals\"\n  - button \"Service\"\n  - button \"Inventory\"\n  - text: Critical Alerts\n  - strong: \"Warranty Expiring:\"\n  - text: \"Vehicle #089 brake system warranty expires in 2 days\"\n  - button \"Check Warranty\"\n  - strong: \"Overdue Service:\"\n  - text: \"Vehicle #089 routine check is 1 day overdue\"\n  - button \"Schedule Now\"\n  - text: Warranty Notifications\n  - strong: \"Warranty Expiring:\"\n  - text: \"Vehicle #089 brake system warranty expires on Sep 30, 2025\"\n  - strong: \"Warranty Expired:\"\n  - text: \"Machine #205 hydraulic pump warranty expired on Aug 10, 2025\"\n  - strong: \"Warranty Active:\"\n  - text: \"Vehicle #101 engine warranty valid until Dec 15, 2025 Cost Approval Notifications\"\n  - strong: \"High Cost Approval:\"\n  - text: Engine repair cost LKR 45,000 awaiting approval (CA-001)\n  - button \"Approve\"\n  - button \"Reject\"\n  - strong: \"Cost Approval Pending:\"\n  - text: Hydraulic pump replacement LKR 32,000 (CA-002)\n  - button \"Approve\"\n  - button \"Reject\"\n  - text: Service Notifications\n  - strong: \"Service Report Submitted:\"\n  - text: \"Technical Officer uploaded report for Machine #203\"\n  - button \"Review Report\"\n  - strong: \"Service Completed:\"\n  - text: \"Vehicle #089 brake system repair completed successfully\"\n  - strong: \"Service Due:\"\n  - text: \"Vehicle #101 preventive maintenance due on Sep 28, 2025 Inventory Notifications\"\n  - strong: \"Low Stock Alert:\"\n  - text: Brake pad stock running low (from Inventory Manager)\n  - strong: \"Stock Update:\"\n  - text: Hydraulic oil restocked - 50 units added Notification Summary 4 Critical Alerts 7 Pending Actions 15 Today's Notifications 92% Response Rate",
-    "snapshotLength": 1764
+    "ariaSnapshot": "- main:\n  - heading \"Notifications\" [level=2]\n  - paragraph: Service and approval updates requiring maintenance attention\n  - button \"Mark All Read\" [disabled]\n  - heading \"Filter Notifications\" [level=3]\n  - button \"Reset Filters\"\n  - text: Read Status\n  - combobox \"Read Status\":\n    - option \"All\" [selected]\n    - option \"Unread\"\n    - option \"Read\"\n  - text: Notification Type\n  - combobox \"Notification Type\":\n    - option \"All\" [selected]\n    - option \"Info\"\n    - option \"Warning\"\n    - option \"Success\"\n    - option \"Error\"\n  - text: Sort By\n  - combobox \"Sort By\":\n    - option \"Newest First\" [selected]\n    - option \"Oldest First\"\n  - text: Search\n  - searchbox \"Search\"\n  - paragraph: Showing all 3 notifications\n  - text: Budget review required Budget report BR-112 is awaiting your approval. 4/20/2026, 3:00:00 PM Read Spare-part request updated Spare-part request SPR-223 was approved and inventory is preparing dispatch. 4/20/2026, 2:15:00 PM Read Service completed Service ticket SVT-004 has been completed and is ready for review. 4/20/2026, 12:45:00 PM Read",
+    "snapshotLength": 1076
   },
   "console": [],
   "failedRequests": [],
   "interactionSummary": {
     "activeSection": "notifications",
-    "visibleTickets": 0,
-    "visibleWarrantyRows": 2,
-    "visibleNotificationCards": 5,
+    "visibleBreakdowns": 2,
+    "visibleAssetStatuses": 4,
+    "visibleServiceReports": 1,
+    "visibleWarrantyRows": 1,
+    "hasServiceTicketList": false,
     "modalStates": {
       "ticketDetailsOpen": false,
-      "serviceScheduleOpen": false,
-      "addServiceOpen": false
+      "reportDetailsOpen": false,
+      "warrantyDetailsOpen": false
     }
   }
 }

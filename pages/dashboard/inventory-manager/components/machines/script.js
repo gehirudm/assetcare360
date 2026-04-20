@@ -8,6 +8,7 @@ class InventoryMachines extends HTMLElement {
         super();
         this.machines = [];
         this.currentFilter = 'all';
+        this.currentSort = 'created-desc';
     }
 
     connectedCallback() {
@@ -46,6 +47,13 @@ class InventoryMachines extends HTMLElement {
                 <button class="filter-btn" data-status="Active">Active</button>
                 <button class="filter-btn" data-status="Under Maintenance">Under Maintenance</button>
                 <button class="filter-btn" data-status="Inactive">Inactive</button>
+                <div class="list-sort-controls">
+                    <label class="sort-label" for="machineCreatedSort">Sort</label>
+                    <select id="machineCreatedSort" class="form-select" aria-label="Sort machines by created date">
+                        <option value="created-desc">Created Date: Newest First</option>
+                        <option value="created-asc">Created Date: Oldest First</option>
+                    </select>
+                </div>
             </div>
 
             <div id="machinesList">
@@ -72,6 +80,15 @@ class InventoryMachines extends HTMLElement {
             searchInput.addEventListener('input', () => this.applyFilters());
         }
 
+        // Sort input
+        const sortInput = this.querySelector('#machineCreatedSort');
+        if (sortInput) {
+            sortInput.addEventListener('change', () => {
+                this.currentSort = sortInput.value || 'created-desc';
+                this.applyFilters();
+            });
+        }
+
         // Add button
         const addBtn = this.querySelector('#addMachineBtn');
         if (addBtn) {
@@ -86,7 +103,7 @@ class InventoryMachines extends HTMLElement {
         try {
             const response = await API.get('/machines');
             this.machines = response.data?.machines || [];
-            this.displayMachines(this.machines);
+            this.applyFilters();
         } catch (error) {
             console.error('Failed to load machines:', error);
             Utils.showToast('Failed to load machines', 'error');
@@ -123,7 +140,33 @@ class InventoryMachines extends HTMLElement {
             return matchesStatus && matchesSearch;
         });
 
-        this.displayMachines(filtered);
+        this.displayMachines(this.sortByCreatedDate(filtered));
+    }
+
+    sortByCreatedDate(machineList) {
+        const direction = this.currentSort === 'created-asc' ? 1 : -1;
+
+        return [...machineList].sort((a, b) => {
+            const createdAtDifference = this.getCreatedTimestamp(a) - this.getCreatedTimestamp(b);
+            if (createdAtDifference !== 0) {
+                return direction === 1 ? createdAtDifference : -createdAtDifference;
+            }
+
+            const aId = Number.parseInt(a?.id, 10);
+            const bId = Number.parseInt(b?.id, 10);
+            if (Number.isFinite(aId) && Number.isFinite(bId) && aId !== bId) {
+                const idDifference = aId - bId;
+                return direction === 1 ? idDifference : -idDifference;
+            }
+
+            return 0;
+        });
+    }
+
+    getCreatedTimestamp(machine) {
+        const rawDate = machine?.created_at || machine?.createdAt || machine?.date_created;
+        const timestamp = Date.parse(rawDate || '');
+        return Number.isFinite(timestamp) ? timestamp : 0;
     }
 
     displayMachines(machineList) {

@@ -136,16 +136,6 @@ class TMCargoManagement extends HTMLElement {
                         }));
                     }
                     break;
-                case 'deactivate-cargo-item':
-                    if (itemId > 0) {
-                        this._setCargoItemActiveState(itemId, false);
-                    }
-                    break;
-                case 'activate-cargo-item':
-                    if (itemId > 0) {
-                        this._setCargoItemActiveState(itemId, true);
-                    }
-                    break;
             }
         });
 
@@ -191,36 +181,6 @@ class TMCargoManagement extends HTMLElement {
         this._cargoItems = Array.isArray(response.data?.cargo_items)
             ? response.data.cargo_items
             : [];
-    }
-
-    async _setCargoItemActiveState(itemId, shouldBeActive) {
-        const item = this._cargoItems.find((entry) => Number(entry.id) === Number(itemId));
-        if (!item) {
-            TMUtils.emitToast('Cargo item not found', 'error');
-            return;
-        }
-
-        const actionLabel = shouldBeActive ? 'reactivate' : 'deactivate';
-        const confirmed = confirm(`Are you sure you want to ${actionLabel} "${item.name}"?`);
-        if (!confirmed) {
-            return;
-        }
-
-        try {
-            if (shouldBeActive) {
-                const response = await API.put(`/trips/cargo-items/${itemId}`, { is_active: true });
-                this._assertSuccess(response, 'Failed to reactivate cargo item');
-                TMUtils.emitToast('Cargo item reactivated successfully', 'success');
-            } else {
-                const response = await API.delete(`/trips/cargo-items/${itemId}`);
-                this._assertSuccess(response, 'Failed to deactivate cargo item');
-                TMUtils.emitToast('Cargo item deactivated successfully', 'success');
-            }
-
-            await this.refresh();
-        } catch (error) {
-            TMUtils.emitToast(error.message || `Failed to ${actionLabel} cargo item`, 'error');
-        }
     }
 
     _setCargoTypeButtonState() {
@@ -318,13 +278,12 @@ class TMCargoManagement extends HTMLElement {
         }
 
         container.innerHTML = items.map((item) => {
-            const isActive = Number(item.is_active) === 1;
             const isDangerous = Number(item.is_dangerous) === 1;
             const itemId = Number(item.id);
             const description = String(item.description || '').trim();
 
             return `
-                <div class="inventory-item cargo-catalog-item ${isActive ? '' : 'cancelled'}" data-item-id="${itemId}">
+                <div class="inventory-item cargo-catalog-item" data-item-id="${itemId}">
                     <div class="item-details">
                         <strong><i class="fas fa-boxes-stacked"></i> ${TMUtils.escapeHtml(item.name || 'Unnamed Cargo')}</strong>
                         <div class="item-meta">
@@ -332,18 +291,15 @@ class TMCargoManagement extends HTMLElement {
                             <i class="fas fa-ruler-combined"></i> Unit: ${TMUtils.escapeHtml(item.unit || 'units')}
                         </div>
                         ${description ? `<div class="item-meta"><i class="fas fa-align-left"></i> ${TMUtils.escapeHtml(description)}</div>` : ''}
-                        <div class="cargo-badge-row">
-                            <span class="status-badge ${isDangerous ? 'badge-danger' : 'badge-ok'}">${isDangerous ? 'Dangerous Cargo' : 'Non-dangerous'}</span>
-                            <span class="status-badge ${isActive ? 'badge-ok' : 'badge-muted'}">${isActive ? 'Active' : 'Inactive'}</span>
+                        <div class="item-meta">
+                            <i class="fas ${isDangerous ? 'fa-radiation' : 'fa-circle-check'}"></i>
+                            ${isDangerous ? 'Dangerous cargo item' : 'Non-dangerous cargo item'}
                         </div>
                     </div>
                     <div class="item-actions">
                         <button class="btn btn-primary btn-small" data-action="view-cargo-item" data-item-id="${itemId}">
                             <i class="fas fa-eye"></i> View Details
                         </button>
-                        ${isActive
-                            ? `<button class="btn btn-danger btn-small" data-action="deactivate-cargo-item" data-item-id="${itemId}"><i class="fas fa-ban"></i> Deactivate</button>`
-                            : `<button class="btn btn-secondary btn-small" data-action="activate-cargo-item" data-item-id="${itemId}"><i class="fas fa-rotate-left"></i> Reactivate</button>`}
                     </div>
                 </div>
             `;
