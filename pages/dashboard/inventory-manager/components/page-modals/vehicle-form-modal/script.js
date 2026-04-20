@@ -164,13 +164,6 @@ function createVehicleModal(vehicle = null, nextVehicleId = 'VEH-001') {
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Last Service Date</label>
-                            <input type="date" class="form-input" id="vehicleLastServiceDate" 
-                                   value="${vehicle?.last_service_date || ''}" 
-                                   max="${new Date().toISOString().split('T')[0]}">
-                            <small style="color: var(--muted); display: block; margin-top: 4px;">Cannot be in the future</small>
-                        </div>
-                        <div class="form-group">
                             <label class="form-label">Last Service Mileage (km)</label>
                             <input type="number" class="form-input" id="lastServiceMileage" 
                                    value="${vehicle?.last_service_mileage || ''}" min="0">
@@ -313,18 +306,6 @@ async function handleAddVehicle(e) {
     try {
         const formData = getVehicleFormData();
 
-        // Validate last service date is not in the future
-        if (formData.last_service_date) {
-            const lastServiceDate = new Date(formData.last_service_date);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
-
-            if (lastServiceDate > today) {
-                Utils.showToast('Last service date cannot be in the future', 'error');
-                return;
-            }
-        }
-
         if (formData.last_insurance_renew_date) {
             const lastInsuranceRenewDate = new Date(formData.last_insurance_renew_date);
             const today = new Date();
@@ -367,18 +348,6 @@ async function handleEditVehicle(e) {
     try {
         const vehicleId = document.getElementById('vehicleId').value;
         const formData = getVehicleFormData();
-
-        // Validate last service date is not in the future
-        if (formData.last_service_date) {
-            const lastServiceDate = new Date(formData.last_service_date);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
-
-            if (lastServiceDate > today) {
-                Utils.showToast('Last service date cannot be in the future', 'error');
-                return;
-            }
-        }
 
         if (formData.last_insurance_renew_date) {
             const lastInsuranceRenewDate = new Date(formData.last_insurance_renew_date);
@@ -441,14 +410,13 @@ function getVehicleFormData() {
         supplier_contact: document.getElementById('vehicleSupplierContact').value,
         service_interval_type: serviceType,
         warranty_expiry: document.getElementById('vehicleWarrantyExpiry').value || null,
-        warranty_provider: document.getElementById('vehicleWarrantyProvider').value,
+        warranty_provider: document.getElementById('vehicleWarrantyProvider').value || null,
         insurance_type: document.getElementById('vehicleInsuranceType').value || null,
         insurance_provider: (document.getElementById('vehicleInsuranceProvider').value || '').trim(),
         insurance_provider_details: (document.getElementById('vehicleInsuranceProviderDetails').value || '').trim(),
         insurance_renew_interval_days: parsePositiveIntegerOrNull(document.getElementById('vehicleInsuranceRenewIntervalDays').value),
         last_insurance_renew_date: document.getElementById('vehicleLastInsuranceRenewDate').value || null,
         last_insurance_renew_details: (document.getElementById('vehicleLastInsuranceRenewDetails').value || '').trim(),
-        last_service_date: document.getElementById('vehicleLastServiceDate').value || null,
         last_service_mileage: document.getElementById('lastServiceMileage').value ? parseInt(document.getElementById('lastServiceMileage').value) : null,
         notes: document.getElementById('vehicleNotes').value
     };

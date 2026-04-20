@@ -116,13 +116,6 @@ function createMachineModal(machine = null, nextMachineId = 'MCH-001') {
                             <input type="number" class="form-input" id="serviceInterval" 
                                    value="${machine?.service_interval_days || 90}" min="1" required>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Last Service Date</label>
-                            <input type="date" class="form-input" id="lastServiceDate" 
-                                   value="${machine?.last_service_date || ''}" 
-                                   max="${new Date().toISOString().split('T')[0]}">
-                            <small style="color: var(--muted); display: block; margin-top: 4px;">Cannot be in the future</small>
-                        </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -260,18 +253,6 @@ async function handleAddMachine(e) {
         const form = e.currentTarget;
         const formData = getMachineFormData(form);
 
-        // Validate last service date is not in the future
-        if (formData.last_service_date) {
-            const lastServiceDate = new Date(formData.last_service_date);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
-
-            if (lastServiceDate > today) {
-                Utils.showToast('Last service date cannot be in the future', 'error');
-                return;
-            }
-        }
-
         if (formData.last_insurance_renew_date) {
             const lastInsuranceRenewDate = new Date(formData.last_insurance_renew_date);
             const today = new Date();
@@ -318,18 +299,6 @@ async function handleEditMachine(e) {
         if (!machineId) {
             Utils.showToast('Machine ID is missing for update', 'error');
             return;
-        }
-
-        // Validate last service date is not in the future
-        if (formData.last_service_date) {
-            const lastServiceDate = new Date(formData.last_service_date);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
-
-            if (lastServiceDate > today) {
-                Utils.showToast('Last service date cannot be in the future', 'error');
-                return;
-            }
         }
 
         if (formData.last_insurance_renew_date) {
@@ -388,9 +357,8 @@ function getMachineFormData(form) {
         supplier_name: form.querySelector('#supplierName')?.value || '',
         supplier_contact: form.querySelector('#supplierContact')?.value || '',
         service_interval_days: parseInt(form.querySelector('#serviceInterval')?.value || '0', 10),
-        last_service_date: form.querySelector('#lastServiceDate')?.value || null,
         warranty_expiry: form.querySelector('#warrantyExpiry')?.value || null,
-        warranty_provider: form.querySelector('#warrantyProvider')?.value || '',
+        warranty_provider: form.querySelector('#warrantyProvider')?.value || null,
         insurance_type: form.querySelector('#insuranceType')?.value || null,
         insurance_provider: (form.querySelector('#insuranceProvider')?.value || '').trim(),
         insurance_provider_details: (form.querySelector('#insuranceProviderDetails')?.value || '').trim(),

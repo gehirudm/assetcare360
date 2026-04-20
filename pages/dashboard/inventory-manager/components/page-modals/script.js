@@ -42,6 +42,23 @@ function getVehicleFromComponent(id) {
     return vehicles.find(vehicle => Number(vehicle.id) === Number(id)) || null;
 }
 
+function normalizeVehicleRecord(vehicle) {
+    if (!vehicle || typeof vehicle !== 'object') {
+        return null;
+    }
+
+    const normalizedMileage = Number(vehicle.current_mileage);
+    const fallbackMileage = Number(vehicle.mileage);
+
+    return {
+        ...vehicle,
+        number_plate: vehicle.number_plate || vehicle.registration_number || '',
+        current_mileage: Number.isFinite(normalizedMileage)
+            ? normalizedMileage
+            : (Number.isFinite(fallbackMileage) ? fallbackMileage : 0)
+    };
+}
+
 async function fetchMachineRecord(id) {
     const localRecord = getMachineFromComponent(id);
     if (localRecord) {
@@ -71,7 +88,7 @@ async function fetchMachineRecord(id) {
 }
 
 async function fetchVehicleRecord(id) {
-    const localRecord = getVehicleFromComponent(id);
+    const localRecord = normalizeVehicleRecord(getVehicleFromComponent(id));
     if (localRecord) {
         return localRecord;
     }
@@ -79,7 +96,7 @@ async function fetchVehicleRecord(id) {
     try {
         const response = await API.get(`/vehicles/${id}`);
         if (response.status === 'success' && response.data) {
-            return response.data.vehicle || response.data;
+            return normalizeVehicleRecord(response.data.vehicle || response.data);
         }
     } catch (error) {
         console.warn('Failed to fetch vehicle by id, falling back to list endpoint:', error);
@@ -89,7 +106,8 @@ async function fetchVehicleRecord(id) {
         const response = await API.get('/vehicles');
         if (response.status === 'success') {
             const records = Array.isArray(response.data?.vehicles) ? response.data.vehicles : [];
-            return records.find(vehicle => Number(vehicle.id) === Number(id)) || null;
+            const match = records.find(vehicle => Number(vehicle.id) === Number(id)) || null;
+            return normalizeVehicleRecord(match);
         }
     } catch (error) {
         console.warn('Failed to fetch vehicle list:', error);

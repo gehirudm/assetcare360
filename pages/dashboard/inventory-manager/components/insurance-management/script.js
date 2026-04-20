@@ -244,7 +244,7 @@ class InventoryInsuranceManagement extends HTMLElement {
             asset_code: vehicle.vehicle_id || `VEH-${vehicle.id}`,
             asset_name: vehicle.vehicle_name || 'Vehicle',
             model_number: vehicle.model_number || 'N/A',
-            display_identifier: vehicle.number_plate || 'N/A',
+            display_identifier: vehicle.number_plate || vehicle.registration_number || 'N/A',
             insurance_type: vehicle.insurance_type || '',
             insurance_provider: vehicle.insurance_provider || '',
             insurance_provider_details: vehicle.insurance_provider_details || '',
