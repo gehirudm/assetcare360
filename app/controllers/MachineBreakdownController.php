@@ -162,7 +162,8 @@ class MachineBreakdownController {
             Response::error('Invalid JSON payload', 400);
         }
 
-        $breakdownDate = $this->normalizeBreakdownDateTime($input['breakdown_date'] ?? null, false);
+        // Always use server timestamp for new machine breakdown reports.
+        $breakdownDate = date('Y-m-d H:i:s');
         $currentUser = RoleMiddleware::getCurrentUser();
         
         try {

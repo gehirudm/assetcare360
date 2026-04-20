@@ -157,7 +157,8 @@ class BreakdownReportController {
             Response::error('Invalid JSON payload', 400);
         }
 
-        $breakdownDate = $this->normalizeBreakdownDate($input['breakdown_date'] ?? null, false);
+        // Always use server date for new breakdown reports.
+        $breakdownDate = date('Y-m-d');
         $currentUser = RoleMiddleware::getCurrentUser();
         
         try {

@@ -249,7 +249,6 @@ class MOReportFaultModal extends HTMLElement {
             const breakdownData = {
                 machine_id: Number.parseInt(machineId, 10),
                 operator_id: this.currentUser?.id || null,
-                breakdown_date: new Date().toISOString(),
                 breakdown_type: 'General Fault',
                 severity: priority || 'Medium',
                 description,
