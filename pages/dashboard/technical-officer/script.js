@@ -9,11 +9,26 @@ let requestedPartsMap = {};
 // Track the current ticket being updated in the update work modal
 let currentUpdateTicketId = null;
 let technicalOfficerTicketDetailReturnSection = 'tickets';
+let technicalOfficerServiceTicketDetailReturnSection = 'service-tickets';
 
 // Navigation is handled by <ac-layout>; this keeps query-param deep links in sync.
 let isHistoryNavigation = false;
 
 function handleSectionActivation(sectionId) {
+    if (sectionId === 'service-tickets') {
+        const serviceTicketsComponent = document.querySelector('to-service-tickets');
+        if (serviceTicketsComponent && typeof serviceTicketsComponent.refresh === 'function') {
+            serviceTicketsComponent.refresh();
+        }
+    }
+
+    if (sectionId === 'service-ticket-details') {
+        const serviceTicketDetailView = document.querySelector('#service-ticket-details to-service-ticket-detail-view');
+        if (serviceTicketDetailView && typeof serviceTicketDetailView.refresh === 'function') {
+            serviceTicketDetailView.refresh();
+        }
+    }
+
     if (sectionId === 'notifications') {
         refreshTONotifications().catch(error => {
             console.error('Failed to refresh notifications section:', error);
@@ -79,7 +94,10 @@ function syncSectionInUrl(sectionId, replace = false) {
 // Restore section from query param on load / browser back-forward
 function restoreSectionFromUrl() {
     const params = new URLSearchParams(window.location.search);
-    const section = params.get('section') || 'dashboard';
+    const rawSection = params.get('section') || 'dashboard';
+    const section = rawSection === 'service-warranty'
+        ? 'service-tickets'
+        : (rawSection === 'feedback' ? 'dashboard' : rawSection);
 
     const layout = document.querySelector('ac-layout');
     if (!layout || typeof layout.navigateTo !== 'function') return;
@@ -90,9 +108,12 @@ function restoreSectionFromUrl() {
 }
 
 window.addEventListener('popstate', (e) => {
-    const section = (e.state && e.state.section)
+    const rawSection = (e.state && e.state.section)
         || new URLSearchParams(window.location.search).get('section')
         || 'dashboard';
+    const section = rawSection === 'service-warranty'
+        ? 'service-tickets'
+        : (rawSection === 'feedback' ? 'dashboard' : rawSection);
 
     const layout = document.querySelector('ac-layout');
     if (!layout || typeof layout.navigateTo !== 'function') return;
@@ -433,17 +454,6 @@ async function refreshTOInventory() {
     }
 }
 
-function bindTOFeedback() {
-    const feedbackComponent = document.querySelector('to-feedback');
-    if (!feedbackComponent || feedbackComponent.dataset.bound === 'true') return;
-
-    feedbackComponent.dataset.bound = 'true';
-    feedbackComponent.addEventListener('technical-officer-feedback:submitted', (event) => {
-        const message = event.detail?.message || 'Feedback submitted successfully! Shared with Supervisor & Maintenance Manager.';
-        showToast(message, 'success');
-    });
-}
-
 function bindTOSpareParts() {
     const sparePartsComponent = document.querySelector('to-spare-parts');
     if (!sparePartsComponent || sparePartsComponent.dataset.bound === 'true') return;
@@ -492,14 +502,28 @@ function refreshTOSpareParts() {
     }
 }
 
-function bindTOServiceWarranty() {
-    const serviceWarrantyComponent = document.querySelector('to-service-warranty');
-    if (!serviceWarrantyComponent || serviceWarrantyComponent.dataset.bound === 'true') return;
+function bindTOServiceTickets() {
+    const serviceTicketsComponent = document.querySelector('to-service-tickets');
+    if (!serviceTicketsComponent || serviceTicketsComponent.dataset.bound === 'true') return;
 
-    serviceWarrantyComponent.dataset.bound = 'true';
-    serviceWarrantyComponent.addEventListener('technical-officer-service-warranty:submitted', (event) => {
-        const message = event.detail?.message || 'Warranty claim submitted to Inventory Manager!';
-        showToast(message, 'success');
+    serviceTicketsComponent.dataset.bound = 'true';
+    serviceTicketsComponent.addEventListener('technical-officer-service-tickets:view-ticket', (event) => {
+        const ticketId = Number(event.detail?.ticketId || 0);
+        if (ticketId <= 0) {
+            return;
+        }
+
+        viewServiceTicket(ticketId, {
+            returnSection: 'service-tickets',
+        });
+    });
+
+    serviceTicketsComponent.addEventListener('to-ui:toast', (event) => {
+        const message = event.detail?.message;
+        const type = event.detail?.type || 'success';
+        if (message) {
+            showToast(message, type);
+        }
     });
 }
 
@@ -775,6 +799,46 @@ function bindTOTicketDetails() {
     });
 }
 
+function bindTOServiceTicketDetails() {
+    const serviceTicketDetailView = document.querySelector('#service-ticket-details to-service-ticket-detail-view');
+    if (!serviceTicketDetailView || serviceTicketDetailView.dataset.bound === 'true') {
+        return;
+    }
+
+    serviceTicketDetailView.dataset.bound = 'true';
+
+    serviceTicketDetailView.addEventListener('to-service-ticket-detail-view:toast', (event) => {
+        const message = event.detail?.message;
+        const type = event.detail?.type || 'info';
+        if (!message) {
+            return;
+        }
+
+        showToast(message, type);
+    });
+
+    serviceTicketDetailView.addEventListener('to-service-ticket-detail-view:back', (event) => {
+        const requestedSection = String(
+            event.detail?.returnSection
+            || technicalOfficerServiceTicketDetailReturnSection
+            || 'service-tickets'
+        ).trim() || 'service-tickets';
+
+        serviceTicketDetailView.closeView?.();
+        navigateToSection(requestedSection);
+    });
+
+    serviceTicketDetailView.addEventListener('to-service-ticket-detail-view:request-spare-parts', (event) => {
+        const ticket = event.detail?.ticket;
+        if (!ticket) {
+            showToast('Service ticket details are unavailable for spare part request.', 'error');
+            return;
+        }
+
+        void requestSparePartsForServiceTicket(ticket);
+    });
+}
+
 // View ticket details in the dashboard-local details section component.
 function viewTicket(ticketId, options = {}) {
     const numericTicketId = Number(ticketId);
@@ -801,8 +865,185 @@ function viewTicket(ticketId, options = {}) {
     });
 }
 
+// View service ticket details in the dashboard-local details section component.
+function viewServiceTicket(ticketId, options = {}) {
+    const numericTicketId = Number(ticketId);
+    if (!Number.isFinite(numericTicketId) || numericTicketId <= 0) {
+        showToast('Invalid service ticket ID.', 'error');
+        return;
+    }
+
+    const serviceTicketDetailView = document.querySelector('#service-ticket-details to-service-ticket-detail-view');
+    if (!serviceTicketDetailView || typeof serviceTicketDetailView.open !== 'function') {
+        showToast('Service ticket details component is unavailable.', 'error');
+        return;
+    }
+
+    const returnSection = String(options.returnSection || 'service-tickets').trim() || 'service-tickets';
+    technicalOfficerServiceTicketDetailReturnSection = returnSection;
+
+    navigateToSection('service-ticket-details');
+    window.scrollTo(0, 0);
+
+    serviceTicketDetailView.open(numericTicketId, {
+        returnSection,
+    });
+}
+
 // Cached options HTML for spare parts dropdowns (loaded once per modal open)
 let _cachedSparePartOptionsHtml = '';
+
+function _updateRequestPartsSubmitButtonLabel() {
+    const submitButton = document.querySelector('#requestPartsForm button[type="submit"]');
+    if (!submitButton) {
+        return;
+    }
+
+    const ticketContext = document.getElementById('requestingTicketContext')?.value || 'fault_ticket';
+    const noSparePartsNeeded = document.getElementById('noSparePartsNeeded')?.checked || false;
+
+    if (ticketContext === 'service_ticket') {
+        if (noSparePartsNeeded) {
+            submitButton.innerHTML = '<i class="fas fa-play"></i> Start Service Operation';
+            return;
+        }
+
+        submitButton.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Spare Part Request';
+        return;
+    }
+
+    submitButton.innerHTML = '<i class="fas fa-paper-plane"></i> Submit & Start Work';
+}
+
+function _setRequestPartsModalContext(ticketContext) {
+    const normalizedContext = ticketContext === 'service_ticket' ? 'service_ticket' : 'fault_ticket';
+    const contextField = document.getElementById('requestingTicketContext');
+    if (contextField) {
+        contextField.value = normalizedContext;
+    }
+
+    const modalTitle = document.querySelector('#requestPartsModal .modal-header h2');
+    if (modalTitle) {
+        if (normalizedContext === 'service_ticket') {
+            modalTitle.innerHTML = '<i class="fas fa-clipboard-list"></i> Request Spare Parts (Service Ticket)';
+        } else {
+            modalTitle.innerHTML = '<i class="fas fa-clipboard-list"></i> Request Spare Parts';
+        }
+    }
+
+    _updateRequestPartsSubmitButtonLabel();
+}
+
+function _formatRequestDate(dateValue) {
+    if (!dateValue) {
+        return '';
+    }
+
+    const parsedDate = new Date(dateValue);
+    if (Number.isNaN(parsedDate.getTime())) {
+        return '';
+    }
+
+    return parsedDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
+}
+
+function _validateExpectedCompletionDate(value) {
+    const normalized = String(value || '').trim();
+    if (!normalized) {
+        return {
+            valid: false,
+            message: 'Expected completion date is required to start service work.',
+        };
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+        return {
+            valid: false,
+            message: 'Expected completion date must use YYYY-MM-DD format.',
+        };
+    }
+
+    const [year, month, day] = normalized.split('-').map(Number);
+    const parsed = new Date(year, month - 1, day);
+    if (
+        Number.isNaN(parsed.getTime())
+        || parsed.getFullYear() !== year
+        || parsed.getMonth() !== month - 1
+        || parsed.getDate() !== day
+    ) {
+        return {
+            valid: false,
+            message: 'Expected completion date is invalid.',
+        };
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    parsed.setHours(0, 0, 0, 0);
+    if (parsed < today) {
+        return {
+            valid: false,
+            message: 'Expected completion date cannot be in the past.',
+        };
+    }
+
+    return {
+        valid: true,
+        value: normalized,
+    };
+}
+
+function _promptExpectedCompletionDate(defaultDate = '') {
+    const value = window.prompt('Enter expected completion date (YYYY-MM-DD)', String(defaultDate || '').trim());
+    if (value === null) {
+        return null;
+    }
+
+    const validation = _validateExpectedCompletionDate(value);
+    if (!validation.valid) {
+        showToast(validation.message, 'warning');
+        return null;
+    }
+
+    return validation.value;
+}
+
+async function _prepareRequestPartsModalRows() {
+    const sparePartsContainer = document.getElementById('sparePartsContainer');
+    if (!sparePartsContainer) {
+        return;
+    }
+
+    try {
+        const productsRes = await API.get('/products');
+        const products = (productsRes.status === 'success' && Array.isArray(productsRes.data?.products))
+            ? productsRes.data.products
+            : [];
+
+        _cachedSparePartOptionsHtml = products.length > 0
+            ? products.map(p => `<option value="${p.sparepart_id}">${p.name} - ${p.sparepart_id}</option>`).join('')
+            : '';
+    } catch (err) {
+        console.error('Could not load spare parts list from API:', err);
+        _cachedSparePartOptionsHtml = '';
+    }
+
+    sparePartsContainer.innerHTML = _buildSparePartRow(false);
+    _attachAvailabilityListeners(sparePartsContainer);
+}
+
+function _resetRequestPartsModalCheckbox() {
+    const noPartsCheckbox = document.getElementById('noSparePartsNeeded');
+    if (noPartsCheckbox) {
+        noPartsCheckbox.checked = false;
+    }
+    toggleSparePartsSection(false);
+    _updateRequestPartsSubmitButtonLabel();
+}
 
 // Request spare parts for a ticket — opens the requestPartsModal and pre-populates it.
 async function requestSparePartsForTicket(ticketId) {
@@ -818,6 +1059,8 @@ async function requestSparePartsForTicket(ticketId) {
     const originalIssueTextarea   = document.getElementById('originalIssueTextarea');
     const prioritySelect          = document.getElementById('prioritySelect');
 
+    _setRequestPartsModalContext('fault_ticket');
+
     if (requestingTicketIdField) requestingTicketIdField.value = ticketId;
 
     if (ticket) {
@@ -832,40 +1075,73 @@ async function requestSparePartsForTicket(ticketId) {
         }
         if (locationInput)           locationInput.value           = ticket.location || '';
         if (reportedByInput)         reportedByInput.value         = ticket.reported_by_name || ticket.reporter_full_name || 'Unknown';
-        if (reportedDateInput)       reportedDateInput.value       = ticket.created_at
-            ? new Date(ticket.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-            : '';
+        if (reportedDateInput)       reportedDateInput.value       = _formatRequestDate(ticket.created_at);
         if (originalIssueTextarea)   originalIssueTextarea.value   = ticket.description || '';
         if (prioritySelect)          prioritySelect.value          = (ticket.priority || '').toLowerCase();
     }
 
-    // --- Reset 'No spare parts' checkbox ---
-    const noPartsCheckbox = document.getElementById('noSparePartsNeeded');
-    if (noPartsCheckbox) {
-        noPartsCheckbox.checked = false;
-        toggleSparePartsSection(false);
+    _resetRequestPartsModalCheckbox();
+    await _prepareRequestPartsModalRows();
+
+    openModal('requestPartsModal');
+}
+
+async function requestSparePartsForServiceTicket(ticketData) {
+    const ticketId = Number(ticketData?.id || 0);
+    if (!Number.isFinite(ticketId) || ticketId <= 0) {
+        showToast('Invalid service ticket ID.', 'error');
+        return;
     }
 
-    // --- Load spare parts from API and build a single blank row ---
-    const sparePartsContainer = document.getElementById('sparePartsContainer');
-    if (sparePartsContainer) {
-        try {
-            const productsRes = await API.get('/products');
-            const products = (productsRes.status === 'success' && Array.isArray(productsRes.data?.products))
-                ? productsRes.data.products
-                : [];
+    const requestingTicketIdField = document.getElementById('requestingTicketId');
+    const relatedTicketIdField = document.getElementById('relatedTicketId');
+    const equipmentInput = document.getElementById('equipmentInput');
+    const locationInput = document.getElementById('locationInput');
+    const reportedByInput = document.getElementById('reportedByInput');
+    const reportedDateInput = document.getElementById('reportedDateInput');
+    const originalIssueTextarea = document.getElementById('originalIssueTextarea');
+    const prioritySelect = document.getElementById('prioritySelect');
 
-            _cachedSparePartOptionsHtml = products.length > 0
-                ? products.map(p => `<option value="${p.sparepart_id}">${p.name} — ${p.sparepart_id}</option>`).join('')
-                : '';
-        } catch (err) {
-            console.error('Could not load spare parts list from API:', err);
-            _cachedSparePartOptionsHtml = '';
-        }
+    _setRequestPartsModalContext('service_ticket');
 
-        sparePartsContainer.innerHTML = _buildSparePartRow(false);
-        _attachAvailabilityListeners(sparePartsContainer);
+    if (requestingTicketIdField) {
+        requestingTicketIdField.value = String(ticketId);
     }
+
+    const serviceTicketLabel = ticketData?.service_ticket_id || ticketData?.ticket_id || `SVT-${ticketId}`;
+    if (relatedTicketIdField) {
+        relatedTicketIdField.value = serviceTicketLabel;
+    }
+
+    if (equipmentInput) {
+        const assetLabel = ticketData?.asset_name || ticketData?.asset_code || 'N/A';
+        equipmentInput.value = assetLabel;
+        equipmentInput.readOnly = true;
+        equipmentInput.style.backgroundColor = '#f0f0f0';
+    }
+
+    if (locationInput) {
+        locationInput.value = ticketData?.location || ticketData?.asset_location || '';
+    }
+
+    if (reportedByInput) {
+        reportedByInput.value = ticketData?.reported_by_name || ticketData?.reported_by || currentUser?.full_name || 'Technical Officer';
+    }
+
+    if (reportedDateInput) {
+        reportedDateInput.value = _formatRequestDate(ticketData?.created_at);
+    }
+
+    if (originalIssueTextarea) {
+        originalIssueTextarea.value = ticketData?.description || '';
+    }
+
+    if (prioritySelect) {
+        prioritySelect.value = String(ticketData?.priority || '').toLowerCase();
+    }
+
+    _resetRequestPartsModalCheckbox();
+    await _prepareRequestPartsModalRows();
 
     openModal('requestPartsModal');
 }
@@ -1007,6 +1283,8 @@ function toggleSparePartsSection(isChecked) {
     section.querySelectorAll('select, input').forEach(el => {
         el.required = !isChecked;
     });
+
+    _updateRequestPartsSubmitButtonLabel();
 }
 
 
@@ -1464,9 +1742,17 @@ function initializeForms() {
     document.getElementById('requestPartsForm').addEventListener('submit', async function (e) {
         e.preventDefault();
 
-        // Get the ticket ID that triggered this request
-        const ticketId = document.getElementById('requestingTicketId').value;
+        // Get the ticket ID/context that triggered this request
+        const ticketIdRaw = document.getElementById('requestingTicketId').value;
+        const ticketContext = document.getElementById('requestingTicketContext')?.value || 'fault_ticket';
+        const isServiceTicketContext = ticketContext === 'service_ticket';
         const noSparePartsNeeded = document.getElementById('noSparePartsNeeded')?.checked || false;
+        const ticketId = Number(ticketIdRaw);
+
+        if (ticketIdRaw && (!Number.isFinite(ticketId) || ticketId <= 0)) {
+            showToast('Invalid ticket ID for spare part request.', 'error');
+            return;
+        }
 
         // Capture the selected spare parts and store them for later use in update work modal
         const sparePartItems = [];
@@ -1485,12 +1771,12 @@ function initializeForms() {
                 }
             });
             // Also store for local update work modal usage
-            if (sparePartItems.length > 0) {
+            if (sparePartItems.length > 0 && !isServiceTicketContext) {
                 requestedPartsMap[ticketId] = sparePartItems.map(p => p.part_name);
             }
         }
 
-        if (ticketId) {
+        if (ticketIdRaw) {
             try {
                 if (!noSparePartsNeeded) {
                     // Spare parts requested path
@@ -1530,14 +1816,13 @@ function initializeForms() {
                     }
 
                     const ticket = allTickets.find(t => t.id == ticketId);
-                    const ticketIdFormatted = ticket ? getDisplayTicketId(ticket) : '';
+                    const ticketIdFormatted = document.getElementById('relatedTicketId')?.value || (ticket ? getDisplayTicketId(ticket) : '');
                     const equipmentName = document.getElementById('equipmentInput')?.value || '';
                     const locationVal = document.getElementById('locationInput')?.value || '';
                     const priorityVal = document.getElementById('prioritySelect')?.value || 'Medium';
                     const additionalNotes = document.getElementById('additionalNotesTextarea')?.value || '';
 
                     const requestPayload = {
-                        fault_ticket_id: parseInt(ticketId),
                         ticket_id_formatted: ticketIdFormatted,
                         equipment_name: equipmentName,
                         location: locationVal,
@@ -1546,43 +1831,92 @@ function initializeForms() {
                         items: sparePartItems
                     };
 
+                    if (isServiceTicketContext) {
+                        requestPayload.service_ticket_id = ticketId;
+                    } else {
+                        requestPayload.fault_ticket_id = ticketId;
+                    }
+
                     const spareResponse = await API.post('/spare-part-requests', requestPayload);
                     if (spareResponse.status !== 'success') {
                         showToast(spareResponse.message || 'Failed to submit spare parts request.', 'error');
                         return;
                     }
 
-                    // Backend's syncTicketStatus() already set the ticket to
-                    // "Waiting for Spare Parts" — update local state directly,
-                    // no duplicate PUT needed.
-                    const ticketIndex = allTickets.findIndex(t => t.id == ticketId);
-                    if (ticketIndex !== -1) {
-                        allTickets[ticketIndex].status = 'Waiting for Spare Parts';
-                    }
+                    if (isServiceTicketContext) {
+                        showToast('Service ticket spare parts request submitted to Inventory Manager. Waiting for approval.', 'success');
 
-                    renderTickets(allTickets);
-                    updateDashboardCounts(allTickets);
-                    showToast('Spare parts request submitted to Inventory Manager. Waiting for approval.', 'success');
-                    refreshTOSpareParts();
+                        const serviceTicketDetailView = document.querySelector('#service-ticket-details to-service-ticket-detail-view');
+                        if (serviceTicketDetailView && typeof serviceTicketDetailView.refresh === 'function') {
+                            serviceTicketDetailView.refresh();
+                        }
 
-                } else {
-                    // No spare parts needed → PUT to move ticket directly to In Progress
-                    const response = await API.put(`/fault-tickets/${ticketId}`, {
-                        status: 'In Progress'
-                    });
-
-                    if (response.status === 'success') {
+                        const serviceTicketsComponent = document.querySelector('to-service-tickets');
+                        if (serviceTicketsComponent && typeof serviceTicketsComponent.refresh === 'function') {
+                            serviceTicketsComponent.refresh();
+                        }
+                    } else {
+                        // Backend's syncTicketStatus() already set the ticket to
+                        // "Waiting for Spare Parts" - update local state directly,
+                        // no duplicate PUT needed.
                         const ticketIndex = allTickets.findIndex(t => t.id == ticketId);
                         if (ticketIndex !== -1) {
-                            allTickets[ticketIndex].status = 'In Progress';
+                            allTickets[ticketIndex].status = 'Waiting for Spare Parts';
                         }
 
                         renderTickets(allTickets);
                         updateDashboardCounts(allTickets);
-                        showToast('No spare parts needed. Work started! Status changed to In Progress.', 'success');
+                        showToast('Spare parts request submitted to Inventory Manager. Waiting for approval.', 'success');
+                    }
+
+                    refreshTOSpareParts();
+
+                } else {
+                    if (isServiceTicketContext) {
+                        // No spare parts needed for service ticket -> start service operation.
+                        const expectedCompletionDate = _promptExpectedCompletionDate();
+                        if (!expectedCompletionDate) {
+                            return;
+                        }
+
+                        const response = await API.post(`/service-tickets/${ticketId}/start`, {
+                            expected_completion_date: expectedCompletionDate,
+                        });
+                        if (response.status === 'success') {
+                            const serviceTicketDetailView = document.querySelector('#service-ticket-details to-service-ticket-detail-view');
+                            if (serviceTicketDetailView && typeof serviceTicketDetailView.refresh === 'function') {
+                                serviceTicketDetailView.refresh();
+                            }
+
+                            const serviceTicketsComponent = document.querySelector('to-service-tickets');
+                            if (serviceTicketsComponent && typeof serviceTicketsComponent.refresh === 'function') {
+                                serviceTicketsComponent.refresh();
+                            }
+
+                            showToast(`No spare parts needed. Service operation started with expected completion date ${expectedCompletionDate}.`, 'success');
+                        } else {
+                            showToast(response.message || 'Failed to start service operation. Please try again.', 'error');
+                            return;
+                        }
                     } else {
-                        showToast(response.message || 'Status update failed. Please try again.', 'error');
-                        return;
+                        // No spare parts needed -> PUT to move fault ticket directly to In Progress.
+                        const response = await API.put(`/fault-tickets/${ticketId}`, {
+                            status: 'In Progress'
+                        });
+
+                        if (response.status === 'success') {
+                            const ticketIndex = allTickets.findIndex(t => t.id == ticketId);
+                            if (ticketIndex !== -1) {
+                                allTickets[ticketIndex].status = 'In Progress';
+                            }
+
+                            renderTickets(allTickets);
+                            updateDashboardCounts(allTickets);
+                            showToast('No spare parts needed. Work started! Status changed to In Progress.', 'success');
+                        } else {
+                            showToast(response.message || 'Status update failed. Please try again.', 'error');
+                            return;
+                        }
                     }
                 }
             } catch (error) {
@@ -1599,6 +1933,8 @@ function initializeForms() {
         // Reset form and unlock fields for next use
         this.reset();
         document.getElementById('requestingTicketId').value = '';
+        const requestContextField = document.getElementById('requestingTicketContext');
+        if (requestContextField) requestContextField.value = 'fault_ticket';
         const noPartsCheckbox = document.getElementById('noSparePartsNeeded');
         if (noPartsCheckbox) {
             noPartsCheckbox.checked = false;
@@ -1620,6 +1956,8 @@ function initializeForms() {
         if (originalIssueTextarea) originalIssueTextarea.value = '';
         const additionalNotesTextarea = document.getElementById('additionalNotesTextarea');
         if (additionalNotesTextarea) additionalNotesTextarea.value = '';
+
+        _setRequestPartsModalContext('fault_ticket');
     });
 
 }
@@ -1684,11 +2022,11 @@ function toggleSidebar() {
 
         bindTOInventory();
         bindTONotifications();
-        bindTOFeedback();
         bindTOTickets();
         bindTOTicketDetails();
+        bindTOServiceTicketDetails();
         bindTOSpareParts();
-        bindTOServiceWarranty();
+        bindTOServiceTickets();
         bindTOAnalyticsHub();
 
         // Load tickets and inventory after user data is loaded
@@ -1714,11 +2052,11 @@ document.addEventListener('DOMContentLoaded', function () {
     bindCreateFaultTicket();
     bindTOTickets();
     bindTOTicketDetails();
+    bindTOServiceTicketDetails();
     bindTOInventory();
     bindTONotifications();
-    bindTOFeedback();
     bindTOSpareParts();
-    bindTOServiceWarranty();
+    bindTOServiceTickets();
     bindTOAnalyticsHub();
 
     // Set today's date as default for date inputs

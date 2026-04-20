@@ -1,0 +1,21 @@
+{
+  "stage": "before",
+  "viewport": "desktop",
+  "url": "http://127.0.0.1:3000/profile/index.html",
+  "title": "User Profile - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - button \"Back to Dashboard\"\n  - heading \"My Profile\" [level=2]\n  - paragraph: View and manage your account information\n  - navigation \"Breadcrumb\":\n    - link \"Dashboard\":\n      - /url: /dashboard/inventory-manager/index.html\n    - text: My Profile\n  - text: I\n  - heading \"Inventory Manager One\" [level=2]\n  - paragraph: Inventory Manager\n  - paragraph: \"Employee ID: LITRO-INVENTORY-001\"\n  - text: Active\n  - button \"Personal Information\"\n  - button \"Security\"\n  - button \"Activity Log\"\n  - text: Personal Details\n  - button \"Edit Profile\"\n  - text: Full Name Inventory Manager One Employee ID LITRO-INVENTORY-001 Email Address inventory.manager@assetcare.local Phone Number +94 71 123 4567 Role Inventory Manager Joined Date Jan 15, 2025",
+    "snapshotLength": 751
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "totalBackButtons": 1,
+    "headerBackButtons": 0,
+    "contentBackButtons": 1,
+    "userInfoVisible": false,
+    "breadcrumbVisible": true,
+    "currentBreadcrumbText": "",
+    "activityItems": 0
+  }
+}

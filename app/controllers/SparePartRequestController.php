@@ -48,6 +48,9 @@ class SparePartRequestController {
             if (isset($_GET['fault_ticket_id'])) {
                 $filters['fault_ticket_id'] = $_GET['fault_ticket_id'];
             }
+            if (isset($_GET['service_ticket_id'])) {
+                $filters['service_ticket_id'] = $_GET['service_ticket_id'];
+            }
 
             $result = $this->service->getAll($filters);
             return Response::json($result);
@@ -99,6 +102,25 @@ class SparePartRequestController {
     }
 
     /**
+     * GET /spare-part-requests/service-ticket/:id
+     * Get requests for a specific service ticket
+     */
+    public function getByServiceTicket() {
+        try {
+            $ticketId = $_GET['id'] ?? null;
+            if (!$ticketId) {
+                return Response::json(['status' => 'error', 'message' => 'Service ticket ID is required'], 400);
+            }
+
+            $result = $this->service->getByServiceTicket($ticketId);
+            return Response::json($result);
+        } catch (Exception $e) {
+            error_log("Error in SparePartRequestController::getByServiceTicket: " . $e->getMessage());
+            return Response::json(['status' => 'error', 'message' => 'Failed to fetch service ticket requests'], 500);
+        }
+    }
+
+    /**
      * GET /spare-part-requests/stats
      * Get request counts by status
      */
@@ -139,6 +161,7 @@ class SparePartRequestController {
                         'request_db_id' => (int) ($result['data']['id'] ?? 0),
                         'request_id' => $result['data']['request_id'] ?? null,
                         'fault_ticket_id' => (int) ($data['fault_ticket_id'] ?? 0),
+                        'service_ticket_id' => (int) ($data['service_ticket_id'] ?? 0),
                         'requested_by' => (int) ($data['requested_by'] ?? 0),
                     ],
                     [

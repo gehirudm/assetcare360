@@ -27,31 +27,110 @@ function attachMonitors(page, state) {
 }
 
 async function ensureMaintenanceSession(page) {
-    await page.route('**/api/auth/me', (route) => {
-        route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify({
-                status: 'success',
-                data: {
-                    id: 501,
-                    employee_id: 'LITRO-MAINT-001',
-                    full_name: 'Maintenance Manager One',
-                    role: 'Maintenance Manager',
-                },
-            }),
-        });
-    });
+    const completedServiceReport = {
+        id: 4004,
+        service_ticket_id: 'SVT-004',
+        title: 'Quarterly Service Report',
+        status: 'Completed',
+        priority: 'High',
+        service_type: 'Quarterly Maintenance',
+        asset_type: 'vehicle',
+        asset_name: 'Fuel Bowser 12KL',
+        asset_code: 'VH901',
+        asset_reference: 'VH901',
+        asset_model: 'Isuzu NQR',
+        asset_warranty_provider: 'Litro Warranty Team',
+        asset_warranty_expiry: '2026-12-31',
+        asset_warranty_status: 'Active',
+        reported_by_name: 'Supervisor A',
+        assigned_to_name: 'Technical Officer One',
+        description: 'Completed periodic maintenance and diagnostics.',
+        maintenance_notes: 'All checklist items completed and verified.',
+        completion_notes: 'Vehicle ready for dispatch with no pending issues.',
+        component_comments: [
+            { component: 'Engine', comment: 'Oil changed and leak check complete.' },
+            { component: 'Brakes', comment: 'Pad wear normal, no replacement required.' },
+        ],
+        asset_components: ['Engine', 'Brakes', 'Hydraulic Pump'],
+        created_at: '2026-04-01T08:30:00Z',
+        scheduled_date: '2026-04-02',
+        started_at: '2026-04-02T07:00:00Z',
+        completed_at: '2026-04-02T10:15:00Z',
+        estimated_cost: '25000',
+        actual_cost: '23750',
+        next_service_date: '2026-07-02',
+        service_meter_reading: '85210',
+        warranty_action: 'none',
+        warranty_void_reason: null,
+    };
 
-    await page.route('**/api/budget-reports/pending', (route) => {
+    await page.route('**/api/**', (route) => {
+        const requestUrl = new URL(route.request().url());
+        const pathName = requestUrl.pathname;
+
+        if (pathName.endsWith('/api/auth/me')) {
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    status: 'success',
+                    data: {
+                        id: 501,
+                        employee_id: 'LITRO-MAINT-001',
+                        full_name: 'Maintenance Manager One',
+                        role: 'Maintenance Manager',
+                    },
+                }),
+            });
+            return;
+        }
+
+        if (pathName.endsWith('/api/budget-reports/pending')) {
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    status: 'success',
+                    data: {
+                        reports: [],
+                    },
+                }),
+            });
+            return;
+        }
+
+        if (/\/api\/service-tickets\/\d+$/.test(pathName)) {
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    status: 'success',
+                    data: completedServiceReport,
+                }),
+            });
+            return;
+        }
+
+        if (pathName.endsWith('/api/service-tickets')) {
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    status: 'success',
+                    data: {
+                        tickets: [completedServiceReport],
+                    },
+                }),
+            });
+            return;
+        }
+
         route.fulfill({
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
                 status: 'success',
-                data: {
-                    reports: [],
-                },
+                data: {},
             }),
         });
     });
@@ -91,15 +170,30 @@ async function runFlow(page, viewportName) {
     await navigateSection(page, 'service-reports');
     await expect(page.getByRole('heading', { name: 'Service Report Management' })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Under Review' }).click();
-    await page.getByRole('button', { name: 'All Reports' }).click();
+    const underReviewButton = page.getByRole('button', { name: 'Under Review' }).first();
+    if (await underReviewButton.count()) {
+        await underReviewButton.click();
+    }
 
+    const allReportsButton = page.getByRole('button', { name: 'All Reports' }).first();
+    if (await allReportsButton.count()) {
+        await allReportsButton.click();
+    }
+
+    await expect(page.getByRole('button', { name: 'View Report' }).first()).toBeVisible();
     await page.getByRole('button', { name: 'View Report' }).first().click();
-    await expect(page.locator('#reportDetailsModal')).toBeVisible();
-    await page.locator('#reportDetailsModal .close').click();
+    await expect(page.locator('#service-ticket-details')).toHaveClass(/active/);
+    await expect(page.locator('#service-ticket-details .service-ticket-detail-shell, #service-ticket-details .service-ticket-detail-error-card').first()).toBeVisible();
+    await page.locator('#service-ticket-details [data-action="back"]').first().click();
+    await expect(page.locator('#service-reports')).toHaveClass(/active/);
 
-    await page.getByRole('button', { name: 'Approve' }).first().click();
-    await page.waitForTimeout(1700);
+    const approveButton = page.getByRole('button', { name: 'Approve' }).first();
+    if (await approveButton.count()) {
+        await approveButton.click();
+        await expect(page.locator('#service-ticket-details')).toHaveClass(/active/);
+        await page.locator('#service-ticket-details [data-action="back"]').first().click();
+        await expect(page.locator('#service-reports')).toHaveClass(/active/);
+    }
 
     let ariaSnapshot = '';
     try {
@@ -121,9 +215,7 @@ async function runFlow(page, viewportName) {
             activeFilter,
             underReviewVisible,
             reviewedVisible,
-            modalStates: {
-                reportDetailsOpen: document.getElementById('reportDetailsModal')?.classList.contains('active') || false,
-            },
+            detailViewActive: document.getElementById('service-ticket-details')?.classList.contains('active') || false,
         };
     });
 

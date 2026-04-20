@@ -5,72 +5,52 @@ class MaintenanceServiceWarranty extends HTMLElement {
         }
 
         this._mounted = true;
-        this.currentFilter = 'all';
-        this.currentQuery = '';
-        this.serviceScheduleData = [];
+        this.filterStatus = 'all';
+        this.searchTerm = '';
         this.loading = false;
+        this.rows = [];
 
         this.render();
         this.bindEvents();
-        this.bindCrossComponentEvents();
-        this.loadServiceScheduleData();
-    }
-
-    disconnectedCallback() {
-        if (this._boundAddRecordHandler) {
-            document.removeEventListener('maintenance-service:add-record', this._boundAddRecordHandler);
-        }
+        this.refresh();
     }
 
     render() {
         this.innerHTML = `
             <div class="page-header">
-                <h1 class="page-title">Service & Warranty Monitoring</h1>
-                <p class="page-subtitle">Track vehicle and machine service schedules using live inventory details</p>
+                <h1 class="page-title">Warranty Management</h1>
+                <p class="page-subtitle">Track warranty health and control void/restore status for vehicles and machines</p>
+            </div>
+
+            <div class="filter-toolbar" style="margin-bottom: 20px;">
+                <div class="filter-toolbar__group">
+                    <label class="filter-toolbar__label">Warranty Status</label>
+                    <div class="filter-controls filter-toolbar__filters" id="serviceWarrantyFilterControls">
+                        <button class="filter-btn active" type="button" data-action="set-filter" data-status="all">All</button>
+                        <button class="filter-btn" type="button" data-action="set-filter" data-status="active">Active</button>
+                        <button class="filter-btn" type="button" data-action="set-filter" data-status="expired">Expired</button>
+                        <button class="filter-btn" type="button" data-action="set-filter" data-status="voided">Voided</button>
+                    </div>
+                </div>
             </div>
 
             <div class="search-bar" style="margin-bottom: 20px;">
-                <input type="text" id="serviceWarrantySearch" class="search-input" placeholder="Search assets, model, or registration/location" data-action="search-assets">
-                <button class="btn btn-primary" type="button" data-action="open-add-service">
-                    <i class="fas fa-plus"></i> Add Service Record
-                </button>
-                <button class="btn btn-secondary" type="button" data-action="refresh-data">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                </button>
+                <input class="search-input" id="warrantySearchInput" data-action="search" placeholder="Search by asset ID, name, type, or provider">
             </div>
 
             <div class="card">
                 <div class="card-header">
-                    <span><i class="fas fa-shield-alt"></i> Warranty and Service Status</span>
-                    <span id="serviceWarrantyCount" class="status-badge status-scheduled">Loading...</span>
+                    <span><i class="fas fa-shield-alt"></i> Warranty Assets</span>
+                    <span class="status-badge status-scheduled" id="warrantyVisibleCount">Loading...</span>
                 </div>
-                <div class="filter-controls" id="serviceWarrantyFilterControls">
-                    <button class="filter-btn active" type="button" data-action="set-filter" data-status="all">All</button>
-                    <button class="filter-btn" type="button" data-action="set-filter" data-status="active">Active</button>
-                    <button class="filter-btn" type="button" data-action="set-filter" data-status="expiring">Expiring Soon</button>
-                    <button class="filter-btn" type="button" data-action="set-filter" data-status="expired">Expired</button>
-                </div>
-
-                <div id="service-schedule-list" class="inventory-list">
-                    <div style="text-align: center; color: var(--muted); padding: 20px;">Loading service schedule details...</div>
+                <div id="warrantyAssetList" class="inventory-list">
+                    <div style="text-align:center;padding:20px;color:var(--muted);">Loading warranty assets...</div>
                 </div>
             </div>
         `;
     }
 
     bindEvents() {
-        this.addEventListener('input', (event) => {
-            const actionNode = event.target.closest('[data-action]');
-            if (!actionNode) {
-                return;
-            }
-
-            if (actionNode.dataset.action === 'search-assets') {
-                this.currentQuery = String(actionNode.value || '').trim().toLowerCase();
-                this.applyFilter(this.currentFilter);
-            }
-        });
-
         this.addEventListener('click', (event) => {
             const actionNode = event.target.closest('[data-action]');
             if (!actionNode) {
@@ -79,326 +59,145 @@ class MaintenanceServiceWarranty extends HTMLElement {
 
             const action = actionNode.dataset.action;
             if (action === 'set-filter') {
-                this.applyFilter(actionNode.dataset.status, actionNode);
+                const status = String(actionNode.dataset.status || 'all').toLowerCase();
+                this.applyFilter(status, actionNode);
                 return;
             }
 
-            if (action === 'open-add-service') {
-                this.openAddServiceModal();
+            if (action === 'open-warranty-modal') {
+                const assetType = actionNode.dataset.assetType;
+                const assetId = Number(actionNode.dataset.assetId || 0);
+                if (assetType && assetId > 0) {
+                    this.viewWarrantyDetails({
+                        asset_type: assetType,
+                        asset_id: assetId,
+                    });
+                }
+            }
+        });
+
+        this.addEventListener('input', (event) => {
+            const searchNode = event.target.closest('[data-action="search"]');
+            if (!searchNode) {
                 return;
             }
 
-            if (action === 'refresh-data') {
-                this.loadServiceScheduleData();
-                return;
-            }
-
-            if (action === 'schedule-service') {
-                this.scheduleService(actionNode.dataset.equipmentId);
-                return;
-            }
-
-            if (action === 'view-schedule') {
-                this.viewServiceSchedule(actionNode.dataset.equipmentId);
-            }
+            this.searchTerm = String(searchNode.value || '').trim().toLowerCase();
+            this.renderRows();
         });
     }
 
-    bindCrossComponentEvents() {
-        this._boundAddRecordHandler = (event) => {
-            const record = event.detail?.record;
-            if (!record) {
-                return;
+    normalizeWarrantyStatus(rawStatus, warrantyExpiry) {
+        const status = String(rawStatus || '').trim();
+        if (status === 'Active' || status === 'Expired' || status === 'Voided') {
+            return status;
+        }
+
+        if (warrantyExpiry) {
+            const expiryDate = new Date(warrantyExpiry);
+            if (!Number.isNaN(expiryDate.getTime()) && expiryDate < new Date()) {
+                return 'Expired';
             }
+        }
 
-            this.addServiceRecord(record);
-        };
-
-        document.addEventListener('maintenance-service:add-record', this._boundAddRecordHandler);
+        return 'Active';
     }
 
-    async loadServiceScheduleData() {
+    async refresh() {
         this.loading = true;
-        this.updateSummary();
-        this.renderScheduleRows();
+        this.updateVisibleCounter();
+        this.renderRows();
 
         let errorMessage = '';
 
         try {
             const [vehiclesResponse, machinesResponse] = await Promise.all([
-                API.get('/vehicles?per_page=200'),
-                API.get('/machines?per_page=200'),
+                API.get('/vehicles?per_page=500'),
+                API.get('/machines?per_page=500'),
             ]);
 
-            const vehicles = this.extractDataList(vehiclesResponse, 'vehicles');
-            const machines = this.extractDataList(machinesResponse, 'machines');
-
-            const vehicleSchedules = vehicles.map((vehicle) => this.mapVehicleToSchedule(vehicle));
-            const machineSchedules = machines.map((machine) => this.mapMachineToSchedule(machine));
-
-            // Keep vehicle ordering identical to Inventory Manager vehicle listing order.
-            this.serviceScheduleData = [
-                ...vehicleSchedules,
-                ...machineSchedules,
-            ];
-
-            if (vehiclesResponse.status !== 'success' || machinesResponse.status !== 'success') {
-                this.emitToast('Some inventory details could not be loaded.', 'warning');
-            }
+            const vehicleRows = this.mapVehicleRows(vehiclesResponse);
+            const machineRows = this.mapMachineRows(machinesResponse);
+            this.rows = [...vehicleRows, ...machineRows];
         } catch (error) {
-            console.error('Failed to load service and warranty data:', error);
-            this.serviceScheduleData = [];
-            errorMessage = 'Failed to load service and warranty details.';
-            this.emitToast(errorMessage, 'error');
+            console.error('Failed to load warranty data:', error);
+            this.rows = [];
+            errorMessage = 'Failed to load warranty assets.';
+            this.emitToast('Failed to load warranty assets.', 'error');
         }
 
         this.loading = false;
-        this.updateSummary();
-        this.renderScheduleRows(errorMessage);
-        this.applyFilter(this.currentFilter);
+        this.renderRows(errorMessage);
+        this.updateVisibleCounter();
     }
 
-    extractDataList(response, key) {
-        if (!response || response.status !== 'success' || !response.data || !Array.isArray(response.data[key])) {
+    mapVehicleRows(response) {
+        if (!response || response.status !== 'success' || !response.data) {
             return [];
         }
 
-        return response.data[key];
+        const vehicles = Array.isArray(response.data.vehicles) ? response.data.vehicles : [];
+        return vehicles.map((vehicle) => ({
+            asset_type: 'vehicle',
+            asset_id: Number(vehicle.id),
+            asset_code: vehicle.vehicle_id || 'Vehicle',
+            asset_name: vehicle.vehicle_name || 'Unnamed Vehicle',
+            asset_ref: vehicle.number_plate || '-',
+            warranty_provider: vehicle.warranty_provider || '-',
+            warranty_expiry: vehicle.warranty_expiry || null,
+            warranty_status: this.normalizeWarrantyStatus(vehicle.warranty_status, vehicle.warranty_expiry),
+            warranty_void_reason: vehicle.warranty_void_reason || null,
+            warranty_voided_at: vehicle.warranty_voided_at || null,
+            updated_at: vehicle.updated_at || vehicle.created_at || null,
+        }));
     }
 
-    mapVehicleToSchedule(vehicle) {
-        const vehicleIdentifier = vehicle.vehicle_id || `Vehicle #${vehicle.id}`;
-        const registrationNumber = vehicle.registration_number || vehicle.number_plate || 'N/A';
-        return {
-            id: `vehicle-${vehicle.id}`,
-            assetDbId: String(vehicle.id),
-            equipment: vehicleIdentifier,
-            equipmentType: 'vehicle',
-            equipmentTypeLabel: 'Vehicle',
-            equipmentName: vehicle.vehicle_name || vehicleIdentifier,
-            identifierLabel: 'Registration Number',
-            identifierValue: registrationNumber,
-            modelNumber: vehicle.model_number || 'N/A',
-            inventoryStatus: vehicle.status || 'Unknown',
-            insuranceExpiry: vehicle.warranty_expiry || '',
-            nextServiceDue: vehicle.next_service_date || '',
-            serviceType: vehicle.service_interval_type || 'Vehicle Service',
-            insuranceProvider: vehicle.warranty_provider || 'Not specified',
-            insurancePolicy: 'Not specified',
-            lastService: vehicle.last_service_date || '',
-            serviceInterval: this.describeVehicleInterval(vehicle),
-            technicalOfficer: 'Unassigned',
-            notes: vehicle.notes || 'No additional notes',
-            thresholdType: 'km',
-            currentReading: this.parseNullableNumber(vehicle.current_mileage ?? vehicle.mileage),
-            nextThreshold: this.parseNullableNumber(vehicle.next_service_mileage),
-        };
+    mapMachineRows(response) {
+        if (!response || response.status !== 'success' || !response.data) {
+            return [];
+        }
+
+        const machines = Array.isArray(response.data.machines) ? response.data.machines : [];
+        return machines.map((machine) => ({
+            asset_type: 'machine',
+            asset_id: Number(machine.id),
+            asset_code: machine.machine_id || 'Machine',
+            asset_name: machine.machine_name || 'Unnamed Machine',
+            asset_ref: machine.location || '-',
+            warranty_provider: machine.warranty_provider || '-',
+            warranty_expiry: machine.warranty_expiry || null,
+            warranty_status: this.normalizeWarrantyStatus(machine.warranty_status, machine.warranty_expiry),
+            warranty_void_reason: machine.warranty_void_reason || null,
+            warranty_voided_at: machine.warranty_voided_at || null,
+            updated_at: machine.updated_at || machine.created_at || null,
+        }));
     }
 
-    mapMachineToSchedule(machine) {
-        const machineIdentifier = machine.machine_id || `Machine #${machine.id}`;
-        return {
-            id: `machine-${machine.id}`,
-            assetDbId: String(machine.id),
-            equipment: machineIdentifier,
-            equipmentType: 'machinery',
-            equipmentTypeLabel: 'Machine',
-            equipmentName: machine.machine_name || machineIdentifier,
-            identifierLabel: 'Location',
-            identifierValue: machine.location || 'N/A',
-            modelNumber: machine.model_number || 'N/A',
-            inventoryStatus: machine.status || 'Unknown',
-            insuranceExpiry: machine.warranty_expiry || '',
-            nextServiceDue: machine.next_service_date || '',
-            serviceType: 'Machine Service',
-            insuranceProvider: machine.warranty_provider || 'Not specified',
-            insurancePolicy: 'Not specified',
-            lastService: machine.last_service_date || '',
-            serviceInterval: this.describeMachineInterval(machine),
-            technicalOfficer: 'Unassigned',
-            notes: machine.notes || 'No additional notes',
-            thresholdType: 'hours',
-            currentReading: this.parseNullableNumber(machine.current_operating_hours),
-            nextThreshold: this.parseNullableNumber(machine.next_service_hours),
-        };
+    applyFilter(status, trigger) {
+        this.filterStatus = String(status || 'all').toLowerCase();
+
+        this.querySelectorAll('#serviceWarrantyFilterControls .filter-btn').forEach((button) => {
+            button.classList.toggle('active', button === trigger);
+        });
+
+        this.renderRows();
     }
 
-    describeVehicleInterval(vehicle) {
-        const parts = [];
-        const intervalDays = this.parseNullableNumber(vehicle.service_interval_days);
-        const intervalKm = this.parseNullableNumber(vehicle.service_interval_km);
-
-        if (intervalDays !== null && intervalDays > 0) {
-            parts.push(`${intervalDays.toLocaleString()} days`);
+    statusClass(status) {
+        if (status === 'Voided') {
+            return 'status-closed';
         }
-
-        if (intervalKm !== null && intervalKm > 0) {
-            parts.push(`${intervalKm.toLocaleString()} km`);
+        if (status === 'Expired') {
+            return 'status-pending';
         }
-
-        return parts.length > 0 ? parts.join(' + ') : 'Not configured';
-    }
-
-    describeMachineInterval(machine) {
-        const parts = [];
-        const intervalDays = this.parseNullableNumber(machine.service_interval_days);
-        const intervalHours = this.parseNullableNumber(machine.service_interval_hours);
-
-        if (intervalDays !== null && intervalDays > 0) {
-            parts.push(`${intervalDays.toLocaleString()} days`);
-        }
-
-        if (intervalHours !== null && intervalHours > 0) {
-            parts.push(`${intervalHours.toLocaleString()} hours`);
-        }
-
-        return parts.length > 0 ? parts.join(' + ') : 'Not configured';
-    }
-
-    parseNullableNumber(value) {
-        if (value === null || value === undefined || value === '') {
-            return null;
-        }
-
-        const parsed = Number(value);
-        return Number.isFinite(parsed) ? parsed : null;
-    }
-
-    toDateOrNull(value) {
-        if (!value) {
-            return null;
-        }
-
-        const date = new Date(`${value}T00:00:00`);
-        if (Number.isNaN(date.getTime())) {
-            return null;
-        }
-
-        date.setHours(0, 0, 0, 0);
-        return date;
-    }
-
-    getDateStatus(dueDateString) {
-        const dueDate = this.toDateOrNull(dueDateString);
-        if (!dueDate) {
-            return 'scheduled';
-        }
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const diffTime = dueDate - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays < 0) {
-            return 'overdue';
-        }
-
-        if (diffDays <= 7) {
-            return 'due-soon';
-        }
-
-        return 'scheduled';
-    }
-
-    getWarrantyStatusByDate(expiryDateString) {
-        const expiryDate = this.toDateOrNull(expiryDateString);
-        if (!expiryDate) {
-            return 'active';
-        }
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const diffTime = expiryDate - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays < 0) {
-            return 'expired';
-        }
-
-        if (diffDays <= 30) {
-            return 'expiring';
-        }
-
-        return 'active';
-    }
-
-    mergeServiceStatus(statusA, statusB) {
-        const rank = {
-            scheduled: 0,
-            'due-soon': 1,
-            overdue: 2,
-        };
-
-        return (rank[statusB] || 0) > (rank[statusA] || 0) ? statusB : statusA;
-    }
-
-    getThresholdStatus(item) {
-        const nextThreshold = this.parseNullableNumber(item.nextThreshold);
-        const currentReading = this.parseNullableNumber(item.currentReading);
-
-        if (nextThreshold === null || currentReading === null) {
-            return 'scheduled';
-        }
-
-        const warningBuffer = item.thresholdType === 'hours' ? 10 : 500;
-        const remaining = nextThreshold - currentReading;
-
-        if (remaining < 0) {
-            return 'overdue';
-        }
-
-        if (remaining <= warningBuffer) {
-            return 'due-soon';
-        }
-
-        return 'scheduled';
-    }
-
-    getServiceStatus(item) {
-        const dateStatus = this.getDateStatus(item.nextServiceDue);
-        const thresholdStatus = this.getThresholdStatus(item);
-        return this.mergeServiceStatus(dateStatus, thresholdStatus);
-    }
-
-    getFilterStatus(item) {
-        const serviceStatus = this.getServiceStatus(item);
-        const warrantyStatus = this.getWarrantyStatusByDate(item.insuranceExpiry);
-
-        if (serviceStatus === 'overdue' || warrantyStatus === 'expired') {
-            return 'expired';
-        }
-
-        if (serviceStatus === 'due-soon' || warrantyStatus === 'expiring') {
-            return 'expiring';
-        }
-
-        return 'active';
-    }
-
-    getStatusMeta(item) {
-        const serviceStatus = this.getServiceStatus(item);
-        const warrantyStatus = this.getWarrantyStatusByDate(item.insuranceExpiry);
-
-        if (serviceStatus === 'overdue') {
-            return { className: 'status-overdue', text: 'Service Overdue' };
-        }
-
-        if (warrantyStatus === 'expired') {
-            return { className: 'status-overdue', text: 'Warranty Expired' };
-        }
-
-        if (serviceStatus === 'due-soon') {
-            return { className: 'status-due-soon', text: 'Service Due Soon' };
-        }
-
-        if (warrantyStatus === 'expiring') {
-            return { className: 'status-due-soon', text: 'Warranty Expiring' };
-        }
-
-        return { className: 'status-scheduled', text: 'Scheduled' };
+        return 'status-completed';
     }
 
     formatDate(dateString) {
+        if (!dateString) {
+            return 'N/A';
+        }
+
         const date = new Date(dateString);
         if (Number.isNaN(date.getTime())) {
             return 'N/A';
@@ -411,340 +210,203 @@ class MaintenanceServiceWarranty extends HTMLElement {
         });
     }
 
-    formatThresholdSummary(item) {
-        const nextThreshold = this.parseNullableNumber(item.nextThreshold);
-        const currentReading = this.parseNullableNumber(item.currentReading);
-        if (nextThreshold === null || currentReading === null) {
-            return 'N/A';
-        }
-
-        const unit = item.thresholdType === 'hours' ? 'hours' : 'km';
-        const currentText = currentReading.toLocaleString();
-        const nextText = nextThreshold.toLocaleString();
-        return `${currentText} / ${nextText} ${unit}`;
-    }
-
-    formatServiceDueDetails(item) {
-        const dateText = item.nextServiceDue ? this.formatDate(item.nextServiceDue) : 'N/A';
-        const thresholdText = this.formatThresholdSummary(item);
-        return `
-            <div>${this.escapeHtml(dateText)}</div>
-            <div style="font-size: 12px; color: var(--muted);">Threshold: ${this.escapeHtml(thresholdText)}</div>
-        `;
-    }
-
-    formatCurrentReading(item) {
-        const currentReading = this.parseNullableNumber(item.currentReading);
-        if (currentReading === null) {
-            return 'N/A';
-        }
-
-        const unit = item.thresholdType === 'hours' ? 'hours' : 'km';
-        return `${currentReading.toLocaleString()} ${unit}`;
-    }
-
-    formatInventoryMeta(item) {
-        const inventoryStatus = item.inventoryStatus || 'Unknown';
-        const reading = this.formatCurrentReading(item);
-        return `${inventoryStatus} | ${reading}`;
-    }
-
-    getInventoryStatusClass(status) {
-        const normalized = String(status || '').toLowerCase();
-        if (normalized === 'active') {
-            return 'status-completed';
-        }
-
-        if (normalized === 'under maintenance') {
-            return 'status-in-progress';
-        }
-
-        if (normalized === 'inactive' || normalized === 'decommissioned') {
-            return 'status-closed';
-        }
-
-        if (normalized === 'for auction') {
-            return 'status-pending';
-        }
-
-        return 'status-normal';
-    }
-
-    updateSummary(visibleCount = null) {
-        const summaryChip = this.querySelector('#serviceWarrantyCount');
-        if (!summaryChip) {
-            return;
-        }
-
-        if (this.loading) {
-            summaryChip.textContent = 'Loading...';
-            return;
-        }
-
-        const totalCount = this.serviceScheduleData.length;
-        const hasScopedView = this.currentFilter !== 'all' || this.currentQuery !== '';
-
-        if (hasScopedView && visibleCount !== null) {
-            summaryChip.textContent = `${visibleCount} of ${totalCount} assets`;
-            return;
-        }
-
-        summaryChip.textContent = `${totalCount} assets`;
-    }
-
-    renderScheduleRows(errorMessage = '') {
-        const listContainer = this.querySelector('#service-schedule-list');
-        if (!listContainer) {
+    renderRows(errorMessage = '') {
+        const list = this.querySelector('#warrantyAssetList');
+        if (!list) {
             return;
         }
 
         if (errorMessage) {
-            listContainer.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 20px;">${this.escapeHtml(errorMessage)}</div>`;
+            list.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);">${this.escapeHtml(errorMessage)}</div>`;
+            this.updateVisibleCounter(0);
             return;
         }
 
         if (this.loading) {
-            listContainer.innerHTML = '<div style="text-align: center; color: var(--muted); padding: 20px;">Loading service schedule details...</div>';
+            list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">Loading warranty assets...</div>';
             return;
         }
 
-        if (this.serviceScheduleData.length === 0) {
-            listContainer.innerHTML = '<div style="text-align: center; color: var(--muted); padding: 20px;">No vehicle or machine records found.</div>';
+        const filteredRows = this.rows
+            .filter((row) => {
+                const statusKey = row.warranty_status.toLowerCase();
+                const statusMatch = this.filterStatus === 'all' || statusKey === this.filterStatus;
+
+                const searchBlob = [
+                    row.asset_type,
+                    row.asset_code,
+                    row.asset_name,
+                    row.asset_ref,
+                    row.warranty_provider,
+                    row.warranty_status,
+                    row.warranty_void_reason,
+                ].join(' ').toLowerCase();
+
+                const searchMatch = !this.searchTerm || searchBlob.includes(this.searchTerm);
+                return statusMatch && searchMatch;
+            })
+            .sort((first, second) => {
+                const firstTime = new Date(first.updated_at || first.warranty_expiry || '').getTime();
+                const secondTime = new Date(second.updated_at || second.warranty_expiry || '').getTime();
+                const safeFirst = Number.isFinite(firstTime) ? firstTime : 0;
+                const safeSecond = Number.isFinite(secondTime) ? secondTime : 0;
+                return safeSecond - safeFirst;
+            });
+
+        if (filteredRows.length === 0) {
+            list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">No assets match the current warranty filters.</div>';
+            this.updateVisibleCounter(0);
             return;
         }
 
-        listContainer.innerHTML = this.serviceScheduleData.map((item) => {
-            const filterStatus = this.getFilterStatus(item);
-            const statusMeta = this.getStatusMeta(item);
-            const assetIcon = item.equipmentType === 'vehicle' ? 'fa-truck' : 'fa-cogs';
-            const serviceDateText = item.nextServiceDue ? this.formatDate(item.nextServiceDue) : 'N/A';
-            const warrantyDateText = item.insuranceExpiry ? this.formatDate(item.insuranceExpiry) : 'N/A';
-            const thresholdText = this.formatThresholdSummary(item);
-            const inventoryStatusClass = this.getInventoryStatusClass(item.inventoryStatus);
-            const searchText = [
-                item.equipment,
-                item.equipmentName,
-                item.modelNumber,
-                item.identifierValue,
-                item.inventoryStatus,
-                statusMeta.text,
-            ].join(' ').toLowerCase();
+        list.innerHTML = filteredRows.map((row) => {
+            const statusClass = this.statusClass(row.warranty_status);
+            const displayType = row.asset_type === 'vehicle' ? 'Vehicle' : 'Machine';
 
             return `
-                <div class="inventory-item" data-service-status="${this.getServiceStatus(item)}" data-warranty-status="${filterStatus}" data-filter-status="${filterStatus}" data-search-text="${this.escapeHtml(searchText)}">
+                <div class="inventory-item" data-asset-type="${this.escapeHtml(row.asset_type)}" data-asset-id="${Number(row.asset_id)}">
                     <div class="item-details">
-                        <strong><i class="fas ${assetIcon}"></i> ${this.escapeHtml(item.equipmentName)}</strong>
+                        <strong><i class="fas fa-shield-alt"></i> ${this.escapeHtml(row.asset_code)} - ${this.escapeHtml(row.asset_name)}</strong>
                         <div class="item-meta">
-                            <i class="fas fa-hashtag"></i> ${this.escapeHtml(item.modelNumber)} &nbsp;|&nbsp;
-                            <i class="fas fa-barcode"></i> ${this.escapeHtml(item.equipment)} &nbsp;|&nbsp;
-                            <i class="fas fa-id-card"></i> ${this.escapeHtml(item.identifierValue)}
+                            <i class="fas fa-cubes"></i> ${displayType} &nbsp;|&nbsp;
+                            <i class="fas fa-id-card"></i> ${this.escapeHtml(row.asset_ref)}
                         </div>
-                        <div class="item-description">
-                            <span class="status-text ${inventoryStatusClass}">${this.escapeHtml(item.inventoryStatus || 'Unknown')}</span>
+                        <div class="item-meta">
+                            <i class="fas fa-building"></i> Provider: ${this.escapeHtml(row.warranty_provider)}
                             &nbsp;|&nbsp;
-                            <span class="status-badge ${statusMeta.className}">${statusMeta.text}</span>
+                            <i class="fas fa-calendar-alt"></i> Expiry: ${this.escapeHtml(this.formatDate(row.warranty_expiry))}
                         </div>
-                        <div class="item-meta">
-                            <i class="fas fa-shield-alt"></i> Warranty: ${this.escapeHtml(warrantyDateText)} &nbsp;|&nbsp;
-                            <i class="fas fa-tools"></i> Next Service: ${this.escapeHtml(serviceDateText)}
-                        </div>
-                        <div class="item-meta">
-                            <i class="fas fa-sync-alt"></i> Interval: ${this.escapeHtml(item.serviceInterval)} &nbsp;|&nbsp;
-                            <i class="fas fa-tachometer-alt"></i> Threshold: ${this.escapeHtml(thresholdText)}
-                        </div>
+                        ${row.warranty_void_reason ? `
+                            <div class="item-meta" style="color: var(--danger);">
+                                <i class="fas fa-exclamation-circle"></i>
+                                Void reason: ${this.escapeHtml(row.warranty_void_reason)}
+                            </div>
+                        ` : ''}
                     </div>
                     <div class="item-actions">
-                        <div class="action-buttons">
-                            <button class="btn btn-secondary btn-small" type="button" data-action="view-schedule" data-equipment-id="${item.id}">View</button>
-                            <button class="btn btn-primary btn-small" type="button" data-action="schedule-service" data-equipment-id="${item.id}">Update</button>
-                        </div>
+                        <span class="status-badge ${statusClass}">${this.escapeHtml(row.warranty_status)}</span>
+                        <button class="btn btn-primary btn-small" type="button" data-action="open-warranty-modal" data-asset-type="${this.escapeHtml(row.asset_type)}" data-asset-id="${Number(row.asset_id)}">
+                            <i class="fas fa-edit"></i> Manage
+                        </button>
                     </div>
                 </div>
             `;
         }).join('');
+
+        this.updateVisibleCounter(filteredRows.length);
     }
 
-    setActiveFilterButton(button) {
-        this.querySelectorAll('#serviceWarrantyFilterControls .filter-btn').forEach((item) => {
-            item.classList.remove('active');
-        });
-
-        if (button) {
-            button.classList.add('active');
+    updateVisibleCounter(visibleCount = null) {
+        const node = this.querySelector('#warrantyVisibleCount');
+        if (!node) {
+            return;
         }
+
+        if (this.loading) {
+            node.textContent = 'Loading...';
+            return;
+        }
+
+        const total = this.rows.length;
+        if (visibleCount === null) {
+            node.textContent = `${total} assets`;
+            return;
+        }
+
+        node.textContent = `${visibleCount} of ${total} assets`;
     }
 
-    applyFilter(status, button) {
-        const nextStatus = status || this.currentFilter || 'all';
-        this.currentFilter = nextStatus;
-
-        if (button) {
-            this.setActiveFilterButton(button);
-        } else {
-            const activeButton = this.querySelector(`#serviceWarrantyFilterControls [data-status="${nextStatus}"]`);
-            this.setActiveFilterButton(activeButton);
+    async viewWarrantyDetails(entryOrId) {
+        const normalized = this.resolveEntry(entryOrId);
+        if (!normalized) {
+            this.emitToast('Warranty details are unavailable right now.', 'warning');
+            return;
         }
 
-        let visibleCount = 0;
-        this.querySelectorAll('#service-schedule-list [data-filter-status]').forEach((row) => {
-            const rowFilterStatus = row.dataset.filterStatus;
-            const searchText = row.dataset.searchText || '';
+        const modal = document.querySelector('maintenance-warranty-details-modal');
+        if (modal && typeof modal.open === 'function') {
+            modal.open(normalized);
+            return;
+        }
 
-            const matchesStatus = rowFilterStatus && (nextStatus === 'all' || rowFilterStatus === nextStatus);
-            const matchesSearch = !this.currentQuery || searchText.includes(this.currentQuery);
-            const isVisible = matchesStatus && matchesSearch;
+        this.emitToast('Warranty details modal is unavailable right now.', 'warning');
+    }
 
-            row.style.display = isVisible ? 'flex' : 'none';
-            if (isVisible) {
-                visibleCount += 1;
+    resolveEntry(entryOrId) {
+        if (entryOrId && typeof entryOrId === 'object') {
+            const assetType = String(entryOrId.asset_type || '').toLowerCase();
+            const assetId = Number(entryOrId.asset_id || 0);
+            if (!assetType || assetId <= 0) {
+                return null;
             }
-        });
-
-        this.updateSummary(visibleCount);
-    }
-
-    getServiceScheduleById(equipmentId) {
-        return this.serviceScheduleData.find((item) => item.id === String(equipmentId || '')) || null;
-    }
-
-    viewServiceSchedule(equipmentId) {
-        const schedule = this.getServiceScheduleById(equipmentId);
-        if (!schedule) {
-            this.emitToast(`Service schedule ${equipmentId} not found.`, 'warning');
-            return;
+            return this.rows.find((row) => row.asset_type === assetType && Number(row.asset_id) === assetId) || null;
         }
 
-        const modal = document.querySelector('maintenance-service-schedule-modal');
-        if (!modal || typeof modal.open !== 'function') {
-            this.emitToast('Service schedule modal is unavailable.', 'error');
-            return;
-        }
-
-        modal.open({
-            equipment: `${schedule.equipment} (${schedule.equipmentTypeLabel})`,
-            insuranceProvider: schedule.insuranceProvider,
-            insurancePolicy: schedule.insurancePolicy,
-            insuranceExpiry: this.formatDate(schedule.insuranceExpiry),
-            lastService: this.formatDate(schedule.lastService),
-            nextServiceDue: this.formatDate(schedule.nextServiceDue),
-            serviceType: schedule.serviceType,
-            serviceInterval: schedule.serviceInterval,
-            technicalOfficer: schedule.technicalOfficer,
-            notes: `${schedule.notes}\n${schedule.identifierLabel}: ${schedule.identifierValue}\nModel: ${schedule.modelNumber}`,
-        });
-    }
-
-    openAddServiceModal(prefill = {}) {
-        const modal = document.querySelector('maintenance-add-service-record-modal');
-        if (!modal || typeof modal.open !== 'function') {
-            this.emitToast('Add service modal is unavailable.', 'error');
-            return;
-        }
-
-        modal.open(prefill);
-    }
-
-    scheduleService(equipmentId) {
-        const schedule = this.getServiceScheduleById(equipmentId);
-        if (!schedule) {
-            this.emitToast(`Unable to schedule service for ${equipmentId}.`, 'warning');
-            return;
-        }
-
-        this.openAddServiceModal({
-            assetDbId: schedule.assetDbId,
-            equipmentId: schedule.equipment,
-            equipmentType: schedule.equipmentType,
-            insuranceExpiry: schedule.insuranceExpiry,
-            nextServiceDue: schedule.nextServiceDue,
-            serviceType: schedule.serviceType,
-            notes: schedule.notes,
-        });
-    }
-
-    normalizeEquipmentLabel(value) {
-        const input = String(value || '').trim();
-        if (!input) {
-            return '';
-        }
-
-        const vehicleMatch = input.match(/^VH(\d+)$/i);
-        if (vehicleMatch) {
-            return `Vehicle #${vehicleMatch[1]}`;
-        }
-
-        const machineMatch = input.match(/^MC(\d+)$/i);
-        if (machineMatch) {
-            return `Machine #${machineMatch[1]}`;
-        }
-
-        return input;
-    }
-
-    resolveScheduleFromRecord(record) {
-        const targetType = record.equipmentType === 'vehicle' ? 'vehicle' : 'machinery';
-
-        if (record.assetDbId) {
-            return this.serviceScheduleData.find((item) => {
-                return item.assetDbId === String(record.assetDbId) && item.equipmentType === targetType;
-            }) || null;
-        }
-
-        const normalizedEquipment = this.normalizeEquipmentLabel(record.equipment || '');
-        if (!normalizedEquipment) {
+        const token = String(entryOrId || '').trim();
+        if (!token) {
             return null;
         }
 
-        const compact = normalizedEquipment.replace(/\s+/g, '').toLowerCase();
-        return this.serviceScheduleData.find((item) => {
-            if (item.equipmentType !== targetType) {
-                return false;
-            }
-
-            return item.equipment.replace(/\s+/g, '').toLowerCase() === compact;
+        return this.rows.find((row) => {
+            return String(row.asset_id) === token || `${row.asset_type}:${row.asset_id}` === token || row.asset_code === token;
         }) || null;
     }
 
-    async addServiceRecord(record) {
-        const schedule = this.resolveScheduleFromRecord(record || {});
-        if (!schedule) {
-            this.emitToast('Please choose an existing vehicle or machine to update.', 'warning');
-            return;
+    async updateWarrantyStatus(payload) {
+        const assetType = String(payload?.assetType || '').toLowerCase();
+        const assetId = Number(payload?.assetId || 0);
+        const status = String(payload?.status || '').trim();
+        const reason = String(payload?.reason || '').trim();
+
+        if (!assetType || assetId <= 0) {
+            this.emitToast('Invalid warranty target selected.', 'error');
+            return false;
         }
 
-        const payload = {};
-        if (record.insuranceExpiry) {
-            payload.warranty_expiry = record.insuranceExpiry;
-        }
-        if (record.nextServiceDue) {
-            payload.next_service_date = record.nextServiceDue;
-        }
-        if (record.notes) {
-            payload.notes = record.notes;
+        if (!['Active', 'Expired', 'Voided'].includes(status)) {
+            this.emitToast('Warranty status must be Active, Expired, or Voided.', 'warning');
+            return false;
         }
 
-        if (Object.keys(payload).length === 0) {
-            this.emitToast('No service fields were provided for update.', 'warning');
-            return;
+        if (status === 'Voided' && !reason) {
+            this.emitToast('Reason is required when voiding warranty.', 'warning');
+            return false;
         }
-
-        const endpoint = schedule.equipmentType === 'vehicle'
-            ? `/vehicles/${schedule.assetDbId}`
-            : `/machines/${schedule.assetDbId}`;
 
         try {
-            const response = await API.put(endpoint, payload);
+            const response = await API.post(`/service-tickets/warranty/${assetType}/${assetId}`, {
+                status,
+                reason: status === 'Voided' ? reason : null,
+            });
+
             if (!response || response.status !== 'success') {
-                this.emitToast(response?.message || 'Failed to update service details.', 'error');
-                return;
+                this.emitToast(response?.message || 'Failed to update warranty status.', 'error');
+                return false;
             }
 
-            this.emitToast('Service record updated successfully.', 'success');
-            await this.loadServiceScheduleData();
+            this.emitToast('Warranty status updated successfully.', 'success');
+            await this.refresh();
+            return true;
         } catch (error) {
-            console.error('Failed to update service record:', error);
-            this.emitToast('Failed to update service details.', 'error');
+            console.error('Failed to update warranty status:', error);
+            this.emitToast('Failed to update warranty status.', 'error');
+            return false;
         }
+    }
+
+    viewServiceSchedule(identifier) {
+        this.viewWarrantyDetails(identifier);
+    }
+
+    scheduleService(identifier) {
+        this.viewWarrantyDetails(identifier);
+    }
+
+    emitToast(message, type = 'info') {
+        this.dispatchEvent(new CustomEvent('maintenance-ui:toast', {
+            bubbles: true,
+            detail: { message, type },
+        }));
     }
 
     escapeHtml(value) {
@@ -754,13 +416,6 @@ class MaintenanceServiceWarranty extends HTMLElement {
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
-    }
-
-    emitToast(message, type = 'info') {
-        this.dispatchEvent(new CustomEvent('maintenance-ui:toast', {
-            bubbles: true,
-            detail: { message, type },
-        }));
     }
 }
 

@@ -4,7 +4,7 @@ require_once __DIR__ . '/BaseModel.php';
 
 /**
  * Spare Part Request Model
- * Stores spare part requests made by Technical Officers for fault tickets.
+ * Stores spare part requests made by Technical Officers for fault or service tickets.
  * These requests go to the Inventory Manager for approval.
  */
 class SparePartRequest extends BaseModel {
@@ -23,7 +23,8 @@ class SparePartRequest extends BaseModel {
         return [
             'id' => 'INT AUTO_INCREMENT PRIMARY KEY',
             'request_id' => 'VARCHAR(30) NOT NULL UNIQUE',
-            'fault_ticket_id' => 'INT NOT NULL',
+            'fault_ticket_id' => 'INT NULL',
+            'service_ticket_id' => 'INT NULL',
             'ticket_id_formatted' => 'VARCHAR(30) NULL',
             'requested_by' => 'INT NOT NULL',
             'equipment_name' => 'VARCHAR(255) NULL',
@@ -45,6 +46,7 @@ class SparePartRequest extends BaseModel {
     protected function getIndexes() {
         return [
             'idx_spr_fault_ticket' => 'fault_ticket_id',
+            'idx_spr_service_ticket' => 'service_ticket_id',
             'idx_spr_requested_by' => 'requested_by',
             'idx_spr_status' => 'status',
             'idx_spr_created_at' => 'created_at'
@@ -74,14 +76,24 @@ class SparePartRequest extends BaseModel {
     public function getAllRequests($filters = []) {
         $sql = "SELECT spr.*,
                        ft.ticket_id as fault_ticket_code,
-                       ft.description as ticket_description,
-                       ft.priority as ticket_priority,
-                       ft.status as ticket_status,
+                       st.service_ticket_id as service_ticket_code,
+                       st.title as service_ticket_title,
+                       st.priority as service_ticket_priority,
+                       st.status as service_ticket_status,
+                       COALESCE(ft.ticket_id, st.service_ticket_id, spr.ticket_id_formatted) as linked_ticket_code,
+                       COALESCE(ft.description, st.description, st.title) as ticket_description,
+                       COALESCE(ft.priority, st.priority, spr.priority) as ticket_priority,
+                       COALESCE(ft.status, st.status) as ticket_status,
+                       CASE
+                           WHEN spr.service_ticket_id IS NOT NULL THEN 'service_ticket'
+                           ELSE 'fault_ticket'
+                       END as request_context,
                        u.full_name as requested_by_name,
                        u.employee_id as requested_by_employee_id,
                        reviewer.full_name as reviewed_by_name
                 FROM `{$this->table}` spr
                 LEFT JOIN fault_tickets ft ON spr.fault_ticket_id = ft.id
+                LEFT JOIN service_tickets st ON spr.service_ticket_id = st.id
                 LEFT JOIN users u ON spr.requested_by = u.id
                 LEFT JOIN users reviewer ON spr.reviewed_by = reviewer.id
                 WHERE 1=1";
@@ -103,6 +115,11 @@ class SparePartRequest extends BaseModel {
             $params[] = $filters['fault_ticket_id'];
         }
 
+        if (!empty($filters['service_ticket_id'])) {
+            $sql .= " AND spr.service_ticket_id = ?";
+            $params[] = $filters['service_ticket_id'];
+        }
+
         $sql .= " ORDER BY spr.created_at DESC";
 
         $stmt = $this->db->prepare($sql);
@@ -116,14 +133,24 @@ class SparePartRequest extends BaseModel {
     public function getRequestById($id) {
         $sql = "SELECT spr.*,
                        ft.ticket_id as fault_ticket_code,
-                       ft.description as ticket_description,
-                       ft.priority as ticket_priority,
-                       ft.status as ticket_status,
+                       st.service_ticket_id as service_ticket_code,
+                       st.title as service_ticket_title,
+                       st.priority as service_ticket_priority,
+                       st.status as service_ticket_status,
+                       COALESCE(ft.ticket_id, st.service_ticket_id, spr.ticket_id_formatted) as linked_ticket_code,
+                       COALESCE(ft.description, st.description, st.title) as ticket_description,
+                       COALESCE(ft.priority, st.priority, spr.priority) as ticket_priority,
+                       COALESCE(ft.status, st.status) as ticket_status,
+                       CASE
+                           WHEN spr.service_ticket_id IS NOT NULL THEN 'service_ticket'
+                           ELSE 'fault_ticket'
+                       END as request_context,
                        u.full_name as requested_by_name,
                        u.employee_id as requested_by_employee_id,
                        reviewer.full_name as reviewed_by_name
                 FROM `{$this->table}` spr
                 LEFT JOIN fault_tickets ft ON spr.fault_ticket_id = ft.id
+                LEFT JOIN service_tickets st ON spr.service_ticket_id = st.id
                 LEFT JOIN users u ON spr.requested_by = u.id
                 LEFT JOIN users reviewer ON spr.reviewed_by = reviewer.id
                 WHERE spr.id = ?";
@@ -146,6 +173,22 @@ class SparePartRequest extends BaseModel {
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$faultTicketId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get requests for a specific service ticket
+     */
+    public function getByServiceTicket($serviceTicketId) {
+        $sql = "SELECT spr.*,
+                       u.full_name as requested_by_name
+                FROM `{$this->table}` spr
+                LEFT JOIN users u ON spr.requested_by = u.id
+                WHERE spr.service_ticket_id = ?
+                ORDER BY spr.created_at DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$serviceTicketId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 

@@ -8,7 +8,8 @@ class InventoryInsuranceManagement extends HTMLElement {
         super();
         this.assets = [];
         this.filteredAssets = [];
-        this.currentFilter = 'all';
+        this.currentFilter = 'upcoming';
+        this.currentSort = 'next-renewal-asc';
         this.currentSearch = '';
         this.currentRenewalAsset = null;
     }
@@ -40,8 +41,6 @@ class InventoryInsuranceManagement extends HTMLElement {
 
             <div id="insuranceStatusBanner"></div>
 
-            <div class="insurance-summary-grid" id="insuranceSummaryGrid"></div>
-
             <div class="insurance-controls">
                 <input
                     id="insuranceSearch"
@@ -49,11 +48,24 @@ class InventoryInsuranceManagement extends HTMLElement {
                     type="text"
                     placeholder="Search by asset name, ID, provider, or number plate..."
                 >
-                <div class="insurance-filter-buttons" id="insuranceFilterButtons">
-                    <button class="insurance-filter-btn" data-filter="upcoming" type="button">Upcoming</button>
-                    <button class="insurance-filter-btn" data-filter="overdue" type="button">Overdue</button>
-                    <button class="insurance-filter-btn" data-filter="missing" type="button">Missing Data</button>
-                    <button class="insurance-filter-btn active" data-filter="all" type="button">All</button>
+                <div class="insurance-control-actions">
+                    <div class="insurance-filter-buttons" id="insuranceFilterButtons">
+                        <button class="insurance-filter-btn active" data-filter="upcoming" type="button">Upcoming</button>
+                        <button class="insurance-filter-btn" data-filter="scheduled" type="button">Scheduled</button>
+                        <button class="insurance-filter-btn" data-filter="overdue" type="button">Overdue</button>
+                        <button class="insurance-filter-btn" data-filter="missing" type="button">Missing Data</button>
+                        <button class="insurance-filter-btn" data-filter="all" type="button">All</button>
+                    </div>
+                    <div class="insurance-sort-wrap">
+                        <label class="insurance-sort-label" for="insuranceSort">Sort</label>
+                        <select id="insuranceSort" class="form-select insurance-sort-select" aria-label="Sort insurance renewals">
+                            <option value="next-renewal-asc" selected>Next Renewal: Nearest First</option>
+                            <option value="next-renewal-desc">Next Renewal: Farthest First</option>
+                            <option value="status-priority">Status Priority</option>
+                            <option value="asset-name-asc">Asset Name: A-Z</option>
+                            <option value="asset-name-desc">Asset Name: Z-A</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -67,7 +79,7 @@ class InventoryInsuranceManagement extends HTMLElement {
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
-                    <p class="insurance-modal-subtitle" id="insuranceRenewalAssetLabel"></p>
+                    <div class="insurance-modal-asset-card" id="insuranceRenewalAssetDetails" aria-live="polite"></div>
                     <form id="insuranceRenewalForm">
                         <div class="form-row">
                             <div class="form-group">
@@ -118,7 +130,6 @@ class InventoryInsuranceManagement extends HTMLElement {
             </div>
         `;
 
-        this.renderSummary();
         this.renderList();
     }
 
@@ -138,6 +149,12 @@ class InventoryInsuranceManagement extends HTMLElement {
         const searchInput = this.querySelector('#insuranceSearch');
         searchInput?.addEventListener('input', (event) => {
             this.currentSearch = String(event.target.value || '').trim().toLowerCase();
+            this.applyFilters();
+        });
+
+        const sortSelect = this.querySelector('#insuranceSort');
+        sortSelect?.addEventListener('change', (event) => {
+            this.currentSort = String(event.target.value || 'next-renewal-asc');
             this.applyFilters();
         });
 
@@ -198,7 +215,6 @@ class InventoryInsuranceManagement extends HTMLElement {
             this.assets = [];
             this.filteredAssets = [];
             this.renderStatusBanner(error.message || 'Failed to load insurance data.', 'error');
-            this.renderSummary();
             this.renderList();
         }
     }
@@ -244,7 +260,7 @@ class InventoryInsuranceManagement extends HTMLElement {
             asset_code: vehicle.vehicle_id || `VEH-${vehicle.id}`,
             asset_name: vehicle.vehicle_name || 'Vehicle',
             model_number: vehicle.model_number || 'N/A',
-            display_identifier: vehicle.number_plate || vehicle.registration_number || 'N/A',
+            display_identifier: vehicle.number_plate || 'N/A',
             insurance_type: vehicle.insurance_type || '',
             insurance_provider: vehicle.insurance_provider || '',
             insurance_provider_details: vehicle.insurance_provider_details || '',
@@ -278,37 +294,64 @@ class InventoryInsuranceManagement extends HTMLElement {
             return searchTarget.includes(this.currentSearch);
         });
 
-        this.filteredAssets = filtered;
-        this.renderSummary();
+        this.filteredAssets = this.sortAssets(filtered);
         this.renderList();
     }
 
-    renderSummary() {
-        const summaryRoot = this.querySelector('#insuranceSummaryGrid');
-        if (!summaryRoot) return;
+    sortAssets(assets) {
+        const sorted = [...assets];
 
-        const upcoming = this.assets.filter((asset) => this.getRenewalState(asset.next_insurance_renew_date).key === 'upcoming').length;
-        const overdue = this.assets.filter((asset) => this.getRenewalState(asset.next_insurance_renew_date).key === 'overdue').length;
-        const missing = this.assets.filter((asset) => this.getRenewalState(asset.next_insurance_renew_date).key === 'missing').length;
+        if (this.currentSort === 'asset-name-asc') {
+            return sorted.sort((first, second) => String(first.asset_name || '').localeCompare(String(second.asset_name || '')));
+        }
 
-        summaryRoot.innerHTML = `
-            <div class="insurance-summary-card">
-                <div class="insurance-summary-title">Upcoming Insurance Renewals</div>
-                <div class="insurance-summary-value">${upcoming}</div>
-            </div>
-            <div class="insurance-summary-card">
-                <div class="insurance-summary-title">Overdue Renewals</div>
-                <div class="insurance-summary-value">${overdue}</div>
-            </div>
-            <div class="insurance-summary-card">
-                <div class="insurance-summary-title">Missing Insurance Data</div>
-                <div class="insurance-summary-value">${missing}</div>
-            </div>
-            <div class="insurance-summary-card">
-                <div class="insurance-summary-title">Tracked Assets</div>
-                <div class="insurance-summary-value">${this.assets.length}</div>
-            </div>
-        `;
+        if (this.currentSort === 'asset-name-desc') {
+            return sorted.sort((first, second) => String(second.asset_name || '').localeCompare(String(first.asset_name || '')));
+        }
+
+        if (this.currentSort === 'status-priority') {
+            const statusRank = {
+                overdue: 0,
+                upcoming: 1,
+                scheduled: 2,
+                missing: 3,
+            };
+
+            return sorted.sort((first, second) => {
+                const firstState = this.getRenewalState(first.next_insurance_renew_date);
+                const secondState = this.getRenewalState(second.next_insurance_renew_date);
+
+                const firstRank = statusRank[firstState.key] ?? 99;
+                const secondRank = statusRank[secondState.key] ?? 99;
+                if (firstRank !== secondRank) {
+                    return firstRank - secondRank;
+                }
+
+                return firstState.daysUntil - secondState.daysUntil;
+            });
+        }
+
+        if (this.currentSort === 'next-renewal-desc') {
+            return sorted.sort((first, second) => {
+                const firstState = this.getRenewalState(first.next_insurance_renew_date);
+                const secondState = this.getRenewalState(second.next_insurance_renew_date);
+
+                const firstMissing = firstState.daysUntil === Number.MAX_SAFE_INTEGER;
+                const secondMissing = secondState.daysUntil === Number.MAX_SAFE_INTEGER;
+
+                if (firstMissing !== secondMissing) {
+                    return firstMissing ? 1 : -1;
+                }
+
+                return secondState.daysUntil - firstState.daysUntil;
+            });
+        }
+
+        return sorted.sort((first, second) => {
+            const firstState = this.getRenewalState(first.next_insurance_renew_date);
+            const secondState = this.getRenewalState(second.next_insurance_renew_date);
+            return firstState.daysUntil - secondState.daysUntil;
+        });
     }
 
     renderList() {
@@ -327,7 +370,7 @@ class InventoryInsuranceManagement extends HTMLElement {
 
         listRoot.innerHTML = this.filteredAssets.map((asset) => {
             const renewalState = this.getRenewalState(asset.next_insurance_renew_date);
-            const daysLabel = renewalState.daysUntil === null
+            const daysLabel = renewalState.key === 'missing'
                 ? 'No renewal schedule'
                 : (renewalState.daysUntil < 0
                     ? `${Math.abs(renewalState.daysUntil)} day(s) overdue`
@@ -345,15 +388,6 @@ class InventoryInsuranceManagement extends HTMLElement {
                         </div>
                         <div class="insurance-item-meta">
                             Insurance: ${this.escapeHtml(asset.insurance_type || 'N/A')} | Provider: ${this.escapeHtml(asset.insurance_provider || 'N/A')}
-                        </div>
-                        <div class="insurance-item-meta">
-                            Provider Details: ${this.escapeHtml(asset.insurance_provider_details || 'N/A')}
-                        </div>
-                        <div class="insurance-item-meta">
-                            Last Renewed: ${this.formatDate(asset.last_insurance_renew_date)} | Interval: ${asset.insurance_renew_interval_days ? `${asset.insurance_renew_interval_days} day(s)` : 'N/A'}
-                        </div>
-                        <div class="insurance-item-meta">
-                            Renewal Notes: ${this.escapeHtml(asset.last_insurance_renew_details || 'N/A')}
                         </div>
                         <div class="insurance-status-row">
                             <span class="insurance-status-chip ${renewalState.key}">${renewalState.label}</span>
@@ -386,10 +420,10 @@ class InventoryInsuranceManagement extends HTMLElement {
         this.currentRenewalAsset = asset;
 
         const modal = this.querySelector('#insuranceRenewalModal');
-        const label = this.querySelector('#insuranceRenewalAssetLabel');
+        const detailsRoot = this.querySelector('#insuranceRenewalAssetDetails');
 
-        if (label) {
-            label.textContent = `${asset.asset_name} (${asset.asset_code}) - ${asset.asset_type === 'vehicle' ? asset.display_identifier : asset.model_number}`;
+        if (detailsRoot) {
+            detailsRoot.innerHTML = this.renderRenewalAssetDetails(asset);
         }
 
         this.querySelector('#insuranceRenewalType').value = asset.insurance_type || '';
@@ -413,6 +447,40 @@ class InventoryInsuranceManagement extends HTMLElement {
 
         document.body.style.overflow = '';
         this.currentRenewalAsset = null;
+
+        const detailsRoot = this.querySelector('#insuranceRenewalAssetDetails');
+        if (detailsRoot) {
+            detailsRoot.innerHTML = '';
+        }
+    }
+
+    renderRenewalAssetDetails(asset) {
+        const assetTypeLabel = asset.asset_type === 'vehicle' ? 'Vehicle' : 'Machine';
+        const referenceLabel = asset.asset_type === 'vehicle' ? 'Number Plate' : 'Location';
+
+        return `
+            <div class="insurance-modal-asset-title-row">
+                <span class="insurance-asset-chip ${asset.asset_type}">${this.escapeHtml(assetTypeLabel)}</span>
+                <strong class="insurance-modal-asset-title">${this.escapeHtml(asset.asset_name)} (${this.escapeHtml(asset.asset_code)})</strong>
+            </div>
+            <div class="insurance-modal-asset-grid">
+                ${this.renderRenewalAssetDetailField('Asset ID', asset.asset_code)}
+                ${this.renderRenewalAssetDetailField('Model', asset.model_number || 'N/A')}
+                ${this.renderRenewalAssetDetailField(referenceLabel, asset.display_identifier || 'N/A')}
+                ${this.renderRenewalAssetDetailField('Insurance Type', asset.insurance_type || 'N/A')}
+                ${this.renderRenewalAssetDetailField('Provider', asset.insurance_provider || 'N/A')}
+                ${this.renderRenewalAssetDetailField('Next Renew Date', this.formatDate(asset.next_insurance_renew_date))}
+            </div>
+        `;
+    }
+
+    renderRenewalAssetDetailField(label, value) {
+        return `
+            <div class="insurance-modal-asset-item">
+                <span class="insurance-modal-asset-label">${this.escapeHtml(label)}</span>
+                <span class="insurance-modal-asset-value">${this.escapeHtml(value || 'N/A')}</span>
+            </div>
+        `;
     }
 
     async submitRenewal() {
@@ -490,12 +558,12 @@ class InventoryInsuranceManagement extends HTMLElement {
 
     getRenewalState(nextInsuranceRenewDate) {
         if (!nextInsuranceRenewDate) {
-            return { key: 'missing', label: 'Missing', daysUntil: null };
+            return { key: 'missing', label: 'Missing', daysUntil: Number.MAX_SAFE_INTEGER };
         }
 
         const nextDate = new Date(nextInsuranceRenewDate);
         if (Number.isNaN(nextDate.getTime())) {
-            return { key: 'missing', label: 'Missing', daysUntil: null };
+            return { key: 'missing', label: 'Missing', daysUntil: Number.MAX_SAFE_INTEGER };
         }
 
         const today = new Date();
@@ -515,12 +583,12 @@ class InventoryInsuranceManagement extends HTMLElement {
             return { key: 'upcoming', label: 'Upcoming', daysUntil };
         }
 
-        return { key: 'all', label: 'Scheduled', daysUntil };
+        return { key: 'scheduled', label: 'Scheduled', daysUntil };
     }
 
     getComparableDate(value) {
         const state = this.getRenewalState(value);
-        if (state.daysUntil === null) {
+        if (state.daysUntil === Number.MAX_SAFE_INTEGER) {
             return Number.MAX_SAFE_INTEGER;
         }
 

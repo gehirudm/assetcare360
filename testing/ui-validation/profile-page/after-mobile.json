@@ -1,0 +1,21 @@
+{
+  "stage": "after",
+  "viewport": "mobile",
+  "url": "http://127.0.0.1:3000/profile/index.html",
+  "title": "User Profile - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - button \"Back to Dashboard\"\n  - heading \"My Profile\" [level=2]\n  - paragraph: View and manage your account information\n  - navigation \"Breadcrumb\":\n    - link \"Dashboard\":\n      - /url: /dashboard/inventory-manager/index.html\n    - text: My Profile\n  - text: I\n  - heading \"Inventory Manager One\" [level=2]\n  - paragraph: Inventory Manager\n  - paragraph: \"Employee ID: LITRO-INVENTORY-001\"\n  - text: Active\n  - button \"Personal Information\"\n  - button \"Security\"\n  - button \"Activity Log\"\n  - text: Recent Login Activity\n  - button \"Refresh\"\n  - article:\n    - heading \"Password login successful\" [level=4]\n    - text: Just now Apr 20, 2026, 02:40 PM 10.20.30.40 Chrome on macOS\n  - article:\n    - heading \"Password login successful\" [level=4]\n    - text: 1 day ago Apr 19, 2026, 11:30 AM 10.20.30.41 Firefox on Windows",
+    "snapshotLength": 830
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "totalBackButtons": 1,
+    "headerBackButtons": 0,
+    "contentBackButtons": 1,
+    "userInfoVisible": true,
+    "breadcrumbVisible": true,
+    "currentBreadcrumbText": "My Profile",
+    "activityItems": 2
+  }
+}

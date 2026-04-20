@@ -12,71 +12,53 @@ class AuctionDashboardOverview extends HTMLElement {
         this.innerHTML = `
             <div class="page-header">
                 <h1 class="page-title">Dashboard</h1>
-                <p class="page-subtitle">Auction Management Overview</p>
+                <p class="page-subtitle">Auction Officer quick actions</p>
             </div>
 
-            <div class="grid">
-                <div class="summary-card">
-                    <div class="summary-title">Today's Activity</div>
-                    <div class="summary-content">
-                        • Active Auctions: 3<br>
-                        • Total Bids: 35<br>
-                        • Pending Bidders: 5<br>
-                        • Scheduled Auctions: 3
+            <div class="summary-grid">
+                <button class="summary-card clickable" type="button" data-nav-target="active-auctions" aria-label="Open Active Auctions section">
+                    <div class="summary-card-content">
+                        <div class="summary-icon"><i class="fas fa-gavel"></i></div>
+                        <div class="summary-details">
+                            <div class="summary-title">Active Auctions</div>
+                            <div class="summary-description">Create and manage live auction listings</div>
+                        </div>
                     </div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-title">Auction Performance</div>
-                    <div class="summary-content">
-                        • Completed This Month: 12<br>
-                        • Success Rate: 92%<br>
-                        • Avg. Above Reserve: 15%<br>
-                        • Total Revenue: LKR 285,000
-                    </div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-title">Pending Actions</div>
-                    <div class="summary-content">
-                        • Bidder Approvals: 5<br>
-                        • Assets Ready: 8<br>
-                        • Ending Soon: 1<br>
-                        • To Be Published: 3
-                    </div>
-                </div>
-            </div>
+                    <div class="summary-arrow"><i class="fas fa-chevron-right"></i></div>
+                </button>
 
-            <div class="card">
-                <div class="card-header">
-                    <span>⚡ Quick Actions</span>
-                </div>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button class="btn btn-primary" type="button" data-nav-target="active-auctions"><i class="fas fa-gavel"></i> Create Auction</button>
-                    <button class="btn btn-primary" type="button" data-nav-target="bidders"><i class="fas fa-users"></i> Register Bidder</button>
-                    <button class="btn btn-primary" type="button" data-nav-target="schedule"><i class="fas fa-calendar-alt"></i> Schedule Auction</button>
-                    <button class="btn btn-success" type="button" data-nav-target="reports"><i class="fas fa-chart-bar"></i> View Reports</button>
-                </div>
-            </div>
+                <button class="summary-card clickable" type="button" data-nav-target="assets" aria-label="Open Assets for Auction section">
+                    <div class="summary-card-content">
+                        <div class="summary-icon"><i class="fas fa-truck"></i></div>
+                        <div class="summary-details">
+                            <div class="summary-title">Assets for Auction</div>
+                            <div class="summary-description">Review and prepare assets ready for bidding</div>
+                        </div>
+                    </div>
+                    <div class="summary-arrow"><i class="fas fa-chevron-right"></i></div>
+                </button>
 
-            <div class="card">
-                <div class="card-header">
-                    <span><i class="fas fa-chart-line"></i> Recent Activities</span>
-                </div>
-                <div class="item-card">
-                    <div class="item-details">
-                        <strong>Auction Created</strong>
-                        <div class="item-meta">AUC-2024-010 | 2 hours ago</div>
-                        <div class="item-description">Truck LKC-7890 (2017) - Reserve: LKR 15,000</div>
+                <button class="summary-card clickable" type="button" data-nav-target="bidders" aria-label="Open Bidder Management section">
+                    <div class="summary-card-content">
+                        <div class="summary-icon"><i class="fas fa-users"></i></div>
+                        <div class="summary-details">
+                            <div class="summary-title">Bidder Management</div>
+                            <div class="summary-description">Register and maintain bidder approval workflows</div>
+                        </div>
                     </div>
-                    <span class="status-badge status-complete">Created</span>
-                </div>
-                <div class="item-card">
-                    <div class="item-details">
-                        <strong>Bidder Approved</strong>
-                        <div class="item-meta">BID-051 - K-Tech Imports | 4 hours ago</div>
-                        <div class="item-description">Company verification completed</div>
+                    <div class="summary-arrow"><i class="fas fa-chevron-right"></i></div>
+                </button>
+
+                <button class="summary-card clickable" type="button" data-nav-target="schedule" aria-label="Open Auction Schedule section">
+                    <div class="summary-card-content">
+                        <div class="summary-icon"><i class="fas fa-calendar-alt"></i></div>
+                        <div class="summary-details">
+                            <div class="summary-title">Auction Schedule</div>
+                            <div class="summary-description">Plan upcoming auctions and timeline slots</div>
+                        </div>
                     </div>
-                    <span class="status-badge status-approved">Approved</span>
-                </div>
+                    <div class="summary-arrow"><i class="fas fa-chevron-right"></i></div>
+                </button>
             </div>
         `;
     }

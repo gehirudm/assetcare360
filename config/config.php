@@ -61,6 +61,20 @@ define('COOKIE_PATH', '/');
 define('COOKIE_DOMAIN', ''); // Leave empty for current domain
 
 /**
+ * CSRF Protection Configuration
+ */
+define('CSRF_COOKIE_NAME', env('CSRF_COOKIE_NAME', 'csrf_token'));
+define('CSRF_TOKEN_EXPIRATION', (int) env('CSRF_TOKEN_EXPIRATION', 7200)); // 2 hours
+define('CSRF_COOKIE_HTTPONLY', filter_var(env('CSRF_COOKIE_HTTPONLY', 'true'), FILTER_VALIDATE_BOOLEAN));
+
+/**
+ * Login Rate Limiting Configuration
+ */
+define('LOGIN_RATE_LIMIT_MAX_ATTEMPTS', (int) env('LOGIN_RATE_LIMIT_MAX_ATTEMPTS', 5));
+define('LOGIN_RATE_LIMIT_WINDOW_SECONDS', (int) env('LOGIN_RATE_LIMIT_WINDOW_SECONDS', 900)); // 15 minutes
+define('LOGIN_RATE_LIMIT_BLOCK_SECONDS', (int) env('LOGIN_RATE_LIMIT_BLOCK_SECONDS', 900)); // 15 minutes
+
+/**
  * Application Configuration
  */
 define('API_PREFIX', '/api');

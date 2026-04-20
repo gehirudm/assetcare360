@@ -219,6 +219,44 @@ class InventoryOrdersApprovals extends HTMLElement {
         this.displayOrders(filtered);
     }
 
+    resolveTicketType(order) {
+        const context = String(order?.request_context || '').toLowerCase();
+        if (context === 'service_ticket') {
+            return 'Service Ticket';
+        }
+
+        const ticketCode = String(order?.ticket_id_formatted || order?.service_ticket_code || order?.fault_ticket_code || '').toUpperCase();
+        if (ticketCode.startsWith('SVT-')) {
+            return 'Service Ticket';
+        }
+        if (ticketCode.startsWith('VBD')) {
+            return 'Vehicle Breakdown';
+        }
+        if (ticketCode.startsWith('MBD')) {
+            return 'Machine Breakdown';
+        }
+        if (ticketCode.startsWith('RBD')) {
+            return 'Routine Breakdown';
+        }
+
+        return 'Fault Ticket';
+    }
+
+    resolveLinkedTicketStatusClass(status) {
+        const normalized = String(status || '').toLowerCase();
+        if (normalized.includes('complete') || normalized.includes('approved') || normalized.includes('resolved') || normalized.includes('closed')) {
+            return 'status-approved';
+        }
+        if (normalized.includes('reject') || normalized.includes('cancel')) {
+            return 'status-rejected';
+        }
+        if (normalized.includes('progress')) {
+            return 'status-low-stock';
+        }
+
+        return 'status-pending';
+    }
+
     displayOrders(orderList) {
         const container = this.querySelector('#ordersList');
         if (!container) return;
@@ -244,9 +282,7 @@ class InventoryOrdersApprovals extends HTMLElement {
 
             const dateStr = new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-            const ticketType = (order.ticket_id_formatted || '').startsWith('VBD') ? 'Vehicle Breakdown' :
-                (order.ticket_id_formatted || '').startsWith('MBD') ? 'Machine Breakdown' :
-                    (order.ticket_id_formatted || '').startsWith('RBD') ? 'Routine Breakdown' : 'Fault Ticket';
+            const ticketType = this.resolveTicketType(order);
 
             const partsCount = (order.items || []).reduce((sum, i) => sum + i.quantity, 0);
             const partsLabel = `${(order.items || []).length} part${(order.items || []).length !== 1 ? 's' : ''} (${partsCount} units)`;
@@ -624,7 +660,7 @@ class InventoryOrdersApprovals extends HTMLElement {
             });
 
             if (response.status === 'success') {
-                Utils.showToast('Spare parts request approved! Fault ticket updated to Parts Approved.', 'success');
+                Utils.showToast('Spare parts request approved successfully.', 'success');
                 this.closeActionModal();
                 await this.loadOrders();
             } else {
@@ -701,9 +737,8 @@ class InventoryOrdersApprovals extends HTMLElement {
         const dateStr = new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         const reviewDate = order.reviewed_at ? new Date(order.reviewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
 
-        const ticketType = (order.ticket_id_formatted || '').startsWith('VBD') ? 'Vehicle Breakdown' :
-            (order.ticket_id_formatted || '').startsWith('MBD') ? 'Machine Breakdown' :
-                (order.ticket_id_formatted || '').startsWith('RBD') ? 'Routine Breakdown' : 'Fault Ticket';
+        const ticketType = this.resolveTicketType(order);
+        const linkedTicketStatusClass = this.resolveLinkedTicketStatusClass(order.ticket_status);
 
         const partsHTML = order.items && order.items.length > 0
             ? order.items.map(item => `
@@ -758,39 +793,20 @@ class InventoryOrdersApprovals extends HTMLElement {
                         <input type="text" class="form-input" value="${order.location || '-'}" readonly>
                     </div>
                 </div>
-
                 <div class="form-section">
                     <h5><i class="fas fa-box"></i> Requested Parts (${(order.items || []).length} items)</h5>
                     ${partsHTML}
                 </div>
 
-                <div class="form-section">
-                    <h5><i class="fas fa-ticket-alt"></i> Linked Ticket Summary</h5>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Ticket ID</label>
-                            <input type="text" class="form-input" value="${order.ticket_id_formatted || '-'}" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Type</label>
-                            <input type="text" class="form-input" value="${ticketType}" readonly>
-                        </div>
+                <div class="form-section" style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 14px;">
+                    <h5><i class="fas fa-ticket-alt" style="color: var(--tang-blue);"></i> Linked Ticket Summary</h5>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <p><strong>Ticket ID:</strong> <span style="color: var(--tang-blue); font-weight: 700;">${order.ticket_id_formatted || '-'}</span></p>
+                        <p><strong>Type:</strong> ${ticketType}</p>
+                        <p><strong>Equipment:</strong> ${order.equipment_name || '-'}</p>
+                        <p><strong>Ticket Status:</strong> <span class="status-text ${linkedTicketStatusClass}">${order.ticket_status || '-'}</span></p>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Equipment</label>
-                            <input type="text" class="form-input" value="${order.equipment_name || '-'}" readonly>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Ticket Status</label>
-                            <input type="text" class="form-input" value="${order.ticket_status || '-'}" readonly>
-                        </div>
-                    </div>
-                    ${order.ticket_description ? `
-                    <div class="form-group">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-textarea" rows="3" readonly>${order.ticket_description}</textarea>
-                    </div>` : ''}
+                    ${order.ticket_description ? `<p style="margin-top: 8px;"><strong>Description:</strong> ${order.ticket_description}</p>` : ''}
                 </div>
 
                 ${order.additional_notes ? `

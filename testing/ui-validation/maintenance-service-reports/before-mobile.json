@@ -4,18 +4,16 @@
   "url": "http://127.0.0.1:3000/dashboard/maintenance/index.html",
   "title": "Maintenance Manager Dashboard",
   "accessibility": {
-    "ariaSnapshot": "- main:\n  - heading \"Service Report Management\" [level=1]\n  - paragraph: Review service reports with invoices/warranty claims\n  - button \"All Reports\"\n  - button \"Under Review\"\n  - button \"Reviewed\"\n  - text: Reviewed Reports\n  - table:\n    - rowgroup:\n      - row \"Report ID Equipment Service Type Cost Technical Officer Review Date Actions\":\n        - columnheader \"Report ID\"\n        - columnheader \"Equipment\"\n        - columnheader \"Service Type\"\n        - columnheader \"Cost\"\n        - columnheader \"Technical Officer\"\n        - columnheader \"Review Date\"\n        - columnheader \"Actions\"\n    - rowgroup:\n      - 'row \"SR-001 Vehicle #089 Brake System Overhaul LKR 15,000 Technical Officer B Aug 20, 2025 View\"':\n        - cell \"SR-001\"\n        - 'cell \"Vehicle #089\"'\n        - cell \"Brake System Overhaul\"\n        - cell \"LKR 15,000\"\n        - cell \"Technical Officer B\"\n        - cell \"Aug 20, 2025\"\n        - cell \"View\":\n          - button \"View\"\n      - 'row \"SR-003 Machine #180 Engine Maintenance LKR 28,000 Technical Officer A Aug 18, 2025 View\"':\n        - cell \"SR-003\"\n        - 'cell \"Machine #180\"'\n        - cell \"Engine Maintenance\"\n        - cell \"LKR 28,000\"\n        - cell \"Technical Officer A\"\n        - cell \"Aug 18, 2025\"\n        - cell \"View\":\n          - button \"View\"\n  - text: Report Statistics 3 Under Review 25 Reports This Month LKR 2.8L Total Service Cost",
-    "snapshotLength": 1391
+    "ariaSnapshot": "- main:\n  - heading \"Service Report Management\" [level=1]\n  - paragraph: Submitted service reports are listed automatically and can be viewed in detail\n  - button \"All Assets\"\n  - button \"Vehicles\"\n  - button \"Machines\"\n  - textbox \"Search by ticket ID, asset, technical officer, or service type\"\n  - text: Submitted Service Reports 1 reports\n  - strong: SVT-004 - Quarterly Service Report\n  - text: \"Vehicle: Fuel Bowser 12KL (VH901) | Quarterly Maintenance Vehicle ready for dispatch with no pending issues. Completed | Technical Officer: Technical Officer One | Submitted By: Supervisor A Completed: 02 Apr 2026, 15:45 | Actual Cost: LKR 23,750.00\"\n  - button \"View Report\"",
+    "snapshotLength": 676
   },
   "console": [],
   "failedRequests": [],
   "interactionSummary": {
     "activeSection": "service-reports",
-    "activeFilter": null,
+    "activeFilter": "All Assets",
     "underReviewVisible": 0,
-    "reviewedVisible": 1,
-    "modalStates": {
-      "reportDetailsOpen": false
-    }
+    "reviewedVisible": 0,
+    "detailViewActive": false
   }
 }

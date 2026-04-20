@@ -294,7 +294,7 @@ class MaintenanceNotifications extends HTMLElement {
             return;
         }
 
-        this.navigateToSection('service-warranty');
+        this.navigateToSection('warranty-management');
         serviceWarranty.scheduleService(String(equipmentId || ''));
     }
 }
