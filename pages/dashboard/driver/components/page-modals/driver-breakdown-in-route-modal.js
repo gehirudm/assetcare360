@@ -6,6 +6,7 @@ class DriverBreakdownInRouteModal extends HTMLElement {
 
         this._mounted = true;
         this.editingId = null;
+        this.isSubmitting = false;
         this.isSeverityLockedByDangerousCargo = false;
         this._dangerousCargoCheckToken = 0;
         this.render();
@@ -118,6 +119,15 @@ class DriverBreakdownInRouteModal extends HTMLElement {
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
 
+            if (this.isSubmitting) {
+                return;
+            }
+
+            const submitButton = form.querySelector('#routeBreakdownSubmit');
+            const idleLabel = this.editingId
+                ? 'Update Route Breakdown Report'
+                : 'Submit Breakdown in Route Report';
+
             const selectedVehicle = this.getSelectedVehicle();
             if (!selectedVehicle) {
                 DriverUtils.showToast('Please select a vehicle.', 'error');
@@ -153,6 +163,12 @@ class DriverBreakdownInRouteModal extends HTMLElement {
             }
 
             try {
+                this.isSubmitting = true;
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.textContent = this.editingId ? 'Updating...' : 'Submitting...';
+                }
+
                 const response = this.editingId
                     ? await DriverUtils.apiPut(`/route-breakdowns/${encodeURIComponent(this.editingId)}`, payload)
                     : await DriverUtils.apiPost('/route-breakdowns', payload);
@@ -170,6 +186,12 @@ class DriverBreakdownInRouteModal extends HTMLElement {
             } catch (error) {
                 console.error('Failed to submit route breakdown report:', error);
                 DriverUtils.showToast('Failed to submit route breakdown report. Please try again.', 'error');
+            } finally {
+                this.isSubmitting = false;
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = idleLabel;
+                }
             }
         });
     }

@@ -1035,6 +1035,23 @@ body {
     animation: slideIn 0.3s ease;
 }
 
+.toast.error {
+    background: var(--danger);
+}
+
+.toast.warning {
+    background: var(--warn);
+    color: var(--text-900);
+}
+
+.toast.info {
+    background: var(--royal-blue);
+}
+
+.toast.success {
+    background: var(--kelly-green);
+}
+
 @keyframes slideIn {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
