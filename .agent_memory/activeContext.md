@@ -1,9 +1,917 @@
 # Active Context
 
 ## Current Focus
-Dashboard Web Components refactor execution for the active Supervisor residual slice remains complete (TASK034, TASK035, TASK036). TASK033 and TASK032 are also complete. Latest active workflow correction for route-breakdown garage handling is now completed as TASK039. Remaining non-dashboard backlog primarily includes migration verification.
+Dashboard Web Components refactor execution for the active Supervisor residual slice remains complete (TASK034, TASK035, TASK036). TASK033 and TASK032 are also complete. Route-breakdown workflow correction (TASK039), GPS/map approval (TASK042), transportation cargo lifecycle + dangerous escalation (TASK043), TM cargo section split/navigation cleanup (TASK044), TM cargo catalogue/details UX refinement (TASK045), dangerous in-route priority lock + supervisor dangerous visibility hardening (TASK046), breakdown-view/ticket-flow unification with create-time linked fault-ticket creation (TASK047), Inventory insurance flow implementation (TASK048), Supervisor insurance-claim ticket flow implementation (TASK049), Driver/Machinery Operator fault-reporting 500 fix (TASK050), Machinery Operator duplicate ticket creation fix (TASK051), newest-first ticket rendering stabilization (TASK052), Inventory single-page analytics/reporting hub delivery (TASK060), and service-ticket workflow implementation (TASK062) are now complete. Active remaining backlog is TASK003 migration verification plus pending monolith-final-decomposition cleanup tasks (TASK037, TASK038). New active workstream: TASK063 service-ticket requirement compliance audit and remediation planning.
 
-<<<<<<< Updated upstream
+### Supervisor ticket detail toast style hardening completed (April 20, 2026)
+- Completed TASK097 to resolve remaining toast styling issues in Supervisor fault ticket detail view.
+- Updated `pages/dashboard/supervisor/style.css`:
+	- hardened global supervisor toast selector with stronger geometry constraints.
+	- added stable `#toast.toast.show` state to prevent style bleed from detail assets.
+- Updated `pages/dashboard/technical-officer/view-ticket/style.css`:
+	- normalized toast geometry (`top: auto`, `left: auto`) and explicit show/hide display behavior.
+- Added targeted UI validation:
+	- `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-ticket-detail-toast-style.spec.js`
+	- verifies toast remains anchored and non-stretched after detail assets load.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- targeted spec passed and combined supervisor regression run passed.
+
+### Supervisor resolved route-breakdown visibility fix completed (April 20, 2026)
+- Completed TASK096 to ensure route-breakdown tickets in completed garage workflow appear in Supervisor resolved fault-ticket list.
+- Updated `pages/dashboard/supervisor/script.js`:
+	- added workflow/status normalization helpers for resolved and in-progress state detection.
+	- updated filter and bucket categorization logic so resolved route tickets are recognized without requiring technician assignments.
+	- treated route garage workflow `completed` as resolved-equivalent state.
+- Added targeted validation:
+	- `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-tickets-resolved-route.spec.js`
+	- verifies a route-breakdown ticket with `garage_workflow_status=completed` and no assignments appears in resolved list only.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- targeted Playwright regression spec passed (1/1).
+
+### Supervisor ticket detail toast position fix completed (April 20, 2026)
+- Completed TASK095 to fix stretched toast rendering in Supervisor fault-ticket detail view.
+- Updated `pages/dashboard/supervisor/style.css`:
+	- scoped toast position rule to `body > #toast.toast`.
+	- explicitly reset `bottom`/`left` to `auto` while preserving top-right placement.
+- Validation evidence:
+	- diagnostics clean for touched CSS file.
+	- closest supervisor Playwright suites currently fail/skip due unrelated fixture or selector drift; details logged in TASK095.
+
+### Inventory vehicle modal vehicle_type enum normalization completed (April 20, 2026)
+- Completed TASK094 to fix add/edit vehicle modal failures caused by vehicle_type enum mismatch.
+- Updated `pages/dashboard/inventory-manager/components/page-modals/vehicle-form-modal/script.js`:
+	- added mapping from business vehicle labels to canonical DB `vehicle_type` enum values.
+	- `getVehicleFormData()` now submits mapped `vehicle_type` while keeping selected vehicle label in `vehicle_name`.
+- Updated `app/services/VehicleService.php`:
+	- create/update flows now normalize and validate `vehicle_type` via service-level helper methods.
+	- added alias support for known inventory modal labels and explicit validation failure for invalid values.
+- Validation evidence:
+	- `php -l app/services/VehicleService.php` passed.
+	- diagnostics clean for touched files.
+
+### Driver route-breakdown delete cascade fix completed (April 20, 2026)
+- Completed TASK093 to fix route-breakdown delete behavior where linked route fault tickets were left behind.
+- Updated `app/controllers/RouteBreakdownController.php`:
+	- `delete()` now removes linked `fault_tickets` (route_breakdown type) and `vehicle_breakdown_inroute` row in one transaction.
+	- added linked ticket image-path lookup helpers and post-commit file cleanup.
+	- extended cleanup helper to handle both absolute and relative file paths.
+- Validation evidence:
+	- `php -l app/controllers/RouteBreakdownController.php` passed.
+	- diagnostics clean for touched file.
+
+### Driver in-route breakdown resolved-ticket unblock completed (April 20, 2026)
+- Completed TASK092 to fix route-breakdown create guard regression that blocked new in-route reports after resolved ticket state.
+- Updated `app/controllers/RouteBreakdownController.php`:
+	- normalized active-ticket status checks with `LOWER(TRIM(COALESCE(...)))` for resolved/closed detection.
+	- updated active-report guard to ignore route-breakdown reports whose linked route-breakdown ticket is already resolved/closed.
+- Validation evidence:
+	- `php -l app/controllers/RouteBreakdownController.php` passed.
+	- diagnostics clean for touched file.
+
+### Profile Activity Log now shows login activities (April 20, 2026)
+- Completed TASK091 to implement real login activity data in the Profile page Activity tab.
+- Updated backend auth stack:
+	- `app/services/AuthService.php`: added `getLoginActivities($userId, $limit)` with successful-login filtering from `api_request_logs`.
+	- `app/controllers/AuthController.php`: added authenticated `getLoginActivities()` endpoint handler.
+	- `public/index.php`: added route `GET /auth/login-activities`.
+	- `app/config/EndpointRegistry.php`: added metadata for `GET:/api/auth/login-activities`.
+- Updated profile UI:
+	- `pages/profile/index.html`: replaced activity placeholder with `Recent Login Activity` card and refresh action.
+	- `pages/profile/script.js`: added lazy activity fetch/render logic with loading/error/empty/data states.
+	- `pages/profile/style.css`: added activity log list/item/meta styles.
+- Updated API/testing assets:
+	- `testing/openapi.yaml`: added `/auth/login-activities` contract.
+	- `testing/postman/postman_collection.json`: added `Get Login Activities` request.
+	- `testing/ui-validation/profile-page/validate-profile-page.spec.js`: added mocked login activities and assertions for rendered entries.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `VAL_STAGE=before npx playwright test profile-page/validate-profile-page.spec.js --reporter=line` passed (desktop/mobile).
+	- `VAL_STAGE=after npx playwright test profile-page/validate-profile-page.spec.js --reporter=line` passed (desktop/mobile).
+	- `php -l app/services/AuthService.php app/controllers/AuthController.php app/config/EndpointRegistry.php public/index.php` passed.
+
+### Profile page breadcrumb trail completed (April 20, 2026)
+- Completed TASK090 to add breadcrumb navigation in the Profile page content subheader.
+- Updated `pages/profile/index.html`:
+	- added breadcrumb trail under profile subtitle (`Dashboard > My Profile`) with dashboard crumb anchor id `profileDashboardBreadcrumb`.
+- Updated `pages/profile/style.css`:
+	- added breadcrumb presentation styles (`.breadcrumb`, `.breadcrumb-item`, `.breadcrumb-sep`, `.breadcrumb-current`) and responsive breadcrumb sizing.
+- Updated `pages/profile/script.js`:
+	- added shared role-based dashboard route helper `getDashboardPathForUser(userData)`.
+	- wired breadcrumb dashboard href in `populateProfile(...)` and reused helper in `goBackToDashboard()`.
+- Updated `testing/ui-validation/profile-page/validate-profile-page.spec.js`:
+	- added breadcrumb visibility/content assertions for both before and after stage flows.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `cd testing/ui-validation && VAL_STAGE=before npx playwright test profile-page/validate-profile-page.spec.js --reporter=line` passed (desktop/mobile).
+	- `cd testing/ui-validation && VAL_STAGE=after npx playwright test profile-page/validate-profile-page.spec.js --reporter=line` passed (desktop/mobile).
+
+### Inventory insurance summary section removal completed (April 20, 2026)
+- Completed TASK086 to remove the summary section from Inventory Manager Insurance Management (user request phrased as Warranty Management).
+- Updated `pages/dashboard/inventory-manager/components/insurance-management/script.js`:
+	- removed summary markup (`#insuranceSummaryGrid`) and deleted summary-rendering logic/calls.
+	- retained filters, search, renewal modal, and list rendering behavior.
+- Updated `pages/dashboard/inventory-manager/components/insurance-management/style.css`:
+	- removed unused `.insurance-summary-*` style blocks.
+- Updated `testing/ui-validation/inventory-insurance-management/validate-inventory-insurance-management.spec.js`:
+	- replaced summary-title presence assertion with explicit absence assertion for summary grid.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `VAL_STAGE=after npx playwright test inventory-insurance-management/validate-inventory-insurance-management.spec.js --reporter=line` passed (desktop/mobile).
+
+### Inventory insurance scheduled filter and sorting completed (April 20, 2026)
+- Completed TASK087 to add a dedicated `Scheduled` filter and user-selectable sorting options in Inventory Manager Insurance Management.
+- Updated `pages/dashboard/inventory-manager/components/insurance-management/script.js`:
+	- added Scheduled filter control and aligned renewal-state key mapping for future renewals.
+	- added sort control state/listener and list comparators (nearest/farthest renewal, status priority, asset name A-Z/Z-A).
+- Updated `pages/dashboard/inventory-manager/components/insurance-management/style.css`:
+	- added sort-control layout styles and scheduled status-chip visual style.
+- Updated `testing/ui-validation/inventory-insurance-management/validate-inventory-insurance-management.spec.js`:
+	- extended fixtures and assertions to validate Scheduled filter behavior and sorting behavior.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `VAL_STAGE=before npx playwright test inventory-insurance-management/validate-inventory-insurance-management.spec.js` passed (desktop/mobile).
+	- `VAL_STAGE=after npx playwright test inventory-insurance-management/validate-inventory-insurance-management.spec.js` passed (desktop/mobile).
+
+### Inventory insurance renewal modal asset details polished (April 20, 2026)
+- Completed TASK088 to fix Submit Insurance Renewal modal asset-details readability/styling.
+- Updated `pages/dashboard/inventory-manager/components/insurance-management/script.js`:
+	- replaced plain subtitle text with structured details container (`#insuranceRenewalAssetDetails`).
+	- added helper renderers for labeled asset metadata fields used by the renewal modal.
+	- updated open/close modal handlers to render and clear details card content.
+- Updated `pages/dashboard/inventory-manager/components/insurance-management/style.css`:
+	- added `.insurance-modal-asset-*` styles for details card, title row, field grid, and responsive mobile layout.
+- Updated `testing/ui-validation/inventory-insurance-management/validate-inventory-insurance-management.spec.js`:
+	- added assertions for modal details-card visibility, expected field count, and key asset values.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `VAL_STAGE=before npx playwright test inventory-insurance-management/validate-inventory-insurance-management.spec.js` passed (desktop/mobile).
+	- `VAL_STAGE=after npx playwright test inventory-insurance-management/validate-inventory-insurance-management.spec.js` passed (desktop/mobile).
+
+### Profile header alignment and back-button relocation completed (April 20, 2026)
+- Completed TASK089 to align Profile page header with dashboard styling and move Back to Dashboard control into content area.
+- Updated `pages/profile/index.html`:
+	- removed header-level Back to Dashboard button.
+	- added dashboard-style header user info block (`userAvatar`, `userName`, `headerUserRole`, `headerUserEmployeeId`).
+	- added content subheader with compact `back-icon-btn` next to profile title/subtitle.
+- Updated `pages/profile/style.css`:
+	- aligned header user and logout styles with dashboard shell patterns.
+	- added `.profile-detail-subheader` and `.back-icon-btn` styles (with responsive handling).
+- Updated `pages/profile/script.js`:
+	- populated new header role and employee metadata fields from profile response.
+- Added new UI validation suite:
+	- `testing/ui-validation/profile-page/validate-profile-page.spec.js` (before/after, desktop/mobile).
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `VAL_STAGE=before npx playwright test profile-page/validate-profile-page.spec.js` passed (desktop/mobile).
+	- `VAL_STAGE=after npx playwright test profile-page/validate-profile-page.spec.js` passed (desktop/mobile).
+
+### Auction assets now sourced from Inventory-marked status (April 20, 2026)
+- Completed TASK085 to ensure assets marked by Inventory Manager as `For Auction` appear in Auction Manager Assets section.
+- Updated `pages/dashboard/auction/components/assets.js`:
+	- replaced static mock cards with live API loading from `/vehicles?status=For%20Auction` and `/machines?status=For%20Auction`.
+	- normalized vehicle/machine rows into one assets list with shared filter/action rendering.
+	- preserved asset filtering and schedule/view actions while adding live availability badge updates and empty/error states.
+- Updated `testing/ui-validation/auction-dashboard/validate-auction-dashboard.spec.js`:
+	- added API route stubs for vehicles/machines.
+	- added assertions for API-rendered assets and availability count in Auction Assets section.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `VAL_STAGE=after npx playwright test auction-dashboard/validate-auction-dashboard.spec.js --reporter=line` passed (desktop/mobile).
+
+### Auction overview actions-only simplification completed (April 20, 2026)
+- Completed TASK084 to align Auction Officer overview with the 4-button actions-only pattern used in other dashboards.
+- Updated `pages/dashboard/auction/components/dashboard-overview.js`:
+	- removed all extra overview blocks (summary metrics, quick actions panel, recent activities).
+	- added exactly 4 section-navigation action buttons (`active-auctions`, `assets`, `bidders`, `schedule`).
+- Updated `pages/dashboard/auction/style.css`:
+	- added/updated summary action-grid styles for clickable cards and mobile responsiveness.
+- Updated `testing/ui-validation/auction-dashboard/validate-auction-dashboard.spec.js`:
+	- added assertions for 4 overview action buttons and absence of removed blocks.
+	- added validation for overview-button navigation into Active Auctions.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `VAL_STAGE=after npx playwright test auction-dashboard/validate-auction-dashboard.spec.js --reporter=line` passed (desktop/mobile).
+
+### Auction dashboard header style alignment completed (April 20, 2026)
+- Completed TASK083 to align Auction Officer header section styling with other dashboards.
+- Updated `pages/dashboard/auction/style.css`:
+	- added missing shared header structure styles (`.header-left`, `.brand-logo`, `.brand-name`, `.brand-highlight`, `.header-divider`).
+	- normalized `.header-title` typography to match dashboard baseline (1.4rem, 600).
+- Updated `testing/ui-validation/auction-dashboard/validate-auction-dashboard.spec.js`:
+	- added assertions verifying header-left visibility/flex layout and divider visibility.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `VAL_STAGE=after npx playwright test auction-dashboard/validate-auction-dashboard.spec.js --reporter=line` passed (desktop/mobile).
+
+### Maintenance service chart simplification completed (April 20, 2026)
+- Completed TASK082 to remove Service Activity Distribution from Maintenance Manager Service & Warranty analytics.
+- Updated `pages/dashboard/maintenance/components/analytics-hub/script.js`:
+	- removed Service Activity Distribution chart card from the Service & Warranty panel.
+	- removed `serviceActivity` chart state and render branch in `renderServiceView(...)`.
+- Updated `testing/ui-validation/maintenance-analytics-hub/validate-maintenance-analytics-hub.spec.js`:
+	- service panel chart count assertion updated from 3 to 2.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `VAL_STAGE=after npx playwright test maintenance-analytics-hub/validate-maintenance-analytics-hub.spec.js --reporter=line` passed (desktop/mobile).
+
+### Maintenance analytics notification view removal completed (April 20, 2026)
+- Completed TASK081 to remove Notification Analytics from Maintenance Manager Analytics.
+- Updated `pages/dashboard/maintenance/components/analytics-hub/script.js`:
+	- removed notification analytics tab/panel, report scope option, notification data/chart paths, and notification report generation branches.
+	- kept analytics hub scoped to four views: tickets, breakdowns, cost, and service.
+- Updated `testing/ui-validation/maintenance-analytics-hub/validate-maintenance-analytics-hub.spec.js`:
+	- tab count assertion updated to 4.
+	- added explicit absence checks for notification analytics tab and report-scope option.
+	- validation kept focused on notification-removal behavior.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `VAL_STAGE=after npx playwright test maintenance-analytics-hub/validate-maintenance-analytics-hub.spec.js --reporter=line` passed (desktop/mobile).
+
+### TO service-ticket spare-part request flow completed (April 20, 2026)
+- Completed TASK070 to support optional spare-part requests from TO service-ticket detail pages before service start.
+- Backend dual-context support delivered for spare-part requests:
+	- fault-ticket + service-ticket linkage in model/service/controller/route layer.
+	- new route: `GET /spare-part-requests/service-ticket/:id`.
+	- migration applied: `063_extend_spare_part_requests_for_service_tickets.php`.
+- TO frontend now supports context-aware shared request modal launch from service-ticket detail and pending-approval start lock behavior.
+- Inventory Manager approvals UI now renders linked ticket type/status generically for fault/service contexts.
+- Validation evidence:
+	- `php -l` passed on touched backend files.
+	- migration 063 executed successfully.
+	- `npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js` passed (desktop/mobile).
+
+### Service start expected-completion capture completed (April 20, 2026)
+- Completed TASK071 to require expected completion date capture when Technical Officers start service tickets.
+- Backend start flow updates:
+	- `ServiceTicketController::start()` now accepts optional JSON payload.
+	- `ServiceTicketService::start()` validates `expected_completion_date`, enforces it for TO role, rejects past dates, and persists it into `scheduled_date`.
+- TO start-flow updates:
+	- detail-page start action now prompts for expected completion date and sends it to `/service-tickets/{id}/start`.
+	- no-spare modal start path now prompts/validates expected completion date before starting.
+- MM visibility updates:
+	- Maintenance service-ticket detail labels now explicitly show `Expected Completion Date` / `Expected Completion`.
+- Validation evidence:
+	- `php -l app/services/ServiceTicketService.php app/controllers/ServiceTicketController.php` passed.
+	- `npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js` passed (desktop/mobile).
+
+### TO service detail end-operation button lock fixed (April 20, 2026)
+- Completed TASK072 to fix TO detail view start-transition bug where `End Service Operation` rendered disabled until refresh.
+- Root cause and fix:
+	- post-start detail re-render occurred while `_busy` was still true.
+	- `startTicket()` now clears `_busy` before calling `open(...)` after successful start.
+- Added regression validation coverage in TO routing spec:
+	- starts assigned ticket and immediately clicks `End Service Operation` without refreshing.
+- Validation evidence:
+	- `npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js` passed (desktop/mobile).
+
+### Notification workflow custom agent created (April 20, 2026)
+- Completed TASK073 by adding a specialized custom agent for end-to-end notification delivery workflows:
+	- `.github/agents/notification-workflow-memory-first.agent.md`
+- Agent scope combines memory-first operating discipline with notification pipeline specialization:
+	- action/state change emitters
+	- DomainEvents and envelope compliance
+	- RabbitMQ routing/consumer idempotency
+	- notifications/email consumer parity decisions
+	- dashboard badge/list/analytics visibility requirements
+- Default policy decisions are now explicit in the agent:
+	- email parity ON by default for new business-critical notifications
+	- TO notification rendering defaults to `/notifications` API-backed source-of-truth behavior
+	- static/mock role notification panels are migrated when real workflow notifications are requested
+	- recipient scope defaults to least broad audience (user -> role -> global)
+- Architecture analysis was validated against current implementation files:
+	- `DomainEvents`, `EventEnvelope`, `EventPublisher`, `EventEmitter`
+	- `consume_notification_events.php`, `consume_email_events.php`, `consume_audit_events.php`, `check_service_due.php`
+	- `Notification` model/controller routes, OpenAPI notifications endpoints, and dashboard notification surfaces.
+
+### TO service detail start-action button UI alignment completed (April 20, 2026)
+- Completed TASK074 to align TO service-ticket detail assigned-state action buttons with requested copy/layout behavior.
+- Updated `pages/dashboard/technical-officer/components/service-ticket-details/script.js`:
+	- removed `(Optional)` from `Request Spare Parts` button label.
+	- added scoped equal-width layout for `Request Spare Parts` and `Start Service Operation` buttons.
+	- added mobile fallback to stacked single-column action buttons.
+- Validation evidence:
+	- diagnostics clean for touched component.
+	- `npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js` passed (desktop/mobile).
+
+### TO start-service modal UX upgrade completed (April 20, 2026)
+- Completed TASK075 to replace TO service-ticket detail Start Service browser prompt flow with a proper in-page modal.
+- Updated `pages/dashboard/technical-officer/components/service-ticket-details/script.js`:
+	- introduced modal state fields and modal open/close/cancel/submit handlers.
+	- replaced `window.prompt(...)` with form-driven modal submission for `expected_completion_date`.
+	- preserved existing start busy-state sequencing to keep post-start actions responsive.
+- Updated validation in `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js`:
+	- removed browser dialog handling and added modal visibility/fill/submit assertions.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js` passed (desktop/mobile).
+
+### TO service report details conditional visibility completed (April 20, 2026)
+- Completed TASK076 to hide `Service Report Details` in TO service-ticket detail view when no service report exists.
+- Updated `pages/dashboard/technical-officer/components/service-ticket-details/script.js`:
+	- added `hasServiceReport` conditional rendering for the Service Report Details card.
+	- report-presence detection now keys off completion/report data (completed timestamp, completion notes, component comments, actual cost, warranty report fields).
+	- excluded `service_meter_reading` from report-presence detection to avoid false positives on assigned tickets.
+- Updated `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js`:
+	- added explicit assertions that Service Report Details is hidden for no-report ticket states.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js` passed (desktop/mobile).
+
+### Maintenance Service Management asset sorting options completed (April 20, 2026)
+- Completed TASK077 to add overdue-focused sorting controls in Maintenance Manager Service Management.
+- Updated `pages/dashboard/maintenance/components/maintenance-service-tickets.js`:
+	- added `Sort Assets` dropdown (`maintenanceAssetSort`) with options for service-priority, most-overdue, least-overdue, due-soon-first, and A-Z.
+	- added asset sort state (`currentAssetSort`) and `set-asset-sort` change handling.
+	- added asset sorting helpers/comparators used by Service Management asset list rendering.
+- Updated validation in `testing/ui-validation/maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js`:
+	- added assertion that `most-overdue` sorting surfaces `MC702` first.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `npx playwright test maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js --reporter=line` passed (desktop/mobile).
+
+### TO Start Service modal center alignment fix completed (April 20, 2026)
+- Completed TASK078 to fix Start Service modal placement in TO service-ticket detail view (modal appearing toward right edge).
+- Updated `pages/dashboard/technical-officer/components/service-ticket-details/script.js`:
+	- moved Start Service modal rendering to body-level overlay portal (`syncStartTicketModalPortal`) to avoid layout-context offset.
+	- retained open/close/cancel/submit behavior with portal event wiring.
+	- expanded modal CSS selectors so body-level portal styles apply consistently.
+- Updated validation in `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js`:
+	- changed modal selector to page-level portal target.
+	- added regression assertion for modal horizontal centering.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js` passed (desktop/mobile).
+
+### TO service-ticket Expected Cost visibility completed (April 20, 2026)
+- Completed TASK079 to ensure Expected Cost is visible in TO service-ticket detail view.
+- Updated `pages/dashboard/technical-officer/components/service-ticket-details/script.js`:
+	- added `Expected Cost` to always-visible overview metrics using `estimated_cost`.
+	- renamed service report field label from `Estimated Cost` to `Expected Cost` for terminology consistency.
+- Updated `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js`:
+	- added regression assertions for `Expected Cost` and `LKR` visibility in detail overview.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js` passed (desktop/mobile).
+
+### Maintenance overview actions-only simplification completed (April 20, 2026)
+- Completed TASK080 to align Maintenance Manager dashboard overview with actions-only requirement.
+- Updated `pages/dashboard/maintenance/components/maintenance-dashboard-overview.js`:
+	- removed all non-action overview blocks (recent tickets, pending approvals list, critical notifications, and recent activities).
+	- retained only 4 navigation action cards for `fault-tickets`, `service-tickets`, `cost-approvals`, and `service-reports`.
+	- changed counters to live API-backed values: active fault tickets, active service tickets, pending approvals, completed service reports.
+- Updated `pages/dashboard/maintenance/style.css`:
+	- added button-specific summary card styling + focus-visible state for accessibility.
+- Updated `testing/ui-validation/maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js`:
+	- added assertions that overview contains exactly 4 section action buttons and no `Recent Activities` / `Critical Notifications` blocks.
+- Validation evidence:
+	- diagnostics clean for touched files.
+	- `VAL_STAGE=after npx playwright test maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js --reporter=line` passed (desktop/mobile).
+
+### Maintenance service-ticket details component flow completed (April 20, 2026)
+- Completed TASK069 to replace modal-only service-ticket viewing with Supervisor-style detail component flow.
+- Added dedicated section in maintenance dashboard:
+	- `#service-ticket-details` with `<maintenance-service-ticket-detail-view>`.
+- Added new component:
+	- `pages/dashboard/maintenance/components/service-ticket-details/script.js`
+	- fetches `GET /service-tickets/{id}` and renders full detail view with back navigation.
+- Updated `pages/dashboard/maintenance/script.js`:
+	- added `viewServiceTicketDetails(ticketId)` navigation/open handler,
+	- added return-section back handling,
+	- added refresh handling for detail section activation.
+- Updated `pages/dashboard/maintenance/components/maintenance-service-tickets.js` so View Ticket now opens component flow instead of modal.
+- Validation evidence:
+	- `VAL_STAGE=after npx playwright test maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js --reporter=line` -> pass (2/2).
+
+### Maintenance create-service-ticket asset lock update completed (April 20, 2026)
+- Completed TASK068 to lock the Asset field when Create Service Ticket modal is opened from an asset list row.
+- Updated `pages/dashboard/maintenance/components/page-modals/maintenance-create-service-ticket-modal.js`:
+	- added lock state handling for list-triggered opens,
+	- disabled asset select in locked mode,
+	- mirrored locked asset value through hidden input for valid form submission,
+	- preserved unlocked editable behavior for global/header modal opens.
+- Updated validation in `testing/ui-validation/maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js` to assert both locked (row-trigger) and unlocked (header-trigger) paths.
+- Validation evidence:
+	- `VAL_STAGE=after npx playwright test maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js --reporter=line` -> pass (2/2).
+
+### Maintenance service-ticket asset-level view flow completed (April 20, 2026)
+- Completed TASK067 to align Maintenance Service Management with asset-first ticket actions.
+- Updated `pages/dashboard/maintenance/components/maintenance-service-tickets.js` so the section no longer renders the separate bottom service-ticket list.
+- Added asset-level active service-ticket detection:
+	- if an active service ticket exists for an asset, status is shown as `Service In Progress`
+	- asset action switches from `Create Ticket` to `View Ticket`
+	- `View Ticket` opens the service-ticket details component (`maintenance-report-details-modal`).
+- Updated UI validation in `testing/ui-validation/maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js` to assert the new behavior.
+- Validation evidence:
+	- Passed: `VAL_STAGE=before npx playwright test maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js --reporter=line` (2/2)
+	- Passed: `VAL_STAGE=after npx playwright test maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js --reporter=line` (2/2)
+
+### Login security hardening completed (April 19, 2026)
+- Completed TASK066 to add IP-based login rate limiting and CSRF protection for the login flow.
+- Backend updates:
+	- Added `app/helpers/LoginRateLimiter.php` (file-backed IP throttle state).
+	- Added `app/helpers/CsrfHelper.php` (double-submit CSRF token issue/validation).
+	- Added `GET /auth/csrf` endpoint and login enforcement logic in `app/controllers/AuthController.php`.
+	- Added CSRF/rate-limit config constants in `config/config.php`.
+	- Added `X-CSRF-Token` to CORS allowed headers in `public/index.php`.
+- Frontend updates:
+	- Added `API.getCsrfToken(forceRefresh)` in `pages/js/api.js`.
+	- Updated `Auth.login` in `pages/js/auth.js` to send `X-CSRF-Token` on login requests.
+- API docs updates:
+	- Updated `testing/openapi.yaml` for `/auth/csrf`, login CSRF header requirement, and login `403/429` responses.
+- Validation evidence:
+	- PHP lint + diagnostics clean for all touched files.
+	- Smoke checks:
+		- login without CSRF header -> 403
+		- login with CSRF header (invalid credentials) -> 401
+		- repeated invalid attempts -> 429 on threshold breach.
+
+### Maintenance refresh-button cleanup completed (April 19, 2026)
+- Completed TASK065 to remove manual refresh buttons across Maintenance Manager sections.
+- Removed refresh controls and their dedicated click branches from:
+	- `pages/dashboard/maintenance/components/maintenance-service-reports.js`
+	- `pages/dashboard/maintenance/components/maintenance-service-tickets.js`
+- Confirmed no remaining maintenance-section refresh button markup/action hooks.
+- Validation evidence:
+	- Passed: `VAL_STAGE=before npx playwright test maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js --reporter=line` (2/2)
+	- Passed: `VAL_STAGE=after npx playwright test maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js --reporter=line` (2/2)
+
+### Maintenance section shell wrapper cleanup completed (April 19, 2026)
+- Completed TASK064 to remove the outer boxed section shell effect from all Maintenance Manager sections.
+- Updated `pages/dashboard/maintenance/style.css` `.content-section` to remove wrapper visuals:
+	- `background: transparent`
+	- `border-radius: 0`
+	- `padding: 0`
+	- `box-shadow: none`
+- Validation evidence:
+	- Passed: `VAL_STAGE=before npx playwright test maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js --reporter=line` (2/2)
+	- Passed: `VAL_STAGE=after npx playwright test maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js --reporter=line` (2/2)
+
+### Service-ticket requirement compliance audit in progress (April 19, 2026)
+- Opened TASK063 to validate implementation against the latest requirement restatement.
+- Evidence review indicates the following gaps remain:
+	- Maintenance service section does not expose service-interval editing controls.
+- Completed remediation in this slice:
+	- Maintenance Service Report Management now lists submitted reports directly from completed service tickets (API-backed) with no manager approval action.
+	- Updated MM Service Report `View Report` to open the section-based service-ticket detail view (TO-style layout) with return-to-service-reports navigation.
+	- Extended service-ticket read model to expose normalized `asset_components` and updated OpenAPI schema accordingly.
+	- Upgraded MM service section to `Service Management` with an asset service-status panel (overdue/due-soon/scheduled/no-schedule), search/filter controls, and modal-based ticket creation entry points.
+	- Updated Maintenance create-service-ticket modal so `Service Type` is a predefined dropdown selection instead of free-text input.
+	- Updated Maintenance create-service-ticket modal date field from `Scheduled Date` to `Expected Completion Date` while preserving backend payload compatibility.
+	- Updated Maintenance create-service-ticket modal technician picker to remove `Leave Unassigned` and require selecting a technical officer.
+	- Fixed Maintenance service-ticket detail flow normalization so `Pending Assignment` correctly activates the `Reported` step with waiting-assignment note.
+	- Updated Maintenance service-ticket detail view so `Service Report Details` is hidden for non-completed tickets and shown only for completed tickets.
+	- Hardened Maintenance create-service-ticket modal validation: blocked past expected-completion dates and added additional UI checks for enums, text lengths, and numeric inputs.
+	- Added pending-only `Delete Service Ticket` button in Maintenance service-ticket detail view with delete-event handling and section refresh on success.
+	- Added supervisor-style technician selection modal for service-ticket creation and surfaced technician expertise in MM assignment controls.
+	- Simplified TO Service Tickets section UI by removing the refresh button and summary card block.
+	- Enhanced TO Service Tickets list controls with a unified status/search/sort toolbar and explicit sort options for Created Date and Priority.
+	- Removed TO list-level `Start Work` and `Complete Ticket` controls so all service actions are detail-view only.
+	- Upgraded TO Service Ticket Detail view styling to Supervisor-like detail flow with breadcrumb/back subheader, overview summary card, and step-based service progress flow.
+	- Added TO service-ticket detail-page operations to start/end service work from the dedicated detail view.
+	- Removed `Next Service Date` input from the TO service completion form and stopped sending `next_service_date` from TO completion submissions.
+	- Added comprehensive completion reporting with component-level comments (`component_comments`) persisted in service tickets and exposed in MM detail views.
+	- Added migration `062_add_component_comments_to_service_tickets.php` and applied it.
+	- Updated maintenance UI validation suites to section-based report details and reran desktop/mobile coverage for:
+		- `maintenance-remaining-sections/validate-maintenance-remaining-sections.spec.js`
+		- `maintenance-service-reports/validate-maintenance-service-reports.spec.js`
+	- Combined after-stage validation run passed `4/4`.
+- Confirmed areas currently aligned:
+	- Warranty management is isolated to warranty controls.
+	- Service completion updates asset service dates/meters.
+	- Maintenance and TO dashboards both run through the shared `ac-layout` header shell.
+- Audit output status:
+	- Requirement-by-requirement compliance findings prepared for handoff.
+	- Remediation now includes warranty UI simplification, service-report flow correction/detail view delivery, MM service management UX alignment (asset status + modal create flow), TO service-ticket sorting/filter UX parity, TO detail-only action placement, TO service-ticket detail-view visual flow parity, and TO component-level completion reporting.
+	- Remaining identified gap still pending implementation: service-interval edit controls.
+
+### Service ticket management workflow implementation completed (April 19, 2026)
+- TASK062 backend slice is complete:
+	- Added migration `061_create_service_tickets_and_warranty_management.php` and applied it successfully.
+	- Added service-ticket backend stack (`ServiceTicket` model, `ServiceTicketService`, `ServiceTicketController`) and route registration in `public/index.php`.
+- TASK062 maintenance frontend slice is complete:
+	- Replaced `service-records` section with `service-tickets`.
+	- Split warranty into `warranty-management` and rewired modal actions to backend warranty endpoint.
+	- Applied maintenance header parity styles for shared header brand structure.
+- TASK062 TO frontend slice is complete:
+	- Replaced TO `service-warranty` section with `service-tickets` and added start/complete lifecycle UI.
+	- Updated TO shell sidebar defaults and script section mapping for legacy query params.
+- Follow-up fix and validation closure:
+	- Resolved TO ticket-details rendering failure by correcting shared detail runtime inline-handler export (`addPartField` + backward-compatible `addPartRow` alias) in `pages/view-ticket/script.js`.
+	- Maintenance updated suite passed (`maintenance-remaining-sections`, desktop+mobile).
+	- TO routing suite passed (`to-ticket-routing`, desktop+mobile).
+
+### Machinery Operator single-page analytics hub charts completed (April 19, 2026)
+- Completed TASK061 by adding a dedicated Machinery Operator `analytics` section with TM-style top tab options in one page.
+- Added new `mo-analytics-hub` component with five chart sections:
+	- Fault Analytics
+	- Weekly Check Analytics
+	- Machine Health Analytics
+	- Workflow Analytics
+	- Notification Analytics
+- Implemented report toolbar support in the analytics hub:
+	- From Date / To Date filters
+	- Report scope selector
+	- Apply time filter, generate report, and download CSV actions
+- Wired section routing/refresh lifecycle in `pages/dashboard/machinery-operator/script.js` and shell updates in `pages/dashboard/machinery-operator/index.html`.
+- Added and validated dedicated UI suite:
+	- `testing/ui-validation/machinery-operator-analytics-hub/validate-machinery-operator-analytics-hub.spec.js`
+- Validation evidence:
+	- Passed: `VAL_STAGE=before npx playwright test machinery-operator-analytics-hub/validate-machinery-operator-analytics-hub.spec.js --reporter=line` (2/2)
+	- Passed: `VAL_STAGE=after npx playwright test machinery-operator-dashboard/validate-machinery-operator-dashboard.spec.js machinery-operator-analytics-hub/validate-machinery-operator-analytics-hub.spec.js --reporter=line` (4/4)
+
+### Inventory Manager single-page analytics hub charts completed (April 19, 2026)
+- Completed TASK060 by adding a dedicated Inventory Manager `analytics` section with TM-style tabbed chart views in one page.
+- Added new `inventory-analytics-hub` component with five chart sections:
+	- Stock Analytics
+	- Stock Additions
+	- Usage Analytics
+	- Request Analytics
+	- Asset Coverage
+- Implemented report toolbar support in the analytics hub:
+	- From Date / To Date filters
+	- Report scope selector
+	- Generate report and Download CSV actions
+- Wired section routing/refresh lifecycle in `pages/dashboard/inventory-manager/script.js` and shell updates in `pages/dashboard/inventory-manager/index.html`.
+- Added and stabilized UI validation suite:
+	- `testing/ui-validation/inventory-analytics-hub/validate-inventory-analytics-hub.spec.js`
+	- fixed analytics-hub reconnect click-binding issue in `pages/dashboard/inventory-manager/components/analytics-hub/script.js`
+- Validation evidence:
+	- Passed: `VAL_STAGE=before npx playwright test inventory-analytics-hub/validate-inventory-analytics-hub.spec.js --reporter=line` (2/2)
+	- Passed: `VAL_STAGE=after npx playwright test inventory-analytics-hub/validate-inventory-analytics-hub.spec.js --reporter=line` (2/2)
+
+### Technical Officer single-page analytics hub charts completed (April 19, 2026)
+- Completed TASK059 by adding a dedicated Technical Officer `analytics` section with TM-style tabbed chart views in one page.
+- Added new `to-analytics-hub` component with five chart sections:
+	- Tickets
+	- Spare Parts
+	- Work Updates
+	- Assets
+	- Notifications
+- Wired section routing/refresh lifecycle in `pages/dashboard/technical-officer/script.js` and shell updates in `pages/dashboard/technical-officer/index.html`.
+- Added TO sidebar parity update in `pages/dashboard/technical-officer/components/layout/sidebar/script.js` so subpage shell navigation includes `analytics`.
+- Validation evidence:
+	- Editor diagnostics clean for touched TO files.
+	- Passed: `VAL_BASE_URL=http://127.0.0.1:3000 VAL_STAGE=after npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js --reporter=line` (2/2).
+
+### Technical Officer asset feedback section removal completed (April 19, 2026)
+- Removed `Asset Feedback` from TO dashboard navigation and section mounts:
+	- `pages/dashboard/technical-officer/index.html` no longer includes feedback nav item, section host, or feedback component script include.
+	- `pages/dashboard/technical-officer/components/layout/sidebar/script.js` default sidebar nav no longer includes feedback item.
+	- `pages/dashboard/technical-officer/script.js` no longer binds feedback component events.
+- Added legacy URL fallback so `?section=feedback` normalizes to `dashboard` to avoid dead-link state.
+- Validation evidence:
+	- Passed: `VAL_STAGE=after npx playwright test to-ticket-routing/validate-to-ticket-routing.spec.js --reporter=line` (2/2).
+
+### Supervisor single-page analytics hub charts completed (April 19, 2026)
+- Completed TASK058 by adding a dedicated Supervisor `analytics` section with TM-style tabbed chart views in one page.
+- Added new `supervisor-analytics-hub` component with five chart sections:
+	- Fault Tickets
+	- Breakdowns
+	- Weekly Checks
+	- Budget Queue
+	- Technicians
+- Wired section routing/refresh lifecycle in `pages/dashboard/supervisor/script.js` and shell updates in `pages/dashboard/supervisor/index.html`.
+- Validation evidence:
+	- Editor diagnostics clean for touched Supervisor files.
+	- Passed: `VAL_STAGE=after npx playwright test supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js supervisor-daily-check-reports/validate-daily-check.spec.js --reporter=line` (4/4).
+
+### Transportation Manager analytics report generation + download completed (April 19, 2026)
+- Completed TASK057 by extending the unified TM analytics hub with report generation controls and downloadable exports.
+- Added report toolbar in `tm-analytics-hub`:
+	- From Date / To Date filters
+	- Report scope selector (active tab, per-domain, and all-summary)
+	- Generate report and Download CSV actions
+- Implemented API-backed report builders for Trip, Fuel, Cargo, Driver, Garage, and All Analytics Summary scopes with summary metrics and preview table rendering.
+- Added in-page report status messaging and CSV export file generation.
+- Validation evidence:
+	- Editor diagnostics clean for touched analytics-hub files.
+	- Passed: `VAL_BASE_URL=http://127.0.0.1:3000 VAL_STAGE=after npx playwright test transportation-manager-fuel-fleet/validate-transportation-manager-fuel-fleet.spec.js transportation-cargo-section-split/validate-transportation-cargo-section-split.spec.js --reporter=line`
+
+### Transportation Manager analytics consolidated into single page (April 19, 2026)
+- Completed TASK056 by replacing five separate analytics sections with one unified `analytics` page in the TM dashboard.
+- Added `tm-analytics-hub` with top selector options:
+	- Trip Analytics
+	- Fuel Analytics
+	- Cargo Analytics
+	- Driver Analytics
+	- Garage Analytics
+- Updated TM orchestration so section activation refreshes the unified analytics page and old analytics query-section ids normalize to `analytics`.
+- Validation evidence:
+	- Passed: `VAL_STAGE=after npx playwright test transportation-manager-fuel-fleet/validate-transportation-manager-fuel-fleet.spec.js --reporter=line`
+	- Passed: `VAL_STAGE=after npx playwright test transportation-cargo-section-split/validate-transportation-cargo-section-split.spec.js --reporter=line`
+
+### Transportation Manager separate analytics pages implementation completed (April 19, 2026)
+- Completed TASK055 by implementing dedicated TM analytics sections/pages for Trip, Fuel, Cargo, Driver, and Garage analytics.
+- Updated TM dashboard shell and orchestration to refresh analytics pages on section activation and relevant modal completion events.
+- Added shared analytics-page styling and component-level Chart.js rendering with empty-state fallbacks and API-response guards.
+- Validation evidence:
+	- Passed: `VAL_STAGE=after npx playwright test transportation-manager-fuel-fleet/validate-transportation-manager-fuel-fleet.spec.js --reporter=line`
+	- Passed: `VAL_STAGE=after npx playwright test transportation-cargo-section-split/validate-transportation-cargo-section-split.spec.js --reporter=line`
+
+### Dashboard chart recommendation roadmap completed (April 19, 2026)
+- Completed TASK054 as an advisory discovery/recommendation slice (no production code changes).
+- Verified current chart infrastructure and insertion points:
+	- Existing Chart.js bootstrapping in Transportation Manager dashboard.
+	- Existing chart renderers in TM fleet details and TM cargo details.
+	- Chart-ready summary/report sections across Supervisor, Technical Officer, Inventory, Driver, Machinery Operator, SysAdministration, Maintenance, and Auction dashboards.
+- Produced prioritized where-to-update + chart-type guidance focused on quick wins first, then cross-dashboard expansion.
+- Expanded recommendations to an all-project practical chart catalog with decision/report-focused chart choices per dashboard module and section.
+
+### Rebase conflict recovery completed (April 19, 2026)
+- Recovered an interrupted rebase on `spare-parts-and-garage` with multiple conflict stops across shared ticket detail runtime, role dashboard files, UI validation artifacts, and memory docs.
+- Preserved additive behavior in shared ticket detail runtime by keeping both supervisor insurance assessment rendering and machinery-operator pending edit action handling.
+- Completed rebase successfully after resolving code conflicts and skipping stale memory/testing conflict commits that were superseded by current branch state.
+- Final state verified clean: branch restored to `spare-parts-and-garage` with no unresolved files (`UU`) and ahead-of-origin status.
+
+### Cross-dashboard newest-first fault ticket ordering + sort/filter toolbar alignment completed (April 19, 2026)
+- Implemented explicit sort controls (`Created Date`, `Priority`) and default newest-first behavior across active fault-ticket/fault-reporting list components:
+	- `pages/dashboard/supervisor/components/fault-ticket-tracking/script.js`
+	- `pages/dashboard/technical-officer/components/tickets/script.js`
+	- `pages/dashboard/driver/components/driver-ticket-tracking.js`
+	- `pages/dashboard/machinery-operator/components/mo-fault-reporting.js`
+	- `pages/dashboard/maintenance/components/maintenance-fault-tickets.js`
+- Added responsive filter-toolbar layout patterns in role stylesheets for Supervisor, Technical Officer, Driver, Machinery Operator, and Maintenance dashboards.
+- Updated UI validation suites to assert sort-control visibility and created-vs-priority behavior, with `VAL_STAGE=after` combined run passing desktop+mobile (`10/10` tests):
+	- `supervisor-fault-ticket-tracking`
+	- `to-ticket-routing`
+	- `driver-dashboard`
+	- `machinery-operator-dashboard`
+	- `maintenance-remaining-sections`
+
+### Supervisor driver breakdown visibility regression fix completed (April 18, 2026)
+- Fixed missing driver-reported vehicle breakdown rows in active Supervisor list by updating `pages/dashboard/supervisor/components/fault-ticket-tracking/script.js` to fetch and normalize `GET /breakdown-reports` in the same pipeline as machine and route breakdown feeds.
+- Added `normalizeVehicleBreakdown(...)` and included vehicle reports in the merged list sorting and source-filter rendering path.
+- Updated `openDetails(...)` fallback to use per-row `reportType` so legacy unlinked vehicle rows are not forced through the route-breakdown path.
+- Validation evidence: updated `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` with `/api/breakdown-reports` fixture coverage and vehicle visibility assertions; `VAL_STAGE=after` passed desktop + mobile (`2/2`).
+
+### Supervisor newest-first fault ordering update completed (April 18, 2026)
+- Updated active Supervisor fault-ticket-tracking sort behavior to timestamp-first so newly created faults always appear at the top of the list.
+- Added candidate timestamp fallback handling (`date`, `created_at`, `breakdown_datetime`, `breakdown_date`, `updated_at`) with severity and ID tie-breakers for stable ordering.
+- Updated supervisor tracking validation fixtures/assertions to verify newest-first behavior in both all-source and vehicle-source views.
+- Validation evidence: `VAL_STAGE=after` Playwright run passed for `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` (desktop + mobile, `2/2`).
+
+### TO view-ticket Finish Work modal and resolve flow parity fix completed (April 18, 2026)
+- Updated shared TO detail route `pages/view-ticket/index.html` complete modal to match TO fault-ticket list Finish Work modal structure (ticket ID, parts-used checklist, time spent, machine update description).
+- Updated `pages/view-ticket/script.js` completion workflow to match TO list behavior:
+	- load parts-used checklist from ticket spare-part requests,
+	- submit work update via `POST /ticket-work-updates`,
+	- mark ticket resolved via `PUT /fault-tickets/{id}` with `status: Resolved` and `resolution_notes`.
+- Added targeted UI validation suite `testing/ui-validation/to-finish-work-modal/validate-to-finish-work-modal.spec.js`.
+- Validation evidence: `VAL_STAGE=before` and `VAL_STAGE=after` runs both passed desktop + mobile (`2/2` each) with zero console warnings/errors and zero failed requests.
+
+### TO view-ticket spare-parts modal and logic parity fix completed (April 18, 2026)
+- Updated shared TO detail route `pages/view-ticket/index.html` to use TO dashboard list parity Request Spare Parts modal structure (ticket context fields, no-spare-parts path, dynamic part rows).
+- Updated `pages/view-ticket/script.js` request-parts workflow to align with TO list logic:
+	- prefill ticket context and priority,
+	- load product options from `GET /products`,
+	- check stock via `POST /spare-part-requests/check-availability`,
+	- submit TO-aligned request payload to `POST /spare-part-requests`,
+	- support no-spare-parts fast path via `PUT /fault-tickets/{id}` -> `In Progress`.
+- Added targeted UI validation suite `testing/ui-validation/to-request-spare-parts-modal/validate-to-request-spare-parts-modal.spec.js`.
+- Validation evidence: `VAL_STAGE=before` and `VAL_STAGE=after` runs both passed desktop + mobile (`2/2` each) with zero console warnings/errors and zero failed requests.
+
+### Newest-first ticket rendering stabilization completed (April 18, 2026)
+- Completed TASK052 to ensure newly created tickets/breakdowns consistently render at the top of dashboard lists.
+- Updated list sorting in:
+	- `pages/dashboard/machinery-operator/components/mo-fault-reporting.js`
+	- `pages/dashboard/driver/components/driver-ticket-tracking.js`
+	- `pages/dashboard/driver/components/driver-transport-ticket.js`
+- Replaced single-field timestamp sorting with robust candidate timestamp selection and deterministic ID fallback tie-breakers for equal/missing timestamps.
+- Validation evidence:
+	- Editor diagnostics clean for all touched files.
+	- Sort helper methods confirmed present and used in each component.
+
+### Machinery Operator double fault-ticket creation fix completed (April 18, 2026)
+- Completed TASK051 to fix duplicated fault ticket creation from Machinery Operator fault-report submission.
+- Root cause was a stale frontend sequence in `mo-report-fault-modal` that still posted `POST /fault-tickets` after `POST /machine-breakdowns`, while backend auto-link creation was already enabled in TASK047.
+- Updated MO submit flow to rely on backend auto-created linked tickets and removed manual ticket create call.
+- Preserved photo upload by resolving the linked ticket ID from machine-breakdown list data and uploading selected photos via `PUT /fault-tickets/{id}`.
+- Validation evidence:
+	- Editor diagnostics clean for touched modal file.
+	- Code scan confirms no remaining manual fault-ticket create call in the MO report modal.
+
+### Driver and machinery operator fault-reporting 500 fix completed (April 18, 2026)
+- Completed TASK050 to restore both Driver and Machinery Operator breakdown submission flows.
+- Root cause was a transaction-state failure (`There is no active transaction`) caused by `FaultTicketService::create()` instantiating BaseModel-backed `Machine`/`Vehicle` models during active controller transactions.
+- Replaced model-instantiation lookups with direct PDO queries in `FaultTicketService::create()` to avoid transaction side effects.
+- Added defensive transaction guards (`inTransaction()`) before commit/rollback in:
+	- `BreakdownReportController::create()`
+	- `MachineBreakdownController::create()`
+- Updated `FaultTicket` model to support `vehicle_id` in schema and use runtime column detection for backward-compatible reads/inserts on mixed DB states.
+- Validation evidence:
+	- PHP lint passed for touched files.
+	- Runtime API validation passed:
+		- Driver `POST /api/breakdown-reports` -> `201 Created`
+		- Machinery Operator `POST /api/machine-breakdowns` -> `201 Created`
+
+### Supervisor insurance-claim ticket flow completed (April 18, 2026)
+- Completed TASK049 to support insurance-claim decisioning in Supervisor fault-ticket flow.
+- Added and applied migration `059_add_insurance_claimed_status_to_fault_tickets.php` and extended status model/workflow handling for `Insurance Claimed`.
+- `FaultTicketService` now returns insurance context payload (`insurance_claim`) with asset/provider/type/renewal details, eligibility state, and eligibility reason.
+- Backend transition guard now enforces Supervisor/Admin role checks, eligibility checks, allowed source statuses, and deactivates technician assignments when insurance claim is submitted.
+- Shared detail page now renders insurance overview and claim action branch for Supervisor/Admin; Supervisor tracking list now recognizes and displays `Insurance Claimed` consistently.
+- Updated `testing/openapi.yaml` status enums and fault-ticket schema with insurance-claim contract.
+- Validation evidence:
+	- PHP lint passed for touched backend and migration files.
+	- Migration status confirmed `59/59 applied, 0 pending`.
+	- `VAL_STAGE=after` Playwright validation passed for `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` (desktop + mobile, `2/2`).
+
+### Inventory insurance flow completed (April 18, 2026)
+- Completed TASK048 for Inventory Manager insurance lifecycle support across machine/vehicle create/edit flows and insurance renewals management.
+- Added and applied migration `058_add_insurance_fields_to_assets.php` with insurance columns, renewal-date indexes, and backfill of next renewal dates.
+- Updated machine/vehicle models and services to validate and normalize insurance payload fields and compute `next_insurance_renew_date`.
+- Added new Inventory Manager section component `insurance-management` with summary cards, filtering, upcoming renewals list, and renewal submission modal.
+- Updated machine/vehicle form and details modal UIs to capture and display insurance fields.
+- Updated `testing/openapi.yaml` schemas (`Machine`, `MachineInput`, `Vehicle`, `VehicleInput`) to reflect insurance fields and create requirements.
+- Validation evidence:
+	- PHP lint and JS syntax checks passed for touched files.
+	- Migration status confirmed `58/58 applied, 0 pending`.
+	- Playwright after-stage validation passed for `testing/ui-validation/inventory-insurance-management/validate-inventory-insurance-management.spec.js` (desktop + mobile, `2/2`) after selector hardening and fixture alignment.
+
+### Supervisor view-ticket garage-approval modal regression fix completed (April 18, 2026)
+- Fixed shared detail-page modal style conflict causing `Approve Nearby Garage` modal to render top-left/unstyled for Supervisor route-breakdown tickets.
+- Updated `pages/dashboard/technical-officer/view-ticket/style.css` modal card selector to neutralize inherited dashboard `.modal` overlay properties and keep modal card centered inside `.modal-overlay`.
+- Added explicit garage map styling in the same detail stylesheet (`.garage-approval-map`, `.garage-approval-map-hint`) to preserve map container sizing in the modal.
+- Extended `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` to validate:
+	- opening Supervisor detail-page garage-approval modal,
+	- visible map markers,
+	- marker-click garage selection,
+	- submit payload (`garage_id`) path,
+	- modal centering geometry assertions.
+- Validation evidence:
+	- `VAL_STAGE=after npx playwright test supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js --reporter=line`
+	- passed desktop + mobile (`2/2`).
+
+### Supervisor fault-ticket section consolidation and UX fixes completed (April 18, 2026)
+- Removed the duplicate Supervisor Technician Assignment section (`fault-tickets`) from dashboard navigation/layout and standardized active fault-ticket ownership under `fault-ticket-tracking`.
+- Updated Supervisor routing defaults and legacy section aliases so detail returns and old links normalize to `fault-ticket-tracking`.
+- Updated `supervisor-fault-ticket-tracking` list behavior to:
+	- show dangerous-cargo badge + summary/trip metadata for vehicle route breakdowns,
+	- remove list-level approve-garage button,
+	- rename action label from `VIEW TICKET` to `View`,
+	- add source filter controls (`All Sources`, `Vehicle`, `Machine`).
+- Updated overview card and ticket-detail fallback return section to use `fault-ticket-tracking`.
+- Validation evidence:
+	- Added `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js`.
+	- `VAL_STAGE=before`: passed (desktop + mobile).
+	- `VAL_STAGE=after`: passed (desktop + mobile).
+	- Final artifacts show zero console warnings/errors and zero failed network requests.
+	- Legacy `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js` is now explicitly skipped/deprecated because it targets the removed `fault-tickets` section.
+
+### Supervisor fault-ticket critical sorting and route-breakdown presentation refinement completed (April 18, 2026)
+- Updated `supervisor-fault-ticket-tracking` list ordering to prioritize ticket criticality (Critical > High > Medium > Low) before date.
+- Removed verbose card-level metadata lines for:
+	- dangerous cargo summary text,
+	- dangerous cargo trip line,
+	- garage workflow details line.
+- Added route-workflow-aware status normalization in the active list so rows with `garage_approved` show `Garage Approved` instead of `Pending`.
+- Added legacy route-description normalization for converted in-route records and introduced `Map View` action with coordinate parsing from both stored coordinate columns and legacy text payloads.
+- Updated route auto-ticket description generation (`RouteBreakdownController::buildAutoTicketDescription`) to store concise issue text for newly created linked tickets.
+- Added and applied migration `057_normalize_legacy_route_breakdown_descriptions.php` to normalize incompatible existing route description blobs in DB records (`fault_tickets` updated: 6 rows).
+- Validation evidence:
+	- `VAL_STAGE=before` and `VAL_STAGE=after` both passed for `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` (desktop + mobile).
+	- Assertions include criticality sort order, Garage Approved status display, hidden verbose metadata text, legacy description cleanup, and map-view action behavior.
+
+### Supervisor list-vs-detail map placement correction completed (April 18, 2026)
+- Applied follow-up UX correction to keep list cards focused and move location map context into detail view:
+	- removed list-level map button/action from `supervisor-fault-ticket-tracking`,
+	- removed list coordinate text and `Ticket:` line from cards,
+	- moved role display next to reportee metadata row,
+	- added embedded route location panel and map in shared `pages/view-ticket` for route breakdown tickets.
+- Updated `testing/ui-validation/supervisor-fault-ticket-tracking/validate-supervisor-fault-ticket-tracking.spec.js` to assert:
+	- no map button in list,
+	- no coordinates rendered in list,
+	- no `Ticket:` line in list cards,
+	- role rendered next to reportee,
+	- embedded route map panel visible on detail page.
+- Validation evidence:
+	- `VAL_STAGE=after` passed desktop + mobile (`2/2`).
+	- Touched-file diagnostics clean.
+
+### Breakdown-view/ticket-flow unification + create-time linkage completed (April 18, 2026)
+- Completed TASK047 to align breakdown and fault-ticket View behavior around ticket flow semantics.
+- Backend now auto-creates linked fault tickets transactionally for new breakdown reports across all three create paths:
+	- `BreakdownReportController` (vehicle)
+	- `RouteBreakdownController` (in-route)
+	- `MachineBreakdownController` (machine)
+- Supervisor breakdown actions now resolve to ticket flow (`VIEW TICKET`) and use create-or-open fallback only for legacy unlinked breakdown rows.
+- `FaultTicketService` now merges specialized source-table data into ticket payloads using `breakdown_context` for vehicle/route/machine breakdowns.
+- OpenAPI note updated in `testing/openapi.yaml` for route-breakdown create auto-link behavior.
+- Validation evidence:
+	- PHP lint passed for all touched backend controllers/service.
+	- `VAL_STAGE=after` `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js` passed (desktop + mobile).
+	- `VAL_STAGE=after` `testing/ui-validation/route-breakdown-garage-workflow/validate-route-breakdown-garage-workflow.spec.js` passed (desktop + mobile).
+
+### Actor-specific ticket-detail component migration completed (April 18, 2026)
+- Replaced iframe-based shared ticket detail host usage in dashboards with actor-specific components:
+	- `supervisor-ticket-detail-view`
+	- `to-ticket-detail-view`
+- Updated Supervisor and Technical Officer dashboard orchestration to open standalone `pages/view-ticket/index.html` directly with role override and dashboard-section return path.
+- Removed shared iframe host implementation files (`pages/components/shared/ac-ticket-detail-view.js` and `.css`) to prevent regressions back to iframe rendering.
+- Preserved existing View Ticket UI by keeping `pages/view-ticket/*` unchanged.
+- Validation evidence:
+	- `VAL_STAGE=after` `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js` passed (desktop + mobile).
+	- `VAL_STAGE=after` `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js` passed (desktop + mobile).
+
+### Shared ticket-detail dual-scroll fix superseded by actor-specific detail components (April 18, 2026)
+- Initial dual-scroll mitigation was implemented on the shared ticket-detail host, then superseded in the same day by removing iframe-based host usage entirely.
+- Current architecture uses actor-specific components (`supervisor-ticket-detail-view`, `to-ticket-detail-view`) that open standalone `pages/view-ticket/index.html` directly (no iframe).
+- Shared iframe host files were removed to avoid regression to nested scrolling behavior.
+- Validation evidence:
+	- `VAL_STAGE=after` `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js` passed (desktop + mobile).
+	- `VAL_STAGE=after` `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js` passed (desktop + mobile).
+
+### Supervisor view-breakdown side-effect slice superseded (April 17, 2026)
+- This view-only slice was later superseded by TASK047 product-direction changes that unified Supervisor breakdown actions to ticket-flow semantics (`VIEW TICKET`).
+- Added shared `ac-breakdown-detail-view` host and mounted a dedicated `breakdown-details` dashboard section in Supervisor.
+- Rewired Supervisor breakdown view actions from fault-ticket and fault-ticket-tracking lists to open the new section instead of creating/converting tickets.
+- Removed breakdown-to-ticket create CTA/event handling from Supervisor view-ticket modal breakdown content.
+- Historical validation evidence (superseded behavior only):
+	- Updated and executed `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js`.
+	- Desktop + mobile passed for the former view-only path before TASK047 replaced it.
+
+### Supervisor ticket-detail UX stabilization completed (April 17, 2026)
+- Addressed three supervisor-facing issues in ticket detail flow:
+	- Back button styling for shared `ac-ticket-detail-view` was added and aligned with project navigation standards.
+	- Opening ticket details from deep list positions now resets viewport to top.
+	- Supervisor view actions are now clearly labeled by behavior (`VIEW TICKET` vs `VIEW BREAKDOWN`) to remove modal/page ambiguity.
+- Validation evidence:
+	- `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js` passed desktop + mobile after changes.
+	- TO regression guard `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js` passed desktop + mobile after shared component updates.
+
+### TO + Supervisor in-dashboard ticket detail componentization completed (April 17, 2026)
+- Replaced remaining Supervisor ticket-detail redirect behavior with section-based component flow in `pages/dashboard/supervisor/script.js` (`viewTicketDetails`) and removed fallback redirect in `supervisor-fault-ticket-tracking`.
+- TO and Supervisor dashboards now both rely on `ticket-details` section + shared `ac-ticket-detail-view` behavior with return-section handling.
+- Updated UI validation suites for the new section-based behavior:
+	- `testing/ui-validation/to-ticket-routing/validate-to-ticket-routing.spec.js`
+	- `testing/ui-validation/supervisor-ticket-modals/validate-supervisor-ticket-modals.spec.js`
+- Validation evidence:
+	- Desktop + mobile passed for both specs (4/4 total) after serving frontend at `127.0.0.1:3000`.
+- Task tracking updates:
+	- TASK037 set to In Progress (fault-ticket detail routing slice complete; broader decomposition pending).
+	- TASK038 set to In Progress (TO ticket detail routing slice complete; broader decomposition pending).
+
+### Dangerous in-route priority lock + supervisor visibility hardening completed (April 17, 2026)
+- Completed TASK046 to enforce dangerous-cargo route-breakdown urgency lock and consistent supervisor visibility.
+- Backend updates complete:
+	- `RouteBreakdownController` now normalizes incoming severity and forces `critical` for dangerous-cargo in-route breakdown contexts during create/update.
+	- `FaultTicketService` now enriches route-breakdown tickets with `is_dangerous_cargo`, `dangerous_cargo_present`, `dangerous_cargo_summary`, and `dangerous_cargo_trip_id` during formatting.
+- Frontend updates complete:
+	- Driver in-route breakdown modal now auto-locks urgency to critical, disables severity editing, and shows contextual dangerous-cargo lock notice.
+- Validation evidence:
+	- `VAL_STAGE=after` run passed for `testing/ui-validation/transportation-cargo-lifecycle/validate-transportation-cargo-lifecycle.spec.js` (1/1).
+	- PHP lint passed for `app/controllers/RouteBreakdownController.php` and `app/services/FaultTicketService.php`.
+
+### Transportation Manager cargo catalogue/details UX refinement completed (April 17, 2026)
+- Completed TASK045 to improve TM cargo management information architecture and interactions.
+- Frontend updates complete:
+	- Removed embedded Cargo Analytics subsection from `tm-cargo-management` and retained catalogue-focused UI only.
+	- Added catalogue filters (search + cargo type + status) and action-first item rows.
+	- Follow-up UI cleanup removed explicit refresh buttons and restructured cargo toolbar into cleaner grouped rows.
+	- Follow-up modal polish fixed `Mark as dangerous cargo` checkbox alignment in add-cargo modal.
+	- Second-pass modal polish adjusted dangerous-checkbox margins/padding and centered checkbox row content.
+	- Replaced inline cargo create form with modal flow using `tm-cargo-item-modal`.
+	- Added dedicated cargo details section/component `tm-cargo-details` with breadcrumb/back layout, item profile, analytics cards, trend chart, and recent trip usage.
+	- Updated parent TM orchestration for cargo create modal open, details navigation/back flow, and cargo details refresh.
+- Validation evidence:
+	- Updated and executed `testing/ui-validation/transportation-cargo-section-split/validate-transportation-cargo-section-split.spec.js` with `VAL_STAGE=after` (pass: 1/1).
+	- Updated and executed `testing/ui-validation/transportation-cargo-lifecycle/validate-transportation-cargo-lifecycle.spec.js` with `VAL_STAGE=after` (pass: 1/1).
+
+### Transportation Manager cargo section split completed (April 17, 2026)
+- Completed TASK044 to separate cargo management from Trips into a dedicated TM dashboard section and sidebar entry.
+- Frontend updates complete:
+	- Added new `cargo-management` section + sidebar item and mounted `<tm-cargo-management>` in TM dashboard layout.
+	- Added `pages/dashboard/transportation-manager/components/cargo-management/script.js` and `style.css` to own cargo analytics and cargo catalog behavior.
+	- Refactored `tm-trips` to trips-only ownership (trip lifecycle/list actions retained; cargo analytics/catalog removed).
+	- Updated parent TM orchestration refresh to include cargo section on trip modal completion and section navigation.
+- Validation evidence:
+	- Added `testing/ui-validation/transportation-cargo-section-split/validate-transportation-cargo-section-split.spec.js`.
+	- `VAL_STAGE=before`: passed (1/1).
+	- `VAL_STAGE=after`: passed (1/1) with desktop and mobile viewport checks.
+	- Regression guard `VAL_STAGE=after` for `testing/ui-validation/transportation-cargo-lifecycle/validate-transportation-cargo-lifecycle.spec.js`: passed (1/1).
+	- Final rerun from `testing/ui-validation` workspace reconfirmed both after-stage specs passing (1/1 each).
+	- `VAL_STAGE=before` remains baseline-only and is expected to fail if rerun on post-refactor code.
+
+### Transportation cargo lifecycle + dangerous route-breakdown escalation completed (April 17, 2026)
+- Completed TASK043 end-to-end for TM cargo management/analytics, Driver cargo visibility, and Supervisor dangerous-cargo escalation visibility.
+- Backend/domain updates complete:
+	- Added migration `056_add_cargo_lifecycle_and_route_dangerous_snapshot.php` for cargo catalog/trip cargo assignments and route-breakdown dangerous snapshot fields.
+	- Added cargo APIs in Trip domain (`/trips/cargo-items` CRUD + `/trips/cargo-analytics`).
+	- Trip payloads now include structured cargo fields (`cargo_items`, `total_cargo_quantity`, `dangerous_cargo_quantity`, `has_dangerous_cargo`, `cargo_summary`).
+	- Fault-ticket/route-breakdown dangerous context flow now exposes dangerous snapshot metadata for escalation visibility.
+- Frontend updates complete:
+	- TM trip assignment/edit/view modals now support structured cargo rows with quantity/notes and dangerous indicators.
+	- TM trips page now includes cargo catalog management + cargo analytics UI.
+	- Driver trip log + trip/ticket modals now show structured cargo summaries/details and dangerous markers.
+	- Supervisor ticket lists now show dangerous-cargo chip/summary/trip context for route-breakdown tickets.
+	- Shared `pages/view-ticket` now renders dangerous cargo panel + flow narrative context.
+- API contract + validation:
+	- Updated `testing/openapi.yaml` for cargo endpoints/schemas and dangerous snapshot fields.
+	- Executed `VAL_STAGE=after` for `testing/ui-validation/transportation-cargo-lifecycle/validate-transportation-cargo-lifecycle.spec.js` (pass: 1/1).
+	- Editor diagnostics reported no errors for touched files.
+
 ### Route-breakdown driver GPS + map-based garage approval completed (April 17, 2026)
 - Completed TASK042 end-to-end for driver coordinate capture and supervisor map-based garage approval.
 - Backend/data updates complete:
@@ -21,7 +929,7 @@ Dashboard Web Components refactor execution for the active Supervisor residual s
 		- `VAL_STAGE=before`: passed (2/2 desktop+mobile)
 		- `VAL_STAGE=after`: passed (2/2 desktop+mobile)
 		- PHP lint, JS syntax checks, and editor diagnostics passed for touched files.
-=======
+
 ### Transportation Manager garage management + supervisor map approval update (April 17, 2026)
 - Implemented backend garage creation endpoint in `app/controllers/GarageController.php` and registered `POST /garages` in `public/index.php`.
 - Added missing `GET /route-breakdowns/garages` route registration in `public/index.php` for route-breakdown garage workflows.
@@ -44,7 +952,6 @@ Dashboard Web Components refactor execution for the active Supervisor residual s
 - Validation status:
 	- `VAL_STAGE=before`: passed (desktop + mobile)
 	- `VAL_STAGE=after`: passed (desktop + mobile)
->>>>>>> Stashed changes
 
 ### Vehicle government fuel QR image flow completed (April 16, 2026)
 - Completed TASK041 for Sri Lanka external-fuel QR support across vehicle management, TM dashboard, and Driver dashboard.

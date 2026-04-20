@@ -1,6 +1,14 @@
 // Machine form modal workflow (add/edit)
 
+function cleanupMachineModals() {
+    document.querySelectorAll('#addMachineModal, #editMachineModal').forEach((modal) => {
+        modal.remove();
+    });
+}
+
 async function openAddMachineModal() {
+    cleanupMachineModals();
+
     // Fetch next machine ID before creating the modal
     let nextMachineId = 'MCH-001';
     try {
@@ -46,7 +54,7 @@ function createMachineModal(machine = null, nextMachineId = 'MCH-001') {
                         </div>
                         <div class="form-group">
                             <label class="form-label">Machine Name *</label>
-                            <select class="form-select" id="machineName" required onchange="updateMachineComponents()">
+                            <select class="form-select" id="machineName" required onchange="updateMachineComponents(this)">
                                 <option value="">Select Machine Type</option>
                                 ${Object.keys(MACHINE_TYPES).map(type => `
                                     <option value="${type}" ${machine?.machine_name === type ? 'selected' : ''}>${type}</option>
@@ -108,13 +116,6 @@ function createMachineModal(machine = null, nextMachineId = 'MCH-001') {
                             <input type="number" class="form-input" id="serviceInterval" 
                                    value="${machine?.service_interval_days || 90}" min="1" required>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Last Service Date</label>
-                            <input type="date" class="form-input" id="lastServiceDate" 
-                                   value="${machine?.last_service_date || ''}" 
-                                   max="${new Date().toISOString().split('T')[0]}">
-                            <small style="color: var(--muted); display: block; margin-top: 4px;">Cannot be in the future</small>
-                        </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -126,6 +127,51 @@ function createMachineModal(machine = null, nextMachineId = 'MCH-001') {
                             <label class="form-label">Warranty Provider</label>
                             <input type="text" class="form-input" id="warrantyProvider" 
                                    value="${machine?.warranty_provider || ''}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-shield-alt"></i> Insurance</h5>
+                    <small style="color: var(--muted); display: block; margin-bottom: 10px;">Optional during machine creation. You can add or update insurance details later from Insurance Management.</small>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Insurance Type</label>
+                            <select class="form-select" id="insuranceType">
+                                <option value="">Select Insurance Type</option>
+                                <option value="Full" ${machine?.insurance_type === 'Full' ? 'selected' : ''}>Full</option>
+                                <option value="Third-Party" ${machine?.insurance_type === 'Third-Party' ? 'selected' : ''}>Third-Party</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Insurance Provider</label>
+                            <input type="text" class="form-input" id="insuranceProvider"
+                                   value="${machine?.insurance_provider || ''}">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Insurance Provider Details</label>
+                            <textarea class="form-textarea" id="insuranceProviderDetails" rows="2">${machine?.insurance_provider_details || ''}</textarea>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Insurance Renew Interval (Days)</label>
+                            <input type="number" class="form-input" id="insuranceRenewIntervalDays"
+                                   value="${machine?.insurance_renew_interval_days || ''}" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Last Insurance Renew Date</label>
+                            <input type="date" class="form-input" id="lastInsuranceRenewDate"
+                                   value="${machine?.last_insurance_renew_date || ''}"
+                                   max="${new Date().toISOString().split('T')[0]}">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Last Insurance Renew Details</label>
+                            <textarea class="form-textarea" id="lastInsuranceRenewDetails" rows="2">${machine?.last_insurance_renew_details || ''}</textarea>
                         </div>
                     </div>
                 </div>
@@ -175,9 +221,14 @@ function createMachineModal(machine = null, nextMachineId = 'MCH-001') {
 }
 
 // Update machine components based on selected machine type
-function updateMachineComponents() {
-    const machineType = document.getElementById('machineName')?.value;
-    const componentsGrid = document.getElementById('componentsGrid');
+function updateMachineComponents(trigger) {
+    const form = trigger?.closest('form') || document.getElementById('editMachineForm') || document.getElementById('addMachineForm');
+    if (!form) {
+        return;
+    }
+
+    const machineType = form.querySelector('#machineName')?.value;
+    const componentsGrid = form.querySelector('#componentsGrid');
 
     if (!componentsGrid) return;
 
@@ -199,16 +250,16 @@ async function handleAddMachine(e) {
     e.preventDefault();
 
     try {
-        const formData = getMachineFormData();
+        const form = e.currentTarget;
+        const formData = getMachineFormData(form);
 
-        // Validate last service date is not in the future
-        if (formData.last_service_date) {
-            const lastServiceDate = new Date(formData.last_service_date);
+        if (formData.last_insurance_renew_date) {
+            const lastInsuranceRenewDate = new Date(formData.last_insurance_renew_date);
             const today = new Date();
-            today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+            today.setHours(0, 0, 0, 0);
 
-            if (lastServiceDate > today) {
-                Utils.showToast('Last service date cannot be in the future', 'error');
+            if (lastInsuranceRenewDate > today) {
+                Utils.showToast('Last insurance renew date cannot be in the future', 'error');
                 return;
             }
         }
@@ -219,13 +270,15 @@ async function handleAddMachine(e) {
             Utils.showToast('Machine added successfully!', 'success');
             closeModal('addMachineModal');
             await refreshMachines();
+            if (typeof refreshInsuranceManagement === 'function') {
+                await refreshInsuranceManagement();
+            }
         } else if (response.status === 'error') {
             // Display error message from backend
             Utils.showToast(response.message || 'Failed to add machine', 'error');
 
             // If there are validation errors, display them on the form
             if (response.errors) {
-                const form = document.getElementById('addMachineForm');
                 Utils.showFormErrors(form, response.errors);
             }
         }
@@ -239,17 +292,22 @@ async function handleEditMachine(e) {
     e.preventDefault();
 
     try {
-        const machineId = document.getElementById('machineId').value;
-        const formData = getMachineFormData();
+        const form = e.currentTarget;
+        const machineId = form.querySelector('#machineId')?.value;
+        const formData = getMachineFormData(form);
 
-        // Validate last service date is not in the future
-        if (formData.last_service_date) {
-            const lastServiceDate = new Date(formData.last_service_date);
+        if (!machineId) {
+            Utils.showToast('Machine ID is missing for update', 'error');
+            return;
+        }
+
+        if (formData.last_insurance_renew_date) {
+            const lastInsuranceRenewDate = new Date(formData.last_insurance_renew_date);
             const today = new Date();
-            today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+            today.setHours(0, 0, 0, 0);
 
-            if (lastServiceDate > today) {
-                Utils.showToast('Last service date cannot be in the future', 'error');
+            if (lastInsuranceRenewDate > today) {
+                Utils.showToast('Last insurance renew date cannot be in the future', 'error');
                 return;
             }
         }
@@ -260,13 +318,15 @@ async function handleEditMachine(e) {
             Utils.showToast('Machine updated successfully!', 'success');
             closeModal('editMachineModal');
             await refreshMachines();
+            if (typeof refreshInsuranceManagement === 'function') {
+                await refreshInsuranceManagement();
+            }
         } else if (response.status === 'error') {
             // Display error message from backend
             Utils.showToast(response.message || 'Failed to update machine', 'error');
 
             // If there are validation errors, display them on the form
             if (response.errors) {
-                const form = document.getElementById('editMachineForm');
                 Utils.showFormErrors(form, response.errors);
             }
         }
@@ -276,27 +336,43 @@ async function handleEditMachine(e) {
     }
 }
 
-function getMachineFormData() {
-    const selectedComponents = Array.from(document.querySelectorAll('input[name="machineComponent"]:checked'))
+function parsePositiveIntegerOrNull(value) {
+    const parsed = Number.parseInt(String(value || '').trim(), 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+        return null;
+    }
+
+    return parsed;
+}
+
+function getMachineFormData(form) {
+    const selectedComponents = Array.from(form.querySelectorAll('input[name="machineComponent"]:checked'))
         .map(cb => cb.value);
 
     return {
-        machine_name: document.getElementById('machineName').value,
-        model_number: document.getElementById('modelNumber').value,
-        location: document.getElementById('location').value,
-        status: document.getElementById('status').value,
-        supplier_name: document.getElementById('supplierName').value,
-        supplier_contact: document.getElementById('supplierContact').value,
-        service_interval_days: parseInt(document.getElementById('serviceInterval').value),
-        last_service_date: document.getElementById('lastServiceDate').value || null,
-        warranty_expiry: document.getElementById('warrantyExpiry').value || null,
-        warranty_provider: document.getElementById('warrantyProvider').value,
+        machine_name: form.querySelector('#machineName')?.value || '',
+        model_number: form.querySelector('#modelNumber')?.value || '',
+        location: form.querySelector('#location')?.value || '',
+        status: form.querySelector('#status')?.value || 'Active',
+        supplier_name: form.querySelector('#supplierName')?.value || '',
+        supplier_contact: form.querySelector('#supplierContact')?.value || '',
+        service_interval_days: parseInt(form.querySelector('#serviceInterval')?.value || '0', 10),
+        warranty_expiry: form.querySelector('#warrantyExpiry')?.value || null,
+        warranty_provider: form.querySelector('#warrantyProvider')?.value || null,
+        insurance_type: form.querySelector('#insuranceType')?.value || null,
+        insurance_provider: (form.querySelector('#insuranceProvider')?.value || '').trim(),
+        insurance_provider_details: (form.querySelector('#insuranceProviderDetails')?.value || '').trim(),
+        insurance_renew_interval_days: parsePositiveIntegerOrNull(form.querySelector('#insuranceRenewIntervalDays')?.value),
+        last_insurance_renew_date: form.querySelector('#lastInsuranceRenewDate')?.value || null,
+        last_insurance_renew_details: (form.querySelector('#lastInsuranceRenewDetails')?.value || '').trim(),
         components: selectedComponents,
-        notes: document.getElementById('notes').value
+        notes: form.querySelector('#notes')?.value || ''
     };
 }
 
 async function editMachine(id) {
+    cleanupMachineModals();
+
     const machine = await fetchMachineRecord(id);
     if (!machine) {
         Utils.showToast('Machine not found', 'error');

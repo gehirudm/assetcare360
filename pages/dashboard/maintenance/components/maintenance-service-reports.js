@@ -6,160 +6,73 @@ class MaintenanceServiceReports extends HTMLElement {
 
         this._mounted = true;
         this.currentFilter = 'all';
-        this.reportData = this.buildReportData();
-        this.underReviewIds = ['SR-002', 'SR-004'];
-        this.reviewedIds = ['SR-001', 'SR-003'];
+        this.currentSearch = '';
+        this.loading = false;
+        this.reports = [];
 
         this.render();
         this.bindEvents();
-        this.renderReportLists();
-    }
-
-    buildReportData() {
-        return {
-            'SR-001': {
-                id: 'SR-001',
-                equipment: 'Vehicle #089',
-                serviceType: 'Brake System Complete Overhaul',
-                cost: 'LKR 15,000',
-                technicalOfficer: 'Technical Officer B',
-                serviceDate: 'Aug 19, 2025',
-                description: 'Complete brake system overhaul including master cylinder replacement, brake pad replacement, and brake fluid system flush.',
-                partsUsed: 'Brake pads (4 sets), Brake fluid (2L), Brake discs (2), Master cylinder (1)',
-                laborHours: '8 hours',
-                invoiceNumbers: 'INV-089-BRK-001, INV-089-BRK-002',
-                warrantyClaims: 'WC-001 - Brake disc replacement under warranty',
-                nextServiceDue: 'Aug 19, 2026',
-                recommendations: 'Monitor brake fluid levels monthly',
-            },
-            'SR-002': {
-                id: 'SR-002',
-                equipment: 'Machine #203',
-                serviceType: 'Preventive Maintenance - Hydraulic System',
-                cost: 'LKR 8,500',
-                technicalOfficer: 'Technical Officer A',
-                serviceDate: 'Aug 15, 2025',
-                description: 'Routine preventive maintenance of hydraulic system including oil change, filter replacement, and system pressure testing.',
-                partsUsed: 'Hydraulic oil (15L), Oil filter (2), Pressure seals (5)',
-                laborHours: '4 hours',
-                invoiceNumbers: 'INV-203-HYD-001',
-                warrantyClaims: 'None',
-                nextServiceDue: 'Nov 15, 2025',
-                recommendations: 'Check hydraulic oil levels weekly',
-            },
-            'SR-003': {
-                id: 'SR-003',
-                equipment: 'Machine #180',
-                serviceType: 'Engine Maintenance',
-                cost: 'LKR 28,000',
-                technicalOfficer: 'Technical Officer A',
-                serviceDate: 'Aug 10, 2025',
-                description: 'Major engine maintenance including valve adjustment, timing chain replacement, and complete engine tune-up.',
-                partsUsed: 'Timing chain (1), Engine oil (8L), Air filter (1), Spark plugs (6)',
-                laborHours: '12 hours',
-                invoiceNumbers: 'INV-180-ENG-001, INV-180-ENG-002',
-                warrantyClaims: 'WC-002 - Timing chain under warranty',
-                nextServiceDue: 'Feb 10, 2026',
-                recommendations: 'Monitor engine temperature and oil pressure',
-            },
-            'SR-004': {
-                id: 'SR-004',
-                equipment: 'Vehicle #067',
-                serviceType: 'Engine Service - Complete overhaul',
-                cost: 'LKR 22,000',
-                technicalOfficer: 'Technical Officer B',
-                serviceDate: 'Aug 12, 2025',
-                description: 'Complete engine overhaul including piston replacement, crankshaft grinding, and cylinder head refurbishment.',
-                partsUsed: 'Pistons (4), Engine gaskets, Engine oil (6L), Oil filter (1)',
-                laborHours: '16 hours',
-                invoiceNumbers: 'INV-067-ENG-001',
-                warrantyClaims: 'WC-003 - Piston set under warranty',
-                nextServiceDue: 'Feb 12, 2026',
-                recommendations: 'Break-in period required - light duty for 100 hours',
-            },
-        };
+        this.refresh();
     }
 
     render() {
         this.innerHTML = `
             <div class="page-header">
                 <h1 class="page-title">Service Report Management</h1>
-                <p class="page-subtitle">Review service reports with invoices/warranty claims</p>
+                <p class="page-subtitle">Submitted service reports are listed automatically and can be viewed in detail</p>
             </div>
 
             <div class="filter-controls" id="serviceReportFilterControls">
-                <button class="filter-btn active" type="button" data-action="set-filter" data-status="all">All Reports</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-status="under-review">Under Review</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-status="reviewed">Reviewed</button>
+                <button class="filter-btn active" type="button" data-action="set-filter" data-status="all">All Assets</button>
+                <button class="filter-btn" type="button" data-action="set-filter" data-status="vehicle">Vehicles</button>
+                <button class="filter-btn" type="button" data-action="set-filter" data-status="machine">Machines</button>
             </div>
 
-            <div class="card service-report-card" data-report-status="under-review">
-                <div class="card-header"><i class="fas fa-clipboard-list"></i> Reports Under Review</div>
-                <div id="underReviewReportsList"></div>
-            </div>
-
-            <div class="card service-report-card" data-report-status="reviewed" style="display: none;">
-                <div class="card-header"><i class="fas fa-check-circle"></i> Reviewed Reports</div>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Report ID</th>
-                            <th>Equipment</th>
-                            <th>Service Type</th>
-                            <th>Cost</th>
-                            <th>Technical Officer</th>
-                            <th>Review Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reviewedReportsTableBody"></tbody>
-                </table>
+            <div class="search-bar" style="margin-bottom: 20px;">
+                <input id="maintenanceServiceReportSearch" class="search-input" data-action="search" placeholder="Search by ticket ID, asset, technical officer, or service type">
             </div>
 
             <div class="card">
-                <div class="card-header"><i class="fas fa-chart-bar"></i> Report Statistics</div>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
-                    <div class="stats-card stats-pending">
-                        <div class="stats-number" id="underReviewCount">0</div>
-                        <div class="stats-label">Under Review</div>
-                    </div>
-                    <div class="stats-card stats-active">
-                        <div class="stats-number">25</div>
-                        <div class="stats-label">Reports This Month</div>
-                    </div>
-                    <div class="stats-card" style="background: #f0f9ff; border: 1px solid #e0f2fe;">
-                        <div class="stats-number" style="color: var(--royal-blue);">LKR 2.8L</div>
-                        <div class="stats-label">Total Service Cost</div>
-                    </div>
+                <div class="card-header">
+                    <span><i class="fas fa-clipboard-check"></i> Submitted Service Reports</span>
+                    <span class="status-badge status-completed" id="maintenanceServiceReportCount">Loading...</span>
+                </div>
+                <div id="maintenanceServiceReportList" class="inventory-list">
+                    <div style="text-align: center; color: var(--muted); padding: 20px;">Loading service reports...</div>
                 </div>
             </div>
         `;
     }
 
     bindEvents() {
-        this.addEventListener('click', (event) => {
-            const button = event.target.closest('button');
-            if (!button) {
+        this.addEventListener('input', (event) => {
+            const searchInput = event.target.closest('[data-action="search"]');
+            if (!searchInput) {
                 return;
             }
 
-            const action = button.dataset.action;
+            this.currentSearch = String(searchInput.value || '').trim().toLowerCase();
+            this.renderReportRows();
+        });
+
+        this.addEventListener('click', (event) => {
+            const actionNode = event.target.closest('[data-action]');
+            if (!actionNode) {
+                return;
+            }
+
+            const action = actionNode.dataset.action;
             if (!action) {
                 return;
             }
 
             if (action === 'set-filter') {
-                this.applyFilter(button.dataset.status, button);
-                return;
-            }
-
-            if (action === 'approve-report') {
-                this.approveReport(button.dataset.reportId);
+                this.applyFilter(actionNode.dataset.status, actionNode);
                 return;
             }
 
             if (action === 'view-report') {
-                this.viewReportDetails(button.dataset.reportId);
+                this.viewReportDetails(actionNode.dataset.ticketId);
             }
         });
     }
@@ -171,79 +84,43 @@ class MaintenanceServiceReports extends HTMLElement {
         }));
     }
 
-    getReport(reportId) {
-        return this.reportData[String(reportId)] || null;
+    async refresh() {
+        this.loading = true;
+        this.renderReportRows();
+        this.updateSummary();
+
+        let errorMessage = '';
+
+        try {
+            const response = await API.get('/service-tickets?status=Completed&sort_by=created&sort_dir=desc');
+            this.reports = this.extractTickets(response);
+        } catch (error) {
+            console.error('Failed to load submitted service reports:', error);
+            this.reports = [];
+            errorMessage = 'Failed to load submitted service reports.';
+            this.emitToast('Failed to load submitted service reports.', 'error');
+        }
+
+        this.loading = false;
+        this.renderReportRows(errorMessage);
+        this.updateSummary();
     }
 
-    renderReportLists() {
-        const underReviewList = this.querySelector('#underReviewReportsList');
-        const reviewedBody = this.querySelector('#reviewedReportsTableBody');
-        const underReviewCount = this.querySelector('#underReviewCount');
-
-        if (underReviewList) {
-            if (this.underReviewIds.length === 0) {
-                underReviewList.innerHTML = '<p style="text-align: center; color: var(--muted); padding: 20px;">No reports under review.</p>';
-            } else {
-                underReviewList.innerHTML = this.underReviewIds.map((reportId) => {
-                    const report = this.getReport(reportId);
-                    if (!report) {
-                        return '';
-                    }
-
-                    return `
-                        <div class="request-item">
-                            <div class="ticket-details">
-                                <strong>${report.id}</strong>
-                                <div class="ticket-meta">Equipment: ${report.equipment} | Submitted by: ${report.technicalOfficer}</div>
-                                <div class="ticket-issue">${report.serviceType}</div>
-                                <div class="ticket-meta">
-                                    Date: ${report.serviceDate} | Cost: ${report.cost}<br>
-                                    Parts Used: ${report.partsUsed}<br>
-                                    Attachments: ${report.invoiceNumbers}
-                                </div>
-                            </div>
-                            <div class="ticket-actions">
-                                <span class="status-badge status-under-review">Under Review</span>
-                                <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px;">
-                                    <button class="btn btn-success btn-small" type="button" data-action="approve-report" data-report-id="${report.id}">Approve</button>
-                                    <button class="btn btn-secondary btn-small" type="button" data-action="view-report" data-report-id="${report.id}">View Report</button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
+    extractTickets(response) {
+        if (!response || response.status !== 'success') {
+            return [];
         }
 
-        if (reviewedBody) {
-            if (this.reviewedIds.length === 0) {
-                reviewedBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--muted);">No reviewed reports available</td></tr>';
-            } else {
-                reviewedBody.innerHTML = this.reviewedIds.map((reportId) => {
-                    const report = this.getReport(reportId);
-                    if (!report) {
-                        return '';
-                    }
-
-                    const reviewDate = report.reviewDate || report.serviceDate;
-                    return `
-                        <tr>
-                            <td>${report.id}</td>
-                            <td>${report.equipment}</td>
-                            <td>${report.serviceType}</td>
-                            <td>${report.cost}</td>
-                            <td>${report.technicalOfficer}</td>
-                            <td>${reviewDate}</td>
-                            <td><button class="btn btn-secondary btn-small" type="button" data-action="view-report" data-report-id="${report.id}">View</button></td>
-                        </tr>
-                    `;
-                }).join('');
-            }
+        const payload = response.data || {};
+        if (Array.isArray(payload.tickets)) {
+            return payload.tickets;
         }
 
-        if (underReviewCount) {
-            underReviewCount.textContent = String(this.underReviewIds.length);
+        if (Array.isArray(payload)) {
+            return payload;
         }
+
+        return [];
     }
 
     setActiveFilterButton(button) {
@@ -267,59 +144,214 @@ class MaintenanceServiceReports extends HTMLElement {
             this.setActiveFilterButton(activeButton);
         }
 
-        this.querySelectorAll('.service-report-card').forEach((card) => {
-            const reportStatus = card.dataset.reportStatus;
-            card.style.display = nextStatus === 'all' || reportStatus === nextStatus ? 'block' : 'none';
+        this.renderReportRows();
+    }
+
+    getStatusMeta(status) {
+        const normalized = String(status || '').toLowerCase();
+        if (normalized.includes('completed')) {
+            return { text: 'Completed', className: 'status-completed' };
+        }
+        if (normalized.includes('progress')) {
+            return { text: 'In Progress', className: 'status-in-progress' };
+        }
+        if (normalized.includes('assigned')) {
+            return { text: 'Assigned', className: 'status-assigned' };
+        }
+
+        return { text: status || 'Submitted', className: 'status-scheduled' };
+    }
+
+    formatDateTime(value) {
+        if (!value) {
+            return 'N/A';
+        }
+
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return 'N/A';
+        }
+
+        return date.toLocaleString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
         });
     }
 
-    viewReportDetails(reportId) {
-        const report = this.getReport(reportId);
-        if (!report) {
-            this.emitToast(`Report ${reportId} not found.`, 'warning');
+    formatCurrency(value) {
+        if (value === null || value === undefined || value === '') {
+            return 'N/A';
+        }
+
+        if (typeof value === 'string' && value.trim().toUpperCase().startsWith('LKR')) {
+            return this.escapeHtml(value.trim());
+        }
+
+        const amount = Number(value);
+        if (!Number.isFinite(amount)) {
+            return this.escapeHtml(value);
+        }
+
+        return `LKR ${amount.toLocaleString('en-LK', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        })}`;
+    }
+
+    renderReportRows(errorMessage = '') {
+        const list = this.querySelector('#maintenanceServiceReportList');
+        if (!list) {
             return;
         }
 
-        const modal = document.querySelector('maintenance-report-details-modal');
-        if (!modal || typeof modal.open !== 'function') {
-            this.emitToast('Report details modal is unavailable.', 'error');
+        if (errorMessage) {
+            list.innerHTML = `<div style="text-align: center; color: var(--danger); padding: 20px;">${this.escapeHtml(errorMessage)}</div>`;
+            this.updateSummary(0);
             return;
         }
 
-        modal.open(report);
+        if (this.loading) {
+            list.innerHTML = '<div style="text-align: center; color: var(--muted); padding: 20px;">Loading service reports...</div>';
+            return;
+        }
+
+        const filteredReports = this.reports.filter((report) => {
+            const matchesFilter = this.currentFilter === 'all' || String(report.asset_type || '').toLowerCase() === this.currentFilter;
+
+            const searchText = [
+                report.service_ticket_id,
+                report.title,
+                report.service_type,
+                report.asset_name,
+                report.asset_code,
+                report.assigned_to_name,
+                report.reported_by_name,
+                report.completion_notes,
+            ].join(' ').toLowerCase();
+            const matchesSearch = !this.currentSearch || searchText.includes(this.currentSearch);
+
+            return matchesFilter && matchesSearch;
+        });
+
+        if (filteredReports.length === 0) {
+            list.innerHTML = '<div style="text-align: center; color: var(--muted); padding: 20px;">No submitted service reports found.</div>';
+            this.updateSummary(0);
+            return;
+        }
+
+        list.innerHTML = filteredReports.map((report) => {
+            const statusMeta = this.getStatusMeta(report.status);
+            const ticketId = this.escapeHtml(report.service_ticket_id || `#${report.id}`);
+            const title = this.escapeHtml(report.title || 'Submitted service report');
+            const assetType = this.escapeHtml(String(report.asset_type || '').toLowerCase() === 'machine' ? 'Machine' : 'Vehicle');
+            const assetName = this.escapeHtml(report.asset_name || 'Unknown asset');
+            const assetCode = this.escapeHtml(report.asset_code || '-');
+            const serviceType = this.escapeHtml(report.service_type || '-');
+            const technicalOfficer = this.escapeHtml(report.assigned_to_name || 'Unassigned');
+            const reportedBy = this.escapeHtml(report.reported_by_name || 'N/A');
+            const completedAt = this.escapeHtml(this.formatDateTime(report.completed_at || report.updated_at || report.created_at));
+            const actualCost = this.formatCurrency(report.actual_cost);
+            const notes = this.escapeHtml(report.completion_notes || report.description || 'No completion notes provided');
+
+            return `
+                <div class="inventory-item" data-ticket-id="${Number(report.id)}">
+                    <div class="item-details">
+                        <strong><i class="fas fa-clipboard-check"></i> ${ticketId} - ${title}</strong>
+                        <div class="item-meta">
+                            <i class="fas fa-cubes"></i> ${assetType}: ${assetName} (${assetCode})
+                            &nbsp;|&nbsp;
+                            <i class="fas fa-tag"></i> ${serviceType}
+                        </div>
+                        <div class="item-description">${notes}</div>
+                        <div class="item-meta">
+                            <span class="status-badge ${statusMeta.className}">${statusMeta.text}</span>
+                            &nbsp;|&nbsp;
+                            <i class="fas fa-user-cog"></i> Technical Officer: ${technicalOfficer}
+                            &nbsp;|&nbsp;
+                            <i class="fas fa-user"></i> Submitted By: ${reportedBy}
+                        </div>
+                        <div class="item-meta">
+                            <i class="fas fa-calendar-check"></i> Completed: ${completedAt}
+                            &nbsp;|&nbsp;
+                            <i class="fas fa-money-bill-wave"></i> Actual Cost: ${actualCost}
+                        </div>
+                    </div>
+                    <div class="item-actions" style="min-width: 180px;">
+                        <button class="btn btn-secondary btn-small" type="button" data-action="view-report" data-ticket-id="${Number(report.id)}">
+                            <i class="fas fa-eye"></i> View Report
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        this.updateSummary(filteredReports.length);
+    }
+
+    updateSummary(visibleCount = null) {
+        const countNode = this.querySelector('#maintenanceServiceReportCount');
+        if (!countNode) {
+            return;
+        }
+
+        if (this.loading) {
+            countNode.textContent = 'Loading...';
+            return;
+        }
+
+        const total = this.reports.length;
+        if (visibleCount === null) {
+            countNode.textContent = `${total} reports`;
+            return;
+        }
+
+        countNode.textContent = `${visibleCount} of ${total} reports`;
+    }
+
+    viewReportDetails(ticketId) {
+        const normalizedTicketId = String(ticketId || '').trim();
+        if (!normalizedTicketId) {
+            this.emitToast('Service report not found.', 'warning');
+            return;
+        }
+
+        if (typeof window.viewServiceTicketDetails === 'function') {
+            window.viewServiceTicketDetails(normalizedTicketId, {
+                returnSection: 'service-reports',
+            });
+            return;
+        }
+
+        const detailView = document.querySelector('maintenance-service-ticket-detail-view');
+        if (!detailView || typeof detailView.open !== 'function') {
+            this.emitToast('Service report details view is unavailable.', 'error');
+            return;
+        }
+
+        void detailView.open(normalizedTicketId, {
+            returnSection: 'service-reports',
+        });
     }
 
     approveReport(reportId) {
-        const id = String(reportId || '');
-        if (!this.underReviewIds.includes(id)) {
-            this.emitToast(`Report ${id} is already reviewed.`, 'info');
-            this.applyFilter('reviewed');
-            return;
-        }
-
-        this.underReviewIds = this.underReviewIds.filter((item) => item !== id);
-        if (!this.reviewedIds.includes(id)) {
-            this.reviewedIds.unshift(id);
-        }
-
-        const report = this.getReport(id);
-        if (report) {
-            report.reviewDate = new Date().toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-            });
-        }
-
-        this.renderReportLists();
-        this.emitToast(`Service report ${id} approved and moved to reviewed list!`, 'success');
-        setTimeout(() => {
-            this.applyFilter('reviewed');
-        }, 200);
+        this.emitToast('Service reports do not require manager approval. You can view submitted details directly.', 'info');
+        this.viewReportDetails(reportId);
     }
 
     reviewReport(reportId) {
         this.viewReportDetails(reportId);
+    }
+
+    escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 }
 

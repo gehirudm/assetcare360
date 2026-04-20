@@ -1,0 +1,54 @@
+{
+  "stage": "after",
+  "viewport": "mobile",
+  "startUrl": "http://127.0.0.1:3000/dashboard/supervisor/index.html?section=fault-ticket-tracking",
+  "finalUrl": "http://127.0.0.1:3000/view-ticket/index.html?id=301&role_override=SUPERVISOR&embedded=1",
+  "title": "Fault Ticket Detail - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - text: Ticket ID RBD-201 Status Assigned Priority High Equipment Route Vehicle Location Lat 6.927079, Lng 79.861244 Reported Apr 14, 2026 Issue Description\n  - paragraph: Engine vibration and warning light remain active\n  - text: Dangerous Cargo Context Hazardous Load Reported Trip TRIP-991\n  - paragraph: Compressed gas cylinders\n  - text: Insurance Claim Assessment Asset\n  - strong: Route Vehicle - WP-CAB-2010\n  - text: Provider\n  - strong: Alpha Insurance\n  - text: Type\n  - strong: Comprehensive\n  - text: Next Renewal Date\n  - strong: Dec 1, 2026\n  - text: Eligible for Insurance Claim\n  - paragraph: Within active coverage period.\n  - heading \"Breakdown Location Map\" [level=3]\n  - text: Lat 6.927079, Lng 79.861244 Marker\n  - paragraph: This map shows the location reported when the route breakdown was submitted.\n  - heading \"Ticket Progress Flow\" [level=2]\n  - text: Fault Reported Step 1 Driver One Apr 14, 2026\n  - paragraph: \"Fault reported. Breakdown type: route_breakdown. Dangerous cargo was active at report time. Cargo trip: TRIP-991.\"\n  - text: Assigned to Technician Step 2 Supervisor Supervisor Pending Technical Officer\n  - paragraph: Assigned on N/A.\n  - button \"Assign Technician\"\n  - button \"Approve Nearby Garage\"\n  - button \"Claim Insurance\"\n  - text: Eligible for insurance claim (Alpha Insurance). You can either assign a technician or submit the insurance claim. Budget Approval Step 3 Technical Officer Submitted by Total Amount\n  - strong: \"-\"\n  - text: Approval Level Supervisor Status Pending\n  - button \"Approve Budget\"\n  - button \"Reject Budget\"\n  - text: Spare Parts Request Step 4 No spare parts requested yet. Repair In Progress Step 5 Work has not started yet. Resolved Step 6 Not yet resolved. Ticket Closed Step 7 Ticket is not yet closed.",
+    "snapshotLength": 1794
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "dangerousCargoBadgeVisible": true,
+    "driverVehicleBreakdownVisible": true,
+    "approveGarageActionRemoved": true,
+    "viewLabelUpdated": true,
+    "newestFirstSortWorks": true,
+    "prioritySortWorks": true,
+    "garageApprovedStatusShown": true,
+    "legacyRouteDescriptionNormalized": true,
+    "listMapActionRemoved": true,
+    "listCoordinatesHidden": true,
+    "listTicketLineRemoved": true,
+    "reporterRoleShownNextToName": true,
+    "viewTicketEmbeddedMapVisible": true,
+    "detailGarageApprovalActionVisible": true,
+    "detailGarageApprovalModalCentered": true,
+    "detailGarageMapMarkersVisible": true,
+    "detailGarageMarkerSelectWorks": true,
+    "detailGarageApprovalSubmitWorks": true,
+    "sourceFilterVehicleWorks": true,
+    "sourceFilterMachineWorks": true,
+    "detailReturnSectionUsesFaultTicketTracking": true
+  },
+  "detailGarageModalGeometry": {
+    "overlayDisplay": "flex",
+    "overlayAlignItems": "center",
+    "overlayJustifyContent": "center",
+    "left": 16,
+    "top": 42.203125,
+    "deltaX": 0,
+    "deltaY": 0
+  },
+  "detailGarageApproval": {
+    "approvalCalls": 1,
+    "approvalPayload": {
+      "garage_id": 1,
+      "approval_notes": "Approved nearest garage for immediate repair."
+    },
+    "mapMarkerCount": 3,
+    "garageMarkerCount": 2
+  }
+}

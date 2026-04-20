@@ -1,0 +1,20 @@
+{
+  "stage": "after",
+  "viewport": "mobile",
+  "url": "http://127.0.0.1:3000/dashboard/machinery-operator/index.html",
+  "title": "Machinery Operator Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \" Machinery Operator Analytics\" [level=2]\n  - paragraph: Track machine faults, weekly checks, workflow progress, and notifications in one place.\n  - tablist \"Machinery analytics views\":\n    - tab \"Fault Analytics\"\n    - tab \"Weekly Check Analytics\"\n    - tab \"Machine Health Analytics\"\n    - tab \"Workflow Analytics\"\n    - tab \"Notification Analytics\" [selected]\n  - text: From Date\n  - textbox \"From Date\": 2026-04-01\n  - text: To Date\n  - textbox \"To Date\": 2026-04-30\n  - text: Report Type\n  - combobox \"Report Type\":\n    - option \"Active Analytics View\" [selected]\n    - option \"Fault Analytics\"\n    - option \"Weekly Check Analytics\"\n    - option \"Machine Health Analytics\"\n    - option \"Workflow Analytics\"\n    - option \"Notification Analytics\"\n    - option \"All Analytics Summary\"\n  - button \" Apply Time Filter\"\n  - button \" Generate Report\"\n  - button \" Download CSV\"\n  - text: Analytics updated for selected period. Report downloaded successfully.\n  - heading \"Notification Analytics\" [level=3]\n  - paragraph: \"Period: 2026-04-01 to 2026-04-30 | Generated: Apr 19, 2026, 03:00 PM\"\n  - text: Total Notifications 3 Unread Notifications 2 Warning Error Notifications 1 Success Info Notifications 2\n  - table:\n    - rowgroup:\n      - row \"Notification ID Title Type Read Created At Message\":\n        - columnheader \"Notification ID\"\n        - columnheader \"Title\"\n        - columnheader \"Type\"\n        - columnheader \"Read\"\n        - columnheader \"Created At\"\n        - columnheader \"Message\"\n    - rowgroup:\n      - row \"NTF-001 Fault Ticket Updated info No 2026-04-08T09:10:00Z TKT-6102 moved to In Progress\":\n        - cell \"NTF-001\"\n        - cell \"Fault Ticket Updated\"\n        - cell \"info\"\n        - cell \"No\"\n        - cell \"2026-04-08T09:10:00Z\"\n        - cell \"TKT-6102 moved to In Progress\"\n      - row \"NTF-002 Weekly Check Approved success Yes 2026-04-06T14:20:00Z MCHK-301 approved by supervisor\":\n        - cell \"NTF-002\"\n        - cell \"Weekly Check Approved\"\n        - cell \"success\"\n        - cell \"Yes\"\n        - cell \"2026-04-06T14:20:00Z\"\n        - cell \"MCHK-301 approved by supervisor\"\n      - row \"NTF-003 Weekly Check Rejected warning No 2026-04-19T11:05:00Z MCHK-303 requires corrections\":\n        - cell \"NTF-003\"\n        - cell \"Weekly Check Rejected\"\n        - cell \"warning\"\n        - cell \"No\"\n        - cell \"2026-04-19T11:05:00Z\"\n        - cell \"MCHK-303 requires corrections\"\n  - tabpanel: Notifications 3 Unread 2 Warning + Error 1 Success + Info 2 Notification Type Mix Distribution of notification severity and categories. Notification Timeline Daily notification volume in the selected period.",
+    "snapshotLength": 2660
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "stage": "after",
+    "analyticsNavPresent": true,
+    "analyticsSectionPresent": true,
+    "activeSection": "analytics",
+    "reportRows": 3,
+    "downloadSuggestedFilename": "mo-active-report-20260419-1500.csv"
+  }
+}

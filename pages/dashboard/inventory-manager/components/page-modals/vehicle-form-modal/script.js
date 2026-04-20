@@ -21,6 +21,60 @@ function updateVehicleComponents() {
     `).join('');
 }
 
+const VEHICLE_NAME_TO_DB_TYPE = {
+    'LPG Distribution Truck': 'Truck',
+    'Cylinder Delivery Van': 'Van',
+    'Forklift': 'Other',
+    'Tanker Lorry': 'Tanker',
+    'Staff Car': 'Car',
+    'Pickup Truck': 'Truck',
+    'Three-Wheeler': 'Three-Wheeler',
+    'Motorcycle': 'Bike'
+};
+
+function mapVehicleNameToDbType(vehicleName) {
+    const selectedName = String(vehicleName || '').trim();
+    if (!selectedName) {
+        return '';
+    }
+
+    if (VEHICLE_NAME_TO_DB_TYPE[selectedName]) {
+        return VEHICLE_NAME_TO_DB_TYPE[selectedName];
+    }
+
+    if (Array.isArray(CONFIG?.VEHICLE_TYPES) && CONFIG.VEHICLE_TYPES.includes(selectedName)) {
+        return selectedName;
+    }
+
+    const lower = selectedName.toLowerCase();
+    if (lower.includes('tanker')) {
+        return 'Tanker';
+    }
+    if (lower.includes('truck')) {
+        return 'Truck';
+    }
+    if (lower.includes('van')) {
+        return 'Van';
+    }
+    if (lower.includes('car')) {
+        return 'Car';
+    }
+    if (lower.includes('bus')) {
+        return 'Bus';
+    }
+    if (lower.includes('bike') || lower.includes('motorcycle')) {
+        return 'Bike';
+    }
+    if (lower.includes('three') && lower.includes('wheel')) {
+        return 'Three-Wheeler';
+    }
+    if (lower.includes('lorry')) {
+        return 'Lorry';
+    }
+
+    return 'Other';
+}
+
 async function openAddVehicleModal() {
     // Fetch next vehicle ID before creating the modal
     let nextVehicleId = 'VEH-001';
@@ -164,13 +218,6 @@ function createVehicleModal(vehicle = null, nextVehicleId = 'VEH-001') {
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Last Service Date</label>
-                            <input type="date" class="form-input" id="vehicleLastServiceDate" 
-                                   value="${vehicle?.last_service_date || ''}" 
-                                   max="${new Date().toISOString().split('T')[0]}">
-                            <small style="color: var(--muted); display: block; margin-top: 4px;">Cannot be in the future</small>
-                        </div>
-                        <div class="form-group">
                             <label class="form-label">Last Service Mileage (km)</label>
                             <input type="number" class="form-input" id="lastServiceMileage" 
                                    value="${vehicle?.last_service_mileage || ''}" min="0">
@@ -186,6 +233,51 @@ function createVehicleModal(vehicle = null, nextVehicleId = 'VEH-001') {
                             <label class="form-label">Warranty Provider</label>
                             <input type="text" class="form-input" id="vehicleWarrantyProvider" 
                                    value="${vehicle?.warranty_provider || ''}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h5><i class="fas fa-shield-alt"></i> Insurance</h5>
+                    <small style="color: var(--muted); display: block; margin-bottom: 10px;">Optional during vehicle creation. You can add or update insurance details later from Insurance Management.</small>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Insurance Type</label>
+                            <select class="form-select" id="vehicleInsuranceType">
+                                <option value="">Select Insurance Type</option>
+                                <option value="Full" ${vehicle?.insurance_type === 'Full' ? 'selected' : ''}>Full</option>
+                                <option value="Third-Party" ${vehicle?.insurance_type === 'Third-Party' ? 'selected' : ''}>Third-Party</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Insurance Provider</label>
+                            <input type="text" class="form-input" id="vehicleInsuranceProvider"
+                                   value="${vehicle?.insurance_provider || ''}">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Insurance Provider Details</label>
+                            <textarea class="form-textarea" id="vehicleInsuranceProviderDetails" rows="2">${vehicle?.insurance_provider_details || ''}</textarea>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Insurance Renew Interval (Days)</label>
+                            <input type="number" class="form-input" id="vehicleInsuranceRenewIntervalDays"
+                                   value="${vehicle?.insurance_renew_interval_days || ''}" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Last Insurance Renew Date</label>
+                            <input type="date" class="form-input" id="vehicleLastInsuranceRenewDate"
+                                   value="${vehicle?.last_insurance_renew_date || ''}"
+                                   max="${new Date().toISOString().split('T')[0]}">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Last Insurance Renew Details</label>
+                            <textarea class="form-textarea" id="vehicleLastInsuranceRenewDetails" rows="2">${vehicle?.last_insurance_renew_details || ''}</textarea>
                         </div>
                     </div>
                 </div>
@@ -268,14 +360,13 @@ async function handleAddVehicle(e) {
     try {
         const formData = getVehicleFormData();
 
-        // Validate last service date is not in the future
-        if (formData.last_service_date) {
-            const lastServiceDate = new Date(formData.last_service_date);
+        if (formData.last_insurance_renew_date) {
+            const lastInsuranceRenewDate = new Date(formData.last_insurance_renew_date);
             const today = new Date();
-            today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+            today.setHours(0, 0, 0, 0);
 
-            if (lastServiceDate > today) {
-                Utils.showToast('Last service date cannot be in the future', 'error');
+            if (lastInsuranceRenewDate > today) {
+                Utils.showToast('Last insurance renew date cannot be in the future', 'error');
                 return;
             }
         }
@@ -286,6 +377,9 @@ async function handleAddVehicle(e) {
             Utils.showToast('Vehicle added successfully!', 'success');
             closeModal('addVehicleModal');
             await refreshVehicles();
+            if (typeof refreshInsuranceManagement === 'function') {
+                await refreshInsuranceManagement();
+            }
         } else if (response.status === 'error') {
             // Display error message from backend
             Utils.showToast(response.message || 'Failed to add vehicle', 'error');
@@ -309,14 +403,13 @@ async function handleEditVehicle(e) {
         const vehicleId = document.getElementById('vehicleId').value;
         const formData = getVehicleFormData();
 
-        // Validate last service date is not in the future
-        if (formData.last_service_date) {
-            const lastServiceDate = new Date(formData.last_service_date);
+        if (formData.last_insurance_renew_date) {
+            const lastInsuranceRenewDate = new Date(formData.last_insurance_renew_date);
             const today = new Date();
-            today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+            today.setHours(0, 0, 0, 0);
 
-            if (lastServiceDate > today) {
-                Utils.showToast('Last service date cannot be in the future', 'error');
+            if (lastInsuranceRenewDate > today) {
+                Utils.showToast('Last insurance renew date cannot be in the future', 'error');
                 return;
             }
         }
@@ -327,6 +420,9 @@ async function handleEditVehicle(e) {
             Utils.showToast('Vehicle updated successfully!', 'success');
             closeModal('editVehicleModal');
             await refreshVehicles();
+            if (typeof refreshInsuranceManagement === 'function') {
+                await refreshInsuranceManagement();
+            }
         } else if (response.status === 'error') {
             // Display error message from backend
             Utils.showToast(response.message || 'Failed to update vehicle', 'error');
@@ -343,15 +439,25 @@ async function handleEditVehicle(e) {
     }
 }
 
+function parsePositiveIntegerOrNull(value) {
+    const parsed = Number.parseInt(String(value || '').trim(), 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+        return null;
+    }
+
+    return parsed;
+}
+
 function getVehicleFormData() {
     const serviceType = document.getElementById('serviceIntervalType').value;
+    const selectedVehicleName = document.getElementById('vehicleName').value;
 
     const formData = {
-        vehicle_name: document.getElementById('vehicleName').value,
+        vehicle_name: selectedVehicleName,
         model_number: document.getElementById('vehicleModelNumber').value,
         number_plate: document.getElementById('numberPlate').value,
         chassis_number: document.getElementById('chassisNumber').value,
-        vehicle_type: document.getElementById('vehicleName').value,
+        vehicle_type: mapVehicleNameToDbType(selectedVehicleName),
         fuel_type: document.getElementById('fuelType').value,
         current_mileage: parseInt(document.getElementById('currentMileage').value) || 0,
         status: document.getElementById('vehicleStatus').value,
@@ -359,8 +465,13 @@ function getVehicleFormData() {
         supplier_contact: document.getElementById('vehicleSupplierContact').value,
         service_interval_type: serviceType,
         warranty_expiry: document.getElementById('vehicleWarrantyExpiry').value || null,
-        warranty_provider: document.getElementById('vehicleWarrantyProvider').value,
-        last_service_date: document.getElementById('vehicleLastServiceDate').value || null,
+        warranty_provider: document.getElementById('vehicleWarrantyProvider').value || null,
+        insurance_type: document.getElementById('vehicleInsuranceType').value || null,
+        insurance_provider: (document.getElementById('vehicleInsuranceProvider').value || '').trim(),
+        insurance_provider_details: (document.getElementById('vehicleInsuranceProviderDetails').value || '').trim(),
+        insurance_renew_interval_days: parsePositiveIntegerOrNull(document.getElementById('vehicleInsuranceRenewIntervalDays').value),
+        last_insurance_renew_date: document.getElementById('vehicleLastInsuranceRenewDate').value || null,
+        last_insurance_renew_details: (document.getElementById('vehicleLastInsuranceRenewDetails').value || '').trim(),
         last_service_mileage: document.getElementById('lastServiceMileage').value ? parseInt(document.getElementById('lastServiceMileage').value) : null,
         notes: document.getElementById('vehicleNotes').value
     };

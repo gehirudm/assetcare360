@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
+require_once __DIR__ . '/../services/FaultTicketService.php';
 
 /**
  * Machine Breakdown Controller
@@ -9,10 +10,12 @@ require_once __DIR__ . '/../middleware/RoleMiddleware.php';
  */
 class MachineBreakdownController {
     private $conn;
+    private $faultTicketService;
     
     public function __construct() {
         $db = Database::getInstance();
         $this->conn = $db->getConnection();
+        $this->faultTicketService = new FaultTicketService();
     }
     
     /**
@@ -155,6 +158,12 @@ class MachineBreakdownController {
         RoleMiddleware::requireMinRole('Machinary Operator');
         
         $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            Response::error('Invalid JSON payload', 400);
+        }
+
+        // Always use server timestamp for new machine breakdown reports.
+        $breakdownDate = date('Y-m-d H:i:s');
         $currentUser = RoleMiddleware::getCurrentUser();
         
         try {
@@ -180,15 +189,6 @@ class MachineBreakdownController {
             
             $stmt = $this->conn->prepare($sql);
             
-            // Convert ISO 8601 datetime to MySQL format
-            $breakdownDate = date('Y-m-d H:i:s');
-            if (!empty($input['breakdown_date'])) {
-                $parsed = strtotime($input['breakdown_date']);
-                if ($parsed !== false) {
-                    $breakdownDate = date('Y-m-d H:i:s', $parsed);
-                }
-            }
-            
             $stmt->execute([
                 $breakdownId,
                 $input['machine_id'],
@@ -198,16 +198,93 @@ class MachineBreakdownController {
                 $input['severity'],
                 $input['description']
             ]);
+
+            $ticketPayload = [
+                'machine_id' => (int) $input['machine_id'],
+                'reported_by' => (int) $currentUser['id'],
+                'breakdown_report_id' => $breakdownId,
+                'breakdown_type' => 'machine_breakdown',
+                'priority' => $this->mapSeverityToPriority($input['severity'] ?? null),
+                'description' => $this->buildAutoTicketDescription($breakdownId, [
+                    'breakdown_type' => $input['breakdown_type'] ?? 'Machine Fault',
+                    'severity' => $input['severity'] ?? 'medium',
+                    'breakdown_date' => $breakdownDate,
+                    'description' => $input['description'] ?? ''
+                ])
+            ];
+
+            $ticketResult = $this->faultTicketService->create($ticketPayload);
+            if (empty($ticketResult['success'])) {
+                $ticketError = $ticketResult['message'] ?? 'Failed to auto-create linked fault ticket';
+                throw new RuntimeException($ticketError);
+            }
             
-            $this->conn->commit();
+            if ($this->conn->inTransaction()) {
+                $this->conn->commit();
+            }
             
             Response::success([
                 'breakdown_id' => $breakdownId
             ], 'Machine breakdown report created successfully', 201);
             
         } catch (Exception $e) {
-            $this->conn->rollBack();
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
             Response::error('Failed to create breakdown report: ' . $e->getMessage(), 500);
         }
+    }
+
+    private function mapSeverityToPriority($severity) {
+        $normalized = strtolower(trim((string) $severity));
+
+        if ($normalized === 'critical') {
+            return 'Critical';
+        }
+
+        if ($normalized === 'high') {
+            return 'High';
+        }
+
+        if ($normalized === 'low') {
+            return 'Low';
+        }
+
+        return 'Medium';
+    }
+
+    private function buildAutoTicketDescription(string $breakdownId, array $input): string {
+        $breakdownType = trim((string) ($input['breakdown_type'] ?? 'Machine Fault'));
+        $severity = strtoupper(trim((string) ($input['severity'] ?? 'medium')));
+        $reportedDate = trim((string) ($input['breakdown_date'] ?? date('Y-m-d H:i:s')));
+        $details = trim((string) ($input['description'] ?? 'No description provided'));
+
+        return "[Machine Breakdown] {$breakdownId}\n"
+            . "Type: {$breakdownType}\n"
+            . "Severity: {$severity}\n"
+            . "Reported At: {$reportedDate}\n"
+            . "Details: {$details}";
+    }
+
+    private function normalizeBreakdownDateTime($value, bool $required): string {
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            if ($required) {
+                Response::error('breakdown_date is required', 400);
+            }
+            return date('Y-m-d H:i:s');
+        }
+
+        $timestamp = strtotime($raw);
+        if ($timestamp === false) {
+            Response::error('breakdown_date must be a valid date/time value', 400);
+        }
+
+        $now = time();
+        if ($timestamp > $now) {
+            Response::error('breakdown_date cannot be in the future', 400);
+        }
+
+        return date('Y-m-d H:i:s', $timestamp);
     }
 }

@@ -76,6 +76,69 @@
         return `${parseFloat(value).toFixed(2)} L`;
     }
 
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function formatQuantity(value) {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) {
+            return '0';
+        }
+
+        const fixed = numeric.toFixed(3);
+        return fixed.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+    }
+
+    function hasDangerousCargo(trip) {
+        if (!trip || typeof trip !== 'object') {
+            return false;
+        }
+
+        if (trip.has_dangerous_cargo === true || Number(trip.has_dangerous_cargo) === 1) {
+            return true;
+        }
+
+        if (Array.isArray(trip.cargo_items)) {
+            return trip.cargo_items.some((item) => Number(item?.is_dangerous) === 1);
+        }
+
+        return false;
+    }
+
+    function buildCargoSummary(trip) {
+        if (!trip || typeof trip !== 'object') {
+            return '';
+        }
+
+        if (typeof trip.cargo_summary === 'string' && trip.cargo_summary.trim() !== '') {
+            return trip.cargo_summary.trim();
+        }
+
+        if (Array.isArray(trip.cargo_items) && trip.cargo_items.length > 0) {
+            return trip.cargo_items
+                .map((item) => {
+                    const name = String(item?.name || 'Cargo Item').trim();
+                    const quantity = formatQuantity(item?.quantity);
+                    const unit = String(item?.unit || 'units').trim();
+                    const dangerous = Number(item?.is_dangerous) === 1 ? ' [Dangerous]' : '';
+                    return `${name} (${quantity} ${unit})${dangerous}`;
+                })
+                .join(', ');
+        }
+
+        if (typeof trip.cargo_description === 'string' && trip.cargo_description.trim() !== '') {
+            return trip.cargo_description.trim();
+        }
+
+        return '';
+    }
+
     window.TMUtils = {
         formatDate,
         formatDateTime,
@@ -85,5 +148,9 @@
         formatOdometer,
         formatCurrency,
         formatVolume,
+        escapeHtml,
+        formatQuantity,
+        hasDangerousCargo,
+        buildCargoSummary,
     };
 })();

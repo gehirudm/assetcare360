@@ -110,6 +110,8 @@ class InventoryVehicles extends HTMLElement {
         const searchValue = (this.querySelector('#vehicleSearch')?.value || '').toLowerCase();
 
         const filtered = this.vehicles.filter(vehicle => {
+            const numberPlate = (vehicle.number_plate || vehicle.registration_number || '').toLowerCase();
+
             // Status filter
             const matchesStatus = this.currentFilter === 'all' || vehicle.status === this.currentFilter;
 
@@ -118,7 +120,9 @@ class InventoryVehicles extends HTMLElement {
                 (vehicle.vehicle_name || '').toLowerCase().includes(searchValue) ||
                 (vehicle.model_number || '').toLowerCase().includes(searchValue) ||
                 (vehicle.vehicle_id || '').toLowerCase().includes(searchValue) ||
-                (vehicle.registration_number || '').toLowerCase().includes(searchValue);
+                numberPlate.includes(searchValue) ||
+                (vehicle.insurance_provider || '').toLowerCase().includes(searchValue) ||
+                (vehicle.insurance_type || '').toLowerCase().includes(searchValue);
 
             return matchesStatus && matchesSearch;
         });
@@ -144,6 +148,14 @@ class InventoryVehicles extends HTMLElement {
 
         vehiclesList.innerHTML = vehicleList.map(vehicle => {
             const isForAuction = vehicle.status === 'For Auction';
+            const numberPlate = vehicle.number_plate || vehicle.registration_number || 'N/A';
+            const currentMileageRaw = Number(vehicle.current_mileage);
+            const fallbackMileageRaw = Number(vehicle.mileage);
+            const currentMileage = Number.isFinite(currentMileageRaw)
+                ? currentMileageRaw
+                : (Number.isFinite(fallbackMileageRaw) ? fallbackMileageRaw : 0);
+            const insuranceType = vehicle.insurance_type || 'N/A';
+            const insuranceProvider = vehicle.insurance_provider || 'N/A';
             const auctionActionHtml = isForAuction
                 ? `<button type="button" class="dropdown-item" data-action="remove-auction" data-id="${vehicle.id}"><i class="fas fa-undo"></i> Remove from Auction</button>`
                 : `<button type="button" class="dropdown-item" data-action="mark-auction" data-id="${vehicle.id}"><i class="fas fa-gavel"></i> Mark for Auction</button>`;
@@ -155,11 +167,15 @@ class InventoryVehicles extends HTMLElement {
                         <div class="item-meta">
                             <i class="fas fa-hashtag"></i> ${vehicle.model_number} |
                             <i class="fas fa-barcode"></i> ${vehicle.vehicle_id} |
-                            <i class="fas fa-id-card"></i> ${vehicle.registration_number}
+                            <i class="fas fa-id-card"></i> ${numberPlate}
                         </div>
                         <div class="item-description">
                             <span class="status-text ${this.getStatusClass(vehicle.status)}">${vehicle.status}</span> |
-                            <i class="fas fa-tachometer-alt"></i> ${vehicle.mileage || 0} km
+                            <i class="fas fa-tachometer-alt"></i> ${currentMileage} km
+                        </div>
+                        <div class="item-description">
+                            <i class="fas fa-shield-alt"></i> ${insuranceType} |
+                            <i class="fas fa-building"></i> ${insuranceProvider}
                         </div>
                     </div>
                     <div class="item-actions">

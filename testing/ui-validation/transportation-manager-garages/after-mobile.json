@@ -1,0 +1,30 @@
+{
+  "stage": "after",
+  "viewport": "mobile",
+  "console": [],
+  "failedRequests": [],
+  "transportationManager": {
+    "createdGarageName": "New Garage after",
+    "createCalls": 1,
+    "lastCreatePayload": {
+      "name": "New Garage after",
+      "address": "45 Marine Drive, Colombo 06",
+      "city": "Colombo",
+      "phone": "+94 11 765 4321",
+      "latitude": 6.9,
+      "longitude": 79.86,
+      "is_active": true
+    },
+    "listCount": 3,
+    "activeSection": "garages"
+  },
+  "supervisor": {
+    "approvalCalls": 1,
+    "lastApprovalPayload": {
+      "garage_id": 3,
+      "approval_notes": "Approved nearest connected garage for immediate repair."
+    },
+    "optionCount": 3,
+    "mapHint": "Driver GPS coordinates are missing for this breakdown. Garages are still shown on the map."
+  }
+}

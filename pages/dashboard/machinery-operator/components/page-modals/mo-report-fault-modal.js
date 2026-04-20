@@ -249,7 +249,6 @@ class MOReportFaultModal extends HTMLElement {
             const breakdownData = {
                 machine_id: Number.parseInt(machineId, 10),
                 operator_id: this.currentUser?.id || null,
-                breakdown_date: new Date().toISOString(),
                 breakdown_type: 'General Fault',
                 severity: priority || 'Medium',
                 description,
@@ -262,19 +261,18 @@ class MOReportFaultModal extends HTMLElement {
                 return;
             }
 
-            const formData = new FormData();
-            formData.append('machine_id', machineId);
-            formData.append('description', description);
-            formData.append('priority', priority);
-            formData.append('breakdown_report_id', breakdownResponse.data.breakdown_id);
-            formData.append('breakdown_type', 'machine_breakdown');
-            this.selectedPhotos.forEach((photo) => formData.append('photos[]', photo));
+            let photoUploadWarning = null;
+            if (this.selectedPhotos.length > 0) {
+                const uploadResult = await this.uploadPhotosToLinkedTicket(breakdownResponse.data.breakdown_id);
+                if (!uploadResult.success) {
+                    photoUploadWarning = uploadResult.message;
+                }
+            }
 
-            const ticketResponse = await API.postFormData('/fault-tickets', formData);
-            if (ticketResponse?.status === 'success') {
-                window.MOUtils.emitToast('Machine breakdown reported successfully! Supervisor will review and assign a technician.', 'success');
+            if (photoUploadWarning) {
+                window.MOUtils.emitToast(photoUploadWarning, 'warning');
             } else {
-                window.MOUtils.emitToast('Breakdown created but ticket creation failed. Supervisor can still assign this breakdown.', 'warning');
+                window.MOUtils.emitToast('Machine breakdown reported successfully! Supervisor will review and assign a technician.', 'success');
             }
 
             this.resetForm();
@@ -287,6 +285,56 @@ class MOReportFaultModal extends HTMLElement {
             submitBtn.disabled = false;
             submitBtn.innerHTML = originalLabel;
         }
+    }
+
+    async uploadPhotosToLinkedTicket(breakdownId) {
+        const linkedTicketId = await this.findLinkedTicketId(breakdownId);
+        if (!linkedTicketId) {
+            return {
+                success: false,
+                message: 'Breakdown reported, but photos could not be attached automatically. You can add them later by editing the ticket.'
+            };
+        }
+
+        const formData = new FormData();
+        this.selectedPhotos.forEach((photo) => formData.append('photos[]', photo));
+
+        const response = await API.putFormData(`/fault-tickets/${linkedTicketId}`, formData);
+        if (response?.status !== 'success') {
+            return {
+                success: false,
+                message: 'Breakdown reported, but photo upload failed. You can add photos later by editing the ticket.'
+            };
+        }
+
+        return { success: true };
+    }
+
+    async findLinkedTicketId(breakdownId) {
+        const normalizedBreakdownId = String(breakdownId || '').trim();
+        if (!normalizedBreakdownId) {
+            return null;
+        }
+
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            const response = await API.get('/machine-breakdowns');
+            const reports = response?.status === 'success' && Array.isArray(response.data?.reports)
+                ? response.data.reports
+                : [];
+
+            const matched = reports.find((report) => String(report.breakdown_id || '').trim() === normalizedBreakdownId);
+            const ticketId = Number.parseInt(matched?.fault_ticket_id, 10);
+
+            if (Number.isFinite(ticketId) && ticketId > 0) {
+                return ticketId;
+            }
+
+            if (attempt < 2) {
+                await new Promise((resolve) => setTimeout(resolve, 200));
+            }
+        }
+
+        return null;
     }
 
     showErrors(errors) {

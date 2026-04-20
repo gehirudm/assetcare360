@@ -3,6 +3,8 @@
 require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 require_once __DIR__ . '/../models/Notification.php';
+require_once __DIR__ . '/../services/TripService.php';
+require_once __DIR__ . '/../services/FaultTicketService.php';
 
 /**
  * Route Breakdown Controller
@@ -11,11 +13,17 @@ require_once __DIR__ . '/../models/Notification.php';
 class RouteBreakdownController {
     private $conn;
     private Notification $notificationModel;
+    private TripService $tripService;
+    private FaultTicketService $faultTicketService;
+    private ?bool $dangerousSnapshotColumnsAvailable = null;
+    private ?bool $faultTicketVehicleIdColumnAvailable = null;
 
     public function __construct() {
         $db = Database::getInstance();
         $this->conn = $db->getConnection();
         $this->notificationModel = new Notification();
+        $this->tripService = new TripService();
+        $this->faultTicketService = new FaultTicketService();
     }
 
     /**
@@ -207,34 +215,273 @@ class RouteBreakdownController {
             Response::error('vehicle_id, breakdown_location, breakdown_datetime, breakdown_type, severity and description are required', 400);
         }
 
+        $breakdownDateTime = $this->normalizeBreakdownDateTime($input['breakdown_datetime'], true);
         $breakdownLatitude = $this->parseCoordinate($input['breakdown_latitude'] ?? null, 'breakdown_latitude', -90, 90, true);
         $breakdownLongitude = $this->parseCoordinate($input['breakdown_longitude'] ?? null, 'breakdown_longitude', -180, 180, true);
+        $severity = $this->normalizeSeverityInput($input['severity']);
+        $currentUser = RoleMiddleware::getCurrentUser();
+        $vehicleId = (int) $input['vehicle_id'];
 
-        $stmt = $this->conn->query('SELECT COUNT(*) FROM vehicle_breakdown_inroute');
-        $count = (int) $stmt->fetchColumn() + 1;
-        $routeBreakdownId = 'RBD-' . str_pad((string) $count, 3, '0', STR_PAD_LEFT);
+        $dangerousContext = $this->getDangerousCargoContextSafely($vehicleId);
+        $dangerousCargoPresent = !empty($dangerousContext['has_dangerous_cargo']) ? 1 : 0;
+        $dangerousCargoSummary = !empty($dangerousContext['dangerous_cargo_summary'])
+            ? trim((string) $dangerousContext['dangerous_cargo_summary'])
+            : null;
+        $dangerousCargoTripId = !empty($dangerousContext['dangerous_cargo_trip_id'])
+            ? trim((string) $dangerousContext['dangerous_cargo_trip_id'])
+            : null;
 
-        $sql = "INSERT INTO vehicle_breakdown_inroute
-                (route_breakdown_id, breakdown_id, vehicle_id, driver_id, breakdown_location, breakdown_latitude, breakdown_longitude,
-                 breakdown_datetime, breakdown_type, severity, description, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')";
+        if ($dangerousCargoPresent === 1) {
+            $severity = 'critical';
+        }
 
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute([
-            $routeBreakdownId,
-            $input['breakdown_id'] ?? null,
-            (int) $input['vehicle_id'],
-            (int) RoleMiddleware::getCurrentUser()['id'],
-            trim((string) $input['breakdown_location']),
-            $breakdownLatitude,
-            $breakdownLongitude,
-            $input['breakdown_datetime'],
-            trim((string) $input['breakdown_type']),
-            trim((string) $input['severity']),
-            trim((string) $input['description']),
-        ]);
+        $routeBreakdownId = '';
+        $routeBreakdownLockAcquired = false;
+
+        try {
+            $this->conn->beginTransaction();
+            $this->acquireRouteBreakdownIdLock();
+            $routeBreakdownLockAcquired = true;
+
+            // Lock the vehicle row so concurrent create calls for the same vehicle are serialized.
+            $vehicleLockStmt = $this->conn->prepare('SELECT id FROM vehicles WHERE id = ? FOR UPDATE');
+            $vehicleLockStmt->execute([$vehicleId]);
+            if (!$vehicleLockStmt->fetch()) {
+                if ($this->conn->inTransaction()) {
+                    $this->conn->rollBack();
+                }
+
+                Response::error('Vehicle not found', 404);
+                return;
+            }
+
+            $activeRouteTicket = $this->findActiveRouteBreakdownTicketForVehicle($vehicleId);
+            if ($activeRouteTicket) {
+                if ($this->conn->inTransaction()) {
+                    $this->conn->rollBack();
+                }
+
+                $activeTicketNumber = trim((string) ($activeRouteTicket['ticket_id'] ?? ''));
+                $activeTicketLabel = $activeTicketNumber !== '' ? $activeTicketNumber : ('#' . (int) ($activeRouteTicket['id'] ?? 0));
+
+                Response::error(
+                    'An active in-route breakdown ticket (' . $activeTicketLabel . ') already exists for this vehicle. Resolve or close it before creating a new route breakdown report.',
+                    400
+                );
+                return;
+            }
+
+            $activeRouteBreakdown = $this->findActiveRouteBreakdownForVehicle($vehicleId);
+            if ($activeRouteBreakdown) {
+                if ($this->conn->inTransaction()) {
+                    $this->conn->rollBack();
+                }
+
+                $activeBreakdownLabel = trim((string) ($activeRouteBreakdown['route_breakdown_id'] ?? ''));
+                if ($activeBreakdownLabel === '') {
+                    $activeBreakdownLabel = '#' . (int) ($activeRouteBreakdown['id'] ?? 0);
+                }
+
+                Response::error(
+                    'An active in-route breakdown report (' . $activeBreakdownLabel . ') already exists for this vehicle. Please continue that workflow instead of creating a duplicate report.',
+                    400
+                );
+                return;
+            }
+            $temporaryRouteBreakdownId = 'TMP-' . str_replace('.', '', uniqid('', true));
+
+            if ($this->hasDangerousSnapshotColumns()) {
+                $sql = "INSERT INTO vehicle_breakdown_inroute
+                        (route_breakdown_id, breakdown_id, vehicle_id, driver_id, breakdown_location, breakdown_latitude, breakdown_longitude,
+                         breakdown_datetime, breakdown_type, severity, description, dangerous_cargo_present, dangerous_cargo_summary, dangerous_cargo_trip_id, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')";
+
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute([
+                    $temporaryRouteBreakdownId,
+                    $input['breakdown_id'] ?? null,
+                    $vehicleId,
+                    (int) $currentUser['id'],
+                    trim((string) $input['breakdown_location']),
+                    $breakdownLatitude,
+                    $breakdownLongitude,
+                    $breakdownDateTime,
+                    trim((string) $input['breakdown_type']),
+                    $severity,
+                    trim((string) $input['description']),
+                    $dangerousCargoPresent,
+                    $dangerousCargoSummary,
+                    $dangerousCargoTripId,
+                ]);
+            } else {
+                $sql = "INSERT INTO vehicle_breakdown_inroute
+                        (route_breakdown_id, breakdown_id, vehicle_id, driver_id, breakdown_location, breakdown_latitude, breakdown_longitude,
+                         breakdown_datetime, breakdown_type, severity, description, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')";
+
+                $stmt = $this->conn->prepare($sql);
+                $stmt->execute([
+                    $temporaryRouteBreakdownId,
+                    $input['breakdown_id'] ?? null,
+                    $vehicleId,
+                    (int) $currentUser['id'],
+                    trim((string) $input['breakdown_location']),
+                    $breakdownLatitude,
+                    $breakdownLongitude,
+                    $breakdownDateTime,
+                    trim((string) $input['breakdown_type']),
+                    $severity,
+                    trim((string) $input['description']),
+                ]);
+            }
+
+            $routeBreakdownNumericId = (int) $this->conn->lastInsertId();
+            if ($routeBreakdownNumericId <= 0) {
+                throw new RuntimeException('Failed to determine route breakdown identifier');
+            }
+
+            $routeBreakdownId = $this->generateNextRouteBreakdownCode();
+            $routeIdUpdateStmt = $this->conn->prepare('UPDATE vehicle_breakdown_inroute SET route_breakdown_id = ? WHERE id = ?');
+            $routeIdUpdateStmt->execute([$routeBreakdownId, $routeBreakdownNumericId]);
+
+            $ticketPayload = [
+                'vehicle_id' => $vehicleId,
+                'reported_by' => (int) $currentUser['id'],
+                'breakdown_report_id' => $routeBreakdownId,
+                'breakdown_type' => 'route_breakdown',
+                'priority' => $this->mapSeverityToPriority($severity),
+                'description' => $this->buildAutoTicketDescription($routeBreakdownId, [
+                    'breakdown_type' => $input['breakdown_type'] ?? 'Route Breakdown',
+                    'severity' => $severity,
+                    'breakdown_datetime' => $breakdownDateTime,
+                    'breakdown_location' => $input['breakdown_location'] ?? null,
+                    'description' => $input['description'] ?? '',
+                    'dangerous_cargo_present' => $dangerousCargoPresent,
+                    'dangerous_cargo_summary' => $dangerousCargoSummary,
+                    'dangerous_cargo_trip_id' => $dangerousCargoTripId,
+                ])
+            ];
+
+            $ticketResult = $this->faultTicketService->create($ticketPayload);
+            if (empty($ticketResult['success'])) {
+                if ($this->conn->inTransaction()) {
+                    $this->conn->rollBack();
+                }
+
+                $ticketErrors = $ticketResult['errors'] ?? null;
+                if (is_array($ticketErrors) && !empty($ticketErrors)) {
+                    Response::validationError($ticketErrors, 'Failed to auto-create linked fault ticket');
+                }
+
+                $ticketError = trim((string) ($ticketResult['message'] ?? 'Failed to auto-create linked fault ticket'));
+                $statusCode = stripos($ticketError, 'not found') !== false ? 404 : 400;
+                Response::error($ticketError, $statusCode);
+            }
+
+            if ($this->conn->inTransaction()) {
+                $this->conn->commit();
+            }
+        } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+
+            Response::error('Failed to create route breakdown report: ' . $e->getMessage(), 500);
+            return;
+        } finally {
+            if ($routeBreakdownLockAcquired) {
+                $this->releaseRouteBreakdownIdLock();
+            }
+        }
 
         Response::success(['route_breakdown_id' => $routeBreakdownId], 'Route breakdown created successfully', 201);
+    }
+
+    private function acquireRouteBreakdownIdLock(int $timeoutSeconds = 10): void {
+        $lockStmt = $this->conn->prepare('SELECT GET_LOCK(?, ?)');
+        $lockStmt->execute(['route_breakdown_id_sequence', $timeoutSeconds]);
+        $lockResult = $lockStmt->fetchColumn();
+
+        if ((string) $lockResult !== '1') {
+            throw new RuntimeException('Unable to acquire route breakdown ID generation lock');
+        }
+    }
+
+    private function releaseRouteBreakdownIdLock(): void {
+        try {
+            $releaseStmt = $this->conn->prepare('SELECT RELEASE_LOCK(?)');
+            $releaseStmt->execute(['route_breakdown_id_sequence']);
+        } catch (Throwable $exception) {
+            // Ignore release failures; the lock auto-releases when the connection closes.
+        }
+    }
+
+    private function generateNextRouteBreakdownCode(): string {
+        $stmt = $this->conn->query(
+            "SELECT MAX(sequence_no) AS max_sequence
+             FROM (
+                SELECT CAST(SUBSTRING(route_breakdown_id, 5) AS UNSIGNED) AS sequence_no
+                FROM vehicle_breakdown_inroute
+                WHERE route_breakdown_id REGEXP '^RBD-[0-9]+$'
+
+                UNION ALL
+
+                SELECT CAST(SUBSTRING(breakdown_report_id, 5) AS UNSIGNED) AS sequence_no
+                FROM fault_tickets
+                WHERE breakdown_type = 'route_breakdown'
+                  AND breakdown_report_id REGEXP '^RBD-[0-9]+$'
+            ) AS route_code_pool"
+        );
+
+        $maxSequence = $stmt ? (int) ($stmt->fetchColumn() ?: 0) : 0;
+        $nextNumber = $maxSequence + 1;
+
+        return 'RBD-' . str_pad((string) $nextNumber, 3, '0', STR_PAD_LEFT);
+    }
+
+    private function mapSeverityToPriority($severity): string {
+        $normalized = strtolower(trim((string) $severity));
+
+        if ($normalized === 'critical') {
+            return 'Critical';
+        }
+
+        if ($normalized === 'high') {
+            return 'High';
+        }
+
+        if ($normalized === 'low') {
+            return 'Low';
+        }
+
+        return 'Medium';
+    }
+
+    private function buildAutoTicketDescription(string $routeBreakdownId, array $input): string {
+        $details = trim((string) ($input['description'] ?? ''));
+        if ($details !== '') {
+            if (strlen($details) < 10) {
+                $breakdownType = trim((string) ($input['breakdown_type'] ?? 'Route Breakdown'));
+
+                if ($breakdownType !== '') {
+                    return $breakdownType . ': ' . $details . ' (' . $routeBreakdownId . ')';
+                }
+
+                return $details . ' (' . $routeBreakdownId . ')';
+            }
+
+            return $details;
+        }
+
+        $breakdownType = trim((string) ($input['breakdown_type'] ?? 'Route Breakdown'));
+        $breakdownLocation = trim((string) ($input['breakdown_location'] ?? ''));
+
+        $fallback = $breakdownType !== '' ? $breakdownType : 'Route breakdown reported';
+        if ($breakdownLocation !== '') {
+            $fallback .= ' near ' . $breakdownLocation;
+        }
+
+        return $fallback . ' (' . $routeBreakdownId . ')';
     }
 
     /**
@@ -264,13 +511,26 @@ class RouteBreakdownController {
 
         $fields = [];
         $params = [];
+        $shouldForceCriticalSeverity = $this->shouldForceCriticalSeverity($record);
 
-        $allowedFields = ['severity', 'breakdown_type', 'description', 'status', 'breakdown_location', 'breakdown_datetime'];
+        $allowedFields = ['breakdown_type', 'description', 'status', 'breakdown_location', 'breakdown_datetime'];
         foreach ($allowedFields as $field) {
             if (isset($input[$field])) {
+                if ($field === 'breakdown_datetime') {
+                    $input[$field] = $this->normalizeBreakdownDateTime($input[$field], true);
+                }
                 $fields[] = "$field = ?";
                 $params[] = is_string($input[$field]) ? trim($input[$field]) : $input[$field];
             }
+        }
+
+        if (array_key_exists('severity', $input)) {
+            $requestedSeverity = $this->normalizeSeverityInput($input['severity']);
+            $fields[] = 'severity = ?';
+            $params[] = $shouldForceCriticalSeverity ? 'critical' : $requestedSeverity;
+        } elseif ($shouldForceCriticalSeverity && !empty($fields)) {
+            $fields[] = 'severity = ?';
+            $params[] = 'critical';
         }
 
         $hasLatitude = array_key_exists('breakdown_latitude', $input);
@@ -336,8 +596,45 @@ class RouteBreakdownController {
             Response::error('You can only delete your own reports', 403);
         }
 
-        $stmt = $this->conn->prepare('DELETE FROM vehicle_breakdown_inroute WHERE id = ?');
-        $stmt->execute([$id]);
+        $routeBreakdownCode = trim((string) ($record['route_breakdown_id'] ?? ''));
+        $linkedFaultTicketId = (int) ($record['fault_ticket_id'] ?? 0);
+        $linkedFaultTicketImagePaths = [];
+
+        if ($routeBreakdownCode !== '') {
+            $linkedFaultTicketImagePaths = $this->getLinkedFaultTicketImagePaths($routeBreakdownCode);
+        } elseif ($linkedFaultTicketId > 0) {
+            $linkedFaultTicketImagePaths = $this->getFaultTicketImagePathsByTicketId($linkedFaultTicketId);
+        }
+
+        try {
+            $this->conn->beginTransaction();
+
+            if ($routeBreakdownCode !== '') {
+                $deleteLinkedTicketsStmt = $this->conn->prepare(
+                    "DELETE FROM fault_tickets
+                     WHERE breakdown_type = 'route_breakdown'
+                       AND breakdown_report_id = ?"
+                );
+                $deleteLinkedTicketsStmt->execute([$routeBreakdownCode]);
+            } elseif ($linkedFaultTicketId > 0) {
+                $deleteLinkedTicketStmt = $this->conn->prepare('DELETE FROM fault_tickets WHERE id = ?');
+                $deleteLinkedTicketStmt->execute([$linkedFaultTicketId]);
+            }
+
+            $deleteRouteBreakdownStmt = $this->conn->prepare('DELETE FROM vehicle_breakdown_inroute WHERE id = ?');
+            $deleteRouteBreakdownStmt->execute([$id]);
+
+            $this->conn->commit();
+        } catch (Throwable $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+
+            error_log('RouteBreakdownController::delete error: ' . $e->getMessage());
+            Response::serverError('Failed to delete route breakdown');
+        }
+
+        $this->cleanupUploadedPaths($linkedFaultTicketImagePaths);
 
         Response::success(null, 'Route breakdown deleted successfully');
     }
@@ -440,7 +737,7 @@ class RouteBreakdownController {
 
             $statusStmt = $this->conn->prepare(
                 "UPDATE vehicle_breakdown_inroute
-                 SET status = CASE WHEN status IN ('Resolved', 'Closed') THEN status ELSE 'In Progress' END
+                  SET status = CASE WHEN status IN ('Resolved', 'Closed', 'Insurance Claimed') THEN status ELSE 'In Progress' END
                  WHERE id = ?"
             );
             $statusStmt->execute([$routeBreakdownId]);
@@ -538,7 +835,7 @@ class RouteBreakdownController {
 
             $statusStmt = $this->conn->prepare(
                 "UPDATE vehicle_breakdown_inroute
-                 SET status = CASE WHEN status IN ('Resolved', 'Closed') THEN status ELSE 'In Progress' END
+                  SET status = CASE WHEN status IN ('Resolved', 'Closed', 'Insurance Claimed') THEN status ELSE 'In Progress' END
                  WHERE id = ?"
             );
             $statusStmt->execute([$routeBreakdownId]);
@@ -635,7 +932,7 @@ class RouteBreakdownController {
 
             $statusStmt = $this->conn->prepare(
                 "UPDATE vehicle_breakdown_inroute
-                 SET status = CASE WHEN status IN ('Resolved', 'Closed') THEN status ELSE 'In Progress' END
+                  SET status = CASE WHEN status IN ('Resolved', 'Closed', 'Insurance Claimed') THEN status ELSE 'In Progress' END
                  WHERE id = ?"
             );
             $statusStmt->execute([$routeBreakdownId]);
@@ -823,8 +1120,102 @@ class RouteBreakdownController {
         Response::success(['garages' => $this->getActiveGarages()]);
     }
 
+    private function findActiveRouteBreakdownForVehicle(int $vehicleId): ?array {
+        if ($vehicleId <= 0) {
+            return null;
+        }
+
+        $sql = "SELECT rb.id, rb.route_breakdown_id, rb.status, ft.status AS ticket_status
+                FROM vehicle_breakdown_inroute rb
+                LEFT JOIN fault_tickets ft
+                    ON ft.breakdown_type = 'route_breakdown'
+                   AND ft.breakdown_report_id = rb.route_breakdown_id
+                WHERE rb.vehicle_id = ?
+                  AND LOWER(TRIM(COALESCE(rb.status, 'pending'))) NOT IN ('resolved', 'closed')
+                  AND (
+                      ft.id IS NULL
+                      OR LOWER(TRIM(COALESCE(ft.status, ''))) NOT IN ('resolved', 'closed')
+                  )
+                ORDER BY rb.id DESC, ft.created_at DESC
+                LIMIT 1";
+
+        try {
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$vehicleId]);
+            $row = $stmt->fetch();
+
+            return $row ?: null;
+        } catch (Throwable $e) {
+            error_log('RouteBreakdownController::findActiveRouteBreakdownForVehicle error: ' . $e->getMessage());
+            return null;
+        }
+    }
+    private function findActiveRouteBreakdownTicketForVehicle(int $vehicleId): ?array {
+        if ($vehicleId <= 0) {
+            return null;
+        }
+
+        if ($this->hasFaultTicketVehicleIdColumn()) {
+            $sql = "SELECT ft.id, ft.ticket_id, ft.status
+                    FROM fault_tickets ft
+                    LEFT JOIN vehicle_breakdown_inroute rb ON rb.route_breakdown_id = ft.breakdown_report_id
+                    WHERE ft.breakdown_type = 'route_breakdown'
+                      AND (ft.vehicle_id = ? OR rb.vehicle_id = ?)
+                                            AND LOWER(TRIM(COALESCE(ft.status, ''))) NOT IN ('resolved', 'closed')
+                    ORDER BY ft.created_at DESC
+                    LIMIT 1";
+            $params = [$vehicleId, $vehicleId];
+        } else {
+            $sql = "SELECT ft.id, ft.ticket_id, ft.status
+                    FROM fault_tickets ft
+                    INNER JOIN vehicle_breakdown_inroute rb ON rb.route_breakdown_id = ft.breakdown_report_id
+                    WHERE ft.breakdown_type = 'route_breakdown'
+                      AND rb.vehicle_id = ?
+                                            AND LOWER(TRIM(COALESCE(ft.status, ''))) NOT IN ('resolved', 'closed')
+                    ORDER BY ft.created_at DESC
+                    LIMIT 1";
+            $params = [$vehicleId];
+        }
+
+        try {
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute($params);
+            $row = $stmt->fetch();
+
+            return $row ?: null;
+        } catch (Throwable $e) {
+            error_log('RouteBreakdownController::findActiveRouteBreakdownTicketForVehicle error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    private function hasFaultTicketVehicleIdColumn(): bool {
+        if ($this->faultTicketVehicleIdColumnAvailable !== null) {
+            return $this->faultTicketVehicleIdColumnAvailable;
+        }
+
+        try {
+            $stmt = $this->conn->prepare(
+                "SELECT COUNT(*)
+                 FROM information_schema.columns
+                 WHERE table_schema = DATABASE()
+                   AND table_name = 'fault_tickets'
+                   AND column_name = 'vehicle_id'"
+            );
+            $stmt->execute();
+            $this->faultTicketVehicleIdColumnAvailable = ((int) $stmt->fetchColumn()) === 1;
+        } catch (Throwable $e) {
+            $this->faultTicketVehicleIdColumnAvailable = false;
+        }
+
+        return $this->faultTicketVehicleIdColumnAvailable;
+    }
+
     private function getRouteBreakdownRecord(int $routeBreakdownId): ?array {
         $sql = "SELECT rb.id, rb.route_breakdown_id, rb.driver_id, rb.status, rb.vehicle_id,
+                       rb.dangerous_cargo_present,
+                       rb.dangerous_cargo_summary,
+                       rb.dangerous_cargo_trip_id,
                        v.number_plate,
                        ft.id as fault_ticket_id,
                        ft.ticket_id as fault_ticket_number
@@ -944,6 +1335,99 @@ class RouteBreakdownController {
         $stmt->execute($params);
 
         return $stmt->fetchAll();
+    }
+
+    private function hasDangerousSnapshotColumns(): bool {
+        if ($this->dangerousSnapshotColumnsAvailable !== null) {
+            return $this->dangerousSnapshotColumnsAvailable;
+        }
+
+        try {
+            $stmt = $this->conn->prepare(
+                "SELECT COUNT(*)
+                 FROM information_schema.columns
+                 WHERE table_schema = DATABASE()
+                   AND table_name = 'vehicle_breakdown_inroute'
+                   AND column_name IN ('dangerous_cargo_present', 'dangerous_cargo_summary', 'dangerous_cargo_trip_id')"
+            );
+            $stmt->execute();
+            $this->dangerousSnapshotColumnsAvailable = ((int) $stmt->fetchColumn()) === 3;
+        } catch (Throwable $e) {
+            $this->dangerousSnapshotColumnsAvailable = false;
+        }
+
+        return $this->dangerousSnapshotColumnsAvailable;
+    }
+
+    private function shouldForceCriticalSeverity(array $routeBreakdownRecord): bool {
+        if ($this->hasDangerousSnapshotColumns() && (int) ($routeBreakdownRecord['dangerous_cargo_present'] ?? 0) === 1) {
+            return true;
+        }
+
+        $vehicleId = (int) ($routeBreakdownRecord['vehicle_id'] ?? 0);
+        if ($vehicleId <= 0) {
+            return false;
+        }
+
+        $dangerousContext = $this->getDangerousCargoContextSafely($vehicleId);
+        return !empty($dangerousContext['has_dangerous_cargo']);
+    }
+
+    private function getDangerousCargoContextSafely(int $vehicleId): array {
+        $defaultContext = [
+            'has_dangerous_cargo' => false,
+            'dangerous_cargo_summary' => null,
+            'dangerous_cargo_trip_id' => null,
+            'dangerous_items' => [],
+        ];
+
+        if ($vehicleId <= 0) {
+            return $defaultContext;
+        }
+
+        try {
+            $context = $this->tripService->getDangerousCargoContextForVehicle($vehicleId);
+            if (!is_array($context)) {
+                return $defaultContext;
+            }
+
+            return array_merge($defaultContext, $context);
+        } catch (Throwable $e) {
+            error_log('RouteBreakdownController::getDangerousCargoContextSafely error: ' . $e->getMessage());
+            return $defaultContext;
+        }
+    }
+
+    private function normalizeSeverityInput($severity): string {
+        $normalized = strtolower(trim((string) $severity));
+        $allowed = ['low', 'medium', 'high', 'critical'];
+
+        if ($normalized === '' || !in_array($normalized, $allowed, true)) {
+            Response::error('severity must be one of: low, medium, high, critical', 400);
+        }
+
+        return $normalized;
+    }
+
+    private function normalizeBreakdownDateTime($value, bool $required): string {
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            if ($required) {
+                Response::error('breakdown_datetime is required', 400);
+            }
+            return date('Y-m-d H:i:s');
+        }
+
+        $timestamp = strtotime($raw);
+        if ($timestamp === false) {
+            Response::error('breakdown_datetime must be a valid date/time value', 400);
+        }
+
+        if ($timestamp > time()) {
+            Response::error('breakdown_datetime cannot be in the future', 400);
+        }
+
+        return date('Y-m-d H:i:s', $timestamp);
     }
 
     private function parseCoordinate($value, string $field, float $min, float $max, bool $required): ?float {
@@ -1090,10 +1574,65 @@ class RouteBreakdownController {
                 continue;
             }
 
-            $absolutePath = __DIR__ . '/../../' . ltrim($safePath, '/');
+            $isAbsolutePath = preg_match('/^(?:[A-Za-z]:\\\\|\/)/', $safePath) === 1;
+            $absolutePath = $isAbsolutePath
+                ? $safePath
+                : (__DIR__ . '/../../' . ltrim($safePath, '/'));
+
             if (is_file($absolutePath)) {
                 @unlink($absolutePath);
             }
+        }
+    }
+
+    private function getLinkedFaultTicketImagePaths(string $routeBreakdownCode): array {
+        $code = trim($routeBreakdownCode);
+        if ($code === '') {
+            return [];
+        }
+
+        try {
+            $stmt = $this->conn->prepare(
+                "SELECT fti.file_path
+                 FROM fault_ticket_images fti
+                 INNER JOIN fault_tickets ft ON ft.id = fti.fault_ticket_id
+                 WHERE ft.breakdown_type = 'route_breakdown'
+                   AND ft.breakdown_report_id = ?"
+            );
+            $stmt->execute([$code]);
+
+            $paths = array_map(static function ($row) {
+                return (string) ($row['file_path'] ?? '');
+            }, $stmt->fetchAll() ?: []);
+
+            return array_values(array_filter(array_unique($paths), static function ($value) {
+                return trim((string) $value) !== '';
+            }));
+        } catch (Throwable $e) {
+            error_log('RouteBreakdownController::getLinkedFaultTicketImagePaths error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    private function getFaultTicketImagePathsByTicketId(int $faultTicketId): array {
+        if ($faultTicketId <= 0) {
+            return [];
+        }
+
+        try {
+            $stmt = $this->conn->prepare('SELECT file_path FROM fault_ticket_images WHERE fault_ticket_id = ?');
+            $stmt->execute([$faultTicketId]);
+
+            $paths = array_map(static function ($row) {
+                return (string) ($row['file_path'] ?? '');
+            }, $stmt->fetchAll() ?: []);
+
+            return array_values(array_filter(array_unique($paths), static function ($value) {
+                return trim((string) $value) !== '';
+            }));
+        } catch (Throwable $e) {
+            error_log('RouteBreakdownController::getFaultTicketImagePathsByTicketId error: ' . $e->getMessage());
+            return [];
         }
     }
 

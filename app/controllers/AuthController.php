@@ -4,6 +4,8 @@ require_once __DIR__ . '/../services/AuthService.php';
 require_once __DIR__ . '/../services/PasskeyService.php';
 require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../helpers/CookieHelper.php';
+require_once __DIR__ . '/../helpers/CsrfHelper.php';
+require_once __DIR__ . '/../helpers/LoginRateLimiter.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
 
 /**
@@ -22,15 +24,42 @@ class AuthController
     }
 
     /**
+     * Issue CSRF token
+     * GET /api/auth/csrf
+     */
+    public function csrfToken()
+    {
+        $token = CsrfHelper::issueToken(true);
+        Response::success([
+            'csrf_token' => $token,
+        ], 'CSRF token generated');
+    }
+
+    /**
      * Login endpoint
      * POST /api/auth/login
      */
     public function login()
     {
+        $clientIp = $this->getClientIp();
+
+        $rateLimit = LoginRateLimiter::check($clientIp);
+        if (!$rateLimit['allowed']) {
+            header('Retry-After: ' . (string) $rateLimit['retry_after']);
+            Response::error('Too many login attempts. Please try again later.', 429, [
+                'retry_after_seconds' => $rateLimit['retry_after'],
+            ]);
+        }
+
+        if (!CsrfHelper::validateRequest()) {
+            Response::forbidden('CSRF token validation failed');
+        }
+
         // Get request body
         $input = json_decode(file_get_contents('php://input'), true);
 
         if (!$input) {
+            LoginRateLimiter::recordFailure($clientIp);
             Response::error('Invalid JSON data', 400);
         }
 
@@ -41,14 +70,43 @@ class AuthController
         $result = $this->authService->login($employeeId, $password);
 
         if ($result['success']) {
+            LoginRateLimiter::recordSuccess($clientIp);
+
             // Set auth token in HTTP-only cookie
             CookieHelper::setAuthCookie($result['data']['token']);
 
             // Still return token in response for API clients that prefer header auth
             Response::success($result['data'], $result['message']);
         } else {
+            LoginRateLimiter::recordFailure($clientIp);
             Response::error($result['message'], 401);
         }
+    }
+
+    private function getClientIp()
+    {
+        $forwardedFor = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
+        if (is_string($forwardedFor) && $forwardedFor !== '') {
+            $forwardedIps = explode(',', $forwardedFor);
+            foreach ($forwardedIps as $forwardedIp) {
+                $candidate = trim($forwardedIp);
+                if (filter_var($candidate, FILTER_VALIDATE_IP)) {
+                    return $candidate;
+                }
+            }
+        }
+
+        $realIp = $_SERVER['HTTP_X_REAL_IP'] ?? null;
+        if (is_string($realIp) && filter_var($realIp, FILTER_VALIDATE_IP)) {
+            return $realIp;
+        }
+
+        $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+        if (is_string($remoteAddr) && filter_var($remoteAddr, FILTER_VALIDATE_IP)) {
+            return $remoteAddr;
+        }
+
+        return '0.0.0.0';
     }
 
     /**
@@ -82,6 +140,28 @@ class AuthController
             Response::success($result['data'], 'Profile retrieved successfully');
         } else {
             Response::error($result['message'], 404);
+        }
+    }
+
+    /**
+     * Get current user's recent login activities
+     * GET /api/auth/login-activities
+     */
+    public function getLoginActivities()
+    {
+        $user = RoleMiddleware::authenticate();
+
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
+        if ($limit < 1 || $limit > 100) {
+            $limit = 20;
+        }
+
+        $result = $this->authService->getLoginActivities($user['id'], $limit);
+
+        if ($result['success']) {
+            Response::success($result['data'], $result['message']);
+        } else {
+            Response::error($result['message'], 400);
         }
     }
 

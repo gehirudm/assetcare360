@@ -11,55 +11,80 @@
     <!-- Dashboard shell styles first, then detail overrides -->
     <link rel="stylesheet" href="../dashboard/technical-officer/style.css">
     <link rel="stylesheet" href="../dashboard/technical-officer/view-ticket/style.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <style>
         .assign-tech-list {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            max-height: 240px;
+            gap: 10px;
+            max-height: 260px;
             overflow-y: auto;
             border: 1px solid var(--stone-200);
             border-radius: var(--radius-sm);
-            background: #fff;
-            padding: 10px;
+            background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+            padding: 12px;
         }
 
         .assign-tech-item {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
             gap: 10px;
-            padding: 8px 10px;
+            padding: 10px 12px;
             border: 1px solid var(--stone-200);
             border-radius: 8px;
             background: #fff;
             font-size: 0.85rem;
-            cursor: pointer;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
         }
 
-        .assign-tech-item.selected {
-            border-color: var(--royal-blue);
-            background: #eff6ff;
+        .assign-tech-item:hover {
+            border-color: #bfdbfe;
+            background: #f8fbff;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.08);
+        }
+
+        .assign-tech-item > span:first-child {
+            padding-top: 2px;
         }
 
         .assign-tech-name {
+            display: block;
             font-weight: 600;
+            font-size: 0.87rem;
             color: var(--text-900);
         }
 
         .assign-tech-meta {
-            font-size: 0.75rem;
+            display: block;
+            font-size: 0.76rem;
+            line-height: 1.4;
             color: var(--muted);
         }
 
         .assign-tech-item input[type="radio"],
         .assign-tech-item input[type="checkbox"] {
             margin-top: 2px;
+            accent-color: var(--royal-blue);
+        }
+
+        .assign-modal-note {
+            margin: 0 0 12px;
+            font-size: 0.82rem;
+            color: #334155;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
         }
 
         .assign-warning {
             margin-top: 8px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
             font-size: 0.8rem;
             color: #b45309;
             background: #fffbeb;
@@ -68,58 +93,66 @@
             padding: 8px 10px;
         }
 
-        .garage-approval-layout {
-            display: grid;
-            grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
-            gap: 14px;
-            align-items: start;
+        .assign-warning i {
+            margin-top: 1px;
         }
 
-        .garage-map-panel {
-            border: 1px solid var(--stone-200);
-            border-radius: var(--radius-sm);
-            background: #fff;
-            padding: 10px;
+        .route-location-panel {
+            background: #ffffff;
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .garage-map-title {
-            font-size: 0.82rem;
-            font-weight: 700;
-            color: var(--text-700);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        .route-location-header {
             display: flex;
             align-items: center;
-            gap: 6px;
-            margin-bottom: 8px;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
-        .garage-approval-map {
+        .route-location-title {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1e3a8a;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .route-location-label {
+            font-size: 0.78rem;
+            color: #334155;
+            background: #eff6ff;
+            border: 1px solid #dbeafe;
+            border-radius: 999px;
+            padding: 3px 10px;
+        }
+
+        .route-location-map {
             width: 100%;
-            height: 260px;
-            border-radius: 8px;
-            border: 1px solid var(--stone-200);
-            background: var(--stone-100);
+            height: 320px;
+            border: 1px solid #dbeafe;
+            border-radius: 10px;
+            background: #f8fafc;
             overflow: hidden;
         }
 
-        .garage-map-hint {
-            margin-top: 8px;
-            font-size: 0.78rem;
-            color: var(--muted);
+        .route-location-hint {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.8rem;
         }
 
-        .garage-map-hint.error {
-            color: var(--danger);
-        }
-
-        @media (max-width: 900px) {
-            .garage-approval-layout {
-                grid-template-columns: 1fr;
-            }
-
-            .garage-approval-map {
-                height: 220px;
+        @media (max-width: 768px) {
+            .route-location-map {
+                height: 260px;
             }
         }
     </style>
@@ -217,6 +250,59 @@
                 <div class="overview-label"><i class="fas fa-align-left"></i> Issue Description</div>
                 <p id="ovDescription">-</p>
             </div>
+            <div class="overview-dangerous" id="ovDangerousCargoPanel" style="display:none;">
+                <div class="overview-label"><i class="fas fa-radiation"></i> Dangerous Cargo Context</div>
+                <div class="overview-dangerous-badges" id="ovDangerousCargoBadges"></div>
+                <p id="ovDangerousCargoSummary">-</p>
+            </div>
+            <div class="overview-insurance" id="ovInsurancePanel" style="display:none;">
+                <div class="overview-label"><i class="fas fa-shield-alt"></i> Insurance & Warranty Claim Assessment</div>
+                <div class="overview-insurance-grid">
+                    <div class="overview-insurance-item">
+                        <span>Asset</span>
+                        <strong id="ovInsuranceAsset">-</strong>
+                    </div>
+                    <div class="overview-insurance-item">
+                        <span>Insurance Provider</span>
+                        <strong id="ovInsuranceProvider">-</strong>
+                    </div>
+                    <div class="overview-insurance-item">
+                        <span>Insurance Type</span>
+                        <strong id="ovInsuranceType">-</strong>
+                    </div>
+                    <div class="overview-insurance-item">
+                        <span>Next Renewal Date</span>
+                        <strong id="ovInsuranceRenewalDate">-</strong>
+                    </div>
+                    <div class="overview-insurance-item">
+                        <span>Warranty Provider</span>
+                        <strong id="ovWarrantyProvider">-</strong>
+                    </div>
+                    <div class="overview-insurance-item">
+                        <span>Warranty Expiry</span>
+                        <strong id="ovWarrantyExpiry">-</strong>
+                    </div>
+                </div>
+                <div class="overview-insurance-eligibility" id="ovInsuranceEligibility">-</div>
+                <p id="ovInsuranceReason">-</p>
+            </div>
+            <div class="overview-actions" id="overviewActions" style="display:none;">
+                <button class="btn btn-action" id="editFaultTicketBtn" type="button" style="display:none;">
+                    <i class="fas fa-edit"></i> Edit Fault Ticket
+                </button>
+            </div>
+        </section>
+
+        <section class="route-location-panel" id="routeLocationPanel" style="display:none;">
+            <div class="route-location-header">
+                <h3 class="route-location-title">
+                    <i class="fas fa-map-marked-alt"></i>
+                    Breakdown Location Map
+                </h3>
+                <span class="route-location-label" id="routeLocationLabel" style="display:none;"></span>
+            </div>
+            <div id="routeLocationMap" class="route-location-map"></div>
+            <p id="routeLocationHint" class="route-location-hint">Loading reported location map...</p>
         </section>
 
         <!-- Step-by-Step Flow -->
@@ -287,6 +373,9 @@
                                 </button>
                                 <button class="btn btn-action" id="approveGarageBtn" onclick="openGarageApprovalModal()" style="display:none; margin-left:8px;">
                                     <i class="fas fa-warehouse"></i> Approve Nearby Garage
+                                </button>
+                                <button class="btn btn-action btn-insurance" id="claimInsuranceBtn" onclick="submitInsuranceClaim()" style="display:none; margin-left:8px;">
+                                    <i class="fas fa-file-signature"></i> Claim Insurance
                                 </button>
                                 <div id="step2-garage-hint" class="step-hint" style="display:none; margin-top:8px;"></div>
                             </div>
@@ -539,61 +628,93 @@
          SPARE PARTS MODAL
     ============================= -->
     <div class="modal-overlay" id="partsModal">
-        <div class="modal modal-wide">
+        <div class="modal">
             <div class="modal-header">
-                <h3><i class="fas fa-tools"></i> Request Spare Parts</h3>
+                <h3><i class="fas fa-clipboard-list"></i> Request Spare Parts</h3>
                 <button class="modal-close" onclick="closePartsModal()"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <form id="partsForm" onsubmit="submitPartsRequest(event)">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Fault Ticket</label>
-                            <input type="text" class="form-input" id="partsTicketDisplay" readonly>
+                <form id="requestPartsForm" onsubmit="submitPartsRequest(event)">
+                    <input type="hidden" id="requestingTicketId" value="">
+
+                    <div class="form-section">
+                        <h5><i class="fas fa-ticket-alt"></i> Ticket Information</h5>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Ticket ID</label>
+                                <input type="text" class="form-input" id="relatedTicketId" readonly style="background-color: #f0f0f0;">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Equipment</label>
+                                <input type="text" class="form-input" id="equipmentInput" placeholder="Enter equipment/machine ID" required>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Priority</label>
-                            <select class="form-input" id="partsPriority">
-                                <option value="Low">Low</option>
-                                <option value="Medium" selected>Medium</option>
-                                <option value="High">High</option>
-                                <option value="Critical">Critical</option>
-                            </select>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Location</label>
+                                <input type="text" class="form-input" id="locationInput" readonly style="background-color: #f0f0f0;">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Priority</label>
+                                <select class="form-select" id="prioritySelect" required>
+                                    <option value="">Select Priority</option>
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="critical">Critical</option>
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Equipment Name</label>
-                            <input type="text" class="form-input" id="partsEquipment" placeholder="e.g. Excavator CAT 320">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Reported By</label>
+                                <input type="text" class="form-input" id="reportedByInput" readonly style="background-color: #f0f0f0;">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Reported Date</label>
+                                <input type="text" class="form-input" id="reportedDateInput" readonly style="background-color: #f0f0f0;">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Location</label>
-                            <input type="text" class="form-input" id="partsLocation" placeholder="e.g. Site A, Zone 3">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Additional Notes</label>
-                        <textarea class="form-textarea" id="partsNotes" placeholder="Any additional information about the parts request..." rows="2"></textarea>
                     </div>
 
-                    <!-- Parts Items -->
-                    <div class="parts-section">
-                        <div class="parts-section-header">
-                            <label class="form-label">Spare Parts Required <span class="required">*</span></label>
-                            <button type="button" class="btn-add-part" onclick="addPartRow()">
-                                <i class="fas fa-plus"></i> Add Part
-                            </button>
+                    <div class="form-section">
+                        <h5><i class="fas fa-exclamation-circle"></i> Original Issue Description</h5>
+                        <div class="form-group">
+                            <label class="form-label">Issue Details</label>
+                            <textarea id="originalIssueTextarea" class="form-textarea" rows="4" readonly style="background-color: #f0f0f0;"></textarea>
                         </div>
-                        <div class="parts-items-list" id="partsItemsList">
-                            <!-- rows added dynamically -->
+                    </div>
+
+                    <div class="form-section">
+                        <h5><i class="fas fa-edit"></i> Additional Notes (Optional)</h5>
+                        <div class="form-group">
+                            <label class="form-label">Spare Parts Request Notes</label>
+                            <textarea id="additionalNotesTextarea" class="form-textarea" rows="3" placeholder="Add any additional observations, diagnostics, or notes about the spare parts needed..."></textarea>
+                            <small style="color: var(--muted); margin-top: 5px; display: block;">Add any extra information about why specific parts are needed or additional findings during inspection.</small>
                         </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" id="noSparePartsNeeded" onchange="toggleSparePartsSection(this.checked)" style="width: 18px; height: 18px;">
+                                <span style="font-weight: 500; color: var(--tang-blue);">No Spare Parts Needed for this Ticket</span>
+                            </label>
+                            <small style="color: var(--muted); display: block; margin-top: 5px; margin-left: 28px;">Check this if the repair can be done without any spare parts</small>
+                        </div>
+                    </div>
+
+                    <div class="form-section" id="sparePartsSection">
+                        <h5><i class="fas fa-wrench"></i> Spare Parts Required</h5>
+                        <div id="sparePartsContainer"></div>
+                        <button type="button" class="btn btn-secondary" onclick="addPartField()" style="margin-top: 10px;">
+                            <i class="fas fa-plus"></i> Add Another Part
+                        </button>
                     </div>
 
                     <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closePartsModal()">Cancel</button>
-                        <button type="submit" class="btn btn-primary" id="partsSubmitBtn">
-                            <i class="fas fa-paper-plane"></i> Submit Request
-                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="closePartsModal()"><i class="fas fa-times"></i> Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="partsSubmitBtn"><i class="fas fa-paper-plane"></i> Submit &amp; Start Work</button>
                     </div>
                 </form>
             </div>
@@ -606,19 +727,36 @@
     <div class="modal-overlay" id="completeModal">
         <div class="modal">
             <div class="modal-header">
-                <h3><i class="fas fa-check-double"></i> Mark Ticket as Resolved</h3>
+                <h3><i class="fas fa-check-circle"></i> Finish Work</h3>
                 <button class="modal-close" onclick="closeCompleteModal()"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
                 <form id="completeForm" onsubmit="submitComplete(event)">
-                    <div class="form-group">
-                        <label class="form-label">Work Summary / Resolution Notes <span class="required">*</span></label>
-                        <textarea class="form-textarea" id="completeSummary" placeholder="Describe what was done to resolve the fault..." rows="5" required></textarea>
+                    <div class="form-section">
+                        <h5><i class="fas fa-check-circle"></i> Work Completion</h5>
+                        <div class="form-group">
+                            <label class="form-label">Ticket ID</label>
+                            <input type="text" class="form-input" id="updateTicketId" readonly style="background-color: #f0f0f0;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Parts Used (if any)</label>
+                            <div id="updatePartsUsedContainer" style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; max-height: 180px; overflow-y: auto; background: #fafafa;">
+                                <p style="color: #999; font-size: 0.9rem; margin: 0;" id="noPartsMessage">No spare parts were requested for this ticket.</p>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Time Spent (hours) <span class="required">*</span></label>
+                            <input type="number" class="form-input" id="completeTimeSpent" step="0.5" min="0.5" placeholder="Hours worked" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Description About the Machine Update <span class="required">*</span></label>
+                            <textarea class="form-textarea" id="completeMachineDescription" placeholder="Describe the machine condition and updates made..." rows="5" required></textarea>
+                        </div>
                     </div>
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" onclick="closeCompleteModal()">Cancel</button>
                         <button type="submit" class="btn btn-primary btn-green" id="completeSubmitBtn">
-                            <i class="fas fa-check"></i> Confirm Resolved
+                            <i class="fas fa-check-circle"></i> Finish
                         </button>
                     </div>
                 </form>
@@ -637,6 +775,11 @@
             </div>
             <div class="modal-body">
                 <form id="assignForm" onsubmit="submitAssignment(event)">
+                    <p class="assign-modal-note">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Select one or more technicians and set a realistic completion date before saving.</span>
+                    </p>
+
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Fault Ticket</label>
@@ -657,7 +800,8 @@
                         <label class="form-label">Select Technician(s)</label>
                         <div id="assignTechniciansList" class="assign-tech-list"></div>
                         <div id="assignSelectionWarning" class="assign-warning" style="display:none;">
-                            No technicians selected. This will unassign the ticket.
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>No technicians selected. This will unassign the ticket.</span>
                         </div>
                     </div>
 
@@ -668,7 +812,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Notes</label>
-                            <input type="text" class="form-input" id="assignNotes" placeholder="Optional instructions">
+                            <textarea class="form-textarea" id="assignNotes" rows="3" placeholder="Optional instructions for assigned technicians"></textarea>
                         </div>
                     </div>
 
@@ -694,24 +838,17 @@
             </div>
             <div class="modal-body">
                 <form id="garageApprovalForm" onsubmit="submitGarageApproval(event)">
+                    <input type="hidden" id="garageApprovalBreakdownId">
+
+                    <div class="form-group" id="garageApprovalMeta"></div>
+
                     <div class="form-group">
-                        <label class="form-label">Route Breakdown</label>
-                        <input type="text" class="form-input" id="garageApprovalRouteCode" readonly>
-                    </div>
-
-                    <div class="garage-approval-layout">
-                        <div class="form-group">
-                            <label class="form-label">Select Nearby Garage <span class="required">*</span></label>
-                            <div id="garageApprovalList" class="assign-tech-list"></div>
-                            <div id="garageApprovalSelectionWarning" class="assign-warning" style="display:none;">
-                                Please select one nearby garage to approve.
-                            </div>
-                        </div>
-
-                        <div class="garage-map-panel">
-                            <div class="garage-map-title"><i class="fas fa-map-marked-alt"></i> Garage Locations</div>
-                            <div id="garageApprovalMap" class="garage-approval-map"></div>
-                            <p id="garageApprovalMapHint" class="garage-map-hint">Loading garage coordinates...</p>
+                        <label class="form-label" for="garageApprovalSelect">Select Nearby Garage <span class="required">*</span></label>
+                        <select id="garageApprovalSelect" class="form-select" required>
+                            <option value="">Loading garages...</option>
+                        </select>
+                        <div id="garageApprovalSelectionWarning" class="assign-warning" style="display:none;">
+                            Please select one nearby garage to approve.
                         </div>
                     </div>
 
@@ -759,7 +896,6 @@
     <script src="../components/shared/confirm-dialog.js"></script>
     <script src="../js/dashboard-init.js"></script>
     <script src="../js/fault-ticket-detail-template.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="./script.js"></script>
 </body>
 </html>

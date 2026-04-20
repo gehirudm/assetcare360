@@ -6,6 +6,8 @@ class MOFaultReporting extends HTMLElement {
 
         this._mounted = true;
         this.currentFilter = 'all';
+        this.currentSort = 'created';
+        this.allReports = [];
         this.render();
         this.bindEvents();
         this.refresh();
@@ -28,18 +30,27 @@ class MOFaultReporting extends HTMLElement {
                 <p class="page-subtitle">Submit machine fault tickets with details and photos</p>
             </div>
 
-            <div style="margin-bottom: 20px;">
+            <div class="mo-fault-actions">
                 <button class="btn btn-primary" type="button" data-action="open-report-modal">
                     <i class="fas fa-plus"></i> Report New Fault
                 </button>
             </div>
 
-            <div class="filter-controls" id="faultReportFilterControls">
-                <button class="filter-btn active" type="button" data-action="set-filter" data-filter="all">All Reports</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-filter="open">Pending</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-filter="in-progress">In Progress</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-filter="resolved">Resolved</button>
-                <button class="filter-btn" type="button" data-action="set-filter" data-filter="closed">Closed</button>
+            <div class="filter-toolbar">
+                <div class="filter-controls filter-toolbar__filters" id="faultReportFilterControls">
+                    <button class="filter-btn active" type="button" data-action="set-filter" data-filter="all">All Reports</button>
+                    <button class="filter-btn" type="button" data-action="set-filter" data-filter="open">Pending</button>
+                    <button class="filter-btn" type="button" data-action="set-filter" data-filter="in-progress">In Progress</button>
+                    <button class="filter-btn" type="button" data-action="set-filter" data-filter="resolved">Resolved</button>
+                    <button class="filter-btn" type="button" data-action="set-filter" data-filter="closed">Closed</button>
+                </div>
+                <div class="filter-toolbar__sort">
+                    <label class="filter-toolbar__label" for="faultReportSort">Sort by</label>
+                    <select id="faultReportSort" class="filter-toolbar__select" data-action="set-sort">
+                        <option value="created">Created Date</option>
+                        <option value="priority">Priority</option>
+                    </select>
+                </div>
             </div>
 
             <div class="card">
@@ -70,10 +81,30 @@ class MOFaultReporting extends HTMLElement {
                 return;
             }
 
+            if (action === 'set-sort') {
+                return;
+            }
+
             if (action === 'view-breakdown') {
-                document.dispatchEvent(new CustomEvent('mo:open-machine-breakdown-details', {
-                    detail: { breakdownId: Number.parseInt(actionEl.dataset.breakdownId, 10) },
-                }));
+                const ticketId = Number.parseInt(actionEl.dataset.ticketId, 10);
+                const breakdownId = Number.parseInt(actionEl.dataset.breakdownId, 10);
+
+                if (Number.isFinite(ticketId) && ticketId > 0) {
+                    document.dispatchEvent(new CustomEvent('mo:open-ticket-details', {
+                        detail: {
+                            ticketId,
+                            returnSection: 'fault-reporting',
+                        },
+                    }));
+                    return;
+                }
+
+                if (Number.isFinite(breakdownId) && breakdownId > 0) {
+                    window.MOUtils.emitToast('Linked fault ticket not found yet. Showing breakdown details instead.', 'warning');
+                    document.dispatchEvent(new CustomEvent('mo:open-machine-breakdown-details', {
+                        detail: { breakdownId },
+                    }));
+                }
                 return;
             }
 
@@ -85,7 +116,29 @@ class MOFaultReporting extends HTMLElement {
 
             if (action === 'edit-breakdown') {
                 this.closeDropdownMenus();
-                window.MOUtils.emitToast('Edit machine breakdown feature coming soon', 'info');
+
+                const isEditable = actionEl.dataset.editable === 'true';
+                const ticketStatus = String(actionEl.dataset.ticketStatus || '').trim();
+                const ticketId = Number.parseInt(actionEl.dataset.ticketId, 10);
+
+                if (!isEditable) {
+                    if (!Number.isFinite(ticketId) || ticketId <= 0) {
+                        window.MOUtils.emitToast('Edit is unavailable because this report has no linked fault ticket yet.', 'warning');
+                        return;
+                    }
+
+                    window.MOUtils.emitToast(`Edit is only available while the fault ticket is Open. Current status: ${ticketStatus || 'Unknown'}.`, 'warning');
+                    return;
+                }
+
+                if (!Number.isFinite(ticketId) || ticketId <= 0) {
+                    window.MOUtils.emitToast('This fault ticket cannot be edited right now.', 'warning');
+                    return;
+                }
+
+                document.dispatchEvent(new CustomEvent('mo:open-edit-fault', {
+                    detail: { ticketId },
+                }));
                 return;
             }
 
@@ -93,6 +146,16 @@ class MOFaultReporting extends HTMLElement {
                 this.closeDropdownMenus();
                 window.MOUtils.emitToast('Delete machine breakdown feature coming soon', 'info');
             }
+        });
+
+        this.addEventListener('change', (event) => {
+            const actionEl = event.target.closest('[data-action="set-sort"]');
+            if (!actionEl) {
+                return;
+            }
+
+            this.currentSort = actionEl.value || 'created';
+            this.renderReports();
         });
 
         this._boundOutsideClick = (event) => {
@@ -116,31 +179,139 @@ class MOFaultReporting extends HTMLElement {
             const response = await API.get('/machine-breakdowns');
             const reports = response?.status === 'success' && response.data?.reports ? response.data.reports : [];
 
-            const sortedReports = [...reports].sort((first, second) => {
-                const firstTime = new Date(first.created_at || first.breakdown_date || 0).getTime();
-                const secondTime = new Date(second.created_at || second.breakdown_date || 0).getTime();
-                return secondTime - firstTime;
-            });
+            this.allReports = Array.isArray(reports) ? reports : [];
 
-            if (!sortedReports.length) {
+            if (!this.allReports.length) {
                 list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--stone-400);">No fault reports found. Submit a new fault report to get started.</div>';
                 this.updateSummary([]);
                 return;
             }
 
-            list.innerHTML = sortedReports.map((fault) => this.renderFaultCard(fault)).join('');
-            this.applyFilter(this.currentFilter);
-            this.updateSummary(sortedReports);
+            this.renderReports();
         } catch (error) {
             console.error('Error loading fault reports:', error);
+            this.allReports = [];
             list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--red-500);">Error loading fault reports. Please try again.</div>';
         }
+    }
+
+    renderReports() {
+        const list = this.querySelector('#faultReportsList');
+        if (!list) {
+            return;
+        }
+
+        const sortedReports = this.getSortedReports(this.allReports);
+        if (!sortedReports.length) {
+            list.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--stone-400);">No fault reports found. Submit a new fault report to get started.</div>';
+            this.updateSummary([]);
+            return;
+        }
+
+        list.innerHTML = sortedReports.map((fault) => this.renderFaultCard(fault)).join('');
+        this.applyFilter(this.currentFilter);
+        this.updateSummary(this.allReports);
+    }
+
+    getSortedReports(reports) {
+        const normalizedReports = Array.isArray(reports) ? [...reports] : [];
+
+        if (this.currentSort === 'priority') {
+            return normalizedReports.sort((first, second) => {
+                const priorityDiff = this.getReportPriorityRank(second) - this.getReportPriorityRank(first);
+                if (priorityDiff !== 0) {
+                    return priorityDiff;
+                }
+
+                const timeDiff = this.getReportSortTime(second) - this.getReportSortTime(first);
+                if (timeDiff !== 0) {
+                    return timeDiff;
+                }
+
+                return this.getReportSortRank(second) - this.getReportSortRank(first);
+            });
+        }
+
+        return normalizedReports.sort((first, second) => {
+            const timeDiff = this.getReportSortTime(second) - this.getReportSortTime(first);
+            if (timeDiff !== 0) {
+                return timeDiff;
+            }
+
+            const priorityDiff = this.getReportPriorityRank(second) - this.getReportPriorityRank(first);
+            if (priorityDiff !== 0) {
+                return priorityDiff;
+            }
+
+            return this.getReportSortRank(second) - this.getReportSortRank(first);
+        });
+    }
+
+    getReportSortTime(report) {
+        const candidates = [
+            report?.created_at,
+            report?.updated_at,
+            report?.breakdown_date,
+        ];
+
+        for (const value of candidates) {
+            if (!value) {
+                continue;
+            }
+
+            const timestamp = new Date(value).getTime();
+            if (Number.isFinite(timestamp) && timestamp > 0) {
+                return timestamp;
+            }
+        }
+
+        return 0;
+    }
+
+    getReportSortRank(report) {
+        const directId = Number.parseInt(report?.id, 10);
+        if (Number.isFinite(directId) && directId > 0) {
+            return directId;
+        }
+
+        const breakdownId = String(report?.breakdown_id || '');
+        const numberPart = breakdownId.match(/(\d+)(?!.*\d)/);
+        if (numberPart) {
+            const parsed = Number.parseInt(numberPart[1], 10);
+            if (Number.isFinite(parsed) && parsed > 0) {
+                return parsed;
+            }
+        }
+
+        return 0;
+    }
+
+    getReportPriorityRank(report) {
+        const normalizedPriority = String(report?.priority || report?.severity || 'medium').trim().toLowerCase();
+
+        if (normalizedPriority === 'critical') {
+            return 4;
+        }
+
+        if (normalizedPriority === 'high') {
+            return 3;
+        }
+
+        if (normalizedPriority === 'low') {
+            return 1;
+        }
+
+        return 2;
     }
 
     renderFaultCard(fault) {
         const statusInfo = window.MOUtils.getStatusInfo(fault.status);
         const normalizedStatus = window.MOUtils.normalizeFilterStatus(fault.status);
-        const isPending = normalizedStatus === 'open';
+        const normalizedTicketStatus = String(fault.ticket_status || fault.status || '').trim().toLowerCase();
+        const ticketStatusLabel = String(fault.ticket_status || 'No Ticket').trim() || 'No Ticket';
+        const safeTicketStatusLabel = ticketStatusLabel.replace(/"/g, '&quot;');
+        const hasEditableTicket = Number.isFinite(Number(fault.fault_ticket_id)) && Number(fault.fault_ticket_id) > 0;
+        const canEdit = hasEditableTicket && (normalizedTicketStatus === 'open' || normalizedTicketStatus === 'pending');
         const severity = fault.severity || 'Medium';
         const severityClass = severity.toLowerCase() === 'critical'
             ? 'status-danger'
@@ -173,24 +344,19 @@ class MOFaultReporting extends HTMLElement {
                 </div>
                 <div class="item-actions">
                     <div class="action-buttons">
-                        <button class="btn btn-primary btn-small" type="button" data-action="view-breakdown" data-breakdown-id="${fault.id}">
+                        <button class="btn btn-primary btn-small" type="button" data-action="view-breakdown" data-breakdown-id="${fault.id}" data-ticket-id="${fault.fault_ticket_id || ''}">
                             <i class="fas fa-eye"></i> VIEW
                         </button>
-                        ${isPending ? `
-                            <div class="dropdown-container">
-                                <button class="btn btn-small btn-secondary dropdown-trigger" type="button" data-action="toggle-dropdown" data-menu-id="fault-menu-${fault.id}">
-                                    <i class="fas fa-ellipsis-v"></i>
+                        <div class="dropdown-container">
+                            <button class="btn btn-small btn-secondary dropdown-trigger" type="button" data-action="toggle-dropdown" data-menu-id="fault-menu-${fault.id}">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div class="dropdown-menu" id="fault-menu-${fault.id}">
+                                <button class="dropdown-item" type="button" data-action="edit-breakdown" data-ticket-id="${fault.fault_ticket_id || ''}" data-editable="${canEdit ? 'true' : 'false'}" data-ticket-status="${safeTicketStatusLabel}">
+                                    <i class="fas fa-edit"></i> Edit
                                 </button>
-                                <div class="dropdown-menu" id="fault-menu-${fault.id}">
-                                    <button class="dropdown-item" type="button" data-action="edit-breakdown" data-breakdown-id="${fault.id}">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </button>
-                                    <button class="dropdown-item danger" type="button" data-action="delete-breakdown" data-breakdown-id="${fault.id}">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </button>
-                                </div>
                             </div>
-                        ` : ''}
+                        </div>
                     </div>
                 </div>
             </div>

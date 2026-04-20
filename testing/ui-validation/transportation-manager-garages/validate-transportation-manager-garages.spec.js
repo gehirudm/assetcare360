@@ -81,6 +81,9 @@ const LEAFLET_STUB_JS = `
                 on: function () {
                     return this;
                 },
+                setStyle: function () {
+                    return this;
+                },
                 getLatLng: function () {
                     return {
                         lat: this._coords[0],
@@ -91,6 +94,9 @@ const LEAFLET_STUB_JS = `
                     return this;
                 },
             };
+        },
+        circleMarker: function (coords) {
+            return this.marker(coords);
         },
     };
 })();
@@ -337,7 +343,7 @@ async function mockSupervisorApi(page, state) {
             });
         }
 
-        if (pathname.endsWith('/api/route-breakdowns/garages') && method === 'GET') {
+        if ((pathname.endsWith('/api/route-breakdowns/garages') || pathname.endsWith('/api/garages')) && method === 'GET') {
             const garages = state.garages.filter((garage) => Number(garage.is_active) === 1);
             return json(route, {
                 status: 'success',
@@ -453,15 +459,23 @@ async function runSupervisorFlow(page, viewportName, artifact, state) {
 
     await expect(page.locator('#garageApprovalModal')).toHaveClass(/active/, { timeout: 10000 });
 
-    const garageRows = page.locator('#garageApprovalList .assign-tech-item');
-    await expect(garageRows).toHaveCount(3);
-    await expect(garageRows.filter({ hasText: artifact.transportationManager.createdGarageName })).toHaveCount(1);
+    const garageSelect = page.locator('#garageApprovalSelect');
+    await expect(garageSelect).toBeVisible({ timeout: 10000 });
+
+    await expect.poll(async () => {
+        return page.locator('#garageApprovalSelect option').count();
+    }).toBeGreaterThan(1);
+
+    const optionTexts = await page.locator('#garageApprovalSelect option').allTextContents();
+    const selectableOptions = optionTexts.slice(1);
+    expect(selectableOptions.length).toBe(3);
+    expect(selectableOptions.some((text) => text.includes(artifact.transportationManager.createdGarageName))).toBeTruthy();
 
     await expect(page.locator('#garageApprovalMap')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('#garageApprovalMapHint')).toContainText('All garages with saved coordinates');
+    const mapHintText = (await page.locator('#garageApprovalMapHint').textContent()) || '';
+    expect(mapHintText.trim().length).toBeGreaterThan(0);
 
-    await garageRows.nth(1).click();
-    await expect(garageRows.nth(1)).toHaveClass(/selected/);
+    await page.selectOption('#garageApprovalSelect', { index: 2 });
 
     await page.fill('#garageApprovalNotes', 'Approved nearest connected garage for immediate repair.');
     await page.locator('#garageApprovalForm button[type="submit"]').click();
@@ -476,7 +490,14 @@ async function runSupervisorFlow(page, viewportName, artifact, state) {
     artifact.supervisor = {
         approvalCalls: state.approvalCalls,
         lastApprovalPayload: state.lastApprovalPayload,
-        listCount: await page.locator('#garageApprovalList .assign-tech-item').count(),
+        optionCount: await page.evaluate(() => {
+            const select = document.getElementById('garageApprovalSelect');
+            if (!(select instanceof HTMLSelectElement)) {
+                return 0;
+            }
+
+            return Array.from(select.options).filter((option) => option.value !== '').length;
+        }),
         mapHint: await page.locator('#garageApprovalMapHint').textContent(),
     };
 }

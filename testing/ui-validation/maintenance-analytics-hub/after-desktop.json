@@ -1,0 +1,20 @@
+{
+  "stage": "after",
+  "viewport": "desktop",
+  "url": "http://127.0.0.1:3000/dashboard/maintenance/index.html",
+  "title": "Maintenance Manager Dashboard",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \"Maintenance Analytics\" [level=1]\n  - paragraph: Monitor ticket pipeline, breakdown intake, budget approvals, and service risk in one view.\n  - tablist \"Maintenance analytics views\":\n    - tab \"Fault Ticket Analytics\"\n    - tab \"Breakdown Analytics\"\n    - tab \"Cost Approval Analytics\"\n    - tab \"Service & Warranty Analytics\" [selected]\n  - text: From Date\n  - textbox \"From Date\": 2026-04-01\n  - text: To Date\n  - textbox \"To Date\": 2026-04-30\n  - text: Report Type\n  - combobox \"Report Type\":\n    - option \"Active Analytics View\" [selected]\n    - option \"Fault Ticket Analytics\"\n    - option \"Breakdown Analytics\"\n    - option \"Cost Approval Analytics\"\n    - option \"Service & Warranty Analytics\"\n    - option \"All Analytics Summary\"\n  - button \"Apply Time Filter\"\n  - button \"Generate Report\"\n  - button \"Download CSV\"\n  - text: Analytics updated for selected period. Report downloaded successfully.\n  - heading \"Service & Warranty Analytics\" [level=3]\n  - paragraph: \"Period: 2026-04-01 to 2026-04-30 | Generated: Apr 20, 2026, 12:24 PM\"\n  - text: Tracked Assets 0 Active Assets 0 Expiring Assets 0 Expired Overdue Assets 0 Service Activities 0 Service Reports 0 Service Report Expected Cost Total 0 Service Report Actual Cost Total 0 Service Report Cost Variance 0 Open Repairs 0 Completed Repairs 0\n  - table:\n    - rowgroup:\n      - row \"Activity Source Activity ID Status Asset Recorded At Cost\":\n        - columnheader \"Activity Source\"\n        - columnheader \"Activity ID\"\n        - columnheader \"Status\"\n        - columnheader \"Asset\"\n        - columnheader \"Recorded At\"\n        - columnheader \"Cost\"\n    - rowgroup\n  - tabpanel: Tracked Assets 0 Expiring Soon 0 Expired / Overdue 0 Service Activities (Period) 0 Service Reports (Period) 0 Expected Cost Total LKR 0.00 Actual Cost Total LKR 0.00 Cost Variance LKR 0.00 Asset Service Risk Distribution Current risk state from service and warranty dates. No asset service-risk data available. Service Report Cost Details Expected vs actual totals and net variance from completed service reports. No service report cost details found for selected period.",
+    "snapshotLength": 2134
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "stage": "after",
+    "analyticsNavPresent": true,
+    "analyticsSectionPresent": true,
+    "activeSection": "analytics",
+    "reportRows": 0,
+    "downloadSuggestedFilename": "maintenance-active-report-20260420-1224.csv"
+  }
+}

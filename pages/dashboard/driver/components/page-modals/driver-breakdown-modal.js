@@ -136,7 +136,6 @@ class DriverBreakdownModal extends HTMLElement {
                 severity: form.querySelector('#breakdownSeverity').value,
                 breakdown_type: form.querySelector('#breakdownType').value,
                 description: form.querySelector('#breakdownDescription').value.trim(),
-                breakdown_date: new Date().toISOString().split('T')[0],
             };
 
             try {

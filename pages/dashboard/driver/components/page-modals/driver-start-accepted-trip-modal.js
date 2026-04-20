@@ -148,14 +148,17 @@ class DriverStartAcceptedTripModal extends HTMLElement {
         
         if (detailsEl && this.currentTrip) {
             const route = `${this.currentTrip.origin || 'N/A'} → ${this.currentTrip.destination || 'N/A'}`;
+            const cargoSummary = DriverUtils.buildCargoSummary(this.currentTrip);
+            const hasDangerousCargo = DriverUtils.hasDangerousCargo(this.currentTrip);
             detailsEl.innerHTML = `
-                <h4 style="margin: 0 0 10px 0; color: var(--primary);"><i class="fas fa-route"></i> ${this.currentTripId}</h4>
-                <p style="margin: 0; font-size: 14px;"><i class="fas fa-map-marker-alt"></i> <strong>Route:</strong> ${route}</p>
-                ${this.currentTrip.vehicle_registration ? `<p style="margin: 5px 0 0 0; font-size: 14px;"><i class="fas fa-truck"></i> <strong>Vehicle:</strong> ${this.currentTrip.vehicle_registration}</p>` : ''}
-                ${this.currentTrip.cargo_description ? `<p style="margin: 5px 0 0 0; font-size: 14px;"><i class="fas fa-box"></i> <strong>Cargo:</strong> ${this.currentTrip.cargo_description}</p>` : ''}
+                <h4 style="margin: 0 0 10px 0; color: var(--primary);"><i class="fas fa-route"></i> ${DriverUtils.escapeHtml(this.currentTripId)}</h4>
+                <p style="margin: 0; font-size: 14px;"><i class="fas fa-map-marker-alt"></i> <strong>Route:</strong> ${DriverUtils.escapeHtml(route)}</p>
+                ${this.currentTrip.vehicle_registration ? `<p style="margin: 5px 0 0 0; font-size: 14px;"><i class="fas fa-truck"></i> <strong>Vehicle:</strong> ${DriverUtils.escapeHtml(this.currentTrip.vehicle_registration)}</p>` : ''}
+                ${cargoSummary ? `<p style="margin: 5px 0 0 0; font-size: 14px;"><i class="fas fa-boxes-stacked"></i> <strong>Cargo:</strong> ${DriverUtils.escapeHtml(cargoSummary)}</p>` : ''}
+                ${hasDangerousCargo ? '<p style="margin: 5px 0 0 0; font-size: 13px; color: #b91c1c; font-weight: 600;"><i class="fas fa-radiation"></i> Dangerous cargo is assigned to this trip.</p>' : ''}
             `;
         } else if (detailsEl && this.currentTripId) {
-            detailsEl.innerHTML = `<p style="margin: 0;"><strong>Trip ID:</strong> ${this.currentTripId}</p>`;
+            detailsEl.innerHTML = `<p style="margin: 0;"><strong>Trip ID:</strong> ${DriverUtils.escapeHtml(this.currentTripId)}</p>`;
         }
 
         DriverUtils.setModalState(this.querySelector('#startAcceptedTripModal'), true);

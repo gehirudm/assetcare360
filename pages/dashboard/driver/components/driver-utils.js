@@ -174,7 +174,7 @@
         if (value === 'rejected' || value === 'critical' || value === 'cancelled') {
             return '#e74c3c';
         }
-        if (value === 'in progress' || value === 'in-progress' || value === 'assigned') {
+        if (value === 'in progress' || value === 'in-progress' || value === 'assigned' || value === 'insurance claimed') {
             return '#2563eb';
         }
         if (value === 'pending') {
@@ -192,6 +192,7 @@
             'Waiting for Spare Parts': { label: 'Awaiting Parts', class: 'status-in-progress', text: 'Awaiting Parts' },
             'Parts Approved': { label: 'Parts Approved', class: 'status-in-progress', text: 'Parts Approved' },
             'Parts Rejected': { label: 'Parts Rejected', class: 'status-rejected', text: 'Parts Rejected' },
+            'Insurance Claimed': { label: 'Insurance Claimed', class: 'status-in-progress', text: 'Insurance Claimed' },
             'In Progress': { label: 'In Progress', class: 'status-in-progress', text: 'In Progress' },
             Resolved: { label: 'Resolved', class: 'status-resolved', text: 'Resolved' },
             Closed: { label: 'Closed', class: 'status-closed', text: 'Closed' },
@@ -209,6 +210,7 @@
             'Waiting for Spare Parts': 'Waiting for spare parts to be approved',
             'Parts Approved': 'Spare parts approved, repair to begin soon',
             'Parts Rejected': 'Spare parts request was rejected and needs revision',
+            'Insurance Claimed': 'Supervisor submitted this ticket to insurance claim workflow',
             'In Progress': 'Being investigated and repaired',
             Resolved: 'Work completed and ticket resolved',
             Closed: 'Ticket closed',
@@ -224,7 +226,7 @@
             return 'open';
         }
 
-        if (value === 'assigned' || value.includes('progress') || value.includes('spare') || value.includes('parts') || value.includes('budget')) {
+        if (value === 'assigned' || value === 'insurance claimed' || value.includes('progress') || value.includes('spare') || value.includes('parts') || value.includes('budget')) {
             return 'in-progress';
         }
 
@@ -273,6 +275,83 @@
             hour: '2-digit',
             minute: '2-digit',
         });
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function formatQuantity(value) {
+        const numeric = Number(value);
+        if (!Number.isFinite(numeric)) {
+            return '0';
+        }
+
+        const fixed = numeric.toFixed(3);
+        return fixed.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+    }
+
+    function normalizeCargoItems(entity) {
+        if (!entity || typeof entity !== 'object') {
+            return [];
+        }
+
+        return Array.isArray(entity.cargo_items)
+            ? entity.cargo_items
+            : [];
+    }
+
+    function hasDangerousCargo(entity) {
+        if (!entity || typeof entity !== 'object') {
+            return false;
+        }
+
+        if (entity.has_dangerous_cargo === true || Number(entity.has_dangerous_cargo) === 1) {
+            return true;
+        }
+
+        const items = normalizeCargoItems(entity);
+        if (!items.length) {
+            return false;
+        }
+
+        return items.some((item) => Number(item?.is_dangerous) === 1);
+    }
+
+    function buildCargoSummary(entity) {
+        if (!entity || typeof entity !== 'object') {
+            return '';
+        }
+
+        if (typeof entity.cargo_summary === 'string' && entity.cargo_summary.trim()) {
+            return entity.cargo_summary.trim();
+        }
+
+        const items = normalizeCargoItems(entity);
+        if (items.length) {
+            return items.map((item) => {
+                const name = String(item?.name || item?.cargo_item_id || 'Cargo Item').trim();
+                const quantity = formatQuantity(item?.quantity);
+                const unit = String(item?.unit || 'units').trim();
+                const dangerSuffix = Number(item?.is_dangerous) === 1 ? ' [Dangerous]' : '';
+                return `${name} (${quantity} ${unit})${dangerSuffix}`;
+            }).join(', ');
+        }
+
+        if (typeof entity.cargo_description === 'string' && entity.cargo_description.trim()) {
+            return entity.cargo_description.trim();
+        }
+
+        if (typeof entity.cargo === 'string' && entity.cargo.trim()) {
+            return entity.cargo.trim();
+        }
+
+        return '';
     }
 
     function ensureTodayDefaults(root = document) {
@@ -358,6 +437,11 @@
         normalizeTicketFilterStatus,
         formatDate,
         formatDateTime,
+        escapeHtml,
+        formatQuantity,
+        normalizeCargoItems,
+        hasDangerousCargo,
+        buildCargoSummary,
         ensureTodayDefaults,
         closeOverflowMenus,
         toggleOverflowMenu,

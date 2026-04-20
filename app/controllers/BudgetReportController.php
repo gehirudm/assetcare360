@@ -76,7 +76,7 @@ class BudgetReportController {
             }
             
             // Check if ticket is in a pre-work status (budget can be submitted/resubmitted)
-            $allowedStatuses = ['Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts', 'Parts Approved'];
+            $allowedStatuses = ['Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts', 'Parts Approved', 'Parts Rejected'];
             if (!in_array($ticket['status'], $allowedStatuses)) {
                 http_response_code(400);
                 echo json_encode([
@@ -336,7 +336,7 @@ class BudgetReportController {
             
             // Only allow edits if ticket hasn't reached "In Progress" status yet
             // Allowed: Open, Assigned, Waiting for Budget Approval, Waiting for Spare Parts
-            $allowedStatuses = ['Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts', 'Parts Approved'];
+            $allowedStatuses = ['Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts', 'Parts Approved', 'Parts Rejected'];
             if (!in_array($ticket['status'], $allowedStatuses)) {
                 http_response_code(400);
                 echo json_encode([
@@ -496,7 +496,10 @@ class BudgetReportController {
             );
             
             if ($success) {
-                $this->workflowService->syncTicketStatus((int) $existingReport['fault_ticket_id']);
+                $syncResult = $this->workflowService->syncTicketStatus((int) $existingReport['fault_ticket_id']);
+                if (($syncResult['success'] ?? false) !== true) {
+                    error_log("Budget report review sync warning for report {$id}: " . ($syncResult['message'] ?? 'Unknown workflow sync error'));
+                }
                 
                 $report = $this->budgetReportModel->findById($id);
                 
@@ -594,7 +597,7 @@ class BudgetReportController {
             }
             
             // Only allow deletion if ticket hasn't reached "In Progress" status yet
-            $allowedStatuses = ['Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts', 'Parts Approved'];
+            $allowedStatuses = ['Open', 'Assigned', 'Waiting for Budget Approval', 'Waiting for Spare Parts', 'Parts Approved', 'Parts Rejected'];
             if (!in_array($ticket['status'], $allowedStatuses)) {
                 http_response_code(400);
                 echo json_encode([

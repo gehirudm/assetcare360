@@ -246,3 +246,234 @@ Concise implementation memory for archived tasks.
 - Key Decisions: Supervisor dashboard refactor is partially complete, but high-level analysis shows remaining legacy ownership:
 - Validation Evidence: - [x] Add or update stage-based validation under `testing/ui-validation/supervisor-dashboard/` (or equivalent scope) to cover ticket list actions + modal flows before/after on desktop and mobile.
 - Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK039 - Route Breakdown Garage Workflow Alignment
+- Completion Date: April 16, 2026
+- Problem Solved: Aligned route-breakdown processing with the garage workflow so assignment and approval states behave consistently across backend and dashboard flows.
+- Key Decisions: Standardized route-breakdown action ownership and status progression so UI actions map directly to backend transitions instead of role-specific drift.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK040 - Fuel Logging and TM Fleet Detail Enhancements
+- Completion Date: April 16, 2026
+- Problem Solved: Improved Transportation Manager fuel logging and fleet-detail behavior to support more reliable operational tracking.
+- Key Decisions: Kept enhancements inside existing TM components and data contracts to avoid regressions in surrounding fleet workflows.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK041 - Vehicle Government Fuel QR Image Flow
+- Completion Date: April 16, 2026
+- Problem Solved: Implemented QR-image handling for government fuel records in the vehicle flow.
+- Key Decisions: Added the QR image capability as an extension of the existing fuel workflow so upload/view behavior remained consistent with current UI patterns.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK042 - Route Breakdown Driver Location Capture and Map-Based Garage Approval
+- Completion Date: April 17, 2026
+- Problem Solved: Added driver-location capture and map-based garage approval for route breakdown handling.
+- Key Decisions: Unified location/map context between breakdown creation and approval so approvers use the same geospatial data captured from the field.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK043 - Transportation Cargo Lifecycle and Dangerous Route Breakdown Escalation
+- Completion Date: April 17, 2026
+- Problem Solved: Delivered transportation cargo lifecycle controls and dangerous route-breakdown escalation behavior.
+- Key Decisions: Enforced explicit escalation paths for dangerous conditions while preserving normal cargo lifecycle progression for non-dangerous cases.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK044 - Move Transportation Manager Cargo Management to Separate Sidebar Section
+- Completion Date: April 17, 2026
+- Problem Solved: Split TM cargo management into its own sidebar section for clearer navigation and ownership.
+- Key Decisions: Moved cargo capabilities without changing backend contracts, minimizing risk while improving IA and section-level maintainability.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK045 - Refine Transportation Manager Cargo Catalogue and Add Details View
+- Completion Date: April 17, 2026
+- Problem Solved: Refined TM cargo catalogue interactions and added a dedicated cargo details view.
+- Key Decisions: Prioritized detail visibility and action clarity so operators can inspect cargo records without overloading list views.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK046 - Enforce Dangerous In-Route Priority Lock and Supervisor Visibility
+- Completion Date: April 17, 2026
+- Problem Solved: Enforced dangerous in-route priority lock behavior and ensured supervisor visibility for those records.
+- Key Decisions: Prevented priority downgrades for dangerous in-route states and surfaced clear visibility cues to supervision workflows.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK047 - Unify Breakdown View and Auto-Create Fault Tickets
+- Completion Date: April 18, 2026
+- Problem Solved: Unified breakdown viewing and enabled automatic linked fault-ticket creation.
+- Key Decisions: Established a single breakdown-to-ticket linkage contract and shifted creation responsibility to backend transaction-safe flows.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK048 - Inventory Insurance Flow
+- Completion Date: April 18, 2026
+- Problem Solved: Implemented inventory insurance lifecycle handling for asset records and renewal tracking.
+- Key Decisions: Extended asset data model and UI flows to include insurance metadata while maintaining compatibility with existing inventory operations.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK049 - Supervisor Insurance Claim Fault Ticket Flow
+- Completion Date: April 18, 2026
+- Problem Solved: Added supervisor-governed insurance-claim routing in the fault-ticket workflow.
+- Key Decisions: Introduced role-gated claim transitions and insurance eligibility checks to protect workflow integrity.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK050 - Fix Driver And Machinery Operator Fault Reporting 500
+- Completion Date: April 18, 2026
+- Problem Solved: Resolved 500 errors affecting Driver and Machinery Operator breakdown reporting endpoints.
+- Key Decisions: Removed transaction-unsafe model-instantiation paths during create flows and hardened transaction commit/rollback guards.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK051 - Fix Machinery Operator Double Fault Ticket Creation
+- Completion Date: April 18, 2026
+- Problem Solved: Eliminated duplicate fault-ticket creation from Machinery Operator fault-report submissions.
+- Key Decisions: Stopped redundant frontend ticket creation and relied on backend auto-link creation, preserving post-create photo upload behavior.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK052 - Ensure New Tickets Render First
+- Completion Date: April 18, 2026
+- Problem Solved: Ensured newly created tickets consistently appear first in relevant dashboard lists.
+- Key Decisions: Introduced robust timestamp-first sorting with deterministic tie-breakers across affected role components.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK053 - Cross-Dashboard Fault Ticket Sort and Filter Toolbar
+- Completion Date: April 19, 2026
+- Problem Solved: Standardized sort/filter toolbar behavior and default ordering for fault-ticket lists across multiple dashboards.
+- Key Decisions: Applied one consistent sort-control model and responsive toolbar layout pattern to reduce role-to-role UX divergence.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK054 - Dashboard Chart Recommendation Roadmap
+- Completion Date: April 19, 2026
+- Problem Solved: Produced a practical chart roadmap for dashboard analytics expansion across roles.
+- Key Decisions: Focused on low-risk insertion points and decision-centric chart types to stage delivery incrementally.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK054 - Resolve Rebase Conflicts for Ticket-Detail Dashboard Stack
+- Completion Date: April 19, 2026
+- Problem Solved: Recovered and completed a conflicted rebase sequence for the ticket-detail dashboard stack.
+- Key Decisions: Preserved additive behavior during conflict resolution and discarded stale conflict-state artifacts that were superseded.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK055 - Implement Transportation Manager Separate Analytics Pages
+- Completion Date: April 19, 2026
+- Problem Solved: Implemented separate Transportation Manager analytics pages by domain.
+- Key Decisions: Built dedicated analytics components per domain with guarded response parsing to keep charts reliable against mixed response wrappers.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK056 - Consolidate Transportation Manager Analytics into Single Page
+- Completion Date: April 19, 2026
+- Problem Solved: Consolidated TM analytics into a single unified analytics section with top-level options.
+- Key Decisions: Reused existing domain analytics modules behind one hub and added legacy-section normalization for stable deep links.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK057 - Fix TM Assign-Driver Availability Labeling
+- Completion Date: April 19, 2026
+- Problem Solved: Corrected TM assign-driver availability labeling so active assignments/trips are not misreported as available.
+- Key Decisions: Aligned driver-row availability logic with active-trip and current-assignment checks while preserving workload chip semantics.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK057 - Add Transportation Manager Analytics Report Generation and Download
+- Completion Date: April 19, 2026
+- Problem Solved: Added report generation and CSV download capabilities to the TM analytics experience.
+- Key Decisions: Implemented a shared report toolbar and scope-aware builders to support tab-specific and aggregate report outputs.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK058 - Block Driver Unassign When Active Trip Exists
+- Completion Date: April 19, 2026
+- Problem Solved: Blocked driver unassignment and conflicting reassignment when active trips exist.
+- Key Decisions: Added service-layer active-trip guards so both unassign and reassign operations enforce the same safety rule.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK058 - Add Supervisor Single-Page Analytics Hub Charts
+- Completion Date: April 19, 2026
+- Problem Solved: Added a single-page Supervisor analytics hub with chart-driven views.
+- Key Decisions: Introduced a tabbed analytics hub component and wired section activation refresh into dashboard orchestration.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK059 - Add Technical Officer Single-Page Analytics Hub Charts
+- Completion Date: April 19, 2026
+- Problem Solved: Added a single-page Technical Officer analytics hub with chart-driven views.
+- Key Decisions: Added role-specific analytics hub components and updated routing/sidebar defaults to keep subpage navigation consistent.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK060 - Add Inventory Manager Single-Page Analytics Hub Charts
+- Completion Date: April 19, 2026
+- Problem Solved: Added a single-page Inventory Manager analytics hub and reporting view.
+- Key Decisions: Built tabbed chart sections plus report tooling and stabilized reconnect lifecycle binding in the analytics component.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK061 - Add Machinery Operator Single-Page Analytics Hub Charts
+- Completion Date: April 19, 2026
+- Problem Solved: Added a single-page Machinery Operator analytics hub and reporting workflow.
+- Key Decisions: Delivered tabbed chart modules with date-range reporting and CSV download while preserving dashboard event refresh behavior.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK062 - Implement Service Ticket Management Workflow
+- Completion Date: April 19, 2026
+- Problem Solved: Implemented end-to-end service-ticket workflow across backend API, migrations, and Maintenance/TO dashboard flows.
+- Key Decisions: Added dedicated service-ticket model/service/controller stack, split warranty/service sections, and aligned UI lifecycle actions with API contracts.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK064 - Remove Maintenance Section Shell Wrapper Shadow
+- Completion Date: April 19, 2026
+- Problem Solved: Removed the boxed wrapper/shadow shell effect from Maintenance dashboard content sections.
+- Key Decisions: Changed only shared section-shell style primitives to preserve component internals and behavior.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK065 - Remove Maintenance Refresh Buttons
+- Completion Date: April 19, 2026
+- Problem Solved: Removed manual refresh controls from Maintenance dashboard sections.
+- Key Decisions: Removed both UI controls and corresponding click branches to keep behavior deterministic through section activation refresh logic.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK066 - Login IP Rate Limiting and CSRF
+- Completion Date: April 19, 2026
+- Problem Solved: Hardened login security with IP-based throttling and CSRF protection.
+- Key Decisions: Added backend CSRF issuance/validation and rate-limit helpers, then aligned frontend login requests and API documentation with the new contract.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK067 - Maintenance Service Ticket Asset-Level View Flow
+- Completion Date: April 20, 2026
+- Problem Solved: Switched Maintenance service management to asset-level active-ticket visibility and context-aware ticket actions.
+- Key Decisions: Replaced separate list-first behavior with per-asset status and action switching so active assets open existing ticket detail flows.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK068 - Lock Asset on List-Triggered Service Ticket Modal
+- Completion Date: April 20, 2026
+- Problem Solved: Locked asset selection when create-service-ticket modal is opened from an asset row.
+- Key Decisions: Added locked-mode select behavior with hidden-field value mirroring to preserve valid form submission while retaining unlocked global-create behavior.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.
+
+### TASK069 - Maintenance Service Ticket Details Component Flow
+- Completion Date: April 20, 2026
+- Problem Solved: Replaced modal-only service-ticket viewing with a dedicated Maintenance detail-component section flow.
+- Key Decisions: Introduced section-based navigation with return-path handling and wired list actions to the new component for Supervisor-style consistency.
+- Validation Evidence: **Overall Status:** Completed - 100%
+- Risks/Follow-ups: No unresolved TODO/follow-up markers found at cleanup time.

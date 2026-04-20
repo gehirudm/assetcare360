@@ -51,22 +51,6 @@ class MODashboardOverview extends HTMLElement {
                     </div>
                 </div>
 
-                <div class="summary-card clickable" data-action="navigate" data-section="ticket-tracking">
-                    <div class="summary-card-content">
-                        <div class="summary-icon">
-                            <i class="fas fa-ticket-alt"></i>
-                        </div>
-                        <div class="summary-details">
-                            <div class="summary-title">Ticket Tracking</div>
-                            <div class="summary-number">1</div>
-                            <div class="summary-description">tickets in progress</div>
-                        </div>
-                    </div>
-                    <div class="summary-arrow">
-                        <i class="fas fa-chevron-right"></i>
-                    </div>
-                </div>
-
                 <div class="summary-card clickable" data-action="navigate" data-section="notifications">
                     <div class="summary-card-content">
                         <div class="summary-icon">

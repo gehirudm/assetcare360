@@ -42,3 +42,5 @@ dev.env
 
 testing/ui-validation/node_modules/test-results/
 /test-results/
+
+/logs

@@ -1,0 +1,124 @@
+/**
+ * TM Cargo Management Component Styles
+ */
+
+tm-cargo-management {
+    display: block;
+}
+
+tm-cargo-management .cargo-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+tm-cargo-management .cargo-toolbar-top {
+    display: grid;
+    grid-template-columns: minmax(320px, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+}
+
+tm-cargo-management .cargo-toolbar-bottom {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+tm-cargo-management .cargo-search-bar {
+    margin-bottom: 0;
+}
+
+tm-cargo-management .cargo-type-filters {
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+tm-cargo-management .cargo-status-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+tm-cargo-management .cargo-status-filter label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+tm-cargo-management .cargo-status-filter select {
+    min-width: 132px;
+}
+
+tm-cargo-management .cargo-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+tm-cargo-management .cargo-catalog-card {
+    margin-bottom: 0;
+}
+
+tm-cargo-management .cargo-catalog-item .item-details strong {
+    margin-bottom: 6px;
+}
+
+tm-cargo-management .cargo-badge-row {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+tm-cargo-management .cargo-catalog-item .item-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+tm-cargo-management .cargo-catalog-item .item-actions .btn {
+    min-width: 124px;
+}
+
+@media (max-width: 1200px) {
+    tm-cargo-management .cargo-toolbar-top {
+        grid-template-columns: 1fr;
+    }
+
+    tm-cargo-management .cargo-type-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    tm-cargo-management .cargo-toolbar-bottom {
+        justify-content: flex-start;
+    }
+
+    tm-cargo-management .cargo-status-filter {
+        justify-content: flex-start;
+    }
+
+    tm-cargo-management .cargo-toolbar-actions {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 768px) {
+    tm-cargo-management .cargo-catalog-item .item-actions {
+        justify-content: flex-start;
+    }
+
+    tm-cargo-management .cargo-catalog-item .item-actions .btn {
+        min-width: 0;
+        width: 100%;
+    }
+}

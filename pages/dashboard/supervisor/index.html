@@ -20,9 +20,9 @@
         active-section="dashboard"
         nav='[
             {"section":"dashboard","icon":"fas fa-chart-line","label":"Dashboard"},
+            {"section":"analytics","icon":"fas fa-chart-pie","label":"Analytics"},
             {"section":"daily-check-reports","icon":"fas fa-clipboard-check","label":"Weekly Check Reports"},
             {"section":"fault-ticket-tracking","icon":"fas fa-ticket-alt","label":"Fault Tickets"},
-            {"section":"fault-tickets","icon":"fas fa-user-cog","label":"Technician Assignment"},
             {"section":"repair-management","icon":"fas fa-tools","label":"Repair Management"},
             {"section":"budget-approval","icon":"fas fa-dollar-sign","label":"Budget Approval"},
             {"section":"asset-status","icon":"fas fa-truck","label":"Asset Status"},
@@ -32,6 +32,10 @@
                     <supervisor-dashboard-overview></supervisor-dashboard-overview>
                 </section>
 
+                <section class="content-section" id="analytics">
+                    <supervisor-analytics-hub></supervisor-analytics-hub>
+                </section>
+
                 <!-- Weekly Check Reports Section -->
                 <section class="content-section" id="daily-check-reports">
                     <supervisor-daily-check-reports></supervisor-daily-check-reports>
@@ -39,12 +43,22 @@
 
                 <!-- Fault Tickets Section -->
                 <section class="content-section" id="fault-ticket-tracking">
-                    <supervisor-fault-ticket-tracking></supervisor-fault-ticket-tracking>
+                    <supervisor-fault-tickets></supervisor-fault-tickets>
                 </section>
 
-                <!-- Technician Assignment Section -->
-                <section class="content-section" id="fault-tickets">
-                    <supervisor-fault-tickets></supervisor-fault-tickets>
+                <section class="content-section" id="ticket-details">
+                    <supervisor-ticket-detail-view
+                        default-return-section="fault-ticket-tracking"
+                    ></supervisor-ticket-detail-view>
+                </section>
+
+                <section class="content-section" id="breakdown-details">
+                    <ac-breakdown-detail-view
+                        role-context="supervisor"
+                        default-return-section="fault-ticket-tracking"
+                        list-label="Fault Tickets"
+                        dashboard-label="Supervisor Dashboard"
+                    ></ac-breakdown-detail-view>
                 </section>
 
                 <!-- Repair Management Section -->
@@ -86,14 +100,17 @@
     <script src="../../components/shared/ac-header.js"></script>
     <script src="../../components/shared/ac-sidebar.js"></script>
     <script src="../../components/shared/ac-layout.js"></script>
+    <script src="../../components/shared/ac-breakdown-detail-view.js"></script>
     <script src="../../components/styles/buttons.js"></script>
     <script src="../../components/styles/icons.js"></script>
     <script src="../../components/shared/confirm-dialog.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="../../js/dashboard-init.js"></script>
     <script src="./components/dashboard-overview/script.js"></script>
+    <script src="./components/analytics-hub/script.js"></script>
     <script src="./components/asset-status/script.js"></script>
-    <script src="./components/fault-ticket-tracking/script.js"></script>
     <script src="./components/fault-tickets/script.js"></script>
+    <script src="./components/ticket-details/script.js"></script>
     <script src="./components/repair-management/script.js"></script>
     <script src="./components/budget-approval/script.js"></script>
     <script src="./components/technicians/script.js"></script>
@@ -104,7 +121,7 @@
     <script src="./components/page-modals/report-details-modal/script.js"></script>
     <script src="./components/page-modals/rejection-reason-modal/script.js"></script>
     <script src="./components/daily-check-reports/script.js"></script>
-    <script src="script.js?v=7"></script>
+    <script src="script.js?v=8"></script>
 </body>
 
 </html>

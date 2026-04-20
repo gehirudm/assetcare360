@@ -43,6 +43,7 @@ function buildBreakdowns() {
             breakdown_date: '2026-04-11T08:40:00Z',
             ticket_status: 'Open',
             fault_ticket_number: 'TKT-4501',
+            fault_ticket_id: 4501,
             assignments: [],
             images: [],
         },
@@ -61,12 +62,32 @@ function buildBreakdowns() {
             breakdown_date: '2026-04-10T11:15:00Z',
             ticket_status: 'In Progress',
             fault_ticket_number: 'TKT-4502',
+            fault_ticket_id: 4502,
             assignments: [
                 {
                     technician_name: 'Technical Officer Nimal',
                     assigned_date: '2026-04-10T13:00:00Z',
                 },
             ],
+            images: [],
+        },
+        {
+            id: 3,
+            breakdown_id: 'MBD-003',
+            machine_id: 203,
+            machine_name: 'Truck #203',
+            machine_model: 'Truck #203',
+            operator_id: 801,
+            operator_name: 'Machinery Operator One',
+            breakdown_type: 'Brake Failure',
+            description: 'Critical brake pressure loss',
+            severity: 'Critical',
+            status: 'Pending',
+            breakdown_date: '2026-04-09T07:30:00Z',
+            ticket_status: 'Open',
+            fault_ticket_number: 'TKT-4503',
+            fault_ticket_id: 4503,
+            assignments: [],
             images: [],
         },
     ];
@@ -181,9 +202,34 @@ async function mockMachineryOperatorApis(page) {
         });
     });
 
+    await page.route('**/api/budget-reports/ticket/**', (route) => {
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ status: 'success', data: { report: null } }),
+        });
+    });
+
+    await page.route('**/api/spare-part-requests/ticket/*', (route) => {
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ status: 'success', data: [] }),
+        });
+    });
+
     await page.route('**/api/machine-weekly-checks**', (route) => {
         const request = route.request();
         if (request.method() === 'POST') {
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ status: 'success', data: {} }),
+            });
+            return;
+        }
+
+        if (request.method() === 'PUT') {
             route.fulfill({
                 status: 200,
                 contentType: 'application/json',
@@ -209,23 +255,30 @@ async function mockMachineryOperatorApis(page) {
     });
 
     await page.route('**/api/fault-tickets/*', (route) => {
+        const id = Number.parseInt(route.request().url().split('/').pop(), 10);
+        const isEditableTicket = id === 4501;
+
         route.fulfill({
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
                 status: 'success',
                 data: {
-                    id: 4501,
-                    ticket_id: 'TKT-4501',
-                    machine_id: 45,
-                    machine_name: 'Excavator #045',
+                    id,
+                    ticket_id: isEditableTicket ? 'TKT-4501' : 'TKT-4502',
+                    machine_id: isEditableTicket ? 45 : 128,
+                    machine_name: isEditableTicket ? 'Excavator #045' : 'Loader #128',
+                    breakdown_type: 'machine_breakdown',
+                    breakdown_report_id: isEditableTicket ? 'MBD-001' : 'MBD-002',
                     location: 'Site A',
                     created_at: '2026-04-11T08:40:00Z',
                     updated_at: '2026-04-12T09:00:00Z',
-                    priority: 'High',
+                    priority: isEditableTicket ? 'High' : 'Medium',
                     reported_by_name: 'Machinery Operator One',
-                    status: 'In Progress',
-                    description: 'Hydraulic pressure drop during operation',
+                    status: isEditableTicket ? 'Open' : 'In Progress',
+                    description: isEditableTicket
+                        ? 'Hydraulic pressure drop during operation'
+                        : 'Engine noise and reduced pulling power',
                     images: [],
                     assignments: [
                         {
@@ -272,6 +325,17 @@ async function runFlow(page, viewportName) {
 
     await navigateSection(page, 'fault-reporting', 'Fault Reporting');
     await expect(page.locator('#fault-reporting .page-title')).toContainText('Fault Reporting');
+
+    const moSortSelect = page.locator('#fault-reporting #faultReportSort');
+    await expect(moSortSelect).toBeVisible();
+    await expect(page.locator('#faultReportsList .inventory-item').first()).toContainText('MBD-001');
+
+    await moSortSelect.selectOption('priority');
+    await expect(page.locator('#faultReportsList .inventory-item').first()).toContainText('MBD-003');
+
+    await moSortSelect.selectOption('created');
+    await expect(page.locator('#faultReportsList .inventory-item').first()).toContainText('MBD-001');
+
     await page.locator('#fault-reporting .filter-btn', { hasText: 'Pending' }).click();
     await page.locator('#fault-reporting .filter-btn', { hasText: 'All Reports' }).click();
     await page.locator('#fault-reporting .btn.btn-primary', { hasText: 'Report New Fault' }).click();
@@ -279,8 +343,22 @@ async function runFlow(page, viewportName) {
     await page.locator('#reportFaultModal .btn.btn-secondary', { hasText: 'Cancel' }).click();
 
     await page.locator('#faultReportsList .btn.btn-primary, #faultsContainer .btn.btn-primary').filter({ hasText: 'VIEW' }).first().click();
-    await expect(page.locator('#machineBreakdownModal')).toBeVisible();
-    await page.locator('#machineBreakdownModal .btn.btn-secondary', { hasText: 'Close' }).click();
+    await expect(page.locator('#ticket-details')).toHaveClass(/active/);
+    await expect(page.locator('#ticket-details #mainContent')).toBeVisible();
+    await expect(page.locator('#ticket-details #ticketIdBadge')).toContainText('MBD-001');
+
+    await page.locator('#ticket-details #editFaultTicketBtn').click();
+    await expect(page.locator('#editFaultModal')).toHaveClass(/active/);
+    await page.locator('#editFaultModal .btn.btn-secondary', { hasText: 'Cancel' }).click();
+
+    await page.locator('#ticket-details #backButton').click();
+    await expect(page.locator('#fault-reporting')).toHaveClass(/active/);
+
+    const editableFaultCard = page.locator('#faultReportsList .inventory-item:has([data-action="edit-breakdown"]), #faultsContainer .inventory-item:has([data-action="edit-breakdown"])').first();
+    await editableFaultCard.locator('[data-action="toggle-dropdown"]').click();
+    await editableFaultCard.locator('[data-action="edit-breakdown"]').click();
+    await expect(page.locator('#editFaultModal')).toHaveClass(/active/);
+    await page.locator('#editFaultModal .btn.btn-secondary', { hasText: 'Cancel' }).click();
 
     await navigateSection(page, 'condition-updates', 'Weekly Check Reports');
     await expect(page.locator('#condition-updates .page-title')).toContainText('Weekly Check Reports');
@@ -294,10 +372,20 @@ async function runFlow(page, viewportName) {
     await expect(weeklyDetailsModal).toBeVisible();
     await weeklyDetailsModal.locator('.btn.btn-secondary', { hasText: 'Close' }).click();
 
-    await navigateSection(page, 'ticket-tracking', 'Ticket Tracking');
-    await expect(page.locator('#ticket-tracking .page-title')).toContainText('Ticket Tracking');
-    await page.locator('#ticket-tracking .filter-btn', { hasText: 'In Progress' }).click();
-    await page.locator('#ticket-tracking .filter-btn', { hasText: 'All Tickets' }).click();
+    const pendingWeeklyCard = page.locator('#weeklyCheckReportsList .inventory-item[data-status="pending"], #updatesContainer .inventory-item[data-status="pending"]').first();
+    await pendingWeeklyCard.locator('[data-action="toggle-dropdown"]').click();
+    await pendingWeeklyCard.locator('[data-action="edit-weekly-check"]').click();
+    await expect(page.locator('#conditionUpdateModal')).toHaveClass(/active/);
+    await expect(page.locator('#conditionUpdateModalTitle')).toContainText('Edit Weekly Check Report');
+    await page.locator('#conditionUpdateModal .btn.btn-secondary', { hasText: 'Cancel' }).click();
+
+    const approvedWeeklyCard = page.locator('#weeklyCheckReportsList .inventory-item[data-status="approved"], #updatesContainer .inventory-item[data-status="approved"]').first();
+    await expect(approvedWeeklyCard.locator('[data-action="toggle-dropdown"]')).toHaveCount(1);
+    await approvedWeeklyCard.locator('[data-action="toggle-dropdown"]').click();
+    await approvedWeeklyCard.locator('[data-action="edit-weekly-check"]').click();
+    await expect(page.locator('#conditionUpdateModal')).not.toHaveClass(/active/);
+
+    await expect(page.locator('#ticket-tracking')).toHaveCount(0);
 
     await navigateSection(page, 'notifications', 'Notifications');
     await expect(page.locator('#notifications .page-title')).toContainText('Notifications');
@@ -315,15 +403,15 @@ async function runFlow(page, viewportName) {
             .filter((item) => item.style.display !== 'none').length;
         const visibleUpdateCards = Array.from(document.querySelectorAll('#weeklyCheckReportsList .inventory-item, #weeklyCheckReportsList .item-card, #updatesContainer .inventory-item, #updatesContainer .item-card'))
             .filter((item) => item.style.display !== 'none').length;
-        const visibleTicketCards = Array.from(document.querySelectorAll('#ticketTrackingList .inventory-item, #ticketTrackingList .item-card, #ticketsContainer .inventory-item, #ticketsContainer .item-card'))
-            .filter((item) => item.style.display !== 'none').length;
         const notificationsCount = document.querySelectorAll('#operatorNotificationsList .item-card, #notificationsContainer .item-card').length;
 
         return {
             activeSection,
             visibleFaultCards,
             visibleUpdateCards,
-            visibleTicketCards,
+            editableFaultActionCount: document.querySelectorAll('#faultReportsList [data-action="edit-breakdown"], #faultsContainer [data-action="edit-breakdown"]').length,
+            editableWeeklyActionCount: document.querySelectorAll('#weeklyCheckReportsList [data-action="edit-weekly-check"], #updatesContainer [data-action="edit-weekly-check"]').length,
+            ticketTrackingSectionPresent: Boolean(document.getElementById('ticket-tracking')),
             notificationsCount,
             modalStates: {
                 reportFaultOpen: document.getElementById('reportFaultModal')?.classList.contains('active') || false,

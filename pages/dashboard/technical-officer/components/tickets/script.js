@@ -2,8 +2,11 @@ class TOTickets extends HTMLElement {
     constructor() {
         super();
         this._tickets = [];
+        this._rawTickets = [];
         this._activeFilter = 'all';
+        this._activeSort = 'created';
         this._onRootClick = this._onRootClick.bind(this);
+        this._onRootChange = this._onRootChange.bind(this);
     }
 
     connectedCallback() {
@@ -11,11 +14,13 @@ class TOTickets extends HTMLElement {
 
         this.render();
         this.addEventListener('click', this._onRootClick);
+        this.addEventListener('change', this._onRootChange);
         this._initialized = true;
     }
 
     disconnectedCallback() {
         this.removeEventListener('click', this._onRootClick);
+        this.removeEventListener('change', this._onRootChange);
     }
 
     _onRootClick(event) {
@@ -65,6 +70,16 @@ class TOTickets extends HTMLElement {
         }));
     }
 
+    _onRootChange(event) {
+        const sortSelect = event.target.closest('select[data-ticket-sort]');
+        if (!sortSelect) {
+            return;
+        }
+
+        this._activeSort = sortSelect.value || 'created';
+        this.renderTickets(this._rawTickets);
+    }
+
     setLoading(message = 'Loading tickets...') {
         const ticketsList = this.querySelector('#allTicketsList');
         const ticketCount = this.querySelector('#ticketCount');
@@ -107,6 +122,7 @@ class TOTickets extends HTMLElement {
         const noTicketsMessage = this.querySelector('#noTicketsMessage');
 
         this._tickets = [];
+        this._rawTickets = [];
 
         if (ticketsList) {
             ticketsList.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--muted);"><i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px;"></i><p>${message}</p></div>`;
@@ -122,7 +138,8 @@ class TOTickets extends HTMLElement {
     }
 
     renderTickets(tickets) {
-        this._tickets = this._sortByNewest(Array.isArray(tickets) ? tickets : []);
+        this._rawTickets = Array.isArray(tickets) ? tickets : [];
+        this._tickets = this._sortTickets(this._rawTickets);
 
         const ticketsList = this.querySelector('#allTicketsList');
         if (!ticketsList) return;
@@ -179,8 +196,38 @@ class TOTickets extends HTMLElement {
         this.applyFilter(this._activeFilter);
     }
 
-    _sortByNewest(tickets) {
-        return [...tickets].sort((first, second) => this._getSortTimestamp(second) - this._getSortTimestamp(first));
+    _sortTickets(tickets) {
+        const normalizedTickets = Array.isArray(tickets) ? [...tickets] : [];
+
+        if (this._activeSort === 'priority') {
+            return normalizedTickets.sort((first, second) => {
+                const priorityDiff = this._getPriorityRank(second) - this._getPriorityRank(first);
+                if (priorityDiff !== 0) {
+                    return priorityDiff;
+                }
+
+                const timeDiff = this._getSortTimestamp(second) - this._getSortTimestamp(first);
+                if (timeDiff !== 0) {
+                    return timeDiff;
+                }
+
+                return Number(second?.id || 0) - Number(first?.id || 0);
+            });
+        }
+
+        return normalizedTickets.sort((first, second) => {
+            const timeDiff = this._getSortTimestamp(second) - this._getSortTimestamp(first);
+            if (timeDiff !== 0) {
+                return timeDiff;
+            }
+
+            const priorityDiff = this._getPriorityRank(second) - this._getPriorityRank(first);
+            if (priorityDiff !== 0) {
+                return priorityDiff;
+            }
+
+            return Number(second?.id || 0) - Number(first?.id || 0);
+        });
     }
 
     _getSortTimestamp(ticket) {
@@ -200,6 +247,24 @@ class TOTickets extends HTMLElement {
 
         const numericId = Number(ticket?.id ?? 0);
         return Number.isFinite(numericId) ? numericId : 0;
+    }
+
+    _getPriorityRank(ticket) {
+        const normalizedPriority = String(ticket?.priority || ticket?.severity || 'medium').trim().toLowerCase();
+
+        if (normalizedPriority === 'critical') {
+            return 4;
+        }
+
+        if (normalizedPriority === 'high') {
+            return 3;
+        }
+
+        if (normalizedPriority === 'low') {
+            return 1;
+        }
+
+        return 2;
     }
 
     applyFilter(status = 'all', clickedButton = null) {
@@ -311,14 +376,23 @@ class TOTickets extends HTMLElement {
 
             <create-fault-ticket></create-fault-ticket>
 
-            <div class="filter-controls" id="ticketFilterTabs">
-                <button type="button" class="filter-btn active" data-ticket-filter="all">All Tickets</button>
-                <button type="button" class="filter-btn" data-ticket-filter="pending">Pending</button>
-                <button type="button" class="filter-btn" data-ticket-filter="waiting-for-spare-parts">Waiting for Parts</button>
-                <button type="button" class="filter-btn" data-ticket-filter="parts-approved">Parts Approved</button>
-                <button type="button" class="filter-btn" data-ticket-filter="parts-rejected">Parts Rejected</button>
-                <button type="button" class="filter-btn" data-ticket-filter="in-progress">In Progress</button>
-                <button type="button" class="filter-btn" data-ticket-filter="completed">Completed</button>
+            <div class="filter-toolbar">
+                <div class="filter-controls filter-toolbar__filters" id="ticketFilterTabs">
+                    <button type="button" class="filter-btn active" data-ticket-filter="all">All Tickets</button>
+                    <button type="button" class="filter-btn" data-ticket-filter="pending">Pending</button>
+                    <button type="button" class="filter-btn" data-ticket-filter="waiting-for-spare-parts">Waiting for Parts</button>
+                    <button type="button" class="filter-btn" data-ticket-filter="parts-approved">Parts Approved</button>
+                    <button type="button" class="filter-btn" data-ticket-filter="parts-rejected">Parts Rejected</button>
+                    <button type="button" class="filter-btn" data-ticket-filter="in-progress">In Progress</button>
+                    <button type="button" class="filter-btn" data-ticket-filter="completed">Completed</button>
+                </div>
+                <div class="filter-toolbar__sort">
+                    <label class="filter-toolbar__label" for="ticketSortSelect">Sort by</label>
+                    <select id="ticketSortSelect" class="filter-toolbar__select" data-ticket-sort>
+                        <option value="created">Created Date</option>
+                        <option value="priority">Priority</option>
+                    </select>
+                </div>
             </div>
 
             <div class="card">

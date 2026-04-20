@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../models/SparePartRequest.php';
 require_once __DIR__ . '/../models/SparePartRequestItem.php';
 require_once __DIR__ . '/../models/FaultTicket.php';
+require_once __DIR__ . '/../models/ServiceTicket.php';
 require_once __DIR__ . '/../models/Product.php';
 require_once __DIR__ . '/FaultTicketWorkflowService.php';
 require_once __DIR__ . '/../../config/Database.php';
@@ -15,6 +16,7 @@ class SparePartRequestService {
     private $requestModel;
     private $itemModel;
     private $faultTicketModel;
+    private $serviceTicketModel;
     private $workflowService;
     private $productModel;
 
@@ -22,6 +24,7 @@ class SparePartRequestService {
         $this->requestModel = new SparePartRequest();
         $this->itemModel = new SparePartRequestItem();
         $this->faultTicketModel = new FaultTicket();
+        $this->serviceTicketModel = new ServiceTicket();
         $this->workflowService = new FaultTicketWorkflowService();
         $this->productModel = new Product();
     }
@@ -30,32 +33,75 @@ class SparePartRequestService {
      * Create a new spare part request with items
      */
     public function create($data) {
-        // Validate required fields
-        if (empty($data['fault_ticket_id'])) {
-            return ['status' => 'error', 'message' => 'Fault ticket ID is required'];
+        $faultTicketId = isset($data['fault_ticket_id']) ? (int) $data['fault_ticket_id'] : 0;
+        $serviceTicketId = isset($data['service_ticket_id']) ? (int) $data['service_ticket_id'] : 0;
+
+        if ($faultTicketId <= 0 && $serviceTicketId <= 0) {
+            return ['status' => 'error', 'message' => 'Either fault_ticket_id or service_ticket_id is required'];
         }
+
+        if ($faultTicketId > 0 && $serviceTicketId > 0) {
+            return ['status' => 'error', 'message' => 'Provide only one ticket context per spare part request'];
+        }
+
+        $requesterId = isset($data['requested_by']) ? (int) $data['requested_by'] : 0;
+        if ($requesterId <= 0) {
+            return ['status' => 'error', 'message' => 'Requested by user is required'];
+        }
+
         if (empty($data['items']) || !is_array($data['items']) || count($data['items']) === 0) {
             return ['status' => 'error', 'message' => 'At least one spare part item is required'];
         }
 
-        $ticket = $this->faultTicketModel->findById($data['fault_ticket_id']);
-        if (!$ticket) {
-            return ['status' => 'error', 'message' => 'Fault ticket not found'];
-        }
+        $requestContext = 'fault_ticket';
+        $ticketIdFormatted = $data['ticket_id_formatted'] ?? null;
 
-        $allowedStatuses = [
-            FaultTicket::STATUS_OPEN,
-            FaultTicket::STATUS_ASSIGNED,
-            FaultTicket::STATUS_WAITING_BUDGET,
-            FaultTicket::STATUS_WAITING_PARTS,
-            FaultTicket::STATUS_PARTS_APPROVED,
-        ];
+        if ($faultTicketId > 0) {
+            $ticket = $this->faultTicketModel->findById($faultTicketId);
+            if (!$ticket) {
+                return ['status' => 'error', 'message' => 'Fault ticket not found'];
+            }
 
-        if (!in_array($ticket['status'], $allowedStatuses, true)) {
-            return [
-                'status' => 'error',
-                'message' => 'Spare part requests can only be submitted before work starts. Current status: ' . $ticket['status']
+            $allowedStatuses = [
+                FaultTicket::STATUS_OPEN,
+                FaultTicket::STATUS_ASSIGNED,
+                FaultTicket::STATUS_WAITING_BUDGET,
+                FaultTicket::STATUS_WAITING_PARTS,
+                FaultTicket::STATUS_PARTS_APPROVED,
             ];
+
+            if (!in_array($ticket['status'], $allowedStatuses, true)) {
+                return [
+                    'status' => 'error',
+                    'message' => 'Spare part requests can only be submitted before work starts. Current status: ' . $ticket['status']
+                ];
+            }
+
+            if (empty($ticketIdFormatted)) {
+                $ticketIdFormatted = $ticket['ticket_id'] ?? null;
+            }
+        } else {
+            $requestContext = 'service_ticket';
+            $serviceTicket = $this->serviceTicketModel->getServiceTicketById($serviceTicketId);
+            if (!$serviceTicket) {
+                return ['status' => 'error', 'message' => 'Service ticket not found'];
+            }
+
+            $allowedServiceStatuses = [
+                ServiceTicket::STATUS_PENDING_ASSIGNMENT,
+                ServiceTicket::STATUS_ASSIGNED,
+            ];
+
+            if (!in_array($serviceTicket['status'], $allowedServiceStatuses, true)) {
+                return [
+                    'status' => 'error',
+                    'message' => 'Spare part requests for service tickets can only be submitted before service starts. Current status: ' . $serviceTicket['status']
+                ];
+            }
+
+            if (empty($ticketIdFormatted)) {
+                $ticketIdFormatted = $serviceTicket['service_ticket_id'] ?? null;
+            }
         }
 
         try {
@@ -68,9 +114,10 @@ class SparePartRequestService {
             // Create the request record
             $requestData = [
                 'request_id' => $requestId,
-                'fault_ticket_id' => $data['fault_ticket_id'],
-                'ticket_id_formatted' => $data['ticket_id_formatted'] ?? null,
-                'requested_by' => $data['requested_by'] ?? null,
+                'fault_ticket_id' => $faultTicketId > 0 ? $faultTicketId : null,
+                'service_ticket_id' => $serviceTicketId > 0 ? $serviceTicketId : null,
+                'ticket_id_formatted' => $ticketIdFormatted,
+                'requested_by' => $requesterId,
                 'equipment_name' => $data['equipment_name'] ?? null,
                 'location' => $data['location'] ?? null,
                 'priority' => $data['priority'] ?? 'Medium',
@@ -90,14 +137,19 @@ class SparePartRequestService {
 
             $db->commit();
 
-            $this->workflowService->syncTicketStatus((int) $data['fault_ticket_id']);
+            if ($faultTicketId > 0) {
+                $this->workflowService->syncTicketStatus($faultTicketId);
+            }
 
             return [
                 'status' => 'success',
                 'message' => 'Spare part request created successfully',
                 'data' => [
                     'id' => $id,
-                    'request_id' => $requestId
+                    'request_id' => $requestId,
+                    'fault_ticket_id' => $faultTicketId > 0 ? $faultTicketId : null,
+                    'service_ticket_id' => $serviceTicketId > 0 ? $serviceTicketId : null,
+                    'request_context' => $requestContext,
                 ]
             ];
         } catch (Exception $e) {
@@ -175,6 +227,27 @@ class SparePartRequestService {
     }
 
     /**
+     * Get requests for a specific service ticket
+     */
+    public function getByServiceTicket($serviceTicketId) {
+        try {
+            $requests = $this->requestModel->getByServiceTicket($serviceTicketId);
+
+            foreach ($requests as &$request) {
+                $request['items'] = $this->itemModel->getByRequestId($request['id']);
+            }
+
+            return [
+                'status' => 'success',
+                'data' => $requests
+            ];
+        } catch (Exception $e) {
+            error_log("Error fetching requests for service ticket: " . $e->getMessage());
+            return ['status' => 'error', 'message' => 'Failed to fetch requests for this service ticket'];
+        }
+    }
+
+    /**
      * Approve a spare part request (by Inventory Manager)
      */
     public function approve($id, $reviewedBy, $notes = null) {
@@ -191,6 +264,20 @@ class SparePartRequestService {
             $db = Database::getInstance()->getConnection();
             $db->beginTransaction();
 
+            $items = $this->itemModel->getByRequestId($id);
+            $stockValidation = $this->validateApprovalStockAvailability($db, $items);
+
+            if (!empty($stockValidation['unavailable_items'])) {
+                $db->rollBack();
+                return [
+                    'status' => 'error',
+                    'message' => 'Cannot approve request. Insufficient stock for one or more requested spare parts.',
+                    'data' => [
+                        'unavailable_items' => $stockValidation['unavailable_items']
+                    ]
+                ];
+            }
+
             // Update request status to Approved
             $this->requestModel->update($id, [
                 'status' => SparePartRequest::STATUS_APPROVED,
@@ -199,28 +286,22 @@ class SparePartRequestService {
                 'reviewed_at' => date('Y-m-d H:i:s')
             ]);
 
-            // Deduct stock for each approved item and update last_issue_date
-            $items = $this->itemModel->getByRequestId($id);
-            foreach ($items as $item) {
-                if (!empty($item['part_code'])) {
-                    $product = $this->productModel->findOne([
-                        'sparepart_id' => $item['part_code'],
-                        'is_active'    => 1
-                    ]);
-                    if ($product) {
-                        $this->productModel->updateQuantity(
-                            $product['id'],
-                            (int)$item['quantity'],
-                            'subtract'
-                        );
-                        $this->productModel->update($product['id'], [
-                            'last_issue_date' => date('Y-m-d')
-                        ]);
-                    }
-                }
+            // Deduct stock once per part code after validated availability.
+            $deductionStmt = $db->prepare('UPDATE `spareparts` SET quantity = quantity - ?, last_issue_date = ? WHERE id = ?');
+            $issueDate = date('Y-m-d');
+
+            foreach ($stockValidation['deductions'] as $deduction) {
+                $deductionStmt->execute([
+                    $deduction['requested_qty'],
+                    $issueDate,
+                    $deduction['product_id']
+                ]);
             }
 
-            $this->workflowService->syncTicketStatus((int) $request['fault_ticket_id']);
+            $faultTicketId = isset($request['fault_ticket_id']) ? (int) $request['fault_ticket_id'] : 0;
+            if ($faultTicketId > 0) {
+                $this->workflowService->syncTicketStatus($faultTicketId);
+            }
 
             $db->commit();
 
@@ -233,12 +314,14 @@ class SparePartRequestService {
                     'id' => (int) $id,
                     'request_id' => $updated['request_id'] ?? null,
                     'fault_ticket_id' => isset($updated['fault_ticket_id']) ? (int) $updated['fault_ticket_id'] : null,
+                    'service_ticket_id' => isset($updated['service_ticket_id']) ? (int) $updated['service_ticket_id'] : null,
+                    'request_context' => !empty($updated['service_ticket_id']) ? 'service_ticket' : 'fault_ticket',
                     'requested_by' => isset($updated['requested_by']) ? (int) $updated['requested_by'] : null,
                     'status' => $updated['status'] ?? SparePartRequest::STATUS_APPROVED,
                 ]
             ];
         } catch (Exception $e) {
-            if (isset($db)) {
+            if (isset($db) && $db->inTransaction()) {
                 $db->rollBack();
             }
             error_log("Error approving spare part request: " . $e->getMessage());
@@ -267,7 +350,10 @@ class SparePartRequestService {
                 'reviewed_at' => date('Y-m-d H:i:s')
             ]);
 
-            $this->workflowService->syncTicketStatus((int) $request['fault_ticket_id']);
+            $faultTicketId = isset($request['fault_ticket_id']) ? (int) $request['fault_ticket_id'] : 0;
+            if ($faultTicketId > 0) {
+                $this->workflowService->syncTicketStatus($faultTicketId);
+            }
 
             $updated = $this->requestModel->getRequestById($id);
 
@@ -278,6 +364,8 @@ class SparePartRequestService {
                     'id' => (int) $id,
                     'request_id' => $updated['request_id'] ?? null,
                     'fault_ticket_id' => isset($updated['fault_ticket_id']) ? (int) $updated['fault_ticket_id'] : null,
+                    'service_ticket_id' => isset($updated['service_ticket_id']) ? (int) $updated['service_ticket_id'] : null,
+                    'request_context' => !empty($updated['service_ticket_id']) ? 'service_ticket' : 'fault_ticket',
                     'requested_by' => isset($updated['requested_by']) ? (int) $updated['requested_by'] : null,
                     'status' => $updated['status'] ?? SparePartRequest::STATUS_REJECTED,
                 ]
@@ -286,6 +374,97 @@ class SparePartRequestService {
             error_log("Error rejecting spare part request: " . $e->getMessage());
             return ['status' => 'error', 'message' => 'Failed to reject request: ' . $e->getMessage()];
         }
+    }
+
+    /**
+     * Validate and lock stock rows before approving a request.
+     * Returns stock deductions and unavailable item list.
+     */
+    private function validateApprovalStockAvailability($db, $items) {
+        $requestedByCode = [];
+        $unavailableItems = [];
+
+        foreach ($items as $item) {
+            $partCode = trim((string) ($item['part_code'] ?? ''));
+            $partName = $item['part_name'] ?? $partCode;
+            $requestedQty = isset($item['quantity']) ? (int) $item['quantity'] : 1;
+            if ($requestedQty < 1) {
+                $requestedQty = 1;
+            }
+
+            if ($partCode === '') {
+                $unavailableItems[] = [
+                    'part_code' => '',
+                    'part_name' => $partName,
+                    'status' => 'invalid',
+                    'available_qty' => 0,
+                    'requested_qty' => $requestedQty,
+                    'message' => 'Part code is missing in the request item.'
+                ];
+                continue;
+            }
+
+            if (!isset($requestedByCode[$partCode])) {
+                $requestedByCode[$partCode] = [
+                    'part_code' => $partCode,
+                    'part_name' => $partName,
+                    'requested_qty' => 0
+                ];
+            }
+
+            $requestedByCode[$partCode]['requested_qty'] += $requestedQty;
+        }
+
+        $deductions = [];
+        $lookupStmt = $db->prepare('SELECT id, name, quantity FROM `spareparts` WHERE sparepart_id = ? AND is_active = 1 LIMIT 1 FOR UPDATE');
+
+        foreach ($requestedByCode as $partCode => $requestedItem) {
+            $lookupStmt->execute([$partCode]);
+            $product = $lookupStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$product) {
+                $unavailableItems[] = [
+                    'part_code' => $partCode,
+                    'part_name' => $requestedItem['part_name'],
+                    'status' => 'not_found',
+                    'available_qty' => 0,
+                    'requested_qty' => (int) $requestedItem['requested_qty'],
+                    'message' => 'Spare part not found in catalog.'
+                ];
+                continue;
+            }
+
+            $availableQty = (int) $product['quantity'];
+            $requestedQty = (int) $requestedItem['requested_qty'];
+
+            if ($availableQty < $requestedQty) {
+                $status = $availableQty === 0 ? 'out_of_stock' : 'insufficient';
+                $message = $availableQty === 0
+                    ? 'Out of stock.'
+                    : "Insufficient stock ({$availableQty} available, {$requestedQty} requested).";
+
+                $unavailableItems[] = [
+                    'part_code' => $partCode,
+                    'part_name' => $product['name'] ?? $requestedItem['part_name'],
+                    'status' => $status,
+                    'available_qty' => $availableQty,
+                    'requested_qty' => $requestedQty,
+                    'message' => $message
+                ];
+                continue;
+            }
+
+            $deductions[] = [
+                'product_id' => (int) $product['id'],
+                'part_code' => $partCode,
+                'requested_qty' => $requestedQty
+            ];
+        }
+
+        return [
+            'deductions' => $deductions,
+            'unavailable_items' => $unavailableItems
+        ];
     }
 
     /**

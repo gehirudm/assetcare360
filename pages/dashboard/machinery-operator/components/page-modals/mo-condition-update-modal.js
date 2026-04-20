@@ -6,6 +6,8 @@ class MOConditionUpdateModal extends HTMLElement {
 
         this._mounted = true;
         this.currentUser = null;
+        this.mode = 'create';
+        this.editingCheck = null;
         this.render();
         this.bindEvents();
     }
@@ -19,7 +21,7 @@ class MOConditionUpdateModal extends HTMLElement {
             <div id="conditionUpdateModal" class="modal" aria-hidden="true">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2><i class="fas fa-clipboard-check"></i> Machine Weekly Check Report</h2>
+                        <h2 id="conditionUpdateModalTitle"><i class="fas fa-clipboard-check"></i> Machine Weekly Check Report</h2>
                         <button class="btn-close" type="button" data-action="close-modal">
                             <i class="fas fa-times"></i>
                         </button>
@@ -76,8 +78,8 @@ class MOConditionUpdateModal extends HTMLElement {
                         </div>
 
                         <div class="modal-actions">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-check"></i> Submit Update
+                            <button type="submit" class="btn btn-primary" id="conditionUpdateSubmitButton">
+                                <i id="conditionUpdateSubmitIcon" class="fas fa-check"></i> <span id="conditionUpdateSubmitText">Submit Update</span>
                             </button>
                             <button type="button" class="btn btn-secondary" data-action="close-modal">
                                 <i class="fas fa-times"></i> Cancel
@@ -103,16 +105,107 @@ class MOConditionUpdateModal extends HTMLElement {
         });
     }
 
-    async open() {
+    async open(options = {}) {
+        const mode = options.mode === 'edit' ? 'edit' : 'create';
+        const check = options.check || null;
+
+        this.setMode(mode, check);
+        await this.populateMachineDropdown(check?.machine_id || null);
+
+        if (this.mode === 'edit' && check) {
+            this.prefillForm(check);
+        } else {
+            this.resetForm();
+        }
+
         this.querySelector('#conditionUpdateModal')?.classList.add('active');
-        await this.populateMachineDropdown();
     }
 
     close() {
         this.querySelector('#conditionUpdateModal')?.classList.remove('active');
+        this.setMode('create', null);
+        this.resetForm();
     }
 
-    async populateMachineDropdown() {
+    setMode(mode, check = null) {
+        this.mode = mode === 'edit' ? 'edit' : 'create';
+        this.editingCheck = this.mode === 'edit' ? check : null;
+
+        const title = this.querySelector('#conditionUpdateModalTitle');
+        const submitText = this.querySelector('#conditionUpdateSubmitText');
+        const submitIcon = this.querySelector('#conditionUpdateSubmitIcon');
+
+        if (this.mode === 'edit') {
+            if (title) {
+                title.innerHTML = '<i class="fas fa-edit"></i> Edit Weekly Check Report';
+            }
+            if (submitText) {
+                submitText.textContent = 'Save Changes';
+            }
+            if (submitIcon) {
+                submitIcon.className = 'fas fa-save';
+            }
+            return;
+        }
+
+        if (title) {
+            title.innerHTML = '<i class="fas fa-clipboard-check"></i> Machine Weekly Check Report';
+        }
+        if (submitText) {
+            submitText.textContent = 'Submit Update';
+        }
+        if (submitIcon) {
+            submitIcon.className = 'fas fa-check';
+        }
+    }
+
+    resetForm() {
+        this.querySelector('#conditionUpdateForm')?.reset();
+    }
+
+    normalizeCondition(condition) {
+        const normalized = String(condition || '').toLowerCase();
+        if (normalized === 'excellent') {
+            return 'Excellent';
+        }
+        if (normalized === 'good') {
+            return 'Good';
+        }
+        if (normalized === 'fair') {
+            return 'Fair';
+        }
+        if (normalized === 'poor') {
+            return 'Poor';
+        }
+        return 'Good';
+    }
+
+    mapSystemStatus(value) {
+        if (value === true || value === 1 || value === '1' || value === 'true') {
+            return 'Normal operation';
+        }
+
+        const normalized = String(value || '').toLowerCase();
+        if (normalized.includes('significant')) {
+            return 'Significant issues';
+        }
+        if (normalized.includes('minor')) {
+            return 'Minor issues observed';
+        }
+
+        return 'Minor issues observed';
+    }
+
+    prefillForm(check) {
+        this.querySelector('#updateMachine').value = check.machine_id ? String(check.machine_id) : '';
+        this.querySelector('#updateCondition').value = this.normalizeCondition(check.overall_condition);
+        this.querySelector('#updateEngine').value = this.mapSystemStatus(check.engine_status);
+        this.querySelector('#updateHydraulic').value = this.mapSystemStatus(check.hydraulics);
+        this.querySelector('#updateObservations').value = check.notes || '';
+        this.querySelector('#updateRecommendations').value = check.issues_found || '';
+    }
+
+    async populateMachineDropdown(selectedMachineId = null) {
         const select = this.querySelector('#updateMachine');
         if (!select || typeof API === 'undefined') {
             return;
@@ -122,19 +215,31 @@ class MOConditionUpdateModal extends HTMLElement {
             const response = await API.get('/machines');
             const machines = response?.status === 'success' && response.data?.machines ? response.data.machines : [];
             const activeMachines = machines.filter((machine) => machine.status === 'Active');
+            const selectedMachine = selectedMachineId
+                ? machines.find((machine) => String(machine.id) === String(selectedMachineId))
+                : null;
+
+            const machinesToShow = [...activeMachines];
+            if (selectedMachine && !machinesToShow.some((machine) => String(machine.id) === String(selectedMachine.id))) {
+                machinesToShow.push(selectedMachine);
+            }
 
             select.innerHTML = '<option value="">Select Machine</option>';
-            if (!activeMachines.length) {
+            if (!machinesToShow.length) {
                 select.innerHTML = '<option value="">No active machines available</option>';
                 return;
             }
 
-            activeMachines.forEach((machine) => {
+            machinesToShow.forEach((machine) => {
                 const option = document.createElement('option');
                 option.value = machine.id;
                 option.textContent = `${machine.machine_id || `ID-${machine.id}`} - ${machine.machine_name || 'Unnamed'}`;
                 select.appendChild(option);
             });
+
+            if (selectedMachineId) {
+                select.value = String(selectedMachineId);
+            }
         } catch (error) {
             console.error('Error loading machines:', error);
             select.innerHTML = '<option value="">Error loading machines. Please try again.</option>';
@@ -142,11 +247,7 @@ class MOConditionUpdateModal extends HTMLElement {
         }
     }
 
-    async handleSubmit() {
-        if (typeof API === 'undefined') {
-            return;
-        }
-
+    buildCheckPayload() {
         const machineId = this.querySelector('#updateMachine')?.value;
         const condition = this.querySelector('#updateCondition')?.value;
         const engine = this.querySelector('#updateEngine')?.value;
@@ -156,18 +257,22 @@ class MOConditionUpdateModal extends HTMLElement {
 
         if (!machineId || !condition || !engine || !hydraulic || !observations) {
             window.MOUtils.emitToast('Please fill in all required fields', 'error');
-            return;
+            return null;
         }
 
-        const today = new Date();
-        const weekEndDate = today.toISOString().split('T')[0];
-        const weekStartDate = new Date(today);
-        weekStartDate.setDate(weekStartDate.getDate() - 6);
+        const fallbackEndDate = new Date();
+        const existingEndDate = this.editingCheck?.week_end_date ? new Date(this.editingCheck.week_end_date) : null;
+        const endDate = existingEndDate && !Number.isNaN(existingEndDate.getTime()) ? existingEndDate : fallbackEndDate;
+        const weekEndDate = endDate.toISOString().split('T')[0];
 
-        const checkData = {
+        const fallbackStartDate = new Date(endDate);
+        fallbackStartDate.setDate(fallbackStartDate.getDate() - 6);
+        const weekStartDate = this.editingCheck?.week_start_date || fallbackStartDate.toISOString().split('T')[0];
+
+        return {
             machine_id: Number.parseInt(machineId, 10),
             operator_id: this.currentUser?.id || null,
-            week_start_date: weekStartDate.toISOString().split('T')[0],
+            week_start_date: weekStartDate,
             week_end_date: weekEndDate,
             overall_condition: condition.toLowerCase(),
             engine_status: engine === 'Normal operation' ? 1 : 0,
@@ -183,21 +288,72 @@ class MOConditionUpdateModal extends HTMLElement {
                 ? `Engine: ${engine}, Hydraulic: ${hydraulic}. ${recommendations || ''}`.trim()
                 : recommendations || null,
         };
+    }
+
+    async handleSubmit() {
+        if (typeof API === 'undefined') {
+            return;
+        }
+
+        const editingStatus = String(this.editingCheck?.status || '').trim().toLowerCase();
+        if (this.mode === 'edit' && editingStatus !== 'pending') {
+            window.MOUtils.emitToast('Only pending weekly checks can be edited.', 'warning');
+            return;
+        }
+
+        const checkData = this.buildCheckPayload();
+        if (!checkData) {
+            return;
+        }
+
+        const submitButton = this.querySelector('#conditionUpdateSubmitButton');
+        const submitText = this.querySelector('#conditionUpdateSubmitText');
+        const originalText = submitText?.textContent || 'Submit Update';
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+        if (submitText) {
+            submitText.textContent = this.mode === 'edit' ? 'Saving...' : 'Submitting...';
+        }
 
         try {
-            const response = await API.post('/machine-weekly-checks', checkData);
+            let response;
+            if (this.mode === 'edit') {
+                const checkId = this.editingCheck?.check_id;
+                if (!checkId) {
+                    window.MOUtils.emitToast('Unable to update this weekly check.', 'error');
+                    return;
+                }
+
+                response = await API.put(`/machine-weekly-checks/${checkId}`, checkData);
+            } else {
+                response = await API.post('/machine-weekly-checks', checkData);
+            }
+
             if (response?.status !== 'success') {
                 window.MOUtils.emitToast(`Failed to submit report: ${response?.message || 'Unknown error'}`, 'error');
                 return;
             }
 
-            window.MOUtils.emitToast('Weekly check report submitted successfully! Supervisor will review.', 'success');
-            this.querySelector('#conditionUpdateForm')?.reset();
+            if (this.mode === 'edit') {
+                window.MOUtils.emitToast('Weekly check report updated successfully.', 'success');
+                document.dispatchEvent(new CustomEvent('mo:weekly-check-updated'));
+            } else {
+                window.MOUtils.emitToast('Weekly check report submitted successfully! Supervisor will review.', 'success');
+                document.dispatchEvent(new CustomEvent('mo:weekly-check-submitted'));
+            }
+
             this.close();
-            document.dispatchEvent(new CustomEvent('mo:weekly-check-submitted'));
         } catch (error) {
             console.error('Error submitting weekly check report:', error);
             window.MOUtils.emitToast(`Error submitting report: ${error.message}`, 'error');
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
+            if (submitText) {
+                submitText.textContent = originalText;
+            }
         }
     }
 }

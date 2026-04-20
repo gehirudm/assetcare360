@@ -15,8 +15,10 @@
         active-section="dashboard"
         nav='[
             {"section":"dashboard","icon":"fas fa-chart-line","label":"Dashboard"},
+            {"section":"analytics","icon":"fas fa-chart-bar","label":"Analytics"},
             {"section":"driver-assignment","icon":"fas fa-user-cog","label":"Driver Assignment"},
             {"section":"trips","icon":"fas fa-route","label":"Trips"},
+            {"section":"cargo-management","icon":"fas fa-boxes-stacked","label":"Cargo Management"},
             {"section":"trip-log","icon":"fas fa-history","label":"Trip Log"},
             {"section":"fuel-log","icon":"fas fa-gas-pump","label":"Fuel Log"},
             {"section":"garages","icon":"fas fa-warehouse","label":"Garages"},
@@ -26,12 +28,24 @@
             <tm-dashboard-overview></tm-dashboard-overview>
         </section>
 
+        <section class="content-section" id="analytics">
+            <tm-analytics-hub></tm-analytics-hub>
+        </section>
+
         <section class="content-section" id="driver-assignment">
             <tm-driver-assignment></tm-driver-assignment>
         </section>
 
         <section class="content-section" id="trips">
             <tm-trips></tm-trips>
+        </section>
+
+        <section class="content-section" id="cargo-management">
+            <tm-cargo-management></tm-cargo-management>
+        </section>
+
+        <section class="content-section" id="cargo-details">
+            <tm-cargo-details></tm-cargo-details>
         </section>
 
         <section class="content-section" id="trip-log">
@@ -61,6 +75,7 @@
     <tm-end-trip-modal></tm-end-trip-modal>
     <tm-add-fuel-log-modal></tm-add-fuel-log-modal>
     <tm-add-garage-modal></tm-add-garage-modal>
+    <tm-cargo-item-modal></tm-cargo-item-modal>
     <tm-view-trip-modal></tm-view-trip-modal>
     <tm-view-fuel-modal></tm-view-fuel-modal>
 
@@ -88,10 +103,19 @@
     <script src="./components/page-modals/tm-end-trip-modal.js"></script>
     <script src="./components/page-modals/tm-add-fuel-log-modal.js"></script>
     <script src="./components/page-modals/tm-add-garage-modal.js"></script>
+    <script src="./components/page-modals/tm-cargo-item-modal.js"></script>
     <script src="./components/page-modals/tm-view-trip-modal.js"></script>
     <script src="./components/page-modals/tm-view-fuel-modal.js"></script>
     <script src="./components/dashboard-overview/script.js"></script>
+    <script src="./components/trip-analytics/script.js"></script>
+    <script src="./components/fuel-analytics/script.js"></script>
+    <script src="./components/cargo-analytics/script.js"></script>
+    <script src="./components/driver-analytics/script.js"></script>
+    <script src="./components/garage-analytics/script.js"></script>
+    <script src="./components/analytics-hub/script.js"></script>
     <script src="./components/trips/script.js"></script>
+    <script src="./components/cargo-management/script.js"></script>
+    <script src="./components/cargo-details/script.js"></script>
     <script src="./components/trip-log/script.js"></script>
     <script src="./components/fuel-log/script.js"></script>
     <script src="./components/garages/script.js"></script>

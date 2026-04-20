@@ -70,8 +70,154 @@ function buildUsers() {
     ];
 }
 
+function buildLogs() {
+    const now = Date.now();
+    const minutesAgo = (minutes) => new Date(now - minutes * 60 * 1000).toISOString();
+
+    return [
+        {
+            id: 5001,
+            user_id: 3,
+            user_name: 'Supervisor One',
+            employee_id: 'LITRO-SUPERVISOR-001',
+            user_role: 'Supervisor',
+            ip_address: '192.168.1.45',
+            method: 'POST',
+            endpoint: '/api/auth/login',
+            action: 'User login',
+            category: 'Authentication',
+            response_code: 200,
+            created_at: minutesAgo(15),
+        },
+        {
+            id: 5002,
+            user_id: 3,
+            user_name: 'Supervisor One',
+            employee_id: 'LITRO-SUPERVISOR-001',
+            user_role: 'Supervisor',
+            ip_address: '192.168.1.45',
+            method: 'GET',
+            endpoint: '/api/breakdown-reports',
+            action: 'Viewed breakdown report list',
+            category: 'Breakdown Management',
+            response_code: 200,
+            created_at: minutesAgo(5),
+        },
+        {
+            id: 5003,
+            user_id: 2,
+            user_name: 'Technical Officer One',
+            employee_id: 'LITRO-TECHOFFICER-001',
+            user_role: 'Technical Officer',
+            ip_address: '192.168.1.52',
+            method: 'POST',
+            endpoint: '/api/auth/login',
+            action: 'User login',
+            category: 'Authentication',
+            response_code: 200,
+            created_at: minutesAgo(25),
+        },
+        {
+            id: 5004,
+            user_id: 2,
+            user_name: 'Technical Officer One',
+            employee_id: 'LITRO-TECHOFFICER-001',
+            user_role: 'Technical Officer',
+            ip_address: '192.168.1.52',
+            method: 'POST',
+            endpoint: '/api/tickets/123/updates',
+            action: 'Added work update',
+            category: 'Ticket Workflow',
+            response_code: 201,
+            created_at: minutesAgo(12),
+        },
+        {
+            id: 5005,
+            user_id: 1,
+            user_name: 'Admin User',
+            employee_id: 'LITRO-ADMIN-001',
+            user_role: 'Admin',
+            ip_address: '192.168.1.10',
+            method: 'PATCH',
+            endpoint: '/api/system-settings/petty-cash',
+            action: 'Updated petty cash threshold config',
+            category: 'System Administration',
+            response_code: 200,
+            created_at: minutesAgo(10),
+        },
+        {
+            id: 5006,
+            user_id: 1,
+            user_name: 'Admin User',
+            employee_id: 'LITRO-ADMIN-001',
+            user_role: 'Admin',
+            ip_address: '192.168.1.10',
+            method: 'PATCH',
+            endpoint: '/api/users/2/role',
+            action: 'Updated permission role mapping',
+            category: 'User Management',
+            response_code: 200,
+            created_at: minutesAgo(18),
+        },
+        {
+            id: 5007,
+            user_id: null,
+            user_name: 'Unknown User',
+            employee_id: '',
+            user_role: '',
+            ip_address: '10.0.0.8',
+            method: 'POST',
+            endpoint: '/api/auth/login',
+            action: 'Failed login attempt',
+            category: 'Authentication',
+            response_code: 401,
+            created_at: minutesAgo(20),
+        },
+        {
+            id: 5008,
+            user_id: 1,
+            user_name: 'Admin User',
+            employee_id: 'LITRO-ADMIN-001',
+            user_role: 'Admin',
+            ip_address: '192.168.1.10',
+            method: 'GET',
+            endpoint: '/api/system-settings/audit',
+            action: 'Viewed system configuration audit',
+            category: 'System Administration',
+            response_code: 500,
+            created_at: minutesAgo(8),
+        },
+    ];
+}
+
+function filterLogsByPeriod(logs, period) {
+    const now = Date.now();
+    const periodWindowMs = {
+        today: 24 * 60 * 60 * 1000,
+        week: 7 * 24 * 60 * 60 * 1000,
+        month: 30 * 24 * 60 * 60 * 1000,
+        all: Number.POSITIVE_INFINITY,
+    };
+
+    const windowMs = periodWindowMs[period] || periodWindowMs.today;
+
+    return logs.filter((log) => {
+        if (!Number.isFinite(windowMs)) {
+            return true;
+        }
+
+        const timestamp = Date.parse(log.created_at || '');
+        if (Number.isNaN(timestamp)) {
+            return false;
+        }
+
+        return now - timestamp <= windowMs;
+    });
+}
+
 async function ensureAdminSession(page) {
     const users = buildUsers();
+    const logs = buildLogs();
 
     await page.route('**/api/auth/me', (route) => {
         route.fulfill({
@@ -92,9 +238,10 @@ async function ensureAdminSession(page) {
     await page.route('**/api/users**', (route) => {
         const request = route.request();
         const url = request.url();
+        const { pathname } = new URL(url);
         const method = request.method();
 
-        if (method === 'GET' && /\/api\/users\/?$/.test(url)) {
+        if (method === 'GET' && pathname === '/api/users') {
             route.fulfill({
                 status: 200,
                 contentType: 'application/json',
@@ -114,8 +261,8 @@ async function ensureAdminSession(page) {
             return;
         }
 
-        if (method === 'GET' && /\/api\/users\/\d+/.test(url)) {
-            const idMatch = url.match(/\/api\/users\/(\d+)/);
+        if (method === 'GET' && /^\/api\/users\/\d+$/.test(pathname)) {
+            const idMatch = pathname.match(/\/api\/users\/(\d+)/);
             const user = users.find((item) => String(item.id) === String(idMatch ? idMatch[1] : '')) || users[0];
             route.fulfill({
                 status: 200,
@@ -129,6 +276,43 @@ async function ensureAdminSession(page) {
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({ status: 'success', data: {} }),
+        });
+    });
+
+    await page.route('**/api/logs**', (route) => {
+        const request = route.request();
+        const method = request.method();
+        const requestUrl = new URL(request.url());
+
+        if (method !== 'GET') {
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ status: 'success', data: {} }),
+            });
+            return;
+        }
+
+        const period = requestUrl.searchParams.get('period') || 'today';
+        const filteredLogs = filterLogsByPeriod(logs, period)
+            .slice()
+            .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                status: 'success',
+                data: {
+                    logs: filteredLogs,
+                    pagination: {
+                        page: 1,
+                        limit: filteredLogs.length,
+                        total: filteredLogs.length,
+                        total_pages: 1,
+                    },
+                },
+            }),
         });
     });
 
@@ -187,14 +371,19 @@ async function runFlow(page, viewportName) {
 
     await navigateSection(page, 'system-logs');
     await expect(page.getByRole('heading', { name: 'System Logs' })).toBeVisible();
+    await expect(page.locator('#logCount')).toContainText('logs');
+    await expect(page.locator('#logsList .log-entry').first()).toBeVisible();
     await page.getByRole('button', { name: 'Login Events' }).click();
     const logSearch = page.locator('#logSearch');
     await logSearch.click();
     await logSearch.type('login');
+    await expect(page.locator('#logsList .log-entry').first()).toContainText('login');
 
     await navigateSection(page, 'activity-tracking');
     await expect(page.getByRole('heading', { name: 'User Activity Tracking' })).toBeVisible();
+    await expect(page.locator('#summaryTotalActions')).toHaveText('8');
     await page.getByRole('button', { name: 'Supervisor' }).click();
+    await expect(page.locator('#activeUsersList tr')).toHaveCount(1);
     await page.getByRole('button', { name: 'View Session' }).first().click();
     await expect(page.locator('#detailsModal')).toBeVisible();
     await page.locator('#detailsModal .btn-close').click();

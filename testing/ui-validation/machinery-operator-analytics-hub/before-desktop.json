@@ -1,0 +1,20 @@
+{
+  "stage": "before",
+  "viewport": "desktop",
+  "url": "http://127.0.0.1:3000/dashboard/machinery-operator/index.html",
+  "title": "Machinery Operator Dashboard - AssetCare360",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \" Dashboard Overview\" [level=2]\n  - paragraph: Welcome! Here's your machinery operations summary\n  - text:  Fault Reports 2 active fault tickets   Weekly Check Reports 3 pending supervisor review   Notifications 3 new notifications \n  - heading \" Recent Activities\" [level=3]\n  - text: \"Fault Report Submitted Excavator #045 | Hydraulic Issue | 1 hour ago Reported hydraulic pressure drop during operation PENDING Weekly Check Reviewed Loader #128 | Supervisor Approved | 3 hours ago Weekly check report approved by supervisor APPROVED Repair Completed Truck #203 | Engine Maintenance | 1 day ago Engine oil change completed, machine ready for operation COMPLETED Service Reminder Excavator #045 | 100 Hour Service Due | 2 days ago Scheduled maintenance approaching in 15 operating hours REMINDER\"\n  - heading \" Assigned Machines\" [level=3]\n  - text: \"Excavator #045 Current Hours: 1,847 | Next Service: 1,900 hours Status: Operational | Last update: 2 hours ago OPERATIONAL\"\n  - button \" View\"\n  - text: \"Loader #128 Current Hours: 2,341 | Next Service: 2,500 hours Status: Operational | Last update: 5 hours ago OPERATIONAL\"\n  - button \" View\"\n  - text: \"Truck #203 Current Hours: 3,012 | Next Service: 3,100 hours Status: Under Maintenance | Hydraulic repair in progress MAINTENANCE\"\n  - button \" View\"",
+    "snapshotLength": 1337
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "stage": "before",
+    "analyticsNavPresent": false,
+    "analyticsSectionPresent": false,
+    "activeSection": "dashboard",
+    "reportRows": 0,
+    "downloadSuggestedFilename": null
+  }
+}

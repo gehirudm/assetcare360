@@ -79,11 +79,12 @@ class InventoryOrdersApprovals extends HTMLElement {
 
             <!-- Approval/Rejection Modal -->
             <div class="modal" id="orderActionModal">
-                <div class="modal-overlay"></div>
-                <div class="modal-container">
+                <div class="modal-content order-action-modal-content">
                     <div class="modal-header">
-                        <h3 class="modal-title" id="orderActionTitle">Order Action</h3>
-                        <button class="modal-close" id="orderActionModalClose">&times;</button>
+                        <h2 id="orderActionTitle">Order Action</h2>
+                        <button class="btn-close" id="orderActionModalClose" aria-label="Close action modal">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
                     <div class="modal-body" id="orderActionContent"></div>
                 </div>
@@ -112,10 +113,14 @@ class InventoryOrdersApprovals extends HTMLElement {
             modalClose.addEventListener('click', () => this.closeActionModal());
         }
 
-        // Modal overlay click
-        const modalOverlay = this.querySelector('#orderActionModal .modal-overlay');
-        if (modalOverlay) {
-            modalOverlay.addEventListener('click', () => this.closeActionModal());
+        // Close when clicking backdrop
+        const modal = this.querySelector('#orderActionModal');
+        if (modal) {
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    this.closeActionModal();
+                }
+            });
         }
     }
 
@@ -123,7 +128,7 @@ class InventoryOrdersApprovals extends HTMLElement {
         try {
             const response = await API.get('/spare-part-requests');
             if (response.status === 'success') {
-                this.allOrders = response.data || [];
+                this.allOrders = this.extractOrders(response);
                 this.updateStats(this.allOrders);
                 this.applyFilters();
             } else {
@@ -136,6 +141,26 @@ class InventoryOrdersApprovals extends HTMLElement {
             Utils.showToast('Failed to load spare part requests', 'error');
             this.displayOrders([]);
         }
+    }
+
+    extractOrders(response) {
+        if (!response) {
+            return [];
+        }
+
+        if (Array.isArray(response.data)) {
+            return response.data;
+        }
+
+        if (Array.isArray(response.data?.requests)) {
+            return response.data.requests;
+        }
+
+        if (Array.isArray(response.requests)) {
+            return response.requests;
+        }
+
+        return [];
     }
 
     updateStats(requests) {
@@ -194,6 +219,44 @@ class InventoryOrdersApprovals extends HTMLElement {
         this.displayOrders(filtered);
     }
 
+    resolveTicketType(order) {
+        const context = String(order?.request_context || '').toLowerCase();
+        if (context === 'service_ticket') {
+            return 'Service Ticket';
+        }
+
+        const ticketCode = String(order?.ticket_id_formatted || order?.service_ticket_code || order?.fault_ticket_code || '').toUpperCase();
+        if (ticketCode.startsWith('SVT-')) {
+            return 'Service Ticket';
+        }
+        if (ticketCode.startsWith('VBD')) {
+            return 'Vehicle Breakdown';
+        }
+        if (ticketCode.startsWith('MBD')) {
+            return 'Machine Breakdown';
+        }
+        if (ticketCode.startsWith('RBD')) {
+            return 'Routine Breakdown';
+        }
+
+        return 'Fault Ticket';
+    }
+
+    resolveLinkedTicketStatusClass(status) {
+        const normalized = String(status || '').toLowerCase();
+        if (normalized.includes('complete') || normalized.includes('approved') || normalized.includes('resolved') || normalized.includes('closed')) {
+            return 'status-approved';
+        }
+        if (normalized.includes('reject') || normalized.includes('cancel')) {
+            return 'status-rejected';
+        }
+        if (normalized.includes('progress')) {
+            return 'status-low-stock';
+        }
+
+        return 'status-pending';
+    }
+
     displayOrders(orderList) {
         const container = this.querySelector('#ordersList');
         if (!container) return;
@@ -219,9 +282,7 @@ class InventoryOrdersApprovals extends HTMLElement {
 
             const dateStr = new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-            const ticketType = (order.ticket_id_formatted || '').startsWith('VBD') ? 'Vehicle Breakdown' :
-                (order.ticket_id_formatted || '').startsWith('MBD') ? 'Machine Breakdown' :
-                    (order.ticket_id_formatted || '').startsWith('RBD') ? 'Routine Breakdown' : 'Fault Ticket';
+            const ticketType = this.resolveTicketType(order);
 
             const partsCount = (order.items || []).reduce((sum, i) => sum + i.quantity, 0);
             const partsLabel = `${(order.items || []).length} part${(order.items || []).length !== 1 ? 's' : ''} (${partsCount} units)`;
@@ -362,22 +423,26 @@ class InventoryOrdersApprovals extends HTMLElement {
                 availabilityData = availResponse.data.items;
             }
 
-            // Merge availability data with order items
-            const itemsWithAvailability = (order.items || []).map(item => {
-                const avail = availabilityData.find(a => a.part_code === item.part_code) || {
+            const blockedStatuses = new Set(['not_found', 'out_of_stock', 'insufficient', 'invalid', 'unknown']);
+
+            // Merge availability data with order items using index first, then part-code fallback.
+            const itemsWithAvailability = (order.items || []).map((item, index) => {
+                const availabilityByIndex = Array.isArray(availabilityData) ? availabilityData[index] : null;
+                const availabilityByCode = Array.isArray(availabilityData)
+                    ? availabilityData.find(entry => entry.part_code === item.part_code)
+                    : null;
+
+                const avail = availabilityByIndex || availabilityByCode || {
                     status: 'unknown',
                     available_qty: 0,
                     message: 'Could not check availability'
                 };
+
                 return { ...item, availability: avail };
             });
 
-            // Check if all items are available
-            const unavailableItems = itemsWithAvailability.filter(i => 
-                i.availability.status === 'not_found' || 
-                i.availability.status === 'out_of_stock' ||
-                i.availability.status === 'insufficient'
-            );
+            // Block approval whenever any line item is not fully available.
+            const unavailableItems = itemsWithAvailability.filter(item => blockedStatuses.has(item.availability.status));
             const canApprove = unavailableItems.length === 0;
 
             // Build availability summary per item (simple text)
@@ -387,6 +452,7 @@ class InventoryOrdersApprovals extends HTMLElement {
                     case 'insufficient': return `Requested: ${requestedQty} | In Stock: ${avail.available_qty} — Insufficient stock`;
                     case 'out_of_stock': return `Requested: ${requestedQty} | In Stock: 0 — Out of stock`;
                     case 'not_found':    return `Requested: ${requestedQty} | Not found in catalog`;
+                    case 'invalid':      return `Requested: ${requestedQty} | Invalid part code`;
                     default:             return `Requested: ${requestedQty} | Status unknown`;
                 }
             };
@@ -395,13 +461,18 @@ class InventoryOrdersApprovals extends HTMLElement {
                 <div class="form-group">
                     <label class="form-label">${item.part_name}${item.part_code ? ' (' + item.part_code + ')' : ''}</label>
                     <input type="text" class="form-input" value="${getStatusText(item.availability, item.quantity)}" readonly
-                        style="color: ${['out_of_stock','not_found','insufficient'].includes(item.availability.status) ? '#dc2626' : '#16a34a'}; font-weight: 500;">
+                        style="color: ${blockedStatuses.has(item.availability.status) ? '#dc2626' : '#16a34a'}; font-weight: 500;">
                 </div>
             `).join('');
 
-            // Simple warning if items unavailable
+            const unavailableListItems = unavailableItems.map(item => {
+                const partLabel = item.part_code ? `${item.part_name} (${item.part_code})` : item.part_name;
+                const detail = item.availability?.message || 'Unavailable';
+                return `<li><strong>${partLabel}:</strong> ${detail}</li>`;
+            }).join('');
+
             const warningHTML = !canApprove
-                ? `<p class="form-warning-text"><i class="fas fa-exclamation-triangle"></i> Some parts are unavailable or not in the catalog. Please add stock through <strong>Spare Part Addition</strong> before approving.</p>`
+                ? `<div class="form-warning-text"><i class="fas fa-exclamation-triangle"></i> <strong>Cannot approve this request.</strong> One or more requested spare parts are not available in sufficient quantity. Please restock through <strong>Spare Part Addition</strong> before approving.<ul style="margin: 10px 0 0 18px;">${unavailableListItems}</ul></div>`
                 : '';
 
             content.innerHTML = `
@@ -570,22 +641,55 @@ class InventoryOrdersApprovals extends HTMLElement {
 
     async confirmApproval(orderId) {
         try {
+            const order = this.allOrders.find(r => r.id == orderId);
+            if (!order) {
+                Utils.showToast('Order not found. Please refresh and try again.', 'error');
+                return;
+            }
+
             const notes = this.querySelector('#approvalNotes')?.value || '';
+            const submitBtn = this.querySelector('#approvalForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Approving...';
+            }
+
             const response = await API.post(`/spare-part-requests/${orderId}/approve`, {
                 reviewed_by: this.currentUser?.id,
                 notes: notes
             });
 
             if (response.status === 'success') {
-                Utils.showToast('Spare parts request approved! Fault ticket updated to Parts Approved.', 'success');
+                Utils.showToast('Spare parts request approved successfully.', 'success');
                 this.closeActionModal();
                 await this.loadOrders();
             } else {
+                const unavailableItems = Array.isArray(response.data?.unavailable_items)
+                    ? response.data.unavailable_items
+                    : [];
+
+                if (unavailableItems.length > 0) {
+                    Utils.showToast(response.message || 'Cannot approve request due to insufficient stock.', 'error');
+                    await this.checkAvailabilityAndShowApprovalForm(order);
+                    return;
+                }
+
                 Utils.showToast('Failed to approve: ' + (response.message || 'Unknown error'), 'error');
+
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-check"></i> Confirm Approval';
+                }
             }
         } catch (error) {
             console.error('Error approving order:', error);
             Utils.showToast('Failed to approve request: ' + error.message, 'error');
+
+            const submitBtn = this.querySelector('#approvalForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> Confirm Approval';
+            }
         }
     }
 
@@ -633,81 +737,107 @@ class InventoryOrdersApprovals extends HTMLElement {
         const dateStr = new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
         const reviewDate = order.reviewed_at ? new Date(order.reviewed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
 
-        const ticketType = (order.ticket_id_formatted || '').startsWith('VBD') ? 'Vehicle Breakdown' :
-            (order.ticket_id_formatted || '').startsWith('MBD') ? 'Machine Breakdown' :
-                (order.ticket_id_formatted || '').startsWith('RBD') ? 'Routine Breakdown' : 'Fault Ticket';
+        const ticketType = this.resolveTicketType(order);
+        const linkedTicketStatusClass = this.resolveLinkedTicketStatusClass(order.ticket_status);
 
         const partsHTML = order.items && order.items.length > 0
-            ? `<table style="width: 100%; border-collapse: collapse; margin-top: 8px;">
-                <thead><tr style="background: #f3f4f6;">
-                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid #e5e7eb;">Part Code</th>
-                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid #e5e7eb;">Part Name</th>
-                    <th style="padding: 8px; text-align: center; border-bottom: 2px solid #e5e7eb;">Qty</th>
-                </tr></thead>
-                <tbody>
-                    ${order.items.map(item => `
-                        <tr>
-                            <td style="padding: 8px; border-bottom: 1px solid #f3f4f6; font-weight: 600;">${item.part_code || '-'}</td>
-                            <td style="padding: 8px; border-bottom: 1px solid #f3f4f6;">${item.part_name}</td>
-                            <td style="padding: 8px; text-align: center; border-bottom: 1px solid #f3f4f6; font-weight: 700;">${item.quantity}</td>
-                        </tr>`).join('')}
-                </tbody>
-               </table>`
-            : '<p style="color: #9ca3af;">No parts listed</p>';
-
-        // Build action buttons for pending orders in the details modal
-        let modalActions = '';
-        if (order.status === 'Pending') {
-            modalActions = `
-            <div style="display: flex; gap: 10px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
-                <button class="btn btn-success" id="approveFromDetails" data-id="${order.id}">
-                    <i class="fas fa-check"></i> Approve Request
-                </button>
-                <button class="btn btn-danger" id="rejectFromDetails" data-id="${order.id}">
-                    <i class="fas fa-times"></i> Reject Request
-                </button>
-            </div>`;
-        }
+            ? order.items.map(item => `
+                <div class="form-group">
+                    <label class="form-label">${item.part_name}${item.part_code ? ' (' + item.part_code + ')' : ''}</label>
+                    <input type="text" class="form-input" value="Requested Quantity: ${item.quantity}" readonly>
+                </div>
+            `).join('')
+            : `
+                <div class="form-group">
+                    <label class="form-label">Requested Parts</label>
+                    <input type="text" class="form-input" value="No parts listed" readonly>
+                </div>
+            `;
 
         const modalContent = `
-            <div class="form-section">
-                <h5><i class="fas fa-info-circle"></i> Request Information</h5>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <p><strong>Request ID:</strong> ${order.request_id}</p>
-                    <p><strong>Status:</strong> <span class="status-text ${statusClass}">${order.status}</span></p>
-                    <p><strong>Priority:</strong> <span class="status-text ${priorityClass}">${order.priority}</span></p>
-                    <p><strong>Requested By:</strong> ${order.requested_by_name || '-'}</p>
-                    <p><strong>Request Date:</strong> ${dateStr}</p>
-                    <p><strong>Location:</strong> ${order.location || '-'}</p>
+            <form id="viewRequestForm">
+                <div class="form-section">
+                    <h5><i class="fas fa-info-circle"></i> Request Details</h5>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Request ID</label>
+                            <input type="text" class="form-input" value="${order.request_id || '-'}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ticket</label>
+                            <input type="text" class="form-input" value="${order.ticket_id_formatted || '-'}" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <input type="text" class="form-input" value="${order.status || '-'}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Priority</label>
+                            <input type="text" class="form-input" value="${order.priority || '-'}" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Requested By</label>
+                            <input type="text" class="form-input" value="${order.requested_by_name || '-'}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Request Date</label>
+                            <input type="text" class="form-input" value="${dateStr}" readonly>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Location</label>
+                        <input type="text" class="form-input" value="${order.location || '-'}" readonly>
+                    </div>
                 </div>
-            </div>
-            <div class="form-section" style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 14px;">
-                <h5><i class="fas fa-ticket-alt" style="color: var(--tang-blue);"></i> Linked Ticket Summary</h5>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                    <p><strong>Ticket ID:</strong> <span style="color: var(--tang-blue); font-weight: 700;">${order.ticket_id_formatted || '-'}</span></p>
-                    <p><strong>Type:</strong> ${ticketType}</p>
-                    <p><strong>Equipment:</strong> ${order.equipment_name || '-'}</p>
-                    <p><strong>Ticket Status:</strong> <span class="status-text ${order.ticket_status?.toLowerCase().includes('approved') ? 'status-approved' : 'status-pending'}">${order.ticket_status || '-'}</span></p>
+                <div class="form-section">
+                    <h5><i class="fas fa-box"></i> Requested Parts (${(order.items || []).length} items)</h5>
+                    ${partsHTML}
                 </div>
-                ${order.ticket_description ? `<p style="margin-top: 8px;"><strong>Description:</strong> ${order.ticket_description}</p>` : ''}
-            </div>
-            ${order.additional_notes ? `
-            <div class="form-section">
-                <h5><i class="fas fa-sticky-note"></i> Additional Notes</h5>
-                <p>${order.additional_notes}</p>
-            </div>` : ''}
-            <div class="form-section">
-                <h5><i class="fas fa-box"></i> Spare Parts Requested (${(order.items || []).length} items)</h5>
-                ${partsHTML}
-            </div>
-            ${order.status !== 'Pending' ? `
-            <div class="form-section">
-                <h5><i class="fas fa-user-check"></i> Review Details</h5>
-                <p><strong>Reviewed By:</strong> ${order.reviewed_by_name || '-'}</p>
-                <p><strong>Review Date:</strong> ${reviewDate}</p>
-                ${order.review_notes ? `<p><strong>Notes:</strong> ${order.review_notes}</p>` : ''}
-            </div>` : ''}
-            ${modalActions}
+
+                <div class="form-section" style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 14px;">
+                    <h5><i class="fas fa-ticket-alt" style="color: var(--tang-blue);"></i> Linked Ticket Summary</h5>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <p><strong>Ticket ID:</strong> <span style="color: var(--tang-blue); font-weight: 700;">${order.ticket_id_formatted || '-'}</span></p>
+                        <p><strong>Type:</strong> ${ticketType}</p>
+                        <p><strong>Equipment:</strong> ${order.equipment_name || '-'}</p>
+                        <p><strong>Ticket Status:</strong> <span class="status-text ${linkedTicketStatusClass}">${order.ticket_status || '-'}</span></p>
+                    </div>
+                    ${order.ticket_description ? `<p style="margin-top: 8px;"><strong>Description:</strong> ${order.ticket_description}</p>` : ''}
+                </div>
+
+                ${order.additional_notes ? `
+                <div class="form-section">
+                    <h5><i class="fas fa-sticky-note"></i> Additional Notes</h5>
+                    <div class="form-group">
+                        <textarea class="form-textarea" rows="3" readonly>${order.additional_notes}</textarea>
+                    </div>
+                </div>` : ''}
+
+                ${order.status !== 'Pending' ? `
+                <div class="form-section">
+                    <h5><i class="fas fa-user-check"></i> Review Details</h5>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Reviewed By</label>
+                            <input type="text" class="form-input" value="${order.reviewed_by_name || '-'}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Review Date</label>
+                            <input type="text" class="form-input" value="${reviewDate}" readonly>
+                        </div>
+                    </div>
+                    ${order.review_notes ? `
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-textarea" rows="3" readonly>${order.review_notes}</textarea>
+                    </div>` : ''}
+                </div>` : ''}
+
+            </form>
         `;
 
         this.createDetailsModal(`Spare Parts Request — ${order.request_id}`, modalContent, order.id);
@@ -724,48 +854,35 @@ class InventoryOrdersApprovals extends HTMLElement {
         modal.id = `detailsModal_${orderId}`;
         modal.className = 'modal active';
         modal.innerHTML = `
-            <div class="modal-overlay"></div>
-            <div class="modal-container" style="max-width: 700px;">
+            <div class="modal-content orders-details-modal-content">
                 <div class="modal-header">
-                    <h3 class="modal-title">${title}</h3>
-                    <button class="modal-close">&times;</button>
+                    <h2>${title}</h2>
+                    <button class="btn-close" aria-label="Close request details">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <div class="modal-body">${content}</div>
+                <div class="modal-body order-details-modal-body">${content}</div>
             </div>
         `;
 
         document.body.appendChild(modal);
 
         // Bind close button
-        modal.querySelector('.modal-close').addEventListener('click', () => {
+        modal.querySelector('.btn-close').addEventListener('click', () => {
             modal.classList.remove('active');
             setTimeout(() => modal.remove(), 300);
         });
 
-        // Bind overlay click
-        modal.querySelector('.modal-overlay').addEventListener('click', () => {
+        // Bind backdrop click
+        modal.addEventListener('click', (event) => {
+            if (event.target !== modal) {
+                return;
+            }
+
             modal.classList.remove('active');
             setTimeout(() => modal.remove(), 300);
         });
 
-        // Bind action buttons if they exist
-        const approveBtn = modal.querySelector('#approveFromDetails');
-        if (approveBtn) {
-            approveBtn.addEventListener('click', () => {
-                modal.classList.remove('active');
-                setTimeout(() => modal.remove(), 300);
-                this.approveOrder(parseInt(approveBtn.dataset.id));
-            });
-        }
-
-        const rejectBtn = modal.querySelector('#rejectFromDetails');
-        if (rejectBtn) {
-            rejectBtn.addEventListener('click', () => {
-                modal.classList.remove('active');
-                setTimeout(() => modal.remove(), 300);
-                this.rejectOrder(parseInt(rejectBtn.dataset.id));
-            });
-        }
     }
 
     toggleActionMenu(orderId) {

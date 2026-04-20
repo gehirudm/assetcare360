@@ -1,0 +1,20 @@
+{
+  "stage": "after",
+  "viewport": "mobile",
+  "url": "http://127.0.0.1:3000/dashboard/sysadministration/index.html",
+  "title": "System Administration Dashboard",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \"Service Interval Configuration\" [level=1]\n  - paragraph: Manage vehicle and machine service schedules\n  - button \"Add Service Interval\"\n  - button \"Refresh\"\n  - text: Service Interval Settings 4 assets\n  - table:\n    - rowgroup:\n      - row \"Asset Type Time Interval (days) Mileage/Hours Interval Status Actions\":\n        - columnheader \"Asset\"\n        - columnheader \"Type\"\n        - columnheader \"Time Interval (days)\"\n        - columnheader \"Mileage/Hours Interval\"\n        - columnheader \"Status\"\n        - columnheader \"Actions\"\n    - rowgroup:\n      - row \"MCH-001 Excavator A Machine 45 days 180 hours Overdue Edit Update\":\n        - cell \"MCH-001 Excavator A\":\n          - strong: MCH-001\n          - text: Excavator A\n        - cell \"Machine\"\n        - cell \"45 days\"\n        - cell \"180 hours\"\n        - cell \"Overdue\"\n        - cell \"Edit Update\":\n          - button \"Edit\"\n          - button \"Update\"\n      - row \"MCH-002 Forklift B Machine 90 days 300 hours On Track Edit Update\":\n        - cell \"MCH-002 Forklift B\":\n          - strong: MCH-002\n          - text: Forklift B\n        - cell \"Machine\"\n        - cell \"90 days\"\n        - cell \"300 hours\"\n        - cell \"On Track\"\n        - cell \"Edit Update\":\n          - button \"Edit\"\n          - button \"Update\"\n      - row \"VEH-001 Service Van 01 Vehicle 60 days 6,000 km Due Soon Edit Update\":\n        - cell \"VEH-001 Service Van 01\":\n          - strong: VEH-001\n          - text: Service Van 01\n        - cell \"Vehicle\"\n        - cell \"60 days\"\n        - cell \"6,000 km\"\n        - cell \"Due Soon\"\n        - cell \"Edit Update\":\n          - button \"Edit\"\n          - button \"Update\"\n      - row \"VEH-002 Cargo Truck 02 Vehicle 45 days Not Set Overdue Edit Update\":\n        - cell \"VEH-002 Cargo Truck 02\":\n          - strong: VEH-002\n          - text: Cargo Truck 02\n        - cell \"Vehicle\"\n        - cell \"45 days\"\n        - cell \"Not Set\"\n        - cell \"Overdue\"\n        - cell \"Edit Update\":\n          - button \"Edit\"\n          - button \"Update\"\n  - text: Overdue Service Alerts\n  - strong: \"VEH-001:\"\n  - text: Service due in 2 day(s).\n  - button \"Update Interval\"\n  - button \"View Details\"\n  - strong: \"VEH-002:\"\n  - text: Mileage threshold exceeded by 42,000 km.\n  - button \"Update Interval\"\n  - button \"View Details\"\n  - strong: \"MCH-001:\"\n  - text: Operating-hour threshold exceeded by 15 hours.\n  - button \"Update Interval\"\n  - button \"View Details\"",
+    "snapshotLength": 2445
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "activeSection": "service-config",
+    "configuredRows": 4,
+    "alertCount": 3,
+    "hasVehicleMileageInterval": true,
+    "hasMachineHourInterval": true,
+    "modalOpen": false
+  }
+}

@@ -21,11 +21,11 @@
         active-section="dashboard"
         nav='[
             {"section":"dashboard","icon":"fas fa-chart-line","label":"Dashboard"},
+            {"section":"analytics","icon":"fas fa-chart-pie","label":"Analytics"},
             {"section":"tickets","icon":"fas fa-ticket-alt","label":"Fault &amp; Repair Tickets"},
             {"section":"spare-parts","icon":"fas fa-boxes","label":"Spare Part Management"},
             {"section":"inventory","icon":"fas fa-warehouse","label":"Inventory Management"},
-            {"section":"service-warranty","icon":"fas fa-shield-alt","label":"Service &amp; Warranty"},
-            {"section":"feedback","icon":"fas fa-comment-dots","label":"Asset Feedback"},
+            {"section":"service-tickets","icon":"fas fa-shield-alt","label":"Service Tickets"},
             {"section":"notifications","icon":"fas fa-bell","label":"Notifications","badge":true}
         ]'>
                 <!-- Dashboard Section -->
@@ -103,10 +103,20 @@
 
                 </section>
 
+                <!-- Analytics -->
+                <section class="content-section" id="analytics">
+                    <to-analytics-hub></to-analytics-hub>
+                </section>
+
                 <!-- Fault & Repair Tickets -->
                 <section class="content-section" id="tickets">
                     <to-tickets></to-tickets>
                 </section>
+                    <section class="content-section" id="ticket-details">
+                        <to-ticket-detail-view
+                            default-return-section="tickets"
+                        ></to-ticket-detail-view>
+                    </section>
 
                 <!-- Spare Part Management -->
                 <section class="content-section" id="spare-parts">
@@ -118,19 +128,18 @@
                     <to-inventory></to-inventory>
                 </section>
 
-                <!-- Service & Warranty -->
-                <section class="content-section" id="service-warranty">
-                    <to-service-warranty></to-service-warranty>
+                <!-- Service Tickets -->
+                <section class="content-section" id="service-tickets">
+                    <to-service-tickets></to-service-tickets>
+                </section>
+
+                <section class="content-section" id="service-ticket-details">
+                    <to-service-ticket-detail-view default-return-section="service-tickets"></to-service-ticket-detail-view>
                 </section>
 
                 <!-- Notifications -->
                 <section class="content-section" id="notifications">
                     <to-notifications></to-notifications>
-                </section>
-
-                <!-- Asset Feedback -->
-                <section class="content-section" id="feedback">
-                    <to-feedback></to-feedback>
                 </section>
     </ac-layout>
 
@@ -257,6 +266,7 @@
             </div>
             <form id="requestPartsForm" style="padding: 20px 30px;">
                 <input type="hidden" id="requestingTicketId" value="">
+                <input type="hidden" id="requestingTicketContext" value="fault_ticket">
                 <div class="form-section">
                     <h5><i class="fas fa-ticket-alt"></i> Ticket Information</h5>
                     <div class="form-grid">
@@ -439,12 +449,15 @@
     <script src="../../components/shared/ac-layout.js"></script>
     <script src="../../components/styles/buttons.js"></script>
     <script src="../../components/styles/icons.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="./components/tickets/script.js"></script>
+    <script src="./components/analytics-hub/script.js"></script>
+    <script src="./components/ticket-details/script.js"></script>
     <script src="./components/notifications/script.js"></script>
     <script src="./components/inventory/script.js"></script>
     <script src="./components/spare-parts/script.js"></script>
-    <script src="./components/service-warranty/script.js"></script>
-    <script src="./components/feedback/script.js"></script>
+    <script src="./components/service-tickets/script.js"></script>
+    <script src="./components/service-ticket-details/script.js"></script>
     <script src="./components/create-fault-ticket/script.js"></script>
     <script src="../../components/shared/confirm-dialog.js"></script>
     <script src="../../js/dashboard-init.js"></script>

@@ -6,6 +6,9 @@ class DriverBreakdownInRouteModal extends HTMLElement {
 
         this._mounted = true;
         this.editingId = null;
+        this.isSubmitting = false;
+        this.isSeverityLockedByDangerousCargo = false;
+        this._dangerousCargoCheckToken = 0;
         this.render();
         this.bindEvents();
 
@@ -46,6 +49,10 @@ class DriverBreakdownInRouteModal extends HTMLElement {
                                         <option value="high">High</option>
                                         <option value="critical">Critical</option>
                                     </select>
+                                    <div id="routeBreakdownPriorityLockNotice" style="display:none; margin-top:8px; padding:8px 10px; border-radius:6px; background:#fef2f2; color:#991b1b; font-size:12px; line-height:1.4; border:1px solid #fecaca;">
+                                        <i class="fas fa-radiation" style="margin-right:4px;"></i>
+                                        Urgency is locked to critical while transporting dangerous cargo.
+                                    </div>
                                 </div>
                             </div>
                             <div class="form-grid">
@@ -112,6 +119,15 @@ class DriverBreakdownInRouteModal extends HTMLElement {
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
 
+            if (this.isSubmitting) {
+                return;
+            }
+
+            const submitButton = form.querySelector('#routeBreakdownSubmit');
+            const idleLabel = this.editingId
+                ? 'Update Route Breakdown Report'
+                : 'Submit Breakdown in Route Report';
+
             const selectedVehicle = this.getSelectedVehicle();
             if (!selectedVehicle) {
                 DriverUtils.showToast('Please select a vehicle.', 'error');
@@ -126,6 +142,10 @@ class DriverBreakdownInRouteModal extends HTMLElement {
                 breakdown_datetime: form.querySelector('#routeBreakdownDatetime').value,
                 description: form.querySelector('#routeBreakdownDescription').value.trim(),
             };
+
+            if (this.isSeverityLockedByDangerousCargo) {
+                payload.severity = 'critical';
+            }
 
             const latitudeRaw = form.querySelector('#routeBreakdownLatitude')?.value;
             const longitudeRaw = form.querySelector('#routeBreakdownLongitude')?.value;
@@ -143,6 +163,12 @@ class DriverBreakdownInRouteModal extends HTMLElement {
             }
 
             try {
+                this.isSubmitting = true;
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.textContent = this.editingId ? 'Updating...' : 'Submitting...';
+                }
+
                 const response = this.editingId
                     ? await DriverUtils.apiPut(`/route-breakdowns/${encodeURIComponent(this.editingId)}`, payload)
                     : await DriverUtils.apiPost('/route-breakdowns', payload);
@@ -160,6 +186,12 @@ class DriverBreakdownInRouteModal extends HTMLElement {
             } catch (error) {
                 console.error('Failed to submit route breakdown report:', error);
                 DriverUtils.showToast('Failed to submit route breakdown report. Please try again.', 'error');
+            } finally {
+                this.isSubmitting = false;
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = idleLabel;
+                }
             }
         });
     }
@@ -188,6 +220,7 @@ class DriverBreakdownInRouteModal extends HTMLElement {
         DriverUtils.ensureTodayDefaults(form);
         this.assignedVehicle = null;
         this.allVehicles = [];
+        this.setSeverityLockState({ locked: false });
         if (latitudeField) {
             latitudeField.value = '';
         }
@@ -245,6 +278,8 @@ class DriverBreakdownInRouteModal extends HTMLElement {
             submit.textContent = 'Submit Breakdown in Route Report';
         }
 
+        await this.syncDangerousCargoSeverityLock();
+
         DriverUtils.setModalState(this.querySelector('#breakdownInRouteModal'), true);
     }
 
@@ -264,6 +299,13 @@ class DriverBreakdownInRouteModal extends HTMLElement {
                         `).join('')}
                     </select>
                 `;
+
+                const vehicleSelect = container.querySelector('#vehicleSelect');
+                if (vehicleSelect) {
+                    vehicleSelect.addEventListener('change', () => {
+                        this.syncDangerousCargoSeverityLock();
+                    });
+                }
             } else {
                 container.innerHTML = `
                     <label class="form-label">Vehicle *</label>
@@ -281,6 +323,104 @@ class DriverBreakdownInRouteModal extends HTMLElement {
                 </div>
             `;
         }
+    }
+
+    async syncDangerousCargoSeverityLock() {
+        const currentToken = this._dangerousCargoCheckToken + 1;
+        this._dangerousCargoCheckToken = currentToken;
+
+        const selectedVehicle = this.getSelectedVehicle();
+        if (!selectedVehicle) {
+            this.setSeverityLockState({ locked: false });
+            return;
+        }
+
+        try {
+            const response = await DriverUtils.apiGet('/trips');
+            const trips = DriverUtils.normalizeApiList(response, 'trips');
+            const selectedPlate = String(selectedVehicle.number_plate || '').trim().toLowerCase();
+
+            const activeTrips = trips.filter((trip) => {
+                const tripPlate = String(trip?.vehicle_registration || trip?.vehicle_registration_no || trip?.number_plate || '').trim().toLowerCase();
+                if (!tripPlate || !selectedPlate || tripPlate !== selectedPlate) {
+                    return false;
+                }
+
+                return this.isTripInActiveTransportState(trip?.status);
+            });
+
+            activeTrips.sort((first, second) => this.getTripStatusPriority(second?.status) - this.getTripStatusPriority(first?.status));
+            const activeTrip = activeTrips[0] || null;
+            const isDangerousCargo = activeTrip ? DriverUtils.hasDangerousCargo(activeTrip) : false;
+
+            if (this._dangerousCargoCheckToken !== currentToken) {
+                return;
+            }
+
+            this.setSeverityLockState({
+                locked: isDangerousCargo,
+                tripId: activeTrip?.trip_id || activeTrip?.id || null,
+                cargoSummary: activeTrip ? DriverUtils.buildCargoSummary(activeTrip) : '',
+            });
+        } catch (error) {
+            console.error('Failed to verify dangerous cargo context for route breakdown severity lock:', error);
+
+            if (this._dangerousCargoCheckToken !== currentToken) {
+                return;
+            }
+
+            this.setSeverityLockState({ locked: false });
+        }
+    }
+
+    isTripInActiveTransportState(status) {
+        const normalizedStatus = String(status || '').trim().toLowerCase().replace(/\s+/g, '_');
+        return normalizedStatus === 'accepted' || normalizedStatus === 'in_progress';
+    }
+
+    getTripStatusPriority(status) {
+        const normalizedStatus = String(status || '').trim().toLowerCase().replace(/\s+/g, '_');
+        if (normalizedStatus === 'in_progress') {
+            return 2;
+        }
+
+        if (normalizedStatus === 'accepted') {
+            return 1;
+        }
+
+        return 0;
+    }
+
+    setSeverityLockState({ locked = false, tripId = null, cargoSummary = '' } = {}) {
+        const severityField = this.querySelector('#routeBreakdownSeverity');
+        const lockNotice = this.querySelector('#routeBreakdownPriorityLockNotice');
+
+        if (!severityField || !lockNotice) {
+            return;
+        }
+
+        this.isSeverityLockedByDangerousCargo = locked === true;
+
+        if (this.isSeverityLockedByDangerousCargo) {
+            severityField.value = 'critical';
+            severityField.disabled = true;
+
+            const details = [];
+            if (tripId) {
+                details.push(`Trip ${tripId}`);
+            }
+            if (cargoSummary) {
+                details.push(cargoSummary);
+            }
+
+            const detailsText = details.length ? ` (${details.join(' | ')})` : '';
+            lockNotice.textContent = `Urgency is locked to critical while transporting dangerous cargo${detailsText}.`;
+            lockNotice.style.display = 'block';
+            return;
+        }
+
+        severityField.disabled = false;
+        lockNotice.style.display = 'none';
     }
 
     close() {

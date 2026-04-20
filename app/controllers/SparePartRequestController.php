@@ -48,6 +48,9 @@ class SparePartRequestController {
             if (isset($_GET['fault_ticket_id'])) {
                 $filters['fault_ticket_id'] = $_GET['fault_ticket_id'];
             }
+            if (isset($_GET['service_ticket_id'])) {
+                $filters['service_ticket_id'] = $_GET['service_ticket_id'];
+            }
 
             $result = $this->service->getAll($filters);
             return Response::json($result);
@@ -99,6 +102,25 @@ class SparePartRequestController {
     }
 
     /**
+     * GET /spare-part-requests/service-ticket/:id
+     * Get requests for a specific service ticket
+     */
+    public function getByServiceTicket() {
+        try {
+            $ticketId = $_GET['id'] ?? null;
+            if (!$ticketId) {
+                return Response::json(['status' => 'error', 'message' => 'Service ticket ID is required'], 400);
+            }
+
+            $result = $this->service->getByServiceTicket($ticketId);
+            return Response::json($result);
+        } catch (Exception $e) {
+            error_log("Error in SparePartRequestController::getByServiceTicket: " . $e->getMessage());
+            return Response::json(['status' => 'error', 'message' => 'Failed to fetch service ticket requests'], 500);
+        }
+    }
+
+    /**
      * GET /spare-part-requests/stats
      * Get request counts by status
      */
@@ -139,6 +161,7 @@ class SparePartRequestController {
                         'request_db_id' => (int) ($result['data']['id'] ?? 0),
                         'request_id' => $result['data']['request_id'] ?? null,
                         'fault_ticket_id' => (int) ($data['fault_ticket_id'] ?? 0),
+                        'service_ticket_id' => (int) ($data['service_ticket_id'] ?? 0),
                         'requested_by' => (int) ($data['requested_by'] ?? 0),
                     ],
                     [
@@ -254,25 +277,55 @@ class SparePartRequestController {
                 return Response::json(['status' => 'error', 'message' => 'Invalid request. Expected { "items": [...] }'], 400);
             }
 
-            $results = [];
-            foreach ($data['items'] as $item) {
-                $partCode = $item['part_code'] ?? '';
-                $requestedQty = isset($item['quantity']) ? (int)$item['quantity'] : 1;
+            $normalizedItems = [];
+            $requestedTotals = [];
 
-                if (empty($partCode)) {
+            foreach ($data['items'] as $item) {
+                $partCode = trim((string) ($item['part_code'] ?? ''));
+                $requestedQty = isset($item['quantity']) ? (int) $item['quantity'] : 1;
+                if ($requestedQty < 1) {
+                    $requestedQty = 1;
+                }
+
+                $normalizedItems[] = [
+                    'part_code' => $partCode,
+                    'requested_qty' => $requestedQty
+                ];
+
+                if ($partCode !== '') {
+                    $requestedTotals[$partCode] = ($requestedTotals[$partCode] ?? 0) + $requestedQty;
+                }
+            }
+
+            $catalogByCode = [];
+            foreach (array_keys($requestedTotals) as $partCode) {
+                $catalogByCode[$partCode] = $this->productModel->findOne([
+                    'sparepart_id' => $partCode,
+                    'is_active' => 1
+                ]) ?: null;
+            }
+
+            $results = [];
+            foreach ($normalizedItems as $item) {
+                $partCode = $item['part_code'];
+                $requestedQty = (int) $item['requested_qty'];
+                $totalRequestedQty = $partCode !== ''
+                    ? (int) ($requestedTotals[$partCode] ?? $requestedQty)
+                    : $requestedQty;
+
+                if ($partCode === '') {
                     $results[] = [
                         'part_code' => $partCode,
                         'status' => 'invalid',
                         'available_qty' => 0,
                         'requested_qty' => $requestedQty,
+                        'total_requested_qty' => $totalRequestedQty,
                         'message' => 'Part code is required'
                     ];
                     continue;
                 }
 
-                // Look up the spare part in catalog
-                $product = $this->productModel->findOne(['sparepart_id' => $partCode, 'is_active' => 1]);
-
+                $product = $catalogByCode[$partCode] ?? null;
                 if (!$product) {
                     $results[] = [
                         'part_code' => $partCode,
@@ -280,33 +333,36 @@ class SparePartRequestController {
                         'status' => 'not_found',
                         'available_qty' => 0,
                         'requested_qty' => $requestedQty,
+                        'total_requested_qty' => $totalRequestedQty,
                         'message' => 'Spare part not found in catalog'
                     ];
-                } else {
-                    $availableQty = (int)$product['quantity'];
-                    $lowStockThreshold = (int)($product['low_stock_threshold'] ?? $product['reorder_level'] ?? 10);
-                    $status = 'available';
-                    $message = "In stock ({$availableQty} available)";
-
-                    if ($availableQty === 0) {
-                        $status = 'out_of_stock';
-                        $message = 'Out of stock';
-                    } elseif ($availableQty < $requestedQty) {
-                        $status = 'insufficient';
-                        $message = "Low stock ({$availableQty} available, {$requestedQty} requested)";
-                    }
-
-                    $results[] = [
-                        'part_code' => $partCode,
-                        'part_name' => $product['name'],
-                        'status' => $status,
-                        'available_qty' => $availableQty,
-                        'requested_qty' => $requestedQty,
-                        'low_stock_threshold' => $lowStockThreshold,
-                        'reorder_level' => $lowStockThreshold,
-                        'message' => $message
-                    ];
+                    continue;
                 }
+
+                $availableQty = (int) $product['quantity'];
+                $lowStockThreshold = (int) ($product['low_stock_threshold'] ?? $product['reorder_level'] ?? 10);
+                $status = 'available';
+                $message = "In stock ({$availableQty} available)";
+
+                if ($availableQty === 0) {
+                    $status = 'out_of_stock';
+                    $message = 'Out of stock';
+                } elseif ($availableQty < $totalRequestedQty) {
+                    $status = 'insufficient';
+                    $message = "Low stock ({$availableQty} available, {$totalRequestedQty} requested)";
+                }
+
+                $results[] = [
+                    'part_code' => $partCode,
+                    'part_name' => $product['name'],
+                    'status' => $status,
+                    'available_qty' => $availableQty,
+                    'requested_qty' => $requestedQty,
+                    'total_requested_qty' => $totalRequestedQty,
+                    'low_stock_threshold' => $lowStockThreshold,
+                    'reorder_level' => $lowStockThreshold,
+                    'message' => $message
+                ];
             }
 
             return Response::json([

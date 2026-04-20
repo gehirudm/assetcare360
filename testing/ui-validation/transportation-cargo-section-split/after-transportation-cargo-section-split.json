@@ -1,0 +1,33 @@
+{
+  "stage": "after",
+  "desktop": {
+    "hasCargoNavItem": true,
+    "hasCargoSectionComponent": true,
+    "hasCargoDetailsSectionComponent": true,
+    "hasCargoAnalyticsInTrips": false,
+    "hasCargoCatalogInTrips": false,
+    "hasCargoAnalyticsInCargoSection": false,
+    "hasCargoCatalogInCargoSection": true,
+    "hasCargoAddEntryPoint": true,
+    "hasCargoViewDetailsAction": true,
+    "hasCargoAnalyticsInDetailsView": true,
+    "hasAssignCargoSection": true,
+    "hasAssignCargoAddButton": true
+  },
+  "mobile": {
+    "hasCargoNavItem": true,
+    "hasCargoSectionComponent": true,
+    "hasCargoDetailsSectionComponent": true,
+    "hasCargoAnalyticsInTrips": false,
+    "hasCargoCatalogInTrips": false,
+    "hasCargoAnalyticsInCargoSection": false,
+    "hasCargoCatalogInCargoSection": true,
+    "hasCargoAddEntryPoint": true,
+    "hasCargoViewDetailsAction": true,
+    "hasCargoAnalyticsInDetailsView": true,
+    "hasAssignCargoSection": true,
+    "hasAssignCargoAddButton": true
+  },
+  "console": [],
+  "failedRequests": []
+}

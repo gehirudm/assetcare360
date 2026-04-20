@@ -57,10 +57,17 @@ const Auth = {
      */
     async login(employeeId, password) {
         try {
+            const csrfToken = await API.getCsrfToken(true);
+
             const response = await API.post('/auth/login', {
                 employee_id: employeeId,
                 password: password
-            }, { skipAuth: true });
+            }, {
+                skipAuth: true,
+                headers: {
+                    'X-CSRF-Token': csrfToken
+                }
+            });
             
             // Backend returns {status: 'success', message: '...', data: {...}}
             if (response.status === 'success' && response.data) {

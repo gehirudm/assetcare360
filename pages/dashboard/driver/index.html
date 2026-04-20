@@ -16,6 +16,7 @@
         active-section="dashboard"
         nav='[
             {"section":"dashboard","icon":"fas fa-tachometer-alt","label":"Dashboard"},
+            {"section":"analytics","icon":"fas fa-chart-line","label":"Analytics"},
             {"section":"trip-log","icon":"fas fa-route","label":"Trip Log"},
             {"section":"vehicle-check","icon":"fas fa-clipboard-check","label":"Vehicle Check"},
             {"section":"breakdown","icon":"fas fa-exclamation-triangle","label":"Breakdown Report"},
@@ -28,6 +29,10 @@
             <driver-dashboard-overview></driver-dashboard-overview>
         </section>
 
+        <section class="content-section" id="analytics">
+            <driver-analytics-hub></driver-analytics-hub>
+        </section>
+
         <section class="content-section" id="trip-log">
             <driver-trip-log></driver-trip-log>
         </section>
@@ -38,6 +43,10 @@
 
         <section class="content-section" id="breakdown">
             <driver-breakdown></driver-breakdown>
+        </section>
+
+        <section class="content-section" id="ticket-details">
+            <driver-ticket-detail-view default-return-section="breakdown"></driver-ticket-detail-view>
         </section>
 
         <section class="content-section" id="ticket-tracking">
@@ -84,6 +93,7 @@
     <script src="../../js/api.js"></script>
     <script src="../../js/auth.js"></script>
     <script src="../../js/utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="../../components/shared/ac-header.js"></script>
     <script src="../../components/shared/ac-sidebar.js"></script>
     <script src="../../components/shared/ac-layout.js"></script>
@@ -93,9 +103,11 @@
 
     <script src="./components/driver-utils.js"></script>
     <script src="./components/driver-dashboard-overview.js"></script>
+    <script src="./components/analytics-hub/script.js"></script>
     <script src="./components/driver-trip-log.js"></script>
     <script src="./components/driver-vehicle-check.js"></script>
     <script src="./components/driver-breakdown.js"></script>
+    <script src="./components/ticket-details/script.js"></script>
     <script src="./components/driver-ticket-tracking.js"></script>
     <script src="./components/driver-fuel-mileage.js"></script>
     <script src="./components/driver-transport-ticket.js"></script>

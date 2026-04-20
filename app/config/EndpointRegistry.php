@@ -12,6 +12,11 @@ class EndpointRegistry {
      */
     private static $registry = [
         // Authentication Endpoints
+        'GET:/api/auth/csrf' => [
+            'action' => 'Get CSRF Token',
+            'category' => 'Authentication',
+            'description' => 'Issue CSRF token for protected authentication requests'
+        ],
         'POST:/api/auth/login' => [
             'action' => 'User Login',
             'category' => 'Authentication',
@@ -26,6 +31,11 @@ class EndpointRegistry {
             'action' => 'Get Current User',
             'category' => 'Authentication',
             'description' => 'Retrieve current authenticated user information'
+        ],
+        'GET:/api/auth/login-activities' => [
+            'action' => 'Get Login Activities',
+            'category' => 'Authentication',
+            'description' => 'Retrieve current user recent login activity events'
         ],
         'POST:/api/auth/change-password' => [
             'action' => 'Change Password',

@@ -50,7 +50,8 @@ class SupervisorFaultTickets extends HTMLElement {
                     action,
                     ticketId: this.parseNumber(actionButton.dataset.ticketId),
                     reportId: this.parseNumber(actionButton.dataset.reportId),
-                    reportType: actionButton.dataset.reportType || ''
+                    reportType: actionButton.dataset.reportType || '',
+                    routeBreakdownId: this.parseNumber(actionButton.dataset.routeBreakdownId)
                 }
             }));
             return;
@@ -226,6 +227,9 @@ class SupervisorFaultTickets extends HTMLElement {
         const isMachine = report.type === 'machine_breakdown';
         const reportId = report.breakdown_id || `BD-${report.id}`;
         const severity = (report.severity || 'Medium').toLowerCase();
+        const dangerousCargoPresent = Number(report.dangerous_cargo_present || 0) === 1;
+        const dangerousCargoSummary = String(report.dangerous_cargo_summary || '').trim();
+        const dangerousCargoTripId = String(report.dangerous_cargo_trip_id || '').trim();
         const createdDate = new Date(report.created_at || report.breakdown_date);
         const formattedDate = Number.isNaN(createdDate.getTime())
             ? 'N/A'
@@ -238,6 +242,15 @@ class SupervisorFaultTickets extends HTMLElement {
         const sourceLabel = isMachine ? 'Machine' : (isRoute ? 'Route' : 'Vehicle');
         const sourceColor = isMachine ? '#7c3aed' : '#2563eb';
         const dropdownId = `breakdown-${report.type}-${report.id}`;
+        const dangerousBadge = dangerousCargoPresent
+            ? '<span class="dangerous-cargo-chip" style="font-size: 10px; background: #dc2626; color: white; padding: 1px 6px; border-radius: 4px; margin-left: 6px;"><i class="fas fa-radiation"></i> Dangerous Cargo</span>'
+            : '';
+        const dangerousSummaryLine = dangerousCargoPresent && dangerousCargoSummary
+            ? `<div class="item-meta" style="margin-top:4px;color:#991b1b;font-weight:500;"><i class="fas fa-boxes-stacked"></i> ${this.escapeHtml(dangerousCargoSummary)}</div>`
+            : '';
+        const dangerousTripLine = dangerousCargoPresent && dangerousCargoTripId
+            ? `<div class="item-meta" style="margin-top:4px;color:#991b1b;font-weight:500;"><i class="fas fa-route"></i> Cargo Trip: ${this.escapeHtml(dangerousCargoTripId)}</div>`
+            : '';
 
         return `
             <div class="inventory-item">
@@ -251,10 +264,13 @@ class SupervisorFaultTickets extends HTMLElement {
                         <span class="status-text status-${this.escapeHtml(severity)}">${this.escapeHtml(severity.toUpperCase())}</span> |
                         <i class="fas fa-calendar"></i> ${this.escapeHtml(formattedDate)}
                     </div>
+                    ${dangerousBadge}
+                    ${dangerousSummaryLine}
+                    ${dangerousTripLine}
                 </div>
                 <div class="item-actions">
                     <div class="action-buttons">
-                        <button class="btn btn-primary btn-small" type="button" data-action="view-breakdown" data-report-type="${this.escapeHtml(report.type || '')}" data-report-id="${Number(report.id)}"><i class="fas fa-eye"></i> VIEW</button>
+                        <button class="btn btn-primary btn-small" type="button" data-action="view-breakdown-ticket" data-report-type="${this.escapeHtml(report.type || '')}" data-report-id="${Number(report.id)}"><i class="fas fa-eye"></i> VIEW TICKET</button>
                         <div class="dropdown-container">
                             <button class="btn btn-small btn-secondary dropdown-trigger" type="button" data-dropdown-id="${this.escapeHtml(dropdownId)}">
                                 <i class="fas fa-ellipsis-v"></i>
@@ -274,8 +290,17 @@ class SupervisorFaultTickets extends HTMLElement {
     renderUnassignedTicket(ticket) {
         const isMachineBreakdown = ticket.is_machine_breakdown === true;
         const isRouteBreakdown = String(ticket.breakdown_type || '').toLowerCase() === 'route_breakdown';
+        const dangerousCargoPresent = ticket.is_dangerous_cargo === true || Number(ticket.is_dangerous_cargo || 0) === 1 || Number(ticket.dangerous_cargo_present || 0) === 1;
+        const dangerousCargoSummary = String(ticket.dangerous_cargo_summary || '').trim();
+        const dangerousCargoTripId = String(ticket.dangerous_cargo_trip_id || '').trim();
         const routeGarageWorkflowStatus = String(ticket.route_garage_workflow_status || '').toLowerCase();
-        const hasGarageAssignment = isRouteBreakdown && ['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(routeGarageWorkflowStatus);
+        const routeApprovedGarageId = Number(ticket.route_approved_garage_id || ticket.approved_garage_id || 0);
+        const hasGarageAssignment = isRouteBreakdown && (
+            ['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(routeGarageWorkflowStatus)
+            || routeApprovedGarageId > 0
+        );
+        const canApproveGarage = this.canApproveRouteGarage(ticket, hasGarageAssignment);
+        const routeBreakdownNumericId = Number(ticket.route_breakdown_numeric_id || 0);
         const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
         const reporterName = ticket.reported_by_name || ticket.reporter_full_name || 'Unknown';
         const createdDate = new Date(ticket.created_at);
@@ -299,8 +324,22 @@ class SupervisorFaultTickets extends HTMLElement {
             : `<button class="dropdown-item" type="button" data-action="assign-ticket" data-ticket-id="${Number(ticket.id)}">
                                     <i class="fas fa-user-plus"></i> Assign Technician
                                 </button>`;
+        const approveGarageActionHtml = canApproveGarage
+            ? `<button class="dropdown-item" type="button" data-action="approve-garage" data-ticket-id="${Number(ticket.id)}" data-route-breakdown-id="${routeBreakdownNumericId > 0 ? routeBreakdownNumericId : ''}">
+                                    <i class="fas fa-warehouse"></i> Approve Nearby Garage
+                                </button>`
+            : '';
         const garageHintHtml = hasGarageAssignment
             ? `<div class="item-meta" style="margin-top:4px;color:#0f766e;font-weight:500;"><i class="fas fa-info-circle"></i> Technician assignment is not required after garage approval.</div>`
+            : '';
+        const dangerousBadge = dangerousCargoPresent
+            ? '<span class="dangerous-cargo-chip" style="font-size: 10px; background: #dc2626; color: white; padding: 1px 6px; border-radius: 4px; margin-left: 6px;"><i class="fas fa-radiation"></i> Dangerous Cargo</span>'
+            : '';
+        const dangerousSummaryHtml = dangerousCargoPresent && dangerousCargoSummary
+            ? `<div class="item-meta" style="margin-top:4px;color:#991b1b;font-weight:500;"><i class="fas fa-boxes-stacked"></i> ${this.escapeHtml(dangerousCargoSummary)}</div>`
+            : '';
+        const dangerousTripHtml = dangerousCargoPresent && dangerousCargoTripId
+            ? `<div class="item-meta" style="margin-top:4px;color:#991b1b;font-weight:500;"><i class="fas fa-route"></i> Cargo Trip: ${this.escapeHtml(dangerousCargoTripId)}</div>`
             : '';
 
         return `
@@ -315,17 +354,21 @@ class SupervisorFaultTickets extends HTMLElement {
                         <span class="status-text status-${this.escapeHtml(priority)}">${this.escapeHtml(priority.toUpperCase())}</span> |
                         <i class="fas fa-calendar"></i> ${this.escapeHtml(formattedDate)}
                     </div>
+                    ${dangerousBadge}
+                    ${dangerousSummaryHtml}
+                    ${dangerousTripHtml}
                     ${garageMeta}
                     ${garageHintHtml}
                 </div>
                 <div class="item-actions">
                     <div class="action-buttons">
-                        <button class="btn btn-primary btn-small" type="button" data-action="view-ticket" data-ticket-id="${Number(ticket.id)}"><i class="fas fa-eye"></i> VIEW</button>
+                        <button class="btn btn-primary btn-small" type="button" data-action="view-ticket" data-ticket-id="${Number(ticket.id)}"><i class="fas fa-eye"></i> VIEW TICKET</button>
                         <div class="dropdown-container">
                             <button class="btn btn-small btn-secondary dropdown-trigger" type="button" data-dropdown-id="${this.escapeHtml(dropdownId)}">
                                 <i class="fas fa-ellipsis-v"></i>
                             </button>
                             <div class="dropdown-menu" id="dropdown-${this.escapeHtml(dropdownId)}">
+                                ${approveGarageActionHtml}
                                 ${assignActionHtml}
                                 ${!isMachineBreakdown ? `
                                 <button class="dropdown-item" type="button" data-action="edit-ticket" data-ticket-id="${Number(ticket.id)}">
@@ -346,8 +389,17 @@ class SupervisorFaultTickets extends HTMLElement {
     renderAssignedTicket(ticket) {
         const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
         const isRouteBreakdown = String(ticket.breakdown_type || '').toLowerCase() === 'route_breakdown';
+        const dangerousCargoPresent = ticket.is_dangerous_cargo === true || Number(ticket.is_dangerous_cargo || 0) === 1 || Number(ticket.dangerous_cargo_present || 0) === 1;
+        const dangerousCargoSummary = String(ticket.dangerous_cargo_summary || '').trim();
+        const dangerousCargoTripId = String(ticket.dangerous_cargo_trip_id || '').trim();
         const routeGarageWorkflowStatus = String(ticket.route_garage_workflow_status || '').toLowerCase();
-        const hasGarageAssignment = isRouteBreakdown && ['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(routeGarageWorkflowStatus);
+        const routeApprovedGarageId = Number(ticket.route_approved_garage_id || ticket.approved_garage_id || 0);
+        const hasGarageAssignment = isRouteBreakdown && (
+            ['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(routeGarageWorkflowStatus)
+            || routeApprovedGarageId > 0
+        );
+        const canApproveGarage = this.canApproveRouteGarage(ticket, hasGarageAssignment);
+        const routeBreakdownNumericId = Number(ticket.route_breakdown_numeric_id || 0);
         const assignedTo = ticket.assignments && ticket.assignments.length > 0
             ? ticket.assignments.map(a => a.technician_name).join(', ')
             : (hasGarageAssignment ? (ticket.route_approved_garage_name || 'Nearby Garage') : 'Unassigned');
@@ -363,6 +415,20 @@ class SupervisorFaultTickets extends HTMLElement {
             ? ticket.breakdown_report_id
             : (ticket.ticket_id || ('MBD-' + String(ticket.id).padStart(3, '0')));
         const dropdownId = `active-${ticket.id}`;
+        const approveGarageActionHtml = canApproveGarage
+            ? `<button class="dropdown-item" type="button" data-action="approve-garage" data-ticket-id="${Number(ticket.id)}" data-route-breakdown-id="${routeBreakdownNumericId > 0 ? routeBreakdownNumericId : ''}">
+                                    <i class="fas fa-warehouse"></i> Approve Nearby Garage
+                                </button>`
+            : '';
+        const dangerousBadge = dangerousCargoPresent
+            ? '<span class="dangerous-cargo-chip" style="font-size: 10px; background: #dc2626; color: white; padding: 1px 6px; border-radius: 4px; margin-left: 6px;"><i class="fas fa-radiation"></i> Dangerous Cargo</span>'
+            : '';
+        const dangerousSummaryHtml = dangerousCargoPresent && dangerousCargoSummary
+            ? `<div class="item-meta" style="margin-top:4px;color:#991b1b;font-weight:500;"><i class="fas fa-boxes-stacked"></i> ${this.escapeHtml(dangerousCargoSummary)}</div>`
+            : '';
+        const dangerousTripHtml = dangerousCargoPresent && dangerousCargoTripId
+            ? `<div class="item-meta" style="margin-top:4px;color:#991b1b;font-weight:500;"><i class="fas fa-route"></i> Cargo Trip: ${this.escapeHtml(dangerousCargoTripId)}</div>`
+            : '';
 
         return `
             <div class="inventory-item">
@@ -374,6 +440,9 @@ class SupervisorFaultTickets extends HTMLElement {
                     </div>
                     ${hasGarageAssignment ? `<div class="item-meta"><i class="fas fa-info-circle" style="color:#0f766e;"></i> <span style="color:#0f766e;font-weight:600;">Garage workflow is active; technician assignment is optional.</span></div>` : ''}
                     ${expectedCompletionDate ? `<div class="item-meta"><i class="fas fa-calendar-check"></i> Expected: ${this.escapeHtml(expectedCompletionDate)}</div>` : ''}
+                    ${dangerousBadge}
+                    ${dangerousSummaryHtml}
+                    ${dangerousTripHtml}
                     <div class="item-meta">
                         <span class="status-text status-${this.escapeHtml(priority)}">${this.escapeHtml((ticket.priority || 'MEDIUM').toUpperCase())}</span> |
                         <span class="status-text status-${this.escapeHtml(status)}">${this.escapeHtml((ticket.status || 'OPEN').toUpperCase().replace('-', ' '))}</span>
@@ -381,12 +450,13 @@ class SupervisorFaultTickets extends HTMLElement {
                 </div>
                 <div class="item-actions">
                     <div class="action-buttons">
-                        <button class="btn btn-primary btn-small" type="button" data-action="view-ticket" data-ticket-id="${Number(ticket.id)}"><i class="fas fa-eye"></i> VIEW</button>
+                        <button class="btn btn-primary btn-small" type="button" data-action="view-ticket" data-ticket-id="${Number(ticket.id)}"><i class="fas fa-eye"></i> VIEW TICKET</button>
                         <div class="dropdown-container">
                             <button class="btn btn-small btn-secondary dropdown-trigger" type="button" data-dropdown-id="${this.escapeHtml(dropdownId)}">
                                 <i class="fas fa-ellipsis-v"></i>
                             </button>
                             <div class="dropdown-menu" id="dropdown-${this.escapeHtml(dropdownId)}">
+                                ${approveGarageActionHtml}
                                 ${hasGarageAssignment ? '' : `<button class="dropdown-item" type="button" data-action="edit-assignment" data-ticket-id="${Number(ticket.id)}">
                                     <i class="fas fa-edit"></i> Edit Assignment
                                 </button>
@@ -412,6 +482,9 @@ class SupervisorFaultTickets extends HTMLElement {
 
     renderResolvedTicket(ticket) {
         const assetName = ticket.machine_model_number || ticket.machine_name || `Machine #${ticket.machine_id}`;
+        const dangerousCargoPresent = ticket.is_dangerous_cargo === true || Number(ticket.is_dangerous_cargo || 0) === 1 || Number(ticket.dangerous_cargo_present || 0) === 1;
+        const dangerousCargoSummary = String(ticket.dangerous_cargo_summary || '').trim();
+        const dangerousCargoTripId = String(ticket.dangerous_cargo_trip_id || '').trim();
         const assignedTo = ticket.assignments && ticket.assignments.length > 0
             ? ticket.assignments.map(a => a.technician_name).join(', ')
             : 'Unassigned';
@@ -422,6 +495,15 @@ class SupervisorFaultTickets extends HTMLElement {
         const displayTicketId = (ticket.breakdown_type === 'machine_breakdown' && ticket.breakdown_report_id)
             ? ticket.breakdown_report_id
             : (ticket.ticket_id || ('MBD-' + String(ticket.id).padStart(3, '0')));
+        const dangerousBadge = dangerousCargoPresent
+            ? '<span class="dangerous-cargo-chip" style="font-size: 10px; background: #dc2626; color: white; padding: 1px 6px; border-radius: 4px; margin-left: 6px;"><i class="fas fa-radiation"></i> Dangerous Cargo</span>'
+            : '';
+        const dangerousSummaryHtml = dangerousCargoPresent && dangerousCargoSummary
+            ? `<div class="item-meta" style="margin-top:4px;color:#991b1b;font-weight:500;"><i class="fas fa-boxes-stacked"></i> ${this.escapeHtml(dangerousCargoSummary)}</div>`
+            : '';
+        const dangerousTripHtml = dangerousCargoPresent && dangerousCargoTripId
+            ? `<div class="item-meta" style="margin-top:4px;color:#991b1b;font-weight:500;"><i class="fas fa-route"></i> Cargo Trip: ${this.escapeHtml(dangerousCargoTripId)}</div>`
+            : '';
 
         return `
             <div class="inventory-item" style="border-left: 4px solid #10b981;">
@@ -432,6 +514,9 @@ class SupervisorFaultTickets extends HTMLElement {
                         <i class="fas fa-user-cog"></i> ${this.escapeHtml(assignedTo)}
                     </div>
                     ${resolvedDate ? `<div class="item-meta"><i class="fas fa-calendar-check"></i> Resolved: ${this.escapeHtml(resolvedDate)}</div>` : ''}
+                    ${dangerousBadge}
+                    ${dangerousSummaryHtml}
+                    ${dangerousTripHtml}
                     <div class="item-meta">
                         <span class="status-text status-${this.escapeHtml(priority)}">${this.escapeHtml((ticket.priority || 'MEDIUM').toUpperCase())}</span> |
                         <span class="status-badge" style="background: #10b981; color: white; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;"><i class="fas fa-check-circle"></i> FINISHED</span>
@@ -439,7 +524,7 @@ class SupervisorFaultTickets extends HTMLElement {
                 </div>
                 <div class="item-actions">
                     <div class="action-buttons">
-                        <button class="btn btn-primary btn-small" type="button" data-action="view-ticket" data-ticket-id="${Number(ticket.id)}"><i class="fas fa-eye"></i> VIEW</button>
+                        <button class="btn btn-primary btn-small" type="button" data-action="view-ticket" data-ticket-id="${Number(ticket.id)}"><i class="fas fa-eye"></i> VIEW TICKET</button>
                     </div>
                 </div>
             </div>
@@ -457,6 +542,23 @@ class SupervisorFaultTickets extends HTMLElement {
 
     refresh() {
         // Parent script controls data loading. This keeps API parity with other section components.
+    }
+
+    canApproveRouteGarage(ticket, hasGarageAssignment) {
+        if (!ticket || String(ticket.breakdown_type || '').toLowerCase() !== 'route_breakdown') {
+            return false;
+        }
+
+        if (hasGarageAssignment) {
+            return false;
+        }
+
+        const normalizedStatus = String(ticket.status || '').toLowerCase();
+        if (normalizedStatus === 'resolved' || normalizedStatus === 'closed' || normalizedStatus === 'insurance claimed') {
+            return false;
+        }
+
+        return true;
     }
 
     render() {

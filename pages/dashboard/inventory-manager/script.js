@@ -37,6 +37,18 @@ async function initializeApp() {
             console.warn('Initial notifications refresh failed:', err);
         });
 
+        // Wire insurance management section and initialize renewal status view
+        bindInsuranceManagement();
+        await refreshInsuranceManagement().catch(err => {
+            console.warn('Initial insurance management refresh failed:', err);
+        });
+
+        // Wire analytics section and initialize report/chart shell
+        bindInventoryAnalyticsHub();
+        await refreshInventoryAnalyticsHub().catch(err => {
+            console.warn('Initial analytics refresh failed:', err);
+        });
+
         // Wire catalog section events
         bindCatalog();
 
@@ -276,6 +288,64 @@ async function refreshNotifications() {
     await notificationsModel.refresh();
 }
 
+function bindInsuranceManagement() {
+    const insuranceModel = document.querySelector('inventory-insurance-management');
+    if (!insuranceModel || insuranceModel._inventoryInsuranceManagementBound) {
+        return;
+    }
+
+    insuranceModel._inventoryInsuranceManagementBound = true;
+
+    insuranceModel.addEventListener('inventory-insurance-management:renewal-saved', async () => {
+        try {
+            await Promise.all([
+                refreshMachines(),
+                refreshVehicles(),
+                refreshDashboardOverview(),
+            ]);
+        } catch (error) {
+            console.error('Failed to sync dashboard after insurance renewal update:', error);
+        }
+    });
+}
+
+async function refreshInsuranceManagement() {
+    const insuranceModel = document.querySelector('inventory-insurance-management');
+    if (!insuranceModel || typeof insuranceModel.refresh !== 'function') {
+        return;
+    }
+
+    await insuranceModel.refresh();
+}
+
+function bindInventoryAnalyticsHub() {
+    const analyticsModel = document.querySelector('inventory-analytics-hub');
+    if (!analyticsModel || analyticsModel._inventoryAnalyticsHubBound) {
+        return;
+    }
+
+    analyticsModel._inventoryAnalyticsHubBound = true;
+
+    analyticsModel.addEventListener('inventory-analytics-hub:toast', event => {
+        const message = String(event.detail?.message || '').trim();
+        if (!message) {
+            return;
+        }
+
+        const type = String(event.detail?.type || 'info').trim() || 'info';
+        Utils.showToast(message, type);
+    });
+}
+
+async function refreshInventoryAnalyticsHub() {
+    const analyticsModel = document.querySelector('inventory-analytics-hub');
+    if (!analyticsModel || typeof analyticsModel.refresh !== 'function') {
+        return;
+    }
+
+    await analyticsModel.refresh();
+}
+
 function bindCatalog() {
     const catalogModel = document.querySelector('inventory-catalog');
     if (!catalogModel || catalogModel._inventoryCatalogBound) {
@@ -421,11 +491,17 @@ async function loadSectionData(sectionId) {
             case 'dashboard':
                 await refreshDashboardOverview();
                 break;
+            case 'analytics':
+                await refreshInventoryAnalyticsHub();
+                break;
             case 'machines':
                 refreshMachines();
                 break;
             case 'vehicles':
                 refreshVehicles();
+                break;
+            case 'insurance-management':
+                await refreshInsuranceManagement();
                 break;
             case 'catalog':
                 await refreshCatalog();

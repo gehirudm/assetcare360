@@ -31,30 +31,38 @@ class DriverBreakdown extends HTMLElement {
                 <p class="page-subtitle">Report vehicle issues and track repair status</p>
             </div>
 
-            <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+            <div class="driver-breakdown-actions">
                 <button class="btn btn-primary" type="button" data-action="open-breakdown-modal">Report Breakdown</button>
                 <button class="btn btn-danger" type="button" data-action="open-route-breakdown-modal">Report Breakdown in Route</button>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-exclamation-circle"></i> My Submitted Reports
-                    <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="driver-breakdown-content">
+                <div class="driver-breakdown-heading">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>My Submitted Reports</span>
+                </div>
+
+                <div class="driver-breakdown-filters">
+                    <div class="driver-breakdown-filter-group">
+                        <span class="driver-breakdown-filter-label">Type:</span>
                         <div class="filter-controls">
-                            <span style="font-weight: 600; margin-right: 10px;">Type:</span>
                             <button class="filter-btn active" type="button" data-action="set-type-filter" data-filter="all">All</button>
                             <button class="filter-btn" type="button" data-action="set-type-filter" data-filter="breakdown">Breakdown</button>
                             <button class="filter-btn" type="button" data-action="set-type-filter" data-filter="in-route">Breakdown in Route</button>
                         </div>
+                    </div>
+
+                    <div class="driver-breakdown-filter-group">
+                        <span class="driver-breakdown-filter-label">Status:</span>
                         <div class="filter-controls">
-                            <span style="font-weight: 600; margin-right: 10px;">Status:</span>
                             <button class="filter-btn active" type="button" data-action="set-status-filter" data-filter="all">All</button>
                             <button class="filter-btn" type="button" data-action="set-status-filter" data-filter="in-progress">In Progress</button>
                             <button class="filter-btn" type="button" data-action="set-status-filter" data-filter="resolved">Resolved</button>
                         </div>
                     </div>
                 </div>
-                <div id="driverBreakdownList"></div>
+
+                <div id="driverBreakdownList" class="driver-breakdown-list"></div>
             </div>
         `;
     }
@@ -111,6 +119,19 @@ class DriverBreakdown extends HTMLElement {
             const item = this.items.find((entry) => String(entry.id) === String(id));
 
             if (action === 'view-breakdown' && item) {
+                const linkedTicketId = Number.parseInt(item.fault_ticket_id, 10);
+                if (Number.isFinite(linkedTicketId) && linkedTicketId > 0) {
+                    this.dispatchEvent(new CustomEvent('driver:open-ticket-details', {
+                        bubbles: true,
+                        detail: {
+                            ticketId: linkedTicketId,
+                            returnSection: 'breakdown',
+                        }
+                    }));
+                    return;
+                }
+
+                DriverUtils.showToast('Ticket is not linked yet. Showing report details instead.', 'warning');
                 DriverUtils.openModal('breakdownDetailsModal', { item });
                 return;
             }
@@ -168,6 +189,9 @@ class DriverBreakdown extends HTMLElement {
         const id = item.id;
         const breakdownId = type === 'in-route' ? item.route_breakdown_id : item.breakdown_id;
         const dateRaw = type === 'in-route' ? item.breakdown_datetime : item.breakdown_date;
+        const approvedGarageName = type === 'in-route'
+            ? (item?.garage_workflow?.approved_garage?.name || item.approved_garage_name || null)
+            : null;
 
         return {
             ...item,
@@ -175,6 +199,7 @@ class DriverBreakdown extends HTMLElement {
             type,
             breakdownId,
             dateRaw,
+            approvedGarageName,
             displayDate: DriverUtils.formatDateTime(dateRaw),
             status: item.ticket_status || item.status || 'Pending',
             severity: item.severity || 'medium',
@@ -205,6 +230,9 @@ class DriverBreakdown extends HTMLElement {
     renderItem(item) {
         const statusColor = DriverUtils.getStatusColor(item.status);
         const severityColor = DriverUtils.getStatusColor(item.severity);
+        const approvedGarageLine = item.type === 'in-route' && item.approvedGarageName
+            ? `<div class="item-meta" style="margin-top:6px;"><i class="fas fa-warehouse" style="color:#0f766e;"></i> <span style="color:#0f766e;font-weight:600;">Nearby Garage: ${DriverUtils.escapeHtml(item.approvedGarageName)}</span></div>`
+            : '';
         const overflowMenu = `
             <div class="dropdown-container">
                 <button class="btn btn-small btn-secondary dropdown-trigger" type="button" data-action="toggle-actions-menu" aria-label="More actions">
@@ -233,6 +261,7 @@ class DriverBreakdown extends HTMLElement {
                         <br>
                         ${item.summary}
                     </div>
+                    ${approvedGarageLine}
                 </div>
                 <div class="item-actions">
                     <div class="action-buttons">

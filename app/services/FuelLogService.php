@@ -104,6 +104,8 @@ class FuelLogService {
             }
         }
 
+        $data['log_datetime'] = $this->normalizeLogDateTime($data['log_datetime']);
+
         $vehicle = $this->vehicleModel->findByNumberPlate($data['vehicle_registration']);
         if (!$vehicle) {
             throw new Exception("Vehicle not found for registration: {$data['vehicle_registration']}");
@@ -176,5 +178,23 @@ class FuelLogService {
         }
 
         return $vehicle;
+    }
+
+    private function normalizeLogDateTime($value): string {
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            throw new Exception('log_datetime is required');
+        }
+
+        $timestamp = strtotime($raw);
+        if ($timestamp === false) {
+            throw new Exception('log_datetime must be a valid date/time value');
+        }
+
+        if ($timestamp > time()) {
+            throw new Exception('log_datetime cannot be in the future');
+        }
+
+        return date('Y-m-d H:i:s', $timestamp);
     }
 }

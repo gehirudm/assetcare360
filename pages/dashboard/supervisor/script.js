@@ -3,9 +3,12 @@
 DashboardInit.init('Supervisor', {
     onSuccess: () => {
         bindSupervisorDashboardOverview();
+        bindSupervisorAnalyticsHub();
         bindSupervisorDailyCheckReports();
         bindSupervisorFaultTickets();
         bindSupervisorTicketModals();
+        bindSupervisorTicketDetailView();
+        bindSupervisorBreakdownDetailView();
         bindSupervisorAssetStatus();
         bindSupervisorRepairManagement();
         bindSupervisorBudgetApproval();
@@ -26,19 +29,23 @@ DashboardInit.init('Supervisor', {
 
 const SUPERVISOR_SECTIONS = new Set([
     'dashboard',
+    'analytics',
     'daily-check-reports',
     'fault-ticket-tracking',
-    'fault-tickets',
+    'ticket-details',
+    'breakdown-details',
     'repair-management',
     'budget-approval',
     'asset-status',
-    'technicians',
-    'technician-assignments'
+    'technicians'
 ]);
 
+let supervisorTicketDetailsReturnSection = 'fault-ticket-tracking';
+let supervisorBreakdownDetailsReturnSection = 'fault-ticket-tracking';
+
 function normalizeSupervisorSection(sectionId) {
-    if (sectionId === 'technician-assignments') {
-        return 'fault-tickets';
+    if (sectionId === 'technician-assignments' || sectionId === 'fault-tickets') {
+        return 'fault-ticket-tracking';
     }
 
     return SUPERVISOR_SECTIONS.has(sectionId) ? sectionId : 'dashboard';
@@ -61,9 +68,42 @@ function syncSupervisorSectionInUrl(sectionId) {
     window.history.replaceState({}, '', `${url.pathname}${url.search}`);
 }
 
+function navigateSupervisorSection(sectionId) {
+    const section = normalizeSupervisorSection(sectionId);
+    const layout = document.querySelector('ac-layout');
+    if (!layout || typeof layout.navigateTo !== 'function') {
+        return;
+    }
+
+    layout.navigateTo(section);
+}
+
+function scrollSupervisorViewportToTop() {
+    try {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    } catch (_error) {
+        window.scrollTo(0, 0);
+    }
+}
+
+function cleanupSupervisorDetailViewsOnSectionChange(sectionId) {
+    const normalizedSection = normalizeSupervisorSection(sectionId);
+
+    if (normalizedSection !== 'ticket-details') {
+        const ticketDetailView = document.querySelector('#ticket-details supervisor-ticket-detail-view');
+        ticketDetailView?.closeView?.();
+    }
+
+    if (normalizedSection !== 'breakdown-details') {
+        const breakdownDetailView = document.querySelector('#breakdown-details ac-breakdown-detail-view');
+        breakdownDetailView?.closeView?.();
+    }
+}
+
 document.querySelector('ac-layout')
     ?.addEventListener('section-change', (event) => {
         const section = normalizeSupervisorSection(event.detail?.section);
+        cleanupSupervisorDetailViewsOnSectionChange(section);
         syncSupervisorSectionInUrl(section);
         loadSectionData(section);
     });
@@ -88,14 +128,17 @@ function loadSectionData(sectionId) {
         case 'dashboard':
             // Dashboard already shows static summary
             break;
+        case 'analytics':
+            refreshSupervisorAnalyticsHub();
+            break;
         case 'daily-check-reports':
             refreshSupervisorDailyCheckReports();
             break;
         case 'fault-ticket-tracking':
             refreshSupervisorFaultTicketTracking();
             break;
-        case 'fault-tickets':
-            refreshSupervisorFaultTickets();
+        case 'ticket-details':
+        case 'breakdown-details':
             break;
         case 'repair-management':
             refreshSupervisorRepairManagement();
@@ -107,7 +150,6 @@ function loadSectionData(sectionId) {
             refreshSupervisorAssetStatus();
             break;
         case 'technicians':
-        case 'technician-assignments':
             loadTechnicians();
             break;
     }
@@ -125,6 +167,26 @@ function bindSupervisorDashboardOverview() {
         if (!section || !layout || typeof layout.navigateTo !== 'function') return;
         layout.navigateTo(section);
     });
+}
+
+function bindSupervisorAnalyticsHub() {
+    const component = document.querySelector('supervisor-analytics-hub');
+    if (!component || component.dataset.bound === 'true') return;
+
+    component.dataset.bound = 'true';
+
+    component.addEventListener('supervisor-analytics-hub:toast', (event) => {
+        const message = event.detail?.message;
+        const type = event.detail?.type || 'info';
+        if (!message) return;
+        showToast(message, type);
+    });
+}
+
+function refreshSupervisorAnalyticsHub() {
+    const component = document.querySelector('supervisor-analytics-hub');
+    if (!component || typeof component.refresh !== 'function') return;
+    component.refresh();
 }
 
 function bindSupervisorDailyCheckReports() {
@@ -154,9 +216,13 @@ function refreshSupervisorDailyCheckReports() {
 }
 
 function refreshSupervisorFaultTicketTracking() {
-    const component = document.querySelector('supervisor-fault-ticket-tracking');
-    if (!component || typeof component.refresh !== 'function') return;
-    component.refresh();
+    const trackingComponent = document.querySelector('supervisor-fault-ticket-tracking');
+    if (trackingComponent && typeof trackingComponent.refresh === 'function') {
+        trackingComponent.refresh();
+        return;
+    }
+
+    refreshSupervisorFaultTickets();
 }
 
 function bindSupervisorFaultTickets() {
@@ -189,12 +255,9 @@ function bindSupervisorFaultTickets() {
 
         switch (action) {
             case 'view-breakdown':
+            case 'view-breakdown-ticket':
                 if (!detail.reportType || !detail.reportId) return;
-                if (detail.reportType === 'route_breakdown') {
-                    viewRouteBreakdownTicket(detail.reportType, detail.reportId);
-                } else {
-                    viewBreakdownDetails(detail.reportType, detail.reportId);
-                }
+                viewOrCreateBreakdownTicket(detail.reportType, detail.reportId);
                 break;
             case 'assign-breakdown':
                 if (!detail.reportType || !detail.reportId) return;
@@ -207,6 +270,13 @@ function bindSupervisorFaultTickets() {
             case 'view-ticket':
                 if (!detail.ticketId) return;
                 viewTicketDetails(detail.ticketId);
+                break;
+            case 'approve-garage':
+                if (!detail.ticketId && !detail.routeBreakdownId) return;
+                void openGarageApprovalModalFromDetail({
+                    ticketId: detail.ticketId,
+                    routeBreakdownId: detail.routeBreakdownId,
+                });
                 break;
             case 'assign-ticket':
                 if (!detail.ticketId) return;
@@ -272,6 +342,11 @@ function bindSupervisorTicketModals() {
 
         assignTicketModal.addEventListener('supervisor-assign-ticket-modal:assigned', () => {
             loadFaultTickets();
+
+            const ticketDetailView = document.querySelector('#ticket-details supervisor-ticket-detail-view');
+            if (ticketDetailView && typeof ticketDetailView.refresh === 'function') {
+                ticketDetailView.refresh();
+            }
         });
     }
 
@@ -285,14 +360,107 @@ function bindSupervisorTicketModals() {
             if (!message) return;
             showToast(message, type);
         });
+    }
 
-        viewTicketModal.addEventListener('supervisor-view-ticket-modal:create-ticket-from-breakdown', (event) => {
-            const reportType = event.detail?.reportType;
-            const reportId = Number(event.detail?.reportId);
-            if (!reportType || !Number.isFinite(reportId)) return;
-            createTicketFromBreakdown(reportType, reportId);
+    const garageApprovalModal = document.querySelector('supervisor-garage-approval-modal');
+    if (garageApprovalModal && garageApprovalModal.dataset.bound !== 'true') {
+        garageApprovalModal.dataset.bound = 'true';
+
+        garageApprovalModal.addEventListener('supervisor-ui:toast', (event) => {
+            const message = event.detail?.message;
+            const type = event.detail?.type || 'info';
+            if (!message) return;
+            showToast(message, type);
+        });
+
+        garageApprovalModal.addEventListener('supervisor-garage-approval-modal:approved', async () => {
+            await loadFaultTickets();
+
+            const ticketDetailView = document.querySelector('#ticket-details supervisor-ticket-detail-view');
+            if (ticketDetailView && typeof ticketDetailView.refresh === 'function') {
+                ticketDetailView.refresh();
+            }
         });
     }
+}
+
+function bindSupervisorTicketDetailView() {
+    const component = document.querySelector('#ticket-details supervisor-ticket-detail-view');
+    if (!component || component.dataset.bound === 'true') {
+        return;
+    }
+
+    component.dataset.bound = 'true';
+
+    component.addEventListener('supervisor-ticket-detail-view:toast', (event) => {
+        const message = event.detail?.message;
+        const type = event.detail?.type || 'info';
+        if (!message) {
+            return;
+        }
+
+        showToast(message, type);
+    });
+
+    component.addEventListener('supervisor-ticket-detail-view:back', (event) => {
+        const requestedSection = normalizeSupervisorSection(
+            event.detail?.returnSection
+            || supervisorTicketDetailsReturnSection
+            || 'fault-ticket-tracking'
+        );
+
+        component.closeView?.();
+        navigateSupervisorSection(requestedSection);
+    });
+
+    component.addEventListener('supervisor-ticket-detail-view:request-assignment', (event) => {
+        const ticketId = Number(event.detail?.ticketId);
+        if (!Number.isFinite(ticketId) || ticketId <= 0) {
+            showToast('Invalid ticket ID', 'error');
+            return;
+        }
+
+        if (event.detail?.isEdit === true) {
+            editTicketAssignment(ticketId);
+            return;
+        }
+
+        assignTicket(ticketId);
+    });
+
+    component.addEventListener('supervisor-ticket-detail-view:request-garage-approval', (event) => {
+        void openGarageApprovalModalFromDetail(event.detail || {});
+    });
+}
+
+function bindSupervisorBreakdownDetailView() {
+    const component = document.querySelector('#breakdown-details ac-breakdown-detail-view');
+    if (!component || component.dataset.bound === 'true') {
+        return;
+    }
+
+    component.dataset.bound = 'true';
+
+    component.addEventListener('ac-breakdown-detail-view:toast', (event) => {
+        const message = event.detail?.message;
+        const type = event.detail?.type || 'info';
+        if (!message) {
+            return;
+        }
+
+        showToast(message, type);
+    });
+
+    component.addEventListener('ac-breakdown-detail-view:back', (event) => {
+        const requestedSection = String(
+            event.detail?.returnSection
+            || supervisorBreakdownDetailsReturnSection
+            || 'fault-ticket-tracking'
+        ).trim();
+
+        component.closeView?.();
+        navigateSupervisorSection(requestedSection);
+    });
 }
 
 function refreshSupervisorFaultTickets() {
@@ -468,8 +636,12 @@ let currentTicketSourceFilter = 'all';
 let allTickets = []; // Store all tickets for filtering
 let allBreakdownItems = []; // Store breakdown reports for unassigned list
 
-function isRouteGarageWorkflowAssigned(status) {
-    const normalized = String(status || '').toLowerCase();
+function isRouteGarageWorkflowAssigned(status, approvedGarageId = null) {
+    const normalized = String(status || '').toLowerCase().replace(/[-\s]+/g, '_');
+    if (Number(approvedGarageId || 0) > 0) {
+        return true;
+    }
+
     return ['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(normalized);
 }
 
@@ -478,7 +650,47 @@ function isTicketCoveredByGarageWorkflow(ticket) {
         return false;
     }
 
-    return isRouteGarageWorkflowAssigned(ticket.route_garage_workflow_status);
+    return isRouteGarageWorkflowAssigned(ticket.route_garage_workflow_status, ticket.route_approved_garage_id);
+}
+
+function normalizeTicketWorkflowStatus(value) {
+    return String(value || '').toLowerCase().trim().replace(/[-\s]+/g, '_');
+}
+
+function isTicketResolvedState(ticket) {
+    const normalizedStatus = normalizeTicketWorkflowStatus(ticket?.status);
+    if (['resolved', 'closed', 'completed', 'insurance_claimed'].includes(normalizedStatus)) {
+        return true;
+    }
+
+    if (String(ticket?.breakdown_type || '').toLowerCase() === 'route_breakdown') {
+        const routeWorkflowStatus = normalizeTicketWorkflowStatus(ticket?.route_garage_workflow_status);
+        if (routeWorkflowStatus === 'completed') {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function isTicketInProgressState(ticket) {
+    if (isTicketResolvedState(ticket)) {
+        return false;
+    }
+
+    const normalizedStatus = normalizeTicketWorkflowStatus(ticket?.status);
+    if (['in_progress', 'waiting_for_spare_parts', 'waiting_for_budget_approval', 'parts_approved'].includes(normalizedStatus)) {
+        return true;
+    }
+
+    if (String(ticket?.breakdown_type || '').toLowerCase() === 'route_breakdown') {
+        const routeWorkflowStatus = normalizeTicketWorkflowStatus(ticket?.route_garage_workflow_status);
+        if (['garage_approved', 'garage_entry_logged', 'repair_in_progress'].includes(routeWorkflowStatus)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 async function loadFaultTickets() {
@@ -593,8 +805,21 @@ async function loadFaultTickets() {
                 if (reportKey) {
                     routeWorkflowByReportId.set(reportKey, {
                         route_garage_workflow_status: breakdown?.garage_workflow?.status || breakdown.garage_workflow_status || null,
+                        route_approved_garage_id: Number(
+                            breakdown?.garage_workflow?.approved_garage?.id
+                            || breakdown.approved_garage_id
+                            || 0
+                        ) || null,
                         route_approved_garage_name: breakdown?.garage_workflow?.approved_garage?.name || breakdown.approved_garage_name || null,
                         route_breakdown_numeric_id: breakdown.id,
+                        breakdown_location: breakdown.breakdown_location || '',
+                        breakdown_latitude: breakdown.breakdown_latitude ?? null,
+                        breakdown_longitude: breakdown.breakdown_longitude ?? null,
+                        driver_name: breakdown.driver_name || null,
+                        number_plate: breakdown.number_plate || null,
+                        dangerous_cargo_present: Number(breakdown.dangerous_cargo_present || 0) === 1 ? 1 : 0,
+                        dangerous_cargo_summary: breakdown.dangerous_cargo_summary || null,
+                        dangerous_cargo_trip_id: breakdown.dangerous_cargo_trip_id || null,
                     });
                 }
 
@@ -619,6 +844,9 @@ async function loadFaultTickets() {
                     fault_ticket_id: breakdown.fault_ticket_id ? Number(breakdown.fault_ticket_id) : null,
                     garage_workflow_status: breakdown?.garage_workflow?.status || breakdown.garage_workflow_status || null,
                     approved_garage_name: breakdown?.garage_workflow?.approved_garage?.name || breakdown.approved_garage_name || null,
+                    dangerous_cargo_present: Number(breakdown.dangerous_cargo_present || 0) === 1 ? 1 : 0,
+                    dangerous_cargo_summary: breakdown.dangerous_cargo_summary || null,
+                    dangerous_cargo_trip_id: breakdown.dangerous_cargo_trip_id || null,
                 });
             });
             console.log('Loaded route breakdowns:', routeResponse.data.breakdowns.length);
@@ -638,8 +866,18 @@ async function loadFaultTickets() {
                 return {
                     ...ticket,
                     route_garage_workflow_status: workflowMeta.route_garage_workflow_status,
+                    route_approved_garage_id: workflowMeta.route_approved_garage_id,
                     route_approved_garage_name: workflowMeta.route_approved_garage_name,
                     route_breakdown_numeric_id: workflowMeta.route_breakdown_numeric_id,
+                    breakdown_location: ticket.breakdown_location || workflowMeta.breakdown_location || '',
+                    breakdown_latitude: ticket.breakdown_latitude ?? workflowMeta.breakdown_latitude ?? null,
+                    breakdown_longitude: ticket.breakdown_longitude ?? workflowMeta.breakdown_longitude ?? null,
+                    reported_by_name: ticket.reported_by_name || workflowMeta.driver_name || ticket.reporter_full_name || null,
+                    number_plate: ticket.number_plate || workflowMeta.number_plate || null,
+                    dangerous_cargo_present: workflowMeta.dangerous_cargo_present,
+                    dangerous_cargo_summary: workflowMeta.dangerous_cargo_summary,
+                    dangerous_cargo_trip_id: workflowMeta.dangerous_cargo_trip_id,
+                    is_dangerous_cargo: workflowMeta.dangerous_cargo_present === 1,
                 };
             });
         }
@@ -724,20 +962,21 @@ function displayFilteredTickets() {
 
     // Filter tickets based on current filters
     let filteredTickets = allTickets.filter(ticket => {
+        const hasAssignments = ticket.assignments && ticket.assignments.length > 0;
+        const coveredByGarage = isTicketCoveredByGarageWorkflow(ticket);
+        const isResolvedState = isTicketResolvedState(ticket);
+
         // Status filter
         let matchesStatus = true;
         if (currentTicketStatusFilter !== 'all') {
-            const ticketStatus = (ticket.status || '').toLowerCase().replace(' ', '-');
-            const hasAssignments = ticket.assignments && ticket.assignments.length > 0;
-
             if (currentTicketStatusFilter === 'unassigned') {
-                matchesStatus = !hasAssignments;
+                matchesStatus = !hasAssignments && !coveredByGarage && !isResolvedState;
             } else if (currentTicketStatusFilter === 'assigned') {
-                matchesStatus = hasAssignments && ticketStatus !== 'completed' && ticketStatus !== 'resolved';
+                matchesStatus = (hasAssignments || coveredByGarage) && !isResolvedState;
             } else if (currentTicketStatusFilter === 'in-progress') {
-                matchesStatus = ticketStatus === 'in-progress' || ticketStatus === 'in progress';
+                matchesStatus = isTicketInProgressState(ticket);
             } else if (currentTicketStatusFilter === 'completed') {
-                matchesStatus = ticketStatus === 'completed' || ticketStatus === 'resolved' || ticketStatus === 'closed';
+                matchesStatus = isResolvedState;
             }
         }
 
@@ -754,16 +993,17 @@ function displayFilteredTickets() {
     // Separate into unassigned, assigned (active), and resolved
     const unassignedTickets = filteredTickets.filter((ticket) => {
         const hasAssignments = ticket.assignments && ticket.assignments.length > 0;
-        return !hasAssignments && !isTicketCoveredByGarageWorkflow(ticket);
+        const coveredByGarage = isTicketCoveredByGarageWorkflow(ticket);
+        return !hasAssignments && !coveredByGarage && !isTicketResolvedState(ticket);
     });
 
     const assignedTickets = filteredTickets.filter((ticket) => {
         const hasAssignments = ticket.assignments && ticket.assignments.length > 0;
         const coveredByGarage = isTicketCoveredByGarageWorkflow(ticket);
-        return (hasAssignments || coveredByGarage) && ticket.status !== 'Resolved' && ticket.status !== 'Closed';
+        return (hasAssignments || coveredByGarage) && !isTicketResolvedState(ticket);
     });
 
-    const resolvedTickets = filteredTickets.filter(t => t.assignments && t.assignments.length > 0 && (t.status === 'Resolved' || t.status === 'Closed'));
+    const resolvedTickets = filteredTickets.filter(ticket => isTicketResolvedState(ticket));
 
     // Filter breakdown reports based on source filter
     let filteredBreakdowns = allBreakdownItems.filter(b => {
@@ -848,24 +1088,270 @@ function closeAssignTicketModal() {
     modal?.close?.();
 }
 
-function viewTicketDetails(ticketId) {
+function parseLegacyRouteBreakdownDescription(description) {
+    const rawDescription = String(description || '').trim();
+    if (!rawDescription) {
+        return {
+            issueDescription: '',
+            locationText: '',
+        };
+    }
+
+    const normalized = rawDescription.replace(/\r\n/g, '\n');
+    const seemsLegacy = /^\[route breakdown\]/i.test(normalized)
+        || (/vehicle\s*:/i.test(normalized) && /driver\s*:/i.test(normalized) && /description\s*:/i.test(normalized));
+
+    if (!seemsLegacy) {
+        return {
+            issueDescription: rawDescription,
+            locationText: '',
+        };
+    }
+
+    const readField = (label, nextLabels = []) => {
+        const lookahead = nextLabels.length
+            ? `(?=(?:\\s*[|\\n]?\\s*(?:${nextLabels.join('|')})\\s*:)|$)`
+            : '$';
+        const pattern = new RegExp(`${label}\\s*:\\s*([\\s\\S]*?)${lookahead}`, 'i');
+        const match = normalized.match(pattern);
+        return match ? String(match[1] || '').trim() : '';
+    };
+
+    return {
+        issueDescription: readField('Description') || readField('Details') || rawDescription,
+        locationText: readField('Location', ['Description', 'Details']),
+    };
+}
+
+function resolveGarageApprovalIssueDescription(breakdown, fallbackTicket) {
+    const descriptionCandidates = [
+        breakdown?.description,
+        breakdown?.raw?.description,
+        fallbackTicket?.breakdown_context?.description,
+        fallbackTicket?.description,
+    ];
+
+    for (const candidate of descriptionCandidates) {
+        const parsed = parseLegacyRouteBreakdownDescription(candidate);
+        if (parsed.issueDescription) {
+            return parsed.issueDescription;
+        }
+    }
+
+    return '';
+}
+
+function resolveGarageApprovalLocationLabel(breakdown, fallbackTicket) {
+    const routeDescriptionLocation = parseLegacyRouteBreakdownDescription(breakdown?.description).locationText;
+    const routeRawDescriptionLocation = parseLegacyRouteBreakdownDescription(breakdown?.raw?.description).locationText;
+    const ticketDescriptionLocation = parseLegacyRouteBreakdownDescription(fallbackTicket?.description).locationText;
+    const ticketContextDescriptionLocation = parseLegacyRouteBreakdownDescription(fallbackTicket?.breakdown_context?.description).locationText;
+
+    return String(
+        breakdown?.breakdown_location
+        || breakdown?.location
+        || fallbackTicket?.breakdown_location
+        || fallbackTicket?.breakdown_context?.location
+        || routeDescriptionLocation
+        || routeRawDescriptionLocation
+        || ticketContextDescriptionLocation
+        || ticketDescriptionLocation
+        || fallbackTicket?.location
+        || ''
+    ).trim();
+}
+
+function buildGarageApprovalBreakdownPayload(detail = {}) {
+    const breakdown = detail?.breakdown && typeof detail.breakdown === 'object'
+        ? detail.breakdown
+        : {};
+    const ticketId = Number(detail?.ticketId || 0);
+    const fallbackTicket = allTickets.find((ticket) => Number(ticket?.id || 0) === ticketId) || null;
+
+    const routeBreakdownCodeCandidate = String(
+        breakdown.route_breakdown_id
+        || breakdown.breakdown_id
+        || breakdown.breakdownId
+        || fallbackTicket?.breakdown_context?.route_breakdown_id
+        || fallbackTicket?.breakdown_report_id
+        || ''
+    ).trim();
+
+    const matchedRouteBreakdown = routeBreakdownCodeCandidate
+        ? (allBreakdownItems || []).find((item) => {
+            if (normalizeBreakdownType(item?.type) !== 'route_breakdown') {
+                return false;
+            }
+
+            const itemCode = String(item?.breakdown_id || item?.route_breakdown_id || '').trim();
+            return itemCode !== '' && itemCode === routeBreakdownCodeCandidate;
+        })
+        : null;
+
+    const routeBreakdownId = Number(
+        detail?.routeBreakdownId
+        || breakdown.id
+        || matchedRouteBreakdown?.id
+        || fallbackTicket?.route_breakdown_numeric_id
+        || fallbackTicket?.breakdown_context?.route_breakdown_numeric_id
+        || 0
+    );
+
+    if (!Number.isFinite(routeBreakdownId) || routeBreakdownId <= 0) {
+        return null;
+    }
+
+    const breakdownCode = breakdown.route_breakdown_id
+        || breakdown.breakdown_id
+        || fallbackTicket?.breakdown_context?.route_breakdown_id
+        || fallbackTicket?.breakdown_report_id
+        || `RBD-${routeBreakdownId}`;
+
+    const breakdownRaw = breakdown.raw && typeof breakdown.raw === 'object'
+        ? breakdown.raw
+        : breakdown;
+
+    const rawPayload = {
+        ...(fallbackTicket || {}),
+        ...(breakdownRaw || {}),
+        ...(breakdown || {}),
+    };
+
+    const fallbackApprovedGarageId = Number(fallbackTicket?.route_approved_garage_id || fallbackTicket?.approved_garage_id || 0);
+    const normalizedDescription = resolveGarageApprovalIssueDescription(breakdown, fallbackTicket);
+    const normalizedLocationLabel = resolveGarageApprovalLocationLabel(breakdown, fallbackTicket);
+
+    return {
+        ...breakdown,
+        id: routeBreakdownId,
+        route_breakdown_id: breakdownCode,
+        breakdownId: breakdown.breakdownId || breakdownCode,
+        number_plate: breakdown.number_plate
+            || fallbackTicket?.number_plate
+            || fallbackTicket?.breakdown_context?.number_plate
+            || '',
+        identifier: breakdown.identifier
+            || breakdown.number_plate
+            || fallbackTicket?.number_plate
+            || fallbackTicket?.breakdown_context?.number_plate
+            || `Vehicle #${breakdown.vehicle_id || fallbackTicket?.vehicle_id || 'N/A'}`,
+        reportedBy: breakdown.reportedBy
+            || breakdown.driver_name
+            || breakdown.raw?.driver_name
+            || fallbackTicket?.reported_by_name
+            || fallbackTicket?.reporter_full_name
+            || fallbackTicket?.breakdown_context?.reporter_name
+            || 'Unknown',
+        driver_name: breakdown.driver_name
+            || breakdown.reportedBy
+            || breakdown.raw?.driver_name
+            || fallbackTicket?.reported_by_name
+            || fallbackTicket?.reporter_full_name
+            || fallbackTicket?.breakdown_context?.reporter_name
+            || 'Unknown',
+        breakdown_location: normalizedLocationLabel,
+        breakdown_latitude: breakdown.breakdown_latitude
+            ?? fallbackTicket?.breakdown_latitude
+            ?? null,
+        breakdown_longitude: breakdown.breakdown_longitude
+            ?? fallbackTicket?.breakdown_longitude
+            ?? null,
+        approved_garage_id: Number(
+            breakdown?.approved_garage_id
+            || breakdown?.garage_workflow?.approved_garage?.id
+            || fallbackApprovedGarageId
+            || 0
+        ) || null,
+        description: normalizedDescription || breakdown.description || fallbackTicket?.description || '',
+        raw: rawPayload,
+    };
+}
+
+async function openGarageApprovalModalFromDetail(detail = {}) {
+    const modal = document.querySelector('supervisor-garage-approval-modal');
+    if (!modal || typeof modal.open !== 'function') {
+        showToast('Garage approval modal is not available', 'error');
+        return;
+    }
+
+    const breakdownPayload = buildGarageApprovalBreakdownPayload(detail);
+    if (!breakdownPayload) {
+        showToast('Unable to resolve route breakdown details for garage approval.', 'error');
+        return;
+    }
+
+    try {
+        await modal.open({ breakdown: breakdownPayload });
+    } catch (error) {
+        console.error('Failed to open garage approval modal:', error);
+        showToast('Failed to open garage approval modal.', 'error');
+    }
+}
+
+function buildSupervisorTicketDetailFallbackUrl(ticketId, returnSection) {
+    const numericTicketId = Number(ticketId);
+    if (!Number.isFinite(numericTicketId) || numericTicketId <= 0) {
+        return null;
+    }
+
+    const safeReturnSection = normalizeSupervisorSection(returnSection || 'fault-ticket-tracking');
+    const returnUrl = new URL(window.location.pathname, window.location.origin);
+    returnUrl.searchParams.set('section', safeReturnSection);
+
+    const detailUrl = new URL('/view-ticket/index.html', window.location.origin);
+    detailUrl.searchParams.set('id', String(numericTicketId));
+    detailUrl.searchParams.set('role_override', 'SUPERVISOR');
+    detailUrl.searchParams.set('return_to', `${returnUrl.pathname}${returnUrl.search}`);
+
+    return `${detailUrl.pathname}${detailUrl.search}`;
+}
+
+function openSupervisorTicketDetailFallback(ticketId, returnSection) {
+    const fallbackUrl = buildSupervisorTicketDetailFallbackUrl(ticketId, returnSection);
+    if (!fallbackUrl) {
+        showToast('Unable to open ticket details', 'error');
+        return;
+    }
+
+    window.location.href = fallbackUrl;
+}
+
+async function viewTicketDetails(ticketId) {
     const numericTicketId = Number(ticketId);
     if (!Number.isFinite(numericTicketId) || numericTicketId <= 0) {
         showToast('Invalid ticket ID', 'error');
         return;
     }
 
-    const currentUrl = new URL(window.location.href);
-    const currentSection = currentUrl.searchParams.get('section') || 'fault-tickets';
+    const activeSection = document.querySelector('.content-section.active')?.id || '';
+    const urlSection = new URLSearchParams(window.location.search).get('section') || '';
+    const requestedReturnSection = normalizeSupervisorSection(activeSection || urlSection || 'fault-ticket-tracking');
 
-    const returnUrl = new URL(CONFIG.ROUTES.DASHBOARD.SUPERVISOR, window.location.origin);
-    returnUrl.searchParams.set('section', currentSection);
+    if (requestedReturnSection !== 'ticket-details') {
+        supervisorTicketDetailsReturnSection = requestedReturnSection;
+    }
 
-    const viewTicketUrl = new URL('/view-ticket/index.html', window.location.origin);
-    viewTicketUrl.searchParams.set('id', String(numericTicketId));
-    viewTicketUrl.searchParams.set('return_to', `${returnUrl.pathname}${returnUrl.search}`);
+    const ticketDetailView = document.querySelector('#ticket-details supervisor-ticket-detail-view');
+    if (!ticketDetailView || typeof ticketDetailView.open !== 'function') {
+        openSupervisorTicketDetailFallback(numericTicketId, supervisorTicketDetailsReturnSection);
+        return;
+    }
 
-    window.location.href = `${viewTicketUrl.pathname}${viewTicketUrl.search}`;
+    navigateSupervisorSection('ticket-details');
+    scrollSupervisorViewportToTop();
+
+    try {
+        const opened = await ticketDetailView.open(numericTicketId, {
+            returnSection: supervisorTicketDetailsReturnSection,
+        });
+
+        if (opened === false) {
+            openSupervisorTicketDetailFallback(numericTicketId, supervisorTicketDetailsReturnSection);
+        }
+    } catch (error) {
+        console.error('Supervisor embedded ticket detail open failed:', error);
+        openSupervisorTicketDetailFallback(numericTicketId, supervisorTicketDetailsReturnSection);
+    }
 }
 
 function closeViewTicketModal() {
@@ -1081,23 +1567,76 @@ async function fetchTechniciansWithWorkload() {
 // ==================== BREAKDOWN REPORT DETAILS ====================
 
 async function viewBreakdownDetails(type, id) {
-    const modal = document.querySelector('supervisor-view-ticket-modal');
-    if (!modal || typeof modal.openBreakdownDetails !== 'function') {
-        showToast('Ticket details modal is not available', 'error');
+    const normalizedType = normalizeBreakdownType(type);
+    const numericId = Number(id);
+
+    if (!normalizedType || !Number.isFinite(numericId) || numericId <= 0) {
+        showToast('Invalid breakdown report selection', 'error');
         return;
     }
 
-    await modal.openBreakdownDetails(type, id);
+    const detailView = document.querySelector('#breakdown-details ac-breakdown-detail-view');
+    if (!detailView || typeof detailView.open !== 'function') {
+        showToast('Breakdown details component is unavailable', 'error');
+        return;
+    }
+
+    const activeSection = document.querySelector('.content-section.active')?.id || '';
+    const urlSection = new URLSearchParams(window.location.search).get('section') || '';
+    const requestedReturnSection = normalizeSupervisorSection(activeSection || urlSection || 'fault-ticket-tracking');
+
+    if (requestedReturnSection !== 'breakdown-details') {
+        supervisorBreakdownDetailsReturnSection = requestedReturnSection;
+    }
+
+    await detailView.open(normalizedType, numericId, {
+        returnSection: supervisorBreakdownDetailsReturnSection,
+    });
+
+    navigateSupervisorSection('breakdown-details');
+    requestAnimationFrame(() => {
+        scrollSupervisorViewportToTop();
+    });
+}
+
+function normalizeBreakdownType(type) {
+    const normalizedType = String(type || '').trim().toLowerCase();
+
+    if (normalizedType === 'route_breakdown' || normalizedType === 'route') {
+        return 'route_breakdown';
+    }
+
+    if (normalizedType === 'machine_breakdown' || normalizedType === 'machine') {
+        return 'machine_breakdown';
+    }
+
+    if (normalizedType === 'vehicle_breakdown' || normalizedType === 'breakdown_report' || normalizedType === 'vehicle') {
+        return 'vehicle_breakdown';
+    }
+
+    return '';
 }
 
 function findFaultTicketForBreakdown(report) {
     if (!report) return null;
 
-    const breakdownId = String(report.breakdown_id || '').trim();
+    const normalizedReportType = normalizeBreakdownType(report.type || report.breakdown_type || report.source);
+    const directTicketId = Number(report.fault_ticket_id || report.faultTicketId || 0);
+
+    if (Number.isFinite(directTicketId) && directTicketId > 0) {
+        return allTickets.find((ticket) => Number(ticket?.id || 0) === directTicketId) || null;
+    }
+
+    const breakdownId = String(report.breakdown_id || report.route_breakdown_id || '').trim();
     const reportNumericId = Number(report.id || 0);
 
     return allTickets.find((ticket) => {
-        if (!ticket || String(ticket.breakdown_type || '').toLowerCase() !== String(report.type || '').toLowerCase()) {
+        if (!ticket) {
+            return false;
+        }
+
+        const normalizedTicketType = normalizeBreakdownType(ticket.breakdown_type);
+        if (normalizedReportType && normalizedTicketType && normalizedTicketType !== normalizedReportType) {
             return false;
         }
 
@@ -1111,6 +1650,57 @@ function findFaultTicketForBreakdown(report) {
 
         return false;
     }) || null;
+}
+
+function buildBreakdownReportFromTrackingItem(breakdown) {
+    if (!breakdown) {
+        return null;
+    }
+
+    const raw = breakdown.raw || {};
+    const normalizedType = breakdown.source === 'route' ? 'route_breakdown' : 'machine_breakdown';
+
+    if (normalizedType === 'route_breakdown') {
+        return {
+            id: Number(raw.id || breakdown.id || 0),
+            breakdown_id: raw.route_breakdown_id || breakdown.breakdownId || '',
+            type: 'route_breakdown',
+            vehicle_id: raw.vehicle_id || null,
+            description: raw.description || breakdown.description || 'Route breakdown reported',
+            severity: raw.severity || breakdown.severity || 'Medium',
+            status: raw.status || breakdown.effectiveStatus || 'Pending',
+            driver_name: raw.driver_name || breakdown.reportedBy || 'Unknown Driver',
+            number_plate: raw.number_plate || breakdown.identifier || 'N/A',
+            breakdown_date: raw.breakdown_datetime || raw.breakdown_date || breakdown.date,
+            breakdown_type: raw.breakdown_type || breakdown.type || 'Route Breakdown',
+            breakdown_location: raw.breakdown_location || '',
+            created_at: raw.breakdown_datetime || raw.created_at || breakdown.date,
+            source: 'driver',
+            fault_ticket_id: Number(raw.fault_ticket_id || breakdown.faultTicketId || 0) || null,
+            garage_workflow_status: raw?.garage_workflow?.status || raw.garage_workflow_status || breakdown.garageWorkflowStatus || null,
+            approved_garage_name: raw?.garage_workflow?.approved_garage?.name || raw.approved_garage_name || breakdown.approvedGarageName || null,
+            dangerous_cargo_present: Number(raw.dangerous_cargo_present || 0) === 1 ? 1 : 0,
+            dangerous_cargo_summary: raw.dangerous_cargo_summary || null,
+            dangerous_cargo_trip_id: raw.dangerous_cargo_trip_id || null
+        };
+    }
+
+    return {
+        id: Number(raw.id || breakdown.id || 0),
+        breakdown_id: raw.breakdown_id || breakdown.breakdownId || '',
+        type: 'machine_breakdown',
+        machine_id: raw.machine_id || null,
+        machine_model: raw.machine_model || raw.machine_name || breakdown.identifier || 'Unknown Machine',
+        operator_name: raw.operator_name || breakdown.reportedBy || 'Unknown Operator',
+        description: raw.description || breakdown.description || 'Machine breakdown reported',
+        severity: raw.severity || breakdown.severity || 'Medium',
+        status: raw.status || breakdown.effectiveStatus || 'Pending',
+        breakdown_type: raw.breakdown_type || breakdown.type || 'Machine Fault',
+        breakdown_date: raw.breakdown_date || raw.created_at || breakdown.date,
+        created_at: raw.created_at || breakdown.date,
+        source: 'machinery_operator',
+        fault_ticket_id: Number(raw.fault_ticket_id || breakdown.faultTicketId || 0) || null
+    };
 }
 
 async function createFaultTicketFromBreakdownReport(type, report) {
@@ -1149,56 +1739,91 @@ async function createFaultTicketFromBreakdownReport(type, report) {
     throw new Error(errorMsg);
 }
 
-async function viewRouteBreakdownTicket(type, id) {
-    const report = allBreakdownItems.find((item) => item.type === type && item.id === id);
+async function viewOrCreateBreakdownTicket(type, id, trackingBreakdown = null) {
+    const normalizedType = normalizeBreakdownType(type);
+    const numericId = Number(id);
+
+    if (!normalizedType || !Number.isFinite(numericId) || numericId <= 0) {
+        showToast('Invalid breakdown report selection', 'error');
+        return;
+    }
+
+    let report = allBreakdownItems.find((item) => normalizeBreakdownType(item.type) === normalizedType && Number(item.id) === numericId);
+
+    if (!report && trackingBreakdown) {
+        report = buildBreakdownReportFromTrackingItem(trackingBreakdown);
+    }
+
+    if (!report && normalizedType === 'machine_breakdown') {
+        const fallbackTicket = allTickets.find((ticket) => {
+            if (!ticket || !ticket.is_machine_breakdown) {
+                return false;
+            }
+
+            if (Number(ticket.id) === numericId) {
+                return true;
+            }
+
+            const breakdownCode = String(ticket.breakdown_report_id || ticket.ticket_id || '').trim();
+            return breakdownCode !== '' && breakdownCode === String(id).trim();
+        });
+
+        if (fallbackTicket) {
+            report = {
+                id: Number(fallbackTicket.id),
+                breakdown_id: fallbackTicket.breakdown_report_id || fallbackTicket.ticket_id || `MBD-${String(fallbackTicket.id).padStart(3, '0')}`,
+                type: 'machine_breakdown',
+                machine_id: fallbackTicket.machine_id,
+                machine_model: fallbackTicket.machine_name || fallbackTicket.machine_model_number,
+                operator_name: fallbackTicket.reporter_full_name || fallbackTicket.reported_by_name,
+                description: fallbackTicket.description,
+                severity: fallbackTicket.priority,
+                status: fallbackTicket.status,
+                breakdown_type: fallbackTicket.original_report ? fallbackTicket.original_report.breakdown_type : 'Machine Fault',
+                breakdown_date: fallbackTicket.created_at,
+                fault_ticket_id: Number(fallbackTicket.id)
+            };
+        }
+    }
+
     if (!report) {
-        showToast('Route breakdown report not found', 'error');
+        showToast('Breakdown report not found', 'error');
         return;
     }
 
-    if (report.fault_ticket_id) {
-        viewTicketDetails(report.fault_ticket_id);
-        return;
-    }
+    const linkedTicket = findFaultTicketForBreakdown(report);
+    const linkedTicketId = Number(report.fault_ticket_id || linkedTicket?.id || 0);
 
-    const existingTicket = findFaultTicketForBreakdown(report);
-    if (existingTicket && Number(existingTicket.id) > 0) {
-        viewTicketDetails(existingTicket.id);
+    if (Number.isFinite(linkedTicketId) && linkedTicketId > 0) {
+        viewTicketDetails(linkedTicketId);
         return;
     }
 
     try {
-        showToast('Creating ticket details view for this route breakdown...', 'info');
-        const newTicketId = await createFaultTicketFromBreakdownReport(type, report);
+        showToast('Creating fault ticket from breakdown report...', 'info');
+        const newTicketId = await createFaultTicketFromBreakdownReport(normalizedType, report);
 
         if (!Number.isFinite(newTicketId) || newTicketId <= 0) {
-            throw new Error('Failed to create fault ticket');
+            showToast('Failed to open ticket details', 'error');
+            return;
         }
 
         await loadFaultTickets();
-        showToast('Fault ticket created. Opening details page...', 'success');
         viewTicketDetails(newTicketId);
+        showToast('Fault ticket created successfully', 'success');
     } catch (error) {
-        console.error('Error opening route breakdown in ticket page:', error);
-        showToast(error.message || 'Failed to open route breakdown ticket details', 'error');
+        console.error('Error creating fault ticket from breakdown view flow:', error);
+        showToast(error.message || 'Failed to create ticket from breakdown', 'error');
     }
+}
+
+async function viewRouteBreakdownTicket(type, id) {
+    await viewBreakdownDetails(type, id);
 }
 
 // View machine breakdown details from allTickets
 function viewMachineBreakdownInSupervisor(breakdownId) {
-    const ticket = allTickets.find(t => t.is_machine_breakdown && t.id === breakdownId);
-    if (!ticket) {
-        showToast('Machine breakdown not found', 'error');
-        return;
-    }
-
-    const modal = document.querySelector('supervisor-view-ticket-modal');
-    if (!modal || typeof modal.openMachineBreakdown !== 'function') {
-        showToast('Ticket details modal is not available', 'error');
-        return;
-    }
-
-    modal.openMachineBreakdown(ticket);
+    viewBreakdownDetails('machine_breakdown', breakdownId);
 }
 
 // Assign technician to a breakdown report (auto-creates fault ticket first, then opens assign modal)
@@ -1227,6 +1852,14 @@ async function assignBreakdownTicket(type, id) {
 
     if (!report) {
         showToast('Breakdown report not found', 'error');
+        return;
+    }
+
+    const linkedTicket = findFaultTicketForBreakdown(report);
+    const linkedTicketId = Number(report.fault_ticket_id || linkedTicket?.id || 0);
+
+    if (Number.isFinite(linkedTicketId) && linkedTicketId > 0) {
+        assignTicket(linkedTicketId);
         return;
     }
 
@@ -1387,23 +2020,35 @@ async function loadTechnicians() {
 // ==================== TOAST NOTIFICATIONS ====================
 
 function showToast(message, type = 'success') {
-    const toast = document.getElementById('toast');
+    const toast = document.querySelector('body > #toast') || document.getElementById('toast');
+    if (!toast) {
+        return;
+    }
+
     toast.textContent = message;
 
     toast.className = 'toast';
     if (type === 'error' || type === 'danger') {
         toast.classList.add('toast-error');
+        toast.classList.add('error');
     } else if (type === 'warning') {
         toast.classList.add('toast-warning');
+        toast.classList.add('warning');
     } else if (type === 'info') {
         toast.classList.add('toast-info');
+        toast.classList.add('info');
     } else {
         toast.classList.add('toast-success');
+        toast.classList.add('success');
     }
 
     toast.style.display = 'block';
+    requestAnimationFrame(() => {
+        toast.classList.add('show');
+    });
 
     setTimeout(() => {
+        toast.classList.remove('show');
         toast.style.display = 'none';
     }, 3000);
 }
@@ -1926,7 +2571,7 @@ async function viewTechnicianDetails(techId) {
 }
 
 function assignNewTicket(techId) {
-    navigateTo('fault-tickets');
+    navigateTo('fault-ticket-tracking');
     showToast('Select a fault ticket and use Assign to choose technician(s)', 'info');
 }
 

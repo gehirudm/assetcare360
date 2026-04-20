@@ -12,8 +12,25 @@ class MOConditionUpdates extends HTMLElement {
         this.refresh();
     }
 
+    disconnectedCallback() {
+        if (this._boundOutsideClick) {
+            document.removeEventListener('click', this._boundOutsideClick);
+        }
+    }
+
     setCurrentUser(user) {
         this.currentUser = user || null;
+    }
+
+    normalizeCheckStatus(status) {
+        const value = String(status || '').trim().toLowerCase();
+        if (value === 'approved') {
+            return 'approved';
+        }
+        if (value === 'rejected') {
+            return 'rejected';
+        }
+        return 'pending';
     }
 
     render() {
@@ -70,8 +87,39 @@ class MOConditionUpdates extends HTMLElement {
                 document.dispatchEvent(new CustomEvent('mo:open-weekly-check-details', {
                     detail: { checkId, check },
                 }));
+                return;
+            }
+
+            if (action === 'toggle-dropdown') {
+                event.stopPropagation();
+                this.toggleDropdown(actionEl.dataset.menuId);
+                return;
+            }
+
+            if (action === 'edit-weekly-check') {
+                this.closeDropdownMenus();
+
+                const checkId = actionEl.dataset.checkId;
+                const check = this.weeklyChecksMap.get(checkId) || null;
+                const normalizedStatus = this.normalizeCheckStatus(check?.status);
+                if (!check || normalizedStatus !== 'pending') {
+                    window.MOUtils.emitToast(`Edit is only available while the weekly check is Pending. Current status: ${check?.status || 'Unknown'}.`, 'warning');
+                    return;
+                }
+
+                document.dispatchEvent(new CustomEvent('mo:open-weekly-check-edit', {
+                    detail: { checkId, check },
+                }));
             }
         });
+
+        this._boundOutsideClick = (event) => {
+            if (!event.target.closest('.dropdown-container')) {
+                this.closeDropdownMenus();
+            }
+        };
+
+        document.addEventListener('click', this._boundOutsideClick);
     }
 
     async refresh() {
@@ -107,6 +155,7 @@ class MOConditionUpdates extends HTMLElement {
     }
 
     renderCheckCard(check) {
+        const normalizedStatus = this.normalizeCheckStatus(check.status);
         const submittedDate = window.MOUtils.formatDate(check.submitted_date);
         const conditionLabel = check.overall_condition
             ? `${check.overall_condition.charAt(0).toUpperCase()}${check.overall_condition.slice(1)}`
@@ -114,16 +163,19 @@ class MOConditionUpdates extends HTMLElement {
 
         let statusLabel = 'Pending';
         let statusClass = 'status-pending';
-        if (check.status === 'approved') {
+        if (normalizedStatus === 'approved') {
             statusLabel = 'Approved';
             statusClass = 'status-approved';
-        } else if (check.status === 'rejected') {
+        } else if (normalizedStatus === 'rejected') {
             statusLabel = 'Rejected';
             statusClass = 'status-rejected';
         }
 
+        const isEditable = normalizedStatus === 'pending';
+        const safeStatusLabel = String(check.status || 'pending').replace(/"/g, '&quot;');
+
         return `
-            <div class="inventory-item" data-status="${check.status || 'pending'}">
+            <div class="inventory-item" data-status="${normalizedStatus}">
                 <div class="item-details">
                     <strong><i class="fas fa-clipboard-check"></i> ${check.check_id}</strong>
                     <div class="item-meta">
@@ -136,9 +188,21 @@ class MOConditionUpdates extends HTMLElement {
                     </div>
                 </div>
                 <div class="item-actions">
-                    <button class="btn btn-primary btn-small" type="button" data-action="view-weekly-check" data-check-id="${check.check_id}">
-                        <i class="fas fa-eye"></i> VIEW
-                    </button>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary btn-small" type="button" data-action="view-weekly-check" data-check-id="${check.check_id}">
+                            <i class="fas fa-eye"></i> VIEW
+                        </button>
+                        <div class="dropdown-container">
+                            <button class="btn btn-small btn-secondary dropdown-trigger" type="button" data-action="toggle-dropdown" data-menu-id="weekly-check-menu-${check.check_id}">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div class="dropdown-menu" id="weekly-check-menu-${check.check_id}">
+                                <button class="dropdown-item" type="button" data-action="edit-weekly-check" data-check-id="${check.check_id}" data-editable="${isEditable ? 'true' : 'false'}" data-check-status="${safeStatusLabel}">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -146,6 +210,7 @@ class MOConditionUpdates extends HTMLElement {
 
     applyFilter(filter) {
         this.currentFilter = filter || 'all';
+        this.closeDropdownMenus();
 
         this.querySelectorAll('#weeklyCheckReportsList .inventory-item').forEach((item) => {
             const status = item.dataset.status || 'pending';
@@ -157,13 +222,35 @@ class MOConditionUpdates extends HTMLElement {
         });
     }
 
+    toggleDropdown(menuId) {
+        const menu = this.querySelector(`#${menuId}`);
+        if (!menu) {
+            return;
+        }
+
+        const isActive = menu.classList.contains('active');
+        this.closeDropdownMenus();
+
+        if (!isActive) {
+            menu.classList.add('active');
+            menu.style.display = 'block';
+        }
+    }
+
+    closeDropdownMenus() {
+        this.querySelectorAll('.dropdown-menu').forEach((menu) => {
+            menu.classList.remove('active', 'show');
+            menu.style.display = 'none';
+        });
+    }
+
     updateSummary(checks) {
         const summary = this.querySelector('[data-weekly-summary]');
         if (!summary) {
             return;
         }
 
-        const pendingCount = checks.filter((item) => item.status === 'pending').length;
+        const pendingCount = checks.filter((item) => this.normalizeCheckStatus(item.status) === 'pending').length;
         summary.textContent = `${pendingCount} pending review`;
     }
 }

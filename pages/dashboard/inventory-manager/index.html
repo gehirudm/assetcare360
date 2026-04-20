@@ -22,6 +22,7 @@
     <script src="../../components/styles/buttons.js"></script>
     <script src="../../components/styles/icons.js"></script>
     <script src="../../components/shared/confirm-dialog.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="../../js/dashboard-init.js"></script>
     
 </head>
@@ -37,8 +38,10 @@
         active-section="dashboard"
         nav='[
             {"section":"dashboard","icon":"fas fa-tachometer-alt","label":"Dashboard"},
+            {"section":"analytics","icon":"fas fa-chart-pie","label":"Analytics"},
             {"section":"machines","icon":"fas fa-cogs","label":"Manage Machines"},
             {"section":"vehicles","icon":"fas fa-truck","label":"Manage Vehicles"},
+            {"section":"insurance-management","icon":"fas fa-shield-alt","label":"Insurance Management"},
             {"section":"catalog","icon":"fas fa-list-alt","label":"Spare Parts Catalog"},
             {"section":"sparepart-addition","icon":"fas fa-plus-circle","label":"Sparepart Addition"},
             {"section":"orders-approvals","icon":"fas fa-clipboard-check","label":"Orders &amp; Approvals"},
@@ -50,6 +53,11 @@
                     <inventory-dashboard-overview></inventory-dashboard-overview>
                 </section>
 
+                <!-- Analytics Section -->
+                <section class="content-section" id="analytics">
+                    <inventory-analytics-hub></inventory-analytics-hub>
+                </section>
+
                 <!-- Machines Section -->
                 <section class="content-section" id="machines">
                     <inventory-machines></inventory-machines>
@@ -58,6 +66,11 @@
                 <!-- Vehicles Section -->
                 <section class="content-section" id="vehicles">
                     <inventory-vehicles></inventory-vehicles>
+                </section>
+
+                <!-- Insurance Management Section -->
+                <section class="content-section" id="insurance-management">
+                    <inventory-insurance-management></inventory-insurance-management>
                 </section>
 
                 <!-- Spare Parts Catalog -->
@@ -102,6 +115,7 @@
 
     <!-- Load JavaScript -->
     <script src="./components/dashboard-overview/script.js"></script>
+    <script src="./components/analytics-hub/script.js"></script>
     <script src="./components/usage-tracking/script.js"></script>
     <script src="./components/notifications/script.js"></script>
     <script src="./components/orders-approvals/script.js"></script>
@@ -120,6 +134,7 @@
     <script src="./components/page-modals/vehicle-mileage-modal/script.js"></script>
     <script src="./components/machines/script.js"></script>
     <script src="./components/vehicles/script.js"></script>
+    <script src="./components/insurance-management/script.js"></script>
     <script src="script.js?v=1.7.0"></script>
 </body>
 </html>

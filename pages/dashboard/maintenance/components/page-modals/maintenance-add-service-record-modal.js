@@ -21,6 +21,7 @@ class MaintenanceAddServiceRecordModal extends HTMLElement {
                     <form id="addServiceForm">
                         <div class="form-section">
                             <h5><i class="fas fa-calendar-alt"></i> Service Schedule Information</h5>
+                            <input type="hidden" name="assetDbId" value="">
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label class="form-label">Equipment ID</label>
@@ -85,13 +86,15 @@ class MaintenanceAddServiceRecordModal extends HTMLElement {
                 return;
             }
 
-            const equipmentType = String(formData.get('equipmentType') || '').trim();
+            const equipmentType = this.normalizeEquipmentType(String(formData.get('equipmentType') || '').trim());
             const normalizedId = this.buildNormalizedId(equipmentValue, equipmentType);
+            const assetDbId = String(formData.get('assetDbId') || '').trim();
 
             this.dispatchEvent(new CustomEvent('maintenance-service:add-record', {
                 bubbles: true,
                 detail: {
                     record: {
+                        assetDbId,
                         id: normalizedId,
                         equipment: equipmentValue,
                         equipmentType,
@@ -124,6 +127,14 @@ class MaintenanceAddServiceRecordModal extends HTMLElement {
         }
 
         return compact;
+    }
+
+    normalizeEquipmentType(value) {
+        const type = String(value || '').trim().toLowerCase();
+        if (type === 'vehicle') {
+            return 'vehicle';
+        }
+        return 'machinery';
     }
 
     setDefaultDates() {
@@ -170,17 +181,25 @@ class MaintenanceAddServiceRecordModal extends HTMLElement {
 
         const equipmentInput = this.querySelector('input[name="equipmentId"]');
         const equipmentTypeSelect = this.querySelector('select[name="equipmentType"]');
+        const assetDbIdInput = this.querySelector('input[name="assetDbId"]');
         const insuranceInput = this.querySelector('input[name="insuranceExpiry"]');
         const dueInput = this.querySelector('input[name="nextServiceDue"]');
         const serviceTypeSelect = this.querySelector('select[name="serviceType"]');
         const notesInput = this.querySelector('textarea[name="notes"]');
 
+        const hasAssetBinding = Boolean(prefill.assetDbId);
+
         if (equipmentInput) {
             equipmentInput.value = this.normalizeEquipmentLabel(prefill.equipmentId || '');
+            equipmentInput.readOnly = hasAssetBinding;
         }
 
         if (equipmentTypeSelect && prefill.equipmentType) {
             equipmentTypeSelect.value = String(prefill.equipmentType);
+        }
+
+        if (assetDbIdInput) {
+            assetDbIdInput.value = hasAssetBinding ? String(prefill.assetDbId) : '';
         }
 
         if (insuranceInput && prefill.insuranceExpiry) {

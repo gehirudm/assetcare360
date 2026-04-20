@@ -30,6 +30,11 @@ function closeModal(modalId) {
     }
 }
 
+const activityLogState = {
+    loaded: false,
+    loading: false
+};
+
 // Close modal when clicking outside
 window.addEventListener('click', (event) => {
     if (event.target.classList.contains('modal')) {
@@ -68,12 +73,25 @@ function populateProfile(userData) {
     // Header user info
     const userAvatar = document.getElementById('userAvatar');
     const userName = document.getElementById('userName');
+    const headerUserRole = document.getElementById('headerUserRole');
+    const headerUserEmployeeId = document.getElementById('headerUserEmployeeId');
 
     if (userAvatar) {
         userAvatar.textContent = firstName.charAt(0).toUpperCase();
     }
     if (userName) {
         userName.textContent = userData.full_name;
+    }
+    if (headerUserRole) {
+        headerUserRole.textContent = userData.role || 'User';
+    }
+    if (headerUserEmployeeId) {
+        headerUserEmployeeId.textContent = userData.employee_id || 'N/A';
+    }
+
+    const dashboardBreadcrumb = document.getElementById('profileDashboardBreadcrumb');
+    if (dashboardBreadcrumb) {
+        dashboardBreadcrumb.href = getDashboardPathForUser(userData);
     }
 
     // Profile summary card
@@ -243,25 +261,19 @@ function logout() {
     Auth.logout();
 }
 
+function getDashboardPathForUser(userData) {
+    if (!userData || !userData.role) {
+        return '/auth/login.html';
+    }
+
+    const roleKey = String(userData.role).toUpperCase().replace(/ /g, '_');
+    return CONFIG.ROUTES.DASHBOARD[roleKey] || '/auth/login.html';
+}
+
 // Go back to dashboard based on user role
 function goBackToDashboard() {
     const userData = window.currentUserData;
-    if (!userData) {
-        window.location.href = '/auth/login.html';
-        return;
-    }
-
-    // Convert role to the format used in CONFIG.ROUTES.DASHBOARD
-    const roleKey = userData.role.toUpperCase().replace(/ /g, '_');
-    const dashboardPath = CONFIG.ROUTES.DASHBOARD[roleKey];
-
-    if (dashboardPath) {
-        window.location.href = dashboardPath;
-    } else {
-        // Fallback to login if role not found
-        console.warn('Dashboard not found for role:', userData.role);
-        window.location.href = '/auth/login.html';
-    }
+    window.location.href = getDashboardPathForUser(userData);
 }
 
 // =========================================
@@ -344,6 +356,187 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function renderActivityLogLoading() {
+    const activityLogContainer = document.getElementById('activityLogContainer');
+    if (!activityLogContainer) return;
+
+    activityLogContainer.innerHTML = `
+        <div class="loading-message">
+            <i class="fas fa-spinner fa-spin"></i> Loading login activity...
+        </div>
+    `;
+}
+
+function renderActivityLogError(message) {
+    const activityLogContainer = document.getElementById('activityLogContainer');
+    if (!activityLogContainer) return;
+
+    activityLogContainer.innerHTML = `
+        <div class="activity-log-empty">
+            <i class="fas fa-exclamation-circle"></i>
+            <p>${escapeHtml(message || 'Failed to load login activity')}</p>
+        </div>
+    `;
+}
+
+function getLoginMethodLabel(activity) {
+    const loginMethod = (activity.login_method || '').toLowerCase();
+    if (loginMethod === 'passkey') {
+        return 'Passkey';
+    }
+
+    return 'Password';
+}
+
+function summarizeUserAgent(userAgent) {
+    if (!userAgent) {
+        return 'Unknown device';
+    }
+
+    let browser = 'Browser';
+    if (userAgent.includes('Edg/')) {
+        browser = 'Edge';
+    } else if (userAgent.includes('Chrome/')) {
+        browser = 'Chrome';
+    } else if (userAgent.includes('Firefox/')) {
+        browser = 'Firefox';
+    } else if (userAgent.includes('Safari/') && !userAgent.includes('Chrome/')) {
+        browser = 'Safari';
+    }
+
+    let os = 'Device';
+    if (userAgent.includes('Windows')) {
+        os = 'Windows';
+    } else if (userAgent.includes('Mac OS X') || userAgent.includes('Macintosh')) {
+        os = 'macOS';
+    } else if (userAgent.includes('Android')) {
+        os = 'Android';
+    } else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) {
+        os = 'iOS';
+    } else if (userAgent.includes('Linux')) {
+        os = 'Linux';
+    }
+
+    return `${browser} on ${os}`;
+}
+
+function formatRelativeTime(dateString) {
+    if (!dateString) {
+        return 'Unknown time';
+    }
+
+    const date = new Date(dateString);
+    const diffMs = Date.now() - date.getTime();
+
+    if (Number.isNaN(diffMs) || diffMs < 0) {
+        return 'Just now';
+    }
+
+    const minutes = Math.floor(diffMs / (1000 * 60));
+    if (minutes < 1) {
+        return 'Just now';
+    }
+
+    if (minutes < 60) {
+        return `${minutes} min ago`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+        return `${hours} hr ago`;
+    }
+
+    const days = Math.floor(hours / 24);
+    if (days < 30) {
+        return `${days} day${days === 1 ? '' : 's'} ago`;
+    }
+
+    return Utils.formatDate(dateString);
+}
+
+function renderActivityLogItems(activities) {
+    const activityLogContainer = document.getElementById('activityLogContainer');
+    if (!activityLogContainer) return;
+
+    if (!activities || activities.length === 0) {
+        activityLogContainer.innerHTML = `
+            <div class="activity-log-empty">
+                <i class="fas fa-sign-in-alt"></i>
+                <p>No login activity found yet.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const items = activities.map((activity) => {
+        const methodLabel = getLoginMethodLabel(activity);
+        const loginLabel = `${methodLabel} login successful`;
+        const timestamp = Utils.formatDateTime(activity.created_at);
+        const relativeTime = formatRelativeTime(activity.created_at);
+        const ipAddress = activity.ip_address || 'Unknown IP';
+        const device = summarizeUserAgent(activity.user_agent);
+
+        return `
+            <article class="activity-log-item">
+                <div class="activity-log-icon">
+                    <i class="fas fa-sign-in-alt"></i>
+                </div>
+                <div class="activity-log-content">
+                    <div class="activity-log-top-row">
+                        <h4>${escapeHtml(loginLabel)}</h4>
+                        <span class="activity-log-time">${escapeHtml(relativeTime)}</span>
+                    </div>
+                    <div class="activity-log-meta">
+                        <span><i class="far fa-clock"></i> ${escapeHtml(timestamp)}</span>
+                        <span><i class="fas fa-network-wired"></i> ${escapeHtml(ipAddress)}</span>
+                        <span><i class="fas fa-laptop"></i> ${escapeHtml(device)}</span>
+                    </div>
+                </div>
+            </article>
+        `;
+    }).join('');
+
+    activityLogContainer.innerHTML = `<div class="activity-log-list">${items}</div>`;
+}
+
+async function loadLoginActivities(force = false) {
+    if (activityLogState.loading) {
+        return;
+    }
+
+    if (activityLogState.loaded && !force) {
+        return;
+    }
+
+    activityLogState.loading = true;
+    renderActivityLogLoading();
+
+    try {
+        const response = await API.get('/auth/login-activities?limit=20');
+
+        if (response.status !== 'success') {
+            throw new Error(response.message || 'Failed to load login activity');
+        }
+
+        const activities = response.data && Array.isArray(response.data.activities)
+            ? response.data.activities
+            : [];
+
+        renderActivityLogItems(activities);
+        activityLogState.loaded = true;
+    } catch (error) {
+        console.error('Error loading login activity:', error);
+        renderActivityLogError(error.message || 'Failed to load login activity');
+    } finally {
+        activityLogState.loading = false;
+    }
+}
+
+function refreshActivityLog() {
+    activityLogState.loaded = false;
+    loadLoginActivities(true);
 }
 
 // Register a new passkey
@@ -465,6 +658,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Add active class to selected tab and content
             this.classList.add('active');
             document.getElementById(tabName).classList.add('active');
+
+            if (tabName === 'activity') {
+                loadLoginActivities();
+            }
         });
     });
 });

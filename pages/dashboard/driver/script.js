@@ -1,5 +1,6 @@
 let currentUser = null;
 let refreshIntervalId = null;
+let driverTicketDetailsReturnSection = 'breakdown';
 
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
@@ -19,9 +20,11 @@ function showToast(message, type = 'success') {
 function componentSelectorBySection(sectionId) {
     const selectors = {
         dashboard: 'driver-dashboard-overview',
+        analytics: 'driver-analytics-hub',
         'trip-log': 'driver-trip-log',
         'vehicle-check': 'driver-vehicle-check',
         breakdown: 'driver-breakdown',
+        'ticket-details': 'driver-ticket-detail-view',
         'ticket-tracking': 'driver-ticket-tracking',
         'fuel-mileage': 'driver-fuel-mileage',
         'transport-ticket': 'driver-transport-ticket',
@@ -46,9 +49,11 @@ async function refreshSection(sectionId) {
 async function refreshAllSections() {
     const sections = [
         'dashboard',
+        'analytics',
         'trip-log',
         'vehicle-check',
         'breakdown',
+        'ticket-details',
         'ticket-tracking',
         'fuel-mileage',
         'transport-ticket',
@@ -69,12 +74,83 @@ function closeActiveModalWithEscape() {
     DriverUtils.closeModal(activeModal.id);
 }
 
+function bindDriverTicketDetailView() {
+    const ticketDetailView = document.querySelector('#ticket-details driver-ticket-detail-view');
+    if (!ticketDetailView || ticketDetailView.dataset.bound === 'true') {
+        return;
+    }
+
+    ticketDetailView.dataset.bound = 'true';
+
+    ticketDetailView.addEventListener('driver-ticket-detail-view:toast', (event) => {
+        const message = event.detail?.message;
+        const type = event.detail?.type || 'info';
+        if (!message) {
+            return;
+        }
+
+        showToast(message, type);
+    });
+
+    ticketDetailView.addEventListener('driver-ticket-detail-view:back', (event) => {
+        const requestedSection = String(
+            event.detail?.returnSection
+            || driverTicketDetailsReturnSection
+            || 'breakdown'
+        ).trim() || 'breakdown';
+
+        ticketDetailView.closeView?.();
+        const layout = document.querySelector('ac-layout');
+        layout?.navigateTo?.(requestedSection);
+    });
+}
+
+function viewDriverTicketDetails(ticketId, options = {}) {
+    const numericTicketId = Number(ticketId);
+    if (!Number.isFinite(numericTicketId) || numericTicketId <= 0) {
+        showToast('Linked ticket is not available for this report yet.', 'warning');
+        return;
+    }
+
+    const ticketDetailView = document.querySelector('#ticket-details driver-ticket-detail-view');
+    if (!ticketDetailView || typeof ticketDetailView.open !== 'function') {
+        showToast('Ticket details component is unavailable.', 'error');
+        return;
+    }
+
+    const returnSection = String(options.returnSection || 'breakdown').trim() || 'breakdown';
+    driverTicketDetailsReturnSection = returnSection;
+
+    const layout = document.querySelector('ac-layout');
+    layout?.navigateTo?.('ticket-details');
+    window.scrollTo(0, 0);
+
+    ticketDetailView.open(numericTicketId, {
+        returnSection,
+        focusHash: String(options.focusHash || '').trim(),
+    });
+}
+
+function cleanupDriverTicketDetailsOnSectionChange(sectionId) {
+    if (sectionId === 'ticket-details') {
+        return;
+    }
+
+    const ticketDetailView = document.querySelector('#ticket-details driver-ticket-detail-view');
+    if (!ticketDetailView || typeof ticketDetailView.closeView !== 'function') {
+        return;
+    }
+
+    ticketDetailView.closeView();
+}
+
 function bindOrchestrationEvents() {
     const layout = document.querySelector('ac-layout');
     if (layout) {
         layout.addEventListener('section-change', async (event) => {
             const section = event.detail?.section;
             if (section) {
+                cleanupDriverTicketDetailsOnSectionChange(section);
                 await refreshSection(section);
             }
         });
@@ -91,6 +167,18 @@ function bindOrchestrationEvents() {
 
     document.addEventListener('driver:data-summary-updated', () => {
         refreshSection('dashboard');
+        refreshSection('analytics');
+    });
+
+    document.addEventListener('driver:open-ticket-details', (event) => {
+        const ticketId = event.detail?.ticketId;
+        const returnSection = event.detail?.returnSection || 'breakdown';
+        const focusHash = event.detail?.focusHash || '';
+
+        viewDriverTicketDetails(ticketId, {
+            returnSection,
+            focusHash,
+        });
     });
 
     document.addEventListener('keydown', (event) => {
@@ -102,6 +190,7 @@ function bindOrchestrationEvents() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     bindOrchestrationEvents();
+    bindDriverTicketDetailView();
 
     try {
         await DashboardInit.init(['Driver', 'Admin'], {
@@ -119,6 +208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 refreshIntervalId = window.setInterval(() => {
+                    refreshSection('analytics');
                     refreshSection('trip-log');
                     refreshSection('transport-ticket');
                     refreshSection('vehicle-check');

@@ -9,9 +9,11 @@ require_once __DIR__ . '/../helpers/JWTHelper.php';
  */
 class AuthService {
     private $userModel;
+    private $db;
     
     public function __construct() {
         $this->userModel = new User();
+        $this->db = Database::getInstance()->getConnection();
     }
     
     /**
@@ -195,6 +197,77 @@ class AuthService {
             'success' => true,
             'message' => 'Profile retrieved successfully',
             'data' => $user
+        ];
+    }
+
+    /**
+     * Get recent login activities for a user
+     */
+    public function getLoginActivities($userId, $limit = 20) {
+        $user = $this->userModel->getUserById($userId);
+
+        if (!$user) {
+            return [
+                'success' => false,
+                'message' => 'User not found'
+            ];
+        }
+
+        $safeLimit = max(1, min((int)$limit, 100));
+        $employeeId = $user['employee_id'] ?? null;
+
+        $identityConditions = ['user_id = ?'];
+        $params = [$userId];
+
+        if (!empty($employeeId)) {
+            $identityConditions[] = 'employee_id = ?';
+            $params[] = $employeeId;
+
+            // Login requests are typically unauthenticated, so user_id/employee_id may be null.
+            // We also match employee_id from the logged request payload.
+            $identityConditions[] = 'request_body LIKE ?';
+            $params[] = '%"employee_id"%"' . $employeeId . '"%';
+        }
+
+        $sql = "SELECT
+                    id,
+                    endpoint,
+                    action,
+                    response_code,
+                    ip_address,
+                    user_agent,
+                    created_at,
+                    CASE
+                        WHEN endpoint = '/api/auth/passkey/authenticate' THEN 'passkey'
+                        ELSE 'password'
+                    END AS login_method
+                FROM api_request_logs
+                WHERE endpoint IN ('/api/auth/login', '/api/auth/passkey/authenticate')
+                  AND response_code BETWEEN 200 AND 299
+                  AND (" . implode(' OR ', $identityConditions) . ")
+                ORDER BY created_at DESC
+                LIMIT {$safeLimit}";
+
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $activities = $stmt->fetchAll();
+        } catch (Exception $e) {
+            error_log('Failed to load login activities: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Failed to fetch login activities'
+            ];
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Login activities retrieved successfully',
+            'data' => [
+                'activities' => $activities,
+                'count' => count($activities),
+                'limit' => $safeLimit
+            ]
         ];
     }
     

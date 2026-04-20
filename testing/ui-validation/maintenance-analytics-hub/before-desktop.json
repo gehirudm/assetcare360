@@ -1,0 +1,20 @@
+{
+  "stage": "before",
+  "viewport": "desktop",
+  "url": "http://127.0.0.1:3000/dashboard/maintenance/index.html",
+  "title": "Maintenance Manager Dashboard",
+  "accessibility": {
+    "ariaSnapshot": "- main:\n  - heading \"Dashboard\" [level=1]\n  - paragraph: Maintenance Manager Overview\n  - text: Pending Approvals — Active Fault Tickets 0 Reports Under Review — Resolved Tickets 0 Recent Fault Tickets\n  - strong: TKT-001\n  - text: \"Vehicle #101 | Reporter: John Driver Engine overheating In Progress\"\n  - strong: TKT-002\n  - text: \"Machine #205 | Reporter: Mike Operator Hydraulic leak Pending\"\n  - button \"View All Tickets\"\n  - text: Pending Cost Approvals\n  - strong: CA-001\n  - text: \"Engine overhaul - Vehicle #101 Amount: LKR 45,000 Pending\"\n  - strong: CA-002\n  - text: \"Hydraulic pump - Machine #205 Amount: LKR 32,000 Pending\"\n  - button \"Review All Approvals\"\n  - text: Critical Notifications\n  - strong: \"Warranty Expiring:\"\n  - text: 3 warranty claims expire this week\n  - strong: \"Cost Approval:\"\n  - text: Engine repair cost LKR 45,000 pending approval\n  - strong: \"Service Reports:\"\n  - text: 3 reports pending review\n  - heading \"Recent Activities\" [level=2]\n  - text: \"Cost Approval Request — Engine Repair 10:30 AM · Supervisor John Engine repair cost LKR 45,000 submitted for approval Pending Service Report Uploaded — Vehicle #089 09:15 AM · Technical Officer Routine service report submitted for manager review Under Review Fault Ticket Created — Machine #205 08:45 AM · Operator Mike Hydraulic leak reported and ticket assigned to technical officer Active\"",
+    "snapshotLength": 1378
+  },
+  "console": [],
+  "failedRequests": [],
+  "interactionSummary": {
+    "stage": "before",
+    "analyticsNavPresent": false,
+    "analyticsSectionPresent": false,
+    "activeSection": "dashboard",
+    "reportRows": 0,
+    "downloadSuggestedFilename": null
+  }
+}

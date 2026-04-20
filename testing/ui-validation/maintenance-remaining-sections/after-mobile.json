@@ -11,8 +11,8 @@
   "failedRequests": [],
   "interactionSummary": {
     "activeSection": "notifications",
-    "visibleTickets": 5,
-    "visibleWarrantyRows": 1,
+    "visibleTickets": 0,
+    "visibleWarrantyRows": 2,
     "visibleNotificationCards": 5,
     "modalStates": {
       "ticketDetailsOpen": false,

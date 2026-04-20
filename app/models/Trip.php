@@ -65,8 +65,17 @@ class Trip extends BaseModel {
             $query .= " AND t.driver_id = :driver_id";
             $params[':driver_id'] = $filters['driver_id'];
         }
+
+        if (!empty($filters['vehicle_registration'])) {
+            $query .= " AND t.vehicle_registration = :vehicle_registration";
+            $params[':vehicle_registration'] = $filters['vehicle_registration'];
+        }
         
         $query .= " ORDER BY t.created_at DESC";
+
+        if (!empty($filters['limit']) && is_numeric($filters['limit'])) {
+            $query .= " LIMIT " . max(1, (int) $filters['limit']);
+        }
         
         $stmt = $this->db->prepare($query);
         $stmt->execute($params);
@@ -74,7 +83,10 @@ class Trip extends BaseModel {
     }
     
     public function getTripByTripId($trip_id) {
-        $query = "SELECT * FROM {$this->table} WHERE trip_id = :trip_id";
+        $query = "SELECT t.*, u.full_name AS driver_name
+                  FROM {$this->table} t
+                  LEFT JOIN users u ON t.driver_id = u.id
+                  WHERE t.trip_id = :trip_id";
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':trip_id', $trip_id);
         $stmt->execute();
@@ -236,5 +248,210 @@ class Trip extends BaseModel {
         $stmt->execute($params);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         return $result['count'];
+    }
+
+    public function getCargoItemsByTripIds($tripIds) {
+        $tripIds = array_values(array_unique(array_map('intval', is_array($tripIds) ? $tripIds : [])));
+        $tripIds = array_values(array_filter($tripIds, function ($id) {
+            return $id > 0;
+        }));
+
+        if (empty($tripIds)) {
+            return [];
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($tripIds), '?'));
+
+        $query = "SELECT tci.trip_id as trip_db_id,
+                         tci.cargo_item_id as cargo_item_db_id,
+                         tci.quantity,
+                         tci.notes,
+                         ci.cargo_item_id,
+                         ci.name,
+                         ci.description,
+                         ci.unit,
+                         ci.is_dangerous,
+                         ci.is_active
+                  FROM trip_cargo_items tci
+                  INNER JOIN cargo_items ci ON ci.id = tci.cargo_item_id
+                  WHERE tci.trip_id IN ($placeholders)
+                  ORDER BY tci.id ASC";
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute($tripIds);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $mapped = [];
+        foreach ($rows as $row) {
+            $tripDbId = (int) ($row['trip_db_id'] ?? 0);
+            if ($tripDbId <= 0) {
+                continue;
+            }
+
+            if (!isset($mapped[$tripDbId])) {
+                $mapped[$tripDbId] = [];
+            }
+
+            $mapped[$tripDbId][] = [
+                'cargo_item_db_id' => (int) ($row['cargo_item_db_id'] ?? 0),
+                'cargo_item_id' => $row['cargo_item_id'] ?? null,
+                'name' => $row['name'] ?? null,
+                'description' => $row['description'] ?? null,
+                'unit' => $row['unit'] ?? 'units',
+                'is_dangerous' => (int) ($row['is_dangerous'] ?? 0),
+                'is_active' => (int) ($row['is_active'] ?? 0),
+                'quantity' => isset($row['quantity']) ? (float) $row['quantity'] : 0.0,
+                'notes' => $row['notes'] ?? null,
+            ];
+        }
+
+        return $mapped;
+    }
+
+    public function replaceTripCargoItems($tripDbId, $cargoItems) {
+        $tripDbId = (int) $tripDbId;
+        if ($tripDbId <= 0) {
+            return;
+        }
+
+        $deleteStmt = $this->db->prepare('DELETE FROM trip_cargo_items WHERE trip_id = ?');
+        $deleteStmt->execute([$tripDbId]);
+
+        if (empty($cargoItems) || !is_array($cargoItems)) {
+            return;
+        }
+
+        $insertStmt = $this->db->prepare(
+            'INSERT INTO trip_cargo_items (trip_id, cargo_item_id, quantity, notes) VALUES (?, ?, ?, ?)'
+        );
+
+        foreach ($cargoItems as $item) {
+            if (empty($item['cargo_item_id'])) {
+                continue;
+            }
+
+            $insertStmt->execute([
+                $tripDbId,
+                (int) $item['cargo_item_id'],
+                (float) ($item['quantity'] ?? 0),
+                isset($item['notes']) ? trim((string) $item['notes']) : null,
+            ]);
+        }
+    }
+
+    public function listCargoItems($includeInactive = false) {
+        $query = "SELECT id, cargo_item_id, name, description, unit, is_dangerous, is_active, created_by, created_at, updated_at
+                  FROM cargo_items";
+        $params = [];
+
+        if (!$includeInactive) {
+            $query .= ' WHERE is_active = 1';
+        }
+
+        $query .= ' ORDER BY is_dangerous DESC, name ASC';
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getCargoItemById($id) {
+        $stmt = $this->db->prepare(
+            'SELECT id, cargo_item_id, name, description, unit, is_dangerous, is_active, created_by, created_at, updated_at
+             FROM cargo_items
+             WHERE id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([(int) $id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
+
+    public function findCargoItemByName($name) {
+        $stmt = $this->db->prepare(
+            'SELECT id, cargo_item_id, name, description, unit, is_dangerous, is_active, created_by, created_at, updated_at
+             FROM cargo_items
+             WHERE LOWER(name) = LOWER(?)
+             LIMIT 1'
+        );
+        $stmt->execute([trim((string) $name)]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
+
+    public function createCargoItem($data) {
+        $stmt = $this->db->prepare(
+            'INSERT INTO cargo_items (cargo_item_id, name, description, unit, is_dangerous, is_active, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
+        );
+
+        $ok = $stmt->execute([
+            $data['cargo_item_id'],
+            trim((string) $data['name']),
+            isset($data['description']) && $data['description'] !== '' ? trim((string) $data['description']) : null,
+            trim((string) ($data['unit'] ?? 'units')),
+            !empty($data['is_dangerous']) ? 1 : 0,
+            array_key_exists('is_active', $data) ? (!empty($data['is_active']) ? 1 : 0) : 1,
+            !empty($data['created_by']) ? (int) $data['created_by'] : null,
+        ]);
+
+        if (!$ok) {
+            return null;
+        }
+
+        return $this->getCargoItemById((int) $this->db->lastInsertId());
+    }
+
+    public function updateCargoItem($id, $data) {
+        $id = (int) $id;
+        if ($id <= 0) {
+            return null;
+        }
+
+        $fields = [];
+        $params = [];
+
+        if (array_key_exists('name', $data)) {
+            $fields[] = 'name = ?';
+            $params[] = trim((string) $data['name']);
+        }
+
+        if (array_key_exists('description', $data)) {
+            $fields[] = 'description = ?';
+            $params[] = $data['description'] !== null && $data['description'] !== ''
+                ? trim((string) $data['description'])
+                : null;
+        }
+
+        if (array_key_exists('unit', $data)) {
+            $fields[] = 'unit = ?';
+            $params[] = trim((string) $data['unit']);
+        }
+
+        if (array_key_exists('is_dangerous', $data)) {
+            $fields[] = 'is_dangerous = ?';
+            $params[] = !empty($data['is_dangerous']) ? 1 : 0;
+        }
+
+        if (array_key_exists('is_active', $data)) {
+            $fields[] = 'is_active = ?';
+            $params[] = !empty($data['is_active']) ? 1 : 0;
+        }
+
+        if (!empty($fields)) {
+            $params[] = $id;
+            $stmt = $this->db->prepare('UPDATE cargo_items SET ' . implode(', ', $fields) . ' WHERE id = ?');
+            $stmt->execute($params);
+        }
+
+        return $this->getCargoItemById($id);
+    }
+
+    public function deactivateCargoItem($id) {
+        $stmt = $this->db->prepare('UPDATE cargo_items SET is_active = 0 WHERE id = ?');
+        $stmt->execute([(int) $id]);
+        return $stmt->rowCount() > 0;
     }
 }

@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../helpers/Response.php';
 require_once __DIR__ . '/../middleware/RoleMiddleware.php';
+require_once __DIR__ . '/../services/FaultTicketService.php';
 
 /**
  * Breakdown Report Controller
@@ -9,10 +10,12 @@ require_once __DIR__ . '/../middleware/RoleMiddleware.php';
  */
 class BreakdownReportController {
     private $conn;
+    private $faultTicketService;
     
     public function __construct() {
         $db = Database::getInstance();
         $this->conn = $db->getConnection();
+        $this->faultTicketService = new FaultTicketService();
     }
     
     /**
@@ -150,6 +153,12 @@ class BreakdownReportController {
         RoleMiddleware::requireMinRole('Driver');
         
         $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            Response::error('Invalid JSON payload', 400);
+        }
+
+        // Always use server date for new breakdown reports.
+        $breakdownDate = date('Y-m-d');
         $currentUser = RoleMiddleware::getCurrentUser();
         
         try {
@@ -171,14 +180,33 @@ class BreakdownReportController {
                 $breakdownId,
                 $input['vehicle_id'],
                 $currentUser['id'],
-                $input['breakdown_date'] ?? date('Y-m-d'),
+                $breakdownDate,
                 $input['breakdown_type'],
                 $input['severity'],
                 $input['description']
             ]);
+
+            $ticketPayload = [
+                'vehicle_id' => (int) $input['vehicle_id'],
+                'reported_by' => (int) $currentUser['id'],
+                'breakdown_report_id' => $breakdownId,
+                'breakdown_type' => 'vehicle_breakdown',
+                'priority' => $this->mapSeverityToPriority($input['severity'] ?? null),
+                'description' => $this->buildAutoTicketDescription($breakdownId, array_merge($input, [
+                    'breakdown_date' => $breakdownDate,
+                ]))
+            ];
+
+            $ticketResult = $this->faultTicketService->create($ticketPayload);
+            if (empty($ticketResult['success'])) {
+                $ticketError = $ticketResult['message'] ?? 'Failed to auto-create linked fault ticket';
+                throw new RuntimeException($ticketError);
+            }
             
             // Commit transaction
-            $this->conn->commit();
+            if ($this->conn->inTransaction()) {
+                $this->conn->commit();
+            }
             
             Response::success([
                 'breakdown_id' => $breakdownId
@@ -186,9 +214,42 @@ class BreakdownReportController {
             
         } catch (Exception $e) {
             // Rollback on error
-            $this->conn->rollBack();
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
             Response::error('Failed to create breakdown report: ' . $e->getMessage(), 500);
         }
+    }
+
+    private function mapSeverityToPriority($severity) {
+        $normalized = strtolower(trim((string) $severity));
+
+        if ($normalized === 'critical') {
+            return 'Critical';
+        }
+
+        if ($normalized === 'high') {
+            return 'High';
+        }
+
+        if ($normalized === 'low') {
+            return 'Low';
+        }
+
+        return 'Medium';
+    }
+
+    private function buildAutoTicketDescription(string $breakdownId, array $input): string {
+        $breakdownType = trim((string) ($input['breakdown_type'] ?? 'General Breakdown'));
+        $severity = strtoupper(trim((string) ($input['severity'] ?? 'medium')));
+        $reportedDate = trim((string) ($input['breakdown_date'] ?? date('Y-m-d')));
+        $details = trim((string) ($input['description'] ?? 'No description provided'));
+
+        return "[Vehicle Breakdown] {$breakdownId}\n"
+            . "Type: {$breakdownType}\n"
+            . "Severity: {$severity}\n"
+            . "Reported Date: {$reportedDate}\n"
+            . "Details: {$details}";
     }
     
     /**
@@ -227,6 +288,9 @@ class BreakdownReportController {
         $allowedFields = ['severity', 'breakdown_type', 'description', 'status', 'breakdown_date'];
         foreach ($allowedFields as $field) {
             if (isset($input[$field])) {
+                if ($field === 'breakdown_date') {
+                    $input[$field] = $this->normalizeBreakdownDate($input[$field], true);
+                }
                 $fields[] = "$field = ?";
                 $params[] = $input[$field];
             }
@@ -277,6 +341,28 @@ class BreakdownReportController {
         $stmt->execute([$id]);
         
         Response::success(null, 'Breakdown report deleted successfully');
+    }
+
+    private function normalizeBreakdownDate($value, bool $required): string {
+        $raw = trim((string) ($value ?? ''));
+        if ($raw === '') {
+            if ($required) {
+                Response::error('breakdown_date is required', 400);
+            }
+            return date('Y-m-d');
+        }
+
+        $date = DateTime::createFromFormat('Y-m-d', $raw);
+        if (!$date || $date->format('Y-m-d') !== $raw) {
+            Response::error('breakdown_date must be in YYYY-MM-DD format', 400);
+        }
+
+        $today = new DateTime(date('Y-m-d'));
+        if ($date > $today) {
+            Response::error('breakdown_date cannot be in the future', 400);
+        }
+
+        return $date->format('Y-m-d');
     }
     
     /**

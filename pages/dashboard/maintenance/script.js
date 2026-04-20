@@ -6,8 +6,12 @@ function getMaintenanceServiceReportsComponent() {
     return document.querySelector('maintenance-service-reports');
 }
 
-function getMaintenanceServiceRecordsComponent() {
-    return document.querySelector('maintenance-service-records');
+function getMaintenanceServiceTicketsComponent() {
+    return document.querySelector('maintenance-service-tickets');
+}
+
+function getMaintenanceServiceTicketDetailViewComponent() {
+    return document.querySelector('#service-ticket-details maintenance-service-ticket-detail-view');
 }
 
 function getMaintenanceServiceWarrantyComponent() {
@@ -20,6 +24,26 @@ function getMaintenanceNotificationsComponent() {
 
 function getMaintenanceFaultTicketsComponent() {
     return document.querySelector('maintenance-fault-tickets');
+}
+
+let maintenanceServiceTicketDetailsReturnSection = 'service-tickets';
+
+function navigateMaintenanceSection(sectionId) {
+    const layout = document.querySelector('ac-layout');
+    if (!layout || typeof layout.navigateTo !== 'function') {
+        return false;
+    }
+
+    layout.navigateTo(sectionId);
+    return true;
+}
+
+function scrollMaintenanceViewportToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function getMaintenanceAnalyticsHubComponent() {
+    return document.querySelector('maintenance-analytics-hub');
 }
 
 function getTicketDetailsModalComponent() {
@@ -37,14 +61,75 @@ async function refreshMaintenanceCostApprovals() {
     }
 }
 
-function switchTab(tabName, evt) {
-    const component = getMaintenanceServiceRecordsComponent();
-    if (!component || typeof component.switchTab !== 'function') {
+async function refreshMaintenanceAnalyticsHub() {
+    const component = getMaintenanceAnalyticsHubComponent();
+    if (!component) {
         return;
     }
 
-    const trigger = evt?.target || window.event?.target;
-    component.switchTab(tabName, trigger || null);
+    if (typeof component.refreshActive === 'function') {
+        await component.refreshActive();
+        return;
+    }
+
+    if (typeof component.refresh === 'function') {
+        await component.refresh();
+    }
+}
+
+async function refreshMaintenanceServiceTickets() {
+    const component = getMaintenanceServiceTicketsComponent();
+    if (component && typeof component.refresh === 'function') {
+        await component.refresh();
+    }
+}
+
+async function refreshMaintenanceServiceReports() {
+    const component = getMaintenanceServiceReportsComponent();
+    if (component && typeof component.refresh === 'function') {
+        await component.refresh();
+    }
+}
+
+async function refreshMaintenanceWarrantyManagement() {
+    const component = getMaintenanceServiceWarrantyComponent();
+    if (component && typeof component.refresh === 'function') {
+        await component.refresh();
+    }
+}
+
+async function refreshMaintenanceSection(sectionId) {
+    if (sectionId === 'cost-approvals') {
+        await refreshMaintenanceCostApprovals();
+        return;
+    }
+
+    if (sectionId === 'analytics') {
+        await refreshMaintenanceAnalyticsHub();
+        return;
+    }
+
+    if (sectionId === 'service-tickets') {
+        await refreshMaintenanceServiceTickets();
+        return;
+    }
+
+    if (sectionId === 'service-ticket-details') {
+        const detailView = getMaintenanceServiceTicketDetailViewComponent();
+        if (detailView && typeof detailView.refresh === 'function') {
+            detailView.refresh();
+        }
+        return;
+    }
+
+    if (sectionId === 'service-reports') {
+        await refreshMaintenanceServiceReports();
+        return;
+    }
+
+    if (sectionId === 'warranty-management') {
+        await refreshMaintenanceWarrantyManagement();
+    }
 }
 
 function filterTickets(status, evt) {
@@ -185,7 +270,43 @@ function viewServiceSchedule(equipmentId) {
 }
 
 function viewServiceDetails(serviceId) {
-    showToast(`Viewing detailed service record for ${serviceId}`);
+    viewServiceTicketDetails(serviceId);
+}
+
+function viewServiceTicketDetails(ticketId, options = {}) {
+    const normalizedTicketId = String(ticketId || '').trim();
+    if (!normalizedTicketId) {
+        showToast('Invalid service ticket ID.');
+        return;
+    }
+
+    const detailView = getMaintenanceServiceTicketDetailViewComponent();
+    if (!detailView || typeof detailView.open !== 'function') {
+        showToast('Service ticket details component is unavailable right now.');
+        return;
+    }
+
+    const requestedReturnSection = String(options.returnSection || '').trim();
+    if (requestedReturnSection && requestedReturnSection !== 'service-ticket-details') {
+        maintenanceServiceTicketDetailsReturnSection = requestedReturnSection;
+    } else {
+        const activeSection = document.querySelector('.content-section.active')?.id || '';
+        if (activeSection && activeSection !== 'service-ticket-details') {
+            maintenanceServiceTicketDetailsReturnSection = activeSection;
+        }
+    }
+
+    const navigated = navigateMaintenanceSection('service-ticket-details');
+    if (!navigated) {
+        showToast('Unable to open service ticket details right now.');
+        return;
+    }
+
+    scrollMaintenanceViewportToTop();
+
+    detailView.open(normalizedTicketId, {
+        returnSection: maintenanceServiceTicketDetailsReturnSection,
+    });
 }
 
 function approveCost(requestId) {
@@ -284,6 +405,52 @@ function setupMobileMenu() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     await DashboardInit.init(['Maintenance Manager'], { updateUserDisplay: true });
+
+    const layout = document.querySelector('ac-layout');
+    if (layout) {
+        layout.addEventListener('section-change', async (event) => {
+            const section = event.detail?.section;
+            if (!section) {
+                return;
+            }
+
+            await refreshMaintenanceSection(section);
+        });
+    }
+
+    const serviceTicketDetailView = getMaintenanceServiceTicketDetailViewComponent();
+    if (serviceTicketDetailView) {
+        serviceTicketDetailView.addEventListener('maintenance-service-ticket-detail-view:toast', (event) => {
+            const message = event.detail?.message;
+            if (!message) {
+                return;
+            }
+
+            showToast(message);
+        });
+
+        serviceTicketDetailView.addEventListener('maintenance-service-ticket-detail-view:back', (event) => {
+            const returnSection = String(event.detail?.returnSection || maintenanceServiceTicketDetailsReturnSection || 'service-tickets').trim() || 'service-tickets';
+            maintenanceServiceTicketDetailsReturnSection = returnSection === 'service-ticket-details' ? 'service-tickets' : returnSection;
+
+            navigateMaintenanceSection(maintenanceServiceTicketDetailsReturnSection);
+            serviceTicketDetailView.closeView?.();
+            scrollMaintenanceViewportToTop();
+        });
+
+        serviceTicketDetailView.addEventListener('maintenance-service-ticket-detail-view:deleted', async (event) => {
+            const returnSection = String(event.detail?.returnSection || maintenanceServiceTicketDetailsReturnSection || 'service-tickets').trim() || 'service-tickets';
+            maintenanceServiceTicketDetailsReturnSection = returnSection === 'service-ticket-details' ? 'service-tickets' : returnSection;
+
+            navigateMaintenanceSection(maintenanceServiceTicketDetailsReturnSection);
+            serviceTicketDetailView.closeView?.();
+
+            await refreshMaintenanceServiceTickets();
+            await refreshMaintenanceServiceReports();
+
+            scrollMaintenanceViewportToTop();
+        });
+    }
 
     await refreshMaintenanceCostApprovals();
     setupMobileMenu();

@@ -29,6 +29,12 @@ class DriverBreakdownDetailsModal extends HTMLElement {
                         <h2><i class="fas fa-info-circle"></i> Breakdown Report Details</h2>
                         <button class="btn-close" type="button" data-action="close-modal"><i class="fas fa-times"></i></button>
                     </div>
+                    <div id="breakdownDetailsToolbar" style="display:none; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; padding:10px 12px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc;">
+                        <button class="btn btn-primary btn-small" id="trackWorkflowButton" type="button" data-action="track-workflow" aria-expanded="false">
+                            <i class="fas fa-route"></i> Track Workflow
+                        </button>
+                        <span id="trackWorkflowHint" style="font-size:0.8rem; color:#475569;"></span>
+                    </div>
                     <div id="breakdownDetailsContent"></div>
                     <button class="btn btn-secondary" type="button" data-action="close-modal"><i class="fas fa-times"></i> Close</button>
                 </div>
@@ -42,8 +48,58 @@ class DriverBreakdownDetailsModal extends HTMLElement {
             const actionEl = event.target.closest('[data-action]');
             if (event.target === modal || (actionEl && actionEl.dataset.action === 'close-modal')) {
                 this.close();
+                return;
+            }
+
+            if (actionEl && actionEl.dataset.action === 'track-workflow') {
+                this.showWorkflowFlow();
             }
         });
+    }
+
+    setWorkflowToolbar(context = null) {
+        const toolbar = this.querySelector('#breakdownDetailsToolbar');
+        const button = this.querySelector('#trackWorkflowButton');
+        const hint = this.querySelector('#trackWorkflowHint');
+
+        if (!toolbar || !button || !hint) {
+            return;
+        }
+
+        if (!context) {
+            toolbar.style.display = 'none';
+            button.setAttribute('aria-expanded', 'false');
+            button.disabled = false;
+            hint.textContent = '';
+            return;
+        }
+
+        toolbar.style.display = 'flex';
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-route"></i> Track Workflow';
+        button.setAttribute('aria-expanded', 'false');
+        hint.textContent = context.isRouteBreakdown
+            ? 'RBD workflow shows garage approval, entry, repair updates, and completion.'
+            : 'VBD workflow shows assignment, approvals, repair progress, and closure.';
+    }
+
+    showWorkflowFlow() {
+        const workflowSection = this.querySelector('#driverWorkflowSection');
+        const button = this.querySelector('#trackWorkflowButton');
+
+        if (!workflowSection) {
+            DriverUtils.showToast('Workflow details are not available for this report.', 'warning');
+            return;
+        }
+
+        workflowSection.style.display = 'block';
+        workflowSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-check-circle"></i> Workflow Visible';
+            button.setAttribute('aria-expanded', 'true');
+        }
     }
 
     async open(payload) {
@@ -56,6 +112,7 @@ class DriverBreakdownDetailsModal extends HTMLElement {
         }
 
         DriverUtils.setModalState(modal, true);
+        this.setWorkflowToolbar(null);
 
         const routeBreakdownId = this.getRouteBreakdownId(payload, item);
         if (routeBreakdownId) {
@@ -64,16 +121,19 @@ class DriverBreakdownDetailsModal extends HTMLElement {
             try {
                 const detailPayload = await this.loadRouteBreakdownDetails(routeBreakdownId, item);
                 const context = this.buildWorkflowContext(detailPayload.breakdown, detailPayload.workflowDetails);
-                content.innerHTML = this.renderDetailedView(context);
+                content.innerHTML = this.renderDetailedView(context, { showWorkflow: false });
+                this.setWorkflowToolbar(context);
                 return;
             } catch (error) {
                 console.error('Failed to load route breakdown details:', error);
                 if (item) {
                     content.innerHTML = `${this.renderBasicItem(item)}<div style="padding: 12px; border-left: 4px solid var(--danger); border-radius: 6px; background: #fef2f2; color: #991b1b; margin-top: 12px;">Unable to load full workflow details. Showing basic report information.</div>`;
+                    this.setWorkflowToolbar(null);
                     return;
                 }
 
                 content.innerHTML = '<p style="color: var(--danger);">Failed to load breakdown details. Please try again.</p>';
+                this.setWorkflowToolbar(null);
                 return;
             }
         }
@@ -87,26 +147,31 @@ class DriverBreakdownDetailsModal extends HTMLElement {
                 const context = this.buildWorkflowContext(detailPayload.breakdown, detailPayload.workflowDetails, {
                     isRouteBreakdown: false,
                 });
-                content.innerHTML = this.renderDetailedView(context);
+                content.innerHTML = this.renderDetailedView(context, { showWorkflow: false });
+                this.setWorkflowToolbar(context);
                 return;
             } catch (error) {
                 console.error('Failed to load vehicle breakdown details:', error);
                 if (item) {
                     content.innerHTML = `${this.renderBasicItem(item)}<div style="padding: 12px; border-left: 4px solid var(--danger); border-radius: 6px; background: #fef2f2; color: #991b1b; margin-top: 12px;">Unable to load full workflow details. Showing basic report information.</div>`;
+                    this.setWorkflowToolbar(null);
                     return;
                 }
 
                 content.innerHTML = '<p style="color: var(--danger);">Failed to load breakdown details. Please try again.</p>';
+                this.setWorkflowToolbar(null);
                 return;
             }
         }
 
         if (!item) {
             content.innerHTML = '<p style="color: var(--muted);">Breakdown details are not available.</p>';
+            this.setWorkflowToolbar(null);
             return;
         }
 
         content.innerHTML = this.renderBasicItem(item);
+        this.setWorkflowToolbar(null);
     }
 
     getRouteBreakdownId(payload, item) {
@@ -283,8 +348,9 @@ class DriverBreakdownDetailsModal extends HTMLElement {
         };
     }
 
-    renderDetailedView(context) {
+    renderDetailedView(context, options = {}) {
         const breakdown = context.breakdown;
+        const showWorkflow = options.showWorkflow === true;
         const garageWorkflowHtml = this.renderGarageWorkflowSection(breakdown);
         const garageUpdatesHtml = this.renderGarageUpdatesSection(breakdown.garage_updates || []);
         const isRouteBreakdown = context.isRouteBreakdown === true;
@@ -326,7 +392,7 @@ class DriverBreakdownDetailsModal extends HTMLElement {
             : '';
 
         return `
-            ${this.renderWorkflowFlow(context)}
+            ${this.renderWorkflowFlow(context, showWorkflow)}
 
             <div class="form-section">
                 <h5><i class="fas fa-info-circle"></i> Breakdown Information</h5>
@@ -478,12 +544,19 @@ class DriverBreakdownDetailsModal extends HTMLElement {
         return `${apiBaseUrl}/${normalizedPath}`;
     }
 
-    renderWorkflowFlow(context) {
+    renderWorkflowFlow(context, isVisible = true) {
         const steps = this.getFlowSteps(context);
+        const flowTitle = context.isRouteBreakdown
+            ? 'Route Breakdown Ticket Workflow (RBD)'
+            : 'Vehicle Breakdown Ticket Workflow (VBD)';
+        const currentStage = this.getCurrentWorkflowStageLabel(context);
 
         return `
-            <div class="form-section driver-flow-section">
-                <h5><i class="fas fa-project-diagram"></i> Ticket Resolution Flow</h5>
+            <div id="driverWorkflowSection" class="form-section driver-flow-section" style="${isVisible ? '' : 'display:none;'}">
+                <h5><i class="fas fa-project-diagram"></i> ${this.escapeHtml(flowTitle)}</h5>
+                <p style="margin: 0 0 12px 0; padding: 8px 10px; border-radius: 8px; background: #eff6ff; color: #1d4ed8; font-weight: 600; font-size: 0.85rem;">
+                    <i class="fas fa-location-arrow"></i> Current Stage: ${this.escapeHtml(currentStage)}
+                </p>
                 <div class="driver-ticket-flow">
                     ${steps.map((step, index) => this.renderFlowStep(step, index === steps.length - 1)).join('')}
                 </div>
@@ -492,6 +565,186 @@ class DriverBreakdownDetailsModal extends HTMLElement {
     }
 
     getFlowSteps(context) {
+        if (context.isRouteBreakdown === true) {
+            return this.getRouteFlowSteps(context);
+        }
+
+        return this.getVehicleFlowSteps(context);
+    }
+
+    getCurrentWorkflowStageLabel(context) {
+        if (context.isRouteBreakdown === true) {
+            const status = this.normalizeStatus(
+                context.breakdown?.garage_workflow?.status
+                || context.breakdown?.garage_workflow_status
+                || ''
+            );
+
+            const labelMap = {
+                awaiting_supervisor_approval: 'Awaiting Supervisor Garage Approval',
+                garage_approved: 'Garage Approved',
+                garage_entry_logged: 'Garage Entry Logged',
+                repair_in_progress: 'Repair In Progress',
+                completed: 'Garage Workflow Completed',
+            };
+
+            return labelMap[status] || this.getGarageWorkflowLabel(status || 'awaiting_supervisor_approval');
+        }
+
+        return String(context.ticketStatus || 'Pending').toUpperCase();
+    }
+
+    getRouteFlowSteps(context) {
+        const hasTicket = Boolean(context.ticketId || context.breakdown.fault_ticket_number);
+        const ticketStatus = context.normalizedTicketStatus;
+        const workflow = context.breakdown?.garage_workflow || {};
+        const workflowStatus = this.normalizeStatus(
+            workflow.status
+            || context.breakdown?.garage_workflow_status
+            || 'awaiting_supervisor_approval'
+        );
+        const garageUpdates = this.sortByDateDesc(
+            Array.isArray(context.breakdown?.garage_updates) ? context.breakdown.garage_updates : [],
+            ['created_at', 'updated_at']
+        );
+        const latestGarageUpdate = garageUpdates[0] || null;
+        const approvedGarageName = workflow?.approved_garage?.name || context.breakdown?.approved_garage_name || null;
+
+        const isGarageApproved = ['garage_approved', 'garage_entry_logged', 'repair_in_progress', 'completed'].includes(workflowStatus);
+        const isGarageEntryLogged = ['garage_entry_logged', 'repair_in_progress', 'completed'].includes(workflowStatus);
+        const isRepairTracked = ['repair_in_progress', 'completed'].includes(workflowStatus);
+        const isGarageCompleted = workflowStatus === 'completed';
+
+        const reportedStep = {
+            title: 'Route Breakdown Reported',
+            state: 'completed',
+            date: context.breakdown.breakdown_datetime || context.breakdown.created_at,
+            details: [
+                `Report ID: ${context.breakdown.route_breakdown_id || context.breakdown.id || 'N/A'}`,
+                `Vehicle: ${context.breakdown.number_plate || `Vehicle #${context.breakdown.vehicle_id || 'N/A'}`}`,
+                `Location: ${context.breakdown.breakdown_location || 'N/A'}`,
+                `Severity: ${String(context.breakdown.severity || 'Medium').toUpperCase()}`,
+            ],
+        };
+
+        const ticketStep = {
+            title: 'Fault Ticket Created',
+            state: hasTicket ? 'completed' : 'pending',
+            date: context.createdAt,
+            details: hasTicket
+                ? [
+                    `Ticket Number: ${context.breakdown.fault_ticket_number || context.ticket?.ticket_id || 'Generated'}`,
+                    `Current Ticket Status: ${context.ticketStatus || 'Pending'}`,
+                ]
+                : ['Waiting for ticket creation from breakdown report.'],
+        };
+
+        let approvalState = 'pending';
+        if (!hasTicket) {
+            approvalState = 'pending';
+        } else if (isGarageApproved) {
+            approvalState = 'completed';
+        } else if (ticketStatus === 'insurance claimed') {
+            approvalState = 'active';
+        } else {
+            approvalState = 'active';
+        }
+
+        const approvalStep = {
+            title: 'Supervisor Garage Approval',
+            state: approvalState,
+            date: workflow.approved_at || null,
+            details: isGarageApproved
+                ? [
+                    `Approved Garage: ${approvedGarageName || 'N/A'}`,
+                    `Approved By: ${workflow.approved_by || 'Supervisor'}`,
+                    ...(workflow.approval_notes ? [`Approval Notes: ${workflow.approval_notes}`] : []),
+                ]
+                : ['Supervisor has not approved a nearby garage yet.'],
+        };
+
+        let entryState = 'pending';
+        if (isGarageEntryLogged) {
+            entryState = 'completed';
+        } else if (workflowStatus === 'garage_approved') {
+            entryState = 'active';
+        }
+
+        const entryStep = {
+            title: 'Garage Entry Logged',
+            state: entryState,
+            date: workflow.garage_entry_at || null,
+            details: isGarageEntryLogged
+                ? [
+                    `Garage Entry Time: ${this.formatDate(workflow.garage_entry_at)}`,
+                    ...(approvedGarageName ? [`Garage: ${approvedGarageName}`] : []),
+                ]
+                : ['Driver has not logged garage entry yet.'],
+        };
+
+        let progressState = 'pending';
+        if (isGarageCompleted) {
+            progressState = 'completed';
+        } else if (isRepairTracked || isGarageEntryLogged) {
+            progressState = 'active';
+        }
+
+        const progressDetails = [];
+        if (latestGarageUpdate) {
+            progressDetails.push(`Latest Update: ${latestGarageUpdate.note || 'Progress update submitted.'}`);
+            progressDetails.push(`Updated On: ${this.formatDate(latestGarageUpdate.created_at || latestGarageUpdate.updated_at)}`);
+        }
+        progressDetails.push(`Total Garage Updates: ${garageUpdates.length}`);
+        if (!garageUpdates.length) {
+            progressDetails.push('No repair progress updates submitted yet.');
+        }
+
+        const progressStep = {
+            title: 'Garage Repair Tracking',
+            state: progressState,
+            date: latestGarageUpdate?.created_at || null,
+            details: progressDetails,
+        };
+
+        let completionState = 'pending';
+        if (ticketStatus === 'closed') {
+            completionState = 'completed';
+        } else if (isGarageCompleted || ticketStatus === 'resolved') {
+            completionState = 'active';
+        }
+
+        const completionDetails = [];
+        if (workflow.bill_amount !== null && workflow.bill_amount !== undefined) {
+            completionDetails.push(`Garage Bill: ${this.formatCurrency(workflow.bill_amount)}`);
+        }
+        if (workflow.completion_remarks) {
+            completionDetails.push(`Completion Remarks: ${workflow.completion_remarks}`);
+        }
+        if (context.resolutionNotes) {
+            completionDetails.push(`Resolution Notes: ${context.resolutionNotes}`);
+        }
+        if (!completionDetails.length) {
+            completionDetails.push('Waiting for final completion details and ticket closure.');
+        }
+
+        const completionStep = {
+            title: 'Completion and Closure',
+            state: completionState,
+            date: context.resolvedAt || workflow.completed_at || null,
+            details: completionDetails,
+        };
+
+        return [
+            reportedStep,
+            ticketStep,
+            approvalStep,
+            entryStep,
+            progressStep,
+            completionStep,
+        ];
+    }
+
+    getVehicleFlowSteps(context) {
         const isRouteBreakdown = context.isRouteBreakdown === true;
         const hasTicket = Boolean(context.ticketId || context.breakdown.fault_ticket_number);
         const status = context.normalizedTicketStatus;
