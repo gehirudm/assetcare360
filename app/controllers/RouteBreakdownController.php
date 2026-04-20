@@ -271,6 +271,23 @@ class RouteBreakdownController {
                 return;
             }
 
+            $activeRouteBreakdown = $this->findActiveRouteBreakdownForVehicle($vehicleId);
+            if ($activeRouteBreakdown) {
+                if ($this->conn->inTransaction()) {
+                    $this->conn->rollBack();
+                }
+
+                $activeBreakdownLabel = trim((string) ($activeRouteBreakdown['route_breakdown_id'] ?? ''));
+                if ($activeBreakdownLabel === '') {
+                    $activeBreakdownLabel = '#' . (int) ($activeRouteBreakdown['id'] ?? 0);
+                }
+
+                Response::error(
+                    'An active in-route breakdown report (' . $activeBreakdownLabel . ') already exists for this vehicle. Please continue that workflow instead of creating a duplicate report.',
+                    400
+                );
+                return;
+            }
             $temporaryRouteBreakdownId = 'TMP-' . str_replace('.', '', uniqid('', true));
 
             if ($this->hasDangerousSnapshotColumns()) {
@@ -401,19 +418,23 @@ class RouteBreakdownController {
 
     private function generateNextRouteBreakdownCode(): string {
         $stmt = $this->conn->query(
-            "SELECT route_breakdown_id
-             FROM vehicle_breakdown_inroute
-             WHERE route_breakdown_id REGEXP '^RBD-[0-9]+$'
-             ORDER BY CAST(SUBSTRING(route_breakdown_id, 5) AS UNSIGNED) DESC
-             LIMIT 1"
+            "SELECT MAX(sequence_no) AS max_sequence
+             FROM (
+                SELECT CAST(SUBSTRING(route_breakdown_id, 5) AS UNSIGNED) AS sequence_no
+                FROM vehicle_breakdown_inroute
+                WHERE route_breakdown_id REGEXP '^RBD-[0-9]+$'
+
+                UNION ALL
+
+                SELECT CAST(SUBSTRING(breakdown_report_id, 5) AS UNSIGNED) AS sequence_no
+                FROM fault_tickets
+                WHERE breakdown_type = 'route_breakdown'
+                  AND breakdown_report_id REGEXP '^RBD-[0-9]+$'
+            ) AS route_code_pool"
         );
 
-        $latestCode = $stmt ? trim((string) $stmt->fetchColumn()) : '';
-        $nextNumber = 1;
-
-        if ($latestCode !== '' && preg_match('/^RBD-(\d+)$/', $latestCode, $matches) === 1) {
-            $nextNumber = ((int) $matches[1]) + 1;
-        }
+        $maxSequence = $stmt ? (int) ($stmt->fetchColumn() ?: 0) : 0;
+        $nextNumber = $maxSequence + 1;
 
         return 'RBD-' . str_pad((string) $nextNumber, 3, '0', STR_PAD_LEFT);
     }
@@ -1062,6 +1083,29 @@ class RouteBreakdownController {
         Response::success(['garages' => $this->getActiveGarages()]);
     }
 
+    private function findActiveRouteBreakdownForVehicle(int $vehicleId): ?array {
+        if ($vehicleId <= 0) {
+            return null;
+        }
+
+        $sql = "SELECT id, route_breakdown_id, status
+                FROM vehicle_breakdown_inroute
+                WHERE vehicle_id = ?
+                  AND LOWER(COALESCE(status, 'pending')) NOT IN ('resolved', 'closed')
+                ORDER BY id DESC
+                LIMIT 1";
+
+        try {
+            $stmt = $this->conn->prepare($sql);
+            $stmt->execute([$vehicleId]);
+            $row = $stmt->fetch();
+
+            return $row ?: null;
+        } catch (Throwable $e) {
+            error_log('RouteBreakdownController::findActiveRouteBreakdownForVehicle error: ' . $e->getMessage());
+            return null;
+        }
+    }
     private function findActiveRouteBreakdownTicketForVehicle(int $vehicleId): ?array {
         if ($vehicleId <= 0) {
             return null;
