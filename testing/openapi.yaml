@@ -1910,7 +1910,8 @@ paths:
       summary: Check availability of spare parts
       description: |
         Check availability of multiple spare parts before creating a request.
-        Returns status for each part: available, insufficient, out_of_stock, or not_found.
+        Returns status for each part: available, insufficient, out_of_stock, not_found, or invalid.
+        Availability is evaluated against total requested quantity per part code across all submitted items.
       requestBody:
         required: true
         content:
@@ -1962,7 +1963,7 @@ paths:
                               example: "Hydraulic Pump"
                             status:
                               type: string
-                              enum: [available, insufficient, out_of_stock, not_found]
+                              enum: [available, insufficient, out_of_stock, not_found, invalid]
                               example: "available"
                             available_qty:
                               type: integer
@@ -1970,6 +1971,13 @@ paths:
                             requested_qty:
                               type: integer
                               example: 5
+                            total_requested_qty:
+                              type: integer
+                              description: Aggregated requested quantity for the same part code in the submitted payload.
+                              example: 8
+                            low_stock_threshold:
+                              type: integer
+                              example: 10
                             reorder_level:
                               type: integer
                               example: 10
@@ -4790,7 +4798,7 @@ components:
                   type: string
                 status:
                   type: string
-                  enum: [Open, Assigned, Waiting for Budget Approval, Waiting for Spare Parts, Parts Approved, Insurance Claimed, In Progress, Resolved, Closed]
+                  enum: [Open, Assigned, Waiting for Budget Approval, Waiting for Spare Parts, Parts Approved, Parts Rejected, Insurance Claimed, In Progress, Resolved, Closed]
       responses:
         '200':
           description: Fault ticket updated successfully
@@ -5813,9 +5821,6 @@ components:
           nullable: true
           minimum: 0
           description: Current machine operating hours
-        last_service_date:
-          type: string
-          format: date
         last_service_hours:
           type: integer
           nullable: true
@@ -6005,10 +6010,6 @@ components:
           type: integer
           default: 0
           minimum: 0
-        last_service_date:
-          type: string
-          format: date
-          description: Must not be in the future
         last_service_mileage:
           type: integer
           description: Must be less than or equal to current_mileage
@@ -6627,7 +6628,7 @@ components:
           type: string
         status:
           type: string
-          enum: [Open, Assigned, Waiting for Budget Approval, Waiting for Spare Parts, Parts Approved, Insurance Claimed, In Progress, Resolved, Closed]
+          enum: [Open, Assigned, Waiting for Budget Approval, Waiting for Spare Parts, Parts Approved, Parts Rejected, Insurance Claimed, In Progress, Resolved, Closed]
         insurance_claim:
           $ref: '#/components/schemas/FaultTicketInsuranceClaim'
         is_dangerous_cargo:
