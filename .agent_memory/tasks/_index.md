@@ -12,6 +12,13 @@
 - _(none)_
 
 ## Completed
+- [TASK104] TO View-Ticket Modal Layout and Budget Header Alignment - Widened TO Request Spare Parts modal to prevent compressed layout and aligned budget modal header text, with passing desktop/mobile UI validation
+- [TASK103] Supervisor Route Breakdown Bill Visibility in Ticket Detail - Added shared route completion bill rendering in ticket detail (amount, remarks, image link/preview) and validated via focused supervisor desktop/mobile UI spec
+- [TASK102] Driver Ticket Detail Realtime Progress Flow Refresh - Subscribed embedded Driver detail view to breakdown-change events so Add Progress/Complete Repair updates reflect immediately without page refresh, with passing driver UI regression coverage
+- [TASK101] Driver Ticket Detail Actions Parity With Fault Ticket List - Added Driver detail-view Add Progress/Complete Repair actions with workflow-gated visibility and dashboard modal delegation parity, validated with updated driver UI suite
+- [TASK100] Driver Ticket Detail Modal White Border Fix - Removed legacy embedded view-ticket stylesheet bleed that overrode Driver modal padding and added regression assertion for modal content padding in Driver dashboard validation
+- [TASK099] Driver Breakdown Status and Action Logic Parity - Ported Ticket Tracking ticket-status normalization/filter semantics and workflow-gated ticket actions into Driver Breakdown Report, with updated Driver dashboard UI validation coverage
+- [TASK098] Driver Garage Actions Relocated to Fault Reporting + Detail View - Moved Nearby Garages and Log Garage Entry actions from Driver Ticket Tracking to Driver Breakdown list for route reports, added same actions in Driver ticket detail view using existing nearby-garages modal, and validated with driver dashboard Playwright suite
 - [TASK130] Inventory Catalog Filter/Sort Options and Layout Improvement - Added catalog sorting options and improved filter/sort toolbar layout with focused before/after desktop+mobile Playwright validation pass
 - [TASK129] Normalize Trip IDs to TRP-Dash Format - Added migration 064 to normalize legacy `trips.trip_id` values to `TRP-###`, hardened TripService next-id generation, and verified all records now follow dash format
 - [TASK128] Inventory Machine and Vehicle Created-Date Sorting - Added created-date asc/desc sorting controls for machine and vehicle list sections with focused before/after Playwright validation pass

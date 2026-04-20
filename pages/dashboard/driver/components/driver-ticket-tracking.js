@@ -430,14 +430,6 @@ class DriverTicketTracking extends HTMLElement {
         const routeActionAttr = `${itemKeyAttr} ${idAttr}`;
         const menuItems = [];
 
-        if (isRouteBreakdown) {
-            menuItems.push(`<button class="dropdown-item" type="button" data-action="view-garages" ${routeActionAttr}><i class="fas fa-map-marker-alt"></i> Nearby Garages</button>`);
-        }
-
-        if (workflowStatus === 'garage_approved') {
-            menuItems.push(`<button class="dropdown-item" type="button" data-action="log-garage-entry" ${routeActionAttr}><i class="fas fa-sign-in-alt"></i> Log Garage Entry</button>`);
-        }
-
         if (workflowStatus === 'garage_entry_logged' || workflowStatus === 'repair_in_progress') {
             menuItems.push(`<button class="dropdown-item" type="button" data-action="add-garage-progress" ${routeActionAttr}><i class="fas fa-camera"></i> Add Progress</button>`);
             menuItems.push(`<button class="dropdown-item" type="button" data-action="complete-garage-breakdown" ${routeActionAttr}><i class="fas fa-check-circle"></i> Complete Repair</button>`);

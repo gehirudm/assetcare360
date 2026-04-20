@@ -21,7 +21,6 @@ class DriverGarages extends HTMLElement {
             <div class="card" style="margin-bottom: 16px;">
                 <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
                     <span><i class="fas fa-store"></i> Active Garages</span>
-                    <button class="btn btn-secondary btn-small" type="button" data-action="refresh"><i class="fas fa-sync-alt"></i> Refresh</button>
                 </div>
                 <div id="driverGaragesList" class="grid"></div>
             </div>
@@ -48,11 +47,6 @@ class DriverGarages extends HTMLElement {
             }
 
             const action = actionEl.dataset.action;
-
-            if (action === 'refresh') {
-                this.refresh();
-                return;
-            }
 
             if (action === 'directions') {
                 const address = actionEl.dataset.address || actionEl.dataset.garage || '';

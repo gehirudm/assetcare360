@@ -237,10 +237,44 @@ async function runFlow(page, viewportName) {
     await page.goto(startUrl, { waitUntil: 'domcontentloaded' });
 
     await expect(page.locator('#mainContent')).toBeVisible({ timeout: 20000 });
+    await expect(page.locator('#budget-action #submitBudgetBtn')).toBeVisible({ timeout: 15000 });
+
+    await page.locator('#budget-action #submitBudgetBtn').click();
+    await expect(page.locator('#budgetModal.active')).toBeVisible({ timeout: 10000 });
+
+    const budgetHeaderText = await page.locator('#budgetModal .modal-header h3').innerText();
+    expect(budgetHeaderText).toContain('Request Budget Report');
+
+    await page.locator('#budgetModal .modal-close').click();
+    await expect.poll(async () => page.locator('#budgetModal').evaluate((node) => node.classList.contains('active'))).toBe(false);
+
     await expect(page.locator('#parts-action .btn-action')).toBeVisible({ timeout: 15000 });
 
     await page.locator('#parts-action .btn-action').click();
     await expect(page.locator('#partsModal.active')).toBeVisible({ timeout: 10000 });
+
+    const partsModalMetrics = await page.evaluate(() => {
+        const modal = document.querySelector('#partsModal > .modal');
+        const firstFormGrid = document.querySelector('#partsModal .form-grid');
+
+        if (!modal) {
+            return null;
+        }
+
+        const modalRect = modal.getBoundingClientRect();
+
+        return {
+            modalWidth: modalRect.width,
+            gridTemplateColumns: firstFormGrid
+                ? window.getComputedStyle(firstFormGrid).gridTemplateColumns
+                : ''
+        };
+    });
+
+    expect(partsModalMetrics).toBeTruthy();
+    if (viewportName === 'desktop') {
+        expect(partsModalMetrics.modalWidth).toBeGreaterThan(760);
+    }
 
     await expect(page.locator('#requestingTicketId')).toHaveValue(String(fixtures.ticket.id));
     await expect(page.locator('#relatedTicketId')).not.toHaveValue('');
@@ -315,7 +349,9 @@ async function runFlow(page, viewportName) {
             partRequestSubmission: state.spareRequests.length >= 1,
             noPartStatusUpdate: state.statusUpdates.length >= 1,
             availabilityChecks: state.availabilityChecks.length,
-            finalTicketStatus: fixtures.ticket.status
+            finalTicketStatus: fixtures.ticket.status,
+            budgetHeaderTextMatches: budgetHeaderText.includes('Request Budget Report'),
+            partsModalWidth: partsModalMetrics?.modalWidth || 0
         },
         apiPayloads: {
             spareRequests: state.spareRequests,
