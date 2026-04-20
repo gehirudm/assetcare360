@@ -3,6 +3,29 @@
 ## Current Focus
 Dashboard Web Components refactor execution for the active Supervisor residual slice remains complete (TASK034, TASK035, TASK036). TASK033 and TASK032 are also complete. Route-breakdown workflow correction (TASK039), GPS/map approval (TASK042), transportation cargo lifecycle + dangerous escalation (TASK043), TM cargo section split/navigation cleanup (TASK044), TM cargo catalogue/details UX refinement (TASK045), dangerous in-route priority lock + supervisor dangerous visibility hardening (TASK046), breakdown-view/ticket-flow unification with create-time linked fault-ticket creation (TASK047), Inventory insurance flow implementation (TASK048), Supervisor insurance-claim ticket flow implementation (TASK049), Driver/Machinery Operator fault-reporting 500 fix (TASK050), Machinery Operator duplicate ticket creation fix (TASK051), newest-first ticket rendering stabilization (TASK052), Inventory single-page analytics/reporting hub delivery (TASK060), optional insurance + removed last service date for machine/vehicle add flows (TASK063), SysAdmin user-accounts list/filter reliability fix (TASK064), Inventory Orders & Approvals approve/reject modal form rendering fix (TASK065), spare-part approval insufficient-stock blocking hardening (TASK066), inventory vehicle insurance real-data mapping fix (TASK067), inventory spare-part reject status + details-modal action fix (TASK068), maintenance-manager budget approval internal-error resilience fix (TASK069), spare-part-rejected workflow recovery after budget approval (TASK070), driver in-route breakdown transaction/toast reliability fix (TASK071), duplicate active route-breakdown ticket prevention per vehicle (TASK072), supervisor vehicle ticket-detail rendering fix (TASK073), supervisor nearby-garage modal bridge fix (TASK074), cross-dashboard ticket-detail return style-bleed cleanup (TASK075), route-breakdown garage continuity restoration across supervisor/driver/view-ticket flows (TASK076), and route-breakdown create 500 remediation for linked-ticket validation handling (TASK077) are now complete. Active remaining backlog is TASK003 migration verification plus pending monolith-final-decomposition cleanup tasks (TASK037, TASK038).
 
+### Supervisor detail garage-approval resilience + modal cascade isolation completed (April 20, 2026)
+- Followed up TASK037 after user-reported Supervisor detail errors: unresolved route-breakdown id during `Approve Nearby Garage`, oversized embedded toast rendering, and modal white-border/sizing regression.
+- Updated `pages/dashboard/supervisor/components/ticket-details/script.js` to avoid hard fail on missing `routeBreakdownId` and delegate garage-approval handling to dashboard orchestration first.
+- Updated `pages/view-ticket/script.js` to delegate embedded toasts to host context and add report-code-based route-breakdown id fallback for detail-triggered garage approval payloads.
+- Updated `pages/dashboard/supervisor/script.js` host toast helper to target root dashboard toast (`body > #toast`) and support both legacy and current toast class/show patterns.
+- Updated `pages/dashboard/supervisor/style.css` with high-specificity modal guards for Supervisor modal components so shared generic `.modal-content` rules from embedded detail assets no longer override Supervisor modal geometry.
+- Validation snapshot:
+	- diagnostics clean for touched Supervisor style/script files.
+	- focused Playwright suite `transportation-manager-garages` passed (`2/2`).
+
+### Supervisor detail approve-garage modal header rendering fix completed (April 20, 2026)
+- Followed up TASK037 after user reported the `Approve Nearby Garage` modal header in Supervisor ticket-detail flow was not rendering properly.
+- Root cause: shared ticket-detail stylesheet (`pages/dashboard/technical-officer/view-ticket/style.css`) applies id-scoped `#garageApprovalModal .modal-header` rules that overrode Supervisor header styling in detail context.
+- Updated `pages/dashboard/supervisor/style.css` with host+id scoped overrides for:
+	- `supervisor-garage-approval-modal #garageApprovalModal .modal-content`
+	- `supervisor-garage-approval-modal #garageApprovalModal .modal-header`
+	- `supervisor-garage-approval-modal #garageApprovalModal .modal-header h2`
+	- `supervisor-garage-approval-modal #garageApprovalModal .modal-header .btn-close`
+- Validation snapshot:
+	- diagnostics clean for touched stylesheet.
+	- focused Playwright suite `transportation-manager-garages` passed (`2/2`).
+	- focused dashboard diagnostic with detail assets loaded confirms modal header gradient background and white title text.
+
 ### Supervisor route-detail issue/location parity follow-up completed (April 20, 2026)
 - Followed up TASK037 for user-reported mismatch in Supervisor route breakdown detail flow (`View Ticket -> Approve Nearby Garage`) where issue description/location details diverged from list-level behavior.
 - Updated `pages/view-ticket/script.js` to normalize route issue and location values from route-specific context (including legacy description parsing and `breakdown_context` fallback hydration), then reuse those values in overview rendering and garage-approval payloads.
@@ -97,6 +120,20 @@ Dashboard Web Components refactor execution for the active Supervisor residual s
 	- orphan checks for assignments/images/work-updates linked to RBD tickets: `0`
 - Cross-system scan for string residue:
 	- scanned all DB text columns for `RBD-`; result `[]` (no remaining RBD text matches).
+
+### Route-breakdown full-system purge rerun with residual cleanup completed (April 20, 2026)
+- On user request, re-ran full route-breakdown cleanup across the system and verified route-related table counts.
+- Core/dependent route-breakdown tables were already at zero, but full text-column scan found residual `RBD-` values in:
+	- `notifications.message=27`
+	- `spare_part_requests.ticket_id_formatted=6`
+- Executed transactional residue cleanup:
+	- deleted `spare_part_request_items` rows linked to `spare_part_requests.ticket_id_formatted LIKE 'RBD-%'`.
+	- deleted `spare_part_requests` rows with `ticket_id_formatted LIKE 'RBD-%'`.
+	- deleted `notifications` rows with `message LIKE '%RBD-%'`.
+- Final verification snapshot:
+	- all route-breakdown core/dependent counts remain `0`.
+	- `notifications_rbd=0`, `spare_part_requests_ticket_id_formatted_rbd=0`.
+	- full DB text-column scan now returns `RBD_TEXT_RESIDUE=NONE`.
 
 ### Route-breakdown sequence reset + Supervisor View Ticket garage-approval form parity completed (April 20, 2026)
 - Completed TASK080 for two user requests:

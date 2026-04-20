@@ -2,7 +2,7 @@
 
 ## In Progress
 - [TASK003] Run Migration 047 and Update OpenAPI Spec
-- [TASK037] Supervisor Script Monolith Final Decomposition - Ticket-detail flow uses actor-specific components; breakdown actions follow unified ticket-flow create-or-open behavior; active fault-ticket-tracking owns source filtering + newest-first ordering + route status formatting; shared modal hydration/budget guard hotfixes landed; shared `partsModal` card-visibility structure fix plus Supervisor ticket-detail fallback/style-cleanup fix are applied to keep View flow reliable and prevent post-detail button enlargement; embedded detail Assign Technician now reuses `supervisor-assign-ticket-modal` from list flow and assign-modal geometry parity is restored across list/detail triggers; latest follow-up normalizes route issue/location mapping so detail-triggered garage approval metadata matches list flow (broader decomposition pending)
+- [TASK037] Supervisor Script Monolith Final Decomposition - Ticket-detail flow uses actor-specific components; breakdown actions follow unified ticket-flow create-or-open behavior; active fault-ticket-tracking owns source filtering + newest-first ordering + route status formatting; shared modal hydration/budget guard hotfixes landed; shared `partsModal` card-visibility structure fix plus Supervisor ticket-detail fallback/style-cleanup fix are applied to keep View flow reliable and prevent post-detail button enlargement; embedded detail Assign Technician now reuses `supervisor-assign-ticket-modal` from list flow and assign-modal geometry parity is restored across list/detail triggers; latest follow-ups normalize route issue/location mapping, add detail payload route-id fallback + host-toast delegation, isolate Supervisor modal geometry from shared detail CSS cascade, and restore approve-garage modal header rendering in detail context via host+id CSS overrides (focused validation pass: transportation-manager-garages 2/2) (broader decomposition pending)
 - [TASK038] Technical Officer Script Monolith Final Decomposition - TO ticket detail flow uses actor-specific component + direct view-ticket navigation; shared view-ticket Request Spare Parts and Finish Work parity work is complete; latest hotfixes include modal-node hydration, budget DOM hardening, dashboard toast fallback, and shared `partsModal` structure repair verified by focused Playwright pass (broader decomposition pending)
 - [TASK081] Driver Breakdown Detail Form Clarity - Refactor Driver ticket-tracking breakdown details modal (RBD/VBD) into clearer machinery-style form sections/rows; preserve workflow + garage data and validate desktop/mobile behavior
 
@@ -11,7 +11,7 @@
 
 ## Completed
 - [TASK080] Reset Route Breakdown Sequence and Unify Supervisor View-Ticket Garage Approval Form - Completed on 2026-04-20
-- [TASK079] Fix Route Breakdown ID Reuse and Purge RBD Data - Completed on 2026-04-20
+- [TASK079] Fix Route Breakdown ID Reuse and Purge RBD Data - Completed on 2026-04-20 (includes repeated full-system cleanup rerun and residual `RBD-` reference removal)
 - [TASK078] Prune In-Route Breakdown Reports Data to One Resolved Record - Completed on 2026-04-20
 - [TASK077] Fix Route Breakdown Create 500 on Linked Ticket Validation - Completed on 2026-04-20 (follow-up schema-safe hardening completed same day)
 - [TASK076] Restore Route Breakdown Garage Workflow Continuity - Completed on 2026-04-20

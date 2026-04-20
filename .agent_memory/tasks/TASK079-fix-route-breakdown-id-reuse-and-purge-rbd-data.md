@@ -29,6 +29,7 @@ The duplicate symptom was caused by `route_breakdown_id` reuse (`RBD-002`) after
 | 79.4 | Purge in-route and RBD ticket data | Complete | April 20, 2026 | Transactional delete completed: in-route rows and RBD tickets removed system-wide. |
 | 79.5 | Validate post-change state | Complete | April 20, 2026 | Verified cleanup counts (`after_inroute=0`, `after_rbd_tickets=0`) and PHP lint success. |
 | 79.6 | Re-run full RBD purge on new request | Complete | April 20, 2026 | Executed second transactional cleanup across in-route + linked workflow/ticket tables; all RBD traces removed. |
+| 79.7 | Re-run full-system RBD residue cleanup | Complete | April 20, 2026 | Cleared remaining `RBD-` values in `notifications.message` and `spare_part_requests.ticket_id_formatted`; verified zero residues. |
 
 ## Progress Log
 ### April 20, 2026
@@ -65,3 +66,20 @@ The duplicate symptom was caused by `route_breakdown_id` reuse (`RBD-002`) after
   - orphan checks: `orphan_rbd_assignments=0`, `orphan_rbd_images=0`, `orphan_rbd_work_updates=0`
 - Cross-system residue scan:
   - searched all text columns in DB for `RBD-` pattern; result `[]` (no remaining rows containing RBD codes).
+
+### April 20, 2026 (full-system cleanup rerun with residue removal)
+- User requested clearing route-breakdown data across the whole system again.
+- Revalidated route-breakdown core/dependent tables; counts were already zero for:
+  - `vehicle_breakdown_inroute`, `route_breakdown_garage_workflow`, `route_breakdown_garage_updates`
+  - route-linked `fault_tickets` and dependent rows (`fault_ticket_assignments`, `fault_ticket_images`, `ticket_work_updates`, `budget_reports`, `spare_part_requests`, `spare_part_request_items`, `tec_fault_repair_ticket`)
+- Full text-column scan for `RBD-` found residual rows in:
+  - `notifications.message=27`
+  - `spare_part_requests.ticket_id_formatted=6`
+- Executed transactional residue cleanup:
+  - deleted `spare_part_request_items` linked to `spare_part_requests` with `ticket_id_formatted LIKE 'RBD-%'`.
+  - deleted `spare_part_requests` rows with `ticket_id_formatted LIKE 'RBD-%'`.
+  - deleted `notifications` rows with `message LIKE '%RBD-%'`.
+- Final verification:
+  - route-breakdown core/dependent counts remained `0`.
+  - `notifications_rbd=0`, `spare_part_requests_ticket_id_formatted_rbd=0`.
+  - full text-column scan result: `RBD_TEXT_RESIDUE=NONE`.

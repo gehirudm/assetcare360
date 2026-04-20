@@ -1,6 +1,42 @@
 # Progress
 
 ## What Works
+- ✅ Supervisor detail-path `Approve Nearby Garage` modal header now renders correctly under shared detail stylesheet injection (April 20, 2026)
+  - Follow-up for TASK037 after user-reported header rendering issue in Supervisor dashboard detail flow.
+  - Root cause: id-scoped shared rule `#garageApprovalModal .modal-header` from `pages/dashboard/technical-officer/view-ticket/style.css` overrode Supervisor modal header styling.
+  - Updated `pages/dashboard/supervisor/style.css` with high-specificity host+id overrides for garage modal header/title/close button and modal content layout.
+  - Verification evidence:
+    - diagnostics clean for touched stylesheet.
+    - `VAL_STAGE=after npx playwright test transportation-manager-garages/validate-transportation-manager-garages.spec.js --reporter=line` passed (`2/2`).
+    - focused Playwright dashboard diagnostic (with detail assets loaded) reports header gradient background and white title text.
+
+- ✅ Route-breakdown full-system cleanup rerun now also clears residual `RBD-` references from non-core tables (April 20, 2026)
+  - User requested clearing route-breakdown data across the full system.
+  - Verified all core/dependent route-breakdown tables were `0`, then ran cross-system text scan.
+  - Found residual values in:
+    - `notifications.message=27`
+    - `spare_part_requests.ticket_id_formatted=6`
+  - Executed transactional residue cleanup:
+    - deleted linked `spare_part_request_items` for `spare_part_requests.ticket_id_formatted LIKE 'RBD-%'`.
+    - deleted `spare_part_requests` rows with `ticket_id_formatted LIKE 'RBD-%'`.
+    - deleted `notifications` rows with `message LIKE '%RBD-%'`.
+  - Verification evidence:
+    - route-breakdown core/dependent counts are all `0`.
+    - `notifications_rbd=0`, `spare_part_requests_ticket_id_formatted_rbd=0`.
+    - full text-column scan reports `RBD_TEXT_RESIDUE=NONE`.
+
+- ✅ Supervisor detail `Approve Nearby Garage` flow now resolves route-breakdown IDs robustly and no longer renders oversized host toasts; Supervisor modal white-border/sizing regression is isolated from shared detail CSS (April 20, 2026)
+  - Follow-up for TASK037 after user-reported detail errors and modal geometry regressions in Supervisor dashboard.
+  - Updated `pages/dashboard/supervisor/components/ticket-details/script.js` to delegate garage approval from detail view and avoid hard fail when `routeBreakdownId` is missing in the embedded context.
+  - Updated `pages/view-ticket/script.js`:
+    - added report-code based route-breakdown id fallback for detail-triggered payloads,
+    - delegated embedded toasts to host context so detail toasts no longer render as large side boxes.
+  - Updated `pages/dashboard/supervisor/script.js` toast helper to target root dashboard toast and support both `toast-*` and status-class variants plus `show` state.
+  - Updated `pages/dashboard/supervisor/style.css` with high-specificity Supervisor modal guards to prevent shared `view-ticket` generic `.modal-content` rules from overriding dashboard modal widths/padding.
+  - Verification evidence:
+    - diagnostics clean for touched Supervisor files.
+    - `VAL_STAGE=after npx playwright test transportation-manager-garages/validate-transportation-manager-garages.spec.js --reporter=line` passed (`2/2`).
+
 - ✅ Supervisor route-breakdown detail now uses normalized issue/location values for garage approval parity with list flow (April 20, 2026)
   - Follow-up for TASK037 fixed user-reported mismatch in `View Ticket -> Approve Nearby Garage` route breakdown details.
   - Updated `pages/view-ticket/script.js`:
