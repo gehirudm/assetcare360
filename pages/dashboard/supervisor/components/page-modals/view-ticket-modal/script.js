@@ -250,10 +250,13 @@ class SupervisorViewTicketModal extends HTMLElement {
 
             const isRoute = type === 'route_breakdown';
             const typeLabel = isRoute ? 'Route Breakdown' : 'Vehicle Breakdown';
-            const typeBadgeColor = isRoute ? '#e67e22' : '#e74c3c';
             const reportId = isRoute
                 ? (report.route_breakdown_id || `RBD-${report.id}`)
                 : (report.breakdown_id || `VBD-${report.id}`);
+            const statusValue = report.ticket_status || report.status || 'Pending';
+            const severityValue = report.severity || 'Medium';
+            const sourceLabel = isRoute ? 'Driver Route Breakdown Report' : 'Driver Vehicle Breakdown Report';
+            const sourceBadgeColor = isRoute ? '#ea580c' : '#2563eb';
             const createdDate = new Date(isRoute
                 ? (report.breakdown_datetime || report.created_at)
                 : (report.breakdown_date || report.created_at)
@@ -261,33 +264,29 @@ class SupervisorViewTicketModal extends HTMLElement {
 
             const detailsHTML = `
                 <div class="form-section">
-                    <h5><i class="fas ${isRoute ? 'fa-road' : 'fa-car-crash'}"></i> Breakdown Information</h5>
-                    <p><strong>Report ID:</strong> ${reportId}</p>
-                    <p><strong>Type:</strong> <span style="background: ${typeBadgeColor}; color: white; padding: 2px 10px; border-radius: 10px; font-size: 0.85rem;">${typeLabel}</span></p>
-                    <p><strong>Status:</strong> <span class="status-text status-${(report.status || 'pending').toLowerCase()}">${(report.status || 'Pending').toUpperCase()}</span></p>
-                    <p><strong>Severity:</strong> <span class="status-text status-${(report.severity || 'medium').toLowerCase()}">${(report.severity || 'Medium').toUpperCase()}</span></p>
-                    <p><strong>Breakdown Type:</strong> ${report.breakdown_type || 'N/A'}</p>
-                    ${isRoute && report.breakdown_location ? `<p><strong>Location:</strong> ${report.breakdown_location}</p>` : ''}
-                </div>
-
-                <div class="form-section">
-                    <h5><i class="fas fa-truck"></i> Vehicle Details</h5>
-                    <p><strong>Vehicle:</strong> ${report.number_plate || 'N/A'}</p>
-                    ${report.make ? `<p><strong>Make:</strong> ${report.make}</p>` : ''}
-                    ${report.model ? `<p><strong>Model:</strong> ${report.model}</p>` : ''}
+                    <h5><i class="fas fa-info-circle"></i> ${this.escapeHtml(typeLabel)} Information</h5>
+                    <p><strong>Breakdown ID:</strong> ${this.escapeHtml(reportId)}</p>
+                    <p><strong>Status:</strong> <span class="status-text status-${this.toStatusClass(statusValue)}">${this.escapeHtml(String(statusValue).toUpperCase())}</span></p>
+                    <p><strong>Severity:</strong> <span class="status-text status-${this.toStatusClass(severityValue)}">${this.escapeHtml(String(severityValue).toUpperCase())}</span></p>
+                    <p><strong>Vehicle:</strong> ${this.escapeHtml(report.number_plate || 'N/A')}</p>
+                    <p><strong>Driver:</strong> ${this.escapeHtml(report.driver_name || 'N/A')}</p>
+                    ${report.driver_employee_id ? `<p><strong>Employee ID:</strong> ${this.escapeHtml(report.driver_employee_id)}</p>` : ''}
+                    ${report.driver_phone ? `<p><strong>Phone:</strong> ${this.escapeHtml(report.driver_phone)}</p>` : ''}
+                    ${report.make ? `<p><strong>Make:</strong> ${this.escapeHtml(report.make)}</p>` : ''}
+                    ${report.model ? `<p><strong>Model:</strong> ${this.escapeHtml(report.model)}</p>` : ''}
+                    <p><strong>Breakdown Type:</strong> ${this.escapeHtml(report.breakdown_type || 'N/A')}</p>
+                    ${isRoute && report.breakdown_location ? `<p><strong>Location:</strong> ${this.escapeHtml(report.breakdown_location)}</p>` : ''}
+                    <p><strong>Date:</strong> ${this.escapeHtml(createdDate.toLocaleString())}</p>
                 </div>
 
                 <div class="form-section">
                     <h5><i class="fas fa-clipboard-list"></i> Description</h5>
-                    <p style="white-space: pre-wrap; border-left: none; padding: 12px; background: var(--background); border-radius: 6px;">${report.description || 'No description provided'}</p>
+                    <p style="white-space: pre-wrap; padding: 12px; background: var(--background); border-radius: 6px;">${this.escapeHtml(report.description || 'No description provided')}</p>
                 </div>
 
                 <div class="form-section">
-                    <h5><i class="fas fa-user"></i> Driver Details</h5>
-                    <p><strong>Driver:</strong> ${report.driver_name || 'N/A'}</p>
-                    ${report.driver_employee_id ? `<p><strong>Employee ID:</strong> ${report.driver_employee_id}</p>` : ''}
-                    ${report.driver_phone ? `<p><strong>Phone:</strong> ${report.driver_phone}</p>` : ''}
-                    <p><strong>Reported On:</strong> ${createdDate.toLocaleString()}</p>
+                    <h5><i class="fas fa-exclamation-triangle"></i> Source</h5>
+                    <p><span style="background: ${sourceBadgeColor}; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px;">${this.escapeHtml(sourceLabel)}</span></p>
                 </div>
             `;
 
@@ -300,6 +299,25 @@ class SupervisorViewTicketModal extends HTMLElement {
             console.error('Error loading breakdown details:', error);
             this.emitToast('Failed to load breakdown report details', 'error');
         }
+    }
+
+    toStatusClass(value) {
+        const normalized = String(value || '')
+            .trim()
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+
+        return normalized || 'pending';
+    }
+
+    escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     openMachineBreakdown(ticket) {
