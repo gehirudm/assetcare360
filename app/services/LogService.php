@@ -71,7 +71,7 @@ class LogService {
         
         // Time period filtering
         if (!empty($filters['period'])) {
-            $timeCondition = $this->getTimePeriodCondition($filters['period']);
+            $timeCondition = $this->getTimePeriodCondition($filters['period'], 'l.created_at');
             if ($timeCondition) {
                 $sql .= " AND " . $timeCondition;
             }
@@ -226,9 +226,14 @@ class LogService {
         $byResponseCode = $codeStmt->fetchAll(PDO::FETCH_KEY_PAIR);
         
         // Top users by activity
+        $userWhereClauses = ['user_id IS NOT NULL'];
+        if (!empty($condition)) {
+            $userWhereClauses[] = $condition;
+        }
+        $userWhereSql = ' WHERE ' . implode(' AND ', $userWhereClauses);
+
         $userSql = "SELECT user_id, employee_id, COUNT(*) as request_count 
-                    FROM `{$this->table}`" . $timeCondition . "
-                    WHERE user_id IS NOT NULL
+                    FROM `{$this->table}`" . $userWhereSql . "
                     GROUP BY user_id, employee_id 
                     ORDER BY request_count DESC 
                     LIMIT 10";
@@ -292,19 +297,24 @@ class LogService {
     /**
      * Get time period SQL condition
      */
-    private function getTimePeriodCondition($period) {
+    private function getTimePeriodCondition($period, $timestampColumn = 'created_at') {
+        $column = trim((string)$timestampColumn);
+        if ($column === '') {
+            $column = 'created_at';
+        }
+
         switch ($period) {
             case 'today':
-                return "DATE(created_at) = CURDATE()";
+                return "DATE({$column}) = CURDATE()";
             
             case 'week':
-                return "created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+                return "{$column} >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
             
             case 'month':
-                return "created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+                return "{$column} >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
             
             case 'year':
-                return "created_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
+                return "{$column} >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
             
             case 'all':
             default:

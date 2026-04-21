@@ -34,9 +34,6 @@ class SAPettyCashConfig extends HTMLElement {
                 <button class="btn btn-primary" type="button" data-action="open-limit-modal">
                     <i class="fas fa-money-bill-wave"></i> Set New Limit
                 </button>
-                <button class="btn btn-secondary" type="button" data-action="refresh-setting">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                </button>
             </div>
 
             <div class="card">
@@ -83,11 +80,6 @@ class SAPettyCashConfig extends HTMLElement {
 
             if (action === 'open-limit-modal') {
                 this.openLimitModal();
-                return;
-            }
-
-            if (action === 'refresh-setting') {
-                this.loadPettyCashSetting();
                 return;
             }
 
@@ -168,7 +160,7 @@ class SAPettyCashConfig extends HTMLElement {
         if (!this._setting) {
             rowsContainer.innerHTML = `
                 <tr>
-                    <td>petty_cash_limit</td>
+                    <td><strong>Petty Cash Limit</strong></td>
                     <td id="saPettyCashLimitValue">Not configured</td>
                     <td>Not available</td>
                     <td>Not available</td>
@@ -183,15 +175,11 @@ class SAPettyCashConfig extends HTMLElement {
         const settingValue = this.formatCurrency(this.parseNumericValue(this._setting.setting_value));
         const updatedAt = this.formatDateTime(this._setting.updated_at);
         const updatedBy = this._setting.updated_by_name || this._setting.updated_by || 'System';
-        const description = this._setting.description
-            ? `<div style="font-size: 12px; color: var(--muted); margin-top: 4px;">${this.escapeHtml(this._setting.description)}</div>`
-            : '';
 
         rowsContainer.innerHTML = `
             <tr>
                 <td>
-                    <strong>petty_cash_limit</strong>
-                    ${description}
+                    <strong>Petty Cash Limit</strong>
                 </td>
                 <td id="saPettyCashLimitValue">${settingValue}</td>
                 <td>${updatedAt}</td>

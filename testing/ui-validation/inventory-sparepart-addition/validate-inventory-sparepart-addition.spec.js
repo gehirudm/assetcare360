@@ -200,7 +200,6 @@ async function runFlow(page, viewportName) {
     await expect(page.locator('#addStockSparepartIdDisplay')).toHaveValue('SPR-123', { timeout: 10000 });
 
     await page.locator('#addStockQuantity').fill('6');
-    await page.locator('#addStockLocation').selectOption('LOCATION 1');
     await page.locator('#addStockSupplier').fill('Existing Parts Supply');
     await page.locator('#addStockSupplierContact').fill('existing@example.com');
     await page.locator('#addStockSupplierAddress').fill('Warehouse Road');
@@ -220,7 +219,6 @@ async function runFlow(page, viewportName) {
     await expect(page.locator('#addStockSparepartIdDisplay')).toHaveValue('SPR-047', { timeout: 10000 });
 
     await page.locator('#addStockQuantity').fill('3');
-    await page.locator('#addStockLocation').selectOption('LOCATION 2');
     await page.locator('#addStockSupplier').fill('New Catalog Supply');
     await page.locator('#addStockSupplierContact').fill('new@example.com');
     await page.locator('#addStockSupplierAddress').fill('Industrial Estate');

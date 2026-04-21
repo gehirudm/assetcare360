@@ -49,17 +49,6 @@ class InventoryAddStockModal extends HTMLElement {
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label class="form-label">Storage Location</label>
-                                    <input
-                                        type="text"
-                                        class="form-input"
-                                        id="addStockLocation"
-                                        placeholder="Location from catalog"
-                                        readonly
-                                        style="background-color: #f3f4f6; cursor: not-allowed;"
-                                    >
-                                </div>
-                                <div class="form-group">
                                     <label class="form-label">Received Date *</label>
                                     <input type="date" class="form-input" id="addStockReceivedDate" required>
                                 </div>
@@ -165,15 +154,6 @@ function setAddStockSparepartIdDisplay(value, tone = 'neutral') {
     }
 }
 
-function setAddStockLocationValue(value) {
-    const locationInput = document.getElementById('addStockLocation');
-    if (!locationInput) {
-        return;
-    }
-
-    locationInput.value = value || '';
-}
-
 function getAddStockTodayDate() {
     return new Date().toISOString().split('T')[0];
 }
@@ -243,7 +223,6 @@ async function updateAddStockSparepartNameOptions(selectedSparepartId = '') {
     select.innerHTML = '<option value="">Select Existing Sparepart</option>';
     addStockModalState.selectedProduct = null;
     setAddStockSparepartIdDisplay('');
-    setAddStockLocationValue('');
 
     if (!category) {
         select.innerHTML = '<option value="">Select Category First</option>';
@@ -285,7 +264,6 @@ function handleAddStockSparepartChange() {
     if (!category || !sparepartId) {
         addStockModalState.selectedProduct = null;
         setAddStockSparepartIdDisplay('');
-        setAddStockLocationValue('');
         return;
     }
 
@@ -294,12 +272,10 @@ function handleAddStockSparepartChange() {
 
     if (!product) {
         setAddStockSparepartIdDisplay('', 'error');
-        setAddStockLocationValue('');
         return;
     }
 
     setAddStockSparepartIdDisplay(product.sparepart_id, 'existing');
-    setAddStockLocationValue(product.location || '');
 }
 
 function buildAddStockPayload() {
@@ -539,7 +515,6 @@ async function openAddStockModal() {
     }
 
     setAddStockSparepartIdDisplay('');
-    setAddStockLocationValue('');
 
     const sparepartSelect = document.getElementById('addStockSparepartName');
     if (sparepartSelect) {
@@ -578,7 +553,6 @@ if (!window.__inventoryAddStockSubmitBound) {
             updateAddStockModalHeading('create');
             setAddStockSelectionControlsDisabled(false);
             setAddStockSparepartIdDisplay('');
-            setAddStockLocationValue('');
 
             await Promise.all([
                 refreshSparepartAddition(),
