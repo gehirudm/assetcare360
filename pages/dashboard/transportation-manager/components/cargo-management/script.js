@@ -57,7 +57,7 @@ class TMCargoManagement extends HTMLElement {
                             type="text"
                             id="cargoCatalogSearch"
                             class="search-input"
-                            placeholder="Search by cargo code, name, unit, or description..."
+                            placeholder="Search by cargo code, name, unit, capacity, or description..."
                         >
                     </div>
 
@@ -218,6 +218,7 @@ class TMCargoManagement extends HTMLElement {
                     item.cargo_item_id,
                     item.description,
                     item.unit,
+                    item.capacity,
                 ].map((value) => String(value || '').toLowerCase()).join(' ');
 
                 return searchPool.includes(search);
@@ -281,6 +282,8 @@ class TMCargoManagement extends HTMLElement {
             const isDangerous = Number(item.is_dangerous) === 1;
             const itemId = Number(item.id);
             const description = String(item.description || '').trim();
+            const unitLabel = TMUtils.formatCargoUnit(item.unit || 'units');
+            const capacityLabel = TMUtils.formatCargoCapacity(item.capacity);
 
             return `
                 <div class="inventory-item cargo-catalog-item" data-item-id="${itemId}">
@@ -288,7 +291,10 @@ class TMCargoManagement extends HTMLElement {
                         <strong><i class="fas fa-boxes-stacked"></i> ${TMUtils.escapeHtml(item.name || 'Unnamed Cargo')}</strong>
                         <div class="item-meta">
                             <i class="fas fa-fingerprint"></i> ${TMUtils.escapeHtml(item.cargo_item_id || 'N/A')} |
-                            <i class="fas fa-ruler-combined"></i> Unit: ${TMUtils.escapeHtml(item.unit || 'units')}
+                            <i class="fas fa-ruler-combined"></i> Unit: ${TMUtils.escapeHtml(unitLabel)}
+                        </div>
+                        <div class="item-meta">
+                            <i class="fas fa-weight-hanging"></i> Capacity (weight kg): ${TMUtils.escapeHtml(capacityLabel)}
                         </div>
                         ${description ? `<div class="item-meta"><i class="fas fa-align-left"></i> ${TMUtils.escapeHtml(description)}</div>` : ''}
                         <div class="item-meta">

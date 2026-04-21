@@ -285,6 +285,8 @@ class TMCargoDetails extends HTMLElement {
 
         const isDangerous = Number(this._cargoItem.is_dangerous) === 1;
         const isActive = Number(this._cargoItem.is_active) === 1;
+        const unitLabel = TMUtils.formatCargoUnit(this._cargoItem.unit || 'units');
+        const capacityLabel = TMUtils.formatCargoCapacity(this._cargoItem.capacity);
         const statusInfo = TMUtils.getStatusInfo(isActive ? 'Active' : 'Inactive');
         const latestTransported = this._metrics.latestTransported
             ? TMUtils.formatDateTime(this._metrics.latestTransported)
@@ -295,7 +297,7 @@ class TMCargoDetails extends HTMLElement {
         }
 
         if (subtitle) {
-            subtitle.textContent = `${this._cargoItem.cargo_item_id || 'N/A'} | Unit: ${this._cargoItem.unit || 'units'} | ${isDangerous ? 'Dangerous' : 'Non-dangerous'} cargo`;
+            subtitle.textContent = `${this._cargoItem.cargo_item_id || 'N/A'} | Unit: ${unitLabel} | Capacity: ${capacityLabel} | ${isDangerous ? 'Dangerous' : 'Non-dangerous'} cargo`;
         }
 
         content.innerHTML = `
@@ -307,7 +309,7 @@ class TMCargoDetails extends HTMLElement {
                 <div class="cargo-metrics-grid">
                     <div class="metric-card">
                         <span class="metric-label">Completed Quantity</span>
-                        <div class="metric-value">${TMUtils.formatQuantity(this._metrics.completedQuantity)} ${TMUtils.escapeHtml(this._cargoItem.unit || 'units')}</div>
+                        <div class="metric-value">${TMUtils.formatQuantity(this._metrics.completedQuantity)} ${TMUtils.escapeHtml(unitLabel)}</div>
                     </div>
                     <div class="metric-card">
                         <span class="metric-label">Completed Trips</span>
@@ -356,7 +358,11 @@ class TMCargoDetails extends HTMLElement {
                         </div>
                         <div class="cargo-profile-item">
                             <span class="cargo-profile-label">Unit</span>
-                            <strong>${TMUtils.escapeHtml(this._cargoItem.unit || 'units')}</strong>
+                            <strong>${TMUtils.escapeHtml(unitLabel)}</strong>
+                        </div>
+                        <div class="cargo-profile-item">
+                            <span class="cargo-profile-label">Capacity (weight kg)</span>
+                            <strong>${TMUtils.escapeHtml(capacityLabel)}</strong>
                         </div>
                         <div class="cargo-profile-item">
                             <span class="cargo-profile-label">Cargo Type</span>
@@ -398,7 +404,7 @@ class TMCargoDetails extends HTMLElement {
                                     </div>
                                     <div class="cargo-trip-meta">
                                         <span><i class="fas fa-route"></i> ${TMUtils.escapeHtml(entry.origin)} → ${TMUtils.escapeHtml(entry.destination)}</span>
-                                        <span><i class="fas fa-weight-hanging"></i> ${TMUtils.formatQuantity(entry.quantity)} ${TMUtils.escapeHtml(this._cargoItem.unit || 'units')}</span>
+                                        <span><i class="fas fa-weight-hanging"></i> ${TMUtils.formatQuantity(entry.quantity)} ${TMUtils.escapeHtml(unitLabel)}</span>
                                         <span><i class="fas fa-calendar-day"></i> ${TMUtils.escapeHtml(TMUtils.formatDateTime(entry.timeline))}</span>
                                     </div>
                                 </div>

@@ -409,7 +409,8 @@ class TMAnalyticsHub extends HTMLElement {
         const rows = byItem.map((item) => ({
             cargo_item_id: item.cargo_item_id || '',
             name: item.name || '',
-            unit: item.unit || '',
+            unit: TMUtils.formatCargoUnit(item.unit || ''),
+            capacity: TMUtils.formatCargoCapacity(item.capacity),
             dangerous: Number(item.is_dangerous) === 1 ? 'Yes' : 'No',
             total_quantity: Number(item.total_quantity || 0),
             trips_count: Number(item.trips_count || 0),
@@ -433,6 +434,7 @@ class TMAnalyticsHub extends HTMLElement {
                 { key: 'cargo_item_id', label: 'Cargo Item ID' },
                 { key: 'name', label: 'Cargo Item' },
                 { key: 'unit', label: 'Unit' },
+                { key: 'capacity', label: 'Capacity (weight kg)' },
                 { key: 'dangerous', label: 'Dangerous' },
                 { key: 'total_quantity', label: 'Total Quantity' },
                 { key: 'trips_count', label: 'Trips Count' },

@@ -289,15 +289,16 @@ class Trip extends BaseModel {
         $placeholders = implode(', ', array_fill(0, count($tripIds), '?'));
 
         $query = "SELECT tci.trip_id as trip_db_id,
-                         tci.cargo_item_id as cargo_item_db_id,
-                         tci.quantity,
-                         tci.notes,
-                         ci.cargo_item_id,
-                         ci.name,
-                         ci.description,
-                         ci.unit,
-                         ci.is_dangerous,
-                         ci.is_active
+                 tci.cargo_item_id as cargo_item_db_id,
+                 tci.quantity,
+                 tci.notes,
+                 ci.cargo_item_id,
+                 ci.name,
+                 ci.description,
+                 ci.unit,
+                 ci.capacity_level,
+                 ci.is_dangerous,
+                 ci.is_active
                   FROM trip_cargo_items tci
                   INNER JOIN cargo_items ci ON ci.id = tci.cargo_item_id
                   WHERE tci.trip_id IN ($placeholders)
@@ -324,6 +325,7 @@ class Trip extends BaseModel {
                 'name' => $row['name'] ?? null,
                 'description' => $row['description'] ?? null,
                 'unit' => $row['unit'] ?? 'units',
+                'capacity' => $row['capacity_level'] ?? 'average',
                 'is_dangerous' => (int) ($row['is_dangerous'] ?? 0),
                 'is_active' => (int) ($row['is_active'] ?? 0),
                 'quantity' => isset($row['quantity']) ? (float) $row['quantity'] : 0.0,
@@ -366,7 +368,7 @@ class Trip extends BaseModel {
     }
 
     public function listCargoItems($includeInactive = false) {
-        $query = "SELECT id, cargo_item_id, name, description, unit, is_dangerous, is_active, created_by, created_at, updated_at
+        $query = "SELECT id, cargo_item_id, name, description, unit, capacity_level, is_dangerous, is_active, created_by, created_at, updated_at
                   FROM cargo_items";
         $params = [];
 
@@ -383,7 +385,7 @@ class Trip extends BaseModel {
 
     public function getCargoItemById($id) {
         $stmt = $this->db->prepare(
-            'SELECT id, cargo_item_id, name, description, unit, is_dangerous, is_active, created_by, created_at, updated_at
+            'SELECT id, cargo_item_id, name, description, unit, capacity_level, is_dangerous, is_active, created_by, created_at, updated_at
              FROM cargo_items
              WHERE id = ?
              LIMIT 1'
@@ -396,7 +398,7 @@ class Trip extends BaseModel {
 
     public function findCargoItemByName($name) {
         $stmt = $this->db->prepare(
-            'SELECT id, cargo_item_id, name, description, unit, is_dangerous, is_active, created_by, created_at, updated_at
+            'SELECT id, cargo_item_id, name, description, unit, capacity_level, is_dangerous, is_active, created_by, created_at, updated_at
              FROM cargo_items
              WHERE LOWER(name) = LOWER(?)
              LIMIT 1'
@@ -409,8 +411,8 @@ class Trip extends BaseModel {
 
     public function createCargoItem($data) {
         $stmt = $this->db->prepare(
-            'INSERT INTO cargo_items (cargo_item_id, name, description, unit, is_dangerous, is_active, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
+              'INSERT INTO cargo_items (cargo_item_id, name, description, unit, capacity_level, is_dangerous, is_active, created_by)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
 
         $ok = $stmt->execute([
@@ -418,6 +420,7 @@ class Trip extends BaseModel {
             trim((string) $data['name']),
             isset($data['description']) && $data['description'] !== '' ? trim((string) $data['description']) : null,
             trim((string) ($data['unit'] ?? 'units')),
+            trim((string) ($data['capacity'] ?? 'average')),
             !empty($data['is_dangerous']) ? 1 : 0,
             array_key_exists('is_active', $data) ? (!empty($data['is_active']) ? 1 : 0) : 1,
             !empty($data['created_by']) ? (int) $data['created_by'] : null,
@@ -454,6 +457,11 @@ class Trip extends BaseModel {
         if (array_key_exists('unit', $data)) {
             $fields[] = 'unit = ?';
             $params[] = trim((string) $data['unit']);
+        }
+
+        if (array_key_exists('capacity', $data)) {
+            $fields[] = 'capacity_level = ?';
+            $params[] = trim((string) $data['capacity']);
         }
 
         if (array_key_exists('is_dangerous', $data)) {

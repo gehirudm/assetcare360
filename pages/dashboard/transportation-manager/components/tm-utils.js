@@ -95,6 +95,34 @@
         return fixed.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
     }
 
+    function formatCargoUnit(value) {
+        const unit = String(value ?? '').trim();
+        if (!unit) {
+            return 'units';
+        }
+
+        const numeric = Number(unit);
+        if (Number.isFinite(numeric) && numeric > 0) {
+            return `${formatQuantity(numeric)} kg`;
+        }
+
+        return unit;
+    }
+
+    function normalizeCargoCapacity(value) {
+        const normalized = String(value ?? '').trim().toLowerCase();
+        if (normalized === 'low' || normalized === 'high' || normalized === 'average') {
+            return normalized;
+        }
+
+        return 'average';
+    }
+
+    function formatCargoCapacity(value) {
+        const normalized = normalizeCargoCapacity(value);
+        return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+    }
+
     function hasDangerousCargo(trip) {
         if (!trip || typeof trip !== 'object') {
             return false;
@@ -125,7 +153,7 @@
                 .map((item) => {
                     const name = String(item?.name || 'Cargo Item').trim();
                     const quantity = formatQuantity(item?.quantity);
-                    const unit = String(item?.unit || 'units').trim();
+                    const unit = formatCargoUnit(item?.unit || 'units');
                     const dangerous = Number(item?.is_dangerous) === 1 ? ' [Dangerous]' : '';
                     return `${name} (${quantity} ${unit})${dangerous}`;
                 })
@@ -150,6 +178,9 @@
         formatVolume,
         escapeHtml,
         formatQuantity,
+        formatCargoUnit,
+        normalizeCargoCapacity,
+        formatCargoCapacity,
         hasDangerousCargo,
         buildCargoSummary,
     };

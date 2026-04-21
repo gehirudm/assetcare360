@@ -7568,7 +7568,12 @@ components:
           nullable: true
         unit:
           type: string
-          example: kg
+          example: "50"
+          description: Numeric unit value in kilograms for the cargo item.
+        capacity:
+          type: string
+          enum: [low, average, high]
+          example: average
         is_dangerous:
           type: integer
           enum: [0, 1]
@@ -7601,7 +7606,12 @@ components:
           nullable: true
         unit:
           type: string
-          example: kg
+          example: "50"
+          description: Numeric unit value in kilograms.
+        capacity:
+          type: string
+          enum: [low, average, high]
+          example: average
         is_dangerous:
           type: integer
           enum: [0, 1]
@@ -7626,6 +7636,8 @@ components:
       type: object
       required:
         - name
+        - unit
+        - capacity
       properties:
         name:
           type: string
@@ -7633,8 +7645,14 @@ components:
           type: string
           nullable: true
         unit:
+          type: number
+          format: float
+          minimum: 0.001
+          description: Numeric unit value in kilograms.
+        capacity:
           type: string
-          default: units
+          enum: [low, average, high]
+          default: average
         is_dangerous:
           type: boolean
 
@@ -7647,7 +7665,13 @@ components:
           type: string
           nullable: true
         unit:
+          type: number
+          format: float
+          minimum: 0.001
+          description: Numeric unit value in kilograms.
+        capacity:
           type: string
+          enum: [low, average, high]
         is_dangerous:
           type: boolean
         is_active:
@@ -7693,6 +7717,9 @@ components:
           type: string
         unit:
           type: string
+        capacity:
+          type: string
+          enum: [low, average, high]
         is_dangerous:
           type: integer
           enum: [0, 1]

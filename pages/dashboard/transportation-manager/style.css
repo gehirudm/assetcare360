@@ -1607,6 +1607,35 @@ body {
     box-shadow: none;
     cursor: pointer;
 }
+.capacity-option-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+.capacity-option-card {
+    border: 1px solid var(--stone-200);
+    border-radius: 10px;
+    background: #fff;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: var(--text-700);
+    transition: all 0.2s ease;
+}
+.capacity-option-card:hover {
+    border-color: var(--royal-blue);
+    box-shadow: var(--ring);
+}
+.capacity-option-card input[type="radio"] {
+    margin: 0;
+    accent-color: var(--royal-blue);
+}
+.capacity-option-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
 
 .form-label,
 .form-group label {
@@ -1615,6 +1644,11 @@ body {
     font-weight: 700;
     font-size: .85rem;
     color: var(--text-700);
+@media (max-width: 768px) {
+    .capacity-option-grid {
+        grid-template-columns: 1fr;
+    }
+}
 }
 
 .form-input, 

@@ -268,8 +268,9 @@ class TMAssignTripModal extends HTMLElement {
             const id = Number(item.id || 0);
             const isSelected = id === selectedId;
             const dangerMark = Number(item.is_dangerous) === 1 ? ' [Dangerous]' : '';
-            const unit = item.unit || 'units';
-            return `<option value="${id}" ${isSelected ? 'selected' : ''}>${TMUtils.escapeHtml(item.name || item.cargo_item_id || `Cargo #${id}`)} (${TMUtils.escapeHtml(unit)})${dangerMark}</option>`;
+            const unit = TMUtils.formatCargoUnit(item.unit || 'units');
+            const capacity = TMUtils.formatCargoCapacity(item.capacity);
+            return `<option value="${id}" ${isSelected ? 'selected' : ''}>${TMUtils.escapeHtml(item.name || item.cargo_item_id || `Cargo #${id}`)} (${TMUtils.escapeHtml(unit)} | ${TMUtils.escapeHtml(capacity)})${dangerMark}</option>`;
         }).join('');
 
         row.innerHTML = `

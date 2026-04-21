@@ -108,7 +108,8 @@ class TMViewTripModal extends HTMLElement {
                     ${cargoItems.map((item) => {
                         const name = TMUtils.escapeHtml(item.name || item.cargo_item_id || 'Cargo Item');
                         const quantity = TMUtils.formatQuantity(item.quantity || 0);
-                        const unit = TMUtils.escapeHtml(item.unit || 'units');
+                        const unit = TMUtils.escapeHtml(TMUtils.formatCargoUnit(item.unit || 'units'));
+                        const capacity = TMUtils.escapeHtml(TMUtils.formatCargoCapacity(item.capacity));
                         const notes = item.notes ? `<div class="detail-item"><span class="detail-label">Notes</span><span class="detail-value">${TMUtils.escapeHtml(item.notes)}</span></div>` : '';
                         const isDangerous = Number(item.is_dangerous) === 1;
 
@@ -116,6 +117,10 @@ class TMViewTripModal extends HTMLElement {
                             <div class="detail-item" style="border: 1px solid var(--stone-200); border-radius: 8px; padding: 10px; background: #fff;">
                                 <span class="detail-label">${name}</span>
                                 <span class="detail-value">${quantity} ${unit}</span>
+                                <div class="detail-item" style="padding: 0; margin-top: 6px; border: none;">
+                                    <span class="detail-label">Capacity (weight kg)</span>
+                                    <span class="detail-value">${capacity}</span>
+                                </div>
                                 ${isDangerous ? '<span class="status-badge badge-danger" style="margin-top: 8px; width: fit-content;"><i class="fas fa-radiation"></i> Dangerous</span>' : ''}
                                 ${notes}
                             </div>

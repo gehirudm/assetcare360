@@ -29,7 +29,25 @@ class TMCargoItemModal extends HTMLElement {
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="cargoItemUnit">Unit *</label>
-                                <input type="text" class="form-input" id="cargoItemUnit" name="unit" placeholder="e.g. drums" value="units" required>
+                                <input type="number" class="form-input" id="cargoItemUnit" name="unit" placeholder="e.g. 50" min="0.001" step="0.001" inputmode="decimal" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label class="form-label">Capacity (weight kg) *</label>
+                            <div class="capacity-option-grid" role="radiogroup" aria-label="Capacity (weight kg)">
+                                <label class="capacity-option-card" for="cargoCapacityLow">
+                                    <input type="radio" id="cargoCapacityLow" name="capacity" value="low">
+                                    <span class="capacity-option-title">Low</span>
+                                </label>
+                                <label class="capacity-option-card" for="cargoCapacityAverage">
+                                    <input type="radio" id="cargoCapacityAverage" name="capacity" value="average" checked>
+                                    <span class="capacity-option-title">Average</span>
+                                </label>
+                                <label class="capacity-option-card" for="cargoCapacityHigh">
+                                    <input type="radio" id="cargoCapacityHigh" name="capacity" value="high">
+                                    <span class="capacity-option-title">High</span>
+                                </label>
                             </div>
                         </div>
 
@@ -87,9 +105,9 @@ class TMCargoItemModal extends HTMLElement {
         const form = this.querySelector('#cargoItemForm');
 
         form?.reset();
-        const unitInput = this.querySelector('#cargoItemUnit');
-        if (unitInput) {
-            unitInput.value = 'units';
+        const capacityAverage = this.querySelector('#cargoCapacityAverage');
+        if (capacityAverage) {
+            capacityAverage.checked = true;
         }
 
         this._hideErrors();
@@ -112,12 +130,15 @@ class TMCargoItemModal extends HTMLElement {
     async submit() {
         const nameInput = this.querySelector('#cargoItemName');
         const unitInput = this.querySelector('#cargoItemUnit');
+        const capacityInput = this.querySelector('input[name="capacity"]:checked');
         const descriptionInput = this.querySelector('#cargoItemDescription');
         const dangerousInput = this.querySelector('#cargoItemDangerous');
         const submitBtn = this.querySelector('#cargoItemSubmitBtn');
 
         const name = String(nameInput?.value || '').trim();
-        const unit = String(unitInput?.value || '').trim();
+        const unitRaw = String(unitInput?.value || '').trim();
+        const unit = Number(unitRaw);
+        const capacity = String(capacityInput?.value || '').trim().toLowerCase();
         const description = String(descriptionInput?.value || '').trim();
         const isDangerous = !!dangerousInput?.checked;
 
@@ -126,14 +147,20 @@ class TMCargoItemModal extends HTMLElement {
             return;
         }
 
-        if (!unit) {
-            this._showError('Cargo unit is required.');
+        if (!Number.isFinite(unit) || unit <= 0) {
+            this._showError('Cargo unit must be a number greater than 0.');
+            return;
+        }
+
+        if (!['low', 'average', 'high'].includes(capacity)) {
+            this._showError('Select a cargo capacity level.');
             return;
         }
 
         const payload = {
             name,
             unit,
+            capacity,
             description,
             is_dangerous: isDangerous,
         };

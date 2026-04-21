@@ -323,10 +323,8 @@ class TripService {
             throw new Exception('Cargo item name is required');
         }
 
-        $unit = trim((string) ($data['unit'] ?? 'units'));
-        if ($unit === '') {
-            $unit = 'units';
-        }
+        $unit = $this->normalizeCargoUnitInput($data['unit'] ?? null);
+        $capacity = $this->normalizeCargoCapacityInput($data['capacity'] ?? 'average');
 
         $existingByName = $this->tripModel->findCargoItemByName($name);
         if ($existingByName && (int) ($existingByName['is_active'] ?? 0) === 1) {
@@ -338,6 +336,7 @@ class TripService {
             'name' => $name,
             'description' => isset($data['description']) ? trim((string) $data['description']) : null,
             'unit' => $unit,
+            'capacity' => $capacity,
             'is_dangerous' => !empty($data['is_dangerous']) ? 1 : 0,
             'is_active' => 1,
             'created_by' => isset($actor['id']) ? (int) $actor['id'] : null,
@@ -383,11 +382,11 @@ class TripService {
         }
 
         if (array_key_exists('unit', $data)) {
-            $unit = trim((string) $data['unit']);
-            if ($unit === '') {
-                throw new Exception('Unit cannot be empty');
-            }
-            $updateData['unit'] = $unit;
+            $updateData['unit'] = $this->normalizeCargoUnitInput($data['unit']);
+        }
+
+        if (array_key_exists('capacity', $data)) {
+            $updateData['capacity'] = $this->normalizeCargoCapacityInput($data['capacity']);
         }
 
         if (array_key_exists('is_dangerous', $data)) {
@@ -469,6 +468,7 @@ class TripService {
                     ci.cargo_item_id,
                     ci.name,
                     ci.unit,
+                    ci.capacity_level,
                     ci.is_dangerous,
                     COALESCE(SUM(tci.quantity), 0) as total_quantity,
                     COUNT(DISTINCT t.id) as trips_count,
@@ -477,7 +477,7 @@ class TripService {
              INNER JOIN trip_cargo_items tci ON tci.trip_id = t.id
              INNER JOIN cargo_items ci ON ci.id = tci.cargo_item_id
              $whereClause
-             GROUP BY ci.id, ci.cargo_item_id, ci.name, ci.unit, ci.is_dangerous
+               GROUP BY ci.id, ci.cargo_item_id, ci.name, ci.unit, ci.capacity_level, ci.is_dangerous
              ORDER BY total_quantity DESC, ci.name ASC"
         );
         $byItemStmt->execute($params);
@@ -511,6 +511,7 @@ class TripService {
                     'cargo_item_id' => $item['cargo_item_id'] ?? null,
                     'name' => $item['name'] ?? null,
                     'unit' => $item['unit'] ?? 'units',
+                    'capacity' => $this->normalizeCargoCapacityForOutput($item['capacity_level'] ?? null),
                     'is_dangerous' => (int) ($item['is_dangerous'] ?? 0),
                     'total_quantity' => isset($item['total_quantity']) ? (float) $item['total_quantity'] : 0.0,
                     'trips_count' => isset($item['trips_count']) ? (int) $item['trips_count'] : 0,
@@ -706,7 +707,7 @@ class TripService {
 
         $placeholders = implode(', ', array_fill(0, count($cargoItemIds), '?'));
         $stmt = $this->db->prepare(
-            "SELECT id, cargo_item_id, name, unit, is_dangerous, is_active
+            "SELECT id, cargo_item_id, name, unit, capacity_level, is_dangerous, is_active
              FROM cargo_items
              WHERE id IN ($placeholders)"
         );
@@ -738,6 +739,7 @@ class TripService {
                     'cargo_item_id' => $byId[$id]['cargo_item_id'] ?? null,
                     'name' => $byId[$id]['name'] ?? null,
                     'unit' => $byId[$id]['unit'] ?? 'units',
+                    'capacity' => $this->normalizeCargoCapacityForOutput($byId[$id]['capacity_level'] ?? null),
                     'is_dangerous' => (int) ($byId[$id]['is_dangerous'] ?? 0),
                 ],
             ];
@@ -791,6 +793,7 @@ class TripService {
                 'name' => $item['name'] ?? null,
                 'description' => $item['description'] ?? null,
                 'unit' => $item['unit'] ?? 'units',
+                'capacity' => $this->normalizeCargoCapacityForOutput($item['capacity'] ?? null),
                 'is_dangerous' => (int) ($item['is_dangerous'] ?? 0),
                 'is_active' => (int) ($item['is_active'] ?? 0),
                 'quantity' => isset($item['quantity']) ? (float) $item['quantity'] : 0.0,
@@ -834,7 +837,7 @@ class TripService {
         foreach ($assignments as $assignment) {
             $meta = $assignment['cargo_item'] ?? [];
             $name = trim((string) ($meta['name'] ?? 'Cargo Item'));
-            $unit = trim((string) ($meta['unit'] ?? 'units'));
+            $unit = $this->formatCargoUnitLabel($meta['unit'] ?? 'units');
             $quantity = $this->formatQuantity($assignment['quantity'] ?? 0);
             $dangerousBadge = ((int) ($meta['is_dangerous'] ?? 0) === 1) ? ' [Dangerous]' : '';
 
@@ -852,7 +855,7 @@ class TripService {
         $summaryParts = [];
         foreach ($cargoItems as $item) {
             $name = trim((string) ($item['name'] ?? 'Cargo Item'));
-            $unit = trim((string) ($item['unit'] ?? 'units'));
+            $unit = $this->formatCargoUnitLabel($item['unit'] ?? 'units');
             $quantity = $this->formatQuantity($item['quantity'] ?? 0);
             $dangerousBadge = ((int) ($item['is_dangerous'] ?? 0) === 1) ? ' [Dangerous]' : '';
 
@@ -876,12 +879,62 @@ class TripService {
             'name' => $item['name'] ?? null,
             'description' => $item['description'] ?? null,
             'unit' => $item['unit'] ?? 'units',
+            'capacity' => $this->normalizeCargoCapacityForOutput($item['capacity'] ?? $item['capacity_level'] ?? null),
             'is_dangerous' => (int) ($item['is_dangerous'] ?? 0),
             'is_active' => (int) ($item['is_active'] ?? 0),
             'created_by' => isset($item['created_by']) ? (int) $item['created_by'] : null,
             'created_at' => $item['created_at'] ?? null,
             'updated_at' => $item['updated_at'] ?? null,
         ];
+    }
+
+    private function normalizeCargoUnitInput($value): string {
+        $unit = trim((string) ($value ?? ''));
+        if ($unit === '') {
+            throw new Exception('Cargo unit is required');
+        }
+
+        if (!is_numeric($unit)) {
+            throw new Exception('Cargo unit must be numeric');
+        }
+
+        $numericUnit = (float) $unit;
+        if ($numericUnit <= 0) {
+            throw new Exception('Cargo unit must be greater than 0');
+        }
+
+        return $this->formatQuantity($numericUnit);
+    }
+
+    private function normalizeCargoCapacityInput($value): string {
+        $capacity = strtolower(trim((string) ($value ?? '')));
+        if ($capacity === '') {
+            $capacity = 'average';
+        }
+
+        if (!in_array($capacity, ['low', 'average', 'high'], true)) {
+            throw new Exception('Capacity must be one of: low, average, high');
+        }
+
+        return $capacity;
+    }
+
+    private function normalizeCargoCapacityForOutput($value): string {
+        $capacity = strtolower(trim((string) ($value ?? '')));
+        return in_array($capacity, ['low', 'average', 'high'], true) ? $capacity : 'average';
+    }
+
+    private function formatCargoUnitLabel($unit): string {
+        $normalized = trim((string) ($unit ?? ''));
+        if ($normalized === '') {
+            return 'units';
+        }
+
+        if (is_numeric($normalized)) {
+            return $this->formatQuantity($normalized) . ' kg';
+        }
+
+        return $normalized;
     }
 
     private function generateNextCargoItemCode(): string {
@@ -921,6 +974,7 @@ class TripService {
     private function isCargoSchemaAvailable(): bool {
         return $this->tableExists($this->db, 'cargo_items')
             && $this->tableExists($this->db, 'trip_cargo_items')
+            && $this->columnExists($this->db, 'cargo_items', 'capacity_level')
             && $this->columnExists($this->db, 'trip_cargo_items', 'trip_id')
             && $this->columnExists($this->db, 'trip_cargo_items', 'cargo_item_id')
             && $this->columnExists($this->db, 'trip_cargo_items', 'quantity');
