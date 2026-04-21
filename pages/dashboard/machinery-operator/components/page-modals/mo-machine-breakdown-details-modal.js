@@ -184,6 +184,7 @@ class MOMachineBreakdownDetailsModal extends HTMLElement {
                 <p><strong>Status:</strong> ${this.escapeHtml(context.ticketStatus || breakdown.status || 'Pending')}</p>
                 <p><strong>Severity:</strong> ${this.escapeHtml(breakdown.severity || 'N/A')}</p>
                 <p><strong>Breakdown Type:</strong> ${this.escapeHtml(breakdown.breakdown_type || 'General Fault')}</p>
+                <p><strong>Estimated Cost Range:</strong> ${breakdown.estimated_cost_range ? this.escapeHtml(breakdown.estimated_cost_range) : '<span style="color: var(--muted);">Not specified</span>'}</p>
             </div>
 
             <div class="form-section">

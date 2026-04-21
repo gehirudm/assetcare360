@@ -315,7 +315,7 @@ class MaintenanceCreateServiceTicketModal extends HTMLElement {
 
         const description = String(formData.get('description') || '').trim();
         if (description.length < 10) {
-            return { valid: false, message: 'Description must be at least 10 characters.' };
+            return { valid: false, message: 'Description must be at least 150 characters.' };
         }
 
         if (description.length > 1000) {

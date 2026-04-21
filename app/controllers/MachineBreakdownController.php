@@ -172,6 +172,16 @@ class MachineBreakdownController {
         // Always use server timestamp for new machine breakdown reports.
         $breakdownDate = date('Y-m-d H:i:s');
         $currentUser = RoleMiddleware::getCurrentUser();
+
+        $validationErrors = $this->validateCreatePayload($input);
+        if (!empty($validationErrors)) {
+            Response::validationError($validationErrors);
+        }
+
+        $machineId = (int) $input['machine_id'];
+        $breakdownType = $this->normalizeBreakdownType($input['breakdown_type'] ?? null);
+        $severity = $this->normalizeSeverity($input['severity'] ?? null);
+        $description = trim((string) $input['description']);
         
         try {
             $this->conn->beginTransaction();
@@ -189,34 +199,44 @@ class MachineBreakdownController {
             
             $breakdownId = "MBD-" . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
             
+            $allowedCostRanges = [
+                'Less than LKR 50,000',
+                'LKR 50,000 - 100,000',
+                'More than LKR 100,000',
+            ];
+            $estimatedCostRange = isset($input['estimated_cost_range']) && in_array($input['estimated_cost_range'], $allowedCostRanges, true)
+                ? $input['estimated_cost_range']
+                : null;
+
             $sql = "INSERT INTO machine_breakdown 
                     (breakdown_id, machine_id, operator_id, breakdown_date, breakdown_type,
-                     severity, description, status) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 'Pending')";
+                     severity, description, estimated_cost_range, status) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending')";
             
             $stmt = $this->conn->prepare($sql);
             
             $stmt->execute([
                 $breakdownId,
-                $input['machine_id'],
+                $machineId,
                 $currentUser['id'],
                 $breakdownDate,
-                $input['breakdown_type'],
-                $input['severity'],
-                $input['description']
+                $breakdownType,
+                $severity,
+                $description,
+                $estimatedCostRange,
             ]);
 
             $ticketPayload = [
-                'machine_id' => (int) $input['machine_id'],
+                'machine_id' => $machineId,
                 'reported_by' => (int) $currentUser['id'],
                 'breakdown_report_id' => $breakdownId,
                 'breakdown_type' => 'machine_breakdown',
-                'priority' => $this->mapSeverityToPriority($input['severity'] ?? null),
+                'priority' => $this->mapSeverityToPriority($severity),
                 'description' => $this->buildAutoTicketDescription($breakdownId, [
-                    'breakdown_type' => $input['breakdown_type'] ?? 'Machine Fault',
-                    'severity' => $input['severity'] ?? 'medium',
+                    'breakdown_type' => $breakdownType,
+                    'severity' => $severity,
                     'breakdown_date' => $breakdownDate,
-                    'description' => $input['description'] ?? ''
+                    'description' => $description
                 ])
             ];
 
@@ -263,6 +283,58 @@ class MachineBreakdownController {
             }
             Response::error('Failed to create breakdown report: ' . $e->getMessage(), 500);
         }
+    }
+
+    private function validateCreatePayload(array $input): array {
+        $errors = [];
+
+        $machineId = isset($input['machine_id']) ? (int) $input['machine_id'] : 0;
+        if ($machineId <= 0) {
+            $errors['machine_id'] = 'Machine is required';
+        }
+
+        $description = trim((string) ($input['description'] ?? ''));
+        if ($description === '') {
+            $errors['description'] = 'Fault description is required';
+        } else {
+            $descriptionLength = $this->stringLength($description);
+            if ($descriptionLength < 10) {
+                $errors['description'] = 'Fault description must be at least 10 characters';
+            } elseif ($descriptionLength > 150) {
+                $errors['description'] = 'Fault description cannot exceed 150 characters';
+            }
+        }
+
+        return $errors;
+    }
+
+    private function normalizeBreakdownType($value): string {
+        $normalized = trim((string) $value);
+        if ($normalized === '') {
+            return 'General Fault';
+        }
+
+        return $normalized;
+    }
+
+    private function normalizeSeverity($value): string {
+        $normalized = strtolower(trim((string) $value));
+        $allowed = [
+            'low' => 'Low',
+            'medium' => 'Medium',
+            'high' => 'High',
+            'critical' => 'Critical',
+        ];
+
+        return $allowed[$normalized] ?? 'Medium';
+    }
+
+    private function stringLength(string $value): int {
+        if (function_exists('mb_strlen')) {
+            return mb_strlen($value);
+        }
+
+        return strlen($value);
     }
 
     private function mapSeverityToPriority($severity) {

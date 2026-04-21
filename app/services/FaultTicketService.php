@@ -55,8 +55,8 @@ class FaultTicketService {
         // Validate description
         if (empty($data['description'])) {
             $errors['description'] = 'Description is required';
-        } elseif (strlen($data['description']) < 10) {
-            $errors['description'] = 'Description must be at least 10 characters';
+        } elseif (strlen($data['description']) > 150) {
+            $errors['description'] = 'Description must be at least 150 characters';
         }
         
         // Validate priority

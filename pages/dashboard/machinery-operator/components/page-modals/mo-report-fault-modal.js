@@ -49,8 +49,17 @@ class MOReportFaultModal extends HTMLElement {
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Fault Description *</label>
-                                <textarea class="form-textarea" id="faultDescription" name="description" required placeholder="Describe the fault in detail including any unusual sounds, behaviors, or observations..." minlength="10"></textarea>
-                                <small style="color: var(--muted); display: block; margin-top: 4px;">Minimum 10 characters required</small>
+                                <textarea class="form-textarea" id="faultDescription" name="description" required placeholder="Describe the fault in detail including any unusual sounds, behaviors, or observations..." minlength="10" maxlength="150"></textarea>
+                                <small style="color: var(--muted); display: block; margin-top: 4px;">Minimum 10 and maximum 150 characters required</small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Estimated Cost Range</label>
+                                <select class="form-select" id="faultEstimatedCostRange" name="estimated_cost_range">
+                                    <option value="">Select Estimated Cost Range</option>
+                                    <option value="Less than LKR 50,000">Less than LKR 50,000</option>
+                                    <option value="LKR 50,000 - 100,000">LKR 50,000 - 100,000</option>
+                                    <option value="More than LKR 100,000">More than LKR 100,000</option>
+                                </select>
                             </div>
                         </div>
 
@@ -233,8 +242,15 @@ class MOReportFaultModal extends HTMLElement {
         this.hideErrors();
 
         const machineId = this.querySelector('#faultMachine')?.value;
-        const description = this.querySelector('#faultDescription')?.value;
+        const description = this.querySelector('#faultDescription')?.value || '';
         const priority = this.querySelector('#faultPriority')?.value;
+        const estimatedCostRange = this.querySelector('#faultEstimatedCostRange')?.value || null;
+
+        const trimmedDescription = String(description).trim();
+        if (trimmedDescription.length > 150) {
+            this.showErrors({ description: 'Fault description cannot exceed 150 characters.' });
+            return;
+        }
 
         const submitBtn = this.querySelector('#reportFaultForm button[type="submit"]');
         if (!submitBtn) {
@@ -251,7 +267,8 @@ class MOReportFaultModal extends HTMLElement {
                 operator_id: this.currentUser?.id || null,
                 breakdown_type: 'General Fault',
                 severity: priority || 'Medium',
-                description,
+                description: trimmedDescription,
+                estimated_cost_range: estimatedCostRange || undefined,
                 status: 'Pending',
             };
 
