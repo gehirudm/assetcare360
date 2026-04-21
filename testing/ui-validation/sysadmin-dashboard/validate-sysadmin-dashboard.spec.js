@@ -472,7 +472,6 @@ async function runFlow(page, viewportName) {
 
     await navigateSection(page, 'activity-tracking');
     await expect(page.getByRole('heading', { name: 'User Activity Tracking' })).toBeVisible();
-    await expect(page.locator('#summaryTotalActions')).toHaveText('8');
     await page.getByRole('button', { name: 'Supervisor' }).click();
     await expect(page.locator('#activeUsersList tr')).toHaveCount(1);
     await page.getByRole('button', { name: 'View Session' }).first().click();

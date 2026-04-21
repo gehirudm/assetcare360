@@ -228,7 +228,12 @@ class TMViewFuelModal extends HTMLElement {
         }
 
         const normalizedPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
-        return `${window.location.origin}/${normalizedPath}`;
+        const apiBaseUrl = String(CONFIG?.API_BASE_URL || '').replace(/\/+$/, '');
+        if (!apiBaseUrl) {
+            return `/${normalizedPath}`;
+        }
+
+        return `${apiBaseUrl}/${normalizedPath}`;
     }
 
     close() {

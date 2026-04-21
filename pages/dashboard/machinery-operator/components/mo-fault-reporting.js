@@ -305,8 +305,9 @@ class MOFaultReporting extends HTMLElement {
     }
 
     renderFaultCard(fault) {
-        const statusInfo = window.MOUtils.getStatusInfo(fault.status);
-        const normalizedStatus = window.MOUtils.normalizeFilterStatus(fault.status);
+        const statusSource = this.getDisplayStatusSource(fault);
+        const statusInfo = window.MOUtils.getStatusInfo(statusSource);
+        const normalizedStatus = window.MOUtils.normalizeFilterStatus(statusSource);
         const normalizedTicketStatus = String(fault.ticket_status || fault.status || '').trim().toLowerCase();
         const ticketStatusLabel = String(fault.ticket_status || 'No Ticket').trim() || 'No Ticket';
         const safeTicketStatusLabel = ticketStatusLabel.replace(/"/g, '&quot;');
@@ -386,10 +387,19 @@ class MOFaultReporting extends HTMLElement {
             return;
         }
 
-        const normalized = reports.map((item) => window.MOUtils.normalizeFilterStatus(item.status));
+        const normalized = reports.map((item) => window.MOUtils.normalizeFilterStatus(this.getDisplayStatusSource(item)));
         const pendingCount = normalized.filter((status) => status === 'open').length;
         const inProgressCount = normalized.filter((status) => status === 'in-progress').length;
         summary.textContent = `${pendingCount} pending, ${inProgressCount} in progress`;
+    }
+
+    getDisplayStatusSource(report) {
+        const ticketStatus = String(report?.ticket_status || '').trim();
+        if (ticketStatus) {
+            return ticketStatus;
+        }
+
+        return String(report?.status || '').trim();
     }
 
     toggleDropdown(menuId) {

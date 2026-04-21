@@ -40,43 +40,27 @@ class SAActivityTracking extends HTMLElement {
 
             <div class="card">
                 <div class="card-header">
-                    <span>🟢 Currently Active Users</span>
+                    <span class="active-users-header-title"><i class="fas fa-user-check card-header-icon-live" aria-hidden="true"></i> Currently Active Users</span>
                     <span id="activeUserCount" class="status-text status-normal">Loading...</span>
                 </div>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Role</th>
-                            <th>Login Time</th>
-                            <th>IP Address</th>
-                            <th>Current Activity</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="activeUsersList">
-                        <tr>
-                            <td colspan="6" style="text-align: center; color: var(--muted);">Loading active user sessions...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="card">
-                <div class="card-header"><i class="fas fa-chart-bar"></i> Activity Summary (Last 24 Hours)</div>
-                <div class="grid">
-                    <div class="stat-card">
-                        <div class="stat-number" style="color: var(--kelly-green);" id="summaryUniqueLogins">0</div>
-                        <div class="stat-label">Unique Logins</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" style="color: var(--royal-blue);" id="summaryTotalActions">0</div>
-                        <div class="stat-label">Total Actions</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" style="color: var(--danger);" id="summaryFailedLogins">0</div>
-                        <div class="stat-label">Failed Login Attempts</div>
-                    </div>
+                <div class="active-users-table-wrapper">
+                    <table class="table active-users-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Role</th>
+                                <th>Login Time</th>
+                                <th>IP Address</th>
+                                <th>Current Activity</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activeUsersList">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--muted);">Loading active user sessions...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -194,8 +178,6 @@ class SAActivityTracking extends HTMLElement {
             this.activeUsers = this.buildActiveUsers(this.todayLogs);
             this.userActivitySummaries = this.buildUserActivitySummaries(this.activityLogs);
             this.inactiveUsers = this.buildInactiveUsers(this.users, this.activityLogs);
-
-            this.renderSummaryCards();
             this.applyFilters();
 
             const failedSources = [];
@@ -220,7 +202,6 @@ class SAActivityTracking extends HTMLElement {
             this.activeUsers = [];
             this.userActivitySummaries = [];
             this.inactiveUsers = [];
-            this.renderSummaryCards();
             this.applyFilters();
             this.emitToast('Failed to load user activity tracking data.', 'error');
         } finally {
@@ -527,32 +508,6 @@ class SAActivityTracking extends HTMLElement {
             }));
     }
 
-    renderSummaryCards() {
-        const uniqueLogins = new Set(
-            this.activityLogs
-                .filter((log) => this.isLoginEvent(log) && this.isSuccessfulResponse(log.response_code))
-                .map((log) => this.getUserKey(log))
-                .filter(Boolean)
-        ).size;
-
-        const failedLogins = this.activityLogs.filter((log) => this.isLoginEvent(log) && Number.parseInt(log.response_code, 10) >= 400).length;
-        const totalActions = this.activityLogs.length;
-
-        const uniqueLoginsNode = this.querySelector('#summaryUniqueLogins');
-        const totalActionsNode = this.querySelector('#summaryTotalActions');
-        const failedLoginsNode = this.querySelector('#summaryFailedLogins');
-
-        if (uniqueLoginsNode) {
-            uniqueLoginsNode.textContent = String(uniqueLogins);
-        }
-        if (totalActionsNode) {
-            totalActionsNode.textContent = String(totalActions);
-        }
-        if (failedLoginsNode) {
-            failedLoginsNode.textContent = String(failedLogins);
-        }
-    }
-
     applyFilters() {
         const searchValue = (this.querySelector('#activityUserSearch')?.value || '').toLowerCase().trim();
 
@@ -649,16 +604,29 @@ class SAActivityTracking extends HTMLElement {
     }
 
     renderActiveUserRow(user) {
+        const formattedLoginTime = this.escapeHtml(this.formatDateTime(user.loginAt));
+        const sessionDuration = this.escapeHtml(this.formatDurationSince(user.loginAt));
+        const escapedIpAddress = this.escapeHtml(user.ipAddress);
+        const escapedCurrentActivity = this.escapeHtml(user.currentActivity);
+
         return `
             <tr data-role="${this.escapeHtml(user.role)}">
-                <td>${this.escapeHtml(user.name)} (${this.escapeHtml(user.employeeId)})</td>
+                <td class="active-user-col-user">
+                    <div class="active-user-name">${this.escapeHtml(user.name)}</div>
+                    <div class="active-user-meta">${this.escapeHtml(user.employeeId)}</div>
+                </td>
                 <td><span class="status-text ${this.getRoleStatusClass(user.role)}">${this.escapeHtml(user.role)}</span></td>
-                <td>${this.escapeHtml(this.formatDateTime(user.loginAt))} (${this.escapeHtml(this.formatDurationSince(user.loginAt))})</td>
-                <td>${this.escapeHtml(user.ipAddress)}</td>
-                <td>${this.escapeHtml(user.currentActivity)}</td>
-                <td>
-                    <button class="btn btn-secondary btn-small" type="button" data-action="view-session" data-employee-id="${this.escapeHtml(user.employeeId)}">View Session</button>
-                    <button class="btn btn-danger btn-small" type="button" data-action="force-logout" data-employee-id="${this.escapeHtml(user.employeeId)}">Force Logout</button>
+                <td class="active-user-col-login">
+                    <div>${formattedLoginTime}</div>
+                    <div class="active-user-meta">Online ${sessionDuration}</div>
+                </td>
+                <td class="active-user-col-ip"><span class="active-user-ip" title="${escapedIpAddress}">${escapedIpAddress}</span></td>
+                <td class="active-user-col-activity"><span class="active-user-activity" title="${escapedCurrentActivity}">${escapedCurrentActivity}</span></td>
+                <td class="active-user-col-actions">
+                    <div class="active-user-actions">
+                        <button class="btn btn-secondary btn-small" type="button" data-action="view-session" data-employee-id="${this.escapeHtml(user.employeeId)}"><i class="fas fa-eye" aria-hidden="true"></i> View Session</button>
+                        <button class="btn btn-danger btn-small" type="button" data-action="force-logout" data-employee-id="${this.escapeHtml(user.employeeId)}"><i class="fas fa-sign-out-alt" aria-hidden="true"></i> Force Logout</button>
+                    </div>
                 </td>
             </tr>
         `;

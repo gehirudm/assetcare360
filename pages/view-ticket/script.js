@@ -240,9 +240,17 @@ function resolveSameOriginAssetUrl(pathValue) {
     }
 
     const hasScheme = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(rawPath);
-    const candidatePath = hasScheme
-        ? rawPath
-        : (rawPath.startsWith('/') ? rawPath : `/${rawPath}`);
+    if (hasScheme) {
+        return rawPath;
+    }
+
+    const normalizedPath = rawPath.replace(/^\/+/, '');
+    const apiBaseUrl = String(CONFIG?.API_BASE_URL || '').replace(/\/+$/, '');
+    if (normalizedPath.startsWith('uploads/') && apiBaseUrl) {
+        return `${apiBaseUrl}/${normalizedPath}`;
+    }
+
+    const candidatePath = `/${normalizedPath}`;
 
     try {
         const resolved = new URL(candidatePath, window.location.origin);

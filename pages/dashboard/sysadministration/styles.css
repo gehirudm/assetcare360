@@ -640,6 +640,95 @@ body {
     background: #f7fafc;
 }
 
+.active-users-header-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.card-header-icon-live {
+    color: var(--ok);
+}
+
+.active-users-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.active-users-table {
+    margin-top: 0;
+    min-width: 980px;
+    table-layout: fixed;
+}
+
+.active-users-table th,
+.active-users-table td {
+    vertical-align: top;
+}
+
+.active-users-table td {
+    white-space: normal;
+}
+
+.active-users-table .active-user-col-user {
+    min-width: 220px;
+}
+
+.active-users-table .active-user-col-login {
+    min-width: 200px;
+}
+
+.active-users-table .active-user-col-ip {
+    min-width: 140px;
+}
+
+.active-users-table .active-user-col-activity {
+    min-width: 260px;
+}
+
+.active-users-table .active-user-col-actions {
+    min-width: 180px;
+}
+
+.active-user-name {
+    font-weight: 700;
+    color: var(--text-900);
+}
+
+.active-user-meta {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.active-user-ip,
+.active-user-activity {
+    display: inline-block;
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: top;
+}
+
+.active-user-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: stretch;
+}
+
+.active-user-actions .btn {
+    margin-right: 0;
+    margin-bottom: 0;
+    width: 100%;
+}
+
+.active-user-actions .btn i {
+    margin-right: 6px;
+}
+
 /* User Item */
 .user-item {
     display: flex;
@@ -1332,6 +1421,10 @@ body {
 
     .search-bar {
         flex-direction: column;
+    }
+
+    .active-users-table {
+        min-width: 840px;
     }
 }
 

@@ -154,10 +154,56 @@ function buildMachines() {
     ];
 }
 
+function buildNotifications() {
+    return [
+        {
+            notification_id: 'NTF-001',
+            title: 'Fault Ticket Updated',
+            message: 'TKT-6102 moved to In Progress',
+            type: 'info',
+            is_read: 0,
+            created_at: '2026-04-08T09:10:00Z',
+            source_event_id: 'TKT-6102',
+            source_event: 'fault_ticket.updated',
+        },
+        {
+            notification_id: 'NTF-002',
+            title: 'Weekly Check Approved',
+            message: 'MCHK-301 approved by supervisor',
+            type: 'success',
+            is_read: 1,
+            created_at: '2026-04-06T14:20:00Z',
+            source_event_id: 'MCHK-301',
+            source_event: 'weekly_check.approved',
+        },
+        {
+            notification_id: 'NTF-003',
+            title: 'Weekly Check Rejected',
+            message: 'MCHK-303 requires corrections',
+            type: 'warning',
+            is_read: 0,
+            created_at: '2026-04-19T11:05:00Z',
+            source_event_id: 'MCHK-303',
+            source_event: 'weekly_check.rejected',
+        },
+        {
+            notification_id: 'NTF-004',
+            title: 'Repair Request Failed',
+            message: 'TKT-6201 failed due to missing technician assignment',
+            type: 'error',
+            is_read: 0,
+            created_at: '2026-04-11T07:45:00Z',
+            source_event_id: 'TKT-6201',
+            source_event: 'repair.assignment_failed',
+        },
+    ];
+}
+
 async function mockMachineryOperatorApis(page) {
     const breakdowns = buildBreakdowns();
     const weeklyChecks = buildWeeklyChecks();
     const machines = buildMachines();
+    const notifications = buildNotifications();
 
     await page.route('**/api/auth/me', (route) => {
         route.fulfill({
@@ -249,6 +295,31 @@ async function mockMachineryOperatorApis(page) {
                 data: {
                     count: pendingOnly ? weeklyChecks.filter((item) => item.status === 'pending').length : weeklyChecks.length,
                     checks: weeklyChecks,
+                },
+            }),
+        });
+    });
+
+    await page.route('**/api/notifications**', (route) => {
+        const request = route.request();
+
+        if (request.method() === 'POST') {
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ status: 'success', data: {} }),
+            });
+            return;
+        }
+
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                status: 'success',
+                data: {
+                    notifications,
+                    unread_count: notifications.filter((item) => Number(item.is_read) !== 1).length,
                 },
             }),
         });
@@ -389,6 +460,38 @@ async function runFlow(page, viewportName) {
 
     await navigateSection(page, 'notifications', 'Notifications');
     await expect(page.locator('#notifications .page-title')).toContainText('Notifications');
+
+    const notificationCards = page.locator('#operatorNotificationsList .item-card');
+    const readStatusFilter = page.locator('#operatorNotifReadStatusFilter');
+    const typeFilter = page.locator('#operatorNotifTypeFilter');
+    const sortFilter = page.locator('#operatorNotifSortFilter');
+    const searchInput = page.locator('#operatorNotifSearchInput');
+    const resetFiltersButton = page.locator('#notifications button[data-action="clear-filters"]');
+
+    await expect(readStatusFilter).toBeVisible();
+    await expect(typeFilter).toBeVisible();
+    await expect(sortFilter).toBeVisible();
+    await expect(searchInput).toBeVisible();
+    await expect(notificationCards).toHaveCount(4);
+
+    await sortFilter.selectOption('oldest');
+    await expect(notificationCards.first()).toContainText('Weekly Check Approved');
+    await sortFilter.selectOption('newest');
+    await expect(notificationCards.first()).toContainText('Weekly Check Rejected');
+
+    await readStatusFilter.selectOption('unread');
+    await expect(notificationCards).toHaveCount(3);
+
+    await typeFilter.selectOption('warning');
+    await expect(notificationCards).toHaveCount(1);
+    await expect(notificationCards.first()).toContainText('Weekly Check Rejected');
+
+    await searchInput.fill('MCHK-303');
+    await expect(notificationCards).toHaveCount(1);
+
+    await resetFiltersButton.click();
+    await expect(notificationCards).toHaveCount(4);
+    await expect(page.locator('#operatorNotificationsFilterSummary')).toContainText('Showing all 4 notifications');
 
     let ariaSnapshot = '';
     try {

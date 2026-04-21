@@ -536,7 +536,7 @@ class DriverBreakdownDetailsModal extends HTMLElement {
         }
 
         const normalizedPath = rawPath.replace(/^\/+/, '');
-        const apiBaseUrl = String(CONFIG?.API_BASE_URL || '').replace(/\/api\/?$/, '');
+        const apiBaseUrl = String(CONFIG?.API_BASE_URL || '').replace(/\/+$/, '');
         if (!apiBaseUrl) {
             return '/' + normalizedPath;
         }
