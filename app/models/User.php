@@ -23,6 +23,7 @@ class User extends BaseModel {
             'department' => 'VARCHAR(100) NULL',
             'email' => 'VARCHAR(255) NULL',
             'phone' => 'VARCHAR(20) NULL',
+            'salary' => 'DECIMAL(12,2) NULL',
             'is_active' => 'TINYINT(1) DEFAULT 1',
             'force_password_change' => 'TINYINT(1) DEFAULT 0',
             'password_reset_token' => 'VARCHAR(255) NULL',

@@ -43,6 +43,12 @@ class SACreateUserModal extends HTMLElement {
                                     <input type="tel" class="form-input" name="phone_number" placeholder="+94 XX XXX XXXX">
                                 </div>
                             </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Salary (LKR)</label>
+                                    <input type="number" class="form-input" name="salary" min="0" step="0.01" placeholder="e.g. 85000.00">
+                                </div>
+                            </div>
                         </div>
 
                         <div class="form-section">

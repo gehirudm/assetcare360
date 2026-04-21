@@ -44,6 +44,11 @@ class SAEditUserModal extends HTMLElement {
                         </div>
 
                         <div class="form-group">
+                            <label class="form-label">Salary (LKR)</label>
+                            <input type="number" class="form-input" name="salary" min="0" step="0.01" placeholder="e.g. 85000.00">
+                        </div>
+
+                        <div class="form-group">
                             <label class="form-label">Role</label>
                             <select class="form-select" name="role" required>
                                 <option value="Admin">Admin</option>

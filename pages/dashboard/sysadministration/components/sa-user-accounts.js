@@ -469,6 +469,7 @@ class SAUserAccounts extends HTMLElement {
                 : null,
             password: this.resolveCreateUserPassword(form, formData.get('password')),
             force_password_change: true,
+            salary: formData.get('salary') || null,
         };
 
         try {
@@ -590,6 +591,11 @@ class SAUserAccounts extends HTMLElement {
             form.querySelector('[name="employee_id"]').value = user.employee_id;
             form.querySelector('[name="email"]').value = user.email;
             form.querySelector('[name="phone_number"]').value = user.phone || '';
+
+            const salaryField = form.querySelector('[name="salary"]');
+            if (salaryField) {
+                salaryField.value = user.salary != null ? user.salary : '';
+            }
             form.querySelector('[name="role"]').value = user.role;
 
             const expertiseField = form.querySelector('[name="technical_expertise"]');
@@ -622,6 +628,7 @@ class SAUserAccounts extends HTMLElement {
             technical_expertise: formData.get('role') === 'Technical Officer'
                 ? (formData.get('technical_expertise') || 'General')
                 : null,
+            salary: formData.get('salary') || null,
         };
 
         try {
